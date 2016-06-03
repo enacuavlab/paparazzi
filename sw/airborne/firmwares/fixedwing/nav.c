@@ -40,7 +40,6 @@ static unit_t unit __attribute__((unused));
 
 #include "generated/flight_plan.h"
 
-
 enum oval_status oval_status;
 
 float last_x, last_y;
@@ -57,7 +56,6 @@ float nav_circle_radians_no_rewind; /* Cumulated */
 float nav_circle_trigo_qdr; /* Angle from center to mobile */
 float nav_radius, nav_course, nav_climb, nav_shift;
 
-
 /** Status on the current leg (percentage, 0. < < 1.) in route mode */
 static float nav_leg_progress;
 static float nav_carrot_leg_progress;
@@ -71,6 +69,8 @@ float nav_circle_x, nav_circle_y, nav_circle_radius;
 float nav_segment_x_1, nav_segment_y_1, nav_segment_x_2, nav_segment_y_2;
 uint8_t horizontal_mode;
 float circle_bank = 0;
+
+float gvf_error;
 
 /** Dynamically adjustable, reset to nav_altitude when it is changing */
 float flight_altitude;
@@ -153,6 +153,11 @@ void nav_circle_XY(float x, float y, float radius)
   nav_circle_x = x;
   nav_circle_y = y;
   nav_circle_radius = radius;
+
+  gvf_error = ((pos->x - nav_circle_x)*(pos->x - nav_circle_x)) +
+      ((pos->y - nav_circle_y)*(pos->y - nav_circle_y)) - (nav_circle_radius*
+      nav_circle_radius);
+
 }
 
 
@@ -511,6 +516,14 @@ static void send_survey(struct transport_tx *trans, struct link_device *dev)
                          &nav_survey_east, &nav_survey_north, &nav_survey_west, &nav_survey_south);
   }
 }
+
+static void send_gvf_error(struct transport_tx *trans, struct link_device *dev)
+{
+    if(nav_in_circle)
+        pprz_msg_send_GVF(trans, dev, AC_ID, &gvf_error);
+}
+
+
 #endif
 
 /**
@@ -542,6 +555,7 @@ void nav_init(void)
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CIRCLE, send_circle);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_SEGMENT, send_segment);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_SURVEY, send_survey);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF, send_gvf_error);
 #endif
 }
 

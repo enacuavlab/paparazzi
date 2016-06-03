@@ -1,12 +1,14 @@
-<flight_plan NAME="demo 1" LON0="1.27289" MAX_DIST_FROM_HOME="400" GROUND_ALT="185" SECURITY_HEIGHT="25" QFU="270" ALT="250" LAT0="43.46223">
+<!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
 
+<flight_plan lat0="43.46223" lon0="1.27289" max_dist_from_home="1000" ground_alt="185" QFU="270" alt="310" name="DemoMuret" security_height="50">
 
   <waypoints>
-    <waypoint Y="30.0" NAME="HOME" X="0.0" ALT="250."/>
+    <waypoint NAME="HOME" X="0" Y="0"/>
     <waypoint name="road_start" x="-337" y="17" alt="250."/>
     <waypoint name="road_end" x="238" y="-30" alt="250."/>
     <waypoint name="too far" x="529" y="-23" alt="250."/>
   </waypoints>
+
   <blocks>
     <block name="survey road 1">
       <go wp="road_start"/>
@@ -19,11 +21,12 @@
       </while>
     </block>
     <block name="circle">
-      <circle wp="road_end" ALT="GetAltRef()+50" radius="75"/>
+      <circle wp="road_end" ALT="GetAltRef()+50" radius="nav_radius"/>
     </block>
     <block name="go too far">
       <go wp="too far"/>
-      <circle wp="too far" radius="50"/>
+      <circle wp="too far" radius="nav_radius"/>
     </block>
   </blocks>
+
 </flight_plan>
