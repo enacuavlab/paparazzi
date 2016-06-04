@@ -27,14 +27,14 @@
 <!ELEMENT exceptions (exception*)>
 
 <!ELEMENT blocks (block+)>
-<!ELEMENT block (exception|while|heading|attitude|manual|go|xyz|set|call|call_once|circle|deroute|stay|follow|survey_rectangle|for|return|eight|oval|home|path)*>
+<!ELEMENT block (exception|while|heading|attitude|manual|go|xyz|set|call|call_once|circle|circle_gvf|deroute|stay|follow|survey_rectangle|for|return|eight|oval|home|path)*>
 
 <!ELEMENT include (arg|with)*>
 <!ELEMENT arg EMPTY>
 <!ELEMENT with EMPTY>
 
-<!ELEMENT while (exception|while|heading|attitude|manual|go|xyz|set|call|call_once|circle|deroute|stay|follow|survey_rectangle|for|return|eight|oval|path)*>
-<!ELEMENT for (exception|while|heading|attitude|manual|go|xyz|set|call|call_once|circle|deroute|stay|follow|survey_rectangle|for|return|eight|oval|path)*>
+<!ELEMENT while (exception|while|heading|attitude|manual|go|xyz|set|call|call_once|circle|circle_gvf|deroute|stay|follow|survey_rectangle|for|return|eight|oval|path)*>
+<!ELEMENT for (exception|while|heading|attitude|manual|go|xyz|set|call|call_once|circle|circle_gvf|deroute|stay|follow|survey_rectangle|for|return|eight|oval|path)*>
 <!ELEMENT exception EMPTY>
 <!ELEMENT heading EMPTY>
 <!ELEMENT attitude EMPTY>
@@ -45,6 +45,7 @@
 <!ELEMENT call EMPTY>
 <!ELEMENT call_once EMPTY>
 <!ELEMENT circle EMPTY>
+<!ELEMENT circle_gvf EMPTY>
 <!ELEMENT home EMPTY>
 <!ELEMENT eight EMPTY>
 <!ELEMENT oval EMPTY>
@@ -234,6 +235,19 @@ radius CDATA #IMPLIED>
 <!ATTLIST home>
 
 <!ATTLIST circle
+wp CDATA #REQUIRED
+wp_qdr CDATA #IMPLIED
+wp_dist CDATA #IMPLIED
+radius CDATA #REQUIRED
+alt CDATA #IMPLIED
+height CDATA #IMPLIED
+vmode CDATA #IMPLIED
+climb CDATA #IMPLIED
+pitch CDATA #IMPLIED
+throttle CDATA #IMPLIED
+until CDATA #IMPLIED>
+
+<!ATTLIST circle_gvf
 wp CDATA #REQUIRED
 wp_qdr CDATA #IMPLIED
 wp_dist CDATA #IMPLIED

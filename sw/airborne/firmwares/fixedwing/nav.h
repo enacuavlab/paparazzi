@@ -121,6 +121,7 @@ extern void nav_without_gps(void);
 
 extern float nav_circle_trigo_qdr; /** Angle from center to mobile */
 extern void nav_circle_XY(float x, float y, float radius);
+extern void nav_circle_XY_GVF(float x, float y, float radius);
 
 extern float baseleg_out_qdr;
 extern bool nav_compute_baseleg(uint8_t wp_af, uint8_t wp_td, uint8_t wp_baseleg, float radius);
@@ -135,7 +136,10 @@ extern void nav_glide(uint8_t start_wp, uint8_t wp);
 #define NavGlide(_start_wp, _wp) nav_glide(_start_wp, _wp)
 
 #define NavCircleWaypoint(wp, radius) \
-  nav_circle_XY(waypoints[wp].x, waypoints[wp].y, radius)
+    nav_circle_XY(waypoints[wp].x, waypoints[wp].y, radius)
+
+#define NavCircleWaypoint_GVF(wp, radius) \
+    nav_circle_XY_GVF(waypoints[wp].x, waypoints[wp].y, radius)
 
 /** Normalize a degree angle between 0 and 359 */
 #define NormCourse(x) { \

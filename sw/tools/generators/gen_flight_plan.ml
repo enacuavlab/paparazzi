@@ -304,7 +304,7 @@ let rec index_stage = fun x ->
         incr stage; (* To count the loop stage *)
         Xml.Element (Xml.tag x, Xml.attribs x@["no", soi n], l)
       | "return" | "goto"  | "deroute" | "exit_block" | "follow" | "call" | "call_once" | "home"
-      | "heading" | "attitude" | "manual" | "go" | "stay" | "xyz" | "set" | "circle" ->
+      | "heading" | "attitude" | "manual" | "go" | "stay" | "xyz" | "set" | "circle" | "circle_gvf" ->
         incr stage;
         Xml.Element (Xml.tag x, Xml.attribs x@["no", soi !stage], Xml.children x)
       | "survey_rectangle" | "eight" | "oval"->
@@ -492,6 +492,20 @@ let rec print_stage = fun index_of_waypoints x ->
         let r = parsed_attrib  x "radius" in
         let _vmode = output_vmode x wp "" in
         lprintf "NavCircleWaypoint(%s, %s);\n" wp r;
+        begin
+          try
+            let c = parsed_attrib x "until" in
+            lprintf "if (%s) NextStageAndBreak();\n" c
+          with
+              ExtXml.Error _ -> ()
+        end;
+        lprintf "break;\n"
+      | "circle_gvf" ->
+        stage ();
+        let wp = get_index_waypoint (ExtXml.attrib x "wp") index_of_waypoints in
+        let r = parsed_attrib  x "radius" in
+        let _vmode = output_vmode x wp "" in
+        lprintf "NavCircleWaypoint_GVF(%s, %s);\n" wp r;
         begin
           try
             let c = parsed_attrib x "until" in

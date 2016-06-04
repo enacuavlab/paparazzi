@@ -23,6 +23,9 @@
     <block name="circle">
       <circle wp="road_end" ALT="GetAltRef()+50" radius="nav_radius"/>
     </block>
+    <block name="circle_gvf">
+      <circle_gvf wp="road_end" ALT="GetAltRef()+50" radius="nav_radius"/>
+    </block>
     <block name="go too far">
       <go wp="too far"/>
       <circle wp="too far" radius="nav_radius"/>
