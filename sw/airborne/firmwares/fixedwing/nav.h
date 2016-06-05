@@ -85,6 +85,10 @@ extern uint8_t horizontal_mode;
 #define HORIZONTAL_MODE_ROUTE 1
 #define HORIZONTAL_MODE_CIRCLE 2
 
+extern float gvf_ks;
+extern float gvf_kn;
+extern float gvf_kd;
+
 extern void fly_to_xy(float x, float y);
 
 #define NavGotoWaypoint(_wp) { \

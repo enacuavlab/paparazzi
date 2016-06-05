@@ -70,7 +70,23 @@ float nav_segment_x_1, nav_segment_y_1, nav_segment_x_2, nav_segment_y_2;
 uint8_t horizontal_mode;
 float circle_bank = 0;
 
+/** Guidance Vector Field */
 float gvf_error;
+float gvf_ks;
+float gvf_kn;
+float gvf_kd;
+
+#ifndef GVF_KS
+#define GVF_KS 1.1
+#endif
+
+#ifndef GVF_KN
+#define GVF_KN 9e-5
+#endif
+
+#ifndef GVF_KD
+#define GVF_KD 5e-1
+#endif
 
 /** Dynamically adjustable, reset to nav_altitude when it is changing */
 float flight_altitude;
@@ -79,8 +95,6 @@ float nav_glide_pitch_trim;
 #ifndef NAV_GLIDE_PITCH_TRIM
 #define NAV_GLIDE_PITCH_TRIM 0.
 #endif
-
-
 
 float nav_ground_speed_setpoint, nav_ground_speed_pgain;
 
@@ -101,58 +115,91 @@ void nav_init_stage(void)
   nav_in_circle = false;
   nav_in_segment = false;
   nav_shift = 0;
+
+  gvf_ks = GVF_KS;
+  gvf_kn = GVF_KN;
+  gvf_kd = GVF_KD;
 }
 
 #define MIN_DX ((int16_t)(MAX_PPRZ * 0.05))
 
+float norm_angle(float angle)
+{
+    if (angle > M_PI)
+        angle -= 2*M_PI;
+    else if(angle <= -M_PI)
+        angle += 2*M_PI;
+
+    return angle;
+}
+
+
 void nav_circle_XY_GVF(float x, float y, float radius)
 {
-  struct EnuCoor_f *pos = stateGetPositionEnu_f();
-  float last_trigo_qdr = nav_circle_trigo_qdr;
-  nav_circle_trigo_qdr = atan2f(pos->y - y, pos->x - x);
-  float sign_radius = radius > 0 ? 1 : -1;
-
-  if (nav_in_circle) {
-    float trigo_diff = nav_circle_trigo_qdr - last_trigo_qdr;
-    NormRadAngle(trigo_diff);
-    nav_circle_radians += trigo_diff;
-    trigo_diff *= - sign_radius;
-    if (trigo_diff > 0) { // do not rewind if the change in angle is in the opposite sense than nav_radius
-      nav_circle_radians_no_rewind += trigo_diff;
-    }
-  }
-
-  float dist2_center = DistanceSquare(pos->x, pos->y, x, y);
-  float dist_carrot = CARROT * NOMINAL_AIRSPEED;
-
-  radius += -nav_shift;
-
-  float abs_radius = fabs(radius);
-
-  /** Computes a prebank. Go straight if inside or outside the circle */
-  circle_bank =
-    (dist2_center > Square(abs_radius + dist_carrot)
-     || dist2_center < Square(abs_radius - dist_carrot)) ?
-    0 :
-    atanf(stateGetHorizontalSpeedNorm_f() * stateGetHorizontalSpeedNorm_f() / (NAV_GRAVITY * radius));
-
-  float carrot_angle = dist_carrot / abs_radius;
-  carrot_angle = Min(carrot_angle, M_PI / 4);
-  carrot_angle = Max(carrot_angle, M_PI / 16);
-  float alpha_carrot = nav_circle_trigo_qdr - sign_radius * carrot_angle;
-  horizontal_mode = HORIZONTAL_MODE_CIRCLE;
-  float radius_carrot = abs_radius;
-  if (nav_mode == NAV_MODE_COURSE) {
-    radius_carrot += (abs_radius / cosf(carrot_angle) - abs_radius);
-  }
-  fly_to_xy(x + cosf(alpha_carrot)*radius_carrot,
-            y + sinf(alpha_carrot)*radius_carrot);
-  nav_in_circle = true;
-  nav_circle_x = x;
-  nav_circle_y = y;
+  /* Telemetry */
+  nav_in_circle = true; // Check why is NOT set to false anywhere after the init
+  nav_circle_x = y;
+  nav_circle_y = x;
   nav_circle_radius = radius;
 
-  gvf_error = 750;
+  /* GVF for a circle */
+  struct NedCoor_f *pos = stateGetPositionNed_f();
+  struct FloatEulers *att = stateGetNedToBodyEulers_f();
+  float sign_radius = radius > 0 ? -1 : 1;
+  float ground_speed = stateGetHorizontalSpeedNorm_f();
+  float psi = att->psi;
+  //float psi = -att->psi + M_PI/2;
+  //psi = norm_angle(psi);
+
+  gvf_error = ((pos->x - nav_circle_x)*(pos->x - nav_circle_x)) +
+      ((pos->y - nav_circle_y)*(pos->y - nav_circle_y)) - (nav_circle_radius*
+      nav_circle_radius);
+
+  float grad_phi_x = 2*(pos->x - nav_circle_x);
+  float grad_phi_y = 2*(pos->y - nav_circle_y);
+
+  float uve_x =  sign_radius*grad_phi_y - gvf_kn*gvf_error*grad_phi_x;
+  float uve_y = -sign_radius*grad_phi_x - gvf_kn*gvf_error*grad_phi_y;
+
+  float uve_norm = sqrtf(uve_x*uve_x + uve_y*uve_y);
+
+  float e_dot = ground_speed*(grad_phi_x*cosf(psi)
+          + grad_phi_y*sinf(psi));
+
+  float uve_dot_x = 2*ground_speed*
+      (sign_radius*sinf(psi) - gvf_kn*gvf_error*cosf(psi))
+      - gvf_kn*e_dot*grad_phi_x;
+  float uve_dot_y = 2*ground_speed*
+      (-sign_radius*cosf(psi) - gvf_kn*gvf_error*sinf(psi))
+      - gvf_kn*e_dot*grad_phi_y;
+
+  float eme_d_dot_x = uve_dot_x/uve_norm - (uve_x*uve_x*uve_dot_x +
+          uve_x*uve_y*uve_dot_y)/(uve_norm*uve_norm*uve_norm);
+  float eme_d_dot_y = uve_dot_y/uve_norm - (uve_y*uve_x*uve_dot_x +
+          uve_y*uve_y*uve_dot_y)/(uve_norm*uve_norm*uve_norm);
+
+  float dot_m_md = uve_x/uve_norm*cosf(psi) + uve_y/uve_norm*sinf(psi);
+  float det_m_md = uve_x/uve_norm*sinf(psi) - uve_y/uve_norm*cosf(psi);
+
+  float delta = atan2f(det_m_md, dot_m_md);
+  float omega = -(eme_d_dot_x*uve_y/uve_norm -
+      eme_d_dot_y*uve_x/uve_norm) - gvf_kd*delta;
+
+  // Coordinated turn
+  h_ctl_roll_setpoint = atanf(gvf_ks*omega*ground_speed/9.81/cosf(att->theta));
+  BoundAbs(h_ctl_roll_setpoint, h_ctl_roll_max_setpoint);
+
+  lateral_mode = LATERAL_MODE_ROLL;
+
+  nav_circle_x = x;
+  nav_circle_y = y;
+
+
+  //h_ctl_course_setpoint = atan2(uve_x / uve_norm, uve_y / uve_norm);
+  //if (h_ctl_course_setpoint < 0.) {
+  //    h_ctl_course_setpoint += 2 * M_PI;
+  //  }
+
 }
 
 /** Navigates around (x, y). Clockwise iff radius > 0 */
