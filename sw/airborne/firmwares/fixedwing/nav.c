@@ -136,7 +136,8 @@ float norm_angle(float angle)
 
 void nav_circle_XY_GVF(float x, float y, float radius)
 {
-  /* Telemetry */
+  // We work in NED coordinates (heading and psi are w.r.t. NED)
+  // nav are given in ENU
   nav_in_circle = true; // Check why is NOT set to false anywhere after the init
   nav_circle_x = y;
   nav_circle_y = x;
@@ -147,10 +148,13 @@ void nav_circle_XY_GVF(float x, float y, float radius)
   struct FloatEulers *att = stateGetNedToBodyEulers_f();
   float sign_radius = radius > 0 ? -1 : 1;
   float ground_speed = stateGetHorizontalSpeedNorm_f();
-  float psi = att->psi;
-  //float psi = -att->psi + M_PI/2;
-  //psi = norm_angle(psi);
 
+  // We should work with 'psi', but against wind without any compensation
+  // is better to work with the 'course heading'
+  float psi = stateGetHorizontalSpeedDir_f();
+  //float psi = att->psi;
+
+  // Guidance Vector Field algorithm
   gvf_error = ((pos->x - nav_circle_x)*(pos->x - nav_circle_x)) +
       ((pos->y - nav_circle_y)*(pos->y - nav_circle_y)) - (nav_circle_radius*
       nav_circle_radius);
@@ -191,15 +195,9 @@ void nav_circle_XY_GVF(float x, float y, float radius)
 
   lateral_mode = LATERAL_MODE_ROLL;
 
+  // Telemetry in ENU
   nav_circle_x = x;
   nav_circle_y = y;
-
-
-  //h_ctl_course_setpoint = atan2(uve_x / uve_norm, uve_y / uve_norm);
-  //if (h_ctl_course_setpoint < 0.) {
-  //    h_ctl_course_setpoint += 2 * M_PI;
-  //  }
-
 }
 
 /** Navigates around (x, y). Clockwise iff radius > 0 */
