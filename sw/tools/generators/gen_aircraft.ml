@@ -348,9 +348,10 @@ let () =
     | Some airframe ->
       let module_files = List.map (fun m -> m.Module.xml_filename) loaded_modules in
       if is_older makefile_ac (airframe.Airframe.filename :: module_files)
-      then
-        assert(Sys.command (sprintf "mv %s %s" temp_makefile_ac makefile_ac) = 0)
-      ;
+      then begin
+        assert(Sys.command (sprintf "mv %s %s" temp_makefile_ac makefile_ac) = 0);
+        Unix.chmod makefile_ac 0o664;
+      end;
 
   with Failure f ->
     prerr_endline f;
