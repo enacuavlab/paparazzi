@@ -2,75 +2,48 @@
 
 <airframe name="Jumper">
 
-  <modules>
-    <load name="mag_hmc58xx.xml">
-      <define name="MODULE_HMC58XX_UPDATE_AHRS"/>
-      <configure name="MAG_HMC58XX_I2C_DEV" value="i2c2"/>
-    </load>
+	<modules>
+		<load name="mag_hmc58xx.xml">
+			<define name="MODULE_HMC58XX_UPDATE_AHRS"/>
+			<configure name="MAG_HMC58XX_I2C_DEV" value="i2c2"/>
+		</load>
 
-	<!--
-    <load name="hackhd.xml">
-      <configure name="HACKHD_GPIO" value="GPIOA,GPIO15"/>
-      <define name="HACKHD_SYNC_SEND"/>
-      <define name="HACKHD_AUTOSHOOT_DIST" value="50"/>
-      <define name="USE_PWM5" value="0"/>
-	</load>
-	-->
+		<load name="ins_float_invariant.xml">
+			<define name="USE_MAGNETOMETER"/>
+			<configure name="AHRS_PROPAGATE_FREQUENCY" value="125"/>
+			<configure name="AHRS_CORRECT_FREQUENCY" value="125"/>
+			<define name="BARO_BOARD_APOGEE_FREQ" value="50"/>
+			<define name="MPL3115_OVERSAMPLING" value="2"/>
+		</load>
 
-	<load name="takeoff_detect.xml"/>
-  </modules>
+		<load name="imu_apogee.xml">
+			<define name="APOGEE_LOWPASS_FILTER" value="MPU60X0_DLPF_20HZ"/>
+			<define name="APOGEE_SMPLRT_DIV" value="7"/>
+		</load>
 
-  <firmware name="fixedwing">
-	<define name="USE_I2C1"/>
+		<load name="takeoff_detect.xml"/>
+		<load name="gvf_module.xml"/>
+	</modules>
 
-	<define name="USE_I2C2"/>
-	
-	<configure name="PERIODIC_FREQUENCY" value="125"/>
+	<firmware name="fixedwing">
+		<define name="USE_I2C1"/>
 
-    <target name="ap" board="apogee_1.0_chibios">
-      <subsystem name="radio_control" type="sbus"/>
-	
-	  <subsystem name="ins" type="float_invariant">
-        <define name="USE_MAGNETOMETER"/>
-        <configure name="AHRS_PROPAGATE_FREQUENCY" value="125"/>
-        <configure name="AHRS_CORRECT_FREQUENCY" value="125"/>
-        <define name="BARO_BOARD_APOGEE_FREQ" value="50"/>
-        <define name="MPL3115_OVERSAMPLING" value="2"/>
-      </subsystem>
-	  
-	  <!--
-	  <define name="HACKHD_LOG"/>
-	  -->
-    </target>
+		<define name="USE_I2C2"/>
+
+		<configure name="PERIODIC_FREQUENCY" value="125"/>
+
+		<target name="ap" board="apogee_1.0_chibios">
+			<subsystem name="radio_control" type="sbus"/>
+		</target>
 
     <target name="nps" board="pc">
       <subsystem name="radio_control" type="ppm"/>
-	  <!--
-	  <subsystem name="ahrs" type="float_dcm"/>
-	  <subsystem name="ins" type="alt_float"/>
-	  -->
-	  <subsystem name="ins" type="float_invariant">
-        <define name="USE_MAGNETOMETER"/>
-        <configure name="AHRS_PROPAGATE_FREQUENCY" value="125"/>
-        <configure name="AHRS_CORRECT_FREQUENCY" value="125"/>
-        <define name="BARO_BOARD_APOGEE_FREQ" value="50"/>
-        <define name="MPL3115_OVERSAMPLING" value="2"/>
-      </subsystem>
-
 	  <subsystem name="fdm" type="jsbsim"/>
     </target>
 
     <!-- Communication -->
     <subsystem name="telemetry" type="transparent"/>
-
-    <!-- Actuators are automatically chosen according to board-->
-    <subsystem name="imu" type="apogee">
-      <define name="APOGEE_LOWPASS_FILTER" value="MPU60X0_DLPF_20HZ"/>
-      <define name="APOGEE_SMPLRT_DIV" value="7"/>
-    </subsystem>
-	
 	<subsystem name="control" type="new"/>
-
 	<subsystem name="navigation"/>
 
     <!-- Sensors -->

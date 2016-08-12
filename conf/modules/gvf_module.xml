@@ -1,0 +1,18 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="gvf" dir="guidance/gvf">
+  <doc>
+    <description>Guidance Vector Field Module</description>
+  </doc>
+
+  <header>
+    <file name="gvf.h"/>
+  </header>
+
+  <init fun="gvf_init()"/>
+  
+  <makefile>
+    <file name="gvf.c"/>
+  </makefile>
+</module>
+

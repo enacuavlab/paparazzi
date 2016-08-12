@@ -1,6 +1,9 @@
 <!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
 
 <flight_plan lat0="43.46223" lon0="1.27289" max_dist_from_home="1000" ground_alt="185" QFU="270" alt="310" name="DemoMuret" security_height="50">
+<header>
+#include "generated/modules.h"
+</header>
 
   <waypoints>
     <waypoint NAME="HOME" X="0" Y="0"/>
@@ -23,8 +26,8 @@
     <block name="circle">
       <circle wp="road_end" ALT="GetAltRef()+50" radius="nav_radius"/>
     </block>
-    <block name="circle_gvf">
-      <circle_gvf wp="road_end" ALT="GetAltRef()+50" radius="nav_radius"/>
+    <block name="gvf">
+		<call fun="gvf_ellipse()"/>
     </block>
     <block name="go too far">
       <go wp="too far"/>
