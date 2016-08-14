@@ -7,31 +7,16 @@
 
   <waypoints>
     <waypoint NAME="HOME" X="0" Y="0"/>
-    <waypoint name="road_start" x="-337" y="17" alt="250."/>
-    <waypoint name="road_end" x="238" y="-30" alt="250."/>
-    <waypoint name="too far" x="529" y="-23" alt="250."/>
+    <waypoint name="CIRCLE" x="-337" y="17" alt="250."/>
+    <waypoint name="ELLIPSE" x="238" y="-30" alt="250."/>
   </waypoints>
 
   <blocks>
-    <block name="survey road 1">
-      <go wp="road_start"/>
-      <go wp="road_end"/>
-    </block>
-    <block NAME="survey road 2">
-      <while cond="TRUE">
-        <go wp="road_start" from="road_end" hmode="route"/>
-        <go wp="road_end" from="road_start" hmode="route"/>
-      </while>
-    </block>
     <block name="circle">
-      <circle wp="road_end" ALT="GetAltRef()+50" radius="nav_radius"/>
+      <circle wp="CIRCLE" ALT="GetAltRef()+50" radius="nav_radius"/>
     </block>
-    <block name="gvf">
-		<call fun="gvf_ellipse()"/>
-    </block>
-    <block name="go too far">
-      <go wp="too far"/>
-      <circle wp="too far" radius="nav_radius"/>
+    <block name="ellipse">
+		<call fun="gvf_ellipse(WP_ELLIPSE, gvf_ellipse_a, gvf_ellipse_b, gvf_ellipse_alpha)"/>
     </block>
   </blocks>
 

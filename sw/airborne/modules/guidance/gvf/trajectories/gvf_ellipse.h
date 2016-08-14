@@ -20,34 +20,17 @@
  *
  */
 
-/** \file gvf.h
+/** \file gvf_ellipse.h
  *
  *  Guidance algorithm based on vector fields
+ *  2D Ellipse trajectory
  */
 
-#ifndef GVF_H
-#define GVF_H
+#ifndef GVF_ELLIPSE_H
+#define GVF_ELLIPSE
 
-#include "std.h"
+extern float gvf_ellipse_a;
+extern float gvf_ellipse_b;
+extern float gvf_ellipse_alpha;
 
-// Control
-extern float gvf_error;
-extern float gvf_ke;
-extern float gvf_kn;
-extern float gvf_kd;
-
-// Trajectory
-extern uint8_t gvf_traj_type;
-extern float gvf_p1;
-extern float gvf_p2;
-extern float gvf_p3;
-extern float gvf_p4;
-extern float gvf_p5;
-extern float gvf_p6;
-extern float gvf_p7;
-
-extern void gvf_init(void);
-extern bool gvf_ellipse(uint8_t, float, float, float);
-extern bool gvf_ellipse_set(uint8_t);
-
-#endif // GVF_H
+#endif // GVF_ELLIPSE_H
