@@ -20,8 +20,11 @@
  *
  */
 
-#include "gvf.h"
+#include <math.h>
 #include "std.h"
+
+#include "gvf.h"
+
 #include "./trajectories/gvf_ellipse.h"
 #include "subsystems/navigation/common_nav.h"
 
@@ -79,7 +82,37 @@ bool gvf_ellipse(uint8_t wp, float a, float b, float alpha)
     gvf_p4 = b;
     gvf_p5 = alpha;
 
-    gvf_error = 123.56;
+    float ke = gvf_ke;
+    float kn = gvf_kn;
+    float kd = gvf_kd;
+
+    struct EnuCoor_f *p = stateGetPositionEnu_f();
+    float px = p->x;
+    float py = p->y;
+    float wx = waypoints[wp].x;
+    float wy = waypoints[wp].y;
+
+    float xel = (px-wx)*cosf(alpha) - (py-wy)*sinf(alpha);
+    float yel = (px-wx)*sinf(alpha) + (py-wy)*cosf(alpha);
+
+    float e = (xel/a)*(xel/a) + (yel/b)*(yel/b) - 1;
+
+    float nx = (2*xel/(a*a))*cosf(alpha) + (2*yel/(b*b))*sinf(alpha);
+    float ny = (2*yel/(b*b))*cosf(alpha) - (2*xel/(a*a))*cosf(alpha);
+
+    float tx = ny;
+    float ty = -nx;
+
+    float e = (Xel/self.a)**2 + (Yel/self.b)**2 - 1;
+    
+    float pdx_dot = tx - ke*e*nx;
+    float pdy_dot = ty - ke*e*ny;
+
+    float norm_pd_dot = sqrtf(pdx_dot*pdx_dot + pdy_dot*pdy_dot);
+    float md_x = pdx_dot / norm_pd_dot;
+    float md_y = pdy_dot / norm_pd_dot;
+
+    gvf_error = e;
     return true;
 }
 
@@ -89,13 +122,8 @@ bool gvf_ellipse_set(uint8_t wp)
     float b = gvf_ellipse_b;
     float alpha = gvf_ellipse_alpha;
 
-    gvf_traj_type = 1;
-    gvf_p1 = waypoints[wp].x;
-    gvf_p2 = waypoints[wp].y;
-    gvf_p3 = gvf_ellipse_a;
-    gvf_p4 = gvf_ellipse_b;
-    gvf_p5 = gvf_ellipse_alpha;
-    gvf_error = 100;
+    gvf_ellipse(wp, a, b, alpha);
+
     return true;
 }
 
