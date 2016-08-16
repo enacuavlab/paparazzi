@@ -1,23 +1,20 @@
 <!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
 
-<flight_plan lat0="43.46223" lon0="1.27289" max_dist_from_home="1000" ground_alt="185" QFU="270" alt="310" name="DemoMuret" security_height="50">
-<header>
+<flight_plan alt="310" ground_alt="185" lat0="43.46223" lon0="1.27289" max_dist_from_home="1000" name="DemoMuret" qfu="270" security_height="50">
+  <header>
 #include "generated/modules.h"
 </header>
-
   <waypoints>
-    <waypoint NAME="HOME" X="0" Y="0"/>
-    <waypoint name="CIRCLE" x="-337" y="17" alt="250."/>
-    <waypoint name="ELLIPSE" x="238" y="-30" alt="250."/>
+    <waypoint name="HOME" x="0" y="0"/>
+    <waypoint alt="250.0" name="CIRCLE" x="-16.1" y="12.2"/>
+    <waypoint alt="250.0" name="ELLIPSE" x="-10.2" y="-12.1"/>
   </waypoints>
-
   <blocks>
     <block name="circle">
-      <circle wp="CIRCLE" ALT="GetAltRef()+50" radius="nav_radius"/>
+      <circle alt="GetAltRef()+50" radius="nav_radius" wp="CIRCLE"/>
     </block>
     <block name="ellipse">
-		<call fun="gvf_ellipse(WP_ELLIPSE, gvf_ellipse_a, gvf_ellipse_b, gvf_ellipse_alpha)"/>
+      <call fun="gvf_ellipse(WP_ELLIPSE, gvf_ellipse_a, gvf_ellipse_b, gvf_ellipse_alpha)"/>
     </block>
   </blocks>
-
 </flight_plan>

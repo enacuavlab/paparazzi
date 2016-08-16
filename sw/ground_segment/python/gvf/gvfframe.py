@@ -38,7 +38,7 @@ class GVFFrame(wx.Frame):
         self.timer_traj_lim = 7 # (7+1) * 0.25secs
         self.kn = 0
         self.ke = 0
-        self.map_gvf = map2d(np.array([0, 0]), 1000000)
+        self.map_gvf = map2d(np.array([0, 0]), 100000)
         self.traj = None
         #self.traj = traj_ellipse(np.array([150, -30]), -45*np.pi/180, 140, 360)
         #self.traj.vector_field(self.map_gvf.XYoff, \
@@ -85,7 +85,8 @@ class GVFFrame(wx.Frame):
         if msg.name == 'ATTITUDE':
             self.yaw = float(msg.get_field(1))
         
-        if msg.name == 'DL_VALUE' and self.indexes_are_good == len(self.list_of_indexes):
+        if msg.name == 'DL_VALUE' and \
+                self.indexes_are_good == len(self.list_of_indexes):
             if int(msg.get_field(0)) == int(self.ke_index):
                 self.ke = float(msg.get_field(1))
                 if self.traj is not None:
@@ -100,12 +101,13 @@ class GVFFrame(wx.Frame):
         if msg.name == 'GVF':
             self.gvf_error = float(msg.get_field(0))
             # Ellipse
-            if int(msg.get_field(1)) == 1 and self.timer_traj == self.timer_traj_lim:
+            if int(msg.get_field(1)) == 1 \
+                    and self.timer_traj == self.timer_traj_lim:
                 ex = float(msg.get_field(2))
                 ey = float(msg.get_field(3))
                 ea = float(msg.get_field(4))
                 eb = float(msg.get_field(5))
-                ealpha = float(msg.get_field(6))*np.pi/180
+                ealpha = float(msg.get_field(6))
                 self.traj = traj_ellipse(np.array([ex, ey]), ealpha, ea, eb)
                 self.traj.vector_field(self.map_gvf.XYoff, \
                         self.map_gvf.area, self.kn, self.ke)
@@ -229,8 +231,8 @@ class traj_ellipse:
 
         e = (Xel/self.a)**2 + (Yel/self.b)**2 - 1
         
-        self.mapgrad_U = tx -kn*ke*e*nx
-        self.mapgrad_V = ty -kn*ke*e*ny
+        self.mapgrad_U = tx -ke*e*nx
+        self.mapgrad_V = ty -ke*e*ny
         
         norm = np.sqrt(self.mapgrad_U**2 + self.mapgrad_V**2)
 

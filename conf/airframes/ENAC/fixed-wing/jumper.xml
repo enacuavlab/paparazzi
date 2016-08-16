@@ -22,6 +22,9 @@
 		</load>
 
 		<load name="takeoff_detect.xml"/>
+	</modules>
+
+	<modules main_freq = "60">
 		<load name="gvf_module.xml"/>
 	</modules>
 

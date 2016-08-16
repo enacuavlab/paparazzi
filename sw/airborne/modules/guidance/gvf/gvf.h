@@ -28,6 +28,8 @@
 #ifndef GVF_H
 #define GVF_H
 
+#define GVF_GRAVITY 9.806
+
 #include "std.h"
 
 // Control

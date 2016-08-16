@@ -26,7 +26,18 @@
  *  2D Ellipse trajectory
  */
 
+#ifndef GVF_ELLIPSE_A
+#define GVF_ELLIPSE_A 80
+#endif
 
-float gvf_ellipse_a;
-float gvf_ellipse_b;
-float gvf_ellipse_alpha;
+#ifndef GVF_ELLIPSE_B
+#define GVF_ELLIPSE_B 80
+#endif
+
+#ifndef GVF_ELLIPSE_ALPHA
+#define GVF_ELLIPSE_ALPHA 0
+#endif
+
+float gvf_ellipse_a = GVF_ELLIPSE_A;
+float gvf_ellipse_b = GVF_ELLIPSE_B;
+float gvf_ellipse_alpha = GVF_ELLIPSE_ALPHA;
