@@ -163,8 +163,8 @@
     <define name="AUTO_CLIMB_LIMIT" value="2*V_CTL_ALTITUDE_MAX_CLIMB"/>
 
     <!-- Cruise throttle + limits -->
-    <define name="AUTO_THROTTLE_NOMINAL_CRUISE_THROTTLE" value="0.15"/>
-    <define name="AUTO_THROTTLE_MIN_CRUISE_THROTTLE" value="0.15"/>
+    <define name="AUTO_THROTTLE_NOMINAL_CRUISE_THROTTLE" value="0.09"/>
+    <define name="AUTO_THROTTLE_MIN_CRUISE_THROTTLE" value="0.05"/>
     <define name="AUTO_THROTTLE_MAX_CRUISE_THROTTLE" value="0.85"/>
 
     <!-- Climb loop (throttle) -->
@@ -195,7 +195,7 @@
 	-->
 
     <!-- groundspeed control -->
-    <define name="AUTO_GROUNDSPEED_SETPOINT" value="15"/>
+    <define name="AUTO_GROUNDSPEED_SETPOINT" value="10"/>
     <define name="AUTO_GROUNDSPEED_PGAIN" value="1."/>
     <define name="AUTO_GROUNDSPEED_IGAIN" value="0."/>
 

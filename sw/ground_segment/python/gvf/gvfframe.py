@@ -38,11 +38,8 @@ class GVFFrame(wx.Frame):
         self.timer_traj_lim = 7 # (7+1) * 0.25secs
         self.kn = 0
         self.ke = 0
-        self.map_gvf = map2d(np.array([0, 0]), 100000)
+        self.map_gvf = map2d(np.array([0, 0]), 150000)
         self.traj = None
-        #self.traj = traj_ellipse(np.array([150, -30]), -45*np.pi/180, 140, 360)
-        #self.traj.vector_field(self.map_gvf.XYoff, \
-        #        self.map_gvf.area, self.kn, self.ke)
 
         # Frame
         self.canvas = FigureCanvas(self, -1, self.map_gvf.fig)
@@ -90,12 +87,12 @@ class GVFFrame(wx.Frame):
             if int(msg.get_field(0)) == int(self.ke_index):
                 self.ke = float(msg.get_field(1))
                 if self.traj is not None:
-                    self.traj.vector_field(self.map_gvf.XYoff, \
+                    self.traj.vector_field(self.traj.XYoff, \
                             self.map_gvf.area, self.kn, self.ke)
             if int(msg.get_field(0)) == int(self.kn_index):
                 self.kn = float(msg.get_field(1))
                 if self.traj is not None:
-                    self.traj.vector_field(self.map_gvf.XYoff, \
+                    self.traj.vector_field(self.traj.XYoff, \
                             self.map_gvf.area, self.kn, self.ke)
 
         if msg.name == 'GVF':
@@ -109,7 +106,7 @@ class GVFFrame(wx.Frame):
                 eb = float(msg.get_field(5))
                 ealpha = float(msg.get_field(6))
                 self.traj = traj_ellipse(np.array([ex, ey]), ealpha, ea, eb)
-                self.traj.vector_field(self.map_gvf.XYoff, \
+                self.traj.vector_field(self.traj.XYoff, \
                         self.map_gvf.area, self.kn, self.ke)
 
             self.timer_traj = self.timer_traj + 1
@@ -136,8 +133,10 @@ class map2d:
         self.ax.set_xlabel('South [m]')
         self.ax.set_ylabel('West [m]')
         self.ax.set_title('2D Map')
+        self.ax.annotate('HOME', xy = (0, 0))
         self.ax.set_xlim(XYoff[0]-0.5*np.sqrt(area), XYoff[0]+0.5*np.sqrt(area))
         self.ax.set_ylim(XYoff[1]-0.5*np.sqrt(area), XYoff[1]+0.5*np.sqrt(area))
+        self.ax.axis('equal')
 
     def vehicle_patch(self, XY, yaw):
         Rot = np.array([[np.cos(yaw), np.sin(yaw)],[-np.sin(yaw), np.cos(yaw)]])
@@ -178,6 +177,18 @@ class map2d:
         self.ax.arrow(XY[0], XY[1], \
                 h*np.sin(course), h*np.cos(course),\
                 head_width=5, head_length=10, fc='k', ec='k')
+        self.ax.annotate('HOME', xy = (0, 0))
+        self.ax.annotate('ELLIPSE', xy = (traj.XYoff[0], traj.XYoff[1]))
+        self.ax.plot(0, 0, 'kx', ms=10, mew=2)
+        self.ax.plot(traj.XYoff[0], traj.XYoff[1], 'kx', ms=10, mew=2)
+        self.ax.set_xlabel('South [m]')
+        self.ax.set_ylabel('West [m]')
+        self.ax.set_title('2D Map')
+        self.ax.set_xlim(self.XYoff[0]-0.5*np.sqrt(self.area), \
+                self.XYoff[0]+0.5*np.sqrt(self.area))
+        self.ax.set_ylim(traj.XYoff[1]-0.5*np.sqrt(self.area), \
+                self.XYoff[1]+0.5*np.sqrt(self.area))
+        self.ax.axis('equal')
         self.ax.grid()
 
 class traj_ellipse:
