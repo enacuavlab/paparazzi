@@ -152,6 +152,9 @@ void nav_circle_XY(float x, float y, float radius)
   nav_circle_x = x;
   nav_circle_y = y;
   nav_circle_radius = radius;
+
+  gvf_error = ((pos->x - x)/ radius) * ((pos->x - x)/ radius) + 
+      ((pos->y - y)/ radius) * ((pos->y - y)/ radius) -1;
 }
 
 
