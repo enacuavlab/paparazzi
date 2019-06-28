@@ -35,7 +35,7 @@
 #endif
 
 #include "autopilot.h"
-#include "firmwares/rotorcraft/autopilot_guided.h"
+//#include "firmwares/rotorcraft/autopilot_guided.h"
 
 void firmware_parse_msg(struct link_device *dev __attribute__((unused)), struct transport_tx *trans __attribute__((unused)), uint8_t *buf)
 {
@@ -74,11 +74,11 @@ void firmware_parse_msg(struct link_device *dev __attribute__((unused)), struct 
     case DL_GUIDED_SETPOINT_NED:
       if (DL_GUIDED_SETPOINT_NED_ac_id(buf) != AC_ID) { break; }
 
-      autopilot_guided_update(DL_GUIDED_SETPOINT_NED_flags(buf),
-                              DL_GUIDED_SETPOINT_NED_x(buf),
-                              DL_GUIDED_SETPOINT_NED_y(buf),
-                              DL_GUIDED_SETPOINT_NED_z(buf),
-                              DL_GUIDED_SETPOINT_NED_yaw(buf));
+      //autopilot_guided_update(DL_GUIDED_SETPOINT_NED_flags(buf),
+      //                        DL_GUIDED_SETPOINT_NED_x(buf),
+      //                        DL_GUIDED_SETPOINT_NED_y(buf),
+      //                        DL_GUIDED_SETPOINT_NED_z(buf),
+      //                        DL_GUIDED_SETPOINT_NED_yaw(buf));
       break;
 #endif
 

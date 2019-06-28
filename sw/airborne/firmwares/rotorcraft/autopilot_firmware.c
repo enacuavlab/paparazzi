@@ -99,11 +99,14 @@ static void send_status(struct transport_tx *trans, struct link_device *dev)
   uint8_t motors_on = autopilot.motors_on;
   uint8_t arming_status = autopilot.arming_status;
   uint16_t time_sec = sys_time.nb_sec;
+
+  uint8_t zero = 0;
+
   pprz_msg_send_ROTORCRAFT_STATUS(trans, dev, AC_ID,
                                   &imu_nb_err, &_motor_nb_err,
                                   &radio_control.status, &radio_control.frame_rate,
                                   &fix, &autopilot.mode, &in_flight, &motors_on,
-                                  &arming_status, &guidance_h.mode, &guidance_v_mode,
+                                  &arming_status, &zero, &zero,
                                   &electrical.vsupply, &time_sec);
 }
 
@@ -122,7 +125,8 @@ static void send_energy(struct transport_tx *trans, struct link_device *dev)
 static void send_fp(struct transport_tx *trans, struct link_device *dev)
 {
   int32_t carrot_up = -guidance_v_z_sp;
-  int32_t carrot_heading = ANGLE_BFP_OF_REAL(guidance_h.sp.heading);
+  int32_t zero = 0;
+  int32_t carrot_heading = 0; //ANGLE_BFP_OF_REAL(guidance_h.sp.heading);
   pprz_msg_send_ROTORCRAFT_FP(trans, dev, AC_ID,
                               &(stateGetPositionEnu_i()->x),
                               &(stateGetPositionEnu_i()->y),
@@ -133,8 +137,8 @@ static void send_fp(struct transport_tx *trans, struct link_device *dev)
                               &(stateGetNedToBodyEulers_i()->phi),
                               &(stateGetNedToBodyEulers_i()->theta),
                               &(stateGetNedToBodyEulers_i()->psi),
-                              &guidance_h.sp.pos.y,
-                              &guidance_h.sp.pos.x,
+                              &zero/*guidance_h.sp.pos.y*/,
+                              &zero/*guidance_h.sp.pos.x*/,
                               &carrot_up,
                               &carrot_heading,
                               &stabilization_cmd[COMMAND_THRUST],

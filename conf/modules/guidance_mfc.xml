@@ -1,0 +1,44 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="guidance_mfc" dir="guidance">
+  <doc>
+    <description>
+      Base guidance code for rotorcraft
+      It provides:
+      - vertical guidance with reference and adaptive control
+    </description>
+    <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
+      <define name="HOVER_KP" value="283" description="feedback vertical control P gain"/>
+      <define name="HOVER_KD" value="82" description="feedback vertical control D gain"/>
+      <define name="HOVER_KI" value="13" description="feedback vertical control I gain"/>
+      <define name="NOMINAL_HOVER_THROTTLE" value="0.655" description="nominal throttle at hover (between 0 and 1)"/>
+      <define name="ADAPT_THROTTLE_ENABLED" value="FALSE|TRUE" description="enable adaptive control by default"/>
+    </section>
+  </doc>
+  <settings target="ap|nps">
+    <dl_settings>
+      <dl_settings NAME="Vert Loop">
+        <dl_setting var="guidance_v_kp" min="0" step="1" max="600" shortname="kp" param="GUIDANCE_V_HOVER_KP" persistent="true" module="guidance/guidance_v"/>
+        <dl_setting var="guidance_v_kd" min="0" step="1" max="600" shortname="kd" param="GUIDANCE_V_HOVER_KD" persistent="true"/>
+        <dl_setting var="guidance_v_ki" min="0" step="1" max="300" shortname="ki" handler="SetKi" param="GUIDANCE_V_HOVER_KI" persistent="true" module="guidance/guidance_v"/>
+        <dl_setting var="guidance_v_nominal_throttle" min="0.2" step="0.01" max="0.8" shortname="nominal_throttle" param="GUIDANCE_V_NOMINAL_HOVER_THROTTLE" persistent="true"/>
+        <dl_setting var="guidance_v_adapt_throttle_enabled" min="0" step="1" max="1" shortname="adapt_throttle" param="GUIDANCE_V_ADAPT_THROTTLE_ENABLED" values="FALSE|TRUE" persistent="true"/>
+        <dl_setting var="guidance_v_z_sp" min="-5" step="0.5" max="3" shortname="sp" unit="2e-8m" alt_unit="m" alt_unit_coef="0.00390625"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+  <header>
+    <!--file name="guidance_h.h"/-->
+    <file name="guidance_v_mfc.h"/>	
+  </header>
+  <!--init fun="guidance_h_init()"/-->
+  <init fun="guidance_v_init()"/>
+  <makefile target="ap|nps|hitl" firmware="rotorcraft">
+    <!--file name="guidance_h.c" dir="$(SRC_FIRMWARE)/guidance"/-->
+    <!--file name="guidance_h_ref.c" dir="$(SRC_FIRMWARE)/guidance"/-->
+    <file name="guidance_v_mfc.c" dir="$(SRC_FIRMWARE)/guidance"/>
+    <file name="guidance_v_ref.c" dir="$(SRC_FIRMWARE)/guidance"/>
+    <file name="guidance_v_adapt.c" dir="$(SRC_FIRMWARE)/guidance"/>
+    <!--file name="guidance_flip.c" dir="$(SRC_FIRMWARE)/guidance"/-->
+  </makefile>
+</module>

@@ -35,9 +35,9 @@
 void stabilization_attitude_init(void)
 {
   // Check if the indi init is already done for rate control
-//#ifndef STABILIZATION_RATE_INDI
-//  stabilization_mfc_init();
-//#endif
+  //#ifndef STABILIZATION_RATE_MFC
+  //  stabilization_mfc_init();
+  //#endif
 }
 
 void stabilization_attitude_enter(void)

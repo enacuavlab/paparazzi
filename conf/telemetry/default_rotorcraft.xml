@@ -32,6 +32,7 @@
       <message name="VISION_POSITION_ESTIMATE" period="0.1"/>
       <message name="DIVERGENCE"               period="0.05"/>
       <message name="DRAGSPEED"                period="0.02"/>
+      <message name="STAB_ATTITUDE_MFC"        period="0.1"/>
     </mode>
 
     <mode name="ppm">
@@ -175,13 +176,12 @@
 
   <process name="FlightRecorder">
     <mode name="default">
-      <message name="BAT"                 period="0.5"/>
+      <!--message name="BAT"                 period="0.5"/>
       <message name="ENERGY"              period="0.5"/>
       <message name="GPS"                 period="0.2"/>
       <message name="ATTITUDE"            period="0.05"/>
       <message name="DESIRED"             period="0.05"/>
       <message name="IMU_ACCEL"           period="0.02"/>
-      <!--message name="STAB_ATTITUDE_MFC"   period="0.05"/-->
       <message name="IMU_GYRO"            period="0.02"/>
       <message name="IMU_MAG"             period="0.02"/>
       <message name="AIR_DATA"            period="0.05"/>
@@ -195,7 +195,8 @@
       <message name="DATALINK_REPORT"     period="1.0"/>
       <message name="ESC"                 period="0.1"/>
       <message name="ADC_GENERIC"         period="0.05"/>
-      <message name="WIND_INFO_RET"       period="0.1"/>
+      <message name="WIND_INFO_RET"       period="0.1"/-->
+      <message name="STAB_ATTITUDE_MFC"   period="0.002"/>
     </mode>
   </process>
 

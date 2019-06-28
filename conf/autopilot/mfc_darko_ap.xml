@@ -8,24 +8,25 @@
       <include name="generated/airframe.h"/>
       <include name="autopilot.h"/>
       <include name="autopilot_rc_helpers.h"/>
-      <include name="navigation.h"/>
-      <include name="guidance.h"/>
+      <!--include name="navigation.h"/-->
       <include name="state.h"/>
       <include name="subsystems/radio_control.h"/>
       <include name="subsystems/gps.h"/>
       <include name="subsystems/actuators.h"/>
-      <include name="stabilization/stabilization_mfc.h"/>
-      <include name="stabilization/stabilization_attitude.h"/>
-      <include name="firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"/>
-      <include name="firmwares/rotorcraft/stabilization/stabilization_attitude_quat_mfc.h"/>
+      <include name="firmwares/rotorcraft/guidance/guidance_v_mfc.h"/>
+      <include name="firmwares/rotorcraft/stabilization/stabilization_mfc.h"/>
+      <include name="firmwares/rotorcraft/stabilization.h"/>
+      <!--include name="stabilization/stabilization_attitude.h"/-->
+      <!--include name="firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"/-->
       <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT" cond="ifndef MODE_MANUAL"/>
-      <!--define name="RCAuxMode0()" value="rc_mode_switch(RADIO_GAIN2, 0, 2)"/>
-      <define name="RCAuxMode1()" value="rc_mode_switch(RADIO_GAIN2, 1, 2)"/-->
+      <define name="RCAuxMode0()" value="rc_mode_switch(RADIO_GAIN2, 0, 2)"/>
+      <define name="RCAuxMode1()" value="rc_mode_switch(RADIO_GAIN2, 1, 2)"/>
       <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD" cond="ifndef MODE_AUTO1"/>
       <define name="MODE_AUTO2" value="AP_MODE_NAV" cond="ifndef MODE_AUTO2"/>
       <define name="RCLost()" value="(radio_control.status == RC_REALLY_LOST)"/>
       <define name="DLModeNav()" value="(autopilot_mode_auto2 == AP_MODE_NAV)"/>
       <define name="DLModeGuided()" value="(autopilot_mode_auto2 == AP_MODE_GUIDED)"/>
+      <define name="NAV_FREQ" value="4"/>
     </includes>
 
     <settings>
@@ -34,14 +35,18 @@
     </settings>
 
     <control_block name="set_actuators">
+      <call fun="stabilization_cmd[COMMAND_ROLL]   = stabilization_mfc_cmd[0]"/>
+      <call fun="stabilization_cmd[COMMAND_PITCH]  = stabilization_mfc_cmd[1]"/>
+      <call fun="stabilization_cmd[COMMAND_YAW]    = stabilization_mfc_cmd[2]"/>
+      <call fun="stabilization_cmd[COMMAND_THRUST] = stabilization_mfc_cmd[3]"/>
       <call fun="SetRotorcraftCommands(stabilization_cmd, autopilot_in_flight(), autopilot_get_motors_on())"/>
       <call fun="SetActuatorsFromCommands(commands, autopilot_mode)"/>
     </control_block>
 
     <control_block name="attitude_loop">
-      <call fun="stabilization_attitude_read_rc(autopilot_in_flight(), FALSE, FALSE)"/>
-      <!--call fun="stabilization_attitude_run(autopilot_in_flight())"/-->
-      <call fun="stabilization_attitude_run(autopilot_in_flight())"/>
+      <call fun="stabilization_attitude_mfc_read_rc(autopilot_in_flight(), FALSE, FALSE)"/>
+      <call fun="stabilization_attitude_mfc_run(autopilot_in_flight())"/>
+      <call fun="stabilization_attitude_mfc_mixing()"/>
     </control_block>
 
     <control_block name="throttle_direct">
@@ -57,17 +62,17 @@
     </control_block>
 
     <exceptions>
-      <exception cond="too_far_from_home" deroute="HOME"/>
+      <!--exception cond="too_far_from_home" deroute="HOME"/-->
       <exception cond="kill_switch_is_on()" deroute="KILL"/>
     </exceptions>
 
     <mode name="ATTITUDE_DIRECT" shortname="ATT">
       <select cond="RCMode0()"/>
       <on_enter>
-        <call fun="stabilization_attitude_enter()"/>
+        <call fun="stabilization_attitude_mfc_enter()"/>
       </on_enter>
       <control freq="NAV_FREQ">
-        <call fun="nav_periodic_task()"/>
+        <!--call fun="nav_periodic_task()"/-->
       </control>
       <control>
         <call_block name="attitude_loop"/>
@@ -80,11 +85,11 @@
     <mode name="HOVER_Z_HOLD" shortname="H_ZH">
       <select cond="RCMode1()"/>
       <on_enter>
-        <!--call fun="stabilization_attitude_enter()"/-->
+        <call fun="stabilization_attitude_mfc_enter()"/>
         <call fun="guidance_v_z_enter()"/>
       </on_enter>
       <control freq="NAV_FREQ">
-        <call fun="nav_periodic_task()"/>
+        <!--call fun="nav_periodic_task()"/-->
       </control>
       <control>
         <call_block name="attitude_loop"/>
@@ -94,10 +99,12 @@
       <exception cond="RCLost()" deroute="FAILSAFE"/>
     </mode>
 
-    <mode name="FORWARD" shortname="FWD">
+    <mode name="FORWARD" shortname="FWD"/>
+
+    <!--mode name="FORWARD" shortname="FWD">
       <select cond="RCMode1() && false"/>
       <on_enter>
-        <!--call fun="stabilization_attitude_enter()"/-->
+        <call fun="stabilization_attitude_mfc_enter()"/>
         <call fun="guidance_v_z_enter()"/>
       </on_enter>
       <control freq="NAV_FREQ">
@@ -109,13 +116,15 @@
         <call_block name="set_actuators"/>
       </control>
       <exception cond="RCLost()" deroute="FAILSAFE"/>
-    </mode>
+    </mode-->
 
-    <mode name="NAV">
+    <mode name="NAV"/>
+
+    <!--mode name="NAV">
       <select cond="RCMode2() && DLModeNav()" exception="HOME"/>
       <on_enter>
         <call fun="guidance_h_nav_enter()"/>
-        <!--call fun="stabilization_attitude_enter()"/-->
+        <call fun="stabilization_attitude_mfc_enter()"/>
         <call fun="guidance_v_z_enter()"/>
       </on_enter>
       <control freq="NAV_FREQ">
@@ -129,13 +138,14 @@
         <call_block name="set_actuators"/>
       </control>
       <exception cond="GpsIsLost() && autopilot_in_flight()" deroute="FAILSAFE"/>
-    </mode>
+    </mode-->
 
-    <mode name="GUIDED">
+    <mode name="GUIDED"/>
+    <!--mode name="GUIDED">
       <select cond="RCMode2() && DLModeGuided()" exception="HOME"/>
       <on_enter>
         <call fun="guidance_h_hover_enter()"/>
-        <!--call fun="stabilization_attitude_enter()"/-->
+        <call fun="stabilization_attitude_mfc_enter()"/>
         <call fun="guidance_v_mode = GUIDANCE_V_MODE_GUIDED"/>
         <call fun="guidance_v_guided_enter()"/>
       </on_enter>
@@ -150,22 +160,22 @@
         <call_block name="set_actuators"/>
       </control>
       <exception cond="GpsIsLost() && autopilot_in_flight()" deroute="FAILSAFE"/>
-    </mode>
+    </mode-->
 
     <mode name="HOME">
       <on_enter>
-        <call fun="guidance_h_nav_enter()"/>
+        <!--call fun="guidance_h_nav_enter()"/-->
         <!--call fun="stabilization_attitude_enter()"/-->
         <call fun="guidance_v_z_enter()"/>
       </on_enter>
       <control freq="NAV_FREQ">
-        <call fun="nav_home()"/>
+        <!--call fun="nav_home()"/-->
       </control>
       <control>
         <call fun="guidance_v_read_rc()"/>
         <call fun="guidance_v_thrust_adapt(autopilot_in_flight())"/>
-        <call fun="guidance_v_from_nav(autopilot_in_flight())"/>
-        <call fun="guidance_h_from_nav(autopilot_in_flight())"/>
+        <!--call fun="guidance_v_from_nav(autopilot_in_flight())"/-->
+        <!--call fun="guidance_h_from_nav(autopilot_in_flight())"/-->
         <call_block name="set_actuators"/>
       </control>
       <exception cond="GpsIsLost()" deroute="FAILSAFE"/>
@@ -174,13 +184,13 @@
     <!-- Safe landing -->
     <mode name="FAILSAFE" shortname="FAIL">
       <on_enter>
-        <call fun="stabilization_attitude_set_failsafe_setpoint()"/>
+        <call fun="stabilization_attitude_mfc_set_failsafe_setpoint()"/>
         <call fun="guidance_v_mode_changed(GUIDANCE_V_MODE_CLIMB)"/>
         <call fun="guidance_v_zd_sp = SPEED_BFP_OF_REAL(FAILSAFE_DESCENT_SPEED)"/>
       </on_enter>
       <control>
-        <call fun="stabilization_attitude_set_failsafe_setpoint()"/>
-        <call fun="stabilization_attitude_run(autopilot_in_flight())"/>
+        <call fun="stabilization_attitude_mfc_set_failsafe_setpoint()"/>
+        <call fun="stabilization_attitude_mfc_run(autopilot_in_flight())"/>
         <call fun="gv_update_ref_from_zd_sp(guidance_v_zd_sp, stateGetPositionNed_i()->z)"/>
         <call fun="run_hover_loop(autopilot_in_flight())"/>
         <call_block name="set_actuators"/>

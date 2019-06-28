@@ -759,18 +759,31 @@
     </message>
 
     <message name="STAB_ATTITUDE_MFC" id="93">
-      <field name="time" type="float"/>
-      <field name="start_time" type="float"/>
-      <field name="phi" type="float"/>
-      <field name="theta" type="float"/>
-      <field name="psi" type="float"/>
-      <field name="pitch_sp" type="float"/>
-      <field name="pitch_sp_trajec" type="float"/>
-      <field name="pitch_error" type="float"/>
-      <field name="pitch_m" type="float"/>
-      <field name="command_0" type="float"/>
-      <field name="elevator_sp_pprz" type="int16"/>	
+      <field name="time" 	 	 type="float"/>
+      <field name="start_time" 	 	 type="float"/>
+      <field name="roll_sp"      	 type="float"/>
+      <field name="pitch_sp"      	 type="float"/>
+      <field name="yaw_sp"      	 type="float"/>
+      <field name="roll_traj_sp" 	 type="float"/>
+      <field name="pitch_traj_sp" 	 type="float"/>
+      <field name="yaw_traj_sp" 	 type="float"/>
+      <field name="roll_measure" 	 type="float"/>
+      <field name="pitch_measure" 	 type="float"/>
+      <field name="yaw_measure" 	 type="float"/>
+      <field name="roll_estimator" 	 type="float"/>
+      <field name="pitch_estimator" 	 type="float"/>
+      <field name="yaw_estimator" 	 type="float"/>
+      <field name="roll_error"   	 type="float"/>
+      <field name="roll_cmd" 	 	 type="float"/>
+      <field name="stab_mfc_cmd_roll"	 type="int16"/>
+      <field name="Motor_left"	         type="int16"/>
+      <field name="Motor_right"	         type="int16"/>
+      <field name="counter_test" 	 type="float"/>
+      <field name="vel_x_gs" 	         type="float"/>
+      <field name="vel_y_gs" 	         type="float"/>
+      <field name="vel_z_gs" 	         type="float"/>
     </message>
+
 
     <message name="MOTOR_BENCH_STATUS" id="94">
       <field name="time_ticks" type="uint32"/>

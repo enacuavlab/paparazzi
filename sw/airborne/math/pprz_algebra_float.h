@@ -518,6 +518,7 @@ static inline float float_eulers_norm(struct FloatEulers *e)
 }
 extern void float_eulers_of_rmat(struct FloatEulers *e, struct FloatRMat *rm);
 extern void float_eulers_of_quat(struct FloatEulers *e, struct FloatQuat *q);
+extern void float_eulers_of_quat_xzy(struct FloatEulers *e, struct FloatQuat *q);
 extern void float_eulers_of_quat_zxy(struct FloatEulers *e, struct FloatQuat *q);
 extern void float_eulers_of_quat_yxz(struct FloatEulers *e, struct FloatQuat *q);
 

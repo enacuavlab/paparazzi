@@ -115,7 +115,7 @@ $(TARGET).srcs += $(SRC_FIRMWARE)/main_ap.c
 $(TARGET).srcs += autopilot.c
 $(TARGET).srcs += $(SRC_FIRMWARE)/autopilot_firmware.c
 $(TARGET).srcs += $(SRC_FIRMWARE)/autopilot_utils.c
-$(TARGET).srcs += $(SRC_FIRMWARE)/autopilot_guided.c
+#$(TARGET).srcs += $(SRC_FIRMWARE)/autopilot_guided.c
 ifeq ($(USE_GENERATED_AUTOPILOT), TRUE)
 $(TARGET).srcs += $(SRC_FIRMWARE)/autopilot_generated.c
 $(TARGET).CFLAGS += -DUSE_GENERATED_AUTOPILOT=1

@@ -75,7 +75,7 @@ PRINT_CONFIG_MSG_VALUE("USE_BARO_BOARD is TRUE, reading onboard baro: ", BARO_BO
 #include "subsystems/abi.h"
 
 // needed for stop-gap measure waypoints_localize_all()
-#include "subsystems/navigation/waypoints.h"
+//#include "subsystems/navigation/waypoints.h"
 
 
 /* if PRINT_CONFIG is defined, print some config options */
@@ -162,7 +162,7 @@ void main_init(void)
    * This led to the problem that global waypoints were not "localized",
    * so as a stop-gap measure we localize them all (again) here..
    */
-  waypoints_localize_all();
+  //waypoints_localize_all();
 
   settings_init();
 

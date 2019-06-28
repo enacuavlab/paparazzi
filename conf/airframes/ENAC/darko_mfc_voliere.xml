@@ -37,22 +37,35 @@
 
     <module name="telemetry" type="xbee_api"/>
 
-    <module name="imu" type="apogee"> <!--apogee_mpu9150-->
-      <!-- <define name="APOGEE_USE_MPU9150" value="TRUE"/> -->
-      <define name="IMU_APOGEE_CHAN_X" value="1"/>      
+    <!-- Setup rotorcraft-->
+    <module name="imu" type="apogee"> <!--apogee_mpu9150-->	
+    <!-- <define name="APOGEE_USE_MPU9150" value="TRUE"/> -->	
+    <define name="IMU_APOGEE_CHAN_X" value="1"/>
+    <define name="IMU_APOGEE_CHAN_Y" value="0"/>
+    <define name="IMU_APOGEE_CHAN_Z" value="2"/> 
+    <define name="APOGEE_GYRO_RANGE" value="MPU60X0_GYRO_RANGE_2000"/>
+    <define name="APOGEE_ACCEL_RANGE" value="MPU60X0_ACCEL_RANGE_16G"/>
+    <!--Set the frequency to 2000 hz with 256 Hz internal low pass-->
+    <define name="APOGEE_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
+    <define name="APOGEE_SMPLRT_DIV" value="3"/>
+    </module>
+    
+    <!-- Setup fixed-wing-->
+    <!--module name="imu" type="apogee"> 
+      <define name="IMU_APOGEE_CHAN_X" value="2"/>      
       <define name="IMU_APOGEE_CHAN_Y" value="0"/>
-      <define name="IMU_APOGEE_CHAN_Z" value="2"/> 
+      <define name="IMU_APOGEE_CHAN_Z" value="1"/> 
       <define name="APOGEE_GYRO_RANGE" value="MPU60X0_GYRO_RANGE_2000"/>
       <define name="APOGEE_ACCEL_RANGE" value="MPU60X0_ACCEL_RANGE_16G"/>
-      <!--Set the frequency to 2000 hz with 256 Hz internal low pass-->
       <define name="APOGEE_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
       <define name="APOGEE_SMPLRT_DIV" value="3"/>
-    </module>
+    </module-->
 
     <module name="mag" type="hmc58xx">
       <configure name="MAG_HMC58XX_I2C_DEV" value="i2c2"/>
       <define name="MODULE_HMC58XX_UPDATE_AHRS"/>
 
+      <!-- CHANGE MAG CHAN VALUE FOR OUTDOOR FLIGHTS -->
       <define name="HMC58XX_CHAN_X" value="2"/>
       <define name="HMC58XX_CHAN_Y" value="1"/>
       <define name="HMC58XX_CHAN_Z" value="0"/>
@@ -88,6 +101,7 @@
       <define name="INS_FINV_MAG_ID" value="MAG_HMC58XX_SENDER_ID"/>
     </module-->
 
+    <module name="guidance" type="mfc"/> <!-- Temporarily: Only vertical guidance for Z HOLD -->
     <module name="stabilization" type="mfc"/>
 
     <module name="sys_mon"/>
@@ -114,28 +128,37 @@
   </servos>
 
   <commands>
-    <axis name="PITCH" failsafe_value="0"/>
-    <axis name="ROLL" failsafe_value="0"/>
-    <axis name="YAW" failsafe_value="0"/>
+    <axis name="ROLL"   failsafe_value="0"/>
+    <axis name="PITCH"  failsafe_value="0"/>
+    <axis name="YAW"    failsafe_value="0"/>
     <axis name="THRUST" failsafe_value="0"/>
   </commands>
 
   <command_laws>
-    <set servo="ELEVON_LEFT" value="autopilot.motors_on ? actuators_pprz[0] : 0"/>
+    <set servo="ELEVON_LEFT"  value="autopilot.motors_on ? actuators_pprz[0] : 0"/>
     <set servo="ELEVON_RIGHT" value="autopilot.motors_on ? actuators_pprz[1] : 0"/>
-    <set servo="RM" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
-    <set servo="LM" value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
+    <set servo="LM"           value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
+    <set servo="RM"  	      value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
-    <define name="GYRO_P_SIGN" value="-1"/>
+    <!--define name="GYRO_P_SIGN" value="1"/-->
+    <define name="GYRO_P_SIGN" value="-1"/> <!-- Rotorcraft -->
     <define name="GYRO_Q_SIGN" value="1"/>
     <define name="GYRO_R_SIGN" value="1"/>
 
-    <define name="ACCEL_X_SIGN" value="-1"/>
+    <!--define name="ACCEL_X_SIGN" value="1"/-->
+    <define name="ACCEL_X_SIGN" value="-1"/> <!-- Rotorcraft -->
     <define name="ACCEL_Y_SIGN" value="1"/>
     <define name="ACCEL_Z_SIGN" value="1"/>
-    <define name="ACCEL_X_NEUTRAL" value="-13"/>
+    <!--define name="ACCEL_X_NEUTRAL" value="-96"/>
+    <define name="ACCEL_Y_NEUTRAL" value="-31"/>
+    <define name="ACCEL_Z_NEUTRAL" value="13"/>
+    <define name="ACCEL_X_SENS" value="4.8885908544" integer="16"/>
+    <define name="ACCEL_Y_SENS" value="4.88509995562" integer="16"/>
+    <define name="ACCEL_Z_SENS" value="4.89033452937" integer="16"/-->
+
+    <define name="ACCEL_X_NEUTRAL" value="-13"/>	
     <define name="ACCEL_Y_NEUTRAL" value="-23"/>
     <define name="ACCEL_Z_NEUTRAL" value="138"/>
     <define name="ACCEL_X_SENS" value="4.88993350593" integer="16"/>
@@ -191,8 +214,8 @@
 
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
     <!-- setpoints -->
-    <define name="SP_MAX_PHI" value="60." unit="deg"/>
-    <define name="SP_MAX_THETA" value="60." unit="deg"/>
+    <define name="SP_MAX_PHI" value="30." unit="deg"/>
+    <define name="SP_MAX_THETA" value="75." unit="deg"/>
     <define name="SP_MAX_R" value="90." unit="deg/s"/>
     <define name="DEADBAND_R" value="250"/>
     <define name="DEADBAND_A" value="250"/>
@@ -214,12 +237,12 @@
   </section>
 
   <!-- Gains for horizontal navigation-->
-  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-    <define name="PGAIN" value="100"/> <!-- 100 for CYFOAM-->
-    <define name="DGAIN" value="100"/> <!-- 100 for CYFOAM--> 
-    <define name="IGAIN" value="10"/>  <!-- 0 for CYFOAM-->
+  <!--section name="GUIDANCE_H" prefix="GUIDANCE_H_">
+    <define name="PGAIN" value="100"/--> <!-- 100 for CYFOAM-->
+    <!--define name="DGAIN" value="100"/--> <!-- 100 for CYFOAM--> 
+    <!--define name="IGAIN" value="10"/-->  <!-- 0 for CYFOAM-->
     <!--define name="REF_MAX_SPEED" value="0.5" /--> <!-- For mini cyclone inside ENAC Voliere-->
-  </section>
+  <!--/section-->
 
   <section name="NAV">
     <define name="NAV_CLIMB_VSPEED" value="1.0"/>

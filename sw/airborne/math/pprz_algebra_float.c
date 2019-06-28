@@ -687,7 +687,7 @@ void float_eulers_of_quat_yxz(struct FloatEulers *e, struct FloatQuat *q)
   const float qxqz = q->qx * q->qz;
   const float qyqz = q->qy * q->qz;
   const float r11  = 2.f * (qxqz + qiqy);
-  const float r12  = qi2 - qx2 + qy2 + qz2;
+  const float r12  = qi2 - qx2 + qy2 + qz2; //qi2 - qx2 - qy2 + qz2 (CORRECT FORM)
   const float r21  = -2.f * (qyqz - qiqx);
   const float r31  = 2.f * (qxqy + qiqz);
   const float r32  = qi2 - qx2 + qy2 - qz2;
@@ -725,6 +725,38 @@ void float_eulers_of_quat_zxy(struct FloatEulers *e, struct FloatQuat *q)
   e->psi = atan2f(r11, r12);
   e->phi = asinf(r21);
   e->theta = atan2f(r31, r32);
+}
+
+/**
+ * @brief euler rotation 'XZY'
+ * This rotation order is useful if you need 90 deg pitch 
+ * for a hybrid UAV in fixed-wing coordinate system convention
+ * 
+ * @param e Euler output
+ * @param q Quat input
+ */
+void float_eulers_of_quat_xzy(struct FloatEulers *e, struct FloatQuat *q)
+{
+  const float qx2  = q->qx * q->qx;
+  const float qy2  = q->qy * q->qy;
+  const float qz2  = q->qz * q->qz;
+  const float qi2  = q->qi * q->qi;
+  const float qiqx = q->qi * q->qx;
+  const float qiqy = q->qi * q->qy;
+  const float qiqz = q->qi * q->qz;
+  const float qxqy = q->qx * q->qy;
+  const float qxqz = q->qx * q->qz;
+  const float qyqz = q->qy * q->qz;
+  const float r11  =  2 * (qiqx + qyqz);    // 2.*(qx.*qi+qy.*qz)
+  const float r12  = qi2 - qx2 + qy2 - qz2; // qi.^2-qx.^2+qy.^2-qz.^2
+  const float r21  =  2 * (qiqz - qxqy);    // 2.*(qz.*qi-qx.*qy)
+  const float r31  =  2 * (qxqz + qiqy);    // 2.*(qx.*qz+qy.*qi)
+  const float r32  = qi2 + qx2 - qy2 - qz2; // (qi.^2+qx.^2-qy.^2-qz.^2)
+
+  e->psi = atan2f(r11, r12);
+  e->phi = asinf(r21);
+  e->theta = atan2f(r31,r32);
+
 }
 
 /**
