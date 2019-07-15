@@ -33,6 +33,7 @@
 #include "std.h"
 #include "generated/airframe.h"
 //#include "navigation.h"
+#include "subsystems/ins/ins_int.h"
 #include "paparazzi.h"
 #include "autopilot.h"
 #include "mcu_periph/sys_time.h"
@@ -40,8 +41,6 @@
 #include "math/pprz_algebra_float.h"
 #include "subsystems/actuators.h"
 #include <stdio.h>
-
-#include "subsystems/ins/ins_float_invariant.h"
 
 #include "firmwares/rotorcraft/stabilization/stabilization_mfc.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
@@ -167,8 +166,6 @@
 bool log_started = false;
 #endif
 
-struct InsFloatInv ins_float_inv;
-
 struct Mfc mfc;
 struct MfcParameters mfc_roll;
 struct MfcParameters mfc_pitch;
@@ -291,7 +288,7 @@ static void send_mfc_values(struct transport_tx *trans, struct link_device *dev)
       &counter_test,
       &vel_x_gs,
       &vel_y_gs,
-      &vel_z_gs);
+      &vel_z_gs); //23
 }
 //#endif
 
@@ -499,7 +496,7 @@ void stabilization_attitude_mfc_run(bool in_flight)
   vel_x_gs = stateGetSpeedNed_f()->x;
   vel_y_gs = stateGetSpeedNed_f()->y;
   vel_z_gs = stateGetSpeedNed_f()->z;
-  counter_test = ins_float_inv.state.speed.x;
+  counter_test = 1.0;
 }
 
 /**
