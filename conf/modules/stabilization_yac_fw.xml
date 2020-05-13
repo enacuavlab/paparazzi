@@ -1,0 +1,37 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="stabilization_yac" dir="stabilization">
+  <doc>
+    <description>
+      YAC fixedwing controller
+    </description>
+  </doc>
+  <settings>
+    <dl_settings>
+      <dl_settings NAME="YAC stab">
+        <dl_setting MAX="20." MIN="0." STEP="0.01" VAR="stab_yac.roll_ctrl.kp" shortname="Kp roll" module="stabilization/stabilization_yac"/>
+        <dl_setting MAX="20." MIN="0." STEP="0.01" VAR="stab_yac.roll_ctrl.kd" shortname="Kd roll" module="stabilization/stabilization_yac"/>
+        <dl_setting MAX="10." MIN="0." STEP="0.01" VAR="stab_yac.roll_ctrl.scaling" shortname="Scale roll" module="stabilization/stabilization_yac"/>
+        <dl_setting MAX="20." MIN="0." STEP="0.01" VAR="stab_yac.pitch_ctrl.kp" shortname="Kp pitch" module="stabilization/stabilization_yac"/>
+        <dl_setting MAX="20." MIN="0." STEP="0.01" VAR="stab_yac.pitch_ctrl.kd" shortname="Kd pitch" module="stabilization/stabilization_yac"/>
+        <dl_setting MAX="10." MIN="0." STEP="0.01" VAR="stab_yac.pitch_ctrl.scaling" shortname="Scale roll" module="stabilization/stabilization_yac"/>
+        <dl_setting MAX="1.0" MIN="0.001" STEP="0.001" VAR="stab_yac.roll_ctrl.filter.beta" shortname="beta 1e roll" module="stabilization/stabilization_yac"/>
+        <dl_setting MAX="1.0" MIN="0.001" STEP="0.001" VAR="stab_yac.roll_ctrl.filter.mincutoff" shortname="mincutoff 1e roll" module="stabilization/stabilization_yac"/>
+        <dl_setting MAX="1.0" MIN="0.001" STEP="0.001" VAR="stab_yac.pitch_ctrl.filter.beta" shortname="beta 1e pitch" module="stabilization/stabilization_yac"/>
+        <dl_setting MAX="1.0" MIN="0.001" STEP="0.001" VAR="stab_yac.pitch_ctrl.filter.mincutoff" shortname="mincutoff 1e pitch" module="stabilization/stabilization_yac"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+  <header>
+    <file name="stabilization_attitude.h"/>
+    <file name="stabilization_yac.h"/>
+  </header>
+  <init fun="h_ctl_init()"/>
+  <init fun="stab_yac_init()"/>
+  <makefile target="ap|sim|nps" firmware="fixedwing">
+    <file name="stabilization_yac.c" dir="$(SRC_FIRMWARE)/stabilization"/>
+    <file name="stabilization_attitude.c" dir="$(SRC_FIRMWARE)/stabilization"/>
+    <file name="ctrl_yac.c" dir="$(SRC_MODULES)/ctrl"/>
+  </makefile>
+</module>
+

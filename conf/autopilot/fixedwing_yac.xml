@@ -1,0 +1,182 @@
+<!DOCTYPE autopilot SYSTEM "autopilot.dtd">
+
+<autopilot name="Fixed Wing Autopilot">
+
+  <state_machine name="ap" freq="CONTROL_FREQUENCY" gcs_mode="true" settings_mode="true">
+
+    <!--modules>
+      <load name=""/>
+    </modules-->
+
+    <includes>
+      <include name="generated/airframe.h"/>
+      <include name="autopilot.h"/>
+      <include name="autopilot_rc_helpers.h"/>
+      <include name="inter_mcu.h"/>
+      <include name="nav.h"/>
+      <include name="state.h"/>
+      <include name="guidance/guidance_common.h"/>
+      <include name="guidance/guidance_h.h"/>
+      <include name="stabilization/stabilization_attitude.h"/>
+      <include name="stabilization/stabilization_yac.h"/>
+      <include name="subsystems/gps.h"/>
+      <define name="RCAuxMode0()" value="rc_mode_switch(RADIO_GAIN2, 0, 2)"/>
+      <define name="RCAuxMode1()" value="rc_mode_switch(RADIO_GAIN2, 1, 2)"/>
+    </includes>
+
+    <control_block name="actuators_ap">
+      <call fun="PPRZ_MUTEX_LOCK(ap_state_mtx)"/>
+      <call fun="AP_COMMAND_SET_THROTTLE(v_ctl_throttle_slewed)"/>
+      <call fun="AP_COMMAND_SET_ROLL(-h_ctl_aileron_setpoint)"/>
+      <call fun="AP_COMMAND_SET_PITCH(h_ctl_elevator_setpoint)"/>
+      <call fun="AP_COMMAND_SET_YAW(h_ctl_rudder_setpoint)"/>
+      <call fun="AP_COMMAND_SET_CL(h_ctl_flaps_setpoint)"/>
+      <call fun="PPRZ_MUTEX_UNLOCK(ap_state_mtx)"/>
+    </control_block>
+
+    <control_block name="actuators_yac">
+      <call fun="PPRZ_MUTEX_LOCK(ap_state_mtx)"/>
+      <call fun="AP_COMMAND_SET_THROTTLE(v_ctl_throttle_slewed)"/>
+      <call fun="AP_COMMAND_SET_ROLL(stab_yac_get_roll_cmd())"/>
+      <call fun="AP_COMMAND_SET_PITCH(stab_yac_get_pitch_cmd())"/>
+      <call fun="AP_COMMAND_SET_YAW(h_ctl_rudder_setpoint)"/>
+      <call fun="AP_COMMAND_SET_CL(h_ctl_flaps_setpoint)"/>
+      <call fun="PPRZ_MUTEX_UNLOCK(ap_state_mtx)"/>
+    </control_block>
+
+    <control_block name="set_attitude_from_rc">
+      <call fun="PPRZ_MUTEX_LOCK(fbw_state_mtx)"/>
+      <call fun="AP_SETPOINT_ROLL(h_ctl_roll_setpoint, AUTO1_MAX_ROLL)"/>
+      <call fun="AP_SETPOINT_PITCH(h_ctl_pitch_setpoint, AUTO1_MAX_PITCH)"/>
+      <call fun="AP_SETPOINT_YAW_RATE(h_ctl_yaw_rate_setpoint, AUTO1_MAX_YAW_RATE)"/>
+      <call fun="AP_SETPOINT_THROTTLE(v_ctl_throttle_setpoint)"/>
+      <call fun="PPRZ_MUTEX_UNLOCK(fbw_state_mtx)"/>
+    </control_block>
+
+    <control_block name="set_attitude_yac_from_rc">
+      <call fun="PPRZ_MUTEX_LOCK(fbw_state_mtx)"/>
+      <call fun="AP_SETPOINT_ROLL(stab_yac.att_sp.phi, AUTO1_MAX_ROLL)"/>
+      <call fun="AP_SETPOINT_PITCH(stab_yac.att_sp.theta, AUTO1_MAX_PITCH)"/>
+      <call fun="AP_SETPOINT_YAW_RATE(h_ctl_yaw_rate_setpoint, AUTO1_MAX_YAW_RATE)"/>
+      <call fun="AP_SETPOINT_THROTTLE(v_ctl_throttle_setpoint)"/>
+      <call fun="PPRZ_MUTEX_UNLOCK(fbw_state_mtx)"/>
+    </control_block>
+
+    <control_block name="attitude">
+      <call fun="h_ctl_attitude_loop()"/>
+      <call fun="v_ctl_throttle_slew()"/>
+    </control_block>
+
+    <control_block name="attitude_yac">
+      <call fun="stab_yac_attitude_loop()"/>
+      <call fun="v_ctl_throttle_slew()"/>
+    </control_block>
+
+    <control_block name="guidance">
+      <call fun="h_ctl_guidance_loop()"/>
+      <call fun="v_ctl_guidance_loop()"/>
+    </control_block>
+
+    <exceptions>
+      <exception cond="too_far_from_home && autopilot_in_flight()" deroute="HOME"/>
+    </exceptions>
+
+    <mode name="MANUAL" gcs_name="MANU">
+      <select cond="RCMode0()"/>
+      <control freq="4"> <!-- only for display -->
+        <call fun="common_nav_periodic_task_4Hz()"/>
+        <call fun="nav_periodic_task()"/>
+      </control>
+      <control> <!-- only for display -->
+        <call fun="v_ctl_throttle_slewed = imcu_get_radio(RADIO_THROTTLE)"/>
+      </control>
+      <exception cond="RCLost() && autopilot_in_flight()" deroute="HOME"/>
+    </mode>
+
+    <mode name="STAB_YAC">
+      <select cond="RCMode1() && RCAuxMode0()"/>
+      <control freq="4"> <!-- only for display -->
+        <call fun="common_nav_periodic_task_4Hz()"/>
+        <call fun="nav_periodic_task()"/>
+      </control>
+      <control>
+        <call_block name="set_attitude_yac_from_rc"/>
+        <call_block name="attitude_yac"/>
+        <call_block name="actuators_yac"/>
+      </control>
+      <exception cond="RCLost() && autopilot_in_flight()" deroute="HOME"/>
+    </mode>
+
+    <mode name="AUTO1">
+      <select cond="RCMode1() && RCAuxMode1()"/>
+      <control freq="4"> <!-- only for display -->
+        <call fun="common_nav_periodic_task_4Hz()"/>
+        <call fun="nav_periodic_task()"/>
+      </control>
+      <control>
+        <call_block name="set_attitude_from_rc"/>
+        <call_block name="attitude"/>
+        <call_block name="actuators_ap"/>
+      </control>
+      <exception cond="RCLost() && autopilot_in_flight()" deroute="HOME"/>
+    </mode>
+
+    <mode name="NAV_YAC">
+      <select cond="$DEFAULT_MODE"/>
+      <select cond="RCMode2() && RCAuxMode0()" exception="HOME"/>
+      <control freq="4">
+        <call fun="common_nav_periodic_task_4Hz()"/>
+        <call fun="nav_periodic_task()"/>
+      </control>
+      <control>
+        <call_block name="guidance"/>
+        <call fun="stab_yac_set_attitude_setpoint(h_ctl_roll_setpoint, h_ctl_pitch_setpoint)"/>
+        <call_block name="attitude_yac"/>
+        <call_block name="actuators_yac"/>
+      </control>
+      <exception cond="RCLost() && autopilot_in_flight()" deroute="HOME"/>
+    </mode>
+
+    <mode name="AUTO2">
+      <select cond="RCMode2() && RCAuxMode1()" exception="HOME"/>
+      <control freq="4">
+        <call fun="common_nav_periodic_task_4Hz()"/>
+        <call fun="nav_periodic_task()"/>
+      </control>
+      <control>
+        <call_block name="guidance"/>
+        <call_block name="attitude"/>
+        <call_block name="actuators_ap"/>
+      </control>
+      <exception cond="GpsIsLost() && autopilot_in_flight()" deroute="GPS_LOST"/>
+    </mode>
+
+    <mode name="HOME" settings="hide">
+      <control freq="4">
+        <call fun="common_nav_periodic_task_4Hz()"/>
+        <call fun="nav_home()"/>
+      </control>
+      <control>
+        <call_block name="guidance"/>
+        <call_block name="attitude"/>
+        <call_block name="actuators_ap"/>
+      </control>
+      <exception cond="GpsIsLost() && autopilot_in_flight()" deroute="GPS_LOST"/>
+    </mode>
+
+    <mode name="GPS_LOST" gcs_name="NOGPS" settings="hide">
+      <control freq="4">
+        <call fun="common_nav_periodic_task_4Hz()"/>
+        <call fun="nav_without_gps()"/>
+      </control>
+      <control>
+        <call_block name="guidance"/>
+        <call_block name="attitude"/>
+        <call_block name="actuators_ap"/>
+      </control>
+      <exception cond="!GpsIsLost()" deroute="$LAST_MODE"/>
+    </mode>
+
+  </state_machine>
+
+</autopilot>
