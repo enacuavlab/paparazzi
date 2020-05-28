@@ -108,6 +108,7 @@ struct HorizontalGuidance {
 
 extern struct HorizontalGuidance guidance_h;
 
+extern struct Int32Vect2  guidance_h_cmd_earth;
 extern int32_t transition_percentage;
 
 extern void guidance_h_init(void);

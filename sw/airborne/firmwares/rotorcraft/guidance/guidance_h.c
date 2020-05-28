@@ -592,7 +592,7 @@ void guidance_h_from_nav(bool in_flight)
     sp_cmd_i.theta = nav_pitch;
     sp_cmd_i.psi = nav_heading;
     stabilization_attitude_set_rpy_setpoint_i(&sp_cmd_i);
-    stabilization_attitude_run(in_flight);
+    //stabilization_attitude_run(in_flight);
 
 #if HYBRID_NAVIGATION
     //make sure the heading is right before leaving horizontal_mode attitude
@@ -626,7 +626,7 @@ void guidance_h_from_nav(bool in_flight)
 #endif
 
 #endif
-    stabilization_attitude_run(in_flight);
+    //stabilization_attitude_run(in_flight);
   }
 }
 
