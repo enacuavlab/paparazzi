@@ -122,10 +122,6 @@
 extern "C" {
 #endif
 
-//#include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_ellipse.h"
-//#include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_lissajous.h"
-//#include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_2d_trefoil.h"
-
 #include "trajectories/gvf_parametric_3d_ellipse.h"
 #include "trajectories/gvf_parametric_3d_lissajous.h"
 #include "trajectories/gvf_parametric_2d_trefoil.h"
@@ -323,6 +319,10 @@ bool gvf_parametric_3d_sin(float ay, float freq_y, float az, float freq_z, float
 bool gvf_parametric_3d_sin_XYZa(float xo, float yo, float zo, float alpha,
                                 float ay, float freq_y, float az, float freq_z, float phase);
 
+
+// 3D Lissajous
+extern bool gvf_parametric_3D_lissajous_XYZ(float, float, float, float, float, float, float, float, float, float, float, float, float);
+extern bool gvf_parametric_3D_lissajous_wp(uint8_t, float, float, float, float, float, float, float, float, float, float, float);
 
 #ifdef __cplusplus
 }
