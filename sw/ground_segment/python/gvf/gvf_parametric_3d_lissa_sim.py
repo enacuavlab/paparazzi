@@ -55,10 +55,6 @@ deltaz = 0
 wx = 1
 wy = 1
 wz = 1
-
-alpha = np.pi/4
-
-# Controller
 L = 1e-1
 beta = 1e-2
 k1 = 1e-3
