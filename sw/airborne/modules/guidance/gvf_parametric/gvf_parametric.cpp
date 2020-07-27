@@ -228,7 +228,7 @@ void gvf_parametric_set_affine_tr_wps(uint8_t wp1, uint8_t wp2)
 
 void gvf_parametric_set_direction(int8_t s)
 {
-  gvf_control.s = s;
+  gvf_parametric_control.s = s;
 }
 
 void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d, float f2d, float f1dd, float f2dd)
