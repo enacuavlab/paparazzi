@@ -1,0 +1,34 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="autonomous_soaring">
+  <doc>
+    <description>Soaring related things... thermal-gust-dynamic...</description>
+  </doc>
+  <settings>
+    <dl_settings>
+      <dl_settings NAME="SOARING">
+        <dl_setting var="soaring_coeffs.aoa_offset" min="-5.0" step="0.1" max="5.0" shortname="AoA_offset" param="SMARTPROBE_AOA_OFFSET"/>
+        <dl_setting var="soaring_coeffs.aoa_coeff"  min="0" step="0.01" max="1.5" shortname="AoA_coeff" param="SMARTPROBE_AOA_COEFF"/>
+        <dl_setting var="soaring_coeffs.sample_nr"  min="1" step="5" max="500" shortname="SampleNR" param="SMARTPROBE_DT_SAMPLE"/>
+        <!-- <dl_setting MAX="1.2" MIN="0.0" STEP="0.1" VAR="fault_right" shortname="right" module="modules/fault/fault" handler="Set_Right"/> -->
+      </dl_settings>
+    </dl_settings>
+  </settings>
+
+  <header>
+    <file name="autonomous_soaring.h"/>
+  </header>
+  <init fun="soaring_init()"/>
+  <periodic fun="soaring_periodic()" freq="100"/>
+  <!-- <periodic fun="soaring_status_report()" freq="4" autorun="TRUE"/> -->
+  
+  <!-- <datalink message="FAULT_INFO" fun="fault_parse_FAULT_INFO(buf)"/> -->
+  <datalink message="AEROPROBE" fun="soaring_parse_AEROPROBE(buf)"/>
+  <!--periodic fun="module_periodic()" freq="60" autorun="TRUE"/-->
+  <!--event fun="module_event()"/>
+  <datalink message="module_datalink_event()" fun="fault_datalink_callback()"/-->
+  <makefile>
+    <file name="autonomous_soaring.c"/>
+  </makefile>
+</module>
+
