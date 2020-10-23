@@ -7,6 +7,10 @@
       For more details we refer to https://wiki.paparazziuav.org/wiki/Module/guidance_vector_field .
       This algorithm needs the Eigen library, be sure you have it installed, e.g., git submodule update --init --recursive sw/ext/eigen
     </description>
+    <section name="Parameters" prefix="GVF_PARAMETRIC_COORDINATION_">
+      <define name="MAX_NEIGHBORS" value="4" description="Maximum number of accepted neighbors for an aircraft"/>
+      <define name="GAIN_KC" value="1" description="Control gain for the coordination algorithm, the higher the faster the synchronization"/>
+    </section>
   </doc>
 
   <settings name="GVF_PARAMETRIC">
@@ -19,6 +23,12 @@
           <dl_setting MAX="10" MIN="0.01" STEP="0.05" VAR="gvf_parametric_control.L" shortname="L" param="GVF_PARAMETRIC_CONTROL_L"/>
           <dl_setting MAX="1" MIN="0.001" STEP="0.005" VAR="gvf_parametric_control.beta" shortname="beta" param="GVF_PARAMETRIC_CONTROL_BETA"/>
           <dl_setting MAX="1.5" MIN="0.5" STEP="0.01" VAR="gvf_parametric_control.k_psi" shortname="k_psi" param="GVF_PARAMETRIC_CONTROL_KPSI"/>
+        </dl_settings>
+        <dl_settings NAME="Coordination">
+          <dl_setting MAX="1" MIN="0" STEP="1" VAR="gvf_parametric_coordination.coordination" shortname = "Coordination" param="GVF_PARAMETRIC_COORDINATION_COORDINATION"/>
+          <dl_setting MAX="20" MIN="0" STEP="1" VAR="gvf_parametric_coordination.kc" shortname = "Gain" param="GVF_PARAMETRIC_COORDINATION_GAIN_KC"/>
+          <dl_setting MAX="5000" MIN="0" STEP="1" VAR="gvf_parametric_coordination.timeout" shortname = "Timeout" param="GVF_PARAMETRIC_COORDINATION_TIMEOUT"/>
+          <dl_setting MAX="1000" MIN="0" STEP="1" VAR="gvf_parametric_coordination.broadtime" shortname = "Broadcasting" param="GVF_PARAMETRIC_COORDINATION_BROADTIME"/>
         </dl_settings>
         <dl_settings NAME="2D_trefoil">
           <dl_setting MAX="0.01" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_2d_trefoil_par.kx" shortname="2d_tre_kx" param="GVF_PARAMETRIC_2D_TREFOIL_KX"/>
@@ -66,6 +76,9 @@
   </header>
 
   <init fun = "gvf_parametric_init()"/>
+
+  <datalink message="GVF_PARAMETRIC_REG_TABLE" fun="gvf_parametric_coordination_parseRegTable(buf)"/>
+  <datalink message="GVF_PARAMETRIC_W" fun="gvf_parametric_coordination_parseWTable(buf)"/>
 
   <makefile target="ap|nps" firmware="fixedwing">
     <configure name="CXXSTANDARD" value="-std=c++14"/>

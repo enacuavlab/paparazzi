@@ -54,6 +54,46 @@
 #define GVF_PARAMETRIC_CONTROL_KPSI 1
 #endif
 
+/*! Default gain kc for the coordination algorithm */
+#ifndef GVF_PARAMETRIC_COORDINATION_KC
+#define GVF_PARAMETRIC_COORDINATION_KC 1
+#endif
+
+/*! Default timeout for the neighbors' information */
+#ifndef GVF_PARAMETRIC_COORDINATION_TIMEOUT
+#define GVF_PARAMETRIC_COORDINATION_TIMEOUT 1500
+#endif
+
+/*! Default broadcasting time */
+#ifndef GVF_PARAMETRIC_COORDINATION_BROADTIME
+#define GVF_PARAMETRIC_COORDINATION_BROADTIME 200
+#endif
+
+/*! Default number of neighbors per aircraft */
+#ifndef GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS
+#define GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS 4
+#endif
+
+/*! Default gain kc for the coordination algorithm */
+#ifndef GVF_PARAMETRIC_COORDINATION_KC
+#define GVF_PARAMETRIC_COORDINATION_KC 1
+#endif
+
+/*! Default timeout for the neighbors' information */
+#ifndef GVF_PARAMETRIC_COORDINATION_TIMEOUT
+#define GVF_PARAMETRIC_COORDINATION_TIMEOUT 1500
+#endif
+
+/*! Default broadcasting time */
+#ifndef GVF_PARAMETRIC_COORDINATION_BROADTIME
+#define GVF_PARAMETRIC_COORDINATION_BROADTIME 200
+#endif
+
+/*! Default number of neighbors per aircraft */
+#ifndef GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS
+#define GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS 4
+#endif
+
 /*! Default GCS trajectory painter */
 #ifndef GVF_OCAML_GCS
 #define GVF_OCAML_GCS true
@@ -84,9 +124,36 @@ typedef struct {
   float k_psi;
   float L;
   float beta;
+  float w_dot;
 } gvf_parametric_con;
 
 extern gvf_parametric_con gvf_parametric_control;
+
+/** @typedef gvf_parametric_coord
+* @brief Coordination parameters for the GVF_PARAMETRIC
+* @param w Virtual coordinate from the parametrization of the trajectory
+* @param delta_T Time between iterations needed for integrating w
+* @param s Defines the direction to be tracked. It takes the values -1 or 1.
+* @param k_roll Gain for tuning the coordinated turn.
+* @param k_climb Gain for tuning the climbing setting point.
+*/
+typedef struct {
+  int8_t coordination;
+  float kc;
+  uint16_t timeout;
+  uint16_t broadtime;
+} gvf_parametric_coord;
+
+extern gvf_parametric_coord gvf_parametric_coordination;
+
+struct gvf_parametric_coord_tab {
+  int16_t tableNei[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS][5];
+  int16_t error_deltaw[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
+  uint32_t last_comm[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
+};
+
+extern struct gvf_parametric_coord_tab gvf_parametric_coordination_tables;
+
 
 // Parameters for the trajectories
 enum trajectories_parametric {
@@ -112,6 +179,11 @@ extern void gvf_parametric_set_direction(int8_t s);
 extern void gvf_parametric_control_2D(float, float, float, float, float, float, float, float);
 extern void gvf_parametric_control_3D(float, float, float, float, float, float, float, float, float,
                                       float, float, float);
+
+// Coordination functions
+extern void gvf_parametric_coordination_send_w_to_nei(void);
+extern void gvf_parametric_coordination_parseRegTable(uint8_t *buf);
+extern void gvf_parametric_coordination_parseWTable(uint8_t *buf);
 
 // 2D Trefoil
 extern bool gvf_parametric_2D_trefoil_XY(float, float, float, float, float, float, float);
