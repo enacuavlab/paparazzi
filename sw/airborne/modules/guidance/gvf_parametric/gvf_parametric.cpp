@@ -45,6 +45,8 @@ gvf_parametric_con gvf_parametric_control;
 gvf_parametric_coord gvf_parametric_coordination;
 gvf_parametric_coord_tab gvf_parametric_coordination_tables;
 
+uint32_t last_transmision = 0;
+
 // Trajectory
 gvf_parametric_tra gvf_parametric_trajectory;
 
@@ -279,6 +281,11 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
   gvf_parametric_control.w += w_dot * gvf_parametric_control.delta_T * 1e-3;
 
   gvf_parametric_low_level_control_2D(heading_rate);
+
+  if ((gvf_parametric_coordination.coordination) && (now - last_transmision > gvf_parametric_coordination.broadtime) && (autopilot_get_mode() == AP_MODE_AUTO2)) {
+    gvf_parametric_coordination_send_w_to_nei();
+    last_transmision = now;
+  }
 }
 
 void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2, float f3, float f1d, float f2d,
