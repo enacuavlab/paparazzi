@@ -55,7 +55,7 @@ class initTable:
         if self._interface is not None:
             self._interface.shutdown()
 
-    def init_dcftables(self):
+    def init_gvf_parametric_tables(self):
         time.sleep(2)
 
         for count, column in enumerate(self.B.T):
@@ -85,18 +85,18 @@ class initTable:
             msga['ac_id'] = int(self.list_ids[i[0]])
             msga['nei_id'] = int(self.list_ids[i[1]])
             if len(self.list_ids) == 2:
-                msga['desired_w'] = (column[index])[0]*float(self.Wdesired)
+                msga['desired_deltaw'] = (column[index])[0]*float(self.Wdesired)
             else:
-                msga['desired_w'] = (column[index])[0]*float(self.Wdesired[count])
+                msga['desired_deltaw'] = (column[index])[0]*float(self.Wdesired[count])
             self._interface.send(msga)
 
             msgb = PprzMessage("datalink", "GVF_PARAMETRIC_REG_TABLE")
             msgb['ac_id'] = int(self.list_ids[i[1]])
             msgb['nei_id'] = int(self.list_ids[i[0]])
             if len(self.list_ids) == 2:
-                msgb['desired_w'] = (column[index])[1]*float(self.Wdesired)
+                msgb['desired_deltaw'] = (column[index])[1]*float(self.Wdesired)
             else:
-                msgb['desired_w'] = (column[index])[1]*float(self.Wdesired[count])
+                msgb['desired_deltaw'] = (column[index])[1]*float(self.Wdesired[count])
             self._interface.send(msgb)
 
             if self.verbose:
@@ -117,8 +117,8 @@ if __name__ == '__main__':
     if args.verbose:
         print(json.dumps(conf))
     try:
-        initTableDCF = initTable(conf, verbose=args.verbose)
-        initTableDCF.init_dcftables()
+        initTableGVF = initTable(conf, verbose=args.verbose)
+        initTableGVF.init_gvf_parametric_tables()
     except KeyboardInterrupt:
-        initTableDCF.stop()
-    initTableDCF.stop()
+        initTableGVF.stop()
+    initTableGVF.stop()
