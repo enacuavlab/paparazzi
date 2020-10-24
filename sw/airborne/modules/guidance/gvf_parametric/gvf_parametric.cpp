@@ -178,6 +178,7 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
   X(2) = L + beta * (kx * phi1 * f1d + ky * phi2 * f2d);
   X *= L;
 
+  // Coordination if needed for multi vehicles
   float consensus_term_w = 0;
 
   if(gvf_parametric_coordination.coordination){
@@ -251,6 +252,7 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
   float aux = ht * Fp * X;
   Eigen::Vector3f aux2 =  J * xi_dot;
 
+  // Coordination if needed for multi vehicles
   float consensus_term_wdot = 0;
 
   if(gvf_parametric_coordination.coordination){
@@ -333,6 +335,34 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
   X(3) = -L * L + beta * (kx * phi1 * f1d + ky * phi2 * f2d + kz * phi3 * f3d);
   X *= L;
 
+  // Coordination if needed for multi vehicles
+  float consensus_term_w = 0;
+
+  if(gvf_parametric_coordination.coordination){
+      for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++) {
+          if (gvf_parametric_coordination_tables.tableNei[i][0] != -1) {
+              uint32_t timeout = now - gvf_parametric_coordination_tables.last_comm[i];
+              if (timeout > gvf_parametric_coordination.timeout) {
+                  gvf_parametric_coordination_tables.tableNei[i][4] = gvf_parametric_coordination.timeout;
+              } else {
+                  gvf_parametric_coordination_tables.tableNei[i][4] = (uint16_t)timeout;
+
+                  float wi = gvf_parametric_control.w;
+                  float wj = gvf_parametric_coordination_tables.tableNei[i][1];
+                  float desired_dw = gvf_parametric_coordination_tables.tableNei[i][2];
+
+                  float error_w = -beta*(wi-wj) + desired_dw;
+
+                  consensus_term_w += error_w;
+
+                  gvf_parametric_coordination_tables.error_deltaw[i] = error_w;
+              }
+          }
+      }
+  }
+
+  X(3) += gvf_parametric_coordination.kc*consensus_term_w;
+
   // Jacobian
   J.setZero();
   J(0, 0) = -kx * L;
@@ -383,8 +413,32 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
   Eigen::Matrix<float, 1, 4> Xht = Xh.transpose();
 
   float aux = ht * Fp * X;
+  Eigen::Vector4f aux2 =  J * xi_dot;
 
-  float heading_rate = -1 / (Xt * G * X) * Xt * Gp * (I - Xh * Xht) * J * xi_dot - (gvf_parametric_control.k_psi * aux /
+  // Coordination if needed for multi vehicles
+  float consensus_term_wdot = 0;
+
+  if(gvf_parametric_coordination.coordination){
+    for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++) {
+        if (gvf_parametric_coordination_tables.tableNei[i][0] != -1) {
+            uint32_t timeout = now - gvf_parametric_coordination_tables.last_comm[i];
+            if (timeout > gvf_parametric_coordination.timeout) {
+                gvf_parametric_coordination_tables.tableNei[i][4] = gvf_parametric_coordination.timeout;
+            } else {
+                gvf_parametric_coordination_tables.tableNei[i][4] = (uint16_t)timeout;
+
+                float wi_dot = gvf_parametric_control.w_dot;
+                float wj_dot = gvf_parametric_coordination_tables.tableNei[i][2];
+
+                consensus_term_wdot += -(wi_dot - wj_dot);
+            }
+        }
+    }
+  }
+
+  aux2(3) += consensus_term_wdot;
+
+  float heading_rate = -1 / (Xt * G * X) * Xt * Gp * (I - Xh * Xht) * aux2 - (gvf_parametric_control.k_psi * aux /
                        sqrtf(Xt * G * X));
   float climbing_rate = (ground_speed * X(2)) / sqrtf(X(0) * X(0) + X(1) * X(1));
 
@@ -394,6 +448,11 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
   gvf_parametric_control.w_dot = w_dot;
 
   gvf_parametric_low_level_control_3D(heading_rate, climbing_rate);
+
+  if ((gvf_parametric_coordination.coordination) && (now - last_transmision > gvf_parametric_coordination.broadtime) && (autopilot_get_mode() == AP_MODE_AUTO2)) {
+    gvf_parametric_coordination_send_w_to_nei();
+    last_transmision = now;
+  }
 }
 
 /** 2D TRAJECTORIES **/
