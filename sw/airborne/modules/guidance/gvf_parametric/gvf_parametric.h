@@ -54,6 +54,11 @@
 #define GVF_PARAMETRIC_CONTROL_KPSI 1
 #endif
 
+/*! Default on/off coordination */
+#ifndef GVF_PARAMETRIC_COORDINATION_COORDINATION
+#define GVF_PARAMETRIC_COORDINATION_COORDINATION 0
+#endif
+
 /*! Default gain kc for the coordination algorithm */
 #ifndef GVF_PARAMETRIC_COORDINATION_KC
 #define GVF_PARAMETRIC_COORDINATION_KC 1
@@ -147,8 +152,8 @@ typedef struct {
 extern gvf_parametric_coord gvf_parametric_coordination;
 
 struct gvf_parametric_coord_tab {
-  int16_t tableNei[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS][5];
-  int16_t error_deltaw[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
+  float tableNei[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS][5];
+  float error_deltaw[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
   uint32_t last_comm[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
 };
 
