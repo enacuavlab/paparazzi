@@ -61,7 +61,7 @@
 
 /*! Default gain kc for the coordination algorithm */
 #ifndef GVF_PARAMETRIC_COORDINATION_KC
-#define GVF_PARAMETRIC_COORDINATION_KC 1
+#define GVF_PARAMETRIC_COORDINATION_KC 0.01
 #endif
 
 /*! Default timeout for the neighbors' information */

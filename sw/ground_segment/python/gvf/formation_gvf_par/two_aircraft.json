@@ -1,8 +1,8 @@
 {
-  "ids": [101, 102],
+  "ids": [4, 7],
   "topology": [
     [ 1],
     [-1]
   ],
-  "desired_intervehicle_w": [3.14]
+  "desired_intervehicle_w": [0]
 }

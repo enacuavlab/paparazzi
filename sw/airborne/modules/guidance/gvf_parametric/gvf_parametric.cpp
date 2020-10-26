@@ -90,8 +90,8 @@ static void send_circle_parametric(struct transport_tx *trans, struct link_devic
 
 static void send_gvf_parametric_coordination(struct transport_tx *trans, struct link_device *dev)
 {
-  printf("vecinito %f %f %f %f %f %f\n", gvf_parametric_coordination_tables.tableNei[0][0], gvf_parametric_coordination_tables.tableNei[0][1], gvf_parametric_coordination_tables.tableNei[0][2],gvf_parametric_coordination_tables.tableNei[0][3], gvf_parametric_coordination_tables.tableNei[0][4], gvf_parametric_coordination_tables.error_deltaw[0]);
-  //pprz_msg_send_GVF_PAR_COORD(trans, dev, AC_ID, 5 * GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS, &(gvf_parametric_coordination_tables.tableNei[0][0]), GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS, gvf_parametric_coordination_tables.error_deltaw);
+  if(gvf_parametric_coordination.coordination)
+    pprz_msg_send_GVF_PAR_COORD(trans, dev, AC_ID, 5*GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS, &(gvf_parametric_coordination_tables.tableNei[0][0]), GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS, gvf_parametric_coordination_tables.error_deltaw);
 }
 
 #endif // PERIODIC TELEMETRY
@@ -271,13 +271,13 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
                 float wi_dot = gvf_parametric_control.w_dot;
                 float wj_dot = gvf_parametric_coordination_tables.tableNei[i][2];
 
-                consensus_term_wdot += -(wi_dot - wj_dot);
+                consensus_term_wdot += -beta*(wi_dot - wj_dot);
             }
         }
     }
   }
 
-  aux2(2) += consensus_term_wdot;
+  aux2(2) += gvf_parametric_coordination.kc*consensus_term_wdot;
 
   float heading_rate = -1 / (Xt * G * X) * Xt * Gp * (I - Xh * Xht) * aux2 - (gvf_parametric_control.k_psi * aux /
                        sqrtf(Xt * G * X));
