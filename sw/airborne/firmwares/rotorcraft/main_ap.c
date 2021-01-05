@@ -44,6 +44,11 @@
 #include "generated/modules.h"
 #include "subsystems/abi.h"
 
+// define after modules include
+#ifndef PPRZ_PERF_TRACE
+#define PPRZ_PERF_TRACE(_x) {}
+#endif
+
 /* if PRINT_CONFIG is defined, print some config options */
 PRINT_CONFIG_VAR(PERIODIC_FREQUENCY)
 /* SYS_TIME_FREQUENCY/PERIODIC_FREQUENCY should be an integer, otherwise the timer will not be correct */
@@ -138,24 +143,30 @@ void main_init(void)
   // Do a failsafe check first
   failsafe_check();
 
+  PPRZ_PERF_TRACE("init_end");
 }
 
 void handle_periodic_tasks(void)
 {
+  PPRZ_PERF_TRACE("periodic_start");
   if (sys_time_check_and_ack_timer(modules_sensors_tid)) {
+    PPRZ_PERF_TRACE("sensors");
     modules_sensors_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_estimation_tid)) {
+    PPRZ_PERF_TRACE("estimation");
     modules_estimation_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_radio_control_tid)) {
+    PPRZ_PERF_TRACE("radio");
     radio_control_periodic_task();
     modules_radio_control_periodic_task(); // FIXME integrate above
   }
 
   if (sys_time_check_and_ack_timer(modules_control_actuators_tid)) {
+    PPRZ_PERF_TRACE("control");
     modules_control_periodic_task();
 
 #if USE_THROTTLE_CURVES
@@ -175,16 +186,19 @@ void handle_periodic_tasks(void)
   }
 
   if (sys_time_check_and_ack_timer(modules_default_tid)) {
+    PPRZ_PERF_TRACE("default");
     modules_default_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_mcu_core_tid)) {
+    PPRZ_PERF_TRACE("core");
     modules_mcu_periodic_task();
     modules_core_periodic_task();
     RunOnceEvery(10, LED_PERIODIC()); // FIXME periodic in led module
   }
 
   if (sys_time_check_and_ack_timer(modules_datalink_tid)) {
+    PPRZ_PERF_TRACE("telemetry");
     telemetry_periodic();
     modules_datalink_periodic_task(); // FIXME integrate above
 #if defined DATALINK || defined SITL
@@ -193,9 +207,11 @@ void handle_periodic_tasks(void)
   }
 
   if (sys_time_check_and_ack_timer(failsafe_tid)) {
+    PPRZ_PERF_TRACE("failsafe");
     failsafe_check(); // FIXME integrate somewhere else
   }
 
+  PPRZ_PERF_TRACE("periodic_end");
 }
 
 void telemetry_periodic(void)
@@ -269,6 +285,7 @@ void failsafe_check(void)
 
 void main_event(void)
 {
+  PPRZ_PERF_TRACE("event_start");
   modules_mcu_event_task();
   modules_core_event_task();
   modules_sensors_event_task();
@@ -280,4 +297,5 @@ void main_event(void)
   modules_actuators_event_task();
   modules_datalink_event_task();
   modules_default_event_task();
+  PPRZ_PERF_TRACE("event_end");
 }
