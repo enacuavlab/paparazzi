@@ -26,11 +26,14 @@
 #include "modules/benchmark/perf_profil.h"
 #include "mcu_periph/sys_time.h"
 #include "modules/loggers/sdlog_chibios.h"
+#include <hal.h>
+#include <ch.h>
 
 void perf_profil_log(char * msg)
 {
   if (pprzLogFile != -1) {
-    sdLogWriteLog(pprzLogFile, "PPT %s %lu\n", msg, get_sys_time_usec());
+    uint32_t t = RTC2US(STM32_SYSCLK, chSysGetRealtimeCounterX());
+    sdLogWriteLog(pprzLogFile, "PPT %s %lu\n", msg, t);
   }
 }
 
