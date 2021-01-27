@@ -45,6 +45,11 @@
 #include "generated/modules.h"
 #include "subsystems/abi.h"
 
+// define after modules include
+#ifndef PPRZ_PERF_TRACE
+#define PPRZ_PERF_TRACE(_x) {}
+#endif
+
 #include "led.h"
 
 #ifdef USE_NPS
@@ -164,12 +169,17 @@ void init_ap(void)
   // send body_to_imu from here for now
   AbiSendMsgBODY_TO_IMU_QUAT(1, orientationGetQuat_f(&imu.body_to_imu));
 #endif
+
+  PPRZ_PERF_TRACE("init_end");
 }
 
 
 void handle_periodic_tasks_ap(void)
 {
+  PPRZ_PERF_TRACE("periodic_start");
+
   if (sys_time_check_and_ack_timer(modules_sensors_tid)) {
+    PPRZ_PERF_TRACE("sensors");
     modules_sensors_periodic_task();
   }
 
@@ -184,20 +194,24 @@ void handle_periodic_tasks_ap(void)
   //}
 
   if (sys_time_check_and_ack_timer(modules_control_actuators_tid)) {
+    PPRZ_PERF_TRACE("control");
     modules_control_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_default_tid)) {
+    PPRZ_PERF_TRACE("default");
     modules_default_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_mcu_core_tid)) {
+    PPRZ_PERF_TRACE("core");
     modules_mcu_periodic_task();
     modules_core_periodic_task();
     LED_PERIODIC(); // FIXME periodic in led module
   }
 
   if (sys_time_check_and_ack_timer(modules_datalink_tid)) {
+    PPRZ_PERF_TRACE("telemetry");
     reporting_task();
     modules_datalink_periodic_task(); // FIXME integrate above
 #if defined DATALINK || defined SITL
@@ -206,8 +220,11 @@ void handle_periodic_tasks_ap(void)
   }
 
   if (sys_time_check_and_ack_timer(monitor_tid)) {
+    PPRZ_PERF_TRACE("monitor");
     monitor_task();
   }
+
+  PPRZ_PERF_TRACE("periodic_end");
 }
 
 
@@ -291,6 +308,8 @@ void monitor_task(void)
 /*********** EVENT ***********************************************************/
 void event_task_ap(void)
 {
+  PPRZ_PERF_TRACE("event_start");
+
 #ifndef SINGLE_MCU
   /* for SINGLE_MCU done in main_fbw */
   /* event functions for mcu peripherals: i2c, usb_serial.. */
@@ -313,5 +332,6 @@ void event_task_ap(void)
     autopilot_on_rc_frame();
   }
 
+  PPRZ_PERF_TRACE("event_end");
 } /* event_task_ap() */
 
