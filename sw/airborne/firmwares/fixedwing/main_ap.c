@@ -76,6 +76,11 @@ PRINT_CONFIG_MSG_VALUE("USE_BARO_BOARD is TRUE, reading onboard baro: ", BARO_BO
 #endif
 #include "subsystems/abi.h"
 
+// define after modules include
+#ifndef PPRZ_PERF_TRACE
+#define PPRZ_PERF_TRACE(_x) {}
+#endif
+
 #include "led.h"
 
 #ifdef USE_NPS
@@ -148,6 +153,7 @@ tid_t baro_tid;          ///< id for baro_periodic() timer
 
 void init_ap(void)
 {
+  PPRZ_PERF_TRACE("init_start");
 #ifndef SINGLE_MCU /** init done in main_fbw in single MCU */
   mcu_init();
 #endif /* SINGLE_MCU */
@@ -223,34 +229,42 @@ void init_ap(void)
   // send body_to_imu from here for now
   AbiSendMsgBODY_TO_IMU_QUAT(1, orientationGetQuat_f(&imu.body_to_imu));
 #endif
+
+  PPRZ_PERF_TRACE("init_end");
 }
 
 
 void handle_periodic_tasks_ap(void)
 {
+  PPRZ_PERF_TRACE("periodic_start");
 
   if (sys_time_check_and_ack_timer(sensors_tid)) {
+    PPRZ_PERF_TRACE("sensors");
     sensors_task();
   }
 
 #if USE_BARO_BOARD
   if (sys_time_check_and_ack_timer(baro_tid)) {
+    PPRZ_PERF_TRACE("baro");
     baro_periodic();
   }
 #endif
 
 #if USE_GENERATED_AUTOPILOT
   if (sys_time_check_and_ack_timer(attitude_tid)) {
+    PPRZ_PERF_TRACE("ap_gen");
     autopilot_periodic();
   }
 #else
   // static autopilot
   if (sys_time_check_and_ack_timer(navigation_tid)) {
+    PPRZ_PERF_TRACE("ap_static");
     navigation_task();
   }
 
 #ifndef AHRS_TRIGGERED_ATTITUDE_LOOP
   if (sys_time_check_and_ack_timer(attitude_tid)) {
+    PPRZ_PERF_TRACE("attitude");
     attitude_loop();
   }
 #endif
@@ -258,18 +272,22 @@ void handle_periodic_tasks_ap(void)
 #endif
 
   if (sys_time_check_and_ack_timer(modules_tid)) {
+    PPRZ_PERF_TRACE("modules");
     modules_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(monitor_tid)) {
+    PPRZ_PERF_TRACE("monitor");
     monitor_task();
   }
 
   if (sys_time_check_and_ack_timer(telemetry_tid)) {
+    PPRZ_PERF_TRACE("telemetry");
     reporting_task();
     LED_PERIODIC();
   }
 
+  PPRZ_PERF_TRACE("periodic_end");
 }
 
 
@@ -368,6 +386,7 @@ void monitor_task(void)
 /*********** EVENT ***********************************************************/
 void event_task_ap(void)
 {
+  PPRZ_PERF_TRACE("event_start");
 
 #ifndef SINGLE_MCU
   /* for SINGLE_MCU done in main_fbw */
@@ -393,5 +412,6 @@ void event_task_ap(void)
 
   autopilot_event();
 
+  PPRZ_PERF_TRACE("event_end");
 } /* event_task_ap() */
 
