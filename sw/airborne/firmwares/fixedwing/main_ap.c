@@ -49,6 +49,12 @@
 #ifndef PPRZ_PERF_TRACE
 #define PPRZ_PERF_TRACE(_x) {}
 #endif
+#ifndef PPRZ_PERF_EVENT_START
+#define PPRZ_PERF_EVENT_START(_x) {}
+#endif
+#ifndef PPRZ_PERF_EVENT_END
+#define PPRZ_PERF_EVENT_END(_x) {}
+#endif
 
 #include "led.h"
 
@@ -176,14 +182,18 @@ void init_ap(void)
 
 void handle_periodic_tasks_ap(void)
 {
-  PPRZ_PERF_TRACE("periodic_start");
+  bool perf_log = false;
+  //PPRZ_PERF_TRACE("periodic_start");
 
   if (sys_time_check_and_ack_timer(modules_sensors_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("sensors");
     modules_sensors_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_estimation_tid)) {
+    perf_log = true;
+    PPRZ_PERF_TRACE("estimation");
     modules_estimation_periodic_task();
   }
 
@@ -194,16 +204,19 @@ void handle_periodic_tasks_ap(void)
   //}
 
   if (sys_time_check_and_ack_timer(modules_control_actuators_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("control");
     modules_control_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_default_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("default");
     modules_default_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_mcu_core_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("core");
     modules_mcu_periodic_task();
     modules_core_periodic_task();
@@ -211,6 +224,7 @@ void handle_periodic_tasks_ap(void)
   }
 
   if (sys_time_check_and_ack_timer(modules_datalink_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("telemetry");
     reporting_task();
     modules_datalink_periodic_task(); // FIXME integrate above
@@ -220,11 +234,14 @@ void handle_periodic_tasks_ap(void)
   }
 
   if (sys_time_check_and_ack_timer(monitor_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("monitor");
     monitor_task();
   }
 
-  PPRZ_PERF_TRACE("periodic_end");
+  if (perf_log) {
+    PPRZ_PERF_TRACE("periodic_end");
+  }
 }
 
 
@@ -308,7 +325,7 @@ void monitor_task(void)
 /*********** EVENT ***********************************************************/
 void event_task_ap(void)
 {
-  PPRZ_PERF_TRACE("event_start");
+  PPRZ_PERF_EVENT_START();
 
 #ifndef SINGLE_MCU
   /* for SINGLE_MCU done in main_fbw */
@@ -332,6 +349,6 @@ void event_task_ap(void)
     autopilot_on_rc_frame();
   }
 
-  PPRZ_PERF_TRACE("event_end");
+  PPRZ_PERF_EVENT_END();
 } /* event_task_ap() */
 
