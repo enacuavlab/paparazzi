@@ -18,8 +18,6 @@ else:
     exit(1)
 
 time_vector = {
-        "init_start":       (np.zeros(0), np.zeros(0), None),
-        "init_end":         (np.zeros(0), np.zeros(0), None),
         "periodic_start":   (np.zeros(0), np.zeros(0), None),
         "main":             (np.zeros(0), np.zeros(0), None),
         "ap_gen":           (np.zeros(0), np.zeros(0), None),
@@ -53,20 +51,41 @@ with open(data_file) as f:
                 time = int(last_data[2])
                 new_time = int(data[2])
 
-                if not (name in ['init_start', 'init_end', 'periodic_start', 'periodic_end', 'event_start', 'event_end']):
-                    (freq, duty, previous) = time_vector[name]
+                if not (name in ['periodic_start', 'periodic_end', 'event_start', 'event_end']):
+                    (period, duty, previous) = time_vector[name]
                     if previous is None:
-                        time_vector[name] = (freq, duty, time)
+                        time_vector[name] = (period, duty, time)
                     else:
-                        df = time - previous
+                        p = time - previous
                         dt = new_time - time
-                        #print(name, dt, df, time, new_time, previous)
-                        if df < 0:
-                            df = df + 2**32/sysclk
+                        if p < 0:
+                            p = p + 2**32/sysclk
                         time_vector[name] = (
-                                np.append(freq, df),
+                                np.append(period, p),
                                 np.append(duty, dt),
                                 time)
+                elif not (name in ['periodic_start', 'periodic_end']):
+                    split = name.split('_', 1)
+                    base = split[0]
+                    tail = split[1]
+                    if tail == "end":
+                        (period, duty, previous) = time_vector[name]
+                        (_, _, start) = time_vector["{}_start".format(base)]
+                        #print(name, base, tail, previous, start)
+                        if previous is None:
+                            time_vector[name] = (period, duty, time)
+                        elif start is not None:
+                            p = time - previous
+                            dt = new_time - start
+                            #print(name, dt, df, time, new_time, previous)
+                            if p < 0:
+                                p = p + 2**32/sysclk
+                            time_vector[name] = (
+                                    np.append(period, p),
+                                    np.append(duty, dt),
+                                    time)
+                    else: # tail = start
+                        time_vector[name] = (np.zeros(0), np.zeros(0), time)
                 else:
                     pass
 
@@ -75,17 +94,23 @@ with open(data_file) as f:
                 #    time_vector[data[1]] = np.append(time_vector[data[1]], [int(data[2])])
                 #    #print(data[1], data[2], time_vector[data[1]])
             except KeyboardInterrupt:
-                exit(1)
+                print("stop loop by hand")
+                break
             except:
                 print("invalid time or name at line", line)
         else:
             print("invalid data at line:", line)
 
 # print results
+print("name                (samples)\t| period (us) \t[std     ] | freq (Hz)\t| duty (us) \t[std     ] [min     ] [max     ] [nb over]")
 for key in time_vector:
-    (p,d,t) = time_vector[key]
-    if t is not None:
-        print("{:<20}({})\t| period: {:.2f} \t({:.3f}) (f={:.3f})\t| duty: {:.3f} ({:.3f})".format(key, len(p), np.mean(p), np.std(p), 1e6/np.mean(p), np.mean(d), np.std(d)))
+    if not (key in ['periodic_start', 'periodic_end', 'event_start']):
+        (p,d,t) = time_vector[key]
+        if t is not None and len(p) > 1:
+            print("{:<20}({})\t| {:.2f} \t[{:<8.3f}] | {:<8.3f}\t| {:.3f} \t[{:<8.3f}] [{:<8.3f}] [{:<8.3f}] [{:<7d}]".format(key, len(p),
+                np.mean(p), np.std(p), 1e6/np.mean(p),
+                np.mean(d), np.std(d), np.min(d), np.max(d),
+                (d > np.mean(p)).sum()))
 
     if False:
         i = np.arange(0, len(d))
