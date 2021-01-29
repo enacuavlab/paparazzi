@@ -27,11 +27,15 @@
 #define PERF_PROFIL_H
 
 extern void perf_profil_log(char * msg);
+extern void perf_profil_event_start(void);
+extern void perf_profil_event_end(void);
 
 #ifdef PPRZ_PERF_TRACE
 #error "PPRZ_PERF_TRACE already defined when loading perf_profil module"
 #endif
 
 #define PPRZ_PERF_TRACE(_x) perf_profil_log(_x)
+#define PPRZ_PERF_EVENT_START() perf_profil_event_start()
+#define PPRZ_PERF_EVENT_END() perf_profil_event_end()
 
 #endif  // PERF_PROFIL_H

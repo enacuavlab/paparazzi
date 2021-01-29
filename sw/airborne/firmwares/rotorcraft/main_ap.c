@@ -78,6 +78,12 @@ PRINT_CONFIG_MSG_VALUE("USE_BARO_BOARD is TRUE, reading onboard baro: ", BARO_BO
 #ifndef PPRZ_PERF_TRACE
 #define PPRZ_PERF_TRACE(_x) {}
 #endif
+#ifndef PPRZ_PERF_EVENT_START
+#define PPRZ_PERF_EVENT_START(_x) {}
+#endif
+#ifndef PPRZ_PERF_EVENT_END
+#define PPRZ_PERF_EVENT_END(_x) {}
+#endif
 
 // needed for stop-gap measure waypoints_localize_all()
 #include "subsystems/navigation/waypoints.h"
@@ -208,9 +214,11 @@ void main_init(void)
 
 void handle_periodic_tasks(void)
 {
-  PPRZ_PERF_TRACE("periodic_start");
+  bool perf_log = false;
+  //PPRZ_PERF_TRACE("periodic_start");
 
   if (sys_time_check_and_ack_timer(main_periodic_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("main");
     main_periodic();
 #if PERIODIC_FREQUENCY == MODULES_FREQUENCY
@@ -223,33 +231,41 @@ void handle_periodic_tasks(void)
   }
   /* separate timer for modules, since it has a different freq than main */
   if (sys_time_check_and_ack_timer(modules_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("modules");
     modules_periodic_task();
 #endif
   }
   if (sys_time_check_and_ack_timer(radio_control_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("radio");
     radio_control_periodic_task();
   }
   if (sys_time_check_and_ack_timer(failsafe_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("failsafe");
     failsafe_check();
   }
   if (sys_time_check_and_ack_timer(electrical_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("electrical");
     electrical_periodic();
   }
   if (sys_time_check_and_ack_timer(telemetry_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("telemetry");
     telemetry_periodic();
   }
 #if USE_BARO_BOARD
   if (sys_time_check_and_ack_timer(baro_tid)) {
+    perf_log = true;
     PPRZ_PERF_TRACE("baro");
     baro_periodic();
   }
 #endif
-  PPRZ_PERF_TRACE("periodic_end");
+  if (perf_log) {
+    PPRZ_PERF_TRACE("periodic_end");
+  }
 }
 
 void main_periodic(void)
@@ -353,7 +369,7 @@ void failsafe_check(void)
 
 void main_event(void)
 {
-  PPRZ_PERF_TRACE("event_start");
+  PPRZ_PERF_EVENT_START();
   /* event functions for mcu peripherals: i2c, usb_serial.. */
   mcu_event();
 
@@ -368,5 +384,5 @@ void main_event(void)
   autopilot_event();
 
   modules_event_task();
-  PPRZ_PERF_TRACE("event_end");
+  PPRZ_PERF_EVENT_END();
 }
