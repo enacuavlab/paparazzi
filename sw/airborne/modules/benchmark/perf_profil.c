@@ -41,6 +41,7 @@ void perf_profil_log(char * msg)
 #define PERF_PROFIL_EVENT_MAX 1000
 #endif
 static uint32_t nb_event = 0;
+static uint32_t nb_over = 0;
 static uint32_t t_start = 0;
 static uint32_t dt_start = 0;
 static uint32_t dt_end = 0;
@@ -58,7 +59,7 @@ void perf_profil_event_start(void)
 void perf_profil_event_end(void)
 {
   dt_end = chSysGetRealtimeCounterX();
-  nb_event += 1;
+  nb_event++;
   uint32_t dt = dt_end - dt_start;
   if (dt < dt_min) {
     dt_min = dt;
@@ -66,13 +67,17 @@ void perf_profil_event_end(void)
   if (dt > dt_max) {
     dt_max = dt;
   }
+  if (dt > (1000000U/CH_CFG_ST_FREQUENCY)) {
+    nb_over++; // dt (in us) is over the polling inverval (1/CH_CFG_ST_FREQUENCY in sec)
+  }
   if (nb_event >= PERF_PROFIL_EVENT_MAX) {
-    sdLogWriteLog(pprzLogFile, "PPT event %lu %lu %lu %lu\n",
-        nb_event,
+    sdLogWriteLog(pprzLogFile, "PPT event %lu %lu %lu %lu %lu\n",
+        nb_event, nb_over,
         RTC2US(STM32_SYSCLK, dt_end - t_start) / nb_event,
         RTC2US(STM32_SYSCLK, dt_min),
         RTC2US(STM32_SYSCLK, dt_max));
     nb_event = 0;
+    nb_over = 0;
     dt_min = 0xFFFFFFFF;
     dt_max = 0;
   }
