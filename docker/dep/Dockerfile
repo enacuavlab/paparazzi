@@ -14,9 +14,15 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y software
 RUN add-apt-repository ppa:paparazzi-uav/ppa
 RUN add-apt-repository ppa:team-gcc-arm-embedded/ppa
 
+# setup tzdata
+ENV TZ=Etc/UTC
+RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata
+
 # install paparazzi-dev which pull in the dependencies
 # also install cross compiler and some stuff for X
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+RUN DEBIAN_FRONTEND=noninteractive \
+    apt-get update && apt-get install -y \
     cmake \
     gcc-arm-embedded \
     libcanberra-gtk-module \
