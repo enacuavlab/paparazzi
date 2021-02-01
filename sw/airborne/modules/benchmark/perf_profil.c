@@ -67,13 +67,13 @@ void perf_profil_event_end(void)
   if (dt > dt_max) {
     dt_max = dt;
   }
-  if (dt > (1000000U/CH_CFG_ST_FREQUENCY)) {
-    nb_over++; // dt (in us) is over the polling inverval (1/CH_CFG_ST_FREQUENCY in sec)
+  if (dt > US2RTC(STM32_SYSCLK, (1000000U/CH_CFG_ST_FREQUENCY))) {
+    nb_over++; // dt is over the polling inverval (1/CH_CFG_ST_FREQUENCY sec)
   }
   if (nb_event >= PERF_PROFIL_EVENT_MAX) {
-    sdLogWriteLog(pprzLogFile, "PPT event %lu %lu %lu %lu %lu\n",
+    sdLogWriteLog(pprzLogFile, "PPTE event %lu %lu %lu %lu %lu\n",
         nb_event, nb_over,
-        RTC2US(STM32_SYSCLK, dt_end - t_start) / nb_event,
+        RTC2US(STM32_SYSCLK, dt_end - t_start),
         RTC2US(STM32_SYSCLK, dt_min),
         RTC2US(STM32_SYSCLK, dt_max));
     nb_event = 0;

@@ -39,6 +39,8 @@ time_vector = {
 last_time = None
 last_data = None
 
+event_vector = None
+
 with open(data_file) as f:
     for line in f:
         data = line.split()
@@ -51,7 +53,7 @@ with open(data_file) as f:
                 time = int(last_data[2])
                 new_time = int(data[2])
 
-                if not (name in ['periodic_start', 'periodic_end', 'event_start', 'event_end']):
+                if not (name in ['periodic_start', 'periodic_end', 'event_start', 'event_end', 'event']):
                     (period, duty, previous) = time_vector[name]
                     if previous is None:
                         time_vector[name] = (period, duty, time)
@@ -64,7 +66,7 @@ with open(data_file) as f:
                                 np.append(period, p),
                                 np.append(duty, dt),
                                 time)
-                elif not (name in ['periodic_start', 'periodic_end']):
+                elif not (name in ['periodic_start', 'periodic_end', 'event']):
                     split = name.split('_', 1)
                     base = split[0]
                     tail = split[1]
@@ -98,16 +100,40 @@ with open(data_file) as f:
                 break
             except:
                 print("invalid time or name at line", line)
+        elif len(data) == 7 and data[0] == 'PPTE':
+            try:
+                name = data[1]
+                if name == 'event':
+                    nb_sample = int(data[2])
+                    nb_over = int(data[3])
+                    dt = float(data[4])
+                    dt_min = float(data[5])
+                    dt_max = float(data[6])
+                    if event_vector is None:
+                        event_vector = (np.array(nb_sample), np.array(nb_over), np.array(dt / float(nb_sample)), np.array(dt_min), np.array(dt_max))
+                    else:
+                        event_vector = (
+                                np.append(event_vector[0], nb_sample),
+                                np.append(event_vector[1], nb_over),
+                                np.append(event_vector[2], dt / float(nb_sample)),
+                                np.append(event_vector[3], dt_min),
+                                np.append(event_vector[4], dt_max)
+                                )
+            except KeyboardInterrupt:
+                print("stop loop by hand")
+                break
+            except:
+                print("invalid event at line", line)
         else:
             print("invalid data at line:", line)
 
 # print results
-print("name                (samples)\t| period (us) \t[std     ] | freq (Hz)\t| duty (us) \t[std     ] [min     ] [max     ] [nb over]")
+print("name                (samples)\t| period (us) \t[std     ] | freq (Hz)\t| duty (us) \t[std     ] [min     ] [max     ] [nb over ]")
 for key in time_vector:
     if not (key in ['periodic_start', 'periodic_end', 'event_start']):
         (p,d,t) = time_vector[key]
         if t is not None and len(p) > 1:
-            print("{:<20}({})\t| {:.2f} \t[{:<8.3f}] | {:<8.3f}\t| {:.3f} \t[{:<8.3f}] [{:<8.3f}] [{:<8.3f}] [{:<7d}]".format(key, len(p),
+            print("{:<20}({})\t| {:.2f} \t[{:<8.3f}] | {:<8.3f}\t| {:.3f} \t[{:<8.3f}] [{:<8.3f}] [{:<8.3f}] [{:<8d}]".format(key, len(p),
                 np.mean(p), np.std(p), 1e6/np.mean(p),
                 np.mean(d), np.std(d), np.min(d), np.max(d),
                 (d > np.mean(p)).sum()))
@@ -125,4 +151,12 @@ for key in time_vector:
         plt.ylabel('usec')
         plt.title('{} duty'.format(key))
         plt.show()
+
+if event_vector is not None:
+    print("{:<20}({}*{})\t| {:.2f} \t[{:<8.3f}] | {:<8.3f}\t| {} \t[{:<8}] [{:<8.3f}] [{:<8.3f}] [{:<8d}]".format('event',
+        len(event_vector[0]), event_vector[0][0],
+        np.mean(1000*event_vector[2]), np.std(1000*event_vector[2]), 1e6/np.mean(1000*event_vector[2]),
+        'N/A\t', 'N/A', np.min(event_vector[3]), np.max(event_vector[4]),
+        np.sum(event_vector[1])))
+
 
