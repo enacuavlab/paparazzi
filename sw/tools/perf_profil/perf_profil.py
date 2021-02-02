@@ -155,7 +155,7 @@ for key in time_vector:
 if event_vector is not None:
     print("{:<20}({}*{})\t| {:.2f} \t[{:<8.3f}] | {:<8.3f}\t| {} \t[{:<8}] [{:<8.3f}] [{:<8.3f}] [{:<8d}]".format('event',
         len(event_vector[0]), event_vector[0][0],
-        np.mean(1000*event_vector[2]), np.std(event_vector[2]), 1e6/np.mean(event_vector[2]),
+        np.mean(event_vector[2]), np.std(event_vector[2]), 1e6/np.mean(event_vector[2]),
         'N/A\t', 'N/A', np.min(event_vector[3]), np.max(event_vector[4]),
         np.sum(event_vector[1])))
 
