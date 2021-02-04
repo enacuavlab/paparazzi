@@ -46,8 +46,11 @@
 #include "subsystems/abi.h"
 
 // define after modules include
-#ifndef PPRZ_PERF_TRACE
-#define PPRZ_PERF_TRACE(_x) {}
+#ifndef PPRZ_PERF_TRACE_TIME
+#define PPRZ_PERF_TRACE_TIME(_x, _t) {}
+#endif
+#ifndef PPRZ_PERF_TIME
+#define PPRZ_PERF_TIME() {}
 #endif
 #ifndef PPRZ_PERF_EVENT_START
 #define PPRZ_PERF_EVENT_START(_x) {}
@@ -183,17 +186,26 @@ void init_ap(void)
 void handle_periodic_tasks_ap(void)
 {
   bool perf_log = false;
+  uint32_t s_t = 0;
+  uint32_t e_t = 0;
+  uint32_t c_t = 0;
+  uint32_t d_t = 0;
+  uint32_t mc_t = 0;
+  uint32_t tm_t = 0;
+  uint32_t mon_t = 0;
   //PPRZ_PERF_TRACE("periodic_start");
 
   if (sys_time_check_and_ack_timer(modules_sensors_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("sensors");
+    //PPRZ_PERF_TRACE("sensors");
+    s_t = PPRZ_PERF_TIME();
     modules_sensors_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_estimation_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("estimation");
+    e_t = PPRZ_PERF_TIME();
+    //PPRZ_PERF_TRACE("estimation");
     modules_estimation_periodic_task();
   }
 
@@ -205,19 +217,22 @@ void handle_periodic_tasks_ap(void)
 
   if (sys_time_check_and_ack_timer(modules_control_actuators_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("control");
+    c_t = PPRZ_PERF_TIME();
+    //PPRZ_PERF_TRACE("control");
     modules_control_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_default_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("default");
+    d_t = PPRZ_PERF_TIME();
+    //PPRZ_PERF_TRACE("default");
     modules_default_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_mcu_core_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("core");
+    mc_t = PPRZ_PERF_TIME();
+    //PPRZ_PERF_TRACE("core");
     modules_mcu_periodic_task();
     modules_core_periodic_task();
     LED_PERIODIC(); // FIXME periodic in led module
@@ -225,7 +240,8 @@ void handle_periodic_tasks_ap(void)
 
   if (sys_time_check_and_ack_timer(modules_datalink_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("telemetry");
+    tm_t = PPRZ_PERF_TIME();
+    //PPRZ_PERF_TRACE("telemetry");
     reporting_task();
     modules_datalink_periodic_task(); // FIXME integrate above
 #if defined DATALINK || defined SITL
@@ -235,12 +251,35 @@ void handle_periodic_tasks_ap(void)
 
   if (sys_time_check_and_ack_timer(monitor_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("monitor");
+    //PPRZ_PERF_TRACE("monitor");
+    mon_t = PPRZ_PERF_TIME();
     monitor_task();
   }
 
+  uint32_t end = PPRZ_PERF_TIME();
+  if (s_t) {
+    PPRZ_PERF_TRACE_TIME("sensors", s_t);
+  }
+  if (e_t) {
+    PPRZ_PERF_TRACE_TIME("estimation", e_t);
+  }
+  if (c_t) {
+    PPRZ_PERF_TRACE_TIME("control", c_t);
+  }
+  if (d_t) {
+    PPRZ_PERF_TRACE_TIME("default", d_t);
+  }
+  if (mc_t) {
+    PPRZ_PERF_TRACE_TIME("core", m_t);
+  }
+  if (tm_t) {
+    PPRZ_PERF_TRACE_TIME("telemetry", tm_t);
+  }
+  if (mon_t) {
+    PPRZ_PERF_TRACE_TIME("monitor", mon_t);
+  }
   if (perf_log) {
-    PPRZ_PERF_TRACE("periodic_end");
+    PPRZ_PERF_TRACE_TIME("periodic_end", end);
   }
 }
 

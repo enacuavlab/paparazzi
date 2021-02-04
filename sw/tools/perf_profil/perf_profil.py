@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 
 sysclk = 216 # MHz
 
+def rtc2us(t):
+    return float(((int(t) - 1) / sysclk) + 1)
+
 if len(sys.argv) == 2:
     data_file = sys.argv[1]
 else:
@@ -61,10 +64,10 @@ with open(data_file) as f:
                         p = time - previous
                         dt = new_time - time
                         if p < 0:
-                            p = p + 2**32/sysclk
+                            p = p + 2**32
                         time_vector[name] = (
-                                np.append(period, p),
-                                np.append(duty, dt),
+                                np.append(period, rtc2us(p)),
+                                np.append(duty, rtc2us(dt)),
                                 time)
                 elif not (name in ['periodic_start', 'periodic_end', 'event']):
                     split = name.split('_', 1)
@@ -81,10 +84,10 @@ with open(data_file) as f:
                             dt = new_time - start
                             #print(name, dt, df, time, new_time, previous)
                             if p < 0:
-                                p = p + 2**32/sysclk
+                                p = p + 2**32
                             time_vector[name] = (
-                                    np.append(period, p),
-                                    np.append(duty, dt),
+                                    np.append(period, rtc2us(p)),
+                                    np.append(duty, rtc2us(dt)),
                                     time)
                     else: # tail = start
                         time_vector[name] = (np.zeros(0), np.zeros(0), time)
@@ -106,9 +109,9 @@ with open(data_file) as f:
                 if name == 'event':
                     nb_sample = int(data[2])
                     nb_over = int(data[3])
-                    dt = float(data[4])
-                    dt_min = float(data[5])
-                    dt_max = float(data[6])
+                    dt = rtc2us(data[4])
+                    dt_min = rtc2us(data[5])
+                    dt_max = rtc2us(data[6])
                     if event_vector is None:
                         event_vector = (np.array(nb_sample), np.array(nb_over), np.array(dt / float(nb_sample)), np.array(dt_min), np.array(dt_max))
                     else:

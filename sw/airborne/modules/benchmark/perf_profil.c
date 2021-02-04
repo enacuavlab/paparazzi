@@ -29,10 +29,19 @@
 #include <hal.h>
 #include <ch.h>
 
+// RTC2US(STM32_SYSCLK, chSysGetRealtimeCounterX)
+
 void perf_profil_log(char * msg)
 {
   if (pprzLogFile != -1) {
-    uint32_t t = RTC2US(STM32_SYSCLK, chSysGetRealtimeCounterX());
+    uint32_t t = chSysGetRealtimeCounterX();
+    sdLogWriteLog(pprzLogFile, "PPT %s %lu\n", msg, t);
+  }
+}
+
+void perf_profil_log_time(char * msg, uint32_t t)
+{
+  if (pprzLogFile != -1) {
     sdLogWriteLog(pprzLogFile, "PPT %s %lu\n", msg, t);
   }
 }
@@ -73,9 +82,9 @@ void perf_profil_event_end(void)
   if (nb_event >= PERF_PROFIL_EVENT_MAX) {
     sdLogWriteLog(pprzLogFile, "PPTE event %lu %lu %lu %lu %lu\n",
         nb_event, nb_over,
-        RTC2US(STM32_SYSCLK, dt_end - t_start),
-        RTC2US(STM32_SYSCLK, dt_min),
-        RTC2US(STM32_SYSCLK, dt_max));
+        dt_end - t_start,
+        dt_min,
+        dt_max);
     nb_event = 0;
     nb_over = 0;
     dt_min = 0xFFFFFFFF;
