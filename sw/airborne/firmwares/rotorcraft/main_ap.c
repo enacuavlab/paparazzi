@@ -75,8 +75,11 @@ PRINT_CONFIG_MSG_VALUE("USE_BARO_BOARD is TRUE, reading onboard baro: ", BARO_BO
 #include "subsystems/abi.h"
 
 // define after modules include
-#ifndef PPRZ_PERF_TRACE
-#define PPRZ_PERF_TRACE(_x) {}
+#ifndef PPRZ_PERF_TRACE_TIME
+#define PPRZ_PERF_TRACE_TIME(_x, _t) {}
+#endif
+#ifndef PPRZ_PERF_TIME
+#define PPRZ_PERF_TIME() {}
 #endif
 #ifndef PPRZ_PERF_EVENT_START
 #define PPRZ_PERF_EVENT_START(_x) {}
@@ -128,7 +131,6 @@ tid_t baro_tid;          ///< id for baro_periodic() timer
 
 void main_init(void)
 {
-  PPRZ_PERF_TRACE("init_start");
   mcu_init();
 
 #if defined(PPRZ_TRIG_INT_COMPR_FLASH)
@@ -209,62 +211,102 @@ void main_init(void)
   // Do a failsafe check first
   failsafe_check();
 
-  PPRZ_PERF_TRACE("init_end");
 }
 
 void handle_periodic_tasks(void)
 {
   bool perf_log = false;
+  uint32_t main_t = 0;
+  uint32_t msync_t = 0;
+  uint32_t m_t = 0;
+  uint32_t r_t = 0;
+  uint32_t f_t = 0;
+  uint32_t e_t = 0;
+  uint32_t b_t = 0;
+  uint32_t tm_t = 0;
   //PPRZ_PERF_TRACE("periodic_start");
 
   if (sys_time_check_and_ack_timer(main_periodic_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("main");
+    //PPRZ_PERF_TRACE("main");
+    main_t = PPRZ_PERF_TIME();
     main_periodic();
 #if PERIODIC_FREQUENCY == MODULES_FREQUENCY
     /* Use the main periodc freq timer for modules if the freqs are the same
      * This is mainly useful for logging each step.
      */
-    PPRZ_PERF_TRACE("modules_sync");
+    //PPRZ_PERF_TRACE("modules_sync");
+    msync_t = PPRZ_PERF_TIME();
     modules_periodic_task();
 #else
   }
   /* separate timer for modules, since it has a different freq than main */
   if (sys_time_check_and_ack_timer(modules_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("modules");
+    //PPRZ_PERF_TRACE("modules");
+    m_t = PPRZ_PERF_TIME();
     modules_periodic_task();
 #endif
   }
   if (sys_time_check_and_ack_timer(radio_control_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("radio");
+    //PPRZ_PERF_TRACE("radio");
+    r_t = PPRZ_PERF_TIME();
     radio_control_periodic_task();
   }
   if (sys_time_check_and_ack_timer(failsafe_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("failsafe");
+    //PPRZ_PERF_TRACE("failsafe");
+    f_t = PPRZ_PERF_TIME();
     failsafe_check();
   }
   if (sys_time_check_and_ack_timer(electrical_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("electrical");
+    //PPRZ_PERF_TRACE("electrical");
+    e_t = PPRZ_PERF_TIME();
     electrical_periodic();
   }
   if (sys_time_check_and_ack_timer(telemetry_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("telemetry");
+    //PPRZ_PERF_TRACE("telemetry");
+    tm_t = PPRZ_PERF_TIME();
     telemetry_periodic();
   }
 #if USE_BARO_BOARD
   if (sys_time_check_and_ack_timer(baro_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("baro");
+    //PPRZ_PERF_TRACE("baro");
+    b_t = PPRZ_PERF_TIME()
     baro_periodic();
   }
 #endif
+  uint32_t end = PPRZ_PERF_TIME();
+  if (main_t) {
+    PPRZ_PERF_TRACE_TIME("main", main_t);
+  }
+  if (msync_t) {
+    PPRZ_PERF_TRACE_TIME("modules_sync", msync_t);
+  }
+  if (m_t) {
+    PPRZ_PERF_TRACE_TIME("modules", m_t);
+  }
+  if (r_t) {
+    PPRZ_PERF_TRACE_TIME("radio", r_t);
+  }
+  if (f_t) {
+    PPRZ_PERF_TRACE_TIME("failsafe", f_t);
+  }
+  if (e_t) {
+    PPRZ_PERF_TRACE_TIME("electrical", e_t);
+  }
+  if (tm_t) {
+    PPRZ_PERF_TRACE_TIME("telemetry", tm_t);
+  }
+  if (b_t) {
+    PPRZ_PERF_TRACE_TIME("baro", b_t);
+  }
   if (perf_log) {
-    PPRZ_PERF_TRACE("periodic_end");
+    PPRZ_PERF_TRACE_TIME("periodic_end", end);
   }
 }
 

@@ -77,8 +77,11 @@ PRINT_CONFIG_MSG_VALUE("USE_BARO_BOARD is TRUE, reading onboard baro: ", BARO_BO
 #include "subsystems/abi.h"
 
 // define after modules include
-#ifndef PPRZ_PERF_TRACE
-#define PPRZ_PERF_TRACE(_x) {}
+#ifndef PPRZ_PERF_TRACE_TIME
+#define PPRZ_PERF_TRACE_TIME(_x, _t) {}
+#endif
+#ifndef PPRZ_PERF_TIME
+#define PPRZ_PERF_TIME() {}
 #endif
 #ifndef PPRZ_PERF_EVENT_START
 #define PPRZ_PERF_EVENT_START(_x) {}
@@ -243,18 +246,28 @@ void init_ap(void)
 void handle_periodic_tasks_ap(void)
 {
   bool perf_log = false;
+  uint32_t s_t = 0;
+  uint32_t b_t = 0;
+  uint32_t aps_t = 0;
+  uint32_t apg_t = 0;
+  uint32_t att_t = 0;
+  uint32_t m_t = 0;
+  uint32_t mon_t = 0;
+  uint32_t tm_t = 0;
   //PPRZ_PERF_TRACE("periodic_start");
 
   if (sys_time_check_and_ack_timer(sensors_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("sensors");
+    //PPRZ_PERF_TRACE("sensors");
+    s_t = PPRZ_PERF_TIME();
     sensors_task();
   }
 
 #if USE_BARO_BOARD
   if (sys_time_check_and_ack_timer(baro_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("baro");
+    //PPRZ_PERF_TRACE("baro");
+    b_t = PPRZ_PERF_TIME();
     baro_periodic();
   }
 #endif
@@ -262,21 +275,24 @@ void handle_periodic_tasks_ap(void)
 #if USE_GENERATED_AUTOPILOT
   if (sys_time_check_and_ack_timer(attitude_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("ap_gen");
+    //PPRZ_PERF_TRACE("ap_gen");
+    apg_t = PPRZ_PERF_TIME();
     autopilot_periodic();
   }
 #else
   // static autopilot
   if (sys_time_check_and_ack_timer(navigation_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("ap_static");
+    //PPRZ_PERF_TRACE("ap_static");
+    aps_t = PPRZ_PERF_TIME();
     navigation_task();
   }
 
 #ifndef AHRS_TRIGGERED_ATTITUDE_LOOP
   if (sys_time_check_and_ack_timer(attitude_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("attitude");
+    //PPRZ_PERF_TRACE("attitude");
+    att_t = PPRZ_PERF_TIME();
     attitude_loop();
   }
 #endif
@@ -285,25 +301,53 @@ void handle_periodic_tasks_ap(void)
 
   if (sys_time_check_and_ack_timer(modules_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("modules");
+    //PPRZ_PERF_TRACE("modules");
+    m_t = PPRZ_PERF_TIME();
     modules_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(monitor_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("monitor");
+    //PPRZ_PERF_TRACE("monitor");
+    mon_t = PPRZ_PERF_TIME();
     monitor_task();
   }
 
   if (sys_time_check_and_ack_timer(telemetry_tid)) {
     perf_log = true;
-    PPRZ_PERF_TRACE("telemetry");
+    //PPRZ_PERF_TRACE("telemetry");
+    tm_t = PPRZ_PERF_TIME();
     reporting_task();
     LED_PERIODIC();
   }
 
+  uint32_t end = PPRZ_PERF_TIME();
+  if (s_t) {
+    PPRZ_PERF_TRACE_TIME("sensors", s_t);
+  }
+  if (b_t) {
+    PPRZ_PERF_TRACE_TIME("baro", b_t);
+  }
+  if (apg_t) {
+    PPRZ_PERF_TRACE_TIME("ap_gen", apg_t);
+  }
+  if (aps_t) {
+    PPRZ_PERF_TRACE_TIME("ap_static", aps_t);
+  }
+  if (att_t) {
+    PPRZ_PERF_TRACE_TIME("attitude", att_t);
+  }
+  if (m_t) {
+    PPRZ_PERF_TRACE_TIME("modules", m_t);
+  }
+  if (mon_t) {
+    PPRZ_PERF_TRACE_TIME("monitor", mon_t);
+  }
+  if (tm_t) {
+    PPRZ_PERF_TRACE_TIME("telemetry", tm_t);
+  }
   if (perf_log) {
-    PPRZ_PERF_TRACE("periodic_end");
+    PPRZ_PERF_TRACE_TIME("periodic_end", end);
   }
 }
 

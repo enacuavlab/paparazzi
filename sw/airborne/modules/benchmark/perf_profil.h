@@ -26,7 +26,10 @@
 #ifndef PERF_PROFIL_H
 #define PERF_PROFIL_H
 
+#include "std.h"
+
 extern void perf_profil_log(char * msg);
+extern void perf_profil_log_time(char * msg, uint32_t t);
 extern void perf_profil_event_start(void);
 extern void perf_profil_event_end(void);
 
@@ -35,7 +38,9 @@ extern void perf_profil_event_end(void);
 #endif
 
 #define PPRZ_PERF_TRACE(_x) perf_profil_log(_x)
+#define PPRZ_PERF_TRACE_TIME(_x, _t) perf_profil_log_time(_x, _t)
 #define PPRZ_PERF_EVENT_START() perf_profil_event_start()
 #define PPRZ_PERF_EVENT_END() perf_profil_event_end()
+#define PPRZ_PERF_TIME() chSysGetRealtimeCounterX()
 
 #endif  // PERF_PROFIL_H
