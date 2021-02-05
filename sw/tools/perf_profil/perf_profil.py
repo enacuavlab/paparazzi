@@ -131,15 +131,15 @@ with open(data_file) as f:
             print("invalid data at line:", line)
 
 # print results
-print("name                (samples)\t| period (us) \t[std     ] | freq (Hz)\t| duty (us) \t[std     ] [min     ] [max     ] [nb over ]")
+print("name                (samples)\t| period (us) \t[std     ] | freq (Hz)\t| duty (us) \t[std     ] [min     ] [max     ] [nb over ] [%       ]")
 for key in time_vector:
     if not (key in ['periodic_start', 'periodic_end', 'event_start']):
         (p,d,t) = time_vector[key]
         if t is not None and len(p) > 1:
-            print("{:<20}({})\t| {:.2f} \t[{:<8.3f}] | {:<8.3f}\t| {:.3f} \t[{:<8.3f}] [{:<8.3f}] [{:<8.3f}] [{:<8d}]".format(key, len(p),
+            print("{:<20}({})\t| {:.2f} \t[{:<8.3f}] | {:<8.3f}\t| {:.3f} \t[{:<8.3f}] [{:<8.3f}] [{:<8.3f}] [{:<8d}] [{:<8.4f}]".format(key, len(p),
                 np.mean(p), np.std(p), 1e6/np.mean(p),
                 np.mean(d), np.std(d), np.min(d), np.max(d),
-                (d > np.mean(p)).sum()))
+                (d > np.mean(p)).sum(), 100.*np.mean(d)/np.mean(p)))
 
     if False:
         i = np.arange(0, len(d))
@@ -156,10 +156,10 @@ for key in time_vector:
         plt.show()
 
 if event_vector is not None:
-    print("{:<20}({}*{})\t| {:.2f} \t[{:<8.3f}] | {:<8.3f}\t| {} \t[{:<8}] [{:<8.3f}] [{:<8.3f}] [{:<8d}]".format('event',
+    print("{:<20}({}*{})\t| {:.2f} \t[{:<8.3f}] | {:<8.3f}\t| {} \t[{:<8}] [{:<8.3f}] [{:<8.3f}] [{:<8d}] [{:<8}]".format('event',
         len(event_vector[0]), event_vector[0][0],
         np.mean(event_vector[2]), np.std(event_vector[2]), 1e6/np.mean(event_vector[2]),
         'N/A\t', 'N/A', np.min(event_vector[3]), np.max(event_vector[4]),
-        np.sum(event_vector[1])))
+        np.sum(event_vector[1]), 'N/A'))
 
 
