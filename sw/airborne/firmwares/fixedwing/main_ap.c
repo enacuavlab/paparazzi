@@ -50,7 +50,7 @@
 #define PPRZ_PERF_TRACE_TIME(_x, _t) {}
 #endif
 #ifndef PPRZ_PERF_TIME
-#define PPRZ_PERF_TIME() {}
+#define PPRZ_PERF_TIME() 0
 #endif
 #ifndef PPRZ_PERF_EVENT_START
 #define PPRZ_PERF_EVENT_START(_x) {}
@@ -179,7 +179,6 @@ void init_ap(void)
   AbiSendMsgBODY_TO_IMU_QUAT(1, orientationGetQuat_f(&imu.body_to_imu));
 #endif
 
-  PPRZ_PERF_TRACE("init_end");
 }
 
 
