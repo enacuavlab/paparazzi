@@ -69,6 +69,7 @@ parser.add_argument('-cp', '--command_port', dest='command_port', type=int, defa
 parser.add_argument('-v', '--verbose', dest='verbose', action='store_true', help="display debug messages")
 parser.add_argument('-f', '--freq', dest='freq', default=10, type=int, help="transmit frequency")
 parser.add_argument('-gr', '--ground_ref', dest='ground_ref', action='store_true', help="also send the GROUND_REF message")
+parser.add_argument('-a', '--ahrs', dest='ahrs', action='store_true', help="also send the REMOTE_AHRS_QUAT message")
 parser.add_argument('-vs', '--vel_samples', dest='vel_samples', default=4, type=int, help="amount of samples to compute velocity (should be greater than 2)")
 args = parser.parse_args()
 
@@ -170,6 +171,20 @@ def receiveRigidBodyList( rigidBodyList, stamp ):
             gr['rate'] = [ 0., 0., 0. ]
             gr['timestamp'] = stamp
             ivy.send(gr)
+
+        # send REMOTE_AHRS_QUAT message if needed
+        if args.ahrs:
+            ahrs = PprzMessage("datalink", "REMOTE_AHRS_QUAT")
+            ahrs['qi'] = quat[3]
+            ahrs['qx'] = quat[0]
+            ahrs['qy'] = quat[1]
+            ahrs['qz'] = quat[2]
+            ahrs['p'] = 0. # not computed
+            ahrs['q'] = 0. # not computed
+            ahrs['r'] = 0. # not computed
+            ahrs['flag'] = 3 # update attitude and heading
+            ahrs['ac_id'] = id_dict[i]
+            ivy.send(ahrs)
 
 
 
