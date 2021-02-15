@@ -10,6 +10,7 @@
 
     <module name="radio_control"  type="datalink"/>
     <module name="telemetry"      type="transparent_udp"/>
+    <module name="ahrs"           type="datalink"/>
     <module name="gps"            type="datalink"/>
     <module name="ins"            type="gps_passthrough">
       <configure name="USE_MAGNETOMETER" value="FALSE"/>

@@ -1,0 +1,42 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="ahrs_datalink" dir="ahrs">
+  <doc>
+    <description>
+      AHRS solution is provided by a PPRZLINK datalink message.
+      It can come from companion computer or a motion capture system.
+    </description>
+  </doc>
+  <autoload name="ahrs_sim"/>
+  <header>
+    <file name="ahrs.h" dir="subsystems"/>
+  </header>
+  <datalink message="REMOTE_AHRS_QUAT" fun="ahrs_datalink_parse_quat(buf)"/>
+  <datalink message="REMOTE_AHRS_EULER" fun="ahrs_datalink_parse_eulers(buf)"/>
+  <makefile target="!sim|fbw">
+    <define name="USE_AHRS"/>
+    <define name="AHRS_TYPE_H" value="modules/ahrs/ahrs_datalink.h" type="string"/>
+    <file name="ahrs.c" dir="subsystems"/>
+    <file name="ahrs_datalink.c"/>
+    <raw>
+ifdef SECONDARY_AHRS
+ifneq (,$(findstring $(SECONDARY_AHRS), datalink))
+# this is the secondary AHRS
+$(TARGET).CFLAGS += -DAHRS_SECONDARY_TYPE_H=\"modules/ahrs/ahrs_datalink.h\"
+$(TARGET).CFLAGS += -DSECONDARY_AHRS=ahrs_datalink
+else
+# this is the primary AHRS
+$(TARGET).CFLAGS += -DAHRS_TYPE_H=\"modules/ahrs/ahrs_datalink.h\"
+$(TARGET).CFLAGS += -DPRIMARY_AHRS=ahrs_datalink
+endif
+else
+# plain old single AHRS usage
+$(TARGET).CFLAGS += -DAHRS_TYPE_H=\"modules/ahrs/ahrs_datalink.h\"
+endif
+    </raw>
+    <test>
+      <define name="PRIMARY_AHRS" value="ahrs_datalink"/>
+      <define name="AHRS_TYPE_H" value="modules/ahrs/ahrs_datalilnk.h" type="string"/>
+    </test>
+  </makefile>
+</module>
