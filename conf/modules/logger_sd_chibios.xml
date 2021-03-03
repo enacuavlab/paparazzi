@@ -19,6 +19,7 @@
     <file name="sdlog_chibios.h" />
   </header>
   <init fun="sdlog_chibios_init()"/>
+  <telemetry periodic_telemetry="DefaultPeriodic" msg_id="PPRZ_MSG_ID_LOGGER_STATUS" callback="send_sdlog_status"/>
   <makefile target="ap">
     <configure name="SDLOG_LED" default="none"/>
     <define name="SDLOG_LED" value="$(SDLOG_LED)" cond="ifneq ($(SDLOG_LED),none)"/>

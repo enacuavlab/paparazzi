@@ -185,6 +185,20 @@ let parse_periodic = fun xml ->
       | Some "LOCK" | Some "lock" -> Lock
       | Some _ -> failwith "Module.parse_periodic: unreachable" }
 
+
+type p_telemetry = {
+    periodic_telemetry: string;
+    msg_id: string;
+    callback: string
+  }
+
+let parse_p_telemetry = fun xml ->
+  let periodic_telemetry = ExtXml.attrib xml "periodic_telemetry" in
+  let msg_id = ExtXml.attrib xml "msg_id" in
+  let callback = ExtXml.attrib xml "callback" in
+  {periodic_telemetry; msg_id; callback}
+
+
 type event = { ev: string; handlers: string list }
 
 let make_event = fun f handlers ->
@@ -239,6 +253,7 @@ type t = {
   headers: file list;
   inits: string list;
   periodics: periodic list;
+  p_telemetries: p_telemetry list;
   events: event list;
   datalinks: datalink list;
   makefiles: makefile list;
@@ -249,7 +264,7 @@ let empty =
   { xml_filename = ""; name = ""; dir = None;
     task = None; path = ""; doc = Xml.Element ("doc", [], []);
     requires = []; conflicts = []; provides = []; autoloads = []; settings = [];
-    headers = []; inits = []; periodics = []; events = []; datalinks = [];
+    headers = []; inits = []; periodics = []; p_telemetries=[]; events = []; datalinks = [];
     makefiles = []; xml = Xml.Element ("module", [], []) }
 
 let parse_module_list = Str.split (Str.regexp "[ \t]*,[ \t]*")
@@ -282,6 +297,8 @@ let rec parse_xml m = function
     { m with inits = Xml.attrib xml "fun" :: m.inits }
   | Xml.Element ("periodic", _, []) as xml ->
     { m with periodics = parse_periodic xml :: m.periodics }
+  | Xml.Element ("telemetry", _, []) as xml ->
+    { m with p_telemetries = parse_p_telemetry xml :: m.p_telemetries }
   | Xml.Element ("event", _, handlers) as xml ->
     let f = Xml.attrib xml "fun" in
     { m with events = make_event f handlers :: m.events }

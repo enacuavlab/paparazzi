@@ -1,6 +1,6 @@
 <!-- Paparazzi Modules DTD -->
 
-<!ELEMENT module (doc,settings_file*,settings*,depends?,conflicts?,autoload*,header?,init*,periodic*,event*,datalink*,makefile*)>
+<!ELEMENT module (doc,settings_file*,settings*,depends?,conflicts?,autoload*,header?,init*,periodic*,event*,datalink*,telemetry*,makefile*)>
 <!ELEMENT doc (description,(define|configure|section)*)>
 <!ELEMENT settings_file (file*)>
 <!ELEMENT settings (dl_settings?)>
@@ -13,6 +13,7 @@
 <!ELEMENT event (handler*)>
 <!ELEMENT handler EMPTY>
 <!ELEMENT datalink EMPTY>
+<!ELEMENT telemetry EMPTY>
 <!ELEMENT makefile (configure|define|include|flag|file|file_arch|raw|test)*>
 <!ELEMENT test (configure|define|include|file|file_arch|shell)*>
 <!ELEMENT section (define|configure)*>
@@ -62,6 +63,11 @@ fun CDATA #REQUIRED>
 <!ATTLIST datalink
 message CDATA #REQUIRED
 fun CDATA #REQUIRED>
+
+<!ATTLIST telemetry
+periodic_telemetry CDATA #REQUIRED
+msg_id CDATA #REQUIRED
+callback CDATA #REQUIRED>
 
 <!ATTLIST makefile
 target CDATA #IMPLIED

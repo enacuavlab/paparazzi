@@ -181,7 +181,7 @@ void sdlog_chibios_init(void)
 {
   chibios_sdlog_status = SDLOG_STOPPED;
 #if PERIODIC_TELEMETRY
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_LOGGER_STATUS, send_sdlog_status);
+//  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_LOGGER_STATUS, send_sdlog_status);
 #endif
 
   // Start polling on USB
