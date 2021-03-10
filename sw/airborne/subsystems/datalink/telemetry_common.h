@@ -43,6 +43,46 @@ extern "C" {
  */
 typedef void (*telemetry_cb)(struct transport_tx *trans, struct link_device *dev);
 
+/** General parameters for message scheduling
+ */
+struct periodic_mode_params {
+  int hypertick;    // th = gcd(Ti)
+  int hyperperiod;  // Th = lcm(Ti)
+  int Tp;           // period of periodic_telemetry_send
+  int n;            // th/Tp  (how many times periodic_telemetry_send is executed per hypertick)
+  int hyper_n;      // Th/Tp  (how many times periodic_telemetry_send is executed per hyperperiod)
+  int C;            // counter for telemetry loop
+};
+
+/* Periodic parameters for a message
+ * there is one instance per message per mode
+ */
+struct message_params {
+  uint8_t msg_id;
+  uint8_t class_id;
+  telemetry_cb cb;
+  int Oh;
+  int Oa;
+  int Og;
+  int Ts;
+};
+
+struct telemetry_mode {
+//  uint8_t mode_id;
+  size_t nb_messages;
+  struct message_params* msgp;
+};
+
+struct telemetry_process {
+  uint8_t process_id;
+  struct telemetry_mode* modes;
+  uint8_t current_mode;
+  struct periodic_mode_params params;
+};
+
+void periodic_telemetry_send(struct telemetry_process* process, struct transport_tx *trans, struct link_device *dev);
+
+
 /** periodic telemetry msg name definition
  */
 typedef const char telemetry_msg[64];

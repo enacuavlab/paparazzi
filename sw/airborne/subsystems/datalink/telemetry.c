@@ -83,4 +83,27 @@ void periodic_telemetry_err_report(uint8_t _process, uint8_t _mode, uint8_t _id)
   DOWNLINK_SEND_PERIODIC_TELEMETRY_ERR(DefaultChannel, DefaultDevice, &process, &mode, &id);
 }
 
+void periodic_telemetry_send(struct telemetry_process* process, struct transport_tx *trans, struct link_device *dev)
+{
+  struct telemetry_mode* mode = process->modes[process->current_mode]
+
+  for(size_t i=0; i<mode->nb_messages; i++) {
+    int ch = C/process->params->n;
+    target_hypertick = ch % mode->msgp[i].Ts;
+    if ( target_hypertick == mode->msgp[i].Oh ) {
+      int relative_offset = (mode->msgp[i].Oa + mode->msgp[i].Og) / process->params->Tp;
+      if (relative_offset == C%n) {
+        //send message
+        mode->msgp[i].cb(trans, dev);
+      }
+    }
+
+  }
+  
+  process->params->C = (process->params->C+1) % mode->params.hyper_n;
+}
+
+
+
+
 #endif
