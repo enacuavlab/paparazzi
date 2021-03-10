@@ -65,6 +65,7 @@ PRINT_CONFIG_MSG_VALUE("USE_BARO_BOARD is TRUE, reading onboard baro: ", BARO_BO
 // datalink & telemetry
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
+#include "telemetry_generated.h"
 #endif
 
 // modules & settings
@@ -296,6 +297,7 @@ void reporting_task(void)
     //PeriodicSendAp(DefaultChannel, DefaultDevice);
 #if PERIODIC_TELEMETRY
     periodic_telemetry_send_Ap(DefaultPeriodic, &(DefaultChannel).trans_tx, &(DefaultDevice).device);
+    periodic_telemetry_send(&process_Ap, &(DefaultChannel).trans_tx, &(DefaultDevice).device);
 #endif
   }
 }

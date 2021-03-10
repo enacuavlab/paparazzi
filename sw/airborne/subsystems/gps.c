@@ -121,7 +121,7 @@ static inline void send_svinfo_available(struct transport_tx *trans, struct link
   i++;
 }
 
-static void send_gps(struct transport_tx *trans, struct link_device *dev)
+void send_gps(struct transport_tx *trans, struct link_device *dev)
 {
   uint8_t zero = 0;
   int16_t climb = -gps.ned_vel.z;

@@ -77,7 +77,7 @@ static void send_energy(struct transport_tx *trans, struct link_device *dev)
 // FIXME not the best place
 #include "firmwares/fixedwing/stabilization/stabilization_attitude.h"
 #include CTRL_TYPE_H
-static void send_desired(struct transport_tx *trans, struct link_device *dev)
+void send_desired(struct transport_tx *trans, struct link_device *dev)
 {
 #ifndef USE_AIRSPEED
   float v_ctl_auto_airspeed_setpoint = NOMINAL_AIRSPEED;
