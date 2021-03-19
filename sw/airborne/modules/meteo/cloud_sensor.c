@@ -325,7 +325,7 @@ float median_filter_update(float new_sample, struct MedianFilter* filter) {
 
     // Updating filter state
     filter->values[filter->current] = new_sample;
-    filter->current++; 
+    filter->current++;
     filter->current %= 3; // looping on 3 indexes
 
     if (filter->length < 3) {
@@ -405,7 +405,7 @@ void cloud_sensor_callback(uint8_t *buf)
       const uint8_t channel = CLOUD_SENSOR_SINGLE_CHANNEL; // short name for single channel
       //Use values to make the filter processing
       values[CLOUD_SENSOR_OFFSET + channel] = cloud_sensor_filtering(values[CLOUD_SENSOR_OFFSET + channel], &medianFilter0, &lowPassFilter0);
-      //copy filtered values in unused cloud_sensor.raw channel for feedback in GCS in rela time 
+      //copy filtered values in unused cloud_sensor.raw channel for feedback in GCS in rela time
       cloud_sensor.raw[cloud_sensor.nb_raw -1] = values[CLOUD_SENSOR_OFFSET + channel];
 
       // first check that frame is long enough
@@ -526,8 +526,8 @@ void LWC_callback(uint8_t *buf)
   if (DL_PAYLOAD_COMMAND_ac_id(dl_buffer) == AC_ID) {
     uint32_t stamp = get_sys_time_usec();
 
-    // get LWC from ground or external computer
-    cloud_sensor.coef = lwc_from_buffer(buf);
+    // get LWC from ground or external computer and apply filters
+    cloud_sensor.coef = cloud_sensor_filtering(lwc_from_buffer(buf), &medianFilter0, &lowPassFilter0);
 
     // test border crossing and send data over ABI
     check_border();
