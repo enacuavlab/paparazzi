@@ -1,0 +1,129 @@
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+
+<flight_plan alt="680" ground_alt="600" home_mode_height="70" lat0="43.1231452" lon0="0.3653030" max_dist_from_home="1000" name="Nephelae Campistrou" qfu="270" security_height="60">
+  <header>
+    #include "subsystems/datalink/datalink.h"
+</header>
+  <waypoints>
+    <waypoint name="HOME" x="0" y="0"/>
+    <waypoint name="CLIMB" x="-145.0" y="-208.6"/>
+    <waypoint alt="637.0" name="AF" x="-264.2" y="19.3"/>
+    <waypoint alt="601.0" name="TD" x="-48.1" y="-5.5"/>
+    <waypoint alt="650.0" name="_BASELEG" x="108.0" y="-339.2"/>
+    <waypoint name="SP" x="-88.9" y="-133.3"/>
+    <waypoint name="STDBY" x="-89.0" y="-74.8"/>
+    <waypoint lat="43.124147" lon="0.362627" name="TA"/>
+    <waypoint name="C1" x="-246.0" y="-20.5"/>
+    <waypoint name="C2" x="61.9" y="-27.8"/>
+    <waypoint alt="601" name="BUNGEE" x="-50.5" y="50.3"/>
+    <waypoint lat="43.1280292" lon="0.3717068" name="1"/>
+    <waypoint lat="43.1233284" lon="0.3682289" name="2"/>
+    <waypoint lat="43.1173579" lon="0.3696781" name="3"/>
+    <waypoint lat="43.1156420" lon="0.3601620" name="4"/>
+    <waypoint lat="43.1270421" lon="0.3570705" name="5"/>
+    <waypoint lat="43.1302972" lon="0.3592603" name="6"/>
+    <waypoint lat="43.1281702" lon="0.3651696" name="7"/>
+  </waypoints>
+  <sectors>
+    <sector color="red" name="FlightZone" type="dynamic">
+      <corner name="1"/>
+      <corner name="2"/>
+      <corner name="3"/>
+      <corner name="4"/>
+      <corner name="5"/>
+      <corner name="6"/>
+      <corner name="7"/>
+    </sector>
+  </sectors>
+  <variables>
+    <variable init="750.f" max="1000." min="600.0" step="1." type="float" var="fp_max_alt"/>
+    <variable init="720.f" max="1000." min="600.0" step="1." type="float" var="fp_spiral_top"/>
+    <variable init="650.f" max="1000." min="600.0" step="1." type="float" var="fp_spiral_bottom"/>
+    <variable init="2.0" max="4.0" min="1.0" step="0.5" type="float" var="v_climb"/>
+    <variable init="-2.0" max="-1.0" min="-4.0" step="-0.5" type="float" var="v_descent"/>
+    <variable init="2." max="10." min="0.2" step="0.1" type="float" var="fp_dl_lost"/>
+  </variables>
+  <modules>
+    <module name="nav" type="bungee_takeoff"/>
+    <module name="mission" type="fw"/>
+    <module name="nav" type="flower"/>
+    <module name="nav" type="lace"/>
+    <module name="nav" type="rosette"/>
+    <module name="cloud_sensor"/>
+  </modules>
+  <exceptions>
+    <exception cond="GetPosAlt() > fp_max_alt" deroute="Standby"/>
+    <exception cond="datalink_time > (fp_dl_lost*60)" deroute="Standby"/>
+    <exception cond="(!InsideFlightZone(GetPosX(),GetPosY()) @OR (GetPosAlt() @GT fp_max_alt) @OR (GetPosAlt() @LT 640)) @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('land'))" deroute="Standby"/>
+  </exceptions>
+  <blocks>
+    <block name="Wait GPS">
+      <set value="1" var="autopilot.kill_throttle"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Geo_init">
+      <while cond="LessThan(NavBlockTime(), 10)"/>
+    </block>
+    <block name="Holding point">
+      <set value="1" var="autopilot.kill_throttle"/>
+      <attitude roll="0" throttle="0" vmode="throttle"/>
+    </block>
+    <block name="Bungee take-off">
+      <call_once fun="nav_bungee_takeoff_setup(WP_BUNGEE)"/>
+      <call fun="nav_bungee_takeoff_run()"/>
+      <deroute block="Standby"/>
+    </block>
+    <block group="home" name="Takeoff" strip_button="Takeoff (wp CLIMB)" strip_icon="takeoff.png">
+      <exception cond="GetPosAlt() > GetAltRef()+30" deroute="Standby"/>
+      <set value="0" var="autopilot.kill_throttle"/>
+      <set value="0" var="autopilot.flight_time"/>
+      <go from="HOME" pitch="15" throttle="1.0" vmode="throttle" wp="CLIMB"/>
+    </block>
+    <block group="home" name="Standby" strip_button="Standby" strip_icon="home.png">
+      <circle radius="nav_radius" wp="STDBY"/>
+    </block>
+    <block group="mission" name="Mission" strip_button="Mission">
+      <call fun="mission_run()"/>
+      <deroute block="Standby"/>
+    </block>
+    <block group="sp" name="Spiral UP" strip_button="Spiral Up" strip_icon="up_profile.png">
+      <circle climb="v_climb" radius="nav_radius" until="GetPosAlt() > fp_spiral_top" vmode="climb" wp="SP"/>
+      <circle alt="fp_spiral_top" radius="nav_radius" until="NavCircleCount() > 0.5" wp="SP"/>
+    </block>
+    <block group="sp" name="Spiral DOWN" strip_button="Spiral Down" strip_icon="down_profile.png">
+      <circle climb="v_descent" radius="nav_radius" until="GetPosAlt() @LT fp_spiral_bottom" vmode="climb" wp="SP"/>
+      <deroute block="Standby"/>
+    </block>
+    <block group="oval_pattern" name="Oval C1-C2" strip_button="Oval (C1-C2)">
+      <oval p1="C1" p2="C2" radius="nav_radius"/>
+    </block>
+    <block group="oval_pattern" name="Oval UP" strip_button="Oval Climb">
+      <oval climb="v_climb" p1="C1" p2="C2" radius="nav_radius" until="GetPosAlt() > fp_spiral_top" vmode="climb"/>
+    </block>
+    <block group="oval_pattern" name="Oval DOWN" strip_button="Oval Descent">
+      <oval climb="v_descent" p1="C1" p2="C2" radius="nav_radius" until="GetPosAlt() @LT fp_spiral_bottom" vmode="climb"/>
+      <deroute block="Standby"/>
+    </block>
+    <block group="land" name="Land Right AF-TD" strip_button="Land right (wp AF-TD)" strip_icon="land-right.png">
+      <set value="DEFAULT_CIRCLE_RADIUS" var="nav_radius"/>
+      <deroute block="land"/>
+    </block>
+    <block group="land" name="Land Left AF-TD" strip_button="Land left (wp AF-TD)" strip_icon="land-left.png">
+      <set value="-DEFAULT_CIRCLE_RADIUS" var="nav_radius"/>
+      <deroute block="land"/>
+    </block>
+    <block name="land">
+      <call_once fun="nav_compute_baseleg(WP_AF, WP_TD, WP__BASELEG, nav_radius)"/>
+      <circle radius="nav_radius" until="NavCircleCount() > 0.5" wp="_BASELEG"/>
+      <circle radius="nav_radius" until="And(NavQdrCloseTo(DegOfRad(baseleg_out_qdr)-(nav_radius/fabs(nav_radius))*10), 10 > fabs(GetPosAlt() - WaypointAlt(WP__BASELEG)))" wp="_BASELEG"/>
+    </block>
+    <block name="final">
+      <exception cond="GetAltRef() + 8 > GetPosAlt()" deroute="flare"/>
+      <go from="AF" hmode="route" vmode="glide" wp="TD"/>
+    </block>
+    <block name="flare">
+      <go exceeding_time="10" from="AF" hmode="route" throttle="0.0" vmode="throttle" wp="TD"/>
+      <attitude roll="0.0" throttle="0.0" until="FALSE" vmode="throttle"/>
+    </block>
+  </blocks>
+</flight_plan>

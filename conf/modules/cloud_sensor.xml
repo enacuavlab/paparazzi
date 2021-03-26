@@ -19,6 +19,7 @@
         <dl_setting max="1000." min="0." step="1." var="cloud_sensor_hysteresis" shortname="hysteresis" module="meteo/cloud_sensor"/>
         <dl_setting max="20000." min="0." step="0.1" var="cloud_sensor_background" shortname="background" module="meteo/cloud_sensor"/>
         <dl_setting MAX="1" MIN="1" STEP="1" VAR="cloud_sensor_compute_background" shortname="compute background" module="meteo/cloud_sensor"/>
+        <dl_setting MAX="20." MIN="0." STEP="0.1" VAR="cloud_sensor_tau" shortname="tau" module="meteo/cloud_sensor" handler="update_tau"/>
       </dl_settings>
     </dl_settings>
   </settings>
