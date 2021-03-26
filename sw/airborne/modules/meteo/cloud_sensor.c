@@ -319,6 +319,12 @@ void cloud_sensor_init(void)
   log_tagged = false;
 }
 
+void cloud_sensor_update_tau(float tau)
+{
+  cloud_sensor_tau = tau;
+  update_first_order_low_pass_tau(&lowPassFilter0, cloud_sensor_tau, 1.0);
+}
+
 /** Median filter function
 */
 float median_filter_update(float new_sample, struct MedianFilter* filter) {

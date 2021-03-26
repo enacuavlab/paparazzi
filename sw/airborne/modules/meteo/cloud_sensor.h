@@ -50,6 +50,8 @@ extern float cloud_sensor_background;
 extern float cloud_sensor_calib_alpha;
 extern float cloud_sensor_calib_beta;
 extern float cloud_sensor_channel_scale;
+extern float cloud_sensor_tau;
+extern void cloud_sensor_update_tau(float tau); // setting handler
 
 /** Init function
  */
