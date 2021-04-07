@@ -18,16 +18,21 @@
     <waypoint alt="601" name="BUNGEE" x="-50.5" y="50.3"/>
     <waypoint lat="43.1280292" lon="0.3717068" name="1"/>
     <waypoint lat="43.1233284" lon="0.3682289" name="2"/>
-    <waypoint lat="43.1173579" lon="0.3696781" name="3"/>
+    <waypoint lat="43.118632" lon="0.369735" name="3"/>
     <waypoint lat="43.1156420" lon="0.3601620" name="4"/>
     <waypoint lat="43.1270421" lon="0.3570705" name="5"/>
     <waypoint lat="43.1302972" lon="0.3592603" name="6"/>
     <waypoint lat="43.1281702" lon="0.3651696" name="7"/>
+    <waypoint name="2bis" x="385.2" y="-68.5"/>
+    <waypoint name="3bis" x="402.3" y="-402.9"/>
+    <waypoint name="TARGET" x="145.0" y="208.6"/>
   </waypoints>
   <sectors>
     <sector color="red" name="FlightZone" type="dynamic">
       <corner name="1"/>
       <corner name="2"/>
+      <corner name="2bis"/>
+      <corner name="3bis"/>
       <corner name="3"/>
       <corner name="4"/>
       <corner name="5"/>
@@ -48,6 +53,7 @@
     <module name="mission" type="fw"/>
     <module name="nav" type="flower"/>
     <module name="nav" type="lace"/>
+    <module name="nav" type="trinity"/>
     <module name="nav" type="rosette"/>
     <module name="cloud_sensor"/>
   </modules>

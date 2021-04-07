@@ -216,10 +216,10 @@
     <!-- outer loop saturation -->
     <define name="ALTITUDE_MAX_CLIMB" value="2.5"/>
 
-    <define name="PITCH_TRIM" value="0." unit="deg"/>
+    <define name="PITCH_TRIM" value="1.50000350936" unit="deg"/>
 
     <!-- Cruise throttle + limits -->
-    <define name="AUTO_THROTTLE_NOMINAL_CRUISE_THROTTLE" value="0.5"/>
+    <define name="AUTO_THROTTLE_NOMINAL_CRUISE_THROTTLE" value="0.6"/>
     <define name="AUTO_THROTTLE_MIN_CRUISE_THROTTLE" value="0.25"/>
     <define name="AUTO_THROTTLE_MAX_CRUISE_THROTTLE" value="0.85"/>
     <define name="AUTO_PITCH_MAX_PITCH" value="20." unit="deg"/>

@@ -210,23 +210,25 @@ static float lwc_from_buffer(uint8_t *buf)
   for (int i = 0; i < DL_PAYLOAD_COMMAND_command_length(buf); i++) {
     res = res * 10 + DL_PAYLOAD_COMMAND_command(buf)[i];
   }
-  float lwc = 0.65f * (float) res / 255.0f;
+  float lwc = (float) res;
   return lwc;
 }
 
 // send CLOUD_SENSOR message
 static void send_cloud_sensor_data(struct transport_tx *trans, struct link_device *dev)
 {
+  uint8_t nb = 1;
+  float * val = cloud_sensor.raw;
   if (cloud_sensor.nb_raw > 0) {
-    pprz_msg_send_CLOUD_SENSOR(trans, dev, AC_ID,
-        &stateGetPositionLla_i()->lat,
-        &stateGetPositionLla_i()->lon,
-        &gps.hmsl,
-        &gps.tow,
-        &cloud_sensor.coef,
-        cloud_sensor.nb_raw,
-        cloud_sensor.raw);
+    nb = cloud_sensor.nb_raw;
   }
+  pprz_msg_send_CLOUD_SENSOR(trans, dev, AC_ID,
+      &stateGetPositionLla_i()->lat,
+      &stateGetPositionLla_i()->lon,
+      &gps.hmsl,
+      &gps.tow,
+      &cloud_sensor.coef,
+      nb, val);
 }
 
 #if CLOUD_SENSOR_REPORT_BORDER_CROSSING
@@ -533,7 +535,8 @@ void LWC_callback(uint8_t *buf)
     uint32_t stamp = get_sys_time_usec();
 
     // get LWC from ground or external computer and apply filters
-    cloud_sensor.coef = cloud_sensor_filtering(lwc_from_buffer(buf), &medianFilter0, &lowPassFilter0);
+    //cloud_sensor.coef = cloud_sensor_filtering(lwc_from_buffer(buf), &medianFilter0, &lowPassFilter0);
+    cloud_sensor.coef = lwc_from_buffer(buf);
 
     // test border crossing and send data over ABI
     check_border();
