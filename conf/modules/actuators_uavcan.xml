@@ -9,6 +9,7 @@
   </doc>
   <dep>
     <depends>uavcan,actuators</depends>
+    <provides>actuators</provides>
   </dep>
   <header>
     <file name="actuators_uavcan.h" dir="subsystems/actuators"/>

@@ -14,7 +14,7 @@
   </doc>
   <dep>
     <depends>spi_master</depends>
-    <provides>intermcu</provides>
+    <provides>intermcu,commands,radio_control</provides>
   </dep>
   <init fun="intermcu_init()"/>
   <makefile target="ap|fbw" firmware="fixedwing">

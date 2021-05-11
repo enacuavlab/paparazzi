@@ -12,7 +12,7 @@
   </doc>
 
   <dep>
-    <provides>intermcu</provides>
+    <provides>intermcu,commands,radio_control</provides>
   </dep>
   <makefile target="ap|fbw" firmware="fixedwing">
     <raw>

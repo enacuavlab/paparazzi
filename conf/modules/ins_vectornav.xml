@@ -10,10 +10,12 @@
   </doc>
   <dep>
     <depends>uart,gps</depends>
-    <provides>ins,ahrs,gps</provides>
+    <provides>imu,ins,ahrs,gps</provides>
   </dep>
   <autoload name="ins_sim"/>
   <autoload name="ins_nps"/>
+  <autoload name="imu_sim"/>
+  <autoload name="imu_nps"/>
   <header>
     <file name="ins.h" dir="subsystems"/>
   </header>

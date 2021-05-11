@@ -16,8 +16,11 @@
 
   <dep>
     <depends>uart</depends>
-    <provides>intermcu</provides>
+    <provides>intermcu,commands,radio_control</provides>
   </dep>
+  <header>
+    <file name="intermcu.h" dir="subsystems"/>
+  </header>
   <init fun="intermcu_init()"/>
   <periodic fun="intermcu_periodic()"/>
   <makefile target="fbw" firmware="fixedwing">

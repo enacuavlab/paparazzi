@@ -14,7 +14,7 @@
     <depends>imu_aspirin_v2_common</depends>
     <provides>imu</provides>
   </dep>
-  <makefile target="!sim|nps|fbw|hitl">
+  <makefile>
     <!-- SLAVE3 is on PC13, which is the baro CS -->
     <define name="DUSE_SPI_SLAVE3"/>
   </makefile>

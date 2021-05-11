@@ -15,6 +15,10 @@
   <header>
     <file name="sonar_adc.h"/>
   </header>
+  <dep>
+    <depends>adc</depends>
+    <provides>sonar</provides>
+  </dep>
 
   <init fun="sonar_adc_init()"/>
   <periodic fun="sonar_adc_read()" freq="20"/>

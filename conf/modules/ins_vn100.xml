@@ -8,8 +8,7 @@
   </doc>
   <dep>
     <depends>spi_master,gps</depends>
-    <provides>ins,ahrs,gps</provides>
-    <!--conflicts>ins</conflicts-->
+    <provides>imu,mag,ins,ahrs,gps</provides>
   </dep>
   <header>
     <file name="ins_vn100.h"/>

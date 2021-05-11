@@ -9,6 +9,7 @@
   </header>
   <dep>
     <depends>spi_master</depends>
+    <provides>baro</provides>
   </dep>
   <init fun="baro_MS5534A_init()"/>
   <periodic fun="baro_MS5534A_send()" freq="20"/>

@@ -7,8 +7,8 @@
     </description>
   </doc>
   <dep>
-    <depends>imu_common</depends>
-    <provides>imu</provides>
+    <depends>uart,imu_common</depends>
+    <provides>imu,mag,sonar</provides>
   </dep>
   <autoload name="imu_nps"/>
   <autoload name="imu_sim"/>

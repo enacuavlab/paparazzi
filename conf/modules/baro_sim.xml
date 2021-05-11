@@ -7,6 +7,9 @@
       Sends the BARO_ABS ABI message with gps.hmsl converted to absolute pressure.
     </description>
   </doc>
+  <dep>
+    <provides>baro</provides>
+  </dep>
 
   <header>
     <file name="baro_sim.h"/>
