@@ -29,9 +29,6 @@
       <define name="FREQ" value="512" description="set fixed frequency, if not defined but INS/AHRS_PROPAGATE_FREQUENCY is defined it is used, otherwise autofreq is used"/>
     </section>
   </doc>
-  <dep>
-    <depends>@imu</depends>
-  </dep>
   <settings>
     <dl_settings>
       <dl_settings name="1e_imu">
@@ -43,6 +40,9 @@
       </dl_settings>
     </dl_settings>
   </settings>
+  <dep>
+    <depends>@imu</depends>
+  </dep>
   <header>
     <file name="filter_1euro_imu.h"/>
   </header>

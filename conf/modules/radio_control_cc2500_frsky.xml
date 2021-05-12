@@ -37,6 +37,7 @@
   </settings>
   <dep>
     <depends>spi_master</depends>
+    <provides>radio_control</provides>
   </dep>
   <header>
     <file name="cc2500.h" dir="peripherals"/>

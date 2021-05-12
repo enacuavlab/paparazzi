@@ -25,13 +25,3 @@ CFG_SHARED=$(PAPARAZZI_SRC)/conf/firmwares/subsystems/shared
 CFG_ROTORCRAFT=$(PAPARAZZI_SRC)/conf/firmwares/subsystems/rotorcraft
 
 
-
-######################################################################
-##
-## include firmware independent nps makefile and add rotorcraft specifics
-##
-ifneq ($(TARGET), hitl)
-else
-  include $(CFG_SHARED)/hitl.makefile
-endif
-

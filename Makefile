@@ -328,7 +328,7 @@ test_examples: all
 test_modules: all
 	prove -v tests/modules/test_modules.py
 
-test_all_confs: all opencv_bebop
+test_all_confs: all
 	$(Q)$(eval $CONFS:=$(shell ./find_confs.py))
 	@echo "************\nFound $(words $($CONFS)) config files: $($CONFS)"
 	$(Q)$(foreach conf,$($CONFS),echo "\n************\nTesting all aircrafts in conf: $(conf)\n************" && (CONF_XML=$(conf) prove tests/aircrafts/ || echo "failed $(conf)" >> TEST_ALL_CONFS_FAILED);) test -f TEST_ALL_CONFS_FAILED && cat TEST_ALL_CONFS_FAILED && rm -f TEST_ALL_CONFS_FAILED && exit 1; exit 0

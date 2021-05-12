@@ -39,13 +39,21 @@ let lprintf = fun out f ->
   fprintf out "%s" (String.make !margin ' ');
   fprintf out f
 
+(* Encapsulate a condition attribute for function calls *)
+let lprintf_with_cond out s = function
+  | None -> lprintf out "%s;\n" s
+  | Some cond -> fprintf out "#if %s\n%s%s;\n#endif\n" cond (String.make !margin ' ') s
+
 let print_headers = fun out modules ->
   lprintf out  "#include \"std.h\"\n";
   List.iter (fun m ->
     let dirname = match m.Module.dir with None -> m.Module.name | Some d -> d in
     List.iter (fun h ->
       let dir = match h.Module.directory with None -> dirname | Some d -> d in
-      Printf.fprintf out "#include \"%s/%s\"\n" dir h.Module.filename
+      let inc = sprintf "#include \"%s/%s\"" dir h.Module.filename in
+      match h.Module.filecond with
+      | None -> fprintf out "%s\n" inc
+      | Some cond -> fprintf out "#if %s\n%s\n#endif\n" cond inc
     ) m.Module.headers
   ) modules
 
@@ -66,11 +74,6 @@ let get_cap_name = fun f ->
     | [Str.Text t; Str.Delim "("; Str.Delim ")"]
     | [Str.Text t; Str.Delim "("; Str.Text _ ; Str.Delim ")"] -> Compat.uppercase_ascii t
     | _ -> failwith "Gen_modules: not a valid function name"
-
-(* Encapsulate a condition attribute for function calls *)
-let lprintf_with_cond out s = function
-  | None -> lprintf out "%s;\n" s
-  | Some cond -> fprintf out "#if %s\n%s%s;\n#endif\n" cond (String.make !margin ' ') s
 
 (** Computes the required modulos *)
 let get_functions_modulos = fun modules ->

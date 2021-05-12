@@ -40,11 +40,11 @@
     <file name="main_chibios.c" dir="$(SRC_FIRMWARE)" cond="ifeq ($(RTOS), chibios)"/>
     <file name="main_fbw.c" dir="$(SRC_FIRMWARE)"/>
  </makefile>
-  <makefile target="nps">
+  <makefile target="nps|hitl">
     <define name="AP"/>
     <file name="nps_autopilot_fixedwing.c" dir="nps"/>
   </makefile>
-  <makefile target="nps">
+  <makefile target="nps|hitl">
     <define name="AP"/>
     <file name="nps_autopilot_fixedwing.c" dir="nps"/>
   </makefile>

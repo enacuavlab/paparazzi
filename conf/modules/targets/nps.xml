@@ -18,21 +18,21 @@
     <configure name="BARO_PERIODIC_FREQUENCY" default="50"/>
     <configure name="NPS_DIR" value="nps"/>
     <raw>
-nps.MAKEFILE = nps
-nps.ARCHDIR = sim
+$(TARGET).MAKEFILE = $(TARGET)
+$(TARGET).ARCHDIR = sim
 
 # detect system arch and include rt and pthread library only on linux
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
-  nps.LDFLAGS += -lrt -pthread
+  $(TARGET).LDFLAGS += -lrt -pthread
 endif
 
 # sdl needed for joystick input
-nps.LDFLAGS += $(shell sdl-config --libs)
+$(TARGET).LDFLAGS += $(shell sdl-config --libs)
 
 # glib is still needed for some components (such as radio input)
-nps.CFLAGS  += $(shell pkg-config glib-2.0 --cflags)
-nps.LDFLAGS += $(shell pkg-config glib-2.0 --libs)
+$(TARGET).CFLAGS  += $(shell pkg-config glib-2.0 --cflags)
+$(TARGET).LDFLAGS += $(shell pkg-config glib-2.0 --libs)
 
 #
 # add the simulator directory to the make searchpath
@@ -48,7 +48,6 @@ VPATH += $(PAPARAZZI_SRC)/sw/simulator
     <include name="$(PAPARAZZI_SRC)/sw/simulator"/>
     <include name="$(PAPARAZZI_SRC)/sw/simulator/nps"/>
     <include name="$(PAPARAZZI_HOME)/conf/simulator/nps"/>
-    <file name="nps_main_sitl.c" dir="$(NPS_DIR)"/>
     <file name="nps_main_common.c" dir="$(NPS_DIR)"/>
     <file name="nps_sensors.c" dir="$(NPS_DIR)"/>
     <file name="nps_sensors_utils.c" dir="$(NPS_DIR)"/>
@@ -71,6 +70,13 @@ VPATH += $(PAPARAZZI_SRC)/sw/simulator
     <file name="nps_radio_control_spektrum.c" dir="$(NPS_DIR)"/>
     <file name="nps_random.c" dir="$(NPS_DIR)"/>
     <file name="pprz_geodetic_wmm2020.c" dir="math"/>
+  </makefile>
+  <makefile target="nps">
+    <file name="nps_main_sitl.c" dir="$(NPS_DIR)"/>
+  </makefile>
+  <makefile target="hitl">
+    <file name="nps_main_hitl.c" dir="$(NPS_DIR)"/>
+    <file name="nps_ins_vectornav.c" dir="$(NPS_DIR)"/> <!-- TODO should be in ins_vectornav module -->
   </makefile>
 </module>
 

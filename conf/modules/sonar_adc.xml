@@ -12,13 +12,13 @@
     <define name="USE_SONAR" value="" description="activate use of sonar in INS extended filter (only rotorcraft)"/>
   </doc>
 
-  <header>
-    <file name="sonar_adc.h"/>
-  </header>
   <dep>
     <depends>adc</depends>
     <provides>sonar</provides>
   </dep>
+  <header>
+    <file name="sonar_adc.h"/>
+  </header>
 
   <init fun="sonar_adc_init()"/>
   <periodic fun="sonar_adc_read()" freq="20"/>

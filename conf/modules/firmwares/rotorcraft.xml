@@ -27,7 +27,7 @@
   <makefile target="fbw">
     <file name="main_fbw.c" dir="$(SRC_FIRMWARE)"/>
   </makefile>
-  <makefile target="nps">
+  <makefile target="nps|hitl">
     <file name="nps_autopilot_rotorcraft.c" dir="nps"/>
   </makefile>
 </module>
