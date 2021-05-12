@@ -20,10 +20,9 @@
     <define name="PERIPHERALS_AUTO_INIT"/>
     <file name="mcu.c" dir="."/>
     <file_arch name="mcu_arch.c" dir="."/>
-    <file_arch name="gpio_arch.c" dir="mcu_periph" cond="ifeq ($(ARCH), stm32)"/>
+    <file_arch name="gpio_arch.c" dir="mcu_periph"/>
     <file_arch name="led_hw.c" dir="." cond="ifeq ($(ARCH), stm32)"/>
     <file_arch name="led_hw.c" dir="." cond="ifeq ($(TARGET), sim)"/>
-    <file_arch name="gpio_arch.c" dir="mcu_periph" cond="ifeq ($(ARCH), chibios)"/>
     <test>
       <define name="PERIPHERALS_AUTO_INIT"/>
     </test>
