@@ -177,9 +177,8 @@ void handle_periodic_tasks(void)
   if (sys_time_check_and_ack_timer(modules_estimation_tid)) {
     perf_log = true;
     //PPRZ_PERF_TRACE("estimation");
-    modules_estimation_periodic_task();
     e_t = PPRZ_PERF_TIME();
-    modules_periodic_task();
+    modules_estimation_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_radio_control_tid)) {
@@ -193,6 +192,7 @@ void handle_periodic_tasks(void)
   if (sys_time_check_and_ack_timer(modules_control_actuators_tid)) {
     perf_log = true;
     //PPRZ_PERF_TRACE("control");
+    c_t = PPRZ_PERF_TIME();
     modules_control_periodic_task();
 
 #if USE_THROTTLE_CURVES
