@@ -269,7 +269,7 @@ void handle_periodic_tasks_ap(void)
     PPRZ_PERF_TRACE_TIME("default", d_t);
   }
   if (mc_t) {
-    PPRZ_PERF_TRACE_TIME("core", m_t);
+    PPRZ_PERF_TRACE_TIME("core", mc_t);
   }
   if (tm_t) {
     PPRZ_PERF_TRACE_TIME("telemetry", tm_t);

@@ -214,14 +214,14 @@ void handle_periodic_tasks(void)
   if (sys_time_check_and_ack_timer(modules_default_tid)) {
     perf_log = true;
     //PPRZ_PERF_TRACE("default");
-    d_t = PPRZ_PERF_TIME()
+    d_t = PPRZ_PERF_TIME();
     modules_default_periodic_task();
   }
 
   if (sys_time_check_and_ack_timer(modules_mcu_core_tid)) {
     perf_log = true;
     //PPRZ_PERF_TRACE("core");
-    mc_t = PPRZ_PERF_TIME()
+    mc_t = PPRZ_PERF_TIME();
     modules_mcu_periodic_task();
     modules_core_periodic_task();
     RunOnceEvery(10, LED_PERIODIC()); // FIXME periodic in led module
@@ -273,7 +273,6 @@ void handle_periodic_tasks(void)
   if (perf_log) {
     PPRZ_PERF_TRACE_TIME("periodic_end", end);
   }
-}
 }
 
 void telemetry_periodic(void)
