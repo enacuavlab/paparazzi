@@ -56,6 +56,7 @@ static uint32_t dt_start = 0;
 static uint32_t dt_end = 0;
 static uint32_t dt_min = 0xFFFFFFFF;
 static uint32_t dt_max = 0;
+static double dt_acc = 0.;
 
 void perf_profil_event_start(void)
 {
@@ -70,6 +71,7 @@ void perf_profil_event_end(void)
   dt_end = chSysGetRealtimeCounterX();
   nb_event++;
   uint32_t dt = dt_end - dt_start;
+  dt_acc += (double)(RTC2US(STM32_SYSCLK, dt));
   if (dt < dt_min) {
     dt_min = dt;
   }
@@ -80,15 +82,17 @@ void perf_profil_event_end(void)
     nb_over++; // dt is over the polling inverval (1/CH_CFG_ST_FREQUENCY sec)
   }
   if (nb_event >= PERF_PROFIL_EVENT_MAX) {
-    sdLogWriteLog(pprzLogFile, "PPTE event %lu %lu %lu %lu %lu\n",
+    sdLogWriteLog(pprzLogFile, "PPTE event %lu %lu %lu %lu %lu %.2f\n",
         nb_event, nb_over,
         dt_end - t_start,
         dt_min,
-        dt_max);
+        dt_max,
+        dt_acc);
     nb_event = 0;
     nb_over = 0;
     dt_min = 0xFFFFFFFF;
     dt_max = 0;
+    dt_acc = 0.;
   }
 }
 

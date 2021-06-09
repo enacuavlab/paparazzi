@@ -252,11 +252,11 @@ void handle_periodic_tasks(void)
   if (e_t) {
     PPRZ_PERF_TRACE_TIME("estimation", e_t);
   }
-  if (c_t) {
-    PPRZ_PERF_TRACE_TIME("control", c_t);
-  }
   if (r_t) {
     PPRZ_PERF_TRACE_TIME("radio", r_t);
+  }
+  if (c_t) {
+    PPRZ_PERF_TRACE_TIME("control", c_t);
   }
   if (d_t) {
     PPRZ_PERF_TRACE_TIME("default", d_t);
