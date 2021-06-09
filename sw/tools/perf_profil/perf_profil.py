@@ -156,7 +156,7 @@ for key in time_vector:
                 np.mean(d), np.std(d), np.min(d), np.max(d),
                 (d > np.mean(p)).sum(), 100.*np.mean(d)/np.mean(p)))
 
-        if True and len(d) > 1:
+        if False and len(d) > 1:
             i = np.arange(0, len(d))
             plt.figure()
             plt.plot(i, p)
@@ -177,7 +177,7 @@ if event_vector is not None:
         np.mean(event_vector[3]), 'N/A', np.min(event_vector[4]), np.max(event_vector[5]),
         np.sum(event_vector[1]), 'N/A'))
 
-    if True:
+    if False:
         i = np.arange(0, len(event_vector[0]))
         plt.figure()
         plt.plot(i, event_vector[2])
@@ -209,17 +209,18 @@ print(len(time_sensor), len(time_estimation), len(time_control))
 #print((time_sensor), (time_estimation), time_control)
 #print(time_estimation - time_sensor)
 #print(time_control - time_sensor)
-if False:
-    i = np.arange(0, len(time_sensor))
+size = np.min(np.array([len(time_sensor), len(time_estimation), len(time_control)]))
+if True:
+    i = np.arange(0, size)
     plt.figure()
-    plt.plot(i, time_estimation - time_sensor)
+    plt.plot(i, time_estimation[:size] - time_sensor[:size])
     plt.xlabel('sample')
     plt.ylabel('usec')
     plt.title('dt sensor - estimation')
     plt.figure()
-    plt.plot(i, time_control - time_sensor)
+    plt.plot(i, time_control[:size] - time_sensor[:size])
     plt.xlabel('sample')
     plt.ylabel('usec')
-    plt.title('dt control - estimation')
+    plt.title('dt sensor - control')
     plt.show()
 
