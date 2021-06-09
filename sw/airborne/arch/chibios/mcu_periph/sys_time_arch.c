@@ -126,7 +126,8 @@ static __attribute__((noreturn)) void thd_sys_tick(void *arg)
 
   while (TRUE) {
     sys_tick_handler();
-    chThdSleepMilliseconds(1);
+    //chThdSleepMilliseconds(1);
+    chThdSleepMicroseconds(1000000 / CH_CFG_ST_FREQUENCY);
   }
 }
 
