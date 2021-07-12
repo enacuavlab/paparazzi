@@ -1,0 +1,98 @@
+/*
+ * Copyright (C) 2021 Gautier Hattenberger <gautier.hattenberger@enac.fr>
+ *
+ * This file is part of paparazzi
+ *
+ * paparazzi is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * paparazzi is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+
+/** @file "modules/benchmark/perf_profil.c"
+ * @author Gautier Hattenberger <gautier.hattenberger@enac.fr>
+ * Performance profiling tool
+ */
+
+#include "modules/benchmark/perf_profil.h"
+#include "mcu_periph/sys_time.h"
+#include "modules/loggers/sdlog_chibios.h"
+#include <hal.h>
+#include <ch.h>
+
+// RTC2US(STM32_SYSCLK, chSysGetRealtimeCounterX)
+
+void perf_profil_log(char * msg)
+{
+  if (pprzLogFile != -1) {
+    uint32_t t = chSysGetRealtimeCounterX();
+    sdLogWriteLog(pprzLogFile, "PPT %s %lu\n", msg, t);
+  }
+}
+
+void perf_profil_log_time(char * msg, uint32_t t)
+{
+  if (pprzLogFile != -1) {
+    sdLogWriteLog(pprzLogFile, "PPT %s %lu\n", msg, t);
+  }
+}
+
+#ifndef PERF_PROFIL_EVENT_MAX
+#define PERF_PROFIL_EVENT_MAX 1000
+#endif
+static uint32_t nb_event = 0;
+static uint32_t nb_over = 0;
+static uint32_t t_start = 0;
+static uint32_t dt_start = 0;
+static uint32_t dt_end = 0;
+static uint32_t dt_min = 0xFFFFFFFF;
+static uint32_t dt_max = 0;
+static double dt_acc = 0.;
+
+void perf_profil_event_start(void)
+{
+  dt_start = chSysGetRealtimeCounterX();
+  if (nb_event == 0) {
+    t_start = dt_start;
+  }
+}
+
+void perf_profil_event_end(void)
+{
+  dt_end = chSysGetRealtimeCounterX();
+  nb_event++;
+  uint32_t dt = dt_end - dt_start;
+  dt_acc += (double)(RTC2US(STM32_SYSCLK, dt));
+  if (dt < dt_min) {
+    dt_min = dt;
+  }
+  if (dt > dt_max) {
+    dt_max = dt;
+  }
+  if (dt > US2RTC(STM32_SYSCLK, (1000000U/CH_CFG_ST_FREQUENCY))) {
+    nb_over++; // dt is over the polling inverval (1/CH_CFG_ST_FREQUENCY sec)
+  }
+  if (nb_event >= PERF_PROFIL_EVENT_MAX) {
+    sdLogWriteLog(pprzLogFile, "PPTE event %lu %lu %lu %lu %lu %.2f\n",
+        nb_event, nb_over,
+        dt_end - t_start,
+        dt_min,
+        dt_max,
+        dt_acc);
+    nb_event = 0;
+    nb_over = 0;
+    dt_min = 0xFFFFFFFF;
+    dt_max = 0;
+    dt_acc = 0.;
+  }
+}
+

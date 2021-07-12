@@ -1,0 +1,16 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="perf_profil" dir="benchmark">
+  <doc>
+    <description>
+      Performance profiling tool
+
+      Redefine the PPRZ_PERF_TRACE macro and log data on SD card
+    </description>
+  </doc>
+  <header>
+    <file name="perf_profil.h"/>
+  </header>
+  <makefile>
+    <file name="perf_profil.c"/>
+  </makefile>
+</module>

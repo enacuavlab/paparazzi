@@ -44,6 +44,20 @@
 #include "generated/modules.h"
 #include "subsystems/abi.h"
 
+// define after modules include
+#ifndef PPRZ_PERF_TRACE_TIME
+#define PPRZ_PERF_TRACE_TIME(_x, _t) {}
+#endif
+#ifndef PPRZ_PERF_TIME
+#define PPRZ_PERF_TIME() {}
+#endif
+#ifndef PPRZ_PERF_EVENT_START
+#define PPRZ_PERF_EVENT_START(_x) {}
+#endif
+#ifndef PPRZ_PERF_EVENT_END
+#define PPRZ_PERF_EVENT_END(_x) {}
+#endif
+
 /* if PRINT_CONFIG is defined, print some config options */
 PRINT_CONFIG_VAR(PERIODIC_FREQUENCY)
 /* SYS_TIME_FREQUENCY/PERIODIC_FREQUENCY should be an integer, otherwise the timer will not be correct */
@@ -138,20 +152,44 @@ void main_init(void)
 
 void handle_periodic_tasks(void)
 {
+  bool perf_log = false;
+  uint32_t s_t = 0;
+  uint32_t e_t = 0;
+  uint32_t c_t = 0;
+  uint32_t r_t = 0;
+  uint32_t mc_t = 0;
+  uint32_t d_t = 0;
+  uint32_t f_t = 0;
+  uint32_t tm_t = 0;
+  //PPRZ_PERF_TRACE("periodic_start");
+
   if (sys_time_check_and_ack_timer(modules_sensors_tid)) {
+    perf_log = true;
+    //PPRZ_PERF_TRACE("sensors");
+    s_t = PPRZ_PERF_TIME();
     modules_sensors_periodic_task();
     SysTimeTimerStart(control_offset);
     control_compute = true;
   }
 
   if (sys_time_check_and_ack_timer(modules_radio_control_tid)) {
+    perf_log = true;
+    //PPRZ_PERF_TRACE("radio");
+    r_t = PPRZ_PERF_TIME();
     radio_control_periodic_task();
     modules_radio_control_periodic_task(); // FIXME integrate above
   }
 
   if (SysTimeTimer(control_offset) >= CONTROL_OFFSET && control_compute) {
+    perf_log = true;
+    //PPRZ_PERF_TRACE("estimation");
+    e_t = PPRZ_PERF_TIME();
     modules_estimation_periodic_task();
+    //PPRZ_PERF_TRACE("control");
+    c_t = PPRZ_PERF_TIME();
     modules_control_periodic_task();
+    //PPRZ_PERF_TRACE("default");
+    d_t = PPRZ_PERF_TIME();
     modules_default_periodic_task();
 #if USE_THROTTLE_CURVES
     throttle_curve_run(commands, autopilot_get_mode());
@@ -196,12 +234,18 @@ void handle_periodic_tasks(void)
 //  }
 
   if (sys_time_check_and_ack_timer(modules_mcu_core_tid)) {
+    perf_log = true;
+    //PPRZ_PERF_TRACE("core");
+    mc_t = PPRZ_PERF_TIME();
     modules_mcu_periodic_task();
     modules_core_periodic_task();
     RunOnceEvery(10, LED_PERIODIC()); // FIXME periodic in led module
   }
 
   if (sys_time_check_and_ack_timer(modules_datalink_tid)) {
+    perf_log = true;
+    //PPRZ_PERF_TRACE("telemetry");
+    tm_t = PPRZ_PERF_TIME();
     telemetry_periodic();
     modules_datalink_periodic_task(); // FIXME integrate above
 #if defined DATALINK || defined SITL
@@ -210,9 +254,40 @@ void handle_periodic_tasks(void)
   }
 
   if (sys_time_check_and_ack_timer(failsafe_tid)) {
+    perf_log = true;
+    //PPRZ_PERF_TRACE("failsafe");
+    f_t = PPRZ_PERF_TIME();
     failsafe_check(); // FIXME integrate somewhere else
   }
 
+  uint32_t end = PPRZ_PERF_TIME();
+  if (s_t) {
+    PPRZ_PERF_TRACE_TIME("sensors", s_t);
+  }
+  if (r_t) {
+    PPRZ_PERF_TRACE_TIME("radio", r_t);
+  }
+  if (e_t) {
+    PPRZ_PERF_TRACE_TIME("estimation", e_t);
+  }
+  if (c_t) {
+    PPRZ_PERF_TRACE_TIME("control", c_t);
+  }
+  if (d_t) {
+    PPRZ_PERF_TRACE_TIME("default", d_t);
+  }
+  if (mc_t) {
+    PPRZ_PERF_TRACE_TIME("core", mc_t);
+  }
+  if (tm_t) {
+    PPRZ_PERF_TRACE_TIME("telemetry", tm_t);
+  }
+  if (f_t) {
+    PPRZ_PERF_TRACE_TIME("failsafe", f_t);
+  }
+  if (perf_log) {
+    PPRZ_PERF_TRACE_TIME("periodic_end", end);
+  }
 }
 
 void telemetry_periodic(void)
@@ -286,6 +361,7 @@ void failsafe_check(void)
 
 void main_event(void)
 {
+  PPRZ_PERF_EVENT_START();
   modules_mcu_event_task();
   modules_core_event_task();
   modules_sensors_event_task();
@@ -297,4 +373,5 @@ void main_event(void)
   modules_actuators_event_task();
   modules_datalink_event_task();
   modules_default_event_task();
+  PPRZ_PERF_EVENT_END();
 }
