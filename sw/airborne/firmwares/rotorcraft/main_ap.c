@@ -73,26 +73,21 @@ INFO_VALUE("it is recommended to configure in your airframe PERIODIC_FREQUENCY t
  */
 tid_t modules_mcu_core_tid; // single step
 tid_t modules_sensors_tid;
-tid_t modules_estimation_tid;
+//tid_t modules_estimation_tid;
 tid_t modules_radio_control_tid;
-tid_t modules_control_actuators_tid; // single step
+//tid_t modules_control_actuators_tid; // single step
 tid_t modules_datalink_tid;
-tid_t modules_default_tid;
+//tid_t modules_default_tid;
 tid_t failsafe_tid;      ///< id for failsafe_check() timer FIXME
+static uint32_t control_offset = 0;
+static bool control_compute = false;
 
 #define SYS_PERIOD (1.f / PERIODIC_FREQUENCY)
+#define SENSORS_PERIOD (1.f / PERIODIC_FREQUENCY)
 #define DATALINK_PERIOD (1.f / TELEMETRY_FREQUENCY)
 
-#ifndef ESTIMATION_OFFSET
-#define ESTIMATION_OFFSET 6e-4f
-#endif
-
 #ifndef CONTROL_OFFSET
-#define CONTROL_OFFSET 7e-4f
-#endif
-
-#ifndef DEFAULT_OFFSET
-#define DEFAULT_OFFSET 8e-4f
+#define CONTROL_OFFSET 500 // micro-seconds
 #endif
 
 void main_init(void)
@@ -119,10 +114,11 @@ void main_init(void)
 #endif
 
   // register timers with temporal dependencies
-  modules_sensors_tid = sys_time_register_timer(SYS_PERIOD, NULL);
-  modules_estimation_tid = sys_time_register_timer_offset(modules_sensors_tid, ESTIMATION_OFFSET, NULL);
-  modules_control_actuators_tid = sys_time_register_timer_offset(modules_sensors_tid, CONTROL_OFFSET, NULL);
-  modules_default_tid = sys_time_register_timer_offset(modules_sensors_tid, DEFAULT_OFFSET, NULL); // should it be an offset ?
+  modules_sensors_tid = sys_time_register_timer(SENSORS_PERIOD, NULL);
+  //modules_estimation_tid = sys_time_register_timer_offset(modules_sensors_tid, ESTIMATION_OFFSET, NULL);
+  //modules_control_actuators_tid = sys_time_register_timer_offset(modules_sensors_tid, CONTROL_OFFSET, NULL);
+  //modules_default_tid = sys_time_register_timer_offset(modules_sensors_tid, DEFAULT_OFFSET, NULL); // should it be an offset ?
+  SysTimeTimerStart(control_offset);
 
   // register the timers for the periodic functions
   modules_mcu_core_tid = sys_time_register_timer(SYS_PERIOD, NULL);
@@ -144,10 +140,8 @@ void handle_periodic_tasks(void)
 {
   if (sys_time_check_and_ack_timer(modules_sensors_tid)) {
     modules_sensors_periodic_task();
-  }
-
-  if (sys_time_check_and_ack_timer(modules_estimation_tid)) {
-    modules_estimation_periodic_task();
+    SysTimeTimerStart(control_offset);
+    control_compute = true;
   }
 
   if (sys_time_check_and_ack_timer(modules_radio_control_tid)) {
@@ -155,28 +149,51 @@ void handle_periodic_tasks(void)
     modules_radio_control_periodic_task(); // FIXME integrate above
   }
 
-  if (sys_time_check_and_ack_timer(modules_control_actuators_tid)) {
+  if (SysTimeTimer(control_offset) >= CONTROL_OFFSET && control_compute) {
+    modules_estimation_periodic_task();
     modules_control_periodic_task();
-
+    modules_default_periodic_task();
 #if USE_THROTTLE_CURVES
     throttle_curve_run(commands, autopilot_get_mode());
 #endif
-
 #ifndef INTER_MCU_AP
     SetActuatorsFromCommands(commands, autopilot_get_mode());
 #else
     intermcu_set_actuators(commands, autopilot_get_mode());
 #endif
     modules_actuators_periodic_task(); // FIXME integrate above in actuators periodic
-
     if (autopilot_in_flight()) {
       RunOnceEvery(PERIODIC_FREQUENCY, autopilot.flight_time++); // TODO make it 1Hz periodic ?
     }
+    control_compute = false;
   }
 
-  if (sys_time_check_and_ack_timer(modules_default_tid)) {
-    modules_default_periodic_task();
-  }
+//  if (sys_time_check_and_ack_timer(modules_estimation_tid)) {
+//    modules_estimation_periodic_task();
+//  }
+//
+//  if (sys_time_check_and_ack_timer(modules_control_actuators_tid)) {
+//    modules_control_periodic_task();
+//
+//#if USE_THROTTLE_CURVES
+//    throttle_curve_run(commands, autopilot_get_mode());
+//#endif
+//
+//#ifndef INTER_MCU_AP
+//    SetActuatorsFromCommands(commands, autopilot_get_mode());
+//#else
+//    intermcu_set_actuators(commands, autopilot_get_mode());
+//#endif
+//    modules_actuators_periodic_task(); // FIXME integrate above in actuators periodic
+//
+//    if (autopilot_in_flight()) {
+//      RunOnceEvery(PERIODIC_FREQUENCY, autopilot.flight_time++); // TODO make it 1Hz periodic ?
+//    }
+//  }
+//
+//  if (sys_time_check_and_ack_timer(modules_default_tid)) {
+//    modules_default_periodic_task();
+//  }
 
   if (sys_time_check_and_ack_timer(modules_mcu_core_tid)) {
     modules_mcu_periodic_task();
