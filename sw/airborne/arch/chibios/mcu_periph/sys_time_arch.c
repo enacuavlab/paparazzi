@@ -125,9 +125,12 @@ static __attribute__((noreturn)) void thd_sys_tick(void *arg)
   chRegSetThreadName("sys_tick_handler");
 
   while (TRUE) {
+    systime_t t = chVTGetSystemTime();
     sys_tick_handler();
+    //chThdSleepUntilWindowed(t, t + TIME_US2I(USEC_OF_SEC(1.f/SYS_TIME_FREQUENCY)));
+    chThdSleepUntilWindowed(t, t + TIME_US2I(100));
     //chThdSleepMilliseconds(1);
-    chThdSleepMicroseconds(1000000 / CH_CFG_ST_FREQUENCY);
+    //chThdSleepMicroseconds(1000000 / CH_CFG_ST_FREQUENCY);
   }
 }
 

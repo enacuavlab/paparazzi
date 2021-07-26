@@ -29,9 +29,9 @@
 
 #ifndef  SYS_TIME_FREQUENCY
 #error SYS_TIME_FREQUENCY should be defined in Makefile.chibios or airframe.xml and be equal to CH_CFG_ST_FREQUENCY
-#elif SYS_TIME_FREQUENCY != CH_CFG_ST_FREQUENCY
-#error SYS_TIME_FREQUENCY should be equal to CH_CFG_ST_FREQUENCY
-#elif  CH_CFG_ST_FREQUENCY < (2 * PERIODIC_FREQUENCY)
+//#elif SYS_TIME_FREQUENCY != CH_CFG_ST_FREQUENCY
+//#error SYS_TIME_FREQUENCY should be equal to CH_CFG_ST_FREQUENCY
+#elif  CH_CFG_ST_FREQUENCY < (2 * PERIODIC_FREQUENCY) && SYS_TIME_FREQUENCY < (2 * PERIODIC_FREQUENCY)
 #error CH_CFG_ST_FREQUENCY and SYS_TIME_FREQUENCY should be >= 2 x PERIODIC_FREQUENCY
 #endif
 
@@ -78,6 +78,7 @@ static void thd_ap(void *arg)
   chRegSetThreadName("AP");
 
   while (!chThdShouldTerminateX()) {
+    systime_t t = chVTGetSystemTime();
     handle_periodic_tasks();
     main_event();
     // In tick mode, the minimum step is 1e6 / CH_CFG_ST_FREQUENCY
@@ -87,7 +88,8 @@ static void thd_ap(void *arg)
     // Be careful that in tick-less mode, it will be required to use
     // the chThdSleepUntil function with a correct computation of the
     // wakeup time, in particular roll-over should be check.
-    chThdSleepMicroseconds(1000000 / CH_CFG_ST_FREQUENCY);
+    //chThdSleepMicroseconds(1000000 / CH_CFG_ST_FREQUENCY);
+    chThdSleepUntilWindowed(t, t + TIME_US2I(1000000 / CH_CFG_ST_FREQUENCY));
   }
 
   chThdExit(0);

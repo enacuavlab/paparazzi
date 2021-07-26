@@ -110,7 +110,7 @@ tid_t modules_mcu_core_tid; // single step
 tid_t modules_sensors_tid;
 //tid_t modules_estimation_tid;
 //tid_t modules_radio_control_tid; // done in FBW
-//tid_t modules_control_actuators_tid; // single step
+tid_t modules_control_actuators_tid; // single step
 tid_t modules_datalink_tid;
 //tid_t modules_default_tid;
 tid_t monitor_tid;     ///< id for monitor_task() timer FIXME
@@ -122,7 +122,7 @@ static bool control_compute = false;
 #define DATALINK_PERIOD (1.f / TELEMETRY_FREQUENCY)
 
 #ifndef CONTROL_OFFSET
-#define CONTROL_OFFSET 500 // micro-seconds
+#define CONTROL_OFFSET 900 // micro-seconds
 #endif
 
 void init_ap(void)
@@ -151,6 +151,7 @@ void init_ap(void)
   // register timers with temporal dependencies
   modules_sensors_tid = sys_time_register_timer(SYS_PERIOD, NULL);
   //modules_estimation_tid = sys_time_register_timer_offset(modules_sensors_tid, ESTIMATION_OFFSET, NULL);
+  modules_control_actuators_tid = sys_time_register_timer_offset(modules_sensors_tid, (1.f/PERIODIC_FREQUENCY)/2.f, NULL);
   //modules_control_actuators_tid = sys_time_register_timer_offset(modules_sensors_tid, CONTROL_OFFSET, NULL);
   //modules_default_tid = sys_time_register_timer_offset(modules_sensors_tid, DEFAULT_OFFSET, NULL); // should it be an offset ?
   SysTimeTimerStart(control_offset);
@@ -191,15 +192,16 @@ void handle_periodic_tasks_ap(void)
   //PPRZ_PERF_TRACE("periodic_start");
 
   if (sys_time_check_and_ack_timer(modules_sensors_tid)) {
+    SysTimeTimerStart(control_offset);
     perf_log = true;
     //PPRZ_PERF_TRACE("sensors");
     s_t = PPRZ_PERF_TIME();
     modules_sensors_periodic_task();
-    SysTimeTimerStart(control_offset);
     control_compute = true;
   }
 
-  if (SysTimeTimer(control_offset) >= CONTROL_OFFSET && control_compute) {
+  if (sys_time_check_and_ack_timer(modules_control_actuators_tid)) {
+  //if (control_compute && SysTimeTimer(control_offset) >= CONTROL_OFFSET) {
     perf_log = true;
     e_t = PPRZ_PERF_TIME();
     //PPRZ_PERF_TRACE("estimation");
