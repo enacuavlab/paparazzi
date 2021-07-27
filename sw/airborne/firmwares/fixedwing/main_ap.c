@@ -110,7 +110,6 @@ tid_t modules_sensors_tid;
 //tid_t modules_radio_control_tid; // done in FBW
 tid_t modules_gnc_tid; // estimation, control, actuators, default in a single step
 tid_t modules_datalink_tid;
-tid_t monitor_tid;     ///< id for monitor_task() timer FIXME
 
 #define SYS_PERIOD (1.f / PERIODIC_FREQUENCY)
 #define SENSORS_PERIOD (1.f / PERIODIC_FREQUENCY)
@@ -143,7 +142,7 @@ void init_ap(void)
   modules_sensors_tid = sys_time_register_timer(SENSORS_PERIOD, NULL);
 
   // common GNC group (estimation, control, actuators, default)
-  // is called with an offset of PERIODIC_FREQUENCY / 2
+  // is called with an offset of half the main period (1/PERIODIC_FREQUENCY)
   // which is the default resolution of SYS_TIME_FREQUENCY,
   // hence the resolution of the virtual timers.
   // In practice, this is the best compromised between having enough time between
@@ -154,13 +153,11 @@ void init_ap(void)
   //      |            |             |
   //      read         gnc
   //
-  modules_gnc_tid = sys_time_register_timer_offset(modules_sensors_tid, 2.f / PERIODIC_FREQUENCY, NULL);
+  modules_gnc_tid = sys_time_register_timer_offset(modules_sensors_tid, 1.f / (2.f * PERIODIC_FREQUENCY), NULL);
 
   // register the timers for the periodic functions
   modules_mcu_core_tid = sys_time_register_timer(SYS_PERIOD, NULL);
-  //modules_radio_control_tid = sys_time_register_timer((1. / 60.), NULL); // FIXME
   modules_datalink_tid = sys_time_register_timer(DATALINK_PERIOD, NULL);
-  monitor_tid = sys_time_register_timer(1., NULL); // FIXME
 
   /* set initial trim values.
    * these are passed to fbw via inter_mcu.
@@ -188,7 +185,6 @@ void handle_periodic_tasks_ap(void)
   uint32_t d_t = 0;
   uint32_t mc_t = 0;
   uint32_t tm_t = 0;
-  uint32_t mon_t = 0;
   //PPRZ_PERF_TRACE("periodic_start");
 
   if (sys_time_check_and_ack_timer(modules_sensors_tid)) {
@@ -231,13 +227,6 @@ void handle_periodic_tasks_ap(void)
 #endif
   }
 
-  if (sys_time_check_and_ack_timer(monitor_tid)) {
-    perf_log = true;
-    //PPRZ_PERF_TRACE("monitor");
-    mon_t = PPRZ_PERF_TIME();
-    monitor_task();
-  }
-
   uint32_t end = PPRZ_PERF_TIME();
   if (s_t) {
     PPRZ_PERF_TRACE_TIME("sensors", s_t);
@@ -256,9 +245,6 @@ void handle_periodic_tasks_ap(void)
   }
   if (tm_t) {
     PPRZ_PERF_TRACE_TIME("telemetry", tm_t);
-  }
-  if (mon_t) {
-    PPRZ_PERF_TRACE_TIME("monitor", mon_t);
   }
   if (perf_log) {
     PPRZ_PERF_TRACE_TIME("periodic_end", end);

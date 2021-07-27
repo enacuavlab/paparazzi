@@ -94,7 +94,7 @@ void main_init(void)
   modules_sensors_tid = sys_time_register_timer(SYS_PERIOD, NULL);
 
   // common GNC group (estimation, control, actuators, default)
-  // is called with an offset of PERIODIC_FREQUENCY / 2
+  // is called with an offset of half the main period (1/PERIODIC_FREQUENCY)
   // which is the default resolution of SYS_TIME_FREQUENCY,
   // hence the resolution of the virtual timers.
   // In practice, this is the best compromised between having enough time between
@@ -105,7 +105,7 @@ void main_init(void)
   //      |            |             |
   //      read         gnc
   //
-  modules_gnc_tid = sys_time_register_timer_offset(modules_sensors_tid, 2.f / PERIODIC_FREQUENCY, NULL);
+  modules_gnc_tid = sys_time_register_timer_offset(modules_sensors_tid, 1.f / (2.f * PERIODIC_FREQUENCY), NULL);
 
   // register the timers for the periodic functions
   modules_mcu_core_tid = sys_time_register_timer(SYS_PERIOD, NULL);
