@@ -10,7 +10,7 @@
   <header>
     <file name="perf_profil.h"/>
   </header>
-  <makefile>
+  <makefile target="ap">
     <file name="perf_profil.c"/>
   </makefile>
 </module>
