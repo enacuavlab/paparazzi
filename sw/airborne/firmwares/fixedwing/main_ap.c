@@ -40,7 +40,6 @@
 #include "inter_mcu.h"
 #include "link_mcu.h"
 
-#include "generated/flight_plan.h"
 #include "generated/airframe.h"
 #include "generated/modules.h"
 #include "subsystems/abi.h"
@@ -108,22 +107,14 @@ INFO_VALUE("it is recommended to configure in your airframe PERIODIC_FREQUENCY t
  */
 tid_t modules_mcu_core_tid; // single step
 tid_t modules_sensors_tid;
-//tid_t modules_estimation_tid;
 //tid_t modules_radio_control_tid; // done in FBW
-tid_t modules_control_actuators_tid; // single step
+tid_t modules_gnc_tid; // estimation, control, actuators, default in a single step
 tid_t modules_datalink_tid;
-//tid_t modules_default_tid;
 tid_t monitor_tid;     ///< id for monitor_task() timer FIXME
-static uint32_t control_offset = 0;
-static bool control_compute = false;
 
 #define SYS_PERIOD (1.f / PERIODIC_FREQUENCY)
 #define SENSORS_PERIOD (1.f / PERIODIC_FREQUENCY)
 #define DATALINK_PERIOD (1.f / TELEMETRY_FREQUENCY)
-
-#ifndef CONTROL_OFFSET
-#define CONTROL_OFFSET 900 // micro-seconds
-#endif
 
 void init_ap(void)
 {
@@ -149,12 +140,21 @@ void init_ap(void)
 #endif
 
   // register timers with temporal dependencies
-  modules_sensors_tid = sys_time_register_timer(SYS_PERIOD, NULL);
-  //modules_estimation_tid = sys_time_register_timer_offset(modules_sensors_tid, ESTIMATION_OFFSET, NULL);
-  modules_control_actuators_tid = sys_time_register_timer_offset(modules_sensors_tid, (1.f/PERIODIC_FREQUENCY)/2.f, NULL);
-  //modules_control_actuators_tid = sys_time_register_timer_offset(modules_sensors_tid, CONTROL_OFFSET, NULL);
-  //modules_default_tid = sys_time_register_timer_offset(modules_sensors_tid, DEFAULT_OFFSET, NULL); // should it be an offset ?
-  SysTimeTimerStart(control_offset);
+  modules_sensors_tid = sys_time_register_timer(SENSORS_PERIOD, NULL);
+
+  // common GNC group (estimation, control, actuators, default)
+  // is called with an offset of PERIODIC_FREQUENCY / 2
+  // which is the default resolution of SYS_TIME_FREQUENCY,
+  // hence the resolution of the virtual timers.
+  // In practice, this is the best compromised between having enough time between
+  // the sensor readings (triggerd in sensors task group) and the lag between
+  // the state update and control/actuators update
+  //
+  //      |      PERIODIC_FREQ       |
+  //      |            |             |
+  //      read         gnc
+  //
+  modules_gnc_tid = sys_time_register_timer_offset(modules_sensors_tid, 2.f / PERIODIC_FREQUENCY, NULL);
 
   // register the timers for the periodic functions
   modules_mcu_core_tid = sys_time_register_timer(SYS_PERIOD, NULL);
@@ -192,16 +192,13 @@ void handle_periodic_tasks_ap(void)
   //PPRZ_PERF_TRACE("periodic_start");
 
   if (sys_time_check_and_ack_timer(modules_sensors_tid)) {
-    SysTimeTimerStart(control_offset);
     perf_log = true;
     //PPRZ_PERF_TRACE("sensors");
     s_t = PPRZ_PERF_TIME();
     modules_sensors_periodic_task();
-    control_compute = true;
   }
 
-  if (sys_time_check_and_ack_timer(modules_control_actuators_tid)) {
-  //if (control_compute && SysTimeTimer(control_offset) >= CONTROL_OFFSET) {
+  if (sys_time_check_and_ack_timer(modules_gnc_tid)) {
     perf_log = true;
     e_t = PPRZ_PERF_TIME();
     //PPRZ_PERF_TRACE("estimation");
@@ -212,26 +209,7 @@ void handle_periodic_tasks_ap(void)
     d_t = PPRZ_PERF_TIME();
     //PPRZ_PERF_TRACE("default");
     modules_default_periodic_task();
-    control_compute = false;
   }
-
-//  if (sys_time_check_and_ack_timer(modules_estimation_tid)) {
-//    modules_estimation_periodic_task();
-//  }
-//
-//  // done in FBW
-//  //if (sys_time_check_and_ack_timer(modules_radio_control_tid)) {
-//  //  radio_control_periodic_task();
-//  //  modules_radio_control_periodic_task(); // FIXME integrate above
-//  //}
-//
-//  if (sys_time_check_and_ack_timer(modules_control_actuators_tid)) {
-//    modules_control_periodic_task();
-//  }
-//
-//  if (sys_time_check_and_ack_timer(modules_default_tid)) {
-//    modules_default_periodic_task();
-//  }
 
   if (sys_time_check_and_ack_timer(modules_mcu_core_tid)) {
     perf_log = true;
@@ -311,57 +289,6 @@ void reporting_task(void)
     periodic_telemetry_send_Ap(DefaultPeriodic, &(DefaultChannel).trans_tx, &(DefaultDevice).device);
 #endif
   }
-}
-
-
-#ifdef LOW_BATTERY_KILL_DELAY
-#warning LOW_BATTERY_KILL_DELAY has been renamed to CATASTROPHIC_BAT_KILL_DELAY, please update your airframe file!
-#endif
-
-/** Maximum time allowed for catastrophic battery level before going into kill mode */
-#ifndef CATASTROPHIC_BAT_KILL_DELAY
-#define CATASTROPHIC_BAT_KILL_DELAY 5
-#endif
-
-/** Maximum distance from HOME waypoint before going into kill mode */
-#ifndef KILL_MODE_DISTANCE
-#define KILL_MODE_DISTANCE (1.5*MAX_DIST_FROM_HOME)
-#endif
-
-/** Default minimal speed for takeoff in m/s */
-#ifndef MIN_SPEED_FOR_TAKEOFF
-#define MIN_SPEED_FOR_TAKEOFF 5.
-#endif
-
-/** monitor stuff run at 1Hz */
-void monitor_task(void)
-{
-  if (autopilot.flight_time) {
-    autopilot.flight_time++;
-  }
-
-  static uint8_t t = 0;
-  if (ap_electrical.vsupply < CATASTROPHIC_BAT_LEVEL) {
-    t++;
-  } else {
-    t = 0;
-  }
-#if !USE_GENERATED_AUTOPILOT
-  // only check for static autopilot
-  autopilot.kill_throttle |= (t >= CATASTROPHIC_BAT_KILL_DELAY);
-  autopilot.kill_throttle |= autopilot.launch && (dist2_to_home > Square(KILL_MODE_DISTANCE));
-#endif
-
-  if (!autopilot.flight_time &&
-      stateGetHorizontalSpeedNorm_f() > MIN_SPEED_FOR_TAKEOFF) {
-    autopilot.flight_time = 1;
-    autopilot.launch = true; /* Not set in non auto launch */
-#if DOWNLINK
-    uint16_t time_sec = sys_time.nb_sec;
-    DOWNLINK_SEND_TAKEOFF(DefaultChannel, DefaultDevice, &time_sec);
-#endif
-  }
-
 }
 
 
