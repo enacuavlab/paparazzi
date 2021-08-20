@@ -1,0 +1,26 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="nav_thermals" dir="nav">
+  <doc>
+    <description>
+        Thermals centering based on energy for gliders
+
+    </description>
+  </doc>
+  <settings>
+      <dl_settings>
+          <dl_settings NAME="Nav Thermals">
+              <dl_setting var="nav_thermals_params.roll" shortname="roll" min="0.0" step=".5" max="50.0" module="modules/nav/nav_thermals"/>
+          </dl_settings>
+      </dl_settings>
+  </settings>
+  <header>
+    <file name="nav_thermals.h"/>
+  </header>
+  <init fun="nav_thermals_init()"/>
+  <makefile>
+    <file name="nav_thermals.c"/>
+    <test firmware="fixedwing">
+      <define name="CTRL_TYPE_H" value="firmwares/fixedwing/guidance/guidance_v.h" type="string"/>
+    </test>
+  </makefile>
+</module>
