@@ -41,6 +41,5 @@ extern float nav_thermals_energy(float altitude, float speed);
 extern float get_acc(void);
 extern float average(float en[1000], int l);
 extern bool exit_thermals(void);
-extern bool rotation(void);
 
 #endif  // NAV_THERMALS_H

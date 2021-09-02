@@ -20,7 +20,7 @@
     <waypoint name="_3" x="100" y="200"/>
     <waypoint name="_4" x="100" y="0"/>
     <waypoint name="CLIMB" x="-122.5" y="35.4"/>
-    <waypoint name="NOUVEAU" x="150" y="150"/>
+    <waypoint name="NOUVEAU" x="50" y="50"/>
   </waypoints>
   <sectors>
     <sector name="Square">
@@ -36,6 +36,7 @@
   </variables>
   <modules>
       <module name="nav" type="thermals"/>
+      <module name="nav" type="thermal_circle"/>
   </modules>
   <exceptions/>
   <blocks>
@@ -67,7 +68,7 @@
     
     <block name="Thermals" strip_icon="takeoff.png" strip_button="Follow thermal" group="thermal">
         <exception cond="exit_thermals() == false" deroute="Standby"/>
-        <attitude roll="nav_thermals_run()" throttle="0" pitch="0" vmode="throttle"/>
+        <attitude roll="nav_thermals_run()" throttle="0.25" pitch="0" vmode="throttle"/>
     </block>
     <block name="Kill thermal mode" strip_icon="takeoff.png" strip_button="Kill thermal mode" group="thermal">
         <deroute block="Standby"/>
@@ -76,10 +77,17 @@
     
     
     
-    <block name="Line 1-2" strip_button="Line (wp 1-2)" strip_icon="line.png" group="extra_pattern">
-      <call_once fun="nav_line_setup()"/>
-      <call fun="nav_line_run(WP_1, WP_2, nav_radius)"/>
+    
+    <block name="Thermals Circle" strip_icon="takeoff.png" strip_button="Thermal Circle mode" group="thermal">
+        <!--exception cond="exit_thermals() == false" deroute="Standby"/-->
+        <call_once fun="thermal_circle_setup(WP_NOUVEAU)"/>
+        <circle radius="80.0" throttle="0.25" pitch="0" wp="NOUVEAU" until="circle() == false" vmode="throttle"/>
     </block>
+    
+    
+    
+    
+    
     <block name="Figure 8 around wp 1" strip_button="Figure 8 (wp 1-2)" strip_icon="eight.png">
       <eight center="1" radius="nav_radius" turn_around="2"/>
     </block>

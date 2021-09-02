@@ -169,24 +169,9 @@ bool exit_thermals(void){   //function that returns true or false indicating if 
         val = false;
         incr = 0;
     }
-    if (incr == 30){
-        printf("%f \n", speed_z);
-    }
+    
     
     //printf("%i  %f \n", incr, speed_z);
     return val;
 }
 
-int incr2 = 0;
-bool rotation(void){
-    float speed_z;
-    bool val = true;
-    speed_z = stateGetSpeedEnu_f()->z;
-    
-    if (incr2==25 && speed_z < 0){
-        val = false;
-    }
-    incr2 = incr2 + 1;
-    
-    return val
-}
