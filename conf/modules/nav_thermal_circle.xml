@@ -1,0 +1,14 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="nav_thermal_circle" dir="nav">
+  <doc>
+    <description>Thermals centering based on circles for gliders</description>
+  </doc>
+  <header>
+    <file name="nav_thermal_circle.h"/>
+  </header>
+  <init fun="nav_thermal_circle_init()"/>
+  <makefile>
+    <file name="nav_thermal_circle.c"/>
+    <test/>
+  </makefile>
+</module>
