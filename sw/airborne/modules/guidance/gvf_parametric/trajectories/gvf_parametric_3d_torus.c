@@ -57,8 +57,7 @@
 
 gvf_par_3d_torus_par gvf_parametric_3d_torus_par = {GVF_PARAMETRIC_3D_TORUS_KX, GVF_PARAMETRIC_3D_TORUS_KY, GVF_PARAMETRIC_3D_TORUS_KZ, GVF_PARAMETRIC_3D_TORUS_RH, GVF_PARAMETRIC_3D_TORUS_RV};
 
-void gvf_parametric_3d_torus_info(float *f1, float *f2, float *f3, float *f1d, float *f2d, float *f3d,
-                                  float *f1dd, float *f2dd, float *f3dd)
+void gvf_parametric_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1, float *f2dw1, float *f3dw1, float *f1ddw1, float *f2ddw1, float *f3ddw1, float *f1dw2, float *f2dw2, float *f3dw2, float *f1ddw2, float *f2ddw2, float *f3ddw2)
 {
   float xo = gvf_parametric_trajectory.p_parametric[0];
   float yo = gvf_parametric_trajectory.p_parametric[1];
@@ -74,21 +73,24 @@ void gvf_parametric_3d_torus_info(float *f1, float *f2, float *f3, float *f1d, f
   // Parametric equations of the trajectory and the partial derivatives w.r.t. 'w'
 
   *f1 = (rh + rv*cosf(w2))*cosf(w) + xo;
-  *f2 = (rh + rv*sinf(w2))*sinf(w) + yo;
+  *f2 = (rh + rv*cosf(w2))*sinf(w) + yo;
   *f3 = rv*sinf(w2) + zo;
 
-  float nrf1d = -wx*cx*sinf(wx*wb + deltax_rad);
-  float nrf2d = -wy*cy*sinf(wy*wb + deltay_rad);
+  *f1dw1 = 0;
+  *f2dw1 = 0;
+  *f3dw1 = 0;
 
-  *f1d = cosf(alpha_rad)*nrf1d - sinf(alpha_rad)*nrf2d;
-  *f2d = sinf(alpha_rad)*nrf1d + cosf(alpha_rad)*nrf2d;
-  *f3d = -wz*cz*sinf(wz*wb + deltaz_rad);
+  *f1ddw1 = 0;
+  *f2ddw1 = 0;
+  *f3ddw1 = 0;
 
-  float nrf1dd = -wx*wx*cx*cosf(wx*wb + deltax_rad);
-  float nrf2dd = -wy*wy*cy*cosf(wy*wb + deltay_rad);
+  *f1dw2 = 0;
+  *f2dw2 = 0;
+  *f3dw2 = 0;
 
-  *f1dd = cosf(alpha_rad)*nrf1dd - sinf(alpha_rad)*nrf2dd;
-  *f2dd = sinf(alpha_rad)*nrf1dd + cosf(alpha_rad)*nrf2dd;
-  *f3dd = -wz*wz*cz*cosf(wz*wb + deltaz_rad);
+  *f1ddw2 = 0;
+  *f2ddw2 = 0;
+  *f3ddw2 = 0;
+
 }
 
