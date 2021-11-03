@@ -1,0 +1,77 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="gvf_parametric_surf" dir="guidance/gvf_parametric_surf">
+  <doc>
+	  <description>Guidance algorithm for tracking 2D and 3D smooth trajectories that are defined by a parametric equation with two parameters. That allows
+		  the tracking of surfaces such the sphere or the torus.
+
+      For more details we refer to https://wiki.paparazziuav.org/wiki/Module/guidance_vector_field .
+      This algorithm needs the Eigen library, be sure you have it installed, e.g., git submodule update --init --recursive sw/ext/eigen
+    </description>
+    <section name="Parameters" prefix="GVF_PARAMETRIC_SURF_COORDINATION_">
+      <define name="MAX_NEIGHBORS" value="4" description="Maximum number of accepted neighbors for an aircraft"/>
+      <define name="GAIN_KC1" value="1" description="Control gain for the coordination algorithm, the higher the faster the synchronization"/>
+      <define name="GAIN_KC2" value="1" description="Control gain for the coordination algorithm, the higher the faster the synchronization"/>
+    </section>
+  </doc>
+
+  <settings name="GVF_PARAMETRIC_SURF">
+    <dl_settings>
+      <dl_settings NAME="GVF_PARAMETRIC_SURF">
+        <dl_settings NAME="Control">
+          <dl_setting MAX="1" MIN="-1" STEP="2" VAR="gvf_parametric_surf_control.s1" shortname = "direction"/>
+          <dl_setting MAX="1" MIN="-1" STEP="2" VAR="gvf_parametric_surf_control.s2" shortname = "direction"/>
+          <dl_setting MAX="1.25" MIN="0.75" STEP="0.05" VAR="gvf_parametric_surf_control.k_roll" shortname="k_roll" param="GVF_PARAMETRIC_SURF_CONTROL_KROLL"/>
+          <dl_setting MAX="1.25" MIN="0.75" STEP="0.05" VAR="gvf_parametric_surf_control.k_climb" shortname="k_climb" param="GVF_PARAMETRIC_SURF_CONTROL_KCLIMB"/>
+          <dl_setting MAX="10" MIN="0.01" STEP="0.05" VAR="gvf_parametric_surf_control.L" shortname="L" param="GVF_PARAMETRIC_SURF_CONTROL_L"/>
+          <dl_setting MAX="1" MIN="0.001" STEP="0.005" VAR="gvf_parametric_surf_control.beta1" shortname="beta1" param="GVF_PARAMETRIC_SURF_CONTROL_BETA1"/>
+          <dl_setting MAX="1" MIN="0.001" STEP="0.005" VAR="gvf_parametric_surf_control.beta2" shortname="beta2" param="GVF_PARAMETRIC_SURF_CONTROL_BETA2"/>
+          <dl_setting MAX="1.5" MIN="0.5" STEP="0.01" VAR="gvf_parametric_surf_control.k_psi" shortname="k_psi" param="GVF_PARAMETRIC_SURF_CONTROL_KPSI"/>
+        </dl_settings>
+        <dl_settings NAME="Coordination">
+          <dl_setting MAX="1" MIN="0" STEP="1" VAR="gvf_parametric_surf_coordination.coordination" shortname = "Coordination" param="GVF_PARAMETRIC_SURF_COORDINATION_COORDINATION"/>
+          <dl_setting MAX="20" MIN="0" STEP="1" VAR="gvf_parametric_surf_coordination.kc1" shortname = "Gain" param="GVF_PARAMETRIC_SURF_COORDINATION_GAIN_KC1"/>
+          <dl_setting MAX="20" MIN="0" STEP="1" VAR="gvf_parametric_surf_coordination.kc2" shortname = "Gain" param="GVF_PARAMETRIC_SURF_COORDINATION_GAIN_KC2"/>
+          <dl_setting MAX="5000" MIN="0" STEP="1" VAR="gvf_parametric_surf_coordination.timeout" shortname = "Timeout" param="GVF_PARAMETRIC_SURF_COORDINATION_TIMEOUT"/>
+          <dl_setting MAX="1000" MIN="0" STEP="1" VAR="gvf_parametric_surf_coordination.broadtime" shortname = "Broadcasting" param="GVF_PARAMETRIC_SURF_COORDINATION_BROADTIME"/>
+        </dl_settings>
+        <dl_settings NAME="3D_torus">
+          <dl_setting MAX="0.01" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_2d_trefoil_par.kx" shortname="2d_tre_kx" param="GVF_PARAMETRIC_2D_TREFOIL_KX"/>
+          <dl_setting MAX="0.01" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_2d_trefoil_par.ky" shortname="2d_tre_ky" param="GVF_PARAMETRIC_2D_TREFOIL_KY"/>
+          <dl_setting MAX="1" MIN="0.0" STEP="0.01" VAR="gvf_parametric_2d_trefoil_par.w1" shortname="2d_tre_w1" param="GVF_PARAMETRIC_2D_TREFOIL_W1"/>
+          <dl_setting MAX="1" MIN="0.0" STEP="0.01" VAR="gvf_parametric_2d_trefoil_par.w2" shortname="2d_tre_w2" param="GVF_PARAMETRIC_2D_TREFOIL_W2"/>
+          <dl_setting MAX="200" MIN="10" STEP="5" VAR="gvf_parametric_2d_trefoil_par.ratio" shortname="2d_tre_ratio" param="GVF_PARAMETRIC_2D_TREFOIL_RATIO"/>
+          <dl_setting MAX="200" MIN="10" STEP="5" VAR="gvf_parametric_2d_trefoil_par.r" shortname="2d_tre_r" param="GVF_PARAMETRIC_2D_TREFOIL_R"/>
+          <dl_setting MAX="180" MIN="-180" STEP="1" VAR="gvf_parametric_2d_trefoil_par.alpha" shortname="2d_tre_alpha" param="GVF_PARAMETRIC_2D_TREFOIL_ALPHA"/>
+        </dl_settings>
+       </dl_settings>
+    </dl_settings>
+  </settings>
+
+  <header>
+    <file name="gvf_parametric_surf.h"/>
+    <file name="gvf_parametric_surf_low_level_control.h"/>
+    <file name="trajectories/gvf_parametric_surf_3d_torus.h"/>
+  </header>
+
+  <init fun = "gvf_parametric_surf_init()"/>
+
+  <datalink message="GVF_PARAMETRIC_SURF_REG_TABLE" fun="gvf_parametric_coordination_parseRegTable(buf)"/>
+  <datalink message="GVF_PARAMETRIC_SURF_W" fun="gvf_parametric_coordination_parseWTable(buf)"/>
+
+  <makefile target="ap|nps" firmware="fixedwing">
+    <configure name="CXXSTANDARD" value="-std=c++14"/>
+    <flag name="CXXFLAGS" value="Wno-int-in-bool-context -Wno-deprecated-copy"/>
+    <include name="$(PAPARAZZI_SRC)/sw/ext/eigen"/>
+    <define name="EIGEN_NO_MALLOC"/>
+    <define name="EIGEN_NO_AUTOMATIC_RESIZING"/>
+    <file name="gvf_parametric_surf.cpp"/>
+    <file name="gvf_parametric_surf__low_level_control.c"/>
+    <file name="trajectories/gvf_parametric_surf_3d_torus.c"/>
+    <flag name="LDFLAGS" value="lstdc++" />
+  </makefile>
+
+  <makefile target="ap" firmware="fixedwing">
+    <define name="EIGEN_NO_DEBUG"/>
+  </makefile>
+</module>
