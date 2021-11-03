@@ -31,31 +31,31 @@
 #include "gvf_parametric_3d_torus.h"
 
 /*! Default gain kx for the 3d torus trajectory */
-#ifndef GVF_PARAMETRIC_3D_TORUS_KX
-#define GVF_PARAMETRIC_3D_TORUS_KX 0.001
+#ifndef GVF_PARAMETRIC_SURF_3D_TORUS_KX
+#define GVF_PARAMETRIC_SURF_3D_TORUS_KX 0.001
 #endif
 
 /*! Default gain ky for the 3d torus trajectory */
-#ifndef GVF_PARAMETRIC_3D_TORUS_KY
-#define GVF_PARAMETRIC_3D_TORUS_KY 0.001
+#ifndef GVF_PARAMETRIC_SURF_3D_TORUS_KY
+#define GVF_PARAMETRIC_SURF_3D_TORUS_KY 0.001
 #endif
 
 /*! Default gain kz for the 3d torus trajectory */
-#ifndef GVF_PARAMETRIC_3D_TORUS_KZ
-#define GVF_PARAMETRIC_3D_TORUS_KZ 0.001
+#ifndef GVF_PARAMETRIC_SURF_3D_TORUS_KZ
+#define GVF_PARAMETRIC_SURF_3D_TORUS_KZ 0.001
 #endif
 
 /*! Default radius taken from the center of the torus  */
-#ifndef GVF_PARAMETRIC_3D_TORUS_RH
-#define GVF_PARAMETRIC_3D_TORUS_RH 80
+#ifndef GVF_PARAMETRIC_SURF_3D_TORUS_RH
+#define GVF_PARAMETRIC_SURF_3D_TORUS_RH 80
 #endif
 
 /*! Default radius for the inner tube */
-#ifndef GVF_PARAMETRIC_3D_TORUS_RV
-#define GVF_PARAMETRIC_3D_TORUS_RV 10
+#ifndef GVF_PARAMETRIC_SURF_3D_TORUS_RV
+#define GVF_PARAMETRIC_SURF_3D_TORUS_RV 10
 #endif
 
-gvf_par_3d_torus_par gvf_parametric_3d_torus_par = {GVF_PARAMETRIC_3D_TORUS_KX, GVF_PARAMETRIC_3D_TORUS_KY, GVF_PARAMETRIC_3D_TORUS_KZ, GVF_PARAMETRIC_3D_TORUS_RH, GVF_PARAMETRIC_3D_TORUS_RV};
+gvf_par_3d_torus_par gvf_parametric_3d_torus_par = {GVF_PARAMETRIC_SURF_3D_TORUS_KX, GVF_PARAMETRIC_SURF_3D_TORUS_KY, GVF_PARAMETRIC_SURF_3D_TORUS_KZ, GVF_PARAMETRIC_SURF_3D_TORUS_RH, GVF_PARAMETRIC_SURF_3D_TORUS_RV};
 
 void gvf_parametric_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1, float *f2dw1, float *f3dw1, float *f1ddw1, float *f2ddw1, float *f3ddw1, float *f1dw2, float *f2dw2, float *f3dw2, float *f1ddw2, float *f2ddw2, float *f3ddw2)
 {
@@ -70,27 +70,27 @@ void gvf_parametric_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1,
   float w1b = w1 * gvf_parametric_surface_control.beta1 * gvf_parametric_surface_control.s1;
   float w2b = w2 * gvf_parametric_surface_control.beta2 * gvf_parametric_surface_control.s2;
 
-  // Parametric equations of the trajectory and the partial derivatives w.r.t. 'w'
+  // Parametric equations of the trajectory and the partial derivatives w.r.t. 'w1b' and 'w2b'
 
-  *f1 = (rh + rv*cosf(w2))*cosf(w) + xo;
-  *f2 = (rh + rv*cosf(w2))*sinf(w) + yo;
-  *f3 = rv*sinf(w2) + zo;
+  *f1 = (rh + rv*cosf(w2b))*cosf(w1b) + xo;
+  *f2 = (rh + rv*cosf(w2b))*sinf(w1b) + yo;
+  *f3 = rv*sinf(w2b) + zo;
 
-  *f1dw1 = 0;
-  *f2dw1 = 0;
+  *f1dw1 = -sinf(w1b)*(rh + rv*cos(w2b));
+  *f2dw1 =  cosf(w1b)*(rh + rv*cos(w2b));
   *f3dw1 = 0;
 
-  *f1ddw1 = 0;
-  *f2ddw1 = 0;
+  *f1ddw1 = -cosf(w1b)*(rh + rv*cos(w2b));
+  *f2ddw1 = -sinf(w1b)*(rh + rv*cos(w2b));
   *f3ddw1 = 0;
 
-  *f1dw2 = 0;
-  *f2dw2 = 0;
-  *f3dw2 = 0;
+  *f1dw2 = -rv*sinf(w2b)*cosf(w1b);
+  *f2dw2 = -rv*sinf(w2b)*sinf(w1b);
+  *f3dw2 =  rv*cosf(w2b);
 
-  *f1ddw2 = 0;
-  *f2ddw2 = 0;
-  *f3ddw2 = 0;
+  *f1ddw2 = -rv*cosf(w2b)*cosf(w1b);
+  *f2ddw2 = -rv*cosf(w2b)*sinf(w1b);
+  *f3ddw2 = -rv*sinf(w2b);
 
 }
 
