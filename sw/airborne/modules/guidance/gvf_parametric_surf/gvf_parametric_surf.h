@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Hector Garcia de Marina <hgarciad@ucm.es>
+ * Copyright (C) 2021 Hector Garcia de Marina <hgarciad@ucm.es>
  *
  * This file is part of paparazzi.
  *
@@ -19,64 +19,69 @@
  */
 
 /**
- * @file modules/guidance/gvf_parametric/gvf_parametric.h
+ * @file modules/guidance/gvf_parametric/gvf_parametric_surf.h
  *
- * Guiding vector field algorithm for 2D and 3D parametric trajectories.
+ * Guiding vector field algorithm for 2D and 3D parametric trajectories
+ * with two parameters.
  */
 
-#ifndef GVF_PARAMETRIC_H
-#define GVF_PARAMETRIC_H
+#ifndef GVF_PARAMETRIC_SURF_SURF_H
+#define GVF_PARAMETRIC_SURF_SURF_H
 
-#define GVF_PARAMETRIC_GRAVITY 9.806
+#define GVF_PARAMETRIC_SURF_GRAVITY 9.806
 
 /*! Default gain kroll for tuning the "coordinated turn" */
-#ifndef GVF_PARAMETRIC_CONTROL_KROLL
-#define GVF_PARAMETRIC_CONTROL_KROLL 1
+#ifndef GVF_PARAMETRIC_SURF_CONTROL_KROLL
+#define GVF_PARAMETRIC_SURF_CONTROL_KROLL 1
 #endif
 
 /*! Default gain kclimb for tuning the climbing setting point */
-#ifndef GVF_PARAMETRIC_CONTROL_KCLIMB
-#define GVF_PARAMETRIC_CONTROL_KCLIMB 1
+#ifndef GVF_PARAMETRIC_SURF_CONTROL_KCLIMB
+#define GVF_PARAMETRIC_SURF_CONTROL_KCLIMB 1
 #endif
 
 /*! Default scale for the error signals */
-#ifndef GVF_PARAMETRIC_CONTROL_L
-#define GVF_PARAMETRIC_CONTROL_L 0.1
+#ifndef GVF_PARAMETRIC_SURF_CONTROL_L
+#define GVF_PARAMETRIC_SURF_CONTROL_L 0.1
 #endif
 
 /*! Default scale for w  */
-#ifndef GVF_PARAMETRIC_CONTROL_BETA
-#define GVF_PARAMETRIC_CONTROL_BETA 0.01
+#ifndef GVF_PARAMETRIC_SURF_CONTROL_BETA
+#define GVF_PARAMETRIC_SURF_CONTROL_BETA 0.01
 #endif
 
 /*! Default gain kpsi for tuning the alignment of the vehicle with the vector field */
-#ifndef GVF_PARAMETRIC_CONTROL_KPSI
-#define GVF_PARAMETRIC_CONTROL_KPSI 1
+#ifndef GVF_PARAMETRIC_SURF_CONTROL_KPSI
+#define GVF_PARAMETRIC_SURF_CONTROL_KPSI 1
 #endif
 
 /*! Default on/off coordination */
-#ifndef GVF_PARAMETRIC_COORDINATION_COORDINATION
-#define GVF_PARAMETRIC_COORDINATION_COORDINATION 0
+#ifndef GVF_PARAMETRIC_SURF_COORDINATION
+#define GVF_PARAMETRIC_SURF_COORDINATION 0
 #endif
 
-/*! Default gain kc for the coordination algorithm */
-#ifndef GVF_PARAMETRIC_COORDINATION_KC
-#define GVF_PARAMETRIC_COORDINATION_KC 0.01
+/*! Default gains kc1 and kc2 for the coordination algorithm */
+#ifndef GVF_PARAMETRIC_SURF_COORDINATION_KC1
+#define GVF_PARAMETRIC_SURF_COORDINATION_KC1 0.01
+#endif
+
+#ifndef GVF_PARAMETRIC_SURF_COORDINATION_KC2
+#define GVF_PARAMETRIC_SURF_COORDINATION_KC2 0.01
 #endif
 
 /*! Default timeout for the neighbors' information */
-#ifndef GVF_PARAMETRIC_COORDINATION_TIMEOUT
-#define GVF_PARAMETRIC_COORDINATION_TIMEOUT 1500
+#ifndef GVF_PARAMETRIC_SURF_COORDINATION_TIMEOUT
+#define GVF_PARAMETRIC_SURF_COORDINATION_TIMEOUT 1500
 #endif
 
 /*! Default broadcasting time */
-#ifndef GVF_PARAMETRIC_COORDINATION_BROADTIME
-#define GVF_PARAMETRIC_COORDINATION_BROADTIME 200
+#ifndef GVF_PARAMETRIC_SURF_COORDINATION_BROADTIME
+#define GVF_PARAMETRIC_SURF_COORDINATION_BROADTIME 200
 #endif
 
 /*! Default number of neighbors per aircraft */
-#ifndef GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS
-#define GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS 4
+#ifndef GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS
+#define GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS 4
 #endif
 
 
@@ -84,37 +89,10 @@
 extern "C" {
 #endif
 
-#include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_ellipse.h"
-#include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_lissajous.h"
-#include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_2d_trefoil.h"
+#include "modules/guidance/gvf_parametric_surf/trajectories/gvf_parametric_surf_3d_torus.h"
 
-#include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_torus.h"
-
-
-/** @typedef gvf_parametric_con
-* @brief Control parameters for the GVF_PARAMETRIC
-* @param w Virtual coordinate from the parametrization of the trajectory
-* @param delta_T Time between iterations needed for integrating w
-* @param s Defines the direction to be tracked. It takes the values -1 or 1.
-* @param k_roll Gain for tuning the coordinated turn.
-* @param k_climb Gain for tuning the climbing setting point.
-*/
-typedef struct {
-  float w;
-  float delta_T;
-  int8_t s;
-  float k_roll;
-  float k_climb;
-  float k_psi;
-  float L;
-  float beta;
-  float w_dot;
-} gvf_parametric_con;
-
-extern gvf_parametric_con gvf_parametric_control;
-
-/** @typedef gvf_parametric_surface_con
-* @brief Control parameters for the GVF_PARAMETRIC for tracking surfaces
+/** @typedef gvf_parametric_surf_con
+* @brief Control parameters for the GVF_PARAMETRIC_SURF
 * @param w1 Virtual coordinate from the parametrization of the trajectory
 * @param w2 Virtual coordinate from the parametrization of the trajectory
 * @param delta_T Time between iterations needed for integrating w
@@ -137,28 +115,12 @@ typedef struct {
   float beta2;
   float w1_dot;
   float w2_dot;
-} gvf_parametric_surface_con;
+} gvf_parametric_surf_con;
 
-extern gvf_parametric_surface_con gvf_parametric_surface_control;
+extern gvf_parametric_surf_con gvf_parametric_surf_control;
 
-/** @typedef gvf_parametric_coord
-* @brief Coordination parameters for the GVF_PARAMETRIC
-* @param coordination If we want to coordinate on a path
-* @param kc Gain for the consensus
-* @param timeout When we stop considering a neighbor if we have not heard from it
-* @param broadtime Period for broadcasting w
-*/
-typedef struct {
-  int8_t coordination;
-  float kc;
-  uint16_t timeout;
-  uint16_t broadtime;
-} gvf_parametric_coord;
-
-extern gvf_parametric_coord gvf_parametric_coordination;
-
-/** @typedef gvf_parametric_surface_coord
-* @brief Coordination parameters for the GVF_PARAMETRIC
+/** @typedef gvf_parametric_surf_coord
+* @brief Coordination parameters for the GVF_PARAMETRIC_SURF
 * @param coordination If we want to coordinate on a surface
 * @param kc1 Gain for the consensus w1
 * @param kc2 Gain for the consensus w2
@@ -171,92 +133,54 @@ typedef struct {
   float kc2;
   uint16_t timeout;
   uint16_t broadtime;
-} gvf_parametric_surface_coord;
+} gvf_parametric_surf_coord;
 
-extern gvf_parametric_surface_coord gvf_parametric_coordination;
+extern gvf_parametric_surf_coord gvf_parametric_surf_coordination;
 
-struct gvf_parametric_coord_tab {
-  float tableNei[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS][5];
-  float error_deltaw[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
-  uint32_t last_comm[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
+struct gvf_parametric_surf_coord_tab {
+  float tableNei[GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS][7];
+  float error_deltaw1[GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS];
+  float error_deltaw2[GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS];
+  uint32_t last_comm[GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS];
 };
 
-extern struct gvf_parametric_coord_tab gvf_parametric_coordination_tables;
-
-struct gvf_parametric_surface_coord_tab {
-  float tableNei[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS][5];
-  float error_deltaw1[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
-  float error_deltaw2[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
-  uint32_t last_comm[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
-};
-
-extern struct gvf_parametric_surface_coord_tab gvf_parametric_surface_coordination_tables;
-
+extern struct gvf_parametric_surf_coord_tab gvf_parametric_surf_coordination_tables;
 
 // Parameters for the trajectories
-enum trajectories_parametric {
-  TREFOIL_2D = 0,
-  ELLIPSE_3D = 1,
-  LISSAJOUS_3D = 2,
-  TORUS_3D_SURFACE = 3,
-  NONE_PARAMETRIC = 255,
+enum trajectories_parametric_surf {
+  TORUS_3D = 0,
+  NONE_SURF_PARAMETRIC = 255,
 };
 
 typedef struct {
   enum trajectories_parametric type;
   float p_parametric[16];
   float phi_errors[3];
-} gvf_parametric_tra;
+} gvf_parametric_surf_tra;
 
-extern gvf_parametric_tra gvf_parametric_trajectory;
+extern gvf_parametric_surf_tra gvf_parametric_surf_trajectory;
 
 // Init function
-extern void gvf_parametric_init(void);
+extern void gvf_parametric_surf_init(void);
 
 // Control functions
-extern void gvf_parametric_set_direction(int8_t);
-extern void gvf_parametric_control_2D(float, float, float, float, float, float, float, float);
-extern void gvf_parametric_control_3D(float, float, float, float, float, float, float, float, float,
+extern void gvf_parametric_surf_set_direction_s1(int8_t);
+extern void gvf_parametric_surf_set_direction_s2(int8_t);
+extern void gvf_parametric_surf_control_3D(float, float, float, float, float, float, float, float, float,
                                       float, float, float);
 
-extern void gvf_parametric_surface_set_direction(int8_t, int8_t);
-extern void gvf_parametric_surface_control_2D(float, float, float, float, float, float, float, float);
-extern void gvf_parametric_surface_control_3D(float, float, float, float, float, float, float, float, float,
-                                              float, float, float);
-
 // Coordination functions
-extern void gvf_parametric_coordination_send_w_to_nei(void);
-extern void gvf_parametric_coordination_parseRegTable(uint8_t *buf);
-extern void gvf_parametric_coordination_parseWTable(uint8_t *buf);
+extern void gvf_parametric_surf_coordination_send_w_to_nei(void);
+extern void gvf_parametric_surf_coordination_parseRegTable(uint8_t *buf);
+extern void gvf_parametric_surf_coordination_parseWTable(uint8_t *buf);
 
-extern void gvf_parametric_surface_coordination_send_w_to_nei(void);
-extern void gvf_parametric_surface_coordination_parseRegTable(uint8_t *buf);
-extern void gvf_parametric_surface_coordination_parseWTable(uint8_t *buf);
-
-// 2D Trefoil
-extern bool gvf_parametric_2D_trefoil_XY(float, float, float, float, float, float, float);
-extern bool gvf_parametric_2D_trefoil_wp(uint8_t, float, float, float, float, float);
-
-// 3D Ellipse
-extern bool gvf_parametric_3D_ellipse_XYZ(float, float, float, float, float, float);
-extern bool gvf_parametric_3D_ellipse_wp(uint8_t, float, float, float, float);
-extern bool gvf_parametric_3D_ellipse_wp_delta(uint8_t, float, float, float, float);
-
-// 3D Lissajous
-extern bool gvf_parametric_3D_lissajous_XYZ(float, float, float, float, float, float, float, float, float, float, float,
-    float, float);
-extern bool gvf_parametric_3D_lissajous_wp_center(uint8_t, float, float, float, float, float, float, float, float,
-    float, float, float);
-
-// 3D Torus (surface)
-extern bool gvf_parametric_3D_torus_XYZ(float, float, float, float, float, float, float, float, float, float, float,
-    float, float);
-extern bool gvf_parametric_3D_torus_wp_center(uint8_t, float, float, float, float, float, float, float, float,
-    float, float, float);
+// 3D Torus
+extern bool gvf_parametric_surf_3D_torus_XY(float, float, float, float, float, float, float);
+extern bool gvf_parametric_surf_3D_torus_wp(uint8_t, float, float, float, float, float);
 
 #ifdef __cplusplus
 }
 #endif
 
 
-#endif // GVF_PARAMETRIC_H
+#endif // GVF_PARAMETRIC_SURF_H
