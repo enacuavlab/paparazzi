@@ -60,8 +60,8 @@ static void send_gvf_parametric_surf(struct transport_tx *trans, struct link_dev
 
   switch (gvf_parametric_trajectory.type) {
     case TORUS_3D:
-      plen = 7;
-      elen = 2;
+      plen = 5;
+      elen = 3;
       break;
     default:
       plen = 1;
@@ -149,11 +149,12 @@ void gvf_parametric_surf_set_direction_s2(int8_t s2)
 // 2D trajectories with two parameters no implemented yet
 
 // 3D trajectories
-void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, float f2, float f3, float f1d, float f2d,
-                               float f3d, float f1dd, float f2dd, float f3dd)
+void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, float f2, float f3, float f1dw1, float f2dw1,
+                               float f3dw1, float f1ddw1, float f2ddw1, float f3ddw1, float f1dw2, float f2dw2, float f3dw2,
+                               float f1ddw1, float f2ddw2, float f3ddw2)
 {
   uint32_t now = get_sys_time_msec();
-  gvf_parametric_surf_control.delta_T = now - gvf_parametric_t0;
+  gvf_parametric_surf_control.delta_T = now - gvf_parametric_surf_t0;
   gvf_parametric_surf_t0 = now;
 
   if (gvf_parametric_surf_control.delta_T > 300) { // We need at least two iterations for Delta_T
@@ -166,8 +167,8 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
   float beta1 = gvf_parametric_surf_control.beta1 * gvf_parametric_surf_control.s1;
   float beta2 = gvf_parametric_surf_control.beta2 * gvf_parametric_surf_control.s2;
 
-  Eigen::Vector4f X;
-  Eigen::Matrix4f J;
+  Eigen::Vector5f X; // Chi
+  Eigen::Matrix5f J;
 
   // Error signals phi_x phi_y and phi_z
   struct EnuCoor_f *pos_enu = stateGetPositionEnu_f();
@@ -340,8 +341,6 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
 
 bool gvf_parametric_surf_3D_torus_XY(float xo, float yo, float r, float zl, float zh, float alpha)
 {
-  horizontal_mode = HORIZONTAL_MODE_CIRCLE; //  Circle for the 2D GCS
-
   // Safety first! If the asked altitude is low
   if (zl > zh) {
     zl = zh;
@@ -354,13 +353,12 @@ bool gvf_parametric_surf_3D_torus_XY(float xo, float yo, float r, float zl, floa
     r = 60;
   }
 
-  gvf_parametric_trajectory.type = ELLIPSE_3D;
+  gvf_parametric_trajectory.type = TORUS_3D;
   gvf_parametric_trajectory.p_parametric[0] = xo;
   gvf_parametric_trajectory.p_parametric[1] = yo;
-  gvf_parametric_trajectory.p_parametric[2] = r;
-  gvf_parametric_trajectory.p_parametric[3] = zl;
-  gvf_parametric_trajectory.p_parametric[4] = zh;
-  gvf_parametric_trajectory.p_parametric[5] = alpha;
+  gvf_parametric_trajectory.p_parametric[2] = zo;
+  gvf_parametric_trajectory.p_parametric[3] = rh;
+  gvf_parametric_trajectory.p_parametric[4] = rv;
 
   float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
 
