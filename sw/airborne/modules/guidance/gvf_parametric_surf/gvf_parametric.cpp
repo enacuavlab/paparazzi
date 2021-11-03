@@ -41,10 +41,15 @@ extern "C" {
 
 // Control
 uint32_t gvf_parametric_t0 = 0; // We need it for calculting the time lapse delta_T
+uint32_t gvf_parametric_surface_t0 = 0; // We need it for calculting the time lapse delta_T
 
 gvf_parametric_con gvf_parametric_control;
 gvf_parametric_coord gvf_parametric_coordination;
 gvf_parametric_coord_tab gvf_parametric_coordination_tables;
+
+gvf_parametric_surface_con gvf_parametric_surface_control;
+gvf_parametric_surface_coord gvf_parametric_surface_coordination;
+gvf_parametric_surface_coord_tab gvf_parametric_surface_coordination_tables;
 
 uint32_t last_transmision = 0;
 
@@ -140,6 +145,26 @@ void gvf_parametric_init(void)
     gvf_parametric_coordination_tables.tableNei[i][4] = 0;
     gvf_parametric_coordination_tables.error_deltaw[i] = 0;
   }
+
+  gvf_parametric_surface_control.w1 = 0;
+  gvf_parametric_surface_control.w2 = 0;
+  gvf_parametric_surface_control.delta_T = 0;
+  gvf_parametric_surface_control.s1 = 1;
+  gvf_parametric_surface_control.s2 = 1;
+  gvf_parametric_surface_control.k_roll = GVF_PARAMETRIC_CONTROL_KROLL;
+  gvf_parametric_surface_control.k_climb = GVF_PARAMETRIC_CONTROL_KCLIMB;
+  gvf_parametric_surface_control.k_psi = GVF_PARAMETRIC_CONTROL_KPSI;
+  gvf_parametric_surface_control.L = GVF_PARAMETRIC_CONTROL_L;
+  gvf_parametric_surface_control.beta1 = GVF_PARAMETRIC_CONTROL_BETA;
+  gvf_parametric_surface_control.beta2 = GVF_PARAMETRIC_CONTROL_BETA;
+  gvf_parametric_surface_control.w1_dot = 0;
+  gvf_parametric_surface_control.w2_dot = 0;
+
+  gvf_parametric_surface_coordination.coordination = GVF_PARAMETRIC_COORDINATION_COORDINATION;
+  gvf_parametric_surface_coordination.kc1 = GVF_PARAMETRIC_COORDINATION_KC;
+  gvf_parametric_surface_coordination.kc2 = GVF_PARAMETRIC_COORDINATION_KC;
+  gvf_parametric_surface_coordination.timeout = GVF_PARAMETRIC_COORDINATION_TIMEOUT;
+  gvf_parametric_surface_coordination.broadtime = GVF_PARAMETRIC_COORDINATION_BROADTIME;
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PAR_COORD, send_gvf_parametric_coordination);
@@ -318,6 +343,172 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
 
   Eigen::Vector4f X;
   Eigen::Matrix4f J;
+
+  // Error signals phi_x phi_y and phi_z
+  struct EnuCoor_f *pos_enu = stateGetPositionEnu_f();
+  float x = pos_enu->x;
+  float y = pos_enu->y;
+  float z = pos_enu->z;
+
+  float phi1 = L * (x - f1);
+  float phi2 = L * (y - f2);
+  float phi3 = L * (z - f3);
+
+  gvf_parametric_trajectory.phi_errors[0] = phi1 / L; // Error signals in meters for the telemetry
+  gvf_parametric_trajectory.phi_errors[1] = phi2 / L;
+  gvf_parametric_trajectory.phi_errors[2] = phi3 / L;
+
+  // Chi
+  X(0) = -f1d * L * L * beta - kx * phi1;
+  X(1) = -f2d * L * L * beta - ky * phi2;
+  X(2) = -f3d * L * L * beta - kz * phi3;
+  X(3) = -L * L + beta * (kx * phi1 * f1d + ky * phi2 * f2d + kz * phi3 * f3d);
+  X *= L;
+
+  // Coordination if needed for multi vehicles
+  float consensus_term_w = 0;
+
+  if(gvf_parametric_coordination.coordination){
+      for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++) {
+          if ((int32_t)(gvf_parametric_coordination_tables.tableNei[i][0]) != -1) {
+              uint32_t timeout = now - (uint32_t)(gvf_parametric_coordination_tables.last_comm[i]);
+              if (timeout > gvf_parametric_coordination.timeout) {
+                  gvf_parametric_coordination_tables.tableNei[i][4] = (float)gvf_parametric_coordination.timeout;
+              } else {
+                  gvf_parametric_coordination_tables.tableNei[i][4] = (float)timeout;
+
+                  float wi = gvf_parametric_control.w;
+                  float wj = gvf_parametric_coordination_tables.tableNei[i][1];
+                  float desired_dw = gvf_parametric_coordination_tables.tableNei[i][3];
+
+                  float error_w = -beta*(wi-wj) + desired_dw;
+
+                  consensus_term_w += error_w;
+
+                  gvf_parametric_coordination_tables.error_deltaw[i] = error_w;
+              }
+          }
+      }
+  }
+
+  X(3) += gvf_parametric_coordination.kc*consensus_term_w;
+
+  // Jacobian
+  J.setZero();
+  J(0, 0) = -kx * L;
+  J(1, 1) = -ky * L;
+  J(2, 2) = -kz * L;
+  J(3, 0) = kx * f1d * beta * L;
+  J(3, 1) = ky * f2d * beta * L;
+  J(3, 2) = kz * f3d * beta * L;
+  J(0, 3) = -(beta * L) * (beta * L * f1dd - kx * f1d);
+  J(1, 3) = -(beta * L) * (beta * L * f2dd - ky * f2d);
+  J(2, 3) = -(beta * L) * (beta * L * f3dd - kz * f3d);
+  J(3, 3) =  beta * beta * (kx * (phi1 * f1dd - L * f1d * f1d) + ky * (phi2 * f2dd - L * f2d * f2d)
+                            + kz * (phi3 * f3dd - L * f3d * f3d));
+  J *= L;
+
+  // Guidance algorithm
+  float ground_speed = stateGetHorizontalSpeedNorm_f();
+  float w_dot = (ground_speed * X(3)) / sqrtf(X(0) * X(0) + X(1) * X(1));
+
+  Eigen::Vector4f xi_dot;
+  struct EnuCoor_f *vel_enu = stateGetSpeedEnu_f();
+  float course = stateGetHorizontalSpeedDir_f();
+
+  xi_dot << vel_enu->x, vel_enu->y, vel_enu->z, w_dot;
+
+  Eigen::Matrix2f E;
+  Eigen::Matrix<float, 2, 4> F;
+  Eigen::Matrix<float, 2, 4> Fp;
+  Eigen::Matrix4f G;
+  Eigen::Matrix4f Gp;
+  Eigen::Matrix4f I;
+  Eigen::Vector2f h;
+  Eigen::Matrix<float, 1, 2> ht;
+
+  h << sinf(course), cosf(course);
+  ht = h.transpose();
+  I.setIdentity();
+  F << 1.0, 0.0, 0.0, 0.0,
+  0.0, 1.0, 0.0, 0.0;
+  E << 0.0, -1.0,
+  1.0, 0.0;
+  G = F.transpose() * F;
+  Fp = E * F;
+  Gp = F.transpose() * E * F;
+
+  Eigen::Matrix<float, 1, 4> Xt = X.transpose();
+  Eigen::Vector4f Xh = X / X.norm();
+  Eigen::Matrix<float, 1, 4> Xht = Xh.transpose();
+
+  float aux = ht * Fp * X;
+  Eigen::Vector4f aux2 =  J * xi_dot;
+
+  // Coordination if needed for multi vehicles
+  float consensus_term_wdot = 0;
+
+  if(gvf_parametric_coordination.coordination){
+    for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++) {
+        if ((int32_t)(gvf_parametric_coordination_tables.tableNei[i][0]) != -1) {
+            uint32_t timeout = now - (uint32_t)(gvf_parametric_coordination_tables.last_comm[i]);
+            if (timeout > gvf_parametric_coordination.timeout) {
+                gvf_parametric_coordination_tables.tableNei[i][4] = (float)gvf_parametric_coordination.timeout;
+            } else {
+                gvf_parametric_coordination_tables.tableNei[i][4] = (float)timeout;
+
+                float wi_dot = gvf_parametric_control.w_dot;
+                float wj_dot = gvf_parametric_coordination_tables.tableNei[i][2];
+
+                consensus_term_wdot += -beta*(wi_dot - wj_dot);
+            }
+        }
+    }
+  }
+
+  aux2(3) += gvf_parametric_coordination.kc*consensus_term_wdot;
+
+  float heading_rate = -1 / (Xt * G * X) * Xt * Gp * (I - Xh * Xht) * aux2 - (gvf_parametric_control.k_psi * aux /
+                       sqrtf(Xt * G * X));
+  float climbing_rate = (ground_speed * X(2)) / sqrtf(X(0) * X(0) + X(1) * X(1));
+
+  // Virtual coordinate update, even if the vehicle is not in autonomous mode, the parameter w will get "closer" to
+  // the vehicle. So it is not only okei but advisable to update it.
+  gvf_parametric_control.w += w_dot * gvf_parametric_control.delta_T * 1e-3;
+  gvf_parametric_control.w_dot = w_dot;
+
+  gvf_parametric_low_level_control_3D(heading_rate, climbing_rate);
+
+  if ((gvf_parametric_coordination.coordination) && (now - last_transmision > gvf_parametric_coordination.broadtime) && (autopilot_get_mode() == AP_MODE_AUTO2)) {
+    gvf_parametric_coordination_send_w_to_nei();
+    last_transmision = now;
+  }
+}
+
+void gvf_parametric_surface_control_2D(float kx, float ky, float f1, float f2, float f1d, float f2d, float f1dd, float f2dd)
+{
+    return;
+}
+
+void gvf_parametric_surface_control_3D(float kx, float ky, float kz, float f1, float f2, float f3, float f1d, float f2d,
+                               float f3d, float f1dd, float f2dd, float f3dd)
+{
+  uint32_t now = get_sys_time_msec();
+  gvf_parametric_surface_control.delta_T = now - gvf_parametric_surface_t0;
+  gvf_parametric_surface_t0 = now;
+
+  if (gvf_parametric_surface_control.delta_T > 300) { // We need at least two iterations for Delta_T
+    gvf_parametric_surface_control.w1 = 0; // Reset w since we assume the algorithm starts
+    gvf_parametric_surface_control.w2 = 0;
+    return;
+  }
+
+  float L = gvf_parametric_surface_control.L;
+  float beta1 = gvf_parametric_surface_control.beta1 * gvf_parametric_surface_control.s1;
+  float beta2 = gvf_parametric_surface_control.beta2 * gvf_parametric_surface_control.s2;
+
+  Eigen::Vector5f X;
+  Eigen::Matrix5f J;
 
   // Error signals phi_x phi_y and phi_z
   struct EnuCoor_f *pos_enu = stateGetPositionEnu_f();
