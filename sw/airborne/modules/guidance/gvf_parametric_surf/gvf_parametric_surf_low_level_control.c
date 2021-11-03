@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Hector Garcia de Marina <hgarciad@ucm.es>
+ * Copyright (C) 2021 Hector Garcia de Marina <hgarciad@ucm.es>
  *
  * This file is part of paparazzi.
  *
@@ -19,40 +19,21 @@
  */
 
 /**
- * @file modules/guidance/gvf_parametric/gvf_parametric_low_level_control.c
+ * @file modules/guidance/gvf_parametric_surf/gvf_parametric_surf_low_level_control.c
  *
- * Firmware dependent file for the guiding vector field algorithm for 2D and 3D parametric trajectories.
+ * Firmware dependent file for the guiding vector field algorithm for 2D and 3D parametric trajectories with two parameters
  */
 
 #include "autopilot.h"
-#include "gvf_parametric_low_level_control.h"
-#include "gvf_parametric.h"
+#include "gvf_parametric_surf_low_level_control.h"
+#include "gvf_parametric_surf.h"
 
 #if defined(FIXEDWING_FIRMWARE)
 #include "firmwares/fixedwing/stabilization/stabilization_attitude.h"
 #include "firmwares/fixedwing/guidance/guidance_v_n.h"   // gvf_parametric is only compatible with the new pprz controller!
 #endif
 
-void gvf_parametric_low_level_control_2D(float heading_rate)
-{
-#if defined(FIXEDWING_FIRMWARE)
-  if (autopilot_get_mode() == AP_MODE_AUTO2) {
-    // Lateral XY coordinates
-    lateral_mode = LATERAL_MODE_ROLL;
-
-    struct FloatEulers *att = stateGetNedToBodyEulers_f();
-    float ground_speed = stateGetHorizontalSpeedNorm_f();
-
-    h_ctl_roll_setpoint =
-      -gvf_parametric_control.k_roll * atanf(heading_rate * ground_speed / GVF_PARAMETRIC_GRAVITY / cosf(att->theta));
-    BoundAbs(h_ctl_roll_setpoint, h_ctl_roll_max_setpoint); // Setting point for roll angle
-  }
-#else
-#error gvf_parametric does not support your firmware yet
-#endif
-}
-
-void gvf_parametric_low_level_control_3D(float heading_rate, float climbing_rate)
+void gvf_parametric_surf_low_level_control_3D(float heading_rate, float climbing_rate)
 {
 #if defined(FIXEDWING_FIRMWARE)
   if (autopilot_get_mode() == AP_MODE_AUTO2) {
@@ -69,7 +50,7 @@ void gvf_parametric_low_level_control_3D(float heading_rate, float climbing_rate
     float ground_speed = stateGetHorizontalSpeedNorm_f();
 
     h_ctl_roll_setpoint =
-      -gvf_parametric_control.k_roll * atanf(heading_rate * ground_speed / GVF_PARAMETRIC_GRAVITY / cosf(att->theta));
+      -gvf_parametric_control.k_roll * atanf(heading_rate * ground_speed / GVF_PARAMETRIC_SURF_GRAVITY / cosf(att->theta));
     BoundAbs(h_ctl_roll_setpoint, h_ctl_roll_max_setpoint); // Setting point for roll angle
   }
 #else

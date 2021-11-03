@@ -138,7 +138,7 @@ typedef struct {
 extern gvf_parametric_surf_coord gvf_parametric_surf_coordination;
 
 struct gvf_parametric_surf_coord_tab {
-  float tableNei[GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS][7];
+  float tableNei[GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS][8];
   float error_deltaw1[GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS];
   float error_deltaw2[GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS];
   uint32_t last_comm[GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS];

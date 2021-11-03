@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Hector Garcia de Marina <hgarciad@ucm.es>
+ * Copyright (C) 2021 Hector Garcia de Marina <hgarciad@ucm.es>
  *
  * This file is part of paparazzi.
  *
@@ -19,15 +19,15 @@
  */
 
 /**
- * @file modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_torus.h
+ * @file modules/guidance/gvf_parametric_surf/trajectories/gvf_parametric_surf_3d_torus.h
  *
  * Guiding vector field algorithm for 2D and 3D complex trajectories.
  *
  * 3D torus figures
  */
 
-#ifndef GVF_PARAMETRIC_3D_TORUS_H
-#define GVF_PARAMETRIC_3D_TORUS_H
+#ifndef GVF_PARAMETRIC_SURF_3D_TORUS_H
+#define GVF_PARAMETRIC_SURF_3D_TORUS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,10 +51,10 @@ typedef struct {
 
 extern gvf_par_3d_torus_par gvf_parametric_3d_torus_par;
 
-extern void gvf_parametric_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1, float *f2dw1, float *f3dw1, float *f1ddw1, float *f2ddw1, float *f3ddw1, float *f1dw2, float *f2dw2, float *f3dw2, float *f1ddw2, float *f2ddw2, float *f3ddw2);
+extern void gvf_parametric_surf_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1, float *f2dw1, float *f3dw1, float *f1ddw1, float *f2ddw1, float *f3ddw1, float *f1dw2, float *f2dw2, float *f3dw2, float *f1ddw2, float *f2ddw2, float *f3ddw2);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GVF_PARAMETRIC_3D_TORUS_H
+#endif // GVF_PARAMETRIC_SURF_3D_TORUS_H
