@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Hector Garcia de Marina <hgarciad@ucm.es>
+ * Copyright (C) 2021 Hector Garcia de Marina <hgarciad@ucm.es>
  *
  * This file is part of paparazzi.
  *
@@ -19,26 +19,25 @@
  */
 
 /**
- * @file modules/guidance/gvf_parametric/gvf_parametric_low_level_control.h
+ * @file modules/guidance/gvf_parametric_surf/gvf_parametric_surf_low_level_control.h
  *
- * Firmware dependent file for the guiding vector field algorithm for 2D and 3D parametric trajectories.
+ * Firmware dependent file for the guiding vector field algorithm for 2D and 3D parametric trajectories with two parameters
  */
 
-#ifndef GVF_PARAMETRIC_LOW_LEVEL_CONTROL_H
-#define GVF_PARAMETRIC_LOW_LEVEL_CONTROL_H
+#ifndef GVF_PARAMETRIC_SURF_LOW_LEVEL_CONTROL_H
+#define GVF_PARAMETRIC_SURF_LOW_LEVEL_CONTROL_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // Low level control functions
-extern void gvf_parametric_low_level_control_2D(float);
-extern void gvf_parametric_low_level_control_3D(float, float);
+extern void gvf_parametric_surf_low_level_control_3D(float, float);
 
 #ifdef __cplusplus
 }
 #endif
 
 
-#endif // GVF_PARAMETRIC_LOW_LEVEL_CONTROL_H
+#endif // GVF_PARAMETRIC_SURF_LOW_LEVEL_CONTROL_H
 

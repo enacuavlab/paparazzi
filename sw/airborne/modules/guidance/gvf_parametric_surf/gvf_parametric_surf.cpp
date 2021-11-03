@@ -122,6 +122,9 @@ void gvf_parametric_surf_init(void)
     gvf_parametric_coordination_tables.tableNei[i][2] = 0;
     gvf_parametric_coordination_tables.tableNei[i][3] = 0;
     gvf_parametric_coordination_tables.tableNei[i][4] = 0;
+    gvf_parametric_coordination_tables.tableNei[i][5] = 0;
+    gvf_parametric_coordination_tables.tableNei[i][6] = 0;
+    gvf_parametric_coordination_tables.tableNei[i][7] = 0;
     gvf_parametric_coordination_tables.error_deltaw1[i] = 0;
     gvf_parametric_coordination_tables.error_deltaw2[i] = 0;
   }
@@ -196,9 +199,9 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
           if ((int32_t)(gvf_parametric_surf_coordination_tables.tableNei[i][0]) != -1) {
               uint32_t timeout = now - (uint32_t)(gvf_parametric_surf_coordination_tables.last_comm[i]);
               if (timeout > gvf_parametric_surf_coordination.timeout) {
-                  gvf_parametric_surf_coordination_tables.tableNei[i][4] = (float)gvf_parametric_surf_coordination.timeout;
+                  gvf_parametric_surf_coordination_tables.tableNei[i][7] = (float)gvf_parametric_surf_coordination.timeout;
               } else {
-                  gvf_parametric_surf_coordination_tables.tableNei[i][4] = (float)timeout;
+                  gvf_parametric_surf_coordination_tables.tableNei[i][7] = (float)timeout;
 
                   float w1i = gvf_parametric_surf_control.w1;
                   float w1j = gvf_parametric_surf_coordination_tables.tableNei[i][1];
@@ -212,8 +215,8 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
 
                   // DECIDIR POSICIONES DE LA TABLA PARA W2
                   float w2i = gvf_parametric_surf_control.w2;
-                  float w2j = gvf_parametric_surf_coordination_tables.tableNei[i][1];
-                  float desired_dw2 = gvf_parametric_surf_coordination_tables.tableNei[i][3];
+                  float w2j = gvf_parametric_surf_coordination_tables.tableNei[i][4];
+                  float desired_dw2 = gvf_parametric_surf_coordination_tables.tableNei[i][6];
 
                   float error_w2 = -beta*(w2i-w2j) + desired_dw2;
 
@@ -289,9 +292,9 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
         if ((int32_t)(gvf_parametric_surf_coordination_tables.tableNei[i][0]) != -1) {
             uint32_t timeout = now - (uint32_t)(gvf_parametric_surf_coordination_tables.last_comm[i]);
             if (timeout > gvf_parametric_surf_coordination.timeout) {
-                gvf_parametric_surf_coordination_tables.tableNei[i][4] = (float)gvf_parametric_surf_coordination.timeout;
+                gvf_parametric_surf_coordination_tables.tableNei[i][7] = (float)gvf_parametric_surf_coordination.timeout;
             } else {
-                gvf_parametric_surf_coordination_tables.tableNei[i][4] = (float)timeout;
+                gvf_parametric_surf_coordination_tables.tableNei[i][7] = (float)timeout;
 
                 float w1i_dot = gvf_parametric_surf_control.w1_dot;
                 float w1j_dot = gvf_parametric_surf_coordination_tables.tableNei[i][2];
@@ -299,7 +302,7 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
                 consensus_term_w1dot += -beta1*(w1i_dot - w1j_dot);
 
                 float w2i_dot = gvf_parametric_surf_control.w2_dot;
-                float w2j_dot = gvf_parametric_surf_coordination_tables.tableNei[i][2]; // TABLA PARA W2 DOT!
+                float w2j_dot = gvf_parametric_surf_coordination_tables.tableNei[i][5]; // TABLA PARA W2 DOT!
 
                 consensus_term_w2dot += -beta1*(w2i_dot - w2j_dot);
             }
@@ -391,7 +394,7 @@ void gvf_parametric_surf_coordination_parseRegTable(uint8_t *buf)
         if ((int8_t)(gvf_parametric_surf_coordination_tables.tableNei[i][0]) == (int8_t)nei_id) {
           gvf_parametric_surf_coordination_tables.tableNei[i][0] = nei_id;
           gvf_parametric_surf_coordination_tables.tableNei[i][3] = desired_deltaw1;
-          gvf_parametric_surf_coordination_tables.tableNei[i][3] = desired_deltaw2;
+          gvf_parametric_surf_coordination_tables.tableNei[i][6] = desired_deltaw2;
           return;
         }
 
@@ -399,7 +402,7 @@ void gvf_parametric_surf_coordination_parseRegTable(uint8_t *buf)
         if ((int8_t)(gvf_parametric_coordination_tables.tableNei[i][0]) == -1) {
           gvf_parametric_surf_coordination_tables.tableNei[i][0] = nei_id;
           gvf_parametric_surf_coordination_tables.tableNei[i][3] = desired_deltaw1;
-          gvf_parametric_surf_coordination_tables.tableNei[i][3] = desired_deltaw2;
+          gvf_parametric_surf_coordination_tables.tableNei[i][6] = desired_deltaw2;
           return;
         }
     }
@@ -414,8 +417,8 @@ void gvf_parametric_surf_coordination_parseWTable(uint8_t *buf)
       gvf_parametric_surf_coordination_tables.last_comm[i] = get_sys_time_msec();
       gvf_parametric_surf_coordination_tables.tableNei[i][1] = DL_GVF_PARAMETRIC_SURF_W_w1(buf);
       gvf_parametric_coordination_tables.tableNei[i][2] = DL_GVF_PARAMETRIC_SURF_W_w1_dot(buf);
-      gvf_parametric_surf_coordination_tables.tableNei[i][1] = DL_GVF_PARAMETRIC_SURF_W_w2(buf);
-      gvf_parametric_coordination_tables.tableNei[i][2] = DL_GVF_PARAMETRIC_SURF_W_w2_dot(buf);
+      gvf_parametric_surf_coordination_tables.tableNei[i][5] = DL_GVF_PARAMETRIC_SURF_W_w2(buf);
+      gvf_parametric_coordination_tables.tableNei[i][6] = DL_GVF_PARAMETRIC_SURF_W_w2_dot(buf);
       break;
     }
 }
