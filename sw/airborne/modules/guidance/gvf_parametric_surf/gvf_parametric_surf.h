@@ -153,7 +153,7 @@ enum trajectories_parametric_surf {
 };
 
 typedef struct {
-  enum trajectories_parametric type;
+  enum trajectories_parametric_surf type;
   float p_parametric[16];
   float phi_errors[3];
 } gvf_parametric_surf_tra;
@@ -167,7 +167,7 @@ extern void gvf_parametric_surf_init(void);
 extern void gvf_parametric_surf_set_direction_s1(int8_t);
 extern void gvf_parametric_surf_set_direction_s2(int8_t);
 extern void gvf_parametric_surf_control_3D(float, float, float, float, float, float, float, float, float,
-                                      float, float, float);
+                                      float, float, float, float, float, float, float, float, float);
 
 // Coordination functions
 extern void gvf_parametric_surf_coordination_send_w_to_nei(void);
@@ -175,8 +175,8 @@ extern void gvf_parametric_surf_coordination_parseRegTable(uint8_t *buf);
 extern void gvf_parametric_surf_coordination_parseWTable(uint8_t *buf);
 
 // 3D Torus
-extern bool gvf_parametric_surf_3D_torus_XY(float, float, float, float, float, float, float);
-extern bool gvf_parametric_surf_3D_torus_wp(uint8_t, float, float, float, float, float);
+extern bool gvf_parametric_surf_3D_torus_XY(float, float, float, float, float);
+extern bool gvf_parametric_surf_3D_torus_wp(uint8_t, float, float, float);
 
 #ifdef __cplusplus
 }

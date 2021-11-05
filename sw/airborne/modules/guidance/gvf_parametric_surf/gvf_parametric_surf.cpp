@@ -86,7 +86,7 @@ static void send_gvf_parametric_surf(struct transport_tx *trans, struct link_dev
 static void send_gvf_parametric_surf_coordination(struct transport_tx *trans, struct link_device *dev)
 {
   if(gvf_parametric_surf_coordination.coordination)
-    pprz_msg_send_GVF_PAR_SURF_COORD(trans, dev, AC_ID, 7*GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS, &(gvf_parametric_surf_coordination_tables.tableNei[0][0]), GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS, gvf_parametric_surf_coordination_tables.error_deltaw1, gvf_parametric_surf_coordination_tables.error_deltaw2);
+    pprz_msg_send_GVF_PAR_SURF_COORD(trans, dev, AC_ID, 7*GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS, &(gvf_parametric_surf_coordination_tables.tableNei[0][0]), GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS, gvf_parametric_surf_coordination_tables.error_deltaw1, GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS,gvf_parametric_surf_coordination_tables.error_deltaw2);
 }
 
 #endif // PERIODIC TELEMETRY
@@ -98,6 +98,7 @@ static void send_gvf_parametric_surf_coordination(struct transport_tx *trans, st
 void gvf_parametric_surf_init(void)
 {
   gvf_parametric_surf_control.w1 = 0;
+  gvf_parametric_surf_control.w2 = 0;
   gvf_parametric_surf_control.delta_T = 0;
   gvf_parametric_surf_control.s1 = 1;
   gvf_parametric_surf_control.s2 = 1;
@@ -130,7 +131,7 @@ void gvf_parametric_surf_init(void)
   }
 
 #if PERIODIC_TELEMETRY
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PAR_SURF_COORD, send_gvf_parametric_surf_coordination);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_SURF_PAR_SURF_COORD, send_gvf_parametric_surf_coordination);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_SURF_PARAMETRIC, send_gvf_parametric_surf);
 #endif
 
@@ -149,8 +150,7 @@ void gvf_parametric_surf_set_direction_s2(int8_t s2)
 // 2D trajectories with two parameters no implemented yet
 
 // 3D trajectories
-void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, float f2, float f3, float f1dw1, float f2dw1,
-                               float f3dw1, float f1ddw1, float f2ddw1, float f3ddw1, float f1dw2, float f2dw2, float f3dw2,
+void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, float f2, float f3, float f1dw1, float f2dw1, float f3dw1, float f1ddw1, float f2ddw1, float f3ddw1, float f1dw2, float f2dw2, float f3dw2,
                                float f1ddw1, float f2ddw2, float f3ddw2)
 {
   uint32_t now = get_sys_time_msec();
@@ -341,39 +341,29 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
 /** 3D TRAJECTORIES **/
 // 3D TORUS
 
-bool gvf_parametric_surf_3D_torus_XY(float xo, float yo, float r, float zl, float zh, float alpha)
+bool gvf_parametric_surf_3D_torus_XY(float xo, float yo, float rh, float rv, float zo)
 {
-  // Safety first! If the asked altitude is low
-  if (zl > zh) {
-    zl = zh;
-  }
-  if (zl < 1 || zh < 1) {
-    zl = 10;
-    zh = 10;
-  }
-  if (r < 1) {
-    r = 60;
-  }
-
   gvf_parametric_trajectory.type = TORUS_3D;
   gvf_parametric_trajectory.p_parametric[0] = xo;
   gvf_parametric_trajectory.p_parametric[1] = yo;
-  gvf_parametric_trajectory.p_parametric[2] = zo;
+  gvf_parametric_trajectory.p_parametric[1] = zo;
   gvf_parametric_trajectory.p_parametric[3] = rh;
   gvf_parametric_trajectory.p_parametric[4] = rv;
 
-  float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
+  float f1, f2, f3, f1dw1, f2dw1, f3dw1, f1ddw1, f2ddw1, f3ddw1, f1dw2, f2dw2, f3dw2, f1ddw2, f2ddw2, f3ddw2;
 
-  gvf_parametric_3d_ellipse_info(&f1, &f2, &f3, &f1d, &f2d, &f3d, &f1dd, &f2dd, &f3dd);
-  gvf_parametric_control_3D(gvf_parametric_3d_ellipse_par.kx, gvf_parametric_3d_ellipse_par.ky,
-                            gvf_parametric_3d_ellipse_par.kz, f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd);
+  gvf_parametric_surf_3d_torus_info(&f1, &f2, &f3, &f1dw1, &f2dw1, &f3dw1, &f1ddw1, &f2ddw1, &f3ddw1,
+                                    &f1dw2, &f2dw2, &f3dw2, &f1ddw2, &f2ddw2, &f3ddw2);
+  gvf_parametric_surf_control_3D(gvf_parametric_surf_3d_torus_par.kx, gvf_parametric_surf_3d_surf_par.ky,
+                            gvf_parametric_surf_3d_torus_par.kz, f1, f2, f3, f1dw1, f2dw1, f3dw1, f1ddw1, f2ddw1, f3ddw1,
+                            f1dw2, f2dw2, f3dw2, f1ddw2, f2ddw2, f3ddw2);
 
   return true;
 }
 
-bool gvf_parametric_surf_3D_torus_wp(uint8_t wp, float r, float zl, float zh, float alpha)
+bool gvf_parametric_surf_3D_torus_wp(uint8_t wp, float rh, float rv, float alt)
 {
-  gvf_parametric_surf_3D_torus_XY(waypoints[wp].x, waypoints[wp].y, r, zl, zh, alpha);
+  gvf_parametric_surf_3D_torus_XY(waypoints[wp].x, waypoints[wp].y, rh, rv, alt);
   return true;
 }
 
