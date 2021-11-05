@@ -185,10 +185,11 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
   gvf_parametric_surf_trajectory.phi_errors[2] = phi3 / L;
 
   // Chi
-  X(0) = -f1d * L * L * beta - kx * phi1;
-  X(1) = -f2d * L * L * beta - ky * phi2;
-  X(2) = -f3d * L * L * beta - kz * phi3;
-  X(3) = -L * L + beta * (kx * phi1 * f1d + ky * phi2 * f2d + kz * phi3 * f3d);
+  X(0) = -L * L * (beta1*f1dw1 - beta2*f1dw2)- kx * phi1;
+  X(1) = -L * L * (beta1*f1dw2 - beta2*f2dw2)- ky * phi2;
+  X(2) = -L * L * (beta1*f1dw3 - beta2*f2dw3)- kz * phi3;
+  X(3) = -L * L + beta1 * (kx * phi1 * f1dw1 + ky * phi2 * f2dw1 + kz * phi3 * f3dw1);
+  X(4) =  L * L + beta2 * (kx * phi1 * f1dw2 + ky * phi2 * f2dw2 + kz * phi3 * f3dw2);
   X *= L;
 
   // Coordination if needed for multi vehicles
@@ -208,7 +209,7 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
                   float w1j = gvf_parametric_surf_coordination_tables.tableNei[i][1];
                   float desired_dw1 = gvf_parametric_surf_coordination_tables.tableNei[i][3];
 
-                  float error_w1 = -beta*(w1i-w1j) + desired_dw1;
+                  float error_w1 = -beta1*(w1i-w1j) + desired_dw1;
 
                   consensus_term_w1 += error_w1;
 
@@ -219,7 +220,7 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
                   float w2j = gvf_parametric_surf_coordination_tables.tableNei[i][4];
                   float desired_dw2 = gvf_parametric_surf_coordination_tables.tableNei[i][6];
 
-                  float error_w2 = -beta*(w2i-w2j) + desired_dw2;
+                  float error_w2 = -beta2*(w2i-w2j) + desired_dw2;
 
                   consensus_term_w2 += error_w2;
 
@@ -230,7 +231,7 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
   }
 
   X(3) += gvf_parametric_surf_coordination.kc1*consensus_term_w1;
-  X(3) += gvf_parametric_surf_coordination.kc2*consensus_term_w2;
+  X(4) += gvf_parametric_surf_coordination.kc2*consensus_term_w2;
 
   // Jacobian
   J.setZero();
@@ -249,40 +250,41 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
 
   // Guidance algorithm
   float ground_speed = stateGetHorizontalSpeedNorm_f();
-  float w_dot = (ground_speed * X(3)) / sqrtf(X(0) * X(0) + X(1) * X(1));
+  float w1_dot = (ground_speed * X(3)) / sqrtf(X(0) * X(0) + X(1) * X(1));
+  float w2_dot = (ground_speed * X(4)) / sqrtf(X(0) * X(0) + X(1) * X(1));
 
-  Eigen::Vector4f xi_dot;
+  Eigen::Vector5f xi_dot;
   struct EnuCoor_f *vel_enu = stateGetSpeedEnu_f();
   float course = stateGetHorizontalSpeedDir_f();
 
-  xi_dot << vel_enu->x, vel_enu->y, vel_enu->z, w_dot;
+  xi_dot << vel_enu->x, vel_enu->y, vel_enu->z, w1_dot, w2_dot;
 
   Eigen::Matrix2f E;
-  Eigen::Matrix<float, 2, 4> F;
-  Eigen::Matrix<float, 2, 4> Fp;
-  Eigen::Matrix4f G;
-  Eigen::Matrix4f Gp;
-  Eigen::Matrix4f I;
+  Eigen::Matrix<float, 2, 5> F;
+  Eigen::Matrix<float, 2, 5> Fp;
+  Eigen::Matrix5f G;
+  Eigen::Matrix5f Gp;
+  Eigen::Matrix5f I;
   Eigen::Vector2f h;
   Eigen::Matrix<float, 1, 2> ht;
 
   h << sinf(course), cosf(course);
   ht = h.transpose();
   I.setIdentity();
-  F << 1.0, 0.0, 0.0, 0.0,
-  0.0, 1.0, 0.0, 0.0;
+  F << 1.0, 0.0, 0.0, 0.0, 0.0,
+       0.0, 1.0, 0.0, 0.0, 0.0;
   E << 0.0, -1.0,
-  1.0, 0.0;
+       1.0, 0.0;
   G = F.transpose() * F;
   Fp = E * F;
   Gp = F.transpose() * E * F;
 
-  Eigen::Matrix<float, 1, 4> Xt = X.transpose();
+  Eigen::Matrix<float, 1, 5> Xt = X.transpose();
   Eigen::Vector4f Xh = X / X.norm();
-  Eigen::Matrix<float, 1, 4> Xht = Xh.transpose();
+  Eigen::Matrix<float, 1, 5> Xht = Xh.transpose();
 
   float aux = ht * Fp * X;
-  Eigen::Vector4f aux2 =  J * xi_dot;
+  Eigen::Vector5f aux2 =  J * xi_dot;
 
   // Coordination if needed for multi vehicles
   float consensus_term_w1dot = 0;
@@ -303,16 +305,16 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
                 consensus_term_w1dot += -beta1*(w1i_dot - w1j_dot);
 
                 float w2i_dot = gvf_parametric_surf_control.w2_dot;
-                float w2j_dot = gvf_parametric_surf_coordination_tables.tableNei[i][5]; // TABLA PARA W2 DOT!
+                float w2j_dot = gvf_parametric_surf_coordination_tables.tableNei[i][5];
 
-                consensus_term_w2dot += -beta1*(w2i_dot - w2j_dot);
+                consensus_term_w2dot += -beta2*(w2i_dot - w2j_dot);
             }
         }
     }
   }
 
   aux2(3) += gvf_parametric_surf_coordination.kc1*consensus_term_w1dot;
-  aux2(3) += gvf_parametric_surf_coordination.kc2*consensus_term_w2dot;
+  aux2(4) += gvf_parametric_surf_coordination.kc2*consensus_term_w2dot;
 
   float heading_rate = -1 / (Xt * G * X) * Xt * Gp * (I - Xh * Xht) * aux2 - (gvf_parametric_surf_control.k_psi * aux /
                        sqrtf(Xt * G * X));
@@ -373,6 +375,22 @@ bool gvf_parametric_surf_3D_torus_wp(uint8_t wp, float r, float zl, float zh, fl
 {
   gvf_parametric_surf_3D_torus_XY(waypoints[wp].x, waypoints[wp].y, r, zl, zh, alpha);
   return true;
+}
+
+void gvf_parametric_surf_coordination_send_w_to_nei(void)
+{
+  struct pprzlink_msg msg;
+
+  for (int i = 0; i < GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS; i++)
+    if ((int32_t)(gvf_parametric_surf_coordination_tables.tableNei[i][0]) != -1) {
+      msg.trans = &(DefaultChannel).trans_tx;
+      msg.dev = &(DefaultDevice).device;
+      msg.sender_id = AC_ID;
+      msg.receiver_id = (uint8_t)(gvf_parametric_coordination_tables.tableNei[i][0]);
+      msg.component_id = 0;
+      pprzlink_msg_send_GVF_PARAMETRIC_SURF_W(&msg, &(gvf_parametric_surf_control.w1), &(gvf_parametric_surf_control.w1_dot),
+             &(gvf_parametric_surf_control.w2), &(gvf_parametric_surf_control.w2_dot) );
+    }
 }
 
 void gvf_parametric_surf_coordination_parseRegTable(uint8_t *buf)
