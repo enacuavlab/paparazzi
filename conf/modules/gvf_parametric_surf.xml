@@ -64,7 +64,7 @@
     <define name="EIGEN_NO_MALLOC"/>
     <define name="EIGEN_NO_AUTOMATIC_RESIZING"/>
     <file name="gvf_parametric_surf.cpp"/>
-    <file name="gvf_parametric_surf__low_level_control.c"/>
+    <file name="gvf_parametric_surf_low_level_control.c"/>
     <file name="trajectories/gvf_parametric_surf_3d_torus.c"/>
     <flag name="LDFLAGS" value="lstdc++" />
   </makefile>

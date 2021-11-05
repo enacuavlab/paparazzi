@@ -45,10 +45,16 @@
 #define GVF_PARAMETRIC_SURF_CONTROL_L 0.1
 #endif
 
-/*! Default scale for w  */
-#ifndef GVF_PARAMETRIC_SURF_CONTROL_BETA
-#define GVF_PARAMETRIC_SURF_CONTROL_BETA 0.01
+/*! Default scale for w1  */
+#ifndef GVF_PARAMETRIC_SURF_CONTROL_BETA1
+#define GVF_PARAMETRIC_SURF_CONTROL_BETA1 0.01
 #endif
+
+/*! Default scale for w2  */
+#ifndef GVF_PARAMETRIC_SURF_CONTROL_BETA2
+#define GVF_PARAMETRIC_SURF_CONTROL_BETA2 0.01
+#endif
+
 
 /*! Default gain kpsi for tuning the alignment of the vehicle with the vector field */
 #ifndef GVF_PARAMETRIC_SURF_CONTROL_KPSI

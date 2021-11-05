@@ -41,7 +41,7 @@ void gvf_parametric_surf_low_level_control_3D(float heading_rate, float climbing
     v_ctl_mode = V_CTL_MODE_AUTO_CLIMB;
     v_ctl_speed_mode = V_CTL_SPEED_THROTTLE;
 
-    v_ctl_climb_setpoint = gvf_parametric_control.k_climb * climbing_rate; // Setting point for vertical speed
+    v_ctl_climb_setpoint = gvf_parametric_surf_control.k_climb * climbing_rate; // Setting point for vertical speed
 
     // Lateral XY coordinates
     lateral_mode = LATERAL_MODE_ROLL;
@@ -50,7 +50,7 @@ void gvf_parametric_surf_low_level_control_3D(float heading_rate, float climbing
     float ground_speed = stateGetHorizontalSpeedNorm_f();
 
     h_ctl_roll_setpoint =
-      -gvf_parametric_control.k_roll * atanf(heading_rate * ground_speed / GVF_PARAMETRIC_SURF_GRAVITY / cosf(att->theta));
+      -gvf_parametric_surf_control.k_roll * atanf(heading_rate * ground_speed / GVF_PARAMETRIC_SURF_GRAVITY / cosf(att->theta));
     BoundAbs(h_ctl_roll_setpoint, h_ctl_roll_max_setpoint); // Setting point for roll angle
   }
 #else
