@@ -27,8 +27,8 @@
  */
 
 #include "subsystems/navigation/common_nav.h"
-#include "modules/guidance/gvf_parametric/gvf_parametric.h"
-#include "gvf_parametric_3d_torus.h"
+#include "modules/guidance/gvf_parametric_surf/gvf_parametric_surf.h"
+#include "gvf_parametric_surf_3d_torus.h"
 
 /*! Default gain kx for the 3d torus trajectory */
 #ifndef GVF_PARAMETRIC_SURF_3D_TORUS_KX
@@ -55,20 +55,20 @@
 #define GVF_PARAMETRIC_SURF_3D_TORUS_RV 10
 #endif
 
-gvf_par_3d_torus_par gvf_parametric_3d_torus_par = {GVF_PARAMETRIC_SURF_3D_TORUS_KX, GVF_PARAMETRIC_SURF_3D_TORUS_KY, GVF_PARAMETRIC_SURF_3D_TORUS_KZ, GVF_PARAMETRIC_SURF_3D_TORUS_RH, GVF_PARAMETRIC_SURF_3D_TORUS_RV};
+gvf_par_surf_3d_torus_par gvf_parametric_surf_3d_torus_par = {GVF_PARAMETRIC_SURF_3D_TORUS_KX, GVF_PARAMETRIC_SURF_3D_TORUS_KY, GVF_PARAMETRIC_SURF_3D_TORUS_KZ, GVF_PARAMETRIC_SURF_3D_TORUS_RH, GVF_PARAMETRIC_SURF_3D_TORUS_RV};
 
-void gvf_parametric_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1, float *f2dw1, float *f3dw1, float *f1ddw1, float *f2ddw1, float *f3ddw1, float *f1dw2, float *f2dw2, float *f3dw2, float *f1ddw2, float *f2ddw2, float *f3ddw2)
+void gvf_parametric_surf_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1, float *f2dw1, float *f3dw1, float *f1ddw1, float *f2ddw1, float *f3ddw1, float *f1dw2, float *f2dw2, float *f3dw2, float *f1ddw2, float *f2ddw2, float *f3ddw2)
 {
-  float xo = gvf_parametric_trajectory.p_parametric[0];
-  float yo = gvf_parametric_trajectory.p_parametric[1];
-  float zo = gvf_parametric_trajectory.p_parametric[2];
-  float rh = gvf_parametric_trajectory.p_parametric[3];
-  float rv = gvf_parametric_trajectory.p_parametric[4];
+  float xo = gvf_parametric_surf_trajectory.p_parametric[0];
+  float yo = gvf_parametric_surf_trajectory.p_parametric[1];
+  float zo = gvf_parametric_surf_trajectory.p_parametric[2];
+  float rh = gvf_parametric_surf_trajectory.p_parametric[3];
+  float rv = gvf_parametric_surf_trajectory.p_parametric[4];
 
-  float w1 = gvf_parametric_surface_control.w1;
-  float w2 = gvf_parametric_surface_control.w2;
-  float w1b = w1 * gvf_parametric_surface_control.beta1 * gvf_parametric_surface_control.s1;
-  float w2b = w2 * gvf_parametric_surface_control.beta2 * gvf_parametric_surface_control.s2;
+  float w1 = gvf_parametric_surf_control.w1;
+  float w2 = gvf_parametric_surf_control.w2;
+  float w1b = w1 * gvf_parametric_surf_control.beta1 * gvf_parametric_surf_control.s1;
+  float w2b = w2 * gvf_parametric_surf_control.beta2 * gvf_parametric_surf_control.s2;
 
   // Parametric equations of the trajectory and the partial derivatives w.r.t. 'w1b' and 'w2b'
 
