@@ -54,8 +54,8 @@
 
   <init fun = "gvf_parametric_surf_init()"/>
 
-  <datalink message="GVF_PARAMETRIC_SURF_REG_TABLE" fun="gvf_parametric_coordination_parseRegTable(buf)"/>
-  <datalink message="GVF_PARAMETRIC_SURF_W" fun="gvf_parametric_coordination_parseWTable(buf)"/>
+  <datalink message="GVF_PARAMETRIC_SURF_REG_TABLE" fun="gvf_parametric_surf_coordination_parseRegTable(buf)"/>
+  <datalink message="GVF_PARAMETRIC_SURF_W" fun="gvf_parametric_surf_coordination_parseWTable(buf)"/>
 
   <makefile target="ap|nps" firmware="fixedwing">
     <configure name="CXXSTANDARD" value="-std=c++14"/>
