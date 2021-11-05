@@ -47,7 +47,7 @@ gvf_parametric_surf_coord_tab gvf_parametric_surf_coordination_tables;
 uint32_t gvf_parametric_surf_last_transmision = 0;
 
 // Trajectory
-gvf_parametric_tra gvf_parametric_trajectory;
+gvf_parametric_surf_tra gvf_parametric_surf_trajectory;
 
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
@@ -71,14 +71,14 @@ static void send_gvf_parametric_surf(struct transport_tx *trans, struct link_dev
   uint8_t traj_type = (uint8_t)gvf_parametric_surf_trajectory.type;
 
   uint32_t now = get_sys_time_msec();
-  uint32_t delta_T = now - gvf_parametric_t0;
+  uint32_t delta_T = now - gvf_parametric_surf_t0;
 
   float w1b = gvf_parametric_surf_control.w1 * gvf_parametric_surf_control.beta1;
   float w2b = gvf_parametric_surf_control.w2 * gvf_parametric_surf_control.beta2;
 
   if (delta_T < 200) {
     pprz_msg_send_GVF_PARAMETRIC_SURF(trans, dev, AC_ID, &traj_type, &gvf_parametric_surf_control.s1,
-            &gvf_parametric_surf_control.s2, &wb1, &wb2, plen,
+            &gvf_parametric_surf_control.s2, &w1b, &w2b, plen,
             gvf_parametric_surf_trajectory.p_parametric, elen, gvf_parametric_surf_trajectory.phi_errors);
   }
 }
@@ -111,28 +111,28 @@ void gvf_parametric_surf_init(void)
   gvf_parametric_surf_control.w1_dot = 0;
   gvf_parametric_surf_control.w2_dot = 0;
 
-  gvf_parametric_surf_coordination.coordination = GVF_PARAMETRIC_SURF_COORDINATION_COORDINATION;
+  gvf_parametric_surf_coordination.coordination = GVF_PARAMETRIC_SURF_COORDINATION;
   gvf_parametric_surf_coordination.kc1 = GVF_PARAMETRIC_SURF_COORDINATION_KC1;
   gvf_parametric_surf_coordination.kc2 = GVF_PARAMETRIC_SURF_COORDINATION_KC2;
   gvf_parametric_surf_coordination.timeout = GVF_PARAMETRIC_SURF_COORDINATION_TIMEOUT;
   gvf_parametric_surf_coordination.broadtime = GVF_PARAMETRIC_SURF_COORDINATION_BROADTIME;
 
-  for (int i = 0; i < GVF_PARAMETRIC_SURFACE_COORDINATION_MAX_NEIGHBORS; i++) {
-    gvf_parametric_coordination_tables.tableNei[i][0] = -1;
-    gvf_parametric_coordination_tables.tableNei[i][1] = 0;
-    gvf_parametric_coordination_tables.tableNei[i][2] = 0;
-    gvf_parametric_coordination_tables.tableNei[i][3] = 0;
-    gvf_parametric_coordination_tables.tableNei[i][4] = 0;
-    gvf_parametric_coordination_tables.tableNei[i][5] = 0;
-    gvf_parametric_coordination_tables.tableNei[i][6] = 0;
-    gvf_parametric_coordination_tables.tableNei[i][7] = 0;
-    gvf_parametric_coordination_tables.error_deltaw1[i] = 0;
-    gvf_parametric_coordination_tables.error_deltaw2[i] = 0;
+  for (int i = 0; i < GVF_PARAMETRIC_SURF_COORDINATION_MAX_NEIGHBORS; i++) {
+    gvf_parametric_surf_coordination_tables.tableNei[i][0] = -1;
+    gvf_parametric_surf_coordination_tables.tableNei[i][1] = 0;
+    gvf_parametric_surf_coordination_tables.tableNei[i][2] = 0;
+    gvf_parametric_surf_coordination_tables.tableNei[i][3] = 0;
+    gvf_parametric_surf_coordination_tables.tableNei[i][4] = 0;
+    gvf_parametric_surf_coordination_tables.tableNei[i][5] = 0;
+    gvf_parametric_surf_coordination_tables.tableNei[i][6] = 0;
+    gvf_parametric_surf_coordination_tables.tableNei[i][7] = 0;
+    gvf_parametric_surf_coordination_tables.error_deltaw1[i] = 0;
+    gvf_parametric_surf_coordination_tables.error_deltaw2[i] = 0;
   }
 
 #if PERIODIC_TELEMETRY
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_SURF_PAR_SURF_COORD, send_gvf_parametric_surf_coordination);
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_SURF_PARAMETRIC, send_gvf_parametric_surf);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PAR_SURF_COORD, send_gvf_parametric_surf_coordination);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PARAMETRIC_SURF, send_gvf_parametric_surf);
 #endif
 
 }
@@ -150,8 +150,7 @@ void gvf_parametric_surf_set_direction_s2(int8_t s2)
 // 2D trajectories with two parameters no implemented yet
 
 // 3D trajectories
-void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, float f2, float f3, float f1dw1, float f2dw1, float f3dw1, float f1ddw1, float f2ddw1, float f3ddw1, float f1dw2, float f2dw2, float f3dw2,
-                               float f1ddw1, float f2ddw2, float f3ddw2)
+void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, float f2, float f3, float f1dw1, float f2dw1, float f3dw1, float f1ddw1, float f2ddw1, float f3ddw1, float f1dw2, float f2dw2, float f3dw2,float f1ddw2, float f2ddw2, float f3ddw2)
 {
   uint32_t now = get_sys_time_msec();
   gvf_parametric_surf_control.delta_T = now - gvf_parametric_surf_t0;
@@ -167,8 +166,8 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
   float beta1 = gvf_parametric_surf_control.beta1 * gvf_parametric_surf_control.s1;
   float beta2 = gvf_parametric_surf_control.beta2 * gvf_parametric_surf_control.s2;
 
-  Eigen::Vector5f X; // Chi
-  Eigen::Matrix5f J;
+  Eigen::Matrix<float, 5, 5> J;
+  Eigen::Matrix<float, 5, 1> X; // Chi
 
   // Error signals phi_x phi_y and phi_z
   struct EnuCoor_f *pos_enu = stateGetPositionEnu_f();
@@ -186,8 +185,8 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
 
   // Chi
   X(0) = -L * L * (beta1*f1dw1 - beta2*f1dw2)- kx * phi1;
-  X(1) = -L * L * (beta1*f1dw2 - beta2*f2dw2)- ky * phi2;
-  X(2) = -L * L * (beta1*f1dw3 - beta2*f2dw3)- kz * phi3;
+  X(1) = -L * L * (beta1*f2dw1 - beta2*f2dw2)- ky * phi2;
+  X(2) = -L * L * (beta1*f3dw1 - beta2*f3dw2)- kz * phi3;
   X(3) = -L * L + beta1 * (kx * phi1 * f1dw1 + ky * phi2 * f2dw1 + kz * phi3 * f3dw1);
   X(4) =  L * L + beta2 * (kx * phi1 * f1dw2 + ky * phi2 * f2dw2 + kz * phi3 * f3dw2);
   X *= L;
@@ -238,14 +237,14 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
   J(0, 0) = -kx * L;
   J(1, 1) = -ky * L;
   J(2, 2) = -kz * L;
-  J(3, 0) = kx * f1d * beta * L;
-  J(3, 1) = ky * f2d * beta * L;
-  J(3, 2) = kz * f3d * beta * L;
-  J(0, 3) = -(beta * L) * (beta * L * f1dd - kx * f1d);
-  J(1, 3) = -(beta * L) * (beta * L * f2dd - ky * f2d);
-  J(2, 3) = -(beta * L) * (beta * L * f3dd - kz * f3d);
-  J(3, 3) =  beta * beta * (kx * (phi1 * f1dd - L * f1d * f1d) + ky * (phi2 * f2dd - L * f2d * f2d)
-                            + kz * (phi3 * f3dd - L * f3d * f3d));
+  //J(3, 0) = kx * f1d * beta * L;
+  //J(3, 1) = ky * f2d * beta * L;
+  //J(3, 2) = kz * f3d * beta * L;
+  //J(0, 3) = -(beta * L) * (beta * L * f1dd - kx * f1d);
+  //J(1, 3) = -(beta * L) * (beta * L * f2dd - ky * f2d);
+  //J(2, 3) = -(beta * L) * (beta * L * f3dd - kz * f3d);
+  //J(3, 3) =  beta * beta * (kx * (phi1 * f1dd - L * f1d * f1d) + ky * (phi2 * f2dd - L * f2d * f2d)
+                            //+ kz * (phi3 * f3dd - L * f3d * f3d));
   J *= L;
 
   // Guidance algorithm
@@ -253,7 +252,7 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
   float w1_dot = (ground_speed * X(3)) / sqrtf(X(0) * X(0) + X(1) * X(1));
   float w2_dot = (ground_speed * X(4)) / sqrtf(X(0) * X(0) + X(1) * X(1));
 
-  Eigen::Vector5f xi_dot;
+  Eigen::Matrix<float, 5, 1> xi_dot;
   struct EnuCoor_f *vel_enu = stateGetSpeedEnu_f();
   float course = stateGetHorizontalSpeedDir_f();
 
@@ -262,9 +261,9 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
   Eigen::Matrix2f E;
   Eigen::Matrix<float, 2, 5> F;
   Eigen::Matrix<float, 2, 5> Fp;
-  Eigen::Matrix5f G;
-  Eigen::Matrix5f Gp;
-  Eigen::Matrix5f I;
+  Eigen::Matrix<float, 5, 5> G;
+  Eigen::Matrix<float, 5, 5> Gp;
+  Eigen::Matrix<float, 5, 5> I;
   Eigen::Vector2f h;
   Eigen::Matrix<float, 1, 2> ht;
 
@@ -280,11 +279,11 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
   Gp = F.transpose() * E * F;
 
   Eigen::Matrix<float, 1, 5> Xt = X.transpose();
-  Eigen::Vector4f Xh = X / X.norm();
+  Eigen::Matrix<float, 1, 5> Xh = X / X.norm();
   Eigen::Matrix<float, 1, 5> Xht = Xh.transpose();
 
   float aux = ht * Fp * X;
-  Eigen::Vector5f aux2 =  J * xi_dot;
+  Eigen::Matrix<float, 5, 1> aux2 =  J * xi_dot;
 
   // Coordination if needed for multi vehicles
   float consensus_term_w1dot = 0;
@@ -343,18 +342,18 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
 
 bool gvf_parametric_surf_3D_torus_XY(float xo, float yo, float rh, float rv, float zo)
 {
-  gvf_parametric_trajectory.type = TORUS_3D;
-  gvf_parametric_trajectory.p_parametric[0] = xo;
-  gvf_parametric_trajectory.p_parametric[1] = yo;
-  gvf_parametric_trajectory.p_parametric[1] = zo;
-  gvf_parametric_trajectory.p_parametric[3] = rh;
-  gvf_parametric_trajectory.p_parametric[4] = rv;
+  gvf_parametric_surf_trajectory.type = TORUS_3D;
+  gvf_parametric_surf_trajectory.p_parametric[0] = xo;
+  gvf_parametric_surf_trajectory.p_parametric[1] = yo;
+  gvf_parametric_surf_trajectory.p_parametric[1] = zo;
+  gvf_parametric_surf_trajectory.p_parametric[3] = rh;
+  gvf_parametric_surf_trajectory.p_parametric[4] = rv;
 
   float f1, f2, f3, f1dw1, f2dw1, f3dw1, f1ddw1, f2ddw1, f3ddw1, f1dw2, f2dw2, f3dw2, f1ddw2, f2ddw2, f3ddw2;
 
   gvf_parametric_surf_3d_torus_info(&f1, &f2, &f3, &f1dw1, &f2dw1, &f3dw1, &f1ddw1, &f2ddw1, &f3ddw1,
                                     &f1dw2, &f2dw2, &f3dw2, &f1ddw2, &f2ddw2, &f3ddw2);
-  gvf_parametric_surf_control_3D(gvf_parametric_surf_3d_torus_par.kx, gvf_parametric_surf_3d_surf_par.ky,
+  gvf_parametric_surf_control_3D(gvf_parametric_surf_3d_torus_par.kx, gvf_parametric_surf_3d_torus_par.ky,
                             gvf_parametric_surf_3d_torus_par.kz, f1, f2, f3, f1dw1, f2dw1, f3dw1, f1ddw1, f2ddw1, f3ddw1,
                             f1dw2, f2dw2, f3dw2, f1ddw2, f2ddw2, f3ddw2);
 
