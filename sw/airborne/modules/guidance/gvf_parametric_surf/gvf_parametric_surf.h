@@ -173,7 +173,8 @@ extern void gvf_parametric_surf_init(void);
 extern void gvf_parametric_surf_set_direction_s1(int8_t);
 extern void gvf_parametric_surf_set_direction_s2(int8_t);
 extern void gvf_parametric_surf_control_3D(float, float, float, float, float, float, float, float, float,
-                                      float, float, float, float, float, float, float, float, float);
+                                      float, float, float, float, float, float, float, float, float, float,
+                                      float, float, float, float, float);
 
 // Coordination functions
 extern void gvf_parametric_surf_coordination_send_w_to_nei(void);

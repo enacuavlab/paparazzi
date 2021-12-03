@@ -57,7 +57,7 @@
 
 gvf_par_surf_3d_torus_par gvf_parametric_surf_3d_torus_par = {GVF_PARAMETRIC_SURF_3D_TORUS_KX, GVF_PARAMETRIC_SURF_3D_TORUS_KY, GVF_PARAMETRIC_SURF_3D_TORUS_KZ, GVF_PARAMETRIC_SURF_3D_TORUS_RH, GVF_PARAMETRIC_SURF_3D_TORUS_RV};
 
-void gvf_parametric_surf_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1, float *f2dw1, float *f3dw1, float *f1ddw1, float *f2ddw1, float *f3ddw1, float *f1dw2, float *f2dw2, float *f3dw2, float *f1ddw2, float *f2ddw2, float *f3ddw2)
+void gvf_parametric_surf_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1, float *f2dw1, float *f3dw1, float *f1ddw1, float *f2ddw1, float *f3ddw1, float *f1dw2, float *f2dw2, float *f3dw2, float *f1ddw2, float *f2ddw2, float *f3ddw2, float *f1dw1dw2, float *f1dw2dw1, float *f2dw1dw2, float *f2dw2dw1, float *f3dw1dw2, float *f3dw2dw1)
 {
   float xo = gvf_parametric_surf_trajectory.p_parametric[0];
   float yo = gvf_parametric_surf_trajectory.p_parametric[1];
@@ -84,6 +84,10 @@ void gvf_parametric_surf_3d_torus_info(float *f1, float *f2, float *f3, float *f
   *f2ddw1 = -sinf(w1b)*(rh + rv*cos(w2b));
   *f3ddw1 = 0;
 
+  *f1dw1dw2 =  rv*sinf(w1b)*sinf(w2b);
+  *f2dw1dw2 = -rv*cosf(w1b)*sinf(w2b);
+  *f3dw1dw2 = 0;
+
   *f1dw2 = -rv*sinf(w2b)*cosf(w1b);
   *f2dw2 = -rv*sinf(w2b)*sinf(w1b);
   *f3dw2 =  rv*cosf(w2b);
@@ -91,6 +95,10 @@ void gvf_parametric_surf_3d_torus_info(float *f1, float *f2, float *f3, float *f
   *f1ddw2 = -rv*cosf(w2b)*cosf(w1b);
   *f2ddw2 = -rv*cosf(w2b)*sinf(w1b);
   *f3ddw2 = -rv*sinf(w2b);
+
+  *f1dw2dw1 =  rv*sinf(w2b)*sinf(w1b);
+  *f2dw2dw1 = -rv*sinf(w2b)*cosf(w1b);
+  *f3dw2dw1 = 0;
 
 }
 
