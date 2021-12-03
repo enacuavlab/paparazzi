@@ -51,7 +51,7 @@ typedef struct {
 
 extern gvf_par_surf_3d_torus_par gvf_parametric_surf_3d_torus_par;
 
-extern void gvf_parametric_surf_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1, float *f2dw1, float *f3dw1, float *f1ddw1, float *f2ddw1, float *f3ddw1, float *f1dw2, float *f2dw2, float *f3dw2, float *f1ddw2, float *f2ddw2, float *f3ddw2);
+extern void gvf_parametric_surf_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1, float *f2dw1, float *f3dw1, float *f1ddw1, float *f2ddw1, float *f3ddw1, float *f1dw2, float *f2dw2, float *f3dw2, float *f1ddw2, float *f2ddw2, float *f3ddw2, float *f1dw1dw2, float *f1dw2dw1, float *f2dw1dw2, float *f2dw2dw1, float *f3dw1dw2, float *f3dw2dw1);
 
 #ifdef __cplusplus
 }
