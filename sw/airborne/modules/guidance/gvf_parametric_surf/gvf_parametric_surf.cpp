@@ -358,7 +358,7 @@ bool gvf_parametric_surf_3D_torus_XY(float xo, float yo, float rh, float rv, flo
   gvf_parametric_surf_trajectory.type = TORUS_3D;
   gvf_parametric_surf_trajectory.p_parametric[0] = xo;
   gvf_parametric_surf_trajectory.p_parametric[1] = yo;
-  gvf_parametric_surf_trajectory.p_parametric[1] = zo;
+  gvf_parametric_surf_trajectory.p_parametric[2] = zo;
   gvf_parametric_surf_trajectory.p_parametric[3] = rh;
   gvf_parametric_surf_trajectory.p_parametric[4] = rv;
 
