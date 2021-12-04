@@ -173,6 +173,24 @@ class GVFFrame(wx.Frame):
                     phi_z = phi[2]
                     self.traj = traj_param_lissajous_3D(np.array([xo,yo]), zo, cx, cy, cz, \
                             wx, wy, wz, dx, dy, dz, alpha, self.wb)
+            if msg.name == 'GVF_PARAMETRIC_SURF':
+                # Torus 3D
+                if int(msg.get_field(0)) == 0:
+                    self.s1 = int(msg.get_field(1))
+                    self.s2 = int(msg.get_field(2))
+                    self.w1b = float(msg.get_field(3))
+                    self.w2b = float(msg.get_field(4))
+                    param = [float(x) for x in msg.get_field(5)]
+                    xo = param[0]
+                    yo = param[1]
+                    zo = param[2]
+                    rh = param[3]
+                    rv = param[4]
+                    phi = [float(x) for x in msg.get_field(6)]
+                    phi_x = phi[0]
+                    phi_y = phi[1]
+                    phi_z = phi[3]
+                    self.traj = traj_param_surf_torus_3D(np.array([xo, yo]), zo, rh, rv, self.w1b, self.w2b)
 
     def draw_gvf(self, XY, yaw, course, altitude):
         if self.traj is not None:
@@ -274,7 +292,16 @@ class map2d:
             ayz.set_title('YZ Map')
 
             # 3D
-            a3d.plot(traj.traj_points[0, :], traj.traj_points[1, :], traj.traj_points[2, :])
+            if isinstance(traj, traj_param_surf_torus_3D):
+                angletor = np.linspace(0, 2 * np.pi, 32)
+                thetator, phitor = np.meshgrid(angletor, angletor)
+                xtor= (traj.rh + traj.rv * np.cos(phitor)) * np.cos(thetator) + traj.XYoff[0]
+                ytor = (traj.rh + traj.rv * np.cos(phitor)) * np.sin(thetator) + traj.XYoff[1]
+                ztor = traj.rv * np.sin(phitor) + traj.zo
+                a3d.plot_surface(xtor, ytor, ztor, color = 'w', rstride = 1, cstride = 1, alpha=0.5)
+            else:
+                a3d.plot(traj.traj_points[0, :], traj.traj_points[1, :], traj.traj_points[2, :])
+
             if altitude != -1:
                 a3d.plot([XY[0]], [XY[1]], [altitude], marker='o', markerfacecolor='r', markeredgecolor='r')
                 a3d.plot([traj.wpoint[0]], [traj.wpoint[1]], [traj.wpoint[2]], marker='x', markerfacecolor='r', markeredgecolor='r')
@@ -302,6 +329,10 @@ class map2d:
                 axy.plot(traj.XYoff[0], traj.XYoff[1], 'kx', ms=10, mew=2)
             elif isinstance(traj, traj_param_lissajous_3D):
                 axy.annotate('LISSA_3D', xy = (traj.XYoff[0], traj.XYoff[1]))
+                axy.plot(0, 0, 'kx', ms=10, mew=2)
+                axy.plot(traj.XYoff[0], traj.XYoff[1], 'kx', ms=10, mew=2)
+            elif isinstance(traj, traj_param_surf_torus_3D):
+                axy.annotate('TORUS_3D', xy = (traj.XYoff[0], traj.XYoff[1]))
                 axy.plot(0, 0, 'kx', ms=10, mew=2)
                 axy.plot(traj.XYoff[0], traj.XYoff[1], 'kx', ms=10, mew=2)
 
@@ -627,5 +658,40 @@ class traj_param_lissajous_3D:
 
         x = np.cos(self.alpha)*xnr - np.sin(self.alpha)*ynr + self.XYoff[0]
         y = np.sin(self.alpha)*xnr + np.cos(self.alpha)*ynr + self.XYoff[1]
+
+        return np.array([x,y,z])
+
+class traj_param_surf_torus_3D:
+    def float_range(self, start, end, step):
+        while start <= end:
+            yield start
+            start += step
+
+    def __init__(self, XYoff, zo, rh, rv, w1b, w2b):
+        self.dim = 3
+        self.XYoff, self.zo, self.rh, self.rv, self.w1b, self.w2b = XYoff, zo, rh, rv, w1b, w2b
+        self.mapgrad_X = []
+        self.mapgrad_Y = []
+        self.mapgrad_U = []
+        self.mapgrad_V = []
+
+        self.deltaz = self.rv # For the 3D plot
+        self.wpoint = self.param_point(self.w1b, self.w2b)
+
+        num_points = 100
+        self.traj_points = np.zeros((3, num_points))
+
+        i = 0
+        range_points = np.pi
+        for t in self.float_range(0, range_points, range_points/num_points):
+            self.traj_points[:, i] = self.param_point(t,t)
+            i = i + 1
+            if i >= num_points:
+                break
+
+    def param_point(self, w1b, w2b):
+        x = (self.rh + self.rv*np.cos(w2b))*np.cos(w1b) + self.XYoff[0]
+        y = (self.rh + self.rv*np.cos(w2b))*np.sin(w1b) + self.XYoff[1]
+        z = self.rv*np.sin(w2b) + self.zo
 
         return np.array([x,y,z])
