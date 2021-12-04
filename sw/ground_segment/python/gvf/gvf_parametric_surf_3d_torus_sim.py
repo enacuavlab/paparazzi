@@ -20,7 +20,7 @@ matplotlib.rcParams['text.usetex'] = True
 
 # Simulation parameters
 tf = 500
-dt = 5e-2
+dt = 1e-2
 time = np.linspace(0, tf, tf/dt)
 it = 1
 
@@ -51,9 +51,9 @@ rh = 100
 rv = 10
 
 # Controller
-L = 5e-2
-beta1 = 1e-2
-beta2 = 4e-2
+L = 1e-1
+beta1 = 1e-1
+beta2 = 4e-1
 k1 = 1e-3
 k2 = 1e-3
 k3 = 1e-3
@@ -183,6 +183,14 @@ for t in time[:-1]:
 
 fig3d = plt.figure()
 ax3d = fig3d.gca(projection='3d')
+
+angletor = np.linspace(0, 2 * np.pi, 32)
+thetator, phitor = np.meshgrid(angletor, angletor)
+xtor= (rh + rv * np.cos(phitor)) * np.cos(thetator) + xo
+ytor = (rh + rv * np.cos(phitor)) * np.sin(thetator) + yo
+ztor = rv * np.sin(phitor) + zo
+ax3d.plot_surface(xtor, ytor, ztor, color = 'w', rstride = 1, cstride = 1, alpha=0.5)
+
 ax3d.plot(X_h[:,0], X_h[:,1], X_h[:,2])
 
 f, (axe1,axe2,axe3) = plt.subplots(3,1)
