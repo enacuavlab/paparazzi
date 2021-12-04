@@ -51,7 +51,7 @@ rh = 100
 rv = 10
 
 # Controller
-L = 1e-1
+L = 5e-2
 beta1 = 1e-2
 beta2 = 4e-2
 k1 = 1e-3
@@ -169,9 +169,9 @@ for t in time[:-1]:
     # Log
     X_h[it, :] = X.transpose()
     theta_h[it] = theta
-    e1_h[it] = phi1
-    e2_h[it] = phi2
-    e3_h[it] = phi3
+    e1_h[it] = phi1 / L
+    e2_h[it] = phi2 / L
+    e3_h[it] = phi3 / L
     u_theta_h[it] = u_theta
     u_z_h[it] = u_zeta
     u_w1_h[it] = u_w1
