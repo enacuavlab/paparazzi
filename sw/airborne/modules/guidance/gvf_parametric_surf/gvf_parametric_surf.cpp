@@ -243,16 +243,16 @@ void gvf_parametric_surf_control_3D(float kx, float ky, float kz, float f1, floa
   J(4, 0) = kx * f1dw2 * beta2 * L;
   J(4, 1) = ky * f2dw2 * beta2 * L;
   J(4, 2) = kz * f3dw2 * beta2 * L;
-  J(0, 3) = - L * (-beta1 * beta2 * L * f1dw1dw2 + beta1 * beta1 * L * f1ddw1 - kx * beta1 * f1dw1);
-  J(1, 3) = - L * (-beta1 * beta2 * L * f2dw1dw2 + beta1 * beta1 * L * f2ddw1 - ky * beta1 * f2dw1);
-  J(2, 3) = - L * (-beta1 * beta2 * L * f3dw1dw2 + beta1 * beta1 * L * f3ddw1 - kz * beta1 * f3dw1);
+  J(0, 3) = L * (beta1 * beta2 * L * f1dw1dw2 - beta1 * beta1 * L * f1ddw1 + kx * beta1 * f1dw1);
+  J(1, 3) = L * (beta1 * beta2 * L * f2dw1dw2 - beta1 * beta1 * L * f2ddw1 + ky * beta1 * f2dw1);
+  J(2, 3) = L * (beta1 * beta2 * L * f3dw1dw2 - beta1 * beta1 * L * f3ddw1 + kz * beta1 * f3dw1);
   J(3, 3) =  beta1 * beta1 * (kx * (phi1 * f1ddw1 - L * f1dw1 * f1dw1) + ky * (phi2 * f2ddw1 - L * f2dw1 * f2dw1)
                             + kz * (phi3 * f3ddw1 - L * f3dw1 * f3dw1));
   J(4, 3) =  beta1 * beta2 * (kx * (phi1 * f1dw1dw2 - L * f1dw1 * f1dw2) + ky * (phi2 * f2dw1dw2 - L * f2dw1 * f2dw2)
                             + kz * (phi3 * f3dw1dw2 - L * f3dw1 * f3dw2));
-  J(0, 4) = -L * (beta1 * beta2 * L * f1dw2dw1 + beta2 * beta2 * L * f1ddw2 - kx * beta2 * f1dw2);
-  J(1, 4) = -L * (beta1 * beta2 * L * f2dw2dw1 + beta2 * beta2 * L * f2ddw2 - ky * beta2 * f2dw2);
-  J(2, 4) = -L * (beta1 * beta1 * L * f3dw2dw1 + beta2 * beta2 * L * f3ddw2 - kz * beta2 * f3dw2);
+  J(0, 4) = L * (-beta1 * beta2 * L * f1dw2dw1 + beta2 * beta2 * L * f1ddw2 + kx * beta2 * f1dw2);
+  J(1, 4) = L * (-beta1 * beta2 * L * f2dw2dw1 + beta2 * beta2 * L * f2ddw2 + ky * beta2 * f2dw2);
+  J(2, 4) = L * (-beta1 * beta1 * L * f3dw2dw1 + beta2 * beta2 * L * f3ddw2 + kz * beta2 * f3dw2);
   J(3, 4) =  beta2 * beta1 * (kx * (phi1 * f1dw2dw1 - L * f1dw1 * f1dw2) + ky * (phi2 * f2dw2dw1 - L * f2dw1 * f2dw2)
                             + kz * (phi3 * f3dw2dw1 - L * f3dw1 * f3dw2));
 
