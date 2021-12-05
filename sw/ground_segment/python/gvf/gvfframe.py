@@ -189,7 +189,7 @@ class GVFFrame(wx.Frame):
                     phi = [float(x) for x in msg.get_field(6)]
                     phi_x = phi[0]
                     phi_y = phi[1]
-                    phi_z = phi[3]
+                    phi_z = phi[2]
                     self.traj = traj_param_surf_torus_3D(np.array([xo, yo]), zo, rh, rv, self.w1b, self.w2b)
 
     def draw_gvf(self, XY, yaw, course, altitude):
@@ -281,81 +281,92 @@ class map2d:
             ax.grid()
 
         if traj.dim == 3:
-            a3d = self.fig.add_subplot(2,2,1, projection='3d')
-            axy = self.fig.add_subplot(2,2,2)
-            axz = self.fig.add_subplot(2,2,3)
-            ayz = self.fig.add_subplot(2,2,4)
-
-            a3d.set_title('3D Map')
-            axy.set_title('XY Map')
-            axz.set_title('XZ Map')
-            ayz.set_title('YZ Map')
-
-            # 3D
             if isinstance(traj, traj_param_surf_torus_3D):
+                a3d = self.fig.add_subplot(1,1,1, projection='3d')
                 angletor = np.linspace(0, 2 * np.pi, 32)
                 thetator, phitor = np.meshgrid(angletor, angletor)
                 xtor= (traj.rh + traj.rv * np.cos(phitor)) * np.cos(thetator) + traj.XYoff[0]
                 ytor = (traj.rh + traj.rv * np.cos(phitor)) * np.sin(thetator) + traj.XYoff[1]
                 ztor = traj.rv * np.sin(phitor) + traj.zo
                 a3d.plot_surface(xtor, ytor, ztor, color = 'w', rstride = 1, cstride = 1, alpha=0.5)
-            else:
-                a3d.plot(traj.traj_points[0, :], traj.traj_points[1, :], traj.traj_points[2, :])
 
-            if altitude != -1:
                 a3d.plot([XY[0]], [XY[1]], [altitude], marker='o', markerfacecolor='r', markeredgecolor='r')
                 a3d.plot([traj.wpoint[0]], [traj.wpoint[1]], [traj.wpoint[2]], marker='x', markerfacecolor='r', markeredgecolor='r')
 
-            #a3d.axis('equal')
-            if traj.deltaz < 0:
-                a3d.set_zlim(traj.zo+1.5*traj.deltaz, traj.zo-1.5*traj.deltaz)
-            else:
-                a3d.set_zlim(traj.zo-1.5*traj.deltaz, traj.zo+1.5*traj.deltaz)
+                #a3d.axis('equal')
+                if traj.deltaz < 0:
+                    a3d.set_zlim(traj.zo+1.5*traj.deltaz, traj.zo-1.5*traj.deltaz)
+                else:
+                    a3d.set_zlim(traj.zo-1.5*traj.deltaz, traj.zo+1.5*traj.deltaz)
 
-            # XY
-            axy.plot(traj.traj_points[0, :], traj.traj_points[1, :])
-            axy.add_patch(self.vehicle_patch(XY, yaw)) # In radians
-            apex = 45*np.pi/180 # 30 degrees apex angle
-            b = np.sqrt(2*(self.area/2000) / np.sin(apex))
-            h = b*np.cos(apex/2)
-            axy.arrow(XY[0], XY[1], \
+            else:
+                a3d = self.fig.add_subplot(2,2,1, projection='3d')
+                axy = self.fig.add_subplot(2,2,2)
+                axz = self.fig.add_subplot(2,2,3)
+                ayz = self.fig.add_subplot(2,2,4)
+
+                a3d.set_title('3D Map')
+                axy.set_title('XY Map')
+                axz.set_title('XZ Map')
+                ayz.set_title('YZ Map')
+
+                # 3D
+                a3d.plot(traj.traj_points[0, :], traj.traj_points[1, :], traj.traj_points[2, :])
+
+                if altitude != -1:
+                    a3d.plot([XY[0]], [XY[1]], [altitude], marker='o', markerfacecolor='r', markeredgecolor='r')
+                    a3d.plot([traj.wpoint[0]], [traj.wpoint[1]], [traj.wpoint[2]], marker='x', markerfacecolor='r', markeredgecolor='r')
+
+                #a3d.axis('equal')
+                if traj.deltaz < 0:
+                    a3d.set_zlim(traj.zo+1.5*traj.deltaz, traj.zo-1.5*traj.deltaz)
+                else:
+                    a3d.set_zlim(traj.zo-1.5*traj.deltaz, traj.zo+1.5*traj.deltaz)
+
+                # XY
+                axy.plot(traj.traj_points[0, :], traj.traj_points[1, :])
+                axy.add_patch(self.vehicle_patch(XY, yaw)) # In radians
+                apex = 45*np.pi/180 # 30 degrees apex angle
+                b = np.sqrt(2*(self.area/2000) / np.sin(apex))
+                h = b*np.cos(apex/2)
+                axy.arrow(XY[0], XY[1], \
                     h*np.sin(course), h*np.cos(course),\
                     head_width=5, head_length=10, fc='k', ec='k')
-            axy.annotate('HOME', xy = (0, 0))
-            axy.plot(traj.wpoint[0], traj.wpoint[1], 'rx', ms=10, mew=2)
-            if isinstance(traj, traj_param_ellipse_3D):
-                axy.annotate('ELLIPSE_3D', xy = (traj.XYoff[0], traj.XYoff[1]))
-                axy.plot(0, 0, 'kx', ms=10, mew=2)
-                axy.plot(traj.XYoff[0], traj.XYoff[1], 'kx', ms=10, mew=2)
-            elif isinstance(traj, traj_param_lissajous_3D):
-                axy.annotate('LISSA_3D', xy = (traj.XYoff[0], traj.XYoff[1]))
-                axy.plot(0, 0, 'kx', ms=10, mew=2)
-                axy.plot(traj.XYoff[0], traj.XYoff[1], 'kx', ms=10, mew=2)
-            elif isinstance(traj, traj_param_surf_torus_3D):
-                axy.annotate('TORUS_3D', xy = (traj.XYoff[0], traj.XYoff[1]))
-                axy.plot(0, 0, 'kx', ms=10, mew=2)
-                axy.plot(traj.XYoff[0], traj.XYoff[1], 'kx', ms=10, mew=2)
+                axy.annotate('HOME', xy = (0, 0))
+                axy.plot(traj.wpoint[0], traj.wpoint[1], 'rx', ms=10, mew=2)
+                if isinstance(traj, traj_param_ellipse_3D):
+                    axy.annotate('ELLIPSE_3D', xy = (traj.XYoff[0], traj.XYoff[1]))
+                    axy.plot(0, 0, 'kx', ms=10, mew=2)
+                    axy.plot(traj.XYoff[0], traj.XYoff[1], 'kx', ms=10, mew=2)
+                elif isinstance(traj, traj_param_lissajous_3D):
+                    axy.annotate('LISSA_3D', xy = (traj.XYoff[0], traj.XYoff[1]))
+                    axy.plot(0, 0, 'kx', ms=10, mew=2)
+                    axy.plot(traj.XYoff[0], traj.XYoff[1], 'kx', ms=10, mew=2)
+                elif isinstance(traj, traj_param_surf_torus_3D):
+                    axy.annotate('TORUS_3D', xy = (traj.XYoff[0], traj.XYoff[1]))
+                    axy.plot(0, 0, 'kx', ms=10, mew=2)
+                    axy.plot(traj.XYoff[0], traj.XYoff[1], 'kx', ms=10, mew=2)
 
-            axy.axis('equal')
+                axy.axis('equal')
 
-            # XZ
-            axz.plot(traj.traj_points[0, :], traj.traj_points[2, :])
-            if altitude != -1:
-                axz.plot([XY[0]], [altitude], 'ro')
-                axz.plot(traj.wpoint[0], traj.wpoint[2], 'rx', ms=10, mew=2)
-            if traj.deltaz < 0:
-                axz.set_ylim(traj.zo+1.5*traj.deltaz, traj.zo-1.5*traj.deltaz)
-            else:
-                axz.set_ylim(traj.zo-1.5*traj.deltaz, traj.zo+1.5*traj.deltaz)
-            # YZ
-            ayz.plot(traj.traj_points[1, :], traj.traj_points[2, :])
-            if altitude != -1:
-                ayz.plot([XY[1]], [altitude], 'ro')
-                ayz.plot(traj.wpoint[1], traj.wpoint[2], 'rx', ms=10, mew=2)
-            if traj.deltaz < 0:
-                axz.set_ylim(traj.zo+1.5*traj.deltaz, traj.zo-1.5*traj.deltaz)
-            else:
-                ayz.set_ylim(traj.zo-1.5*traj.deltaz, traj.zo+1.5*traj.deltaz)
+                # XZ
+                axz.plot(traj.traj_points[0, :], traj.traj_points[2, :])
+                if altitude != -1:
+                    axz.plot([XY[0]], [altitude], 'ro')
+                    axz.plot(traj.wpoint[0], traj.wpoint[2], 'rx', ms=10, mew=2)
+                if traj.deltaz < 0:
+                    axz.set_ylim(traj.zo+1.5*traj.deltaz, traj.zo-1.5*traj.deltaz)
+                else:
+                    axz.set_ylim(traj.zo-1.5*traj.deltaz, traj.zo+1.5*traj.deltaz)
+               # YZ
+                ayz.plot(traj.traj_points[1, :], traj.traj_points[2, :])
+                if altitude != -1:
+                    ayz.plot([XY[1]], [altitude], 'ro')
+                    ayz.plot(traj.wpoint[1], traj.wpoint[2], 'rx', ms=10, mew=2)
+                if traj.deltaz < 0:
+                    axz.set_ylim(traj.zo+1.5*traj.deltaz, traj.zo-1.5*traj.deltaz)
+                else:
+                    ayz.set_ylim(traj.zo-1.5*traj.deltaz, traj.zo+1.5*traj.deltaz)
 
 class traj_line:
     def float_range(self, start, end, step):
@@ -675,14 +686,14 @@ class traj_param_surf_torus_3D:
         self.mapgrad_U = []
         self.mapgrad_V = []
 
-        self.deltaz = self.rv # For the 3D plot
+        self.deltaz = 5*self.rv # For the 3D plot
         self.wpoint = self.param_point(self.w1b, self.w2b)
 
         num_points = 100
         self.traj_points = np.zeros((3, num_points))
 
         i = 0
-        range_points = np.pi
+        range_points = 2*np.pi
         for t in self.float_range(0, range_points, range_points/num_points):
             self.traj_points[:, i] = self.param_point(t,t)
             i = i + 1
