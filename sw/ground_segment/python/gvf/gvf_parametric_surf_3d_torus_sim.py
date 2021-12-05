@@ -48,12 +48,12 @@ xo = 0
 yo = 0
 zo = 100
 rh = 100
-rv = 10
+rv = 3.5
 
 # Controller
 L = 1e-1
-beta1 = 1e-1
-beta2 = 4e-1
+beta1 = 1e-2
+beta2 = 3e-2
 k1 = 1e-3
 k2 = 1e-3
 k3 = 1e-3
