@@ -5,7 +5,7 @@
 #include "mcu_periph/uart.h"
 
 #include "pprzlink/messages.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 
 static inline void main_init(void);
 static inline void main_periodic_task(void);
@@ -26,7 +26,6 @@ static inline void main_init(void)
   mcu_init();
   sys_time_register_timer((1. / PERIODIC_FREQUENCY), NULL);
   uart0_init_tx();
-  mcu_int_enable();
 }
 
 static inline void main_periodic_task(void)

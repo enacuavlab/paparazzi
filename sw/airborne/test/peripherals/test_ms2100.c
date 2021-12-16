@@ -24,7 +24,7 @@
 #include "mcu.h"
 #include "mcu_periph/sys_time.h"
 #define DATALINK_C
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #include "modules/datalink/pprz_dl.h"
 #include "peripherals/ms2100.h"
 #include "led.h"
@@ -56,7 +56,6 @@ static inline void main_init(void)
   ms2100_init(&ms2100, &(MS2100_SPI_DEV), MS2100_SLAVE_IDX);
   downlink_init();
   pprz_dl_init();
-  mcu_int_enable();
 }
 
 static inline void main_periodic_task(void)

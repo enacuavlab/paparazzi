@@ -1,11 +1,15 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="baro_bmp" dir="sensors">
+<module name="baro_bmp" dir="sensors" task="sensors">
   <doc>
     <description>Bosch BMP085 pressure sensor</description>
     <configure name="BMP_I2C_DEV" value="i2cX" description="select which i2c peripheral to use (default i2c0)"/>
     <define name="SENSOR_SYNC_SEND" description="flag to transmit the data as it is acquired"/>
   </doc>
+  <dep>
+    <depends>i2c</depends>
+    <provides>baro</provides>
+  </dep>
   <header>
     <file name="baro_bmp.h"/>
   </header>
@@ -18,6 +22,13 @@
     <define name="BMP_I2C_DEV" value="$(BMP_I2C_DEV_LOWER)"/>
     <file name="baro_bmp.c"/>
     <file name="bmp085.c" dir="peripherals"/>
+    <test firmware="fixedwing">
+      <define name="USE_I2C1"/>
+      <define name="BMP_I2C_DEV" value="i2c1"/>
+      <define name="DOWNLINK_TRANSPORT" value="pprz_tp"/>
+      <define name="DOWNLINK_DEVICE" value="uart0"/>
+      <define name="USE_UART0"/>
+    </test>
   </makefile>
 </module>
 

@@ -179,10 +179,10 @@ static void adc_regular_sequence(uint32_t *sqr1, uint32_t *sqr2, uint32_t *sqr3,
     if (i <= 6) {
       first6 |= (channel[i - 1] << ((i - 1) * 5));
     }
-    if ((i > 6) & (i <= 12)) {
+    if ((i > 6) && (i <= 12)) {
       second6 |= (channel[i - 1] << ((i - 6 - 1) * 5));
     }
-    if ((i > 12) & (i <= 18)) {
+    if ((i > 12) && (i <= 18)) {
       third6 |= (channel[i - 1] << ((i - 12 - 1) * 5));
     }
   }
@@ -216,15 +216,23 @@ static void adc_sample_time_on_all_channels(uint32_t *smpr1, uint32_t *smpr2, ui
  * is collected). Since we are assuming continuous ADC conversion, the ADC state is
  * never equal to ADC_COMPLETE.
  *
- * @note    Averaging is done when the subsystems ask for ADC values
+ * @note    Averaging is done when the modules ask for ADC values
  * @param[in] adcp pointer to a @p ADCDriver object
  * @param[in] buffer pointer to a @p buffer with samples
  * @param[in] n number of samples
  */
-void adc1callback(ADCDriver *adcp, adcsample_t *buffer, size_t n)
+void adc1callback(ADCDriver *adcp)
 {
   if (adcp->state != ADC_STOP) {
 #if USE_AD1
+    const size_t n = ADC_BUF_DEPTH / 2U;
+    // depending on half buffer that has just been filled
+    // if adcIsBufferComplete return true, the last filled
+    // half buffer start in the middle of buffer, else, is start at
+    // beginiing of buffer
+    const adcsample_t *buffer = adc_samples + (adcIsBufferComplete(adcp) ?
+					   n * ADC_NUM_CHANNELS : 0U);
+
     for (int channel = 0; channel < ADC_NUM_CHANNELS; channel++) {
       if (adc1_buffers[channel] != NULL) {
         adc1_sum_tmp[channel] = 0;
@@ -246,6 +254,8 @@ void adc1callback(ADCDriver *adcp, adcsample_t *buffer, size_t n)
       }
     }
 #if USE_ADC_WATCHDOG
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits" // remove warning when ADC_NUM_CHANNELS is 0 and test always false
     if ((adc_watchdog.adc == adcp) &&
         (adc_watchdog.channel < ADC_NUM_CHANNELS) &&
         (adc_watchdog.cb != NULL)) {
@@ -254,6 +264,7 @@ void adc1callback(ADCDriver *adcp, adcsample_t *buffer, size_t n)
         adc_watchdog.cb();
       }
     }
+#pragma GCC diagnostic pop
 #endif // USE_ADC_WATCHDOG
 
     chSysUnlockFromISR();
@@ -281,7 +292,10 @@ static void adcerrorcallback(ADCDriver *adcp, adcerror_t err)
 void adc_buf_channel(uint8_t adc_channel, struct adc_buf *s, uint8_t av_nb_sample)
 {
   // check for out-of-bounds access
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits" // remove warning when ADC_NUM_CHANNELS is 0 and test always true
   if (adc_channel >= ADC_NUM_CHANNELS) { return; }
+#pragma GCC diagnostic pop
   adc1_buffers[adc_channel] = s;
   if (av_nb_sample <= MAX_AV_NB_SAMPLE) {
     s->av_nb_sample = av_nb_sample;

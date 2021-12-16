@@ -26,12 +26,12 @@
 #include "modules/e_identification_fr/e_identification_fr.h"
 #include "state.h"
 #include "mcu_periph/uart.h"
-#include "subsystems/gps.h"
+#include "modules/gps/gps.h"
 #include "generated/airframe.h"
 #include "generated/flight_plan.h"
 
 #if defined(ROTORCRAFT_FIRMWARE)
-#include "subsystems/navigation/waypoints.h"
+#include "modules/nav/waypoints.h"
 #endif
 
 #define MAX_BUF_LEN 50
@@ -82,7 +82,7 @@ static int put_horizontal_speed(uint8_t *buf)
 
 static int put_route(uint8_t *buf)
 {
-  int32_t route_normalized = INT32_DEG_OF_RAD(stateGetHorizontalSpeedDir_f());
+  int32_t route_normalized = DegOfRad(stateGetHorizontalSpeedDir_f());
   uint16_t route;
   if (route_normalized >= 0) {
     route = (uint16_t) route_normalized;

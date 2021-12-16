@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="gps_ublox" dir="gps">
+<module name="gps_ublox" dir="gps" task="sensors">
   <doc>
     <description>
       U-blox GPS (UART)
@@ -9,11 +9,14 @@
     <configure name="UBX_GPS_PORT" value="UARTx" description="UART where the GPS is connected to (UART1, UART2, etc"/>
     <configure name="UBX_GPS_BAUD" value="B38400" description="UART baud rate"/>
   </doc>
-  <autoload name="gps"/>
+  <dep>
+    <depends>uart,gps</depends>
+    <provides>gps</provides>
+  </dep>
   <autoload name="gps_nps"/>
   <autoload name="gps_sim"/>
   <header>
-    <file name="gps.h" dir="subsystems"/>
+    <file name="gps.h"/>
   </header>
   <init fun="gps_ubx_init()"/>
   <periodic fun="gps_ubx_periodic_check()" freq="1." autorun="TRUE"/>
@@ -22,7 +25,7 @@
     <configure name="UBX_GPS_PORT" default="$(GPS_PORT)" case="upper|lower"/>
     <configure name="UBX_GPS_BAUD" default="$(GPS_BAUD)"/>
 
-    <file name="gps_ubx.c" dir="subsystems/gps"/>
+    <file name="gps_ubx.c"/>
 
     <define name="USE_$(UBX_GPS_PORT_UPPER)"/>
     <define name="UBX_GPS_LINK" value="$(UBX_GPS_PORT_LOWER)"/>
@@ -31,17 +34,22 @@
       ifdef SECONDARY_GPS
       ifneq (,$(findstring $(SECONDARY_GPS), ublox))
       # this is the secondary GPS
-      $(TARGET).CFLAGS += -DGPS_SECONDARY_TYPE_H=\"subsystems/gps/gps_ubx.h\"
+      $(TARGET).CFLAGS += -DGPS_SECONDARY_TYPE_H=\"modules/gps/gps_ubx.h\"
       $(TARGET).CFLAGS += -DSECONDARY_GPS=GPS_UBX
       else
-      $(TARGET).CFLAGS += -DGPS_TYPE_H=\"subsystems/gps/gps_ubx.h\"
+      $(TARGET).CFLAGS += -DGPS_TYPE_H=\"modules/gps/gps_ubx.h\"
       $(TARGET).CFLAGS += -DPRIMARY_GPS=GPS_UBX
       endif
       else
       # plain old single GPS usage
-      $(TARGET).CFLAGS += -DGPS_TYPE_H=\"subsystems/gps/gps_ubx.h\"
+      $(TARGET).CFLAGS += -DGPS_TYPE_H=\"modules/gps/gps_ubx.h\"
       endif
     </raw>
+    <test>
+      <define name="PRIMARY_GPS" value="GPS_UBX"/>
+      <define name="USE_UART2"/>
+      <define name="UBX_GPS_LINK" value="uart2"/>
+    </test>
   </makefile>
 </module>
 

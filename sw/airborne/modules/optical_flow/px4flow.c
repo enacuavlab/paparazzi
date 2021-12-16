@@ -29,7 +29,7 @@
 
 #include "modules/optical_flow/px4flow.h"
 #include "modules/datalink/mavlink_decoder.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 
 // State interface for rotation compensation
 #include "state.h"
@@ -37,7 +37,7 @@
 // Messages
 #include "mcu_periph/uart.h"
 #include "pprzlink/messages.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 
 struct mavlink_heartbeat heartbeat;
 struct mavlink_optical_flow optical_flow;
@@ -102,6 +102,7 @@ static void decode_optical_flow_msg(struct mavlink_message *msg __attribute__((u
       float phi = stateGetNedToBodyEulers_f()->phi;
       float theta = stateGetNedToBodyEulers_f()->theta;
       float gain = (float)fabs( (double) (cosf(phi) * cosf(theta)));
+      optical_flow.distance = optical_flow.ground_distance;
       optical_flow.ground_distance = optical_flow.ground_distance / gain;
   }
 
@@ -162,15 +163,18 @@ void px4flow_init(void)
 void px4flow_downlink(void)
 {
   static float timestamp = 0;
+  static uint8_t distance_quality = 0;
   timestamp = ((float)optical_flow.time_usec) * 0.000001;
-  DOWNLINK_SEND_PX4FLOW(DefaultChannel, DefaultDevice,
-                        &timestamp,
-                        &optical_flow.sensor_id,
-                        &optical_flow.flow_x,
-                        &optical_flow.flow_y,
-                        &optical_flow.flow_comp_m_x,
-                        &optical_flow.flow_comp_m_y,
-                        &optical_flow.quality,
-                        &optical_flow.ground_distance);
+  DOWNLINK_SEND_OPTICAL_FLOW(DefaultChannel, DefaultDevice,
+                            &timestamp,
+                            &optical_flow.sensor_id,
+                            &optical_flow.flow_x,
+                            &optical_flow.flow_y,
+                            &optical_flow.flow_comp_m_x,
+                            &optical_flow.flow_comp_m_y,
+                            &optical_flow.quality,
+                            &optical_flow.distance,
+                            &optical_flow.ground_distance,
+                            &distance_quality);
 }
 

@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="nav_line" dir="nav">
+<module name="nav_line" dir="nav" task="control">
   <doc>
     <description>
        Fixedwing navigation along a line with nice U-turns.
@@ -11,11 +11,17 @@
 
     </description>
   </doc>
+  <dep>
+    <depends>@navigation</depends>
+  </dep>
   <header>
     <file name="nav_line.h"/>
   </header>
   <init fun="nav_line_init()"/>
   <makefile target="ap|sim|nps|hitl">
     <file name="nav_line.c"/>
+    <test firmware="fixedwing">
+      <define name="CTRL_TYPE_H" value="firmwares/fixedwing/guidance/guidance_v.h" type="string"/>
+    </test>
   </makefile>
 </module>

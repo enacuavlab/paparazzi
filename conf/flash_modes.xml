@@ -1,20 +1,6 @@
 <?xml version="1.0"?>
 
 <flash_modes>
-  <mode name="SERIAL (ISP)">
-    <variable name="FLASH_MODE" value="ISP"/>
-    <boards>
-      <board name="booz_.*"/>
-      <board name="hb_.*"/>
-      <board name="logom_.*"/>
-      <board name="navgo_.*"/>
-      <board name="sdlog_.*"/>
-      <board name="tiny_.*"/>
-      <board name="twog_.*"/>
-      <board name="umarim_.*"/>
-      <board name="yapa_.*"/>
-    </boards>
-  </mode>
   <mode name="SERIAL (stm32)">
     <variable name="FLASH_MODE" value="SERIAL"/>
     <boards>
@@ -23,20 +9,6 @@
       <board name="lisa_[ms]_.*"/>
       <board name="elle*"/>
       <board name="naze32*"/>
-    </boards>
-  </mode>
-  <mode name="USB (IAP)">
-    <variable name="FLASH_MODE" value="IAP"/>
-    <boards>
-      <board name="booz_.*"/>
-      <board name="hb_.*"/>
-      <board name="logom_.*"/>
-      <board name="navgo_.*"/>
-      <board name="sdlog_.*"/>
-      <board name="tiny_.*"/>
-      <board name="twog_*"/>
-      <board name="umarim_.*"/>
-      <board name="yapa_.*"/>
     </boards>
   </mode>
   <mode name="USB DFU (stm32_mem)">
@@ -54,7 +26,6 @@
     <variable name="FLASH_MODE" value="DFU-UTIL"/>
     <boards>
       <board name="apogee_.*"/>
-      <board name="stm32f4_discovery"/>
       <board name="li[s]?a_mx_.*"/>
       <board name="navstik_.*"/>
       <board name="elle*"/>
@@ -64,13 +35,14 @@
       <board name="crazybee_f4_.*"/>
       <board name="crazyflie_.*"/>
       <board name="nucleo.*"/>
+      <board name="matek_.*"/>
+      <board name="holybro_.*"/>
     </boards>
   </mode>
   <mode name="STLink (SWD)">
     <variable name="FLASH_MODE" value="STLINK"/>
     <boards>
       <board name="apogee_.*"/>
-      <board name="stm32f4_discovery"/>
       <board name="li[s]?a_mx_.*"/>
       <board name="cc3d"/>
       <board name="elle*"/>
@@ -81,13 +53,14 @@
       <board name="crazybee_f4_.*"/>
       <board name="crazyflie_.*"/>
       <board name="nucleo.*"/>
+      <board name="matek_.*"/>
+      <board name="holybro_.*"/>
     </boards>
   </mode>
   <mode name="BlackMagic Probe (SWD)">
     <variable name="FLASH_MODE" value="SWD"/>
     <boards>
       <board name="apogee_.*"/>
-      <board name="stm32f4_discovery"/>
       <board name="li[s]?a_m_.*"/>
       <board name="li[s]?a_mx_.*"/>
       <board name="px4fmu_.*"/>
@@ -100,9 +73,10 @@
       <board name="lia_.*"/>
       <board name="chimera_.*"/>
       <board name="tawaki_.*"/>
-      <board name="vms_ecu_.*"/>
       <board name="crazyflie_.*"/>
       <board name="nucleo.*"/>
+      <board name="matek_.*"/>
+      <board name="holybro_.*"/>
     </boards>
   </mode>
   <mode name="BlackMagic Probe (SWD_NOPWR)">
@@ -118,7 +92,6 @@
     <variable name="FLASH_MODE" value="JTAG_BMP"/>
     <boards>
       <board name="apogee_*"/>
-      <board name="stm32f4_discovery"/>
       <board name="li[s]?a_[ms]?_.*"/>
       <board name="li[s]?a_mx_.*"/>
       <board name="px4fmu_.*"/>

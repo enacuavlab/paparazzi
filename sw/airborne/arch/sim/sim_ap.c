@@ -10,17 +10,17 @@
 #include <time.h>
 #include <string.h>
 #include "std.h"
-#include "inter_mcu.h"
+#include "modules/intermcu/inter_mcu.h"
 #include "autopilot.h"
-#include "subsystems/gps.h"
+#include "modules/gps/gps.h"
 #include "generated/settings.h"
 #include "firmwares/fixedwing/nav.h"
 #include "firmwares/fixedwing/stabilization/stabilization_attitude.h"
 #include "firmwares/fixedwing/guidance/guidance_v.h"
-#include "subsystems/commands.h"
+#include "modules/core/commands.h"
 #include "firmwares/fixedwing/main_ap.h"
-#include "subsystems/datalink/datalink.h"
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/datalink.h"
+#include "modules/datalink/telemetry.h"
 #include "generated/flight_plan.h"
 
 #include "generated/modules.h"
@@ -64,35 +64,11 @@ value sim_sys_time_task(value unit)
 
 value sim_periodic_task(value unit)
 {
-  sensors_task();
-#if USE_GENERATED_AUTOPILOT
-  autopilot_periodic();
-#else
-  attitude_loop();
-#endif
-  reporting_task();
-  modules_periodic_task();
-  periodic_task_fbw();
-  electrical_periodic();
+  handle_periodic_tasks_ap();
   event_task_ap();
   event_task_fbw();
   return unit;
 }
-
-value sim_monitor_task(value unit)
-{
-  monitor_task();
-  return unit;
-}
-
-value sim_nav_task(value unit)
-{
-#if !USE_GENERATED_AUTOPILOT
-  navigation_task();
-#endif
-  return unit;
-}
-
 
 float ftimeofday(void)
 {
@@ -151,9 +127,3 @@ value set_datalink_message(value s)
   return Val_unit;
 }
 
-/** Required by electrical */
-void adc_buf_channel(void *a __attribute__((unused)),
-                     void *b __attribute__((unused)),
-                     void *c __attribute__((unused)))
-{
-}

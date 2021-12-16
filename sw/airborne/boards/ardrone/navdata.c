@@ -43,9 +43,9 @@
 
 #include "std.h"
 #include "navdata.h"
-#include "subsystems/ins.h"
-#include "subsystems/ahrs.h"
-#include "subsystems/abi.h"
+#include "modules/ins/ins.h"
+#include "modules/ahrs/ahrs.h"
+#include "modules/core/abi.h"
 #include "mcu_periph/gpio.h"
 
 /* Internal used functions */
@@ -128,10 +128,12 @@ ssize_t full_read(int fd, uint8_t *buf, size_t count)
 }
 
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 
 static void send_navdata(struct transport_tx *trans, struct link_device *dev)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
   pprz_msg_send_ARDRONE_NAVDATA(trans, dev, AC_ID,
                                 &navdata.measure.taille,
                                 &navdata.measure.nu_trame,
@@ -162,6 +164,7 @@ static void send_navdata(struct transport_tx *trans, struct link_device *dev)
                                 &navdata.measure.mz,
                                 &navdata.measure.chksum,
                                 &navdata.checksum_errors);
+#pragma GCC diagnostic pop
 }
 #endif
 
@@ -322,7 +325,7 @@ static void *navdata_read(void *data __attribute__((unused)))
   return NULL;
 }
 
-#include "subsystems/imu.h"
+#include "modules/imu/imu.h"
 static void navdata_publish_imu(void)
 {
   RATES_ASSIGN(imu.gyro_unscaled, navdata.measure.vx, -navdata.measure.vy, -navdata.measure.vz);

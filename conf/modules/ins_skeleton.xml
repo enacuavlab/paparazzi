@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="ins_skeleton" dir="ins">
+<module name="ins_skeleton" dir="ins" task="estimation">
   <doc>
     <description>
       INS module skeleton.
@@ -18,13 +18,18 @@
     <define name="INS_MODULE_BARO_ID" value="ABI_BROADCAST" description="ABI sender id of BARO_ABS messages to subscribe to"/>
     <define name="INS_MODULE_GPS_ID" value="GPS_MULTI_ID" description="ABI sender id of GPS messages to subscribe to"/>
   </doc>
+  <dep>
+    <depends>@imu,@gps</depends>
+    <provides>ins</provides>
+  </dep>
   <init fun="ins_module_wrapper_init()"/>
   <header>
     <file name="ins_skeleton.h"/>
   </header>
   <makefile target="ap|nps" firmware="rotorcraft">
     <define name="INS_TYPE_H" value="modules/ins/ins_skeleton.h" type="string"/>
-    <file name="ins.c" dir="subsystems"/>
+    <file name="ins.c"/>
     <file name="ins_skeleton.c"/>
+    <test firmware="rotorcraft"/>
   </makefile>
 </module>

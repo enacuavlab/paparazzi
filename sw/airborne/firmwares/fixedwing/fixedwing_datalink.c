@@ -25,8 +25,8 @@
  *
  */
 
-#include "subsystems/datalink/datalink.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/datalink.h"
+#include "modules/datalink/downlink.h"
 
 #include "pprzlink/messages.h"
 #include "pprzlink/dl_protocol.h"
@@ -37,12 +37,12 @@
 
 #ifdef NAV
 #include "firmwares/fixedwing/nav.h"
-#include "subsystems/navigation/common_nav.h"
+#include "modules/nav/common_nav.h"
 #include "math/pprz_geodetic_float.h"
 #endif
 
 #ifdef HITL
-#include "subsystems/gps.h"
+#include "modules/gps/gps.h"
 #endif
 
 #define MOfMM(_x) (((float)(_x))/1000.)
@@ -114,15 +114,7 @@ void firmware_parse_msg(struct link_device *dev __attribute__((unused)), struct 
 #endif /** WIND_INFO */
 
 #ifdef HITL
-    /** Infrared and GPS sensors are replaced by messages on the datalink */
-    case DL_HITL_INFRARED: {
-      /** This code simulates infrared.c:ir_update() */
-      infrared.roll = DL_HITL_INFRARED_roll(buf);
-      infrared.pitch = DL_HITL_INFRARED_pitch(buf);
-      infrared.top = DL_HITL_INFRARED_top(buf);
-    }
-    break;
-
+    /** GPS sensors are replaced by messages on the datalink */
     case DL_HITL_UBX: {
       /** This code simulates gps_ubx.c:parse_ubx() */
       if (gps_msg_received) {

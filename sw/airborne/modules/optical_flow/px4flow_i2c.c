@@ -28,7 +28,7 @@
  */
 
 #include "modules/optical_flow/px4flow_i2c.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 #include "filters/median_filter.h"
 
 // State interface for rotation compensation
@@ -36,7 +36,7 @@
 
 // Messages
 #include "pprzlink/messages.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 
 /*
  * acceptable quality of optical flow (0-min,1-max)
@@ -267,34 +267,39 @@ void px4flow_i2c_downlink(void)
   uint8_t id = PX4FLOW_I2C_ID;
 
   float timestamp = get_sys_time_float();
+  static uint8_t distance_quality = 0;
 
 #if REQUEST_INT_FRAME
-  int16_t flow_x = px4flow.i2c_int_frame.pixel_flow_x_integral;
-  int16_t flow_y = px4flow.i2c_int_frame.pixel_flow_y_integral;
+  int32_t flow_x = px4flow.i2c_int_frame.pixel_flow_x_integral;
+  int32_t flow_y = px4flow.i2c_int_frame.pixel_flow_y_integral;
 
   float flow_comp_m_x = 0.0;
   float flow_comp_m_y = 0.0;
 
   uint8_t quality = px4flow.i2c_int_frame.qual;
   float ground_distance = ((float)px4flow.i2c_int_frame.ground_distance) / 1000.0;
+  float distance = 0;
 #else
-  int16_t flow_x = px4flow.i2c_frame.pixel_flow_x_sum;
-  int16_t flow_y = px4flow.i2c_frame.pixel_flow_y_sum;
+  int32_t flow_x = px4flow.i2c_frame.pixel_flow_x_sum;
+  int32_t flow_y = px4flow.i2c_frame.pixel_flow_y_sum;
 
   float flow_comp_m_x = ((float)px4flow.i2c_frame.flow_comp_m_x) / 1000.0;
   float flow_comp_m_y = ((float)px4flow.i2c_frame.flow_comp_m_y) / 1000.0;
 
   uint8_t quality = px4flow.i2c_frame.qual;
   float ground_distance = ((float)px4flow.i2c_frame.ground_distance) / 1000.0;
+  float distance;
 #endif
 
-  DOWNLINK_SEND_PX4FLOW(DefaultChannel, DefaultDevice,
-                        &timestamp,
-                        &id,
-                        &flow_x,
-                        &flow_y,
-                        &flow_comp_m_x,
-                        &flow_comp_m_y,
-                        &quality,
-                        &ground_distance);
+  DOWNLINK_SEND_OPTICAL_FLOW(DefaultChannel, DefaultDevice,
+                            &timestamp,
+                            &id,
+                            &flow_x,
+                            &flow_y,
+                            &flow_comp_m_x,
+                            &flow_comp_m_y,
+                            &quality,
+                            &ground_distance,
+                            &distance,
+                            &distance_quality);
 }

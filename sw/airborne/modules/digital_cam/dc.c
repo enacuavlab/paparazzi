@@ -35,8 +35,8 @@
 #include "dc.h"
 
 // for waypoints, include correct header until we have unified API
-#ifdef AP
-#include "subsystems/navigation/common_nav.h"
+#ifdef FIXEDWING_FIRMWARE
+#include "modules/nav/common_nav.h"
 #else
 #include "firmwares/rotorcraft/navigation.h"
 #endif
@@ -94,9 +94,9 @@ uint16_t dc_photo_nr = 0;
 
 #include "mcu_periph/uart.h"
 #include "pprzlink/messages.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #include "state.h"
-#include "subsystems/gps.h"
+#include "modules/gps/gps.h"
 #if DC_SHOT_EXTRA_DL
 #include "modules/datalink/extra_pprz_dl.h"
 #endif

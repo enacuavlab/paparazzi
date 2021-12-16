@@ -45,7 +45,8 @@
 #include "mcu_periph/uart.h"
 #include "mcu_periph/sys_time.h"
 #include "pprzlink/messages.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/core/abi.h"
+#include "modules/datalink/downlink.h"
 #include <math.h>
 
 #ifndef USE_AIRSPEED_ETS
@@ -86,7 +87,7 @@ PRINT_CONFIG_VAR(AIRSPEED_ETS_START_DELAY)
 #ifndef SITL
 #if AIRSPEED_ETS_SDLOG
 #include "modules/loggers/sdlog_chibios.h"
-#include "subsystems/gps.h"
+#include "modules/gps/gps.h"
 bool log_airspeed_ets_started;
 #endif
 #endif
@@ -225,6 +226,10 @@ void airspeed_ets_read_event(void)
       airspeed_ets += airspeed_ets_buffer[n];
     }
     airspeed_ets = airspeed_ets / (float)AIRSPEED_ETS_NBSAMPLES_AVRG;
+    
+    // Publish airspeed sensor
+    AbiSendMsgAIRSPEED(AIRSPEED_ETS_ID, airspeed_ets);
+
 #if USE_AIRSPEED_ETS
     stateSetAirspeed_f(airspeed_ets);
 #endif

@@ -1,10 +1,14 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="sensors">
+<module name="mag_hmc5843" dir="sensors" task="sensors">
   <doc>
     <description>hmc5843 magnetometer</description>
     <configure name="HMC5843_I2C_DEV" value="i2cX" description="select which i2c peripheral to use (default i2c0)"/>
   </doc>
+  <dep>
+    <depends>i2c</depends>
+    <provides>mag</provides>
+  </dep>
   <header>
     <file name="mag_hmc5843.h"/>
   </header>
@@ -18,5 +22,13 @@
     <file name="mag_hmc5843.c"/>
     <file name="hmc5843.c" dir="peripherals"/>
     <define name="HMC5843_NO_IRQ"/>
+    <test>
+      <define name="HMC5843_I2C_DEV" value="i2c1"/>
+      <define name="USE_I2C1"/>
+      <define name="DOWNLINK_TRANSPORT" value="pprz_tp"/>
+      <define name="DOWNLINK_DEVICE" value="uart0"/>
+      <define name="USE_UART0"/>
+      <define name="HMC5843_NO_IRQ"/>
+    </test>
   </makefile>
 </module>

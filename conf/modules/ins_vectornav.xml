@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="ins_vectornav" dir="ins">
+<module name="ins_vectornav" dir="ins" task="estimation">
   <doc>
     <description>
       Vectornav INS Driver.
@@ -8,11 +8,16 @@
     <configure name="VN_PORT" value="uart3" description="UART to use"/>
     <configure name="VN_BAUD" value="B921600" description="UART baudrate"/>
   </doc>
-  <autoload name="gps"/>
+  <dep>
+    <depends>uart,gps</depends>
+    <provides>imu,ins,ahrs,gps</provides>
+  </dep>
   <autoload name="ins_sim"/>
   <autoload name="ins_nps"/>
+  <autoload name="imu_sim"/>
+  <autoload name="imu_nps"/>
   <header>
-    <file name="ins.h" dir="subsystems"/>
+    <file name="ins.h"/>
   </header>
   <init fun="ins_vectornav_init()"/>
   <periodic fun="ins_vectornav_monitor()" freq="1.0" autorun="TRUE"/>
@@ -28,27 +33,33 @@
 
     <file name="vn200_serial.c" dir="peripherals"/>
 
-    <file name="ins.c" dir="subsystems"/>
-    <file name="ins_vectornav.c" dir="subsystems/ins"/>
-    <file name="ins_vectornav_wrapper.c" dir="subsystems/ins"/>
-    <define name="INS_TYPE_H" value="subsystems/ins/ins_vectornav_wrapper.h" type="string"/>
+    <file name="ins.c"/>
+    <file name="ins_vectornav.c"/>
+    <file name="ins_vectornav_wrapper.c"/>
+    <define name="INS_TYPE_H" value="modules/ins/ins_vectornav_wrapper.h" type="string"/>
 
-    <file name="gps.c" dir="subsystems"/>
+    <file name="gps.c" dir="modules/gps"/>
     <define name="USE_GPS"/>
     <raw>
       ifdef SECONDARY_GPS
       ifneq (,$(findstring $(SECONDARY_GPS), vectornav))
       # this is the secondary GPS
-      ap.CFLAGS += -DGPS_SECONDARY_TYPE_H=\"subsystems/ins/ins_vectornav_wrapper.h\"
+      ap.CFLAGS += -DGPS_SECONDARY_TYPE_H=\"modules/ins/ins_vectornav_wrapper.h\"
       ap.CFLAGS += -DSECONDARY_GPS=GPS_VECTORNAV
       else
-      ap.CFLAGS += -DGPS_TYPE_H=\"subsystems/ins/ins_vectornav_wrapper.h\"
+      ap.CFLAGS += -DGPS_TYPE_H=\"modules/ins/ins_vectornav_wrapper.h\"
       ap.CFLAGS += -DPRIMARY_GPS=GPS_VECTORNAV
       endif
       else
       # plain old single GPS usage
-      ap.CFLAGS += -DGPS_TYPE_H=\"subsystems/gps/gps_ubx.h\"
+      ap.CFLAGS += -DGPS_TYPE_H=\"modules/gps/gps_ubx.h\"
       endif
     </raw>
+    <test firmware="fixedwing">
+      <define name="PERIODIC_FREQUENCY" value="100"/>
+      <define name="VN_PORT" value="uart0"/>
+      <define name="USE_UART0"/>
+      <define name="PRIMARY_GPS" value="GPS_VECTORNAV"/>
+    </test>
   </makefile>
 </module>

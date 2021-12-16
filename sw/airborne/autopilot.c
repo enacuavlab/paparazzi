@@ -36,13 +36,13 @@
 #include "mcu_periph/uart.h"
 #include "mcu_periph/sys_time.h"
 #include "mcu_periph/gpio.h"
-#include "subsystems/radio_control.h"
-#include "subsystems/commands.h"
-#include "subsystems/actuators.h"
-//#include "subsystems/electrical.h"
-#include "subsystems/datalink/telemetry.h"
+#include "modules/radio_control/radio_control.h"
+#include "modules/core/commands.h"
+#include "modules/actuators/actuators.h"
+//#include "modules/energy/electrical.h"
+#include "modules/datalink/telemetry.h"
 
-#include "subsystems/settings.h"
+#include "modules/core/settings.h"
 #include "generated/settings.h"
 
 #include "pprz_version.h"
@@ -128,8 +128,14 @@ void autopilot_init(void)
   // call firmware specific init
   autopilot_firmware_init();
 
-  // static / generated AP init part is called later by main program
-  // and will set the correct initial mode
+  // call autopilot implementation init after guidance modules init
+  // (should be guaranteed by modules dependencies)
+  // it will set startup mode
+#if USE_GENERATED_AUTOPILOT
+  autopilot_generated_init();
+#else
+  autopilot_static_init();
+#endif
 
   // register messages
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AUTOPILOT_VERSION, send_autopilot_version);

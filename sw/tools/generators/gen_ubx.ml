@@ -112,7 +112,7 @@ let parse_message = fun class_name m ->
 
   (** Generating send function *)
   let param_type = fun f -> c_type (format f) in
-  let param_name = fun f ->Compat.lowercase_ascii (field_name f) in
+  let param_name = fun f ->String.lowercase_ascii (field_name f) in
   let param_name_and_type = fun f ->
     sprintf "%s ubx_%s" (param_type f) (param_name f) in
   let rec param_names = fun f r ->
@@ -160,7 +160,7 @@ let _ =
     fprintf out "/* Please DO NOT EDIT */\n\n";
 
     fprintf out "#include \"pprzlink/pprzlink_device.h\"\n\n";
-    fprintf out "#include \"subsystems/gps/gps_ubx.h\"\n\n";
+    fprintf out "#include \"modules/gps/gps_ubx.h\"\n\n";
 
     define "UBX_SYNC1" "0xB5";
     define "UBX_SYNC2" "0x62";

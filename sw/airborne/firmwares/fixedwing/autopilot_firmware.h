@@ -30,7 +30,7 @@
 
 #include "std.h"
 #include "autopilot.h"
-#include "subsystems/electrical.h"
+#include "modules/energy/electrical.h"
 
 // FIXME, move to control
 #define LATERAL_MODE_MANUAL    0
@@ -50,6 +50,11 @@ extern uint8_t  mcu1_status;
 /** Init function
  */
 extern void autopilot_firmware_init(void);
+
+/** monitoring task
+ *  should be called at 1Hz
+ */
+extern void monitor_task(void);
 
 #endif /* AUTOPILOT_FIRMWARE_H */
 

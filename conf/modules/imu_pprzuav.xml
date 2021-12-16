@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="imu_ppzuav" dir="imu">
+<module name="imu_pprzuav" dir="imu" task="sensors">
   <doc>
     <description>
       PPZUAV IMU.
@@ -19,10 +19,14 @@
       <define name="MAG_Z_SENS" value="4.90788848" integer="16"/>
     </section>
   </doc>
-  <autoload name="imu_common"/>
+  <dep>
+    <depends>i2c,imu_common</depends>
+    <provides>imu,mag</provides>
+  </dep>
   <autoload name="imu_nps"/>
+  <autoload name="imu_sim"/>
   <header>
-    <file name="imu_ppzuav.h" dir="subsystems/imu"/>
+    <file name="imu_ppzuav.h"/>
   </header>
   <init fun="imu_ppzuav_init()"/>
   <periodic fun="imu_ppzuav_periodic()"/>
@@ -37,6 +41,6 @@
     <file name="adxl345_i2c.c" dir="peripherals"/>
     <file name="itg3200.c" dir="peripherals"/>
     <file name="hmc58xx.c" dir="peripherals"/>
-    <file name="imu_ppzuav.c" dir="subsystems/imu"/>
+    <file name="imu_ppzuav.c"/>
   </makefile>
 </module>

@@ -1,0 +1,60 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="optical_flow_mateksys_3901_l0x" dir="optical_flow">
+
+  <doc>
+    <description>
+      Transfers flow X and Y and range data of the Mateksys3901-l0X sensor to the autopilot
+      This by the default serial connection not by connecting the debug pins on ther sensor
+      The Data is in MSP compatible output.
+    </description>
+    <configure name="MATEKSYS_3901_L0X_PORT" value="UART1" description="Set to which UART the sensor serial stream pin is connected to"/>
+    <configure name="MATEKSYS_3901_L0X_BAUD" value="115200" description="Sets the baudrate of the UART"/>
+    <define name="MATEKSYS_3901_L0X_MOTION_THRES" value="120" description="Sets the minimum motion quality to accept the flow measurement [0-255]"/>
+    <define name="MATEKSYS_3901_L0X_DISTANCE_THRES" value="200" description="Sets the minimum distance quality to accept the distance measurement [0-255]"/>
+    <define name="MATEKSYS_3901_L0X_MAX_DISTANCE" value="2500" description="Maximum allowable distance for rangefinder [mm]"/>
+    <define name="MATEKSYS_3901_L0X_MAX_FLOW" value="150" description="Maximum allowable flow rate measurable [deg/sec] "/>
+    <define name="USE_MATEKSYS_3901_L0X_AGL" value="0" description="Send AGL measurements on ABI bus"/>
+    <define name="USE_MATEKSYS_3901_L0X_OPTICAL_FLOW" value="0" description="Send optical flow measurements on ABI bus"/>
+    <define name="MATEKSYS_3901_L0X_COMPENSATE_ROTATION" value="0" description="Adjust distance from ground by compensating body rotation"/>
+    <define name="MATEKSYS_3901_L0X_FLOW_X_SCALER" value="1" description="Calibration scaling factor for flow in X direction (pitch)"/>
+    <define name="MATEKSYS_3901_L0X_FLOW_Y_SCALER" value="1" description="Calibration scaling factor for flow in Y direction (roll)"/>
+  </doc>
+
+  <settings>
+    <dl_settings>
+      <dl_settings NAME="optical_flow">
+        <dl_setting MAX="2" MIN="-2" STEP="0.05" VAR="mateksys3901l0x.scaler_x" shortname="scaler X" module="modules/optical_flow/mateksys_3901_l0x" param="MATEKSYS_3901_L0X_FLOW_X_SCALER" handler="scale_X" type="float" persistent="true"/>
+        <dl_setting MAX="2" MIN="-2" STEP="0.05" VAR="mateksys3901l0x.scaler_y" shortname="scaler Y" module="modules/optical_flow/mateksys_3901_l0x" param="MATEKSYS_3901_L0X_FLOW_Y_SCALER" handler="scale_Y" type="float" persistent="true"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+
+  <header>
+    <file name="mateksys_3901_l0x.h"/>
+  </header>
+
+  <init fun="mateksys3901l0x_init()"/>
+  <event fun="mateksys3901l0x_event()"/>
+
+  <makefile>
+
+    <!-- Configure default UART port and baudrate -->
+    <configure name="MATEKSYS_3901_L0X_PORT" default="UART3" case="upper|lower"/>
+    <configure name="MATEKSYS_3901_L0X_BAUD" default="B115200"/>
+
+    <!-- Enable UART and set baudrate -->
+    <define name="USE_$(MATEKSYS_3901_L0X_PORT_UPPER)"/>
+    <define name="USE_$(MATEKSYS_3901_L0X_PORT)_TX" value="FALSE"/>
+    <define name="$(MATEKSYS_3901_L0X_PORT_UPPER)_BAUD" value="$(MATEKSYS_3901_L0X_BAUD)"/>
+    <define name="MATEKSYS_3901_L0X_PORT" value="$(MATEKSYS_3901_L0X_PORT_LOWER)"/>
+
+    <file name="mateksys_3901_l0x.c"/>
+
+  </makefile>
+
+  <makefile target="nps|sim">
+    <define name="USE_SONAR" value="1"/>  <!-- in NPS use a virtual sonar to simulate lidar measurements -->
+  </makefile>
+
+</module>

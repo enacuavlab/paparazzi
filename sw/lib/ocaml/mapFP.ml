@@ -34,7 +34,7 @@ let float_attr = fun xml a -> float_of_string (ExtXml.attrib xml a)
 let rec assoc_nocase at = function
 [] -> raise Not_found
   | (a, v)::avs ->
-    if Compat.uppercase_ascii at = Compat.uppercase_ascii a then v else assoc_nocase at avs
+    if String.uppercase_ascii at = String.uppercase_ascii a then v else assoc_nocase at avs
 
 (** Returns the WGS84 coordinates of a waypoint, either from its relative x and
     y coordinates or from its lat and long *)
@@ -203,7 +203,7 @@ let display_kml = fun ?group color geomap xml ->
   try
     let document = ExtXml.child xml "Document" in
     let rec loop = fun child ->
-      let tag = Compat.lowercase_ascii (Xml.tag child) in
+      let tag = String.lowercase_ascii (Xml.tag child) in
       match tag with
         | "linestring" | "linearring" ->
             let coordinates = ExtXml.child child "coordinates" in
@@ -261,12 +261,12 @@ class flight_plan = fun ?format_attribs ?editable ~show_moved geomap color fp_dt
       w in
 
   (* The sectors *)
-  (* Parse sectors and store dynamic ones *)
+  (* Parse and store sectors *)
   let sectors =
     let waypoints = ExtXml.child xml "waypoints" in
     try
       List.fold_left (fun l x ->
-        match Compat.lowercase_ascii (Xml.tag x) with
+        match String.lowercase_ascii (Xml.tag x) with
             "kml" ->
               let file = ExtXml.attrib x "file" in
               display_kml ~group:wpts_group#group color geomap (ExtXml.parse_file (Env.flight_plans_path // file));
@@ -283,10 +283,7 @@ class flight_plan = fun ?format_attribs ?editable ~show_moved geomap color fp_dt
             let color_sector = ExtXml.attrib_or_default x "color" color in
             let segments = display_lines ~group:wpts_group#group color_sector geomap points in
             let wp_names = List.map (fun wp -> Xml.attrib wp "name") (Xml.children x) in
-            if ExtXml.attrib_or_default x "type" "" = "dynamic" then
-              [(wp_names, segments, color_sector)] @ l
-            else
-              l
+            [(wp_names, segments, color_sector)] @ l
           | _ -> failwith "Unknown sectors child")
       [] (Xml.children (ExtXml.child xml "sectors"))
     with Not_found -> [] in

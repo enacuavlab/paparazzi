@@ -58,12 +58,13 @@ Receiving:
 #include "gsm.h"
 #include "mcu_periph/uart.h"
 #include "std.h"
-#include "subsystems/datalink/downlink.h"
-#include "subsystems/gps.h"
+#include "modules/datalink/downlink.h"
+#include "modules/gps/gps.h"
 #include "autopilot.h"
-#include "subsystems/electrical.h"
-//#include "subsystems/navigation/common_nav.h"  //why is should this be needed?
+#include "modules/energy/electrical.h"
+//#include "modules/nav/common_nav.h"  //why is should this be needed?
 #include "generated/settings.h"
+#include "led.h"
 
 #ifndef GSM_LINK
 #define GSM_LINK UART3100

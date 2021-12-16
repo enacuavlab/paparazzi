@@ -40,15 +40,15 @@
 #include "generated/flight_plan.h"
 
 
-#include "subsystems/navigation/waypoints.h"
-//#include "subsystems/navigation/common_nav.h" // for fixed-wing aircraft
+#include "modules/nav/waypoints.h"
+//#include "modules/nav/common_nav.h" // for fixed-wing aircraft
 
 #include "modules/datalink/missionlib/mission_manager.h"
 
 static void mavlink_send_wp(uint8_t sysid, uint8_t compid, uint16_t seq)
 {
   if (seq < NB_WAYPOINT) { // Due to indexing
-#ifdef AP
+#ifdef FIXEDWING_FIRMWARE
     /* for fixedwing firmware send as LOCAL_ENU for now */
     mavlink_msg_mission_item_send(MAVLINK_COMM_0,
                                   sysid,

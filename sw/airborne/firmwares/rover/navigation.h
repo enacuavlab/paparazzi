@@ -30,8 +30,8 @@
 #include "std.h"
 #include "math/pprz_geodetic_float.h"
 #include "state.h"
-#include "subsystems/navigation/waypoints.h"
-#include "subsystems/navigation/common_flight_plan.h"
+#include "modules/nav/waypoints.h"
+#include "modules/nav/common_flight_plan.h"
 #include "autopilot.h"
 
 /** default approaching_time for a wp */ // FIXME
@@ -43,8 +43,13 @@
 #define CARROT_DIST 2.f
 #endif
 
-#ifndef NAV_FREQ
-#define NAV_FREQ 16
+/** default navigation frequency */
+#ifndef NAVIGATION_FREQUENCY
+#if PERIODIC_FREQUENCY == 512
+#define NAVIGATION_FREQUENCY 16
+#else // if not 512, assume a multiple of 20 (e.g. 200, 500, 1000, ...)
+#define NAVIGATION_FREQUENCY 20
+#endif
 #endif
 
 
@@ -131,6 +136,8 @@ extern void nav_register_oval(nav_rover_oval_init nav_oval_init, nav_rover_oval 
 #define GetPosY() (stateGetPositionEnu_f()->y)
 /// Get current altitude above MSL
 #define GetPosAlt() (stateGetPositionEnu_f()->z+state.ned_origin_f.hmsl)
+/// Get current height above reference
+#define GetPosHeight() (stateGetPositionEnu_f()->z)
 /**
  * Get current altitude reference for local coordinates.
  * This is the ground_alt from the flight plan at first,

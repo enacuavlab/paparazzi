@@ -23,7 +23,7 @@
 #define NPS_SENSORS_PARAMS_H
 
 #include "generated/airframe.h"
-#include "subsystems/imu.h"
+#include "modules/imu/imu.h"
 
 
 #define NPS_BODY_TO_IMU_PHI    IMU_BODY_TO_IMU_PHI
@@ -121,9 +121,6 @@
  *  Barometer
  */
 /* m */
-/* aka 2^8/INS_BARO_SENS  */
-#define NPS_BARO_QNH             1013.25
-#define NPS_BARO_SENSITIVITY     4.0
 #define NPS_BARO_DT              (1./5.)
 #define NPS_BARO_NOISE_STD_DEV   5.e-2
 

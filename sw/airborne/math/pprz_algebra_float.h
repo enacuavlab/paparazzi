@@ -481,6 +481,9 @@ extern void float_quat_of_orientation_vect(struct FloatQuat *q, const struct Flo
 /// Quaternion from rotation matrix.
 extern void float_quat_of_rmat(struct FloatQuat *q, struct FloatRMat *rm);
 
+/// Tilt twist decomposition of quaternion
+extern void float_quat_tilt_twist(struct FloatQuat *tilt, struct FloatQuat *twist, struct FloatQuat *quat);
+
 
 /* defines for backwards compatibility */
 #define FLOAT_QUAT_ZERO(_q) WARNING("FLOAT_QUAT_ZERO macro is deprecated, use the lower case function instead") float_quat_identity(&(_q))
@@ -720,6 +723,25 @@ static inline void float_mat_mul(float **o, float **a, float **b, int m, int n, 
       o[i][j] = 0.;
       for (k = 0; k < n; k++) {
         o[i][j] += a[i][k] * b[k][j];
+      }
+    }
+  }
+}
+
+/** o = a * b'
+ *
+ * a: [m x n]
+ * b: [l x n]
+ * o: [m x l]
+ */
+static inline void float_mat_mul_transpose(float **o, float **a, float **b, int m, int n, int l)
+{
+  int i, j, k;
+  for (i = 0; i < m; i++) {
+    for (j = 0; j < l; j++) {
+      o[i][j] = 0.;
+      for (k = 0; k < n; k++) {
+        o[i][j] += a[i][k] * b[j][k];
       }
     }
   }

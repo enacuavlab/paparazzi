@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="nav_survey_poly" dir="nav">
+<module name="nav_survey_poly_rotorcraft" dir="nav" task="control">
   <doc>
     <description>
 Polygon survey for rotorcraft.
@@ -24,10 +24,14 @@ You can use:
     </dl_settings>
   </settings>
 
+  <dep>
+    <depends>@navigation</depends>
+  </dep>
   <header>
     <file name="nav_survey_poly_rotorcraft.h"/>
   </header>
   <makefile target="ap|nps">
     <file name="nav_survey_poly_rotorcraft.c"/>
+    <test firmware="rotorcraft"/>
   </makefile>
 </module>

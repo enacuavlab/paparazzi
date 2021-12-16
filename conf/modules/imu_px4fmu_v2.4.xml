@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="imu_px4fmu_v2.4" dir="imu">
+<module name="imu_px4fmu_v2.4" dir="imu" task="sensors">
   <doc>
     <description>
       PX4 Pixhawk IMU via SPI.
@@ -12,10 +12,14 @@
     <configure name="IMU_LSM_SPI_SLAVE_IDX" value="SPI_SLAVE1" description="slave select pin for the LSM303D"/>
     <define name="IMU_PX4_DISABLE_MAG" value="FALSE" description="define to TRUE to disable the mag on the Pixhawk"/>
   </doc>
-  <autoload name="imu_common"/>
+  <dep>
+    <depends>spi_master,i2c,imu_common</depends>
+    <provides>imu,mag</provides>
+  </dep>
   <autoload name="imu_nps"/>
+  <autoload name="imu_sim"/>
   <header>
-    <file name="imu_px4fmu_v2.4.h" dir="subsystems/imu"/>
+    <file name="imu_px4fmu_v2.4.h"/>
   </header>
   <init fun="imu_px4_init()"/>
   <periodic fun="imu_px4_periodic()"/>
@@ -38,9 +42,18 @@
     <file name="l3gd20_spi.c" dir="peripherals"/>
     <file name="lsm303d_spi.c" dir="peripherals"/>
     <file name="hmc58xx.c" dir="peripherals"/>
-    <file name="imu_px4fmu_v2.4.c" dir="subsystems/imu"/>
-    <raw>
-      include $(CFG_SHARED)/spi_master.makefile
-    </raw>
+    <file name="imu_px4fmu_v2.4.c"/>
+    <test>
+      <define name="IMU_TYPE_H" value="imu/imu_px4fmu_v2.4.h" type="string"/>
+      <define name="IMU_PX4FMU_SPI_DEV" value="spi1"/>
+      <define name="IMU_L3G_SPI_SLAVE_IDX" value="SPI_SLAVE0"/>
+      <define name="IMU_LSM_SPI_SLAVE_IDX" value="SPI_SLAVE1"/>
+      <define name="SPI_MASTER"/>
+      <define name="USE_SPI1"/>
+      <define name="USE_SPI_SLAVE0"/>
+      <define name="USE_SPI_SLAVE1"/>
+      <define name="USE_I2C2"/>
+      <define name="PERIODIC_FREQUENCY" value="512"/>
+    </test>
   </makefile>
 </module>

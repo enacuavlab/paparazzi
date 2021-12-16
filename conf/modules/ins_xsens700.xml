@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="ins_xsens700" dir="ins">
+<module name="ins_xsens700" dir="ins" task="estimation">
   <doc>
     <description>
       XSens Mti-G 700 INS
@@ -8,7 +8,10 @@
     <configure name="XSENS_PORT" value="uart1" description="The (uart) port the XSens is connected to"/>
     <configure name="XSENS_BAUD" value="B115200" description="UART baud rate"/>
   </doc>
-  <autoload name="gps"/>
+  <dep>
+    <depends>uart,gps</depends>
+    <provides>ins,ahrs,gps</provides>
+  </dep>
   <autoload name="ins_sim"/>
   <autoload name="ins_nps"/>
   <header>
@@ -22,7 +25,7 @@
     <file name="xsens700.c"/>
     <file name="xsens_parser.c"/>
     <file name="ins_xsens700.c"/>
-    <file name="ins.c" dir="subsystems"/>
+    <file name="ins.c"/>
     <configure name="XSENS_PORT" default="uart1" case="upper|lower"/>
     <configure name="XSENS_BAUD" default="B115200"/>
     <define name="USE_$(XSENS_PORT_UPPER)" value="1"/>
@@ -31,11 +34,22 @@
     <define name="XSENS_OUTPUT_MODE" value="0x1836"/>
     <define name="AHRS_TRIGGERED_ATTITUDE_LOOP"/>
 
-    <file name="gps.c" dir="subsystems"/>
+    <file name="gps.c" dir="modules/gps"/>
     <define name="USE_GPS"/>
     <define name="USE_GPS_XSENS"/>
     <define name="GPS_NB_CHANNELS" value="50"/>
     <define name="GPS_TYPE_H" value="modules/ins/ins_xsens700.h" type="string"/>
+    <test firmware="fixedwing">
+      <include name="../../var/include"/>
+      <define name="PRIMARY_GPS" value="GPS_XSENS"/>
+      <define name="USE_GPS_XSENS"/>
+      <define name="USE_GPS"/>
+      <define name="XSENS_LINK" value="uart0"/>
+      <define name="DOWNLINK_TRANSPORT" value="pprz_tp"/>
+      <define name="DOWNLINK_DEVICE" value="uart0"/>
+      <define name="USE_UART0"/>
+      <define name="AHRS_TRIGGERED_ATTITUDE_LOOP"/>
+    </test>
   </makefile>
 </module>
 

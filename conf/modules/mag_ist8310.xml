@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="mag_ist8310" dir="sensors">
+<module name="mag_ist8310" dir="sensors" task="sensors">
   <doc>
     <description>
       ST IST8310 magnetometer.
@@ -20,6 +20,10 @@
       <define name="MAG_TO_IMU_PSI" value="0.0" description="Rotation between sensor frame and IMU frame (psi angle)"/>
     </section>
   </doc>
+  <dep>
+    <depends>i2c</depends>
+    <provides>mag</provides>
+  </dep>
   <header>
     <file name="mag_ist8310.h"/>
   </header>
@@ -38,5 +42,12 @@
     <configure name="MAG_IST8310_I2C_DEV" case="upper|lower"/>
     <define name="USE_$(MAG_IST8310_I2C_DEV_UPPER)"/>
     <define name="MAG_IST8310_I2C_DEV" value="$(MAG_IST8310_I2C_DEV_LOWER)"/>
+    <test>
+      <define name="MAG_IST8310_I2C_DEV" value="i2c1"/>
+      <define name="USE_I2C1"/>
+      <define name="DOWNLINK_TRANSPORT" value="pprz_tp"/>
+      <define name="DOWNLINK_DEVICE" value="uart0"/>
+      <define name="USE_UART0"/>
+    </test>
   </makefile>
 </module>

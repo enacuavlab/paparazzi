@@ -1,15 +1,21 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="nav_vertical_raster" dir="nav">
+<module name="nav_vertical_raster" dir="nav" task="control">
   <doc>
     <description>
       Copy of nav line with altitude changes at every sweep
     </description>
   </doc>
+  <dep>
+    <depends>@navigation</depends>
+  </dep>
   <header>
     <file name="nav_vertical_raster.h"/>
   </header>
   <makefile target="ap|sim|nps">
     <file name="nav_vertical_raster.c"/>
+    <test firmware="fixedwing">
+      <define name="CTRL_TYPE_H" value="firmwares/fixedwing/guidance/guidance_v.h" type="string"/>
+    </test>
   </makefile>
 </module>

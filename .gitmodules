@@ -43,10 +43,13 @@
 	url = https://github.com/tudelft/gazebo_models.git
 [submodule "sw/ext/eigen"]
 	path = sw/ext/eigen
-	url = https://github.com/eigenteam/eigen-git-mirror.git
+	url = https://gitlab.com/libeigen/eigen.git
 [submodule "sw/ext/ecl"]
 	path = sw/ext/ecl
 	url = https://github.com/PX4/ecl.git
 [submodule "sw/ext/matrix"]
 	path = sw/ext/matrix
 	url = https://github.com/PX4/Matrix.git
+[submodule "sw/ext/libcanard"]
+	path = sw/ext/libcanard
+	url = https://github.com/UAVCAN/libcanard.git

@@ -30,11 +30,11 @@
 #include "autopilot.h"
 #include "autopilot_arming.h"
 
-#include "subsystems/radio_control.h"
-#include "subsystems/commands.h"
-#include "subsystems/actuators.h"
-#include "subsystems/electrical.h"
-#include "subsystems/settings.h"
+#include "modules/radio_control/radio_control.h"
+#include "modules/core/commands.h"
+#include "modules/actuators/actuators.h"
+#include "modules/energy/electrical.h"
+#include "modules/core/settings.h"
 #include "firmwares/rotorcraft/navigation.h"
 #include "firmwares/rotorcraft/guidance.h"
 
@@ -51,7 +51,7 @@
 #include "generated/settings.h"
 
 #if USE_GPS
-#include "subsystems/gps.h"
+#include "modules/gps/gps.h"
 #else
 #if NO_GPS_NEEDED_FOR_NAV
 #define GpsIsLost() FALSE
@@ -107,7 +107,7 @@ void autopilot_static_init(void)
 }
 
 
-#define NAV_PRESCALER (PERIODIC_FREQUENCY / NAV_FREQ)
+#define NAV_PRESCALER (PERIODIC_FREQUENCY / NAVIGATION_FREQUENCY)
 void autopilot_static_periodic(void)
 {
 
@@ -348,8 +348,9 @@ void autopilot_static_on_rc_frame(void)
       if (new_autopilot_mode == MODE_MANUAL) {
         autopilot_static_set_mode(new_autopilot_mode);
       }
-      /* if in HOME mode, don't allow switching to non-manual modes */
-      else if ((autopilot.mode != AP_MODE_HOME)
+      /* if in HOME or FAILSAFE mode, don't allow switching to non-manual modes */
+      else if (((autopilot.mode != AP_MODE_HOME) && (autopilot.mode != AP_MODE_FAILSAFE))
+
 #if UNLOCKED_HOME_MODE
                /* Allowed to leave home mode when UNLOCKED_HOME_MODE */
                || !too_far_from_home
@@ -390,4 +391,3 @@ void autopilot_static_on_rc_frame(void)
   }
 
 }
-

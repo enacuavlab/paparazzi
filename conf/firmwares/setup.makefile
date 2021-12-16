@@ -5,10 +5,9 @@
 
 SRC_ARCH=arch/$(ARCH)
 SRC_BOARD=boards/$(BOARD)
-SRC_SUBSYSTEMS=subsystems
 SRC_MODULES=modules
 
-CFG_SHARED=$(PAPARAZZI_SRC)/conf/firmwares/subsystems/shared
+CFG_SHARED=$(PAPARAZZI_SRC)/conf/firmwares
 
 SRC_FIRMWARE=firmwares/setup
 
@@ -39,9 +38,7 @@ endif
 
 COMMON_SETUP_CFLAGS += -DUSE_LED
 
-ifeq ($(ARCH), lpc21)
-COMMON_SETUP_SRCS += $(SRC_ARCH)/armVIC.c
-else ifeq ($(ARCH), stm32)
+ifeq ($(ARCH), stm32)
 COMMON_SETUP_SRCS += $(SRC_ARCH)/led_hw.c
 COMMON_SETUP_SRCS += $(SRC_ARCH)/mcu_periph/gpio_arch.c
 endif
@@ -90,14 +87,6 @@ ifneq ($(TUNNEL_RX_LED),none)
  usb_tunnel.CFLAGS += -DTUNNEL_RX_LED=$(TUNNEL_RX_LED)
 endif
 
-ifeq ($(ARCH), lpc21)
-# for the usb_tunnel we need to set PCLK higher with the flag USE_USB_HIGH_PCLK
-usb_tunnel.CFLAGS += -DUSE_USB_HIGH_PCLK
-usb_tunnel.srcs += $(SRC_ARCH)/lpcusb/usbhw_lpc.c $(SRC_ARCH)/lpcusb/usbinit.c
-usb_tunnel.srcs += $(SRC_ARCH)/lpcusb/usbcontrol.c $(SRC_ARCH)/lpcusb/usbstdreq.c
-endif
-
-
 
 #
 # setup actuators
@@ -112,9 +101,9 @@ setup_actuators.CFLAGS += -D$(MODEM_PORT)_BAUD=$(MODEM_BAUD)
 SETUP_ACTUATORS_MODEM_PORT_LOWER=$(shell echo $(MODEM_PORT) | tr A-Z a-z)
 setup_actuators.CFLAGS += -DDOWNLINK -DDOWNLINK_DEVICE=$(SETUP_ACTUATORS_MODEM_PORT_LOWER) -DPPRZ_UART=$(SETUP_ACTUATORS_MODEM_PORT_LOWER)
 setup_actuators.CFLAGS += -DDOWNLINK_TRANSPORT=pprz_tp -DDATALINK=PPRZ
-setup_actuators.srcs += subsystems/datalink/downlink.c pprzlink/src/pprz_transport.c modules/datalink/pprz_dl.c
+setup_actuators.srcs += modules/datalink/downlink.c pprzlink/src/pprz_transport.c modules/datalink/pprz_dl.c
 
-setup_actuators.srcs   += subsystems/actuators.c
+setup_actuators.srcs   += modules/actuators/actuators.c
 setup_actuators.srcs   += $(SRC_FIRMWARE)/setup_actuators.c
 
 ifeq ($(TARGET), setup_actuators)

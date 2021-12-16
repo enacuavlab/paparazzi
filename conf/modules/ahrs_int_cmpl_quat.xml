@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="ahrs_int_cmpl_quat" dir="ahrs">
+<module name="ahrs_int_cmpl_quat" dir="ahrs" task="estimation">
   <doc>
     <description>
       AHRS using complementary filter in fixed point.
@@ -38,19 +38,20 @@
   <settings>
     <dl_settings>
       <dl_settings NAME="AHRS">
-        <dl_setting var="ahrs_icq.gravity_heuristic_factor" min="0" step="1" max="50" module="subsystems/ahrs/ahrs_int_cmpl_quat" shortname="g_heuristic" param="AHRS_GRAVITY_HEURISTIC_FACTOR" type="uint8" persistent="true"/>
-        <dl_setting var="ahrs_icq.accel_omega" min="0.02" step="0.02" max="0.2" module="subsystems/ahrs/ahrs_int_cmpl_quat" shortname="acc_omega" param="AHRS_ACCEL_OMEGA" unit="rad/s" handler="SetAccelOmega" type="float" persistent="true"/>
-        <dl_setting var="ahrs_icq.accel_zeta" min="0.7" step="0.05" max="1.5" module="subsystems/ahrs/ahrs_int_cmpl_quat" shortname="acc_zeta" param="AHRS_ACCEL_ZETA" handler="SetAccelZeta" type="float" persistent="true"/>
-        <dl_setting var="ahrs_icq.mag_omega" min="0.02" step="0.01" max="0.1" module="subsystems/ahrs/ahrs_int_cmpl_quat" shortname="mag_omega" param="AHRS_MAG_OMEGA" unit="rad/s" handler="SetMagOmega" type="float" persistent="true"/>
-        <dl_setting var="ahrs_icq.mag_zeta" min="0.7" step="0.05" max="1.5" module="subsystems/ahrs/ahrs_int_cmpl_quat" shortname="mag_zeta" param="AHRS_MAG_ZETA" handler="SetMagZeta" type="float" persistent="true"/>
+        <dl_setting var="ahrs_icq.gravity_heuristic_factor" min="0" step="1" max="50" module="modules/ahrs/ahrs_int_cmpl_quat" shortname="g_heuristic" param="AHRS_GRAVITY_HEURISTIC_FACTOR" type="uint8" persistent="true"/>
+        <dl_setting var="ahrs_icq.accel_omega" min="0.02" step="0.02" max="0.2" module="modules/ahrs/ahrs_int_cmpl_quat" shortname="acc_omega" param="AHRS_ACCEL_OMEGA" unit="rad/s" handler="SetAccelOmega" type="float" persistent="true"/>
+        <dl_setting var="ahrs_icq.accel_zeta" min="0.7" step="0.05" max="1.5" module="modules/ahrs/ahrs_int_cmpl_quat" shortname="acc_zeta" param="AHRS_ACCEL_ZETA" handler="SetAccelZeta" type="float" persistent="true"/>
+        <dl_setting var="ahrs_icq.mag_omega" min="0.02" step="0.01" max="0.1" module="modules/ahrs/ahrs_int_cmpl_quat" shortname="mag_omega" param="AHRS_MAG_OMEGA" unit="rad/s" handler="SetMagOmega" type="float" persistent="true"/>
+        <dl_setting var="ahrs_icq.mag_zeta" min="0.7" step="0.05" max="1.5" module="modules/ahrs/ahrs_int_cmpl_quat" shortname="mag_zeta" param="AHRS_MAG_ZETA" handler="SetMagZeta" type="float" persistent="true"/>
       </dl_settings>
     </dl_settings>
   </settings>
 
+  <dep>
+    <depends>ahrs_common,@imu,@mag|@gps</depends>
+    <provides>ahrs</provides>
+  </dep>
   <autoload name="ahrs_sim"/>
-  <header>
-    <file name="ahrs.h" dir="subsystems"/>
-  </header>
 
   <makefile target="!sim|fbw" firmware="fixedwing">
     <configure name="USE_MAGNETOMETER" default="0"/>
@@ -59,30 +60,34 @@
   </makefile>
   <makefile target="!sim|fbw">
     <configure name="USE_MAGNETOMETER" default="1"/>
-
     <define name="USE_MAGNETOMETER" cond="ifeq (,$(findstring $(USE_MAGNETOMETER),0 FALSE))"/>
-    <define name="AHRS_ALIGNER_LED" value="$(AHRS_ALIGNER_LED)" cond="ifneq ($(AHRS_ALIGNER_LED),none)"/>
-    <define name="USE_AHRS"/>
-    <define name="USE_AHRS_ALIGNER"/>
-
-    <file name="ahrs.c" dir="subsystems"/>
-    <file name="ahrs_aligner.c" dir="subsystems/ahrs"/>
-    <file name="ahrs_int_cmpl_quat.c" dir="subsystems/ahrs"/>
-    <file name="ahrs_int_cmpl_quat_wrapper.c" dir="subsystems/ahrs"/>
+    <file name="ahrs_int_cmpl_quat.c"/>
+    <file name="ahrs_int_cmpl_quat_wrapper.c"/>
+    <test>
+        <define name="PRIMARY_AHRS" value="ahrs_icq"/>
+        <define name="AHRS_TYPE_H" value="modules/ahrs/ahrs_int_cmpl_quat_wrapper.h" type="string"/>
+        <define name="USE_MAGNETOMETER"/>
+    </test>
+    <test>
+        <define name="PRIMARY_AHRS" value="ahrs_icq"/>
+        <define name="AHRS_TYPE_H" value="modules/ahrs/ahrs_int_cmpl_quat_wrapper.h" type="string"/>
+        <define name="AHRS_USE_GPS_HEADING"/>
+        <define name="USE_GPS"/>
+    </test>
     <raw>
 ifdef SECONDARY_AHRS
 ifneq (,$(findstring $(SECONDARY_AHRS), icq int_cmpl_quat))
 # this is the secondary AHRS
-$(TARGET).CFLAGS += -DAHRS_SECONDARY_TYPE_H=\"subsystems/ahrs/ahrs_int_cmpl_quat_wrapper.h\"
+$(TARGET).CFLAGS += -DAHRS_SECONDARY_TYPE_H=\"modules/ahrs/ahrs_int_cmpl_quat_wrapper.h\"
 $(TARGET).CFLAGS += -DSECONDARY_AHRS=ahrs_icq
 else
 # this is the primary AHRS
-$(TARGET).CFLAGS += -DAHRS_TYPE_H=\"subsystems/ahrs/ahrs_int_cmpl_quat_wrapper.h\"
+$(TARGET).CFLAGS += -DAHRS_TYPE_H=\"modules/ahrs/ahrs_int_cmpl_quat_wrapper.h\"
 $(TARGET).CFLAGS += -DPRIMARY_AHRS=ahrs_icq
 endif
 else
 # plain old single AHRS usage
-$(TARGET).CFLAGS += -DAHRS_TYPE_H=\"subsystems/ahrs/ahrs_int_cmpl_quat_wrapper.h\"
+$(TARGET).CFLAGS += -DAHRS_TYPE_H=\"modules/ahrs/ahrs_int_cmpl_quat_wrapper.h\"
 endif
     </raw>
   </makefile>

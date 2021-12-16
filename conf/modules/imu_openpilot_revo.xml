@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="imu_openpilot_revo" dir="imu">
+<module name="imu_openpilot_revo" dir="imu" task="sensors">
   <doc>
     <description>
       Driver for IMU on OpenPilot Revo board.
@@ -20,10 +20,14 @@
       <define name="MAG_Z_SENS" value="4.90788848" integer="16"/>
     </section>
   </doc>
-  <autoload name="imu_common"/>
+  <dep>
+    <depends>spi_master,i2c,imu_common</depends>
+    <provides>imu,mag</provides>
+  </dep>
   <autoload name="imu_nps"/>
+  <autoload name="imu_sim"/>
   <header>
-    <file name="imu_mpu6000_hmc5883.h" dir="subsystems/imu"/>
+    <file name="imu_mpu6000_hmc5883.h"/>
   </header>
   <init fun="imu_mpu_hmc_init()"/>
   <periodic fun="imu_mpu_hmc_periodic()"/>
@@ -53,14 +57,11 @@
     <define name="IMU_HMC_Y_SIGN" value="1"/>
     <define name="IMU_HMC_Z_SIGN" value="-1"/>
 
-    <define name="IMU_TYPE_H" value="subsystems/imu/imu_mpu6000_hmc5883.h" type="string"/>
+    <define name="IMU_TYPE_H" value="modules/imu/imu_mpu6000_hmc5883.h" type="string"/>
 
     <file name="mpu60x0.c" dir="peripherals"/>
     <file name="mpu60x0_spi.c" dir="peripherals"/>
     <file name="hmc58xx.c" dir="peripherals"/>
-    <file name="imu_mpu6000_hmc5883.c" dir="subsystems/imu"/>
-    <raw>
-      include $(CFG_SHARED)/spi_master.makefile
-    </raw>
+    <file name="imu_mpu6000_hmc5883.c"/>
   </makefile>
 </module>

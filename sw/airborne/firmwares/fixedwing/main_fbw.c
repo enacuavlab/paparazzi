@@ -36,10 +36,10 @@
 
 #include "mcu.h"
 #include "mcu_periph/sys_time.h"
-#include "subsystems/commands.h"
-#include "subsystems/actuators.h"
-#include "subsystems/electrical.h"
-#include "subsystems/radio_control.h"
+#include "modules/core/commands.h"
+#include "modules/actuators/actuators.h"
+#include "modules/energy/electrical.h"
+#include "modules/radio_control/radio_control.h"
 #include "autopilot.h"
 #include "paparazzi.h"
 #include "mcu_periph/i2c.h"
@@ -50,15 +50,15 @@
 #endif
 
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 #endif
 
 #ifdef FBW_DATALINK
 #include "firmwares/fixedwing/fbw_datalink.h"
 #endif
 
-#include "inter_mcu.h"
-#include "link_mcu.h"
+#include "modules/intermcu/inter_mcu.h"
+#include "modules/intermcu/link_mcu.h"
 
 uint8_t fbw_mode;
 
@@ -395,10 +395,6 @@ void init_fbw(void)
   /**** start timers for periodic functions *****/
   fbw_periodic_tid = sys_time_register_timer((1. / 60.), NULL);
   electrical_tid = sys_time_register_timer(0.1, NULL);
-
-#ifndef SINGLE_MCU
-  mcu_int_enable();
-#endif
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_FBW_STATUS, send_fbw_status);

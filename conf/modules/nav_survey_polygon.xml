@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="nav_survey_polygon" dir="nav">
+<module name="nav_survey_polygon" dir="nav" task="control">
   <doc>
     <description>
       Survey a polygon with a fixedwing.
@@ -26,10 +26,16 @@ Block example:
 -->
     </description>
   </doc>
+  <dep>
+    <depends>@navigation</depends>
+  </dep>
   <header>
     <file name="nav_survey_polygon.h"/>
   </header>
   <makefile target="ap|sim|nps">
     <file name="nav_survey_polygon.c"/>
+    <test firmware="fixedwing">
+      <define name="CTRL_TYPE_H" value="firmwares/fixedwing/guidance/guidance_v.h" type="string"/>
+    </test>
   </makefile>
 </module>

@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="imu_drotek_10dof_v2" dir="imu">
+<module name="imu_drotek_10dof_v2" dir="imu" task="sensors">
   <doc>
     <description>
       Drotek 10DOF V2 IMU via I2C.
@@ -18,10 +18,14 @@
       <define name="MAG_Z_SENS" value="4.90788848" integer="16"/>
     </section>
   </doc>
-  <autoload name="imu_common"/>
+  <dep>
+    <depends>i2c,imu_common</depends>
+    <provides>imu,mag</provides>
+  </dep>
+  <autoload name="imu_sim"/>
   <autoload name="imu_nps"/>
   <header>
-    <file name="imu_drotek_10dof_v2.h" dir="subsystems/imu"/>
+    <file name="imu_drotek_10dof_v2.h"/>
   </header>
   <init fun="imu_drotek2_init()"/>
   <periodic fun="imu_drotek2_periodic()"/>
@@ -36,6 +40,12 @@
     <file name="mpu60x0.c" dir="peripherals"/>
     <file name="mpu60x0_i2c.c" dir="peripherals"/>
     <file name="hmc58xx.c" dir="peripherals"/>
-    <file name="imu_drotek_10dof_v2.c" dir="subsystems/imu"/>
+    <file name="imu_drotek_10dof_v2.c"/>
+    <test>
+      <define name="IMU_TYPE_H" value="imu/imu_drotek_10dof_v2.h" type="string"/>
+      <define name="USE_I2C1"/>
+      <define name="DROTEK_2_I2C_DEV" value="i2c1"/>
+      <define name="PERIODIC_FREQUENCY" value="512"/>
+    </test>
   </makefile>
 </module>

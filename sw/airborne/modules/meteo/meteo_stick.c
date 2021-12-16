@@ -21,12 +21,12 @@
 
 #include "modules/meteo/meteo_stick.h"
 
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 #include "peripherals/ads1220.h"
 #include "mcu_periph/pwm_input.h"
 #include "generated/airframe.h"
 #include "pprzlink/messages.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 
 /** Default scale and offset
  *  Only used if calibration from EEPROM is not used/available
@@ -199,7 +199,7 @@ static void meteo_stick_send_data(struct transport_tx *trans, struct link_device
 
 #if LOG_MS
 #include "modules/loggers/sdlog_chibios.h"
-#include "subsystems/gps.h"
+#include "modules/gps/gps.h"
 static bool log_ptu_started;
 
 static inline void meteo_stick_log_data_ascii(void)

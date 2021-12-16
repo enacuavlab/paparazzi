@@ -29,7 +29,7 @@
 #include "mcu.h"
 #include "mcu_periph/sys_time.h"
 #define DATALINK_C
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #include "led.h"
 
 #include "peripherals/lis302dl_spi.h"
@@ -68,7 +68,6 @@ int main(void)
 static inline void main_init(void)
 {
   mcu_init();
-  mcu_int_enable();
 
   sys_time_register_timer((1. / 50), NULL);
   downlink_init();

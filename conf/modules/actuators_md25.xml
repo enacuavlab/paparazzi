@@ -7,6 +7,10 @@
     </description>
     <configure name="ACTUATORS_MD25_DEV" value="i2cX" description="I2C port (default i2c2)"/>
   </doc>
+  <dep>
+    <depends>i2c,actuators</depends>
+    <provides>actuators</provides>
+  </dep>
   <header>
     <file name="actuators_md25.h"/>
   </header>
@@ -14,11 +18,14 @@
   <event fun="actuators_md25_event()"/>
   <makefile>
     <configure name="ACTUATORS_MD25_DEV" default="i2c2" case="upper|lower"/>
-    <define name="ACTUATORS"/>
     <define name="ACTUATORS_MD25_DEV" value="$(ACTUATORS_MD25_DEV_LOWER)"/>
     <define name="USE_$(ACTUATORS_MD25_DEV_UPPER)"/>
     <define name="$(ACTUATORS_MD25_DEV_UPPER)_CLOCK_SPEED" value="100000"/>
     <file name="actuators_md25.c"/>
+    <test>
+        <define name="USE_I2C2"/>
+        <define name="ACTUATORS_MD25_DEV" value="i2c2"/>
+    </test>
   </makefile>
 </module>
 

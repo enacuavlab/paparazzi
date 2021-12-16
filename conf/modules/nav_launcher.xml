@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="nav_launcher" dir="nav">
+<module name="nav_launcher" dir="nav" task="control">
   <doc>
     <description>
       Launcher.
@@ -12,11 +12,17 @@
                  with takeoff circle radius, until you reach desired takeoff altitude
     </description>
   </doc>
+  <dep>
+    <depends>@navigation</depends>
+  </dep>
   <header>
     <file name="nav_launcher.h"/>
   </header>
   <makefile target="ap|sim|nps|hitl">
     <file name="nav_launcher.c"/>
+    <test firmware="fixedwing">
+      <define name="CTRL_TYPE_H" value="firmwares/fixedwing/guidance/guidance_v.h" type="string"/>
+    </test>
   </makefile>
 </module>
 

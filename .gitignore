@@ -53,6 +53,9 @@ paparazzi.sublime-workspace
 # Vagrant VM files
 /.vagrant
 
+# Rust
+Cargo.lock
+
 /var
 /dox
 

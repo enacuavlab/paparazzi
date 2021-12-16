@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="imu_vectornav">
+<module name="imu_vectornav" dir="imu" task="sensors">
   <doc>
     <description>
       Vectornav VN-200 over uart used as IMU.
@@ -10,10 +10,14 @@
     <configure name="VN_PORT" value="uart3" description="UART to use"/>
     <configure name="VN_BAUD" value="B921600" description="UART baudrate"/>
   </doc>
-  <autoload name="imu_common"/>
+  <dep>
+    <depends>uart,imu_common</depends>
+    <provides>imu</provides>
+  </dep>
   <autoload name="imu_nps"/>
+  <autoload name="imu_sim"/>
   <header>
-    <file name="imu_vectornav.h" dir="modules/imu"/>
+    <file name="imu_vectornav.h"/>
   </header>
   <init fun="imu_vectornav_init()"/>
   <periodic fun="imu_vectornav_init()" freq="1"/>
@@ -26,7 +30,7 @@
     <define name="$(VN_PORT_UPPER)_BAUD" value="$(VN_BAUD)"/>
 
     <file name="vn200_serial.c" dir="peripherals"/>
-    <file name="imu_vectornav.c" dir="modules/imu"/>
+    <file name="imu_vectornav.c"/>
 
     <define name="IMU_TYPE_H" value="modules/imu/imu_vectornav.h" type="string"/>
   </makefile>

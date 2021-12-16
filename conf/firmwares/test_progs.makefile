@@ -23,17 +23,16 @@
 ################################################################################
 #
 #
-#  Common test programs for the all LPC21 and STM32 boards
+#  Common test programs for the all STM32 boards
 #
 ################################################################################
 
 
 SRC_ARCH=arch/$(ARCH)
 SRC_BOARD=boards/$(BOARD)
-SRC_SUBSYSTEMS=subsystems
 SRC_MODULES=modules
 
-CFG_SHARED=$(PAPARAZZI_SRC)/conf/firmwares/subsystems/shared
+CFG_SHARED=$(PAPARAZZI_SRC)/conf/firmwares
 
 VPATH += $(PAPARAZZI_HOME)/var/share
 
@@ -62,16 +61,14 @@ endif
 
 COMMON_TEST_CFLAGS += -DUSE_LED
 
-ifeq ($(ARCH), lpc21)
-COMMON_TEST_SRCS += $(SRC_ARCH)/armVIC.c
-else ifeq ($(ARCH), stm32)
+ifeq ($(ARCH), stm32)
 COMMON_TEST_SRCS += $(SRC_ARCH)/led_hw.c
 COMMON_TEST_SRCS += $(SRC_ARCH)/mcu_periph/gpio_arch.c
 endif
 
 # pprz downlink/datalink
 COMMON_TELEMETRY_CFLAGS = -DDOWNLINK -DDOWNLINK_TRANSPORT=pprz_tp -DDATALINK=PPRZ
-COMMON_TELEMETRY_SRCS   = subsystems/datalink/downlink.c pprzlink/src/pprz_transport.c modules/datalink/pprz_dl.c
+COMMON_TELEMETRY_SRCS   = modules/datalink/downlink.c pprzlink/src/pprz_transport.c modules/datalink/pprz_dl.c
 
 # check if we are using UDP
 ifneq (,$(findstring UDP, $(MODEM_DEV)))
@@ -91,16 +88,11 @@ ifneq (,$(findstring usb, $(MODEM_DEV)))
 COMMON_TELEMETRY_CFLAGS += -DUSE_USB_SERIAL
 COMMON_TELEMETRY_CFLAGS += -DPPRZ_UART=usb_serial
 COMMON_TELEMETRY_CFLAGS += -DDOWNLINK_DEVICE=usb_serial
-ifeq ($(ARCH), lpc21)
-COMMON_TELEMETRY_SRCS += $(SRC_ARCH)/usb_ser_hw.c $(SRC_ARCH)/lpcusb/usbhw_lpc.c $(SRC_ARCH)/lpcusb/usbcontrol.c
-COMMON_TELEMETRY_SRCS += $(SRC_ARCH)/lpcusb/usbstdreq.c $(SRC_ARCH)/lpcusb/usbinit.c
-else
 ifeq ($(ARCH), stm32)
 COMMON_TELEMETRY_SRCS += $(SRC_ARCH)/usb_ser_hw.c
 else
 ifneq ($(ARCH), sim)
-$(error telemetry_transparent_usb currently only implemented for the lpc21 and stm32)
-endif
+$(error telemetry_transparent_usb currently only implemented for the stm32)
 endif
 endif
 else
@@ -294,13 +286,7 @@ test_ms2100.srcs   += test/peripherals/test_ms2100.c
 test_ms2100.srcs   += peripherals/ms2100.c $(SRC_ARCH)/peripherals/ms2100_arch.c
 test_ms2100.CFLAGS += -DUSE_SPI -DSPI_MASTER
 test_ms2100.srcs   += mcu_periph/spi.c $(SRC_ARCH)/mcu_periph/spi_arch.c
-ifeq ($(ARCH), lpc21)
-test_ms2100.CFLAGS += -DUSE_SPI1
-test_ms2100.CFLAGS += -DUSE_SPI_SLAVE1
-test_ms2100.CFLAGS += -DMS2100_SLAVE_IDX=1
-test_ms2100.CFLAGS += -DMS2100_SPI_DEV=spi1
-test_ms2100.CFLAGS += -DMS2100_DRDY_VIC_SLOT=12
-else ifeq ($(ARCH), stm32)
+ifeq ($(ARCH), stm32)
 test_ms2100.CFLAGS += -DUSE_SPI2
 test_ms2100.CFLAGS += -DUSE_SPI_SLAVE4
 test_ms2100.CFLAGS += -DMS2100_SLAVE_IDX=4
@@ -349,10 +335,10 @@ test_actuators_pwm.srcs   += $(COMMON_TEST_SRCS)
 test_actuators_pwm.CFLAGS += $(COMMON_TELEMETRY_CFLAGS)
 test_actuators_pwm.srcs   += $(COMMON_TELEMETRY_SRCS)
 test_actuators_pwm.srcs   += test/test_actuators_pwm.c
-test_actuators_pwm.srcs   += $(SRC_ARCH)/subsystems/actuators/actuators_pwm_arch.c $(SRC_ARCH)/subsystems/actuators/actuators_shared_arch.c
+test_actuators_pwm.srcs   += $(SRC_ARCH)/modules/actuators/actuators_pwm_arch.c $(SRC_ARCH)/modules/actuators/actuators_shared_arch.c
 # only add this so it doesn't fail to build if you also have setup_actuators.xml settings file loaded
-# remove me again when we have auto loading of settings according to subsystem/module/target...
-test_actuators_pwm.srcs   += subsystems/actuators.c
+# remove me again when we have auto loading of settings according to module/target...
+test_actuators_pwm.srcs   += modules/actuators/actuators.c
 
 
 #
@@ -362,37 +348,12 @@ test_actuators_pwm_sin.ARCHDIR = $(ARCH)
 test_actuators_pwm_sin.CFLAGS += $(COMMON_TEST_CFLAGS)
 test_actuators_pwm_sin.srcs   += $(COMMON_TEST_SRCS)
 test_actuators_pwm_sin.srcs   += test/test_actuators_pwm_sin.c
-test_actuators_pwm_sin.srcs   += $(SRC_ARCH)/subsystems/actuators/actuators_pwm_arch.c $(SRC_ARCH)/subsystems/actuators/actuators_shared_arch.c
-
-
-#
-# simple test of mikrokopter motor controllers
-#
-test_esc_mkk_simple.ARCHDIR = $(ARCH)
-test_esc_mkk_simple.CFLAGS += $(COMMON_TEST_CFLAGS)
-test_esc_mkk_simple.srcs   += $(COMMON_TEST_SRCS)
-
-test_esc_mkk_simple.srcs   += test/test_esc_mkk_simple.c
-test_esc_mkk_simple.srcs   += mcu_periph/i2c.c $(SRC_ARCH)/mcu_periph/i2c_arch.c
-test_esc_mkk_simple.CFLAGS += -DUSE_I2C2
-test_esc_mkk_simple.CFLAGS += -DACTUATORS_MKK_DEV=i2c2
-
-
-#
-# simple test of asctec v1 motor controllers
-#
-test_esc_asctecv1_simple.ARCHDIR = $(ARCH)
-test_esc_asctecv1_simple.CFLAGS += $(COMMON_TEST_CFLAGS)
-test_esc_asctecv1_simple.srcs   += $(COMMON_TEST_SRCS)
-
-test_esc_asctecv1_simple.srcs   += test/test_esc_asctecv1_simple.c
-test_esc_asctecv1_simple.srcs   += mcu_periph/i2c.c $(SRC_ARCH)/mcu_periph/i2c_arch.c
-test_esc_asctecv1_simple.CFLAGS += -DUSE_I2C1
+test_actuators_pwm_sin.srcs   += $(SRC_ARCH)/modules/actuators/actuators_pwm_arch.c $(SRC_ARCH)/modules/actuators/actuators_shared_arch.c
 
 
 #
 # Test manual : a simple test with rc and servos
-# add the desired actuators and radio_control subsystem to this target
+# add the desired actuators and radio_control modules to this target
 #
 test_manual.ARCHDIR = $(ARCH)
 test_manual.CFLAGS += $(COMMON_TEST_CFLAGS)
@@ -400,8 +361,8 @@ test_manual.srcs   += $(COMMON_TEST_SRCS)
 test_manual.CFLAGS += $(COMMON_TELEMETRY_CFLAGS)
 test_manual.srcs   += $(COMMON_TELEMETRY_SRCS)
 
-test_manual.srcs   += subsystems/commands.c
-test_manual.srcs   += subsystems/actuators.c
+test_manual.srcs   += modules/core/commands.c
+test_manual.srcs   += modules/actuators/actuators.c
 test_manual.srcs   += test/test_manual.c
 
 ifeq ($(TARGET), test_manual)
@@ -458,7 +419,7 @@ test_adc.srcs   += test/mcu_periph/test_adc.c
 #
 # test_imu
 #
-# add imu subsystem to test_imu target!
+# add imu module to test_imu target!
 #
 # configuration
 #   SYS_TIME_LED
@@ -472,14 +433,14 @@ test_imu.CFLAGS += $(COMMON_TELEMETRY_CFLAGS)
 test_imu.srcs   += $(COMMON_TELEMETRY_SRCS)
 test_imu.srcs   += mcu_periph/i2c.c $(SRC_ARCH)/mcu_periph/i2c_arch.c
 test_imu.srcs   += state.c
-test_imu.srcs   += test/subsystems/test_imu.c
+test_imu.srcs   += test/modules/test_imu.c
 test_imu.srcs   += math/pprz_geodetic_int.c math/pprz_geodetic_float.c math/pprz_geodetic_double.c math/pprz_trig_int.c math/pprz_orientation_conversion.c math/pprz_algebra_int.c math/pprz_algebra_float.c math/pprz_algebra_double.c
 
 
 #
 # test_ahrs
 #
-# add imu and ahrs subsystems to test_ahrs target!
+# add imu and ahrs modules to test_ahrs target!
 #
 # configuration
 #   SYS_TIME_LED
@@ -491,10 +452,10 @@ test_ahrs.CFLAGS += $(COMMON_TEST_CFLAGS)
 test_ahrs.srcs   += $(COMMON_TEST_SRCS)
 test_ahrs.CFLAGS += $(COMMON_TELEMETRY_CFLAGS)
 test_ahrs.srcs   += $(COMMON_TELEMETRY_SRCS)
-test_ahrs.srcs   += subsystems/datalink/telemetry.c
+test_ahrs.srcs   += modules/datalink/telemetry.c
 test_ahrs.CFLAGS += -DPERIODIC_TELEMETRY
 test_ahrs.srcs   += mcu_periph/i2c.c $(SRC_ARCH)/mcu_periph/i2c_arch.c
-test_ahrs.srcs   += test/subsystems/test_ahrs.c
+test_ahrs.srcs   += test/modules/test_ahrs.c
 test_ahrs.srcs   += state.c
 test_ahrs.srcs   += math/pprz_geodetic_int.c math/pprz_geodetic_float.c math/pprz_geodetic_double.c math/pprz_trig_int.c math/pprz_orientation_conversion.c math/pprz_algebra_int.c math/pprz_algebra_float.c math/pprz_algebra_double.c
 
@@ -509,7 +470,7 @@ test_radio_control.CFLAGS += $(COMMON_TEST_CFLAGS)
 test_radio_control.srcs   += $(COMMON_TEST_SRCS)
 test_radio_control.CFLAGS += $(COMMON_TELEMETRY_CFLAGS)
 test_radio_control.srcs   += $(COMMON_TELEMETRY_SRCS)
-test_radio_control.srcs   += test/subsystems/test_radio_control.c
+test_radio_control.srcs   += test/modules/test_radio_control.c
 
 
 #
@@ -524,9 +485,9 @@ test_settings.CFLAGS += $(COMMON_TEST_CFLAGS)
 test_settings.srcs   += $(COMMON_TEST_SRCS)
 test_settings.CFLAGS += $(COMMON_TELEMETRY_CFLAGS)
 test_settings.srcs   += $(COMMON_TELEMETRY_SRCS)
-test_settings.srcs   += subsystems/settings.c
-test_settings.srcs   += $(SRC_ARCH)/subsystems/settings_arch.c
-test_settings.srcs   += test/subsystems/test_settings.c
+test_settings.srcs   += modules/core/settings.c
+test_settings.srcs   += $(SRC_ARCH)/modules/core/settings_arch.c
+test_settings.srcs   += test/modules/test_settings.c
 test_settings.CFLAGS += -DUSE_PERSISTENT_SETTINGS
 
 

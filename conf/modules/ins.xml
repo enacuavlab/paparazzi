@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="ins" dir="ins">
+<module name="ins" dir="ins" task="estimation">
   <doc>
     <description>
       simple INS with vertical filter.
@@ -11,14 +11,19 @@
     <define name="INS_INT_IMU_ID" value="ABI_BROADCAST" description="The ABI sender id of the IMU to use"/>
     <define name="INS_INT_VEL_ID" value="ABI_BROADCAST" description="The ABI sender id of the VELOCITY_ESTIMATE (e.g. from opticflow"/>
   </doc>
+  <dep>
+    <depends>@imu,@gps|@position|@velocity</depends>
+    <provides>ins</provides>
+  </dep>
   <header>
-    <file name="ins_int.h" dir="subsystems/ins"/>
+    <file name="ins_int.h" dir="modules/ins"/>
   </header>
   <init fun="ins_int_init()"/>
   <makefile target="ap|nps|hitl">
-    <define name="INS_TYPE_H" value="subsystems/ins/ins_int.h" type="string"/>
-    <file name="ins.c" dir="subsystems"/>
-    <file name="ins_int.c" dir="subsystems/ins"/>
-    <file name="vf_float.c" dir="subsystems/ins"/>
+    <define name="INS_TYPE_H" value="modules/ins/ins_int.h" type="string"/>
+    <file name="ins.c"/>
+    <file name="ins_int.c"/>
+    <file name="vf_float.c"/>
+    <test firmware="rotorcraft"/>
   </makefile>
 </module>

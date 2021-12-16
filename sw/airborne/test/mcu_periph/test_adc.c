@@ -27,7 +27,7 @@
 #include "mcu_periph/sys_time.h"
 #include "led.h"
 #include "mcu_periph/adc.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 
 int main_periodic(void);
 static inline void main_init(void);
@@ -72,7 +72,6 @@ static inline void main_init(void)
   adc_buf_channel(ADC_7, &buf_adc[7], ADC_NB_SAMPLES);
 #endif
 
-  mcu_int_enable();
 }
 
 int main(void)

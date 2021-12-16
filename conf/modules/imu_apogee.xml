@@ -1,14 +1,18 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="imu_apogee" dir="imu">
+<module name="imu_apogee" dir="imu" task="sensors">
   <doc>
     <description>
       Driver for IMU on Apogee board.
       - Accelerometer/Gyroscope: MPU60x0 via I2C1
     </description>
   </doc>
-  <autoload name="imu_common"/>
+  <dep>
+    <depends>i2c,imu_common</depends>
+    <provides>imu</provides>
+  </dep>
   <autoload name="imu_nps"/>
+  <autoload name="imu_sim"/>
   <header>
     <file name="imu_apogee.h" dir="boards/apogee"/>
   </header>
@@ -27,5 +31,12 @@
     <file name="mpu60x0.c" dir="peripherals"/>
     <file name="mpu60x0_i2c.c" dir="peripherals"/>
     <file name="imu_apogee.c" dir="boards/apogee"/>
+    <test>
+      <define name="USE_I2C1"/>
+      <define name="IMU_APOGEE_I2C_DEV" value="i2c1"/>
+      <define name="DOWNLINK_TRANSPORT" value="pprz_tp"/>
+      <define name="DOWNLINK_DEVICE" value="uart0"/>
+      <define name="USE_UART0"/>
+    </test>
   </makefile>
 </module>

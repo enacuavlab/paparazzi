@@ -42,16 +42,16 @@ PRINT_CONFIG_VAR(QRCODE_FPS)
 void qrcode_init(void)
 {
   // Add qrscan to the list of image processing tasks in video_thread
-  cv_add_to_device(&QRCODE_CAMERA, qrscan, QRCODE_FPS);
+  cv_add_to_device(&QRCODE_CAMERA, qrscan, QRCODE_FPS, 0);
 }
 
 // Telemetry
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 
 
 zbar_image_scanner_t *scanner = 0;
 
-struct image_t *qrscan(struct image_t *img)
+struct image_t *qrscan(struct image_t *img, uint8_t camera_id)
 {
   int i, j;
 
