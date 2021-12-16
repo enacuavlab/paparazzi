@@ -31,7 +31,7 @@
 #include "state.h"
 #include "autopilot.h"
 #include "generated/flight_plan.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 
 #ifndef NAV_ROSETTE_RECOVER_MAX_TURN
 #define NAV_ROSETTE_RECOVER_MAX_TURN 1.5f

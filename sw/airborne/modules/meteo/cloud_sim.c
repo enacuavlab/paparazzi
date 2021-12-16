@@ -24,10 +24,10 @@
  */
 
 #include "modules/meteo/cloud_sim.h"
-#include "subsystems/navigation/common_nav.h"
+#include "modules/nav/common_nav.h"
 #include "generated/flight_plan.h"
 #include "generated/airframe.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 #include "state.h"
 
 // default radius in WP mode

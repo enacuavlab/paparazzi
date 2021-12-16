@@ -28,7 +28,7 @@
 #include "generated/flight_plan.h"
 #include "modules/ins/ins.h"
 #include "math/pprz_geodetic_float.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 
 float dist2_to_home;
 float dist2_to_wp;

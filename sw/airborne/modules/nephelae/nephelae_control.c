@@ -14,11 +14,11 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 #include "std.h"
 #include "autopilot.h"
 #include "math/pprz_algebra_int.h"
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 
 /** ABI binding for GPS altitude
 */

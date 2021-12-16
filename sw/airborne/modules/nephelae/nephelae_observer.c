@@ -14,10 +14,10 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 #include "std.h"
 #include "generated/airframe.h"
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 
 /** ABI binding for IMU acceleration
 */

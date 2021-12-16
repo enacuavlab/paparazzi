@@ -32,13 +32,13 @@
 #include "std.h"
 #include "paparazzi.h"
 #include "state.h"
-#include "subsystems/navigation/common_nav.h"
+#include "modules/nav/common_nav.h"
 #include "pprzlink/messages.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #include "modules/mission/mission_common.h"
 #include "math/pprz_geodetic_float.h"
-#include "subsystems/gps.h"
-#include "subsystems/abi.h"
+#include "modules/gps/gps.h"
+#include "modules/core/abi.h"
 
 // LWC threshold for cloud border
 #ifndef LWC_BORDER_THRESHOLD
