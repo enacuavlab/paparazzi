@@ -15,12 +15,12 @@
     </section>
   </doc>
 
-  <settings name="GVF_PARAMETRIC_SURF">
+  <settings>
     <dl_settings>
       <dl_settings NAME="GVF_PARAMETRIC_SURF">
         <dl_settings NAME="Control">
-          <dl_setting MAX="1" MIN="-1" STEP="2" VAR="gvf_parametric_surf_control.s1" shortname = "direction"/>
-          <dl_setting MAX="1" MIN="-1" STEP="2" VAR="gvf_parametric_surf_control.s2" shortname = "direction"/>
+          <dl_setting MAX="1" MIN="-1" STEP="2" VAR="gvf_parametric_surf_control.s1" shortname = "dir w1"/>
+          <dl_setting MAX="1" MIN="-1" STEP="2" VAR="gvf_parametric_surf_control.s2" shortname = "dir w2"/>
           <dl_setting MAX="1.25" MIN="0.75" STEP="0.05" VAR="gvf_parametric_surf_control.k_roll" shortname="k_roll" param="GVF_PARAMETRIC_SURF_CONTROL_KROLL"/>
           <dl_setting MAX="1.25" MIN="0.75" STEP="0.05" VAR="gvf_parametric_surf_control.k_climb" shortname="k_climb" param="GVF_PARAMETRIC_SURF_CONTROL_KCLIMB"/>
           <dl_setting MAX="10" MIN="0.01" STEP="0.05" VAR="gvf_parametric_surf_control.L" shortname="L" param="GVF_PARAMETRIC_SURF_CONTROL_L"/>
@@ -30,8 +30,8 @@
         </dl_settings>
         <dl_settings NAME="Coordination">
           <dl_setting MAX="1" MIN="0" STEP="1" VAR="gvf_parametric_surf_coordination.coordination" shortname = "Coordination" param="GVF_PARAMETRIC_SURF_COORDINATION_COORDINATION"/>
-          <dl_setting MAX="20" MIN="0" STEP="1" VAR="gvf_parametric_surf_coordination.kc1" shortname = "Gain" param="GVF_PARAMETRIC_SURF_COORDINATION_GAIN_KC1"/>
-          <dl_setting MAX="20" MIN="0" STEP="1" VAR="gvf_parametric_surf_coordination.kc2" shortname = "Gain" param="GVF_PARAMETRIC_SURF_COORDINATION_GAIN_KC2"/>
+          <dl_setting MAX="0.05" MIN="0" STEP="0.0001" VAR="gvf_parametric_surf_coordination.kc1" shortname = "Gain w1" param="GVF_PARAMETRIC_SURF_COORDINATION_GAIN_KC1"/>
+          <dl_setting MAX="0.05" MIN="0" STEP="0.0001" VAR="gvf_parametric_surf_coordination.kc2" shortname = "Gain w2" param="GVF_PARAMETRIC_SURF_COORDINATION_GAIN_KC2"/>
           <dl_setting MAX="5000" MIN="0" STEP="1" VAR="gvf_parametric_surf_coordination.timeout" shortname = "Timeout" param="GVF_PARAMETRIC_SURF_COORDINATION_TIMEOUT"/>
           <dl_setting MAX="1000" MIN="0" STEP="1" VAR="gvf_parametric_surf_coordination.broadtime" shortname = "Broadcasting" param="GVF_PARAMETRIC_SURF_COORDINATION_BROADTIME"/>
         </dl_settings>
@@ -39,7 +39,7 @@
           <dl_setting MAX="0.01" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_surf_3d_torus_par.kx" shortname="3d_tor_kx" param="GVF_PARAMETRIC_SURF_3D_TORUS_KX"/>
           <dl_setting MAX="0.01" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_surf_3d_torus_par.ky" shortname="3d_tor_ky" param="GVF_PARAMETRIC_SURF_3D_TORUS_KY"/>
           <dl_setting MAX="0.1" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_surf_3d_torus_par.kz" shortname="3d_tor_kz" param="GVF_PARAMETRIC_SURF_3D_TORUS_KZ"/>
-          <dl_setting MAX="100" MIN="1.0" STEP="1" VAR="gvf_parametric_surf_3d_torus_par.rh" shortname="3d_tor_rh" param="GVF_PARAMETRIC_SURF_3D_TORUS_RH"/>
+          <dl_setting MAX="150" MIN="1.0" STEP="1" VAR="gvf_parametric_surf_3d_torus_par.rh" shortname="3d_tor_rh" param="GVF_PARAMETRIC_SURF_3D_TORUS_RH"/>
           <dl_setting MAX="10" MIN="0.0" STEP="0.5" VAR="gvf_parametric_surf_3d_torus_par.rv" shortname="3d_tor_rv" param="GVF_PARAMETRIC_SURF_3D_TORUS_RV"/>
         </dl_settings>
        </dl_settings>
