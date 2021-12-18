@@ -68,11 +68,11 @@
 
 /*! Default gains kc1 and kc2 for the coordination algorithm */
 #ifndef GVF_PARAMETRIC_SURF_COORDINATION_KC1
-#define GVF_PARAMETRIC_SURF_COORDINATION_KC1 0.01
+#define GVF_PARAMETRIC_SURF_COORDINATION_KC1 0.009
 #endif
 
 #ifndef GVF_PARAMETRIC_SURF_COORDINATION_KC2
-#define GVF_PARAMETRIC_SURF_COORDINATION_KC2 0.01
+#define GVF_PARAMETRIC_SURF_COORDINATION_KC2 0.009
 #endif
 
 /*! Default timeout for the neighbors' information */

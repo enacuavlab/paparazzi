@@ -47,12 +47,12 @@
 
 /*! Default radius taken from the center of the torus  */
 #ifndef GVF_PARAMETRIC_SURF_3D_TORUS_RH
-#define GVF_PARAMETRIC_SURF_3D_TORUS_RH 80
+#define GVF_PARAMETRIC_SURF_3D_TORUS_RH 100
 #endif
 
 /*! Default radius for the inner tube */
 #ifndef GVF_PARAMETRIC_SURF_3D_TORUS_RV
-#define GVF_PARAMETRIC_SURF_3D_TORUS_RV 10
+#define GVF_PARAMETRIC_SURF_3D_TORUS_RV 5
 #endif
 
 gvf_par_surf_3d_torus_par gvf_parametric_surf_3d_torus_par = {GVF_PARAMETRIC_SURF_3D_TORUS_KX, GVF_PARAMETRIC_SURF_3D_TORUS_KY, GVF_PARAMETRIC_SURF_3D_TORUS_KZ, GVF_PARAMETRIC_SURF_3D_TORUS_RH, GVF_PARAMETRIC_SURF_3D_TORUS_RV};

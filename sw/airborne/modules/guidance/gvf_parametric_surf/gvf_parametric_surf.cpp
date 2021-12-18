@@ -395,8 +395,8 @@ void gvf_parametric_surf_coordination_send_w_to_nei(void)
       msg.sender_id = AC_ID;
       msg.receiver_id = (uint8_t)(gvf_parametric_surf_coordination_tables.tableNei[i][0]);
       msg.component_id = 0;
-      pprzlink_msg_send_GVF_PARAMETRIC_SURF_W(&msg, &(gvf_parametric_surf_control.w1), &(gvf_parametric_surf_control.w1_dot),
-             &(gvf_parametric_surf_control.w2), &(gvf_parametric_surf_control.w2_dot) );
+      pprzlink_msg_send_GVF_PARAMETRIC_SURF_W(&msg, &(gvf_parametric_surf_control.w1), &(gvf_parametric_surf_control.w2),
+             &(gvf_parametric_surf_control.w1_dot), &(gvf_parametric_surf_control.w2_dot));
     }
 }
 
