@@ -13,7 +13,7 @@
     </section>
   </doc>
 
-  <settings name="GVF_PARAMETRIC">
+  <settings>
     <dl_settings>
       <dl_settings NAME="GVF_PARAMETRIC">
         <dl_settings NAME="Control">

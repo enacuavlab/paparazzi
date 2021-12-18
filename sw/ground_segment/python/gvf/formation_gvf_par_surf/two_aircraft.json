@@ -1,0 +1,9 @@
+{
+  "ids": [101, 102],
+  "topology": [
+    [ 1],
+    [-1]
+  ],
+  "desired_intervehicle_w1": [0],
+  "desired_intervehicle_w2": [0]
+}
