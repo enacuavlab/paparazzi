@@ -28,7 +28,7 @@
     <waypoint name="TARGET" x="145.0" y="208.6"/>
   </waypoints>
   <sectors>
-    <sector color="red" name="FlightZone" type="dynamic">
+    <sector color="red" name="FlightZone">
       <corner name="1"/>
       <corner name="2"/>
       <corner name="2bis"/>

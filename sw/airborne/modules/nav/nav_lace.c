@@ -237,7 +237,9 @@ bool nav_lace_run(void)
       if (nav_lace.inside_cloud) {
         // found border or already inside
         nav_lace.status = LACE_INSIDE_START;
-        nav_lace.target = *stateGetPositionEnu_f();
+        // update target for horizontal position
+        nav_lace.target.x = stateGetPositionEnu_f()->x;
+        nav_lace.target.y = stateGetPositionEnu_f()->y;
       }
       break;
     case LACE_INSIDE_START:

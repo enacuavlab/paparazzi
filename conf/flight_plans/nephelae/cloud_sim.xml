@@ -20,7 +20,7 @@
     <waypoint name="CLIMB" x="-114.5" y="162.3"/>
   </waypoints>
   <sectors>
-    <sector name="Cloud" color="white" type="dynamic">
+    <sector name="Cloud" color="white">
       <corner name="C1"/>
       <corner name="C2"/>
       <corner name="C3"/>

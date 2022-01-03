@@ -1115,23 +1115,6 @@ let print_flight_plan_h = fun xml ref0 xml_file out_file ->
   lprintf out "\n";
   print_auto_init_bindings out abi_msgs variables;
 
-  (* geofencing sector FIXME why here ? *)
-  begin
-    try
-      let geofence_sector = Xml.attrib xml "geofence_sector" in
-      lprintf out "\n#define InGeofenceSector(_x, _y) %s(_x, _y)\n" (inside_function geofence_sector)
-    with
-        _ -> ()
-  end;
-
-  (* start "C" part *)
-  lprintf out "\n#ifdef NAV_C\n\n";
-
-  (* print variables and ABI initialization *)
-  List.iter (fun v -> print_var_impl out abi_msgs v) variables;
-  lprintf out "\n";
-  print_auto_init_bindings out abi_msgs variables;
-
   (* print main flight plan state machine *)
   lprintf out "static inline void auto_nav(void) {\n";
   right ();
