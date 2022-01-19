@@ -124,7 +124,6 @@ static void send_sdlog_status(struct transport_tx *trans, struct link_device *de
 }
 #endif
 
-
 // Functions for the generic device API
 static int sdlog_check_free_space(struct chibios_sdlog *p __attribute__((unused)), long *fd, uint16_t len)
 {
@@ -196,11 +195,7 @@ void sdlog_chibios_init(void)
 void sdlog_chibios_finish(const bool flush)
 {
   if (pprzLogFile != -1) {
-    // disable all required periph to save energy and maximize chance to flush files
-    // to mass storage and avoid infamous dirty bit on filesystem
-    mcu_periph_energy_save();
-
-    // if a FF_FS_REENTRANT is true, we can umount fs without closing
+     // if a FF_FS_REENTRANT is true, we can umount fs without closing
     // file, fatfs lock will assure that umount is done after a write,
     // and umount will close all open files cleanly. Thats the fatest
     // way to umount cleanly filesystem.
@@ -250,7 +245,7 @@ static void thd_startlog(void *arg)
 		     SDLOG_CONTIGUOUS_STORAGE_MEM, LOG_PREALLOCATION_DISABLED, tmpFilename, sizeof(tmpFilename)) != SDLOG_OK) {
       sdOk = false;
     }
-    chsnprintf(chibios_sdlog_filenames, sizeof(chibios_sdlog_filenames), "%s", tmpFilename);
+    strncpy(chibios_sdlog_filenames, tmpFilename, sizeof(chibios_sdlog_filenames));
 #if FLIGHTRECORDER_SDLOG
     removeEmptyLogs(FR_LOG_DIR, FLIGHTRECORDER_LOG_NAME, 50);
     if (sdLogOpenLog(&flightRecorderLogFile, FR_LOG_DIR, FLIGHTRECORDER_LOG_NAME,
@@ -258,7 +253,8 @@ static void thd_startlog(void *arg)
 		      SDLOG_CONTIGUOUS_STORAGE_MEM, LOG_PREALLOCATION_DISABLED, tmpFilename, sizeof(tmpFilename)) != SDLOG_OK) {
       sdOk = false;
     }
-    chsnprintf(chibios_sdlog_filenames, sizeof(chibios_sdlog_filenames), "%s,%s", chibios_sdlog_filenames, tmpFilename);
+    strncat(chibios_sdlog_filenames, ",", sizeof(chibios_sdlog_filenames) - 1);
+    strncat(chibios_sdlog_filenames, tmpFilename, sizeof(chibios_sdlog_filenames) - 1);
 #endif
   }
 
@@ -321,11 +317,13 @@ static void thd_bat_survey(void *arg)
   register_adc_watchdog(&SDLOG_BAT_ADC, SDLOG_BAT_CHAN, V_ALERT, &powerOutageIsr);
 
   chEvtWaitOne(EVENT_MASK(1));
+  // disable all required periph to save energy and maximize chance to flush files
+  // to mass storage and avoid infamous dirty bit on filesystem
+  mcu_periph_energy_save();
+
   // in case of powerloss, we should go fast and avoid to flush ram buffer
   sdlog_chibios_finish(false);
-  chThdExit(0);
   mcu_deep_sleep();
-  chThdSleep(TIME_INFINITE);
   while (true); // never goes here, only to avoid compiler  warning: 'noreturn' function does return
 }
 
