@@ -112,6 +112,10 @@ typedef void (*adc_watchdog_callback)(void);
 extern void register_adc_watchdog(ADCDriver *adc, adc_channels_num_t channel, adcsample_t vmin,
 				  adc_watchdog_callback cb);
 
+/* Watchdog unregister function
+ */
+extern void unregister_adc_watchdog(void);
+
 #endif
 
 

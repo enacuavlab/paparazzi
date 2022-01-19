@@ -422,4 +422,10 @@ void register_adc_watchdog(ADCDriver *adc, adc_channels_num_t channel, adcsample
     }
   }
 }
+
+void unregister_adc_watchdog(void)
+{
+  adc_watchdog.adc = NULL;
+  adc_watchdog.cb = NULL;
+}
 #endif
