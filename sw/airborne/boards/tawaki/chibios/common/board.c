@@ -293,6 +293,16 @@ void mcu_periph_energy_save(void)
   #warning "LINE_HIZ_PULLDOWN_AT_PWROFF_GROUP not defined or zero sized"
   #warning "please define LINE_HIZ_PULLDOWN_AT_PWROFF_GROUP at board.cfg level"
 #endif
+  
+#if (defined(LINE_OUTPUT_HIGH_AT_PWROFF_GROUP_SIZE)) && (LINE_OUTPUT_HIGH_AT_PWROFF_GROUP_SIZE != 0)
+  BOARD_GROUP_DECLFOREACH(line, LINE_OUTPUT_HIGH_AT_PWROFF_GROUP) {
+    palSetLineMode(line, PAL_MODE_OUTPUT_PUSHPULL);
+    palSetLine(line);
+  }
+#else
+  #warning "LINE_OUTPUT_HIGH_AT_PWROFF_GROUP not defined or zero sized"
+  #warning "please define LINE_OUTPUT_HIGH_AT_PWROFF_GROUP at board.cfg level"
+#endif
 }
 
 

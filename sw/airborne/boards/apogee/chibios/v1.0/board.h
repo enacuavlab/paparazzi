@@ -1986,19 +1986,6 @@
 #define BOARD_GROUP_FOR(array, index, group)  \
   for (ioline_t index=0, *array =  (ioline_t *) group ## _ARRAY; index < group ## _SIZE; index++)
 
-#define LINE_SERVOS_GROUP \
-	LINE_PWM2_CH3, \
-	LINE_PWM2_CH1, \
-	LINE_PWM3_CH3, \
-	LINE_AUX1, \
-	LINE_PWM2_CH2, \
-	LINE_PWM3_CH1, \
-	LINE_PWM3_CH2, \
-	LINE_AUX4, \
-	LINE_AUX3, \
-	LINE_AUX2
-#define LINE_SERVOS_GROUP_SIZE 	 10
-
 #define LINE_HIZ_PULLDOWN_AT_PWROFF_GROUP \
 	LINE_UART4_TX, \
 	LINE_UART4_RX, \
@@ -2039,6 +2026,19 @@
 	LINE_USART6_RX, \
 	LINE_LED2
 #define LINE_HIZ_PULLDOWN_AT_PWROFF_GROUP_SIZE 	 38
+
+#define LINE_SERVOS_GROUP \
+	LINE_PWM2_CH3, \
+	LINE_PWM2_CH1, \
+	LINE_PWM3_CH3, \
+	LINE_AUX1, \
+	LINE_PWM2_CH2, \
+	LINE_PWM3_CH1, \
+	LINE_PWM3_CH2, \
+	LINE_AUX4, \
+	LINE_AUX3, \
+	LINE_AUX2
+#define LINE_SERVOS_GROUP_SIZE 	 10
 
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus
