@@ -34,6 +34,7 @@
 #include "main_chibios.h"
 #include "mcu.h"
 #include "mcu_periph/sdio.h"
+#include "mcu_periph/adc.h"
 #include "led.h"
 
 static void thdUsbStorage(void *arg);
@@ -109,12 +110,18 @@ static void thdUsbStorage(void *arg)
   isRunning = true;
   chRegSetThreadName("UsbStorage:connected");
 
+  /* unregister low bat detection */
+  unregister_adc_watchdog();
+
   /* reconfigure pin for safety (stop servos, ESC, etc) */
   mcu_periph_pwm_safe_mode();
 
   /* Stop the logs*/
   // it's not a powerloss, we have time to flush the ram buffer
   sdlog_chibios_finish(true);
+
+  /* stop autopilot */
+  pprz_terminate_autopilot_threads();
 
   /* connect sdcard sdc interface sdio */
   if (sdio_connect() == false) {
@@ -128,8 +135,6 @@ static void thdUsbStorage(void *arg)
   msd_register_evt_connected(&connected, EVENT_MASK(1));
   chEvtWaitOne(EVENT_MASK(1));
 
-  /* stop autopilot */
-  pprz_terminate_autopilot_threads();
 
   /* wait until usb-storage is unmount and usb cable is unplugged*/
   while (!chThdShouldTerminateX() && (palReadLine(LINE_USB_VBUS) == PAL_HIGH)) {
