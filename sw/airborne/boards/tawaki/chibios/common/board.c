@@ -272,7 +272,7 @@ void mcu_periph_pwm_safe_mode(void)
 #if (defined(LINE_SERVOS_GROUP_SIZE)) && (LINE_SERVOS_GROUP_SIZE != 0)
    BOARD_GROUP_DECLFOREACH(line, LINE_SERVOS_GROUP) {
     palSetLine(line);
-    palSetLineMode(line, PAL_MODE_OUTPUT_PUSHPULL);
+    palSetLineMode(line, PAL_MODE_INPUT);
   }
 #else
   #warning "LINE_SERVOS_GROUP not defined or zero sized"
