@@ -1,0 +1,31 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="co2_ccs811_i2c" dir="sensors" task="sensors">
+  <doc>
+    <description>
+      ScioSense CCS811 CO2 sensor
+    </description>
+    <configure name="CCS811_I2C_DEV" value="i2cX" description="select which i2c peripheral to use (default i2c1)"/>
+    <configure name="CCS811_I2C_ADDR" value="0xB6" description="I2C address (7bits 0x5A or 0x5B -> 0xB4 or 0xB6)"/>
+  </doc>
+  <dep>
+    <depends>i2c</depends>
+    <provides>co2</provides>
+  </dep>
+  <header>
+    <file name="co2_ccs811_i2c.h"/>
+  </header>
+  <init fun="co2_ccs811_init()"/>
+  <periodic fun="co2_ccs811_periodic()" freq="1"/>
+  <event fun="co2_ccs811_event()"/>
+  <makefile target="ap">
+    <configure name="CCS811_I2C_DEV" default="i2c1" case="upper|lower"/>
+    <configure name="CCS811_I2C_ADDR" default="0xB6"/>
+    <define name="USE_$(CCS811_I2C_DEV_UPPER)"/>
+    <define name="CCS811_I2C_DEV" value="$(CCS811_I2C_DEV_LOWER)"/>
+    <define name="CCS811_I2C_ADDR" value="$(CCS811_I2C_ADDR)"/>
+    <file name="co2_ccs811_i2c.c"/>
+    <file name="ccs811_i2c.c" dir="peripherals"/>
+  </makefile>
+</module>
+
