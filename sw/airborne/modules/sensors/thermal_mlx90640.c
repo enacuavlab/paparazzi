@@ -25,7 +25,8 @@
 
 #include "modules/sensors/thermal_mlx90640.h"
 #include "peripherals/mlx90640.h"
-
+#include "modules/loggers/sdlog_chibios.h"
+#include "modules/loggers/sdlog_chibios/sdLog.h"
 #include "core/shell.h"
 #include "core/shell_arch.h"
 
@@ -72,6 +73,20 @@ void thermal_mlx90640_periodic(void)
       chprintf(_stream, "\r\n");
     }
     chprintf(_stream, "\r\n");
+  }
+
+
+  if (pprzLogFile != -1 && mlx.data_available) {
+    //sdLogWriteLog(pprzLogFile, "plop\n");
+    //SdioError sdLogWriteRaw(const FileDes fileObject, const uint8_t *buffer, const size_t len);
+    //SdioError sdLogCloseLog(const FileDes fileObject);
+
+    sdLogWriteByte(pprzLogFile, 0xDE);
+    sdLogWriteByte(pprzLogFile, 0xAD);
+    sdLogWriteByte(pprzLogFile, 0xBE);
+    sdLogWriteByte(pprzLogFile, 0xEF);
+    uint8_t* data = (uint8_t*)mlx.frame;
+    sdLogWriteRaw(pprzLogFile, data, MLX90640_PIXEL_NB*2);
     mlx.data_available = false;
   }
   

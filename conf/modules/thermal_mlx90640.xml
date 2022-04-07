@@ -4,7 +4,7 @@
     <description>Module for the MLX90640 themal IR sensor from Melexis.</description>
   </doc>
   <dep>
-    <depends>i2c</depends>
+    <depends>i2c,logger_sd_chibios</depends>
   </dep>
   <header>
     <file name="thermal_mlx90640.h"/>
