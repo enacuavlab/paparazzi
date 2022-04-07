@@ -13,7 +13,7 @@
   <periodic fun="thermal_mlx90640_periodic()" freq="5"/>
   <event fun="thermal_mlx90640_event()"/>
   <makefile target="ap">
-    <configure name="MLX90640_I2C_DEV" default="i2c0" case="upper|lower"/>
+    <configure name="MLX90640_I2C_DEV" default="i2c2" case="upper|lower"/>
     <configure name="MLX90640_I2C_SLAVE_ADDR" default="0x66"/>
 
     <define name="USE_$(MLX90640_I2C_DEV_UPPER)"/>
