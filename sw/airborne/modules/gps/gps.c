@@ -506,7 +506,7 @@ struct EcefCoor_i ecef_vel_int_from_gps(struct GpsState *gps_s) {
 struct NedCoor_f ned_vel_float_from_gps(struct GpsState *gps_s) {
   struct NedCoor_i ned_vel_i = ned_vel_int_from_gps(gps_s);
   struct NedCoor_f ned_vel_f;
-  NED_FLOAT_OF_BFP(ned_vel_f, ned_vel_i);
+  VECT3_FLOAT_OF_CM(ned_vel_f, ned_vel_i);
   return ned_vel_f;
 }
 
