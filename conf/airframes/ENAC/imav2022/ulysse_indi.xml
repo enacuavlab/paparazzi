@@ -186,8 +186,8 @@
     <define name="REF_ERR_P" value="101"/>
     <define name="REF_ERR_Q" value="101"/>
     <define name="REF_ERR_R" value="124"/>
-    <define name="REF_RATE_P" value="12.6"/>
-    <define name="REF_RATE_Q" value="14.0"/>
+    <define name="REF_RATE_P" value="18.0"/>
+    <define name="REF_RATE_Q" value="18.0"/>
     <define name="REF_RATE_R" value="14.0"/>
 
     <define name="MAX_R" value="60" unit="deg/s"/>

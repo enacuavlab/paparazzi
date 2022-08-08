@@ -1,0 +1,250 @@
+<?xml version="1.0"?>
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+
+<flight_plan alt="605" ground_alt="600" lat0="43.1241048" lon0="0.3633614" max_dist_from_home="150" name="Muret safety" security_height="1">
+  <header>
+    #ifndef SwitchServoOn
+    #define SwitchServoOn(_x) {}
+    #endif
+    #ifndef SwitchServoOff
+    #define SwitchServoOff(_x) {}
+    #endif
+    #define DropOpen SwitchServoOff
+    #define DropClose SwitchServoOn
+
+    #define DROP_NONE     0
+    #define DROP_DELIVERY 1
+    #define DROP_UNKNOWN  2
+    #define DROP_AREA     3
+    #define DROP_SILENT   4
+    #define DROP_TRUCK    5
+    #define SEARCH_UNK    6
+    #define SEARCH_AREA   7
+  </header>
+  <waypoints>
+    <waypoint name="HOME" x="42.1" y="-77.2"/>
+    <waypoint name="STDBY" x="-10.9" y="-18.2"/>
+    <waypoint name="LANDPAD" x="-7.7" y="-8.2"/>
+    <waypoint name="TAG" x="-43.3" y="-26.2"/>
+    <waypoint name="DELIVERY" x="41.2" y="-7.0"/>
+    <waypoint name="SILENT" x="14.8" y="-26.1"/>
+    <waypoint name="S1" x="6.1" y="-26.4"/>
+    <waypoint name="S2" x="23.1" y="-26.0"/>
+    <waypoint name="UNK_TAG" x="20.8" y="-71.2"/>
+    <waypoint name="UNK_CENTER" x="34.0" y="-62.2"/>
+    <waypoint name="AREA_TAG" x="15.0" y="-92.5"/>
+    <waypoint name="A1" x="-3.6" y="-37.5"/>
+    <waypoint name="A2" x="70.8" y="-33.8"/>
+    <waypoint name="A3" x="75.4" y="-106.9"/>
+    <waypoint name="A4" x="1.2" y="-110.1"/>
+    <waypoint name="_FLY1" x="-27.8" y="1.2"/>
+    <waypoint name="_FLY2" x="95.9" y="6.5"/>
+    <waypoint name="_FLY3" x="103.6" y="-144.7"/>
+    <waypoint name="_FLY4" x="-23.3" y="-149.0"/>
+    <waypoint name="_KILL1" x="-44.1" y="15.8"/>
+    <waypoint name="_KILL2" x="109.4" y="25.1"/>
+    <waypoint name="_KILL3" x="117.9" y="-156.6"/>
+    <waypoint name="_KILL4" x="-36.0" y="-161.6"/>
+    <waypoint name="_HERE" x="6.0" y="-1.2"/>
+  </waypoints>
+  <sectors>
+    <sector color="green" name="Survey">
+      <corner name="A1"/>
+      <corner name="A2"/>
+      <corner name="A3"/>
+      <corner name="A4"/>
+    </sector>
+    <sector color="orange" name="Flight_Area">
+      <corner name="_FLY1"/>
+      <corner name="_FLY2"/>
+      <corner name="_FLY3"/>
+      <corner name="_FLY4"/>
+    </sector>
+    <sector color="red" name="Kill">
+      <corner name="_KILL1"/>
+      <corner name="_KILL2"/>
+      <corner name="_KILL3"/>
+      <corner name="_KILL4"/>
+    </sector>
+  </sectors>
+  <variables>
+    <variable init="0" type="int" var="mission_nb"/>
+    <variable init="4." var="drop_height" min="0.5" max="15." step="0.1"/>
+    <variable init="5." var="search_height" min="0.5" max="15." step="0.1"/>
+    <variable init="30." var="search_radius" min="20" max="150." step="1.0"/>
+    <variable init="8." var="search_sweep" min="5." max="20." step="0.1"/>
+    <variable init="5." var="land_height" min="0.5" max="15." step="0.1"/>
+  </variables>
+  <modules>
+    <module name="nav" type="survey_poly_rotorcraft" />
+    <module name="tag_tracking">
+      <define name="TAG_TRACKING_SIM_WP" value="WP_DELIVERY"/>
+    </module>
+  </modules>
+  <exceptions>
+    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 50) 
+    @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
+  </exceptions>
+  <blocks>
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <call_once fun="DropOpen()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 10)"/>
+      <!--call_once fun="NavSetGroundReferenceHere()"/-->
+      <call_once fun="NavSetAltitudeReferenceHere()"/>
+    </block>
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Start Engine">
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
+      <exception cond="GetPosHeight() @GT 2.5 @AND mission_nb == DROP_NONE" deroute="Standby"/>
+      <exception cond="GetPosHeight() @GT 2.5 @AND mission_nb == DROP_DELIVERY" deroute="Goto Delivery"/>
+      <exception cond="GetPosHeight() @GT 2.5 @AND mission_nb == DROP_SILENT" deroute="Goto Silent" />
+      <exception cond="GetPosHeight() @GT 2.5 @AND mission_nb == DROP_UNKNOWN" deroute="Goto Unknown"/>
+      <exception cond="GetPosHeight() @GT 2.5 @AND mission_nb == DROP_AREA" deroute="Goto Area" />
+      <exception cond="GetPosHeight() @GT 2.5 @AND mission_nb == SEARCH_UNK" deroute="Run Search Unknown"/>
+      <exception cond="GetPosHeight() @GT 2.5 @AND mission_nb == SEARCH_AREA" deroute="Start Search Area" />
+      <call_once fun="DropClose()"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0.1" until="stage_time @GT 2" vmode="throttle"/>
+      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+      <stay climb="nav_climb_vspeed" vmode="climb" wp="LANDPAD"/>
+    </block>
+    <block name="Standby" pre_call="if(!InsideKill(GetPosX(), GetPosY())) NavKillThrottle();" strip_button="Standby" strip_icon="home.png">
+      <set var="mission_nb" value="DROP_NONE"/>
+      <stay wp="STDBY"/>
+    </block>
+
+    <block group="mission" name="Start Delivery" strip_button="Drop Delivery">
+      <set var="mission_nb" value="DROP_DELIVERY"/>
+      <deroute block="Takeoff"/>
+    </block>
+    <block group="mission" name="Start Silent" strip_button="Drop Silent">
+      <set var="mission_nb" value="DROP_SILENT"/>
+      <deroute block="Takeoff" />
+    </block>
+    <block group="mission" name="Start Unknown" strip_button="Drop Unknown">
+      <set var="mission_nb" value="DROP_UNKNOWN"/>
+      <deroute block="Takeoff" />
+    </block>
+    <block group="mission" name="Start Area" strip_button="Drop Area">
+      <set var="mission_nb" value="DROP_AREA"/>
+      <deroute block="Takeoff" />
+    </block>
+    <block group="search" name="Search Unknown" strip_button="Search Unknown">
+      <set var="mission_nb" value="SEARCH_UNK"/>
+      <deroute block="Takeoff"/>
+    </block>
+    <block group="search" name="Search Area" strip_button="Search Area">
+      <set var="mission_nb" value="SEARCH_AREA"/>
+      <deroute block="Takeoff" />
+    </block>
+
+    <block name="Goto Delivery">
+      <set var="mission_nb" value="DROP_NONE"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="jevois_stream(false)"/>
+      <go wp="DELIVERY" from="_HERE" hmode="route" height="drop_height"/>
+      <call_once fun="NavSetWaypointHere(WP_TAG)"/>
+      <call_once fun="jevois_stream(true)"/>
+      <stay wp="DELIVERY" until="(tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="drop_height"/>
+      <deroute block="Drop Package"/>
+    </block>
+
+    <block name="Goto Silent">
+      <set var="mission_nb" value="DROP_NONE"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="jevois_stream(false)"/>
+      <go from="_HERE" hmode="route" wp="S1" height="drop_height"/>
+      <stay wp="S1" climb="nav_descend_vspeed" vmode="climb" until="GetPosAlt() @LEQ GetAltRef() + 3."/>
+      <go from="S1" hmode="route" wp="SILENT" height="1.5" />
+      <call_once fun="DropOpen()"/>
+      <go from="SILENT" hmode="route" wp="S2" height="1.5"/>
+      <stay wp="S2" height="drop_height" until="stage_time @GT 3"/>
+      <deroute block="Land"/>
+    </block>
+
+    <block name="Goto Unknown">
+      <set var="mission_nb" value="DROP_NONE"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="jevois_stream(false)"/>
+      <go wp="UNK_TAG" from="_HERE" hmode="route" height="drop_height"/>
+      <call_once fun="NavSetWaypointHere(WP_TAG)"/>
+      <call_once fun="jevois_stream(true)"/>
+      <stay wp="UNK_TAG" until="(tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="drop_height"/>
+      <deroute block="Drop Package"/>
+    </block>
+
+    <block name="Goto Area">
+      <set var="mission_nb" value="DROP_NONE"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="jevois_stream(false)"/>
+      <go wp="AREA_TAG" from="_HERE" hmode="route" height="drop_height"/>
+      <call_once fun="NavSetWaypointHere(WP_TAG)"/>
+      <call_once fun="jevois_stream(true)"/>
+      <stay wp="AREA_TAG" until="(tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="drop_height"/>
+      <deroute block="Drop Package"/>
+    </block>
+
+    <block name="Run Search Unknown">
+      <set var="mission_nb" value="DROP_NONE"/>
+      <exception cond="tag_tracking.status == TAG_TRACKING_RUNNING" deroute="Drop Package"/>
+      <call_once fun="jevois_stream(false)"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="UNK_CENTER" from="_HERE" hmode="route" height="search_height"/>
+      <call_once fun="jevois_stream(true)"/>
+      <for var="i" from="1" to="search_radius/search_sweep">
+        <circle wp="UNK_CENTER" radius="search_sweep*$i" height="search_height" until="NavCircleCount() @GT 1."/>
+      </for>
+      <deroute block="Land"/>
+    </block>
+
+    <block name="Start Search Area">
+      <set var="mission_nb" value="DROP_NONE"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="jevois_stream(false)"/>
+      <go wp="A1" from="_HERE" hmode="route" height="search_height"/>
+      <call_once fun="nav_survey_poly_setup_towards(WP_A1, 4, 10, WP_A2)"/>
+      <deroute block="Run Search Area"/>
+    </block>
+    <block name="Run Search Area">
+      <call_once fun="jevois_stream(true)"/>
+      <exception cond="PolySurveySweepBackNum > 0" deroute="Land"/>
+      <call fun="nav_survey_poly_run(search_height)"/>
+    </block>
+
+    <block name="Drop Package">
+      <stay wp="TAG" until="(stage_time @GT 2 @AND tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 5)" height="drop_height"/>
+      <stay wp="TAG" climb="-0.5" vmode="climb" until="stateGetPositionEnu_f()->z @LT 1.5"/>
+      <call_once fun="DropOpen()"/>
+      <stay wp="TAG" until="stage_time @GT 3" height="drop_height"/>
+      <deroute block="Land"/>
+    </block>
+    <block name="Land here" strip_button="Land here" strip_icon="land-right.png">
+      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+    </block>
+    <block name="Land">
+      <call_once fun="jevois_stream(false)"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="LANDPAD" from="_HERE" hmode="route"/>
+    </block>
+    <block name="Flare">
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <stay climb="nav_descend_vspeed" vmode="climb" wp="LANDPAD"/>
+    </block>
+    <block name="Kill landed">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+
+  </blocks>
+
+</flight_plan>
