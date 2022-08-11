@@ -280,6 +280,11 @@ void ins_reset_altitude_ref(void)
   ins_int.vf_reset = true;
 }
 
+void ins_reset_vertical_pos(void)
+{
+  ins_int.vf_reset = true;
+}
+
 void ins_int_propagate(struct Int32Vect3 *accel, float dt)
 {
   /* untilt accels */

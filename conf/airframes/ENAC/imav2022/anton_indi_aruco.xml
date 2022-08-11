@@ -53,7 +53,7 @@
       <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
     </module>
 
-    <module name="ins" type="extended"/>
+    <module name="ins"/>
     <module name="ahrs" type="int_cmpl_quat"/>
     <module name="air_data"/>
 
@@ -65,13 +65,11 @@
       <define name="AHRS_ALIGNER_IMU_ID" value="IMU_F1E_ID"/>
     </module>
 
-    <module name="sonar_adc">
+    <!--module name="sonar_adc">
       <configure name="ADC_SONAR" value="ADC_1"/>
       <define name="USE_SONAR"/>
-      <!--define name="SENSOR_SYNC_SEND_SONAR"/-->
-      <define name="SONAR_SCALE" value="0.0025"/> <!-- Vcc/1024 per cm => (3.3/2^12)*(0.01/(3.3/2^10) = 0.01*2^10/2^12 -->
     </module>
-    <module name="agl_dist"/>
+    <module name="agl_dist"/-->
 
     <module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
@@ -268,6 +266,11 @@
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+  </section>
+
+  <section name="SONAR">
+    <!--define name="SENSOR_SYNC_SEND_SONAR"/-->
+    <define name="SONAR_SCALE" value="0.0025"/> <!-- Vcc/1024 per cm => (3.3/2^12)*(0.01/(3.3/2^10) = 0.01*2^10/2^12 -->
   </section>
 
   <section name="AGL" prefix="AGL_DIST_SONAR_">

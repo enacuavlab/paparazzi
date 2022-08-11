@@ -298,7 +298,7 @@ void nav_survey_poly_setup(uint8_t EntryWP, uint8_t Size, float sw, float Orient
 
     LINE_STOP_FUNCTION;
     NavVerticalAltitudeMode(waypoints[SurveyEntryWP].enu_f.z, 0.);
-    nav_set_heading_deg(-Orientation + 90.);
+    //nav_set_heading_deg(-Orientation + 90.);
 
   }
 }
