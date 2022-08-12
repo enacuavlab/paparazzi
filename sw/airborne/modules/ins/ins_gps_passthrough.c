@@ -178,8 +178,10 @@ void ins_gps_passthrough_init(void)
 
 void ins_reset_local_origin(void)
 {
-  ltp_def_from_ecef_i(&ins_gp.ltp_def, &gps.ecef_pos);
-  ins_gp.ltp_def.lla.alt = gps.lla_pos.alt;
+  struct EcefCoor_i ecef_pos = ecef_int_from_gps(&gps);
+  struct LlaCoor_i lla_pos = lla_int_from_gps(&gps);
+  ltp_def_from_ecef_i(&ins_gp.ltp_def, &ecef_pos);
+  ins_gp.ltp_def.lla.alt = lla_pos.alt;
   ins_gp.ltp_def.hmsl = gps.hmsl;
   stateSetLocalOrigin_i(&ins_gp.ltp_def);
   ins_gp.ltp_initialized = true;

@@ -245,8 +245,10 @@ void ins_reset_local_origin(void)
 {
 #if USE_GPS
   if (GpsFixValid()) {
-    ltp_def_from_ecef_i(&ins_int.ltp_def, &gps.ecef_pos);
-    ins_int.ltp_def.lla.alt = gps.lla_pos.alt;
+    struct EcefCoor_i ecef_pos = ecef_int_from_gps(&gps);
+    struct LlaCoor_i lla_pos = lla_int_from_gps(&gps);
+    ltp_def_from_ecef_i(&ins_int.ltp_def, &ecef_pos);
+    ins_int.ltp_def.lla.alt = lla_pos.alt;
     ins_int.ltp_def.hmsl = gps.hmsl;
     ins_int.ltp_initialized = true;
     stateSetLocalOrigin_i(&ins_int.ltp_def);
@@ -267,10 +269,11 @@ void ins_reset_altitude_ref(void)
 {
 #if USE_GPS
   if (GpsFixValid()) {
+    struct LlaCoor_i lla_pos = lla_int_from_gps(&gps);
     struct LlaCoor_i lla = {
       .lat = state.ned_origin_i.lla.lat,
       .lon = state.ned_origin_i.lla.lon,
-      .alt = gps.lla_pos.alt
+      .alt = lla_pos.alt
     };
     ltp_def_from_lla_i(&ins_int.ltp_def, &lla);
     ins_int.ltp_def.hmsl = gps.hmsl;

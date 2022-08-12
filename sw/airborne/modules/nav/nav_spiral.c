@@ -92,7 +92,7 @@ bool nav_spiral_run(void)
 
   float DistanceStartEstim;
   float CircleAlpha;
-i8
+
   switch (nav_spiral.status) {
     case SpiralOutside:
       //flys until center of the helix is reached an start helix

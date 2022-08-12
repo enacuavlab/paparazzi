@@ -286,8 +286,11 @@ void ins_reset_local_origin(void)
   // reset state UTM ref
   stateSetLocalUtmOrigin_f(&utm);
 #else
+  struct EcefCoor_i ecef_pos = ecef_int_from_gps(&gps);
+  struct LlaCoor_i lla_pos = lla_int_from_gps(&gps);
   struct LtpDef_i ltp_def;
-  ltp_def_from_ecef_i(&ltp_def, &gps.ecef_pos);
+  ltp_def_from_ecef_i(&ltp_def, &ecef_pos);
+  ltp_def.lla.alt = lla_pos.alt;
   ltp_def.hmsl = gps.hmsl;
   stateSetLocalOrigin_i(&ltp_def);
 #endif
