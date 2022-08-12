@@ -73,13 +73,11 @@
     <module name="actuators" type="pwm"/>
     <module name="switch" type="servo"/>
 
-    <module name="sonar_adc">
+    <!--module name="sonar_adc">
       <configure name="ADC_SONAR" value="ADC_1"/>
-      <!-- <define name="USE_SONAR"/> -->
-      <define name="SENSOR_SYNC_SEND_SONAR"/>
-      <define name="SONAR_SCALE" value="0.0031"/>
+      <define name="USE_SONAR"/>
     </module>
-    <module name="agl_dist"/>
+    <module name="agl_dist"/-->
     
     <!--module name="filter" type="1euro_imu">
       <define name="AHRS_ICQ_IMU_ID" value="IMU_F1E_ID"/>
