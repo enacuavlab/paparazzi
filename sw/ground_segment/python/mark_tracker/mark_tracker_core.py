@@ -1,6 +1,8 @@
 from cmath import sin
 from tkinter import Y
 from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QWidget
 from collections import namedtuple
 from ui.mainwindow import Ui_MarkTracker
 import traceback
@@ -36,10 +38,10 @@ MARK_S2 = 2
 MARK_S3 = 3
 MARK_S4 = 4
 mark_types = {
-    MARK_S1: {'id':1, 'name':'Known location'},
-    MARK_S2: {'id':2, 'name':'100m GPS Spoof'},
-    MARK_S3: {'id':3, 'name':'Unknown field location'},  
-    MARK_S4: {'id':4, 'name':'Silent Deilivery'}
+    MARK_S1: {'id':1, 'name':'DELIVERY'},
+    MARK_S2: {'id':2, 'name':'UNK_TAG'},
+    MARK_S3: {'id':3, 'name':'AREA_TAG'},  
+    MARK_S4: {'id':4, 'name':'SILENT'}
 }
 
 
@@ -50,24 +52,18 @@ class Mark():
     def __init__(self, _id, _name):
         self.id = _id
         self.name = _name
-        self.lat = 0.
-        self.lon = 0.
-        self.alt = 0.
-        self.lat_arr = np.array([])
-        self.lon_arr = np.array([])
+        self.clear()
 
     def set_pos(self, lat, lon, alt):
         ''' set pos '''
-        # filtering
-        self.lat_arr = np.append(self.lat_arr, [lat])
-        self.lon_arr = np.append(self.lon_arr, [lon])
-        self.lat = np.mean(self.lat_arr)
-        self.lon = np.mean(self.lon_arr)
+        self.lat = lat
+        self.lon = lon
         self.alt = alt
 
     def clear(self):
-        self.lat_arr = np.array([])
-        self.lon_arr = np.array([])
+        self.lat = None
+        self.lon = None
+        self.alt = None
 
     def __str__(self):
         out = 'Mark {} with ID {} at pos {}, {}'.format(self.name, self.id, self.lat, self.lon)
@@ -90,18 +86,21 @@ class Mark():
 
         return dist
 
-class Tracker(Ui_MarkTracker):
+class Tracker(QWidget,Ui_MarkTracker):
     '''
     Main tracker class
     '''  
+    console = pyqtSignal(str)
+
     def __init__(self, parent=None, verbose=False):
+        super().__init__()
         Ui_MarkTracker.__init__(self)
         self.mark2 = Mark(9, "9")
         self.verbose = verbose
         self.marks_fpl = {}
         self.marks_by_name = {}
         self.known_pos = {
-            1: {'lat':52.171387, 'lon': 4.420618},
+            1: {'lat': 52.171387, 'lon': 4.420618},
             2: {'lat': 52.169916, 'lon': 4.415763},
             4: {'lat': 52.170707, 'lon': 4.418157},
             5: {'lat': 0, 'lon': 0},
@@ -110,8 +109,8 @@ class Tracker(Ui_MarkTracker):
         for k, e in mark_types.items():
             self.marks_fpl[k] = Mark(k, e['name'])
             self.marks_by_name[e['name']] = k
-        for i in self.marks_fpl:      
-            print(i, " ", self.marks_fpl[i])
+        #for i in self.marks_fpl:      
+        #    print(i, " ", self.marks_fpl[i])
         
         self.id_list = []
         #print(mark_types)
@@ -119,6 +118,8 @@ class Tracker(Ui_MarkTracker):
         self.uavs = {}
         self.uav_id = {}
         self.alt_ref = 0
+
+        self.console.connect(self.console_printer)
 
     def built(self):
         for i in self.marks_fpl: 
@@ -136,7 +137,8 @@ class Tracker(Ui_MarkTracker):
         self.send_s2.clicked.connect(lambda:self.send_mark(MARK_S2))
         self.send_s3.clicked.connect(lambda:self.send_mark(MARK_S3))
         self.send_s4.clicked.connect(lambda:self.send_mark(MARK_S4))
-        
+        self.checkBox_auto_send.setChecked(True)
+
         ''' get aircraft config '''
         #get current flight plan with its waypoints and UAV info
         def connect_cb(conf):
@@ -145,13 +147,13 @@ class Tracker(Ui_MarkTracker):
             conf2 = conf
             active_wps = []
 
+            self.print_console('New A/C ' + conf.name)
             try: 
                 fpl = FlightPlan().parse(conf.flight_plan)
                 wps = fpl.waypoints              
-                for wp in wps:
-                    print(wp.name, " ", wp.alt, " ", wp.no)
-                hist = str(wps) + "\n"
-                self.commands.append(hist)
+                if self.verbose:
+                    for wp in wps:
+                        self.print_console('{} {} {}'.format(wp.name, wp.alt, wp.no))
                 self.alt_ref = fpl.alt
                 if wps is not None:
                     self.uavs[conf.name] = []
@@ -161,18 +163,13 @@ class Tracker(Ui_MarkTracker):
                 self.uav_id[str(conf.name)] = {'id': conf.id}
 
             except (IOError, ET.XMLSyntaxError) as e:
-                hist = 'FlightPlan error' + e.__str__()
-                self.commands.append(hist)
-                print('FlightPlan error',e.__str__())
+                self.print_console('FlightPlan error' + e.__str__())
 
             if self.verbose:
                 print(conf)
 
             self.active_uav.addItem(conf.name)
 
-            hist = str(self.uavs[conf.name])
-            self.commands.append(hist)
-            print(self.uavs[conf.name]," ################################### ")
 
         ''' create connect object, it will start Ivy interface '''
         self.connect = PprzConnect(notify=connect_cb)
@@ -311,23 +308,22 @@ class Tracker(Ui_MarkTracker):
                 hist = "Marker found is not a marker type"
                 self.commands.append(hist)
                 print("Marker found is not a marker type")
-        print("IVY")
+
         self.connect.ivy.subscribe(mark_cb,PprzMessage("telemetry", "MARK"))
 
         # self.connect.ivy.subscribe(self.search_tag_s3)
 
-        def telemetry(ac_id, msg):
-            mark_id = int(msg['ac_id'])
-            wp_id = int(msg['wp_id'])
-            lat = float(msg['lat'])
-            lon = float(msg['long'])
-            alt = float(msg['alt'])
-            print(mark_id, " ", wp_id, " ", lat, " ", lon, " ", alt)
-        self.connect.ivy.subscribe(telemetry,PprzMessage("ground", "MOVE_WAYPOINT"))
-    
     def closing(self):
         ''' shutdown Ivy and window '''
         self.connect.shutdown()
+
+    def print_console(self, words):
+        self.console.emit(words)
+
+    def console_printer(self, words):
+        self.commands.append(words)
+        if self.verbose:
+            print(words)
 
     def search_tag_s3(self):
         global correct_id
@@ -340,9 +336,7 @@ class Tracker(Ui_MarkTracker):
     def uav_selected(self, i):
         ''' update WP list when changing the selected UAV '''
         if self.verbose:
-            hist = 'Selected ' + str(i)
-            self.commands.append(hist)
-            print('selected',i)
+            self.print_console('A/C selected: ' + str(i))
         wps = self.uavs[self.active_uav.currentText()]
 
         self.combo_s1.clear()
@@ -358,39 +352,26 @@ class Tracker(Ui_MarkTracker):
         try:
             self.combo_s1.setCurrentIndex(wps.index(self.marks_fpl[MARK_S1].name))
         except:
-            if self.verbose:
-                hist = "Mission 1 waypoint not found"
-                self.commands.append(hist)
-                print("Mission 1 waypoint not found")
+            self.print_console("Mission 1 waypoint not found")
 
         try:
             self.combo_s2.setCurrentIndex(wps.index(self.marks_fpl[MARK_S2].name))
         except:
-            if self.verbose:
-                hist = "Mission 2 waypoint not found"
-                self.commands.append(hist)
-                print("Mission 2 waypoint not found")
+            self.print_console("Mission 2 waypoint not found")
 
         try:
             self.combo_s3.setCurrentIndex(wps.index(self.marks_fpl[MARK_S3].name))
         except:
-            if self.verbose:
-                hist = "Mission 3 waypoint not found"
-                self.commands.append(hist)
-                print("Mission 3 waypoint not found")
+            self.print_console("Mission 3 waypoint not found")
         
         try:
             self.combo_s4.setCurrentIndex(wps.index(self.marks_fpl[MARK_S4].name))
         except:
-            if self.verbose:
-                hist = "Mission 4 waypoint not found"
-                self.commands.append(hist)
-                print("Mission 4 waypoint not found")
+            self.print_console("Mission 4 waypoint not found")
 
-    def update_pos_label(self, id, mark):
-        hist = "Label update" + "\n"
-        self.commands.append(hist)
-        if(mark.id is not None):
+    def update_pos_label(self, _id, mark):
+        self.print_console("Update mark: "+str(_id))
+        if mark.id is not None:
             if(mark.name == "S3" or mark.name == ""):
                 self.pos_s3.setText("{:.7f} / {:.7f}".format(mark.lat, mark.lon))
             elif(mark.name == "S1"):
@@ -402,63 +383,51 @@ class Tracker(Ui_MarkTracker):
             elif(mark.name == "S4"):
                 self.id_s4.setText(str(id))
                 self.pos_s4.setText("{:.7f} / {:.7f}".format(mark.lat, mark.lon))
-        else:
-            hist = "Mark id error"
-            self.commands.append(hist)
 
     def clear_pos_label(self, mark):
-        print(mark.id, " ", mark.name, " ", MARK_S1, " ", MARK_S3)
-        if(mark.id is not None):
-            if(mark.id == MARK_S1):
+        self.print_console("Clear mark " + str(mark.id) + " " + str(mark.name))
+        def safe_remove(label):
+            try:
+                _id = int(label.text())
+                self.id_list.remove(_id)
+            except:
+                pass
+            finally:
+                label.setText(" - ")
+
+        if mark.id is not None:
+            if mark.id == MARK_S1:
                 self.pos_s1.setText("lat / lon")
-                id = int(self.id_s1.text())
-                self.id_list.remove(id) 
-                self.id_s1.setText(" - ")            
-            if(mark.id == MARK_S2):
-                self.pos_s2.setText("lat / lon")  
-                id = int(self.id_s2.text())
-                self.id_list.remove(id) 
-                self.id_s2.setText(" - ")            
-            if(mark.id == MARK_S3):
+                safe_remove(self.id_s1)
+            if mark.id == MARK_S2:
+                self.pos_s2.setText("lat / lon")
+                safe_remove(self.id_s2)
+            if mark.id == MARK_S3:
                 self.pos_s3.setText("lat / lon") 
                 self.id_list.remove(id3)     
-            if(mark.id == MARK_S4):
+            if mark.id == MARK_S4:
                 self.pos_s4.setText("lat / lon")  
-                id = int(self.id_s4.text())
-                self.id_list.remove(id) 
-                self.id_s4.setText(" - ")                 
-        else:
-            hist = "Mark id error"
-            self.commands.append(hist)
+                safe_remove(self.id_s4)
 
     def get_wp_id(self, mark_id):
         ''' get WP id from mark id '''
         for i, e in mark_types.items():
             if(mark_id is not None):
-                if(int(e['id']) == int(mark_id)):
-                    if( i == MARK_S1):
-                        hist = "MARK_S1 = " + str(mark_id)
-                        self.commands.append(hist)
-                        print("MARK_S1", " = ", mark_id)
+                if int(e['id']) == int(mark_id):
+                    if i == MARK_S1:
+                        self.print_console("MARK_S1 = " + str(mark_id))
                         return self.combo_s1.currentIndex() + 1
-                    elif (i == MARK_S2):
-                        hist = "MARK_S2 = " + str(mark_id)
-                        self.commands.append(hist)
-                        print("MARK_S2", " = ", mark_id)
+                    elif i == MARK_S2:
+                        self.print_console("MARK_S2 = " + str(mark_id))
                         return self.combo_s2.currentIndex() + 1
-                    elif (i == MARK_S3):
-                        hist = "MARK_S3 = " + str(mark_id)
-                        self.commands.append(hist)
-                        print("MARK_S3", " = ", mark_id)
+                    elif i == MARK_S3:
+                        self.print_console("MARK_S3 = " + str(mark_id))
                         return self.combo_s3.currentIndex() + 1                        
-                    elif (i == MARK_S4):
-                        hist = "MARK_S4 = " + str(mark_id)
-                        self.commands.append(hist)
-                        print("MARK_S4", " = ", mark_id)
+                    elif i == MARK_S4:
+                        self.print_console("MARK_S4 = " + str(mark_id))
                         return self.combo_s4.currentIndex() + 1
             else:
-                hist = "Mark id error!"
-                self.commands.append(hist)
+                self.print_console("Mark id error!")
                 return None
 
     def send_mark(self, mark_id):
@@ -466,8 +435,6 @@ class Tracker(Ui_MarkTracker):
         ''' send mark to selected uab cb '''
         hist = "Send mark - " + str(mark_id)
         self.commands.append(hist)
-        print("Send_mark - ",mark_id)
-
 
         #CHANGE MARK TYPE - LOC
         mark = self.marks_fpl[mark_id]
@@ -492,13 +459,11 @@ class Tracker(Ui_MarkTracker):
         if uav_name != '':
             try:
                 uav_id = self.connect.conf_by_name(uav_name).id
-                print("WP WILL BE MOVED")
                 self.move_wp(uav_id, wp_id, mark)
                 if self.verbose:
                     hist = 'Send mark {} to UAV {} ({}), for WP {}'.format(mark.name, uav_name, uav_id, wp_id)
                     self.commands.append(hist)
-                    print('Send mark {} to UAV {} ({}), for WP {}'.format(mark.name, uav_name, uav_id, wp_id))
-                
+
                 hist = "Mark id " + mark_id.__str__() + " vs Correct id " + correct_id.__str__() + "\n"
                 self.commands.append(hist)
 
@@ -506,7 +471,6 @@ class Tracker(Ui_MarkTracker):
                 if self.verbose:
                     hist = 'Send_mark error:' + e.__str__()  + "\n"
                     self.commands.append(hist)
-                    print('Send_mark error:', e.__str__())
 
     def clear_mark(self, mark_id):
         ''' clear mark cb '''
@@ -517,7 +481,6 @@ class Tracker(Ui_MarkTracker):
         if self.verbose:
             hist = 'Clear marker - ' + mark.name + "\n"
             self.commands.append(hist)
-            print('Clear marker - ', mark.name,"\n");
 
     def move_wp(self, ac_id, wp_id, mark):
         ''' move waypoint corresponding to a selected aircraft and mark '''
@@ -527,8 +490,7 @@ class Tracker(Ui_MarkTracker):
         msg['lat'] = mark.lat
         msg['long'] = mark.lon
         msg['alt'] = mark.alt
-        print("WPOINT MOVED ")
-        print("MOVING WP ", wp_id, " AC ID ", ac_id, " NAME ", mark.name, " LAT ", mark.lat, " LON ", mark.lon)
+        self.print_console("MOVING WP {} for A/C {}, Mark {} ({}, {})".format(wp_id, ac_id, mark.name, mark.lat, mark.lon))
         self.connect.ivy.send(msg)
 
     def update_shape(self, id, mark):
@@ -544,7 +506,7 @@ class Tracker(Ui_MarkTracker):
         msg['lonarr'] = [int(10**7 * mark.lon),0]
         msg['radius'] = 2.
         msg['text'] = mark.name
-        print("UPDATE SHAPE ", mark.id, " ", mark.lat, " ", mark.lon)
+        self.print_console("UPDATE SHAPE {} ({}, {})".format(mark.id, mark.lat, mark.lon))
         self.connect.ivy.send(msg)
 
     def clear_shape(self, mark):

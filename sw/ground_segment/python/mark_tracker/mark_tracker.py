@@ -7,7 +7,7 @@ import argparse
 def main():
   app = QtWidgets.QApplication(sys.argv)
   MainWindow = QtWidgets.QMainWindow()
-  tracker = mark_tracker_core.Tracker(verbose=True)
+  tracker = mark_tracker_core.Tracker(verbose=False)
   app.aboutToQuit.connect(tracker.closing)
   tracker.setupUi(MainWindow)
   tracker.built()
