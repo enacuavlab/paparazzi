@@ -86,7 +86,7 @@
   </sectors>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
-    <variable init="5." var="goto_height" min="0.5" max="15." step="0.1"/>
+    <variable init="6." var="goto_height" min="0.5" max="15." step="0.1"/>
     <variable init="1.5" var="drop_height" min="0.5" max="15." step="0.1"/>
     <variable init="4.5" var="search_height" min="0.5" max="15." step="0.1"/>
     <variable init="30." var="search_radius" min="20" max="150." step="1.0"/>
@@ -251,7 +251,7 @@
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
       <go wp="A1" from="_HERE" hmode="route" height="goto_height"/>
-      <call_once fun="nav_survey_poly_setup_towards(WP_A1, 4, 10, WP_A2)"/>
+      <call_once fun="nav_survey_poly_setup_towards(WP_A1, 4, search_sweep, WP_A2)"/>
       <deroute block="Run Search Area"/>
     </block>
     <block name="Run Search Area">
@@ -269,10 +269,10 @@
       <deroute block="Land"/>
     </block>
 
-    <block name="Land here" strip_button="Land here" strip_icon="land-right.png">
+    <block name="Land here" strip_button="Land here" strip_icon="land-right.png" group="land">
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
     </block>
-    <block name="Land">
+    <block name="Land" strip_button="Land on pad" group="land">
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
