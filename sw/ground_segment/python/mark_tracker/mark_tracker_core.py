@@ -95,7 +95,7 @@ class Tracker(QWidget,Ui_MarkTracker):
     def __init__(self, parent=None, verbose=False):
         super().__init__()
         Ui_MarkTracker.__init__(self)
-        self.mark2 = Mark(9, "9")
+        #self.mark2 = Mark(9, "9")
         self.verbose = verbose
         self.marks_fpl = {}
         self.marks_by_name = {}
@@ -192,7 +192,6 @@ class Tracker(QWidget,Ui_MarkTracker):
             lon = float(msg['long'])
             mark = Mark(mark_id, str(ac_id) + "a/c")
             mark.set_pos(lat, lon, self.alt_ref)
-            #self.update_shape(mark)
 
             if mark_id not in self.id_list:
                 self.id_list.append(mark_id)
@@ -208,7 +207,7 @@ class Tracker(QWidget,Ui_MarkTracker):
                     #MISSION 3
                     #create new marker with the name, id, pos
                     wp = self.uavs[conf2.name].get_waypoint(self.combo_s3.currentText())
-                    mark2_name = wp.name
+                    #mark2_name = wp.name
                     mark.name = "AREA"
                     #self.mark2 = Mark(mark_id,mark2_name)  
                     #self.mark2.set_pos(lat, lon, self.alt_ref)
@@ -225,7 +224,7 @@ class Tracker(QWidget,Ui_MarkTracker):
                     #mark_update = Mark(mark_id, "AREA")
                     #mark_update.set_pos(lat, lon, self.alt_ref)
                     self.update_pos_label(mark) #_update)
-                    self.update_shape(mark) #_update)
+                    #self.update_shape(mark) #_update)
                     if self.checkBox_auto_send.isChecked():
                         # UPDATE POS LABEL BEFORE SENDING MARKER
                         self.send_mark(MARK_S3)
@@ -234,26 +233,28 @@ class Tracker(QWidget,Ui_MarkTracker):
                     #MISSION 1
                     #mark_update = Mark(no, "DELIVERY")
                     mark.name = "DELIVERY"
-                    mark_update.set_pos(lat, lon, self.alt_ref)
-                    self.update_pos_label(mark_id, mark_update)
+                    #mark_update.set_pos(lat, lon, self.alt_ref)
+                    self.update_pos_label(mark)
                     self.print_console("DELIVERY found {} {}".format(self.known_pos[1]['lat'], self.known_pos[1]['lon']))
                 
                 elif mark.find_distance(self.known_pos[4]['lat'], self.known_pos[4]['lon']) < self.known_pos[4]['dist']:
                     #MISSION 4
-                    mark_update = Mark(no, "SILENT")
-                    mark_update.set_pos(lat, lon, self.alt_ref)
-                    self.update_pos_label(mark_id, mark_update)
+                    #mark_update = Mark(no, "SILENT")
+                    mark.name = "SILENT"
+                    #mark_update.set_pos(lat, lon, self.alt_ref)
+                    self.update_pos_label(mark)
                     self.print_console("SILENT found {} {}".format(self.known_pos[4]['lat'], self.known_pos[4]['lon']))
                 
                 elif mark.find_distance(self.known_pos[2]['lat'], self.known_pos[2]['lon']) < self.known_pos[2]['dist']:
                     #MISSION 2
-                    mark_update = Mark(no, "UNKNOWN")
-                    mark2_name = self.uavs[conf2.name].get_waypoint(self.combo_s2.currentText()).name
-                    self.mark2 = Mark(mark_id, mark2_name)
-                    self.mark2.set_pos(lat, lon, self.alt_ref)
-                    mark_update.set_pos(lat, lon, self.alt_ref)
-                    self.update_pos_label(mark_id, mark_update)
-                    #self.update_shape(mark_update)
+                    #mark_update = Mark(no, "UNKNOWN")
+                    wp = self.uavs[conf2.name].get_waypoint(self.combo_s2.currentText())
+                    #mark2_name = wp.name
+                    mark.name = "UNKNOWN"
+                    #self.mark2 = Mark(mark_id, mark2_name)
+                    #self.mark2.set_pos(lat, lon, self.alt_ref)
+                    #mark_update.set_pos(lat, lon, self.alt_ref)
+                    self.update_pos_label(mark)
                     self.print_console("UNK found {} {}".format(self.known_pos[2]['lat'], self.known_pos[2]['lon']))
 
                     if self.checkBox_auto_send.isChecked():
@@ -261,26 +262,28 @@ class Tracker(QWidget,Ui_MarkTracker):
                     
                 else:
                     #IF THERE IS A RANDOMLY DETECTED MARKER ON GROUND
-                    mark2_name = self.uavs[conf2.name].get_waypoint(self.combo_s3.currentText()).name
-                    self.mark2 = Mark(mark_id,mark2_name)
-                    self.mark2.set_pos(lat, lon, self.alt_ref)
+                    wp = self.uavs[conf2.name].get_waypoint(self.combo_s3.currentText())
+                    #mark2_name = wp.name
+                    #self.mark2 = Mark(mark_id,mark2_name)
+                    #self.mark2.set_pos(lat, lon, self.alt_ref)
 
                     #if self.checkBox_auto_send.checkState == True:
                     #    self.send_mark(no)
                     
-                    self.print_console("Found unknown marker: " + str(mark2_name))
+                    self.print_console("Found unknown marker: " + str(wp.name))
 
-                    new_mark = Mark(mark_id,"")
-                    new_mark.set_pos(lat,lon,self.alt_ref)
+                    #new_mark = Mark(mark_id,"")
+                    #new_mark.set_pos(lat,lon,self.alt_ref)
 
-                    if self.combo_s3_wps.findText(str(new_mark)):
-                        self.combo_s3_wps.addItem(str(new_mark))
+                    if self.combo_s3_wps.findText(str(mark)):
+                        self.combo_s3_wps.addItem(str(mark))
 
-                    mark_update = Mark(no, "")
-                    mark_update.set_pos(lat, lon, self.alt_ref)
+                    #mark_update = Mark(no, "")
+                    #mark_update.set_pos(lat, lon, self.alt_ref)
                     #self.update_shape(mark_update)
                     #print(self.marks_fpl)              
 
+        self.update_shape(mark)
         self.connect.ivy.subscribe(mark_cb,PprzMessage("telemetry", "MARK"))
 
     def closing(self):
