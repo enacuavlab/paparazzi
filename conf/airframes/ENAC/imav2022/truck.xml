@@ -9,13 +9,13 @@
     <autopilot name="rover_steering"/>
 
     <define name="IMU_MPU9250_READ_MAG" value="0"/>
-    <define name="LOW_NOISE_THRESHOLD" value="3500"/>
-    <define name="LOW_NOISE_TIME" value="10"/>
 
     <target name="ap" board="apogee_1.0_chibios">
     </target>
     <target name="nps" board="pc">
       <module name="fdm" type="rover"/>
+      <define name="NPS_BYPASS_AHRS" value="TRUE"/>
+      <define name="NPS_BYPASS_INS"  value="TRUE"/>
     </target>
 
     <module name="radio_control"  type="datalink"/>
