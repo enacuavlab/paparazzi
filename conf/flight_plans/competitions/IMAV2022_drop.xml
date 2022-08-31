@@ -143,7 +143,12 @@
   <modules>
     <module name="nav" type="survey_poly_rotorcraft" />
     <module name="tag_tracking">
-      <define name="TAG_TRACKING_SIM_WP" value="WP_DELIVERY"/>
+      <define name="TAG_TRACKING_SIM_WP" value="WP_TRUCK"/>
+    </module>
+    <module name="follow">
+      <define name="FOLLOW_AC_ID" value="42"/>
+      <define name="FOLLOW_WAYPOINT_ID" value="WP_TRUCK"/>
+      <define name="FOLLOW_OFFSET_Z" value="5"/>
     </module>
   </modules>
   <exceptions>
@@ -293,11 +298,13 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <set var="follow_follow_wp_status" value="MODULES_START"/>
       <go wp="TRUCK" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="NavSetWaypointHere(WP_TAG)"/>
       <call_once fun="jevois_stream(true)"/>
       <stay wp="TRUCK" until="(tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="search_height+1."/>
+      <set var="follow_follow_wp_status" value="MODULES_STOP"/>
       <deroute block="Drop Package"/>
     </block>
 

@@ -35,6 +35,8 @@
       <while cond="TRUE"/>
     </block>
     <block name="line_P1_P2_turn"> 
+      <call_once fun="NavResurrect()"/>
+      <call_once fun="guidance_control.cmd.speed = 1"/>
       <call fun="gvf_segment_loop_wp1_wp2(WP_P1, WP_P2, gvf_segment_par.d1, gvf_segment_par.d2)"/>
     </block>
   </blocks>

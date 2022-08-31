@@ -19,7 +19,7 @@
     <file name="follow.h"/>
   </header>
   <init fun="follow_init()"/>
-  <periodic fun="follow_wp()" freq="5" autorun="FALSE"/>
+  <periodic fun="follow_wp()" freq="1" autorun="FALSE"/>
   <makefile>
     <file name="follow.c"/>
   </makefile>
