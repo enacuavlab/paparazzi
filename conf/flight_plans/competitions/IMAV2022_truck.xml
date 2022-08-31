@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+
+<flight_plan alt="5" ground_alt="0" lat0="52.171490" lon0="4.417461" max_dist_from_home="610" name="IMAV2022 Truck" security_height="1">
+  
+  <header>
+  </header>
+  <waypoints>
+    <waypoint lat="52.170448" lon="4.418138" name="HOME"/>
+    <waypoint lat="52.171626" lon="4.417294" name="P1"/>
+    <waypoint lat="52.171804" lon="4.417840" name="P2"/>
+    <waypoint lat="52.171974" lon="4.417091" name="_T1"/>
+    <waypoint lat="52.171345" lon="4.417542" name="_T2"/>
+    <waypoint lat="52.171776" lon="4.419102" name="_T3"/>
+    <waypoint lat="52.172411" lon="4.418629" name="_T4"/>
+  </waypoints>
+  <sectors>
+    <sector color="purple" name="Truck">
+      <corner name="_T1"/>
+      <corner name="_T2"/>
+      <corner name="_T3"/>
+      <corner name="_T4"/>
+    </sector>
+  </sectors>
+  <modules>
+    <module name="gvf_module"/> 
+  </modules>
+  <blocks>
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="TRUE"/>
+    </block>
+    <block name="line_P1_P2_turn"> 
+      <call fun="gvf_segment_loop_wp1_wp2(WP_P1, WP_P2, gvf_segment_par.d1, gvf_segment_par.d2)"/>
+    </block>
+  </blocks>
+
+</flight_plan>

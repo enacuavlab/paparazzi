@@ -55,6 +55,17 @@
    gui_color="#5f56ced19e87"
   />
   <aircraft
+   name="TRUCK"
+   ac_id="42"
+   airframe="airframes/ENAC/imav2022/truck.xml"
+   radio="radios/dummy.xml"
+   telemetry="telemetry/default_rover.xml"
+   flight_plan="flight_plans/competitions/IMAV2022_truck.xml"
+   settings="settings/rover_basic.xml"
+   settings_modules="modules/ahrs_float_dcm.xml modules/gps.xml modules/guidance_rover_steering.xml modules/gvf_module.xml~GVF~ modules/imu_common.xml modules/nav_rover_base.xml modules/power_switch.xml"
+   gui_color="#bdbe90b590b5"
+  />
+  <aircraft
    name="ULYSSE"
    ac_id="218"
    airframe="airframes/ENAC/imav2022/ulysse_indi.xml"
