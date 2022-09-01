@@ -39,7 +39,7 @@ MARK_S3 = 3
 MARK_S4 = 4
 mark_types = {
     MARK_S1: {'id':1, 'name':'DELIVERY'},
-    MARK_S2: {'id':2, 'name':'UNK_TAG'},
+    MARK_S2: {'id':2, 'name':'UNCERTAIN'},
     MARK_S3: {'id':3, 'name':'AREA_TAG'},  
     MARK_S4: {'id':4, 'name':'SILENT'}
 }
@@ -190,56 +190,56 @@ class Tracker(QWidget,Ui_MarkTracker):
                 c = self.connect.conf_by_id(str(ac_id))
                 self.print_console('New marker {} from {}'.format(mark_id, c.name))
 
-                if self.correct_id is not None and int(mark_id) == int(self.correct_id):
-                    #MISSION 3
-                    wp = self.uavs[conf2.name].get_waypoint(self.combo_s3.currentText())
-                    mark.type = MARK_S3
-                    mark.name = "AREA"
+            if self.correct_id is not None and int(mark_id) == int(self.correct_id):
+                #MISSION 3
+                wp = self.uavs[conf2.name].get_waypoint(self.combo_s3.currentText())
+                mark.type = MARK_S3
+                mark.name = "AREA"
 
-                    # add correct marker to list
-                    if self.combo_s3_wps.findText(str(mark)):
-                        self.combo_s3_wps.addItem("Found " + str(mark))
-                    
-                    self.print_console("AREA wp moved {}".format(wp.name))
-
-                    id3 = mark.id
-
-                    # update shape position to corresponds its marker
-                    self.update_pos_label(mark)
-                    if self.checkBox_auto_send.isChecked():
-                        # UPDATE POS LABEL BEFORE SENDING MARKER
-                        self.send_mark(mark, wp)
+                # add correct marker to list
+                if self.combo_s3_wps.findText(str(mark)):
+                    self.combo_s3_wps.addItem("Found " + str(mark))
                 
-                elif mark.find_distance(self.known_pos[1]['lat'], self.known_pos[1]['lon']) < self.known_pos[1]['dist']:
-                    #MISSION 1
-                    mark.type = MARK_S1
-                    mark.name = "DELIVERY"
-                    self.update_pos_label(mark)
-                    self.print_console("DELIVERY found {} {}".format(self.known_pos[1]['lat'], self.known_pos[1]['lon']))
-                
-                elif mark.find_distance(self.known_pos[4]['lat'], self.known_pos[4]['lon']) < self.known_pos[4]['dist']:
-                    #MISSION 4
-                    mark.type = MARK_S4
-                    mark.name = "SILENT"
-                    self.update_pos_label(mark)
-                    self.print_console("SILENT found {} {}".format(self.known_pos[4]['lat'], self.known_pos[4]['lon']))
-                
-                elif mark.find_distance(self.known_pos[2]['lat'], self.known_pos[2]['lon']) < self.known_pos[2]['dist']:
-                    #MISSION 2
-                    mark.type = MARK_S2
-                    mark.name = "UNKNOWN"
-                    wp = self.uavs[conf2.name].get_waypoint(self.combo_s2.currentText())
-                    self.update_pos_label(mark)
-                    self.print_console("UNK found {} {}".format(self.known_pos[2]['lat'], self.known_pos[2]['lon']))
+                self.print_console("AREA wp moved {}".format(wp.name))
 
-                    if self.checkBox_auto_send.isChecked():
-                        self.send_mark(mark, wp)
-                    
-                else:
-                    #IF THERE IS A RANDOMLY DETECTED MARKER ON GROUND
-                    self.print_console("Found unknown marker: " + str(mark.id))
-                    if self.combo_s3_wps.findText(str(mark)):
-                        self.combo_s3_wps.addItem(str(mark))
+                id3 = mark.id
+
+                # update shape position to corresponds its marker
+                self.update_pos_label(mark)
+                if self.checkBox_auto_send.isChecked():
+                    # UPDATE POS LABEL BEFORE SENDING MARKER
+                    self.send_mark(mark, wp)
+            
+            elif mark.find_distance(self.known_pos[1]['lat'], self.known_pos[1]['lon']) < self.known_pos[1]['dist']:
+                #MISSION 1
+                mark.type = MARK_S1
+                mark.name = "DELIVERY"
+                self.update_pos_label(mark)
+                self.print_console("DELIVERY found {} {}".format(self.known_pos[1]['lat'], self.known_pos[1]['lon']))
+            
+            elif mark.find_distance(self.known_pos[4]['lat'], self.known_pos[4]['lon']) < self.known_pos[4]['dist']:
+                #MISSION 4
+                mark.type = MARK_S4
+                mark.name = "SILENT"
+                self.update_pos_label(mark)
+                self.print_console("SILENT found {} {}".format(self.known_pos[4]['lat'], self.known_pos[4]['lon']))
+            
+            elif mark.find_distance(self.known_pos[2]['lat'], self.known_pos[2]['lon']) < self.known_pos[2]['dist']:
+                #MISSION 2
+                mark.type = MARK_S2
+                mark.name = "UNCERTAIN"
+                wp = self.uavs[conf2.name].get_waypoint(self.combo_s2.currentText())
+                self.update_pos_label(mark)
+                self.print_console("UNCERTAIN found {} {}".format(self.known_pos[2]['lat'], self.known_pos[2]['lon']))
+
+                if self.checkBox_auto_send.isChecked():
+                    self.send_mark(mark, wp)
+                
+            else:
+                #IF THERE IS A RANDOMLY DETECTED MARKER ON GROUND
+                self.print_console("Found unknown marker: " + str(mark.id))
+                if self.combo_s3_wps.findText(str(mark)):
+                    self.combo_s3_wps.addItem(str(mark))
 
             # update shape at the end of cb
             self.update_shape(mark)
@@ -299,7 +299,8 @@ class Tracker(QWidget,Ui_MarkTracker):
             self.print_console("Mission 4 waypoint not found")
 
     def update_pos_label(self, mark):
-        self.print_console("Update mark: "+str(mark.id))
+        if self.verbose:
+            self.print_console("Update mark: "+str(mark.id))
         if mark.type is not None:
             if mark.type == MARK_S3:
                 self.pos_s3.setText("{:.7f} / {:.7f}".format(mark.lat, mark.lon))
@@ -349,7 +350,7 @@ class Tracker(QWidget,Ui_MarkTracker):
             self.print_console("Get Mark from MARK_S3 " + str(pos))
         elif mark_type == MARK_S2:
             mark.type = MARK_S2
-            mark.name = "UNKNOWN"
+            mark.name = "UNCERTAIN"
             pos = self.pos_s2.text().split("/")
             self.print_console("Get Mark from MARK_S2 " + str(pos))
         elif mark_type == MARK_S1:
