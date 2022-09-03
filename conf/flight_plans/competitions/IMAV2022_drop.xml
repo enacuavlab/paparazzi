@@ -358,14 +358,17 @@
 
     <block name="Run Track">
       <set var="mission_nb" value="DROP_NONE"/>
+      <!-- exception cond="electrical.bat_low" deroute="Goto Delivery"/-->
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(track_speed)"/>
-      <go wp="P1" from="_HERE" hmode="route" height="2*goto_height"/>
+      <go wp="P2" from="_HERE" hmode="route" height="2*goto_height"/>
+      <!--for var="i" from="1" to="3"-->
       <while cond="!electrical.bat_low">
-        <go from="P1" wp="P2" hmode="route" height="2*goto_height"/>
         <go from="P2" wp="P1" hmode="route" height="2*goto_height"/>
+        <go from="P1" wp="P2" hmode="route" height="2*goto_height"/>
       </while>
+      <!-- for/-->
       <deroute block="Goto Delivery"/>
     </block>
 

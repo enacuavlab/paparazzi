@@ -257,7 +257,8 @@
   </section>
 
   <section name="NAV">
-    <define name="ARRIVED_AT_WAYPOINT" value="0.25"/>
+    <!--define name="ARRIVED_AT_WAYPOINT" value="0.25"/-->
+    <define name="ARRIVED_AT_WAYPOINT" value="2.5"/>
     <define name="NAV_DESCEND_VSPEED" value="-0.2"/>
     <define name="RECTANGLE_SURVEY_HEADING_NS" value="0."/>
   </section>

@@ -308,10 +308,9 @@ bool nav_survey_poly_run(float alt)
 {
 
   if (alt < 0.f) {
-    NavVerticalAltitudeMode(waypoints[SurveyEntryWP].enu_f.z, 0.);
-  } else {
-    NavVerticalAltitudeMode(alt, 0.);
+    alt = waypoints[SurveyEntryWP].enu_f.z;
   }
+  NavVerticalAltitudeMode(alt, 0.);
 
   #ifdef NAV_SURVEY_POLY_DYNAMIC
   dSweep = (nav_survey_shift > 0 ? Poly_Distance : -Poly_Distance);
@@ -345,7 +344,7 @@ bool nav_survey_poly_run(float alt)
       VECT3_COPY(navigation_target, survey_from_i);
 
       if (((nav_approaching_from(&survey_from_i, NULL, 0))
-           && (fabsf(stateGetPositionEnu_f()->z - waypoints[SurveyEntryWP].enu_f.z)) < 1.)) {
+           && (fabsf(stateGetPositionEnu_f()->z - alt)) < 1.)) {
         CSurveyStatus = Sweep;
         nav_init_stage();
         LINE_START_FUNCTION;
