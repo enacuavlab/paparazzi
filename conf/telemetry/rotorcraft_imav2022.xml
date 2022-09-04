@@ -14,13 +14,13 @@
       <message name="INS_REF"                period="5.1"/>
       <message name="ROTORCRAFT_NAV_STATUS"  period="2.6"/>
       <message name="WP_MOVED"               period="2.3"/>
-      <message name="GPS_INT"                period=".75"/>
-      <message name="INS"                    period="1.2"/>
+      <message name="GPS_INT"                period="1."/>
+      <!--message name="INS"                    period="1.2"/-->
       <message name="ENERGY"                 period="3.5"/>
       <message name="DATALINK_REPORT"        period="6.1"/>
       <message name="STATE_FILTER_STATUS"    period="4.2"/>
       <message name="AIR_DATA"               period="2.3"/>
-      <message name="SURVEY"                 period="4.5"/>
+      <!--message name="SURVEY"                 period="4.5"/-->
       <message name="FBW_STATUS"             period="2.0"/>      
       <message name="ADC_GENERIC"            period="0.1"/>
     </mode>
