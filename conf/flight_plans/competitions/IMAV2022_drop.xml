@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 
-<flight_plan alt="5" ground_alt="0" lat0="52.171490" lon0="4.417461" max_dist_from_home="610" name="IMAV2022 Drop" security_height="1">
+<flight_plan alt="5" ground_alt="0" lat0="52.171490" lon0="4.417461" max_dist_from_home="610" name="IMAV2022 Drop" security_height="4">
   
   <header>
     #ifndef SwitchServoOn

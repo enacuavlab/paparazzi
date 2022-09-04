@@ -21,6 +21,7 @@
   <init fun="tag_tracking_init()"/>
   <periodic fun="tag_tracking_propagate()" freq="10.0" start="tag_tracking_propagate_start()" autorun="TRUE"/>
   <periodic fun="tag_tracking_report()" freq="1.0" autorun="TRUE"/>
+  <datalink message="TARGET_POS" fun="tag_tracking_parse_target_pos(buf)"/>
   <makefile>
     <file name="tag_tracking.c"/>
     <file name="simple_kinematic_kalman.c" dir="filters"/>

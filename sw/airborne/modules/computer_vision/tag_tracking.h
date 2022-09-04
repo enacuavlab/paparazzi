@@ -36,6 +36,7 @@
 #define TAG_TRACKING_SEARCHING  0
 #define TAG_TRACKING_RUNNING    1
 #define TAG_TRACKING_LOST       2
+#define TAG_TRACKING_DISABLE    3 // don't run kalman filter, update pos from measures
 
 // Type of tag motion
 // If fixed, the speed correction is forced to zero
@@ -55,6 +56,7 @@ extern void tag_tracking_init(void);
 extern void tag_tracking_propagate(void);
 extern void tag_tracking_propagate_start(void);
 extern void tag_tracking_report(void);
+extern void tag_tracking_parse_target_pos(uint8_t *buf);
 
 #endif  // TAG_TRACKING_H
 

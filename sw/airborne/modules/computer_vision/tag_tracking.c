@@ -137,6 +137,7 @@ struct tag_tracking {
   struct FloatVect3 cam_pos;    ///< Position of camera in body frame
 
   float timeout;                ///< timeout for lost flag [sec]
+  bool updated;                 ///< updated state
 
   uint8_t id;                   ///< ID of detected tag
 };
@@ -153,26 +154,25 @@ struct tag_tracking_public tag_tracking;
 
 static abi_event tag_track_ev;
 
-static void tag_track_cb(uint8_t sender_id UNUSED,
-     uint8_t type, char * id,
-     uint8_t nb UNUSED, int16_t * coord, uint16_t * dim UNUSED,
-     struct FloatQuat quat UNUSED, char * extra UNUSED)
+// update measure vect before calling
+static void update_tag_position(void)
 {
-  if (type == JEVOIS_MSG_D3) {
-    // store data from Jevois detection
-    tag_track_private.meas.x = coord[0] * TAG_TRACKING_COORD_TO_M;
-    tag_track_private.meas.y = coord[1] * TAG_TRACKING_COORD_TO_M;
-    tag_track_private.meas.z = coord[2] * TAG_TRACKING_COORD_TO_M;
-    struct FloatVect3 target_pos_ned, target_pos_body;
-    // compute target position in body frame (rotate and translate)
-    float_rmat_transp_vmult(&target_pos_body, &tag_track_private.body_to_cam, &tag_track_private.meas);
-    VECT3_ADD(target_pos_body, tag_track_private.cam_pos);
-    // rotate to ltp frame
-    struct FloatRMat *ltp_to_body_rmat = stateGetNedToBodyRMat_f();
-    float_rmat_transp_vmult(&target_pos_ned, ltp_to_body_rmat, &target_pos_body);
-    // compute absolute position of tag in earth frame
-    struct NedCoor_f * pos_ned = stateGetPositionNed_f();
-    VECT3_ADD(target_pos_ned, *pos_ned);
+  struct FloatVect3 target_pos_ned, target_pos_body;
+  // compute target position in body frame (rotate and translate)
+  float_rmat_transp_vmult(&target_pos_body, &tag_track_private.body_to_cam, &tag_track_private.meas);
+  VECT3_ADD(target_pos_body, tag_track_private.cam_pos);
+  // rotate to ltp frame
+  struct FloatRMat *ltp_to_body_rmat = stateGetNedToBodyRMat_f();
+  float_rmat_transp_vmult(&target_pos_ned, ltp_to_body_rmat, &target_pos_body);
+  // compute absolute position of tag in earth frame
+  struct NedCoor_f * pos_ned = stateGetPositionNed_f();
+  VECT3_ADD(target_pos_ned, *pos_ned);
+
+  if (tag_tracking.status == TAG_TRACKING_DISABLE) {
+    // don't run kalman, just update pos, set speed to zero
+    tag_tracking.pos = target_pos_ned;
+    FLOAT_VECT3_ZERO(tag_tracking.speed);
+  } else {
     // update state and status
     if (tag_tracking.status != TAG_TRACKING_RUNNING) {
       // reset state after first detection or lost tag
@@ -186,22 +186,58 @@ static void tag_track_cb(uint8_t sender_id UNUSED,
     }
     // update public structure
     simple_kinematic_kalman_get_state(&kalman, &tag_tracking.pos, &tag_tracking.speed);
+  }
+}
+
+static void tag_track_cb(uint8_t sender_id UNUSED,
+     uint8_t type, char * id,
+     uint8_t nb UNUSED, int16_t * coord, uint16_t * dim UNUSED,
+     struct FloatQuat quat UNUSED, char * extra UNUSED)
+{
+  if (type == JEVOIS_MSG_D3) {
+    // store data from Jevois detection
+    tag_track_private.meas.x = coord[0] * TAG_TRACKING_COORD_TO_M;
+    tag_track_private.meas.y = coord[1] * TAG_TRACKING_COORD_TO_M;
+    tag_track_private.meas.z = coord[2] * TAG_TRACKING_COORD_TO_M;
+    // update filter
+    update_tag_position();
     // store tag ID
     tag_track_private.id = (uint8_t)jevois_extract_nb(id);
     // reset timeout and status
     tag_track_private.timeout = 0.f;
+    tag_track_private.updated = true;
   }
 }
 
+void tag_tracking_parse_target_pos(uint8_t *buf)
+{
+  // update x,y,z position from lat,lon,alt fields
+  tag_track_private.meas.x = DL_TARGET_POS_lat(buf) * TAG_TRACKING_COORD_TO_M;
+  tag_track_private.meas.y = DL_TARGET_POS_lon(buf) * TAG_TRACKING_COORD_TO_M;
+  tag_track_private.meas.z = DL_TARGET_POS_alt(buf) * TAG_TRACKING_COORD_TO_M;
+  // update filter
+  update_tag_position();
+  // store tag ID
+  tag_track_private.id = DL_TARGET_POS_target_id(buf);
+  // reset timeout and status
+  tag_track_private.timeout = 0.f;
+  tag_track_private.updated = true;
+}
+
 // Update and display tracking WP
-static void update_wp(void)
+static void update_wp(bool report)
 {
 #ifdef TAG_TRACKING_WP
   struct FloatVect3 target_pos_enu;
   ENU_OF_TO_NED(target_pos_enu, tag_tracking.pos); // convert local target pos to ENU
   struct EnuCoor_i pos_i;
   ENU_BFP_OF_REAL(pos_i, target_pos_enu);
-  waypoint_move_enu_i(TAG_TRACKING_WP, &pos_i);
+  if (report) {
+    // move is a set + downlink report
+    waypoint_move_enu_i(TAG_TRACKING_WP, &pos_i);
+  } else {
+    waypoint_set_enu_i(TAG_TRACKING_WP, &pos_i);
+  }
 #endif
 }
 
@@ -229,6 +265,7 @@ void tag_tracking_init()
   tag_tracking.status = TAG_TRACKING_SEARCHING;
   tag_tracking.motion_type = TAG_TRACKING_FIXED_POS;
   tag_track_private.timeout = 0.f;
+  tag_track_private.updated = false;
 }
 
 
@@ -257,7 +294,7 @@ void tag_tracking_propagate()
       // update public structure
       simple_kinematic_kalman_get_state(&kalman, &tag_tracking.pos, &tag_tracking.speed);
       // update WP
-      update_wp();
+      update_wp(false);
       // increment timeout counter
       tag_track_private.timeout += tag_track_dt;
       if (tag_track_private.timeout > TAG_TRACKING_TIMEOUT) {
@@ -297,7 +334,7 @@ void tag_tracking_report()
   DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 7, msg);
 #endif
 
-  if (tag_tracking.status == TAG_TRACKING_RUNNING) {
+  if (tag_tracking.status == TAG_TRACKING_RUNNING || tag_track_private.updated) {
     // compute absolute position
     struct LlaCoor_f tag_lla;
     struct EcefCoor_f tag_ecef;
@@ -307,6 +344,8 @@ void tag_tracking_report()
     float lon_deg = DegOfRad(tag_lla.lon);
     DOWNLINK_SEND_MARK(DefaultChannel, DefaultDevice, &tag_track_private.id,
         &lat_deg, &lon_deg);
+    update_wp(true);
+    tag_track_private.updated = false;
   }
 }
 
