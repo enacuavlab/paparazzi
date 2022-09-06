@@ -25,28 +25,18 @@
       <module name="radio_control" type="ppm"/>
     </target>
 
-
     <module name="telemetry" type="xbee_api"/>
-    <module name="tlsf"/>
-    <module name="logger" type="sd_chibios"/>
-
-    <!-- <module name="fault" /> -->
 
     <module name="actuators" type="dshot">
       <!--define name="DSHOT_SPEED" value="300"/-->
     </module>
     <module name="board" type="tawaki">
-      <!-- <define name="USE_DSHOT_TIM1" value="TRUE"/> -->
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
       <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
     </module>
-
-    <!-- <module name="gps" type="datalink"/> -->
-
     <module name="gps" type="ublox">
       <configure name="GPS_BAUD" value="B115200"/>
-      <!-- <define name="USE_GPS_UBX_RTCM" value="TRUE"/> -->
     </module>
 
     <module name="stabilization" type="indi"/>
@@ -56,37 +46,30 @@
       <define name="GUIDANCE_INDI_THRUST_DYNAMICS" value="0.03"/>
       <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
     </module>
-    <module name="fc_rotor"/>
 
-    <!--Tawaki -->
-    <module name="extra_dl">
-      <configure name="EXTRA_DL_PORT" value="UART3"/>
-      <configure name="EXTRA_DL_BAUD" value="B115200"/>
-    </module>
-    
-    <module name="ins">
-      <define name="INS_SONAR_UPDATE_ON_AGL" value="FALSE" />
-    </module>
-
+    <module name="ins"/>
     <module name="ahrs" type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="TRUE"/>
       <!-- <define name="AHRS_USE_GPS_HEADING" value="FALSE"/> -->
     </module>
-
     <module name="air_data"/>
-    <!--module name="logger_tune_indi_2"/-->
 
     <module name="filter" type="1euro_imu">
       <define name="AHRS_ICQ_IMU_ID" value="IMU_F1E_ID"/>
       <define name="AHRS_ALIGNER_IMU_ID" value="IMU_F1E_ID"/>
     </module>
 
+    <module name="tag_tracking">
+      <configure name="JEVOIS_UART" value="UART4" description="dummy uart in this config"/>
+    </module>
+    <module name="extra_dl">
+      <configure name="EXTRA_DL_PORT" value="UART3"/>
+      <configure name="EXTRA_DL_BAUD" value="B115200"/>
+    </module>
+
     <module name="motor_mixing"/>
 
-    <!--module name="tlsf"/>
-    <module name="pprzlog"/>
-    <module name="logger" type="sd_chibios"/>
-    <module name="flight_recorder"/>
+    <!--module name="flight_recorder"/>
     <module name="logger" type="tune_indi"/-->
   </firmware>
 
@@ -97,26 +80,17 @@
     <servo name="FL" no="4" min="0" neutral="100" max="2000"/>
   </servos>
 
-  <!-- <servos driver="Pwm"> -->
-    <!-- <servo name="GEAR" no="10" min="950" neutral="950" max="2050"/> -->
-  <!-- </servos> -->
-
   <commands>
     <axis name="ROLL" failsafe_value="0"/>
     <axis name="PITCH" failsafe_value="0"/>
     <axis name="YAW" failsafe_value="0"/>
     <axis name="THRUST" failsafe_value="0"/>
-    <!-- <axis name="GEAR" failsafe_value="0"/> -->
   </commands>
 
   <section name="MIXING" prefix="MOTOR_MIXING_">
     <define name="TYPE" value="QUAD_X"/>
     <define name="REVERSE" value="TRUE"/>
   </section>
-
-  <!-- <auto_rc_commands> -->
-    <!-- <set command="GEAR" value="@GAIN2"/> -->
-  <!-- </auto_rc_commands> -->
 
   <!--command_laws>
     <call fun="motor_mixing_run(autopilot_get_motors_on(),FALSE,values)"/>
@@ -296,6 +270,11 @@
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+  </section>
+
+  <section name="TAG_TRACKING" prefix="TAG_TRACKING_">
+    <define name="BODY_TO_CAM_PSI" value="M_PI"/>
+    <define name="CAM_POS_X" value="0.1"/>
   </section>
 
   <section name="GCS">
