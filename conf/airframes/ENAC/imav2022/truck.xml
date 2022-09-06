@@ -24,6 +24,7 @@
     <module name="telemetry"      type="xbee_api"/>
     <module name="imu"            type="apogee"/>
     <module name="gps"            type="ublox"/>
+    <configure name="GPS_BAUD" value="B57600"/>
 
     <module name="ins"  type="gps_passthrough"/>
     <define name="INS_GP_USE_GPS_ACCEL" value="TRUE"/>
@@ -33,6 +34,7 @@
 
     <module name="nav" type="rover_base"/>
     <module name="guidance" type="rover_steering"/>
+    <module name="gvf_module"/>
   </firmware>
 
   <servos> 
@@ -106,13 +108,10 @@
   </section>
 
   <section name="BAT">
-    <define name="CATASTROPHIC_BAT_LEVEL" value="9.3" unit="V"/>
-    <define name="CRITIC_BAT_LEVEL" value="9.8" unit="V"/>
-    <define name="LOW_BAT_LEVEL" value="10.5" unit="V"/>
-    <define name="MAX_BAT_LEVEL" value="12.4" unit="V"/>
-    <define name="MILLIAMP_AT_FULL_THROTTLE" value="20000" unit="mA"/>
-    <define name="MILLIAMP_AT_IDLE_THROTTLE" value="1000" unit="mA"/>
-    <define name="CURRENT_ESTIMATION_NONLINEARITY" value="1.0"/>
+    <define name="CATASTROPHIC_BAT_LEVEL" value="6.2" unit="V"/>
+    <define name="CRITIC_BAT_LEVEL" value="6.3" unit="V"/>
+    <define name="LOW_BAT_LEVEL" value="6.4" unit="V"/>
+    <define name="MAX_BAT_LEVEL" value="7.4" unit="V"/>
   </section>
 
   <section name="GCS">

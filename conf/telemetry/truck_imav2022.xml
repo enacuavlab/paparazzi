@@ -17,6 +17,7 @@
       <message name="ENERGY"                 period="3.5"/>
       <message name="DATALINK_REPORT"        period="6.1"/>
       <message name="STATE_FILTER_STATUS"    period="4.2"/>
+      <message name="GPS_INT"                period="3."/>
     </mode>
 
     <mode name="default" key_press="d">

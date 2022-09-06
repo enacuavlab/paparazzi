@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 
-<flight_plan alt="190" ground_alt="185" lat0="43.4625" lon0="1.27288" max_dist_from_home="150" name="Muret safety" security_height="1">
+<!--flight_plan alt="190" ground_alt="185" lat0="43.4625" lon0="1.27288" max_dist_from_home="150" name="Muret safety" security_height="1"-->
+<flight_plan alt="148" ground_alt="146" lat0="43.5640917" lon0="1.4829201" max_dist_from_home="150" name="IMAV2022 Drop ENAC" security_height="0.3">
   <header>
     #ifndef SwitchServoOn
     #define SwitchServoOn(_x) {}
@@ -50,6 +51,7 @@
     <waypoint name="UNK_TAG" x="26.5" y="40.3"/>
     <waypoint name="UNK_CENTER" x="16.5" y="44.3"/>
     <waypoint name="AREA_TAG" x="49.3" y="20.3"/>
+    <waypoint name="TRUCK" x="10" y="10"/>
     <waypoint name="A1" x="65.6" y="0.6"/>
     <waypoint name="A2" x="-5.5" y="34.1"/>
     <waypoint name="A3" x="12.4" y="77.4"/>
@@ -101,6 +103,11 @@
     <module name="nav" type="survey_poly_rotorcraft" />
     <module name="tag_tracking">
       <define name="TAG_TRACKING_SIM_WP" value="WP_DELIVERY"/>
+    </module>
+    <module name="follow">
+      <define name="FOLLOW_AC_ID" value="42"/>
+      <define name="FOLLOW_WAYPOINT_ID" value="WP_TRUCK"/>
+      <define name="FOLLOW_OFFSET_Z" value="5"/>
     </module>
   </modules>
   <exceptions>
