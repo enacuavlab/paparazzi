@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 
-<!--flight_plan alt="190" ground_alt="185" lat0="43.4625" lon0="1.27288" max_dist_from_home="150" name="Muret safety" security_height="1"-->
-<flight_plan alt="148" ground_alt="146" lat0="43.5640917" lon0="1.4829201" max_dist_from_home="150" name="IMAV2022 Drop ENAC" security_height="0.3">
+<flight_plan alt="190" ground_alt="185" lat0="43.4625" lon0="1.27288" max_dist_from_home="150" name="Muret safety" security_height="1">
   <header>
     #ifndef SwitchServoOn
     #define SwitchServoOn(_x) {}
@@ -13,14 +12,16 @@
     #define DropOpen SwitchServoOff
     #define DropClose SwitchServoOn
 
-    #define DROP_NONE     0
-    #define DROP_DELIVERY 1
-    #define DROP_UNKNOWN  2
-    #define DROP_AREA     3
-    #define DROP_SILENT   4
-    #define DROP_TRUCK    5
-    #define SEARCH_UNK    6
-    #define SEARCH_AREA   7
+    #define DROP_NONE       0
+    #define DROP_DELIVERY   1
+    #define DROP_UNCERTAIN  2
+    #define DROP_AREA       3
+    #define DROP_SILENT     4
+    #define DROP_TRUCK      5
+    #define SEARCH_UNC      6
+    #define SEARCH_AREA     7
+    #define SEARCH_TRUCK    8
+    #define RUN_TRACK       9
 
     #ifdef NAV_C
     #ifndef TAG_TRACKING_COORD_TO_M
@@ -46,16 +47,17 @@
     <waypoint name="TAG" x="-25.9" y="38.4"/>
     <waypoint name="DELIVERY" x="-16.2" y="42.9"/>
     <waypoint name="SILENT" x="30.3" y="21.3"/>
-    <waypoint name="S1" x="26.1" y="22.8"/>
-    <waypoint name="S2" x="33.7" y="19.8"/>
-    <waypoint name="UNK_TAG" x="26.5" y="40.3"/>
-    <waypoint name="UNK_CENTER" x="16.5" y="44.3"/>
+    <waypoint name="UNC_CENTER" x="16.5" y="44.3"/>
+    <waypoint name="UNCERTAIN" x="26.5" y="40.3"/>
     <waypoint name="AREA_TAG" x="49.3" y="20.3"/>
     <waypoint name="TRUCK" x="10" y="10"/>
+    <waypoint name="TRUCK_CENTER" x="6.0" y="25.7"/>
     <waypoint name="A1" x="65.6" y="0.6"/>
     <waypoint name="A2" x="-5.5" y="34.1"/>
     <waypoint name="A3" x="12.4" y="77.4"/>
     <waypoint name="A4" x="84.8" y="45.8"/>
+    <waypoint name="P1" x="-7.4" y="51.3"/>
+    <waypoint name="P2" x="85.3" y="13.8"/>
     <waypoint name="_FLY1" x="-5.7" y="101.7"/>
     <waypoint name="_FLY2" x="113.0" y="57.5"/>
     <waypoint name="_FLY3" x="79.5" y="-57.7"/>
@@ -67,7 +69,7 @@
     <waypoint name="_HERE" x="6.0" y="-1.2"/>
   </waypoints>
   <sectors>
-    <sector color="green" name="Survey">
+    <sector color="yellow" name="Search">
       <corner name="A1"/>
       <corner name="A2"/>
       <corner name="A3"/>
@@ -95,6 +97,8 @@
     <variable init="8." var="search_sweep" min="5." max="20." step="0.1"/>
     <variable init="5." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="2.5" var="search_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="8." var="track_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="25." var="truck_radius" min="2." max="50." step="0.5"/>
     <variable init="42." var="tag_distance"/>
     <variable init="false" type="bool" var="tag_valid"/>
     <abi_binding name="JEVOIS_MSG" handler="fp_tag_cb"/>
@@ -102,7 +106,7 @@
   <modules>
     <module name="nav" type="survey_poly_rotorcraft" />
     <module name="tag_tracking">
-      <define name="TAG_TRACKING_SIM_WP" value="WP_DELIVERY"/>
+      <define name="TAG_TRACKING_SIM_WP" value="WP_TRUCK"/>
     </module>
     <module name="follow">
       <define name="FOLLOW_AC_ID" value="42"/>
@@ -113,6 +117,8 @@
   <exceptions>
     <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 50) 
     @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
+    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 55) 
+    @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">
@@ -135,10 +141,13 @@
       <exception cond="GetPosHeight() @GT 3. @AND mission_nb == DROP_NONE" deroute="Standby"/>
       <exception cond="GetPosHeight() @GT 3. @AND mission_nb == DROP_DELIVERY" deroute="Goto Delivery"/>
       <exception cond="GetPosHeight() @GT 3. @AND mission_nb == DROP_SILENT" deroute="Goto Silent" />
-      <exception cond="GetPosHeight() @GT 3. @AND mission_nb == DROP_UNKNOWN" deroute="Goto Unknown"/>
+      <exception cond="GetPosHeight() @GT 3. @AND mission_nb == DROP_UNCERTAIN" deroute="Goto Uncertain"/>
       <exception cond="GetPosHeight() @GT 3. @AND mission_nb == DROP_AREA" deroute="Goto Area" />
-      <exception cond="GetPosHeight() @GT 3. @AND mission_nb == SEARCH_UNK" deroute="Run Search Unknown"/>
+      <exception cond="GetPosHeight() @GT 3. @AND mission_nb == DROP_TRUCK" deroute="Goto Truck" />
+      <exception cond="GetPosHeight() @GT 3. @AND mission_nb == SEARCH_UNC" deroute="Run Search Uncertain"/>
       <exception cond="GetPosHeight() @GT 3. @AND mission_nb == SEARCH_AREA" deroute="Start Search Area" />
+      <exception cond="GetPosHeight() @GT 3. @AND mission_nb == SEARCH_TRUCK" deroute="Run Search Truck" />
+      <exception cond="GetPosHeight() @GT 3. @AND mission_nb == RUN_TRACK" deroute="Run Track" />
       <call_once fun="ins_reset_vertical_pos()"/>
       <call_once fun="DropClose()"/>
       <call_once fun="NavResurrect()"/>
@@ -146,7 +155,7 @@
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
       <stay climb="nav_climb_vspeed" vmode="climb" wp="LANDPAD"/>
     </block>
-    <block name="Standby" pre_call="if(!InsideKill(GetPosX(), GetPosY())) NavKillThrottle();" strip_button="Standby" strip_icon="home.png">
+    <block name="Standby" strip_button="Standby" strip_icon="home.png">
       <set var="mission_nb" value="DROP_NONE"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <stay wp="STDBY"/>
@@ -160,20 +169,32 @@
       <set var="mission_nb" value="DROP_SILENT"/>
       <deroute block="Takeoff" />
     </block>
-    <block group="mission" name="Start Unknown" strip_button="Drop Unknown">
-      <set var="mission_nb" value="DROP_UNKNOWN"/>
+    <block group="mission" name="Start Uncertain" strip_button="Drop Uncertain">
+      <set var="mission_nb" value="DROP_UNCERTAIN"/>
       <deroute block="Takeoff" />
     </block>
     <block group="mission" name="Start Area" strip_button="Drop Area">
       <set var="mission_nb" value="DROP_AREA"/>
       <deroute block="Takeoff" />
     </block>
-    <block group="search" name="Search Unknown" strip_button="Search Unknown">
-      <set var="mission_nb" value="SEARCH_UNK"/>
+    <block group="mission" name="Start Truck" strip_button="Drop Truck">
+      <set var="mission_nb" value="DROP_TRUCK"/>
+      <deroute block="Takeoff" />
+    </block>
+    <block group="search" name="Search Uncertain" strip_button="Search Uncertain">
+      <set var="mission_nb" value="SEARCH_UNC"/>
       <deroute block="Takeoff"/>
     </block>
     <block group="search" name="Search Area" strip_button="Search Area">
       <set var="mission_nb" value="SEARCH_AREA"/>
+      <deroute block="Takeoff" />
+    </block>
+    <block group="search" name="Search Truck" strip_button="Search Truck">
+      <set var="mission_nb" value="SEARCH_TRUCK"/>
+      <deroute block="Takeoff" />
+    </block>
+    <block group="search" name="Track" strip_button="Track and Drop">
+      <set var="mission_nb" value="RUN_TRACK"/>
       <deroute block="Takeoff" />
     </block>
 
@@ -211,16 +232,16 @@
       <deroute block="Land"/-->
     </block>
 
-    <block name="Goto Unknown">
+    <block name="Goto Uncertain">
       <set var="mission_nb" value="DROP_NONE"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <go wp="UNK_TAG" from="_HERE" hmode="route" height="goto_height"/>
+      <go wp="UNCERTAIN" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="NavSetWaypointHere(WP_TAG)"/>
       <call_once fun="jevois_stream(true)"/>
-      <stay wp="UNK_TAG" until="(tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="search_height"/>
+      <stay wp="UNCERTAIN" until="(tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="search_height"/>
       <deroute block="Drop Package"/>
     </block>
 
@@ -237,17 +258,33 @@
       <deroute block="Drop Package"/>
     </block>
 
-    <block name="Run Search Unknown">
+    <block name="Goto Truck">
+      <set var="mission_nb" value="DROP_NONE"/>
+      <set var="tag_tracking.motion_type" value="TAG_TRACKING_MOVING"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="jevois_stream(false)"/>
+      <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <set var="follow_follow_wp_status" value="MODULES_START"/>
+      <go wp="TRUCK" from="_HERE" hmode="route" height="goto_height"/>
+      <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
+      <call_once fun="NavSetWaypointHere(WP_TAG)"/>
+      <call_once fun="jevois_stream(true)"/>
+      <stay wp="TRUCK" until="(tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="search_height+1."/>
+      <set var="follow_follow_wp_status" value="MODULES_STOP"/>
+      <deroute block="Drop Package"/>
+    </block>
+
+    <block name="Run Search Uncertain">
       <set var="mission_nb" value="DROP_NONE"/>
       <exception cond="tag_tracking.status == TAG_TRACKING_RUNNING" deroute="Drop Package"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <go wp="UNK_CENTER" from="_HERE" hmode="route" height="goto_height"/>
+      <go wp="UNC_CENTER" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="jevois_stream(true)"/>
       <for var="i" from="1" to="search_radius/search_sweep">
-        <circle wp="UNK_CENTER" radius="search_sweep*$i" height="search_height" until="NavCircleCount() @GT 1."/>
+        <circle wp="UNC_CENTER" radius="search_sweep*$i" height="search_height" until="NavCircleCount() @GT 1."/>
       </for>
       <deroute block="Land"/>
     </block>
@@ -268,11 +305,42 @@
       <call fun="nav_survey_poly_run(search_height)"/>
     </block>
 
+    <block name="Run Search Truck">
+      <set var="mission_nb" value="DROP_NONE"/>
+      <exception cond="tag_tracking.status == TAG_TRACKING_RUNNING" deroute="Drop Package"/>
+      <set var="tag_tracking.motion_type" value="TAG_TRACKING_MOVING"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="jevois_stream(false)"/>
+      <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <go wp="TRUCK_CENTER" from="_HERE" hmode="route" height="goto_height"/>
+      <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
+      <call_once fun="jevois_stream(true)"/>
+      <circle wp="TRUCK_CENTER" radius="truck_radius" height="search_height+1." until="stage_time @GT 5.* 60."/>
+      <deroute block="Goto Truck"/>
+    </block>
+
+    <block name="Run Track">
+      <set var="mission_nb" value="DROP_NONE"/>
+      <!-- exception cond="electrical.bat_low" deroute="Goto Delivery"/-->
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="jevois_stream(false)"/>
+      <call_once fun="guidance_h_SetMaxSpeed(track_speed)"/>
+      <go wp="P2" from="_HERE" hmode="route" height="2*goto_height"/>
+      <!--for var="i" from="1" to="3"-->
+      <while cond="!electrical.bat_low">
+        <go from="P2" wp="P1" hmode="route" height="2*goto_height"/>
+        <go from="P1" wp="P2" hmode="route" height="2*goto_height"/>
+      </while>
+      <!-- for/-->
+      <deroute block="Goto Delivery"/>
+    </block>
+
     <block name="Drop Package">
       <stay wp="TAG" until="(stage_time @GT 2 @AND tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 5)" height="search_height"/>
       <stay wp="TAG" climb="-0.5" vmode="climb" until="((tag_distance @LT drop_height) @AND tag_valid) @OR (GetPosHeight() @LT drop_height/2.)" post_call="tag_valid = false"/>
       <call_once fun="DropOpen()"/>
       <stay wp="TAG" until="stage_time @GT 3" height="search_height"/>
+      <set var="tag_tracking.motion_type" value="TAG_TRACKING_FIXED_POS"/>
       <deroute block="Land"/>
     </block>
 
