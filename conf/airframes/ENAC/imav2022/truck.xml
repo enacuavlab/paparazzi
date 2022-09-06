@@ -58,10 +58,17 @@
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
+    <define name="GYRO_P_SIGN" value="1"/>
+    <define name="GYRO_Q_SIGN" value="-1"/>
+    <define name="GYRO_R_SIGN" value="-1"/>
+    <define name="ACCEL_X_SIGN" value="1"/>
+    <define name="ACCEL_Y_SIGN" value="-1"/>
+    <define name="ACCEL_Z_SIGN" value="-1"/>
+
     <!-- MPU MAG -->
     <define name="MAG_X_SIGN" value="1"/>
-    <define name="MAG_Y_SIGN" value="1"/>
-    <define name="MAG_Z_SIGN" value="1"/>
+    <define name="MAG_Y_SIGN" value="-1"/>
+    <define name="MAG_Z_SIGN" value="-1"/>
     <define name="MAG_X_NEUTRAL" value="-53"/>
     <define name="MAG_Y_NEUTRAL" value="-17"/>
     <define name="MAG_Z_NEUTRAL" value="-29"/>
