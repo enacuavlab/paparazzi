@@ -357,7 +357,7 @@ static void gps_ubx_parse_nav_sat(void)
 
 static void gps_ubx_parse_nav_status(void)
 {
-  uint8_t fix = UBX_NAV_SOL_gpsFix(gps_ubx.msg_buf);
+  uint8_t fix = UBX_NAV_STATUS_gpsFix(gps_ubx.msg_buf);
   if ((fix == GPS_FIX_3D && fix > gps_ubx.state.fix) || fix < GPS_FIX_3D) {
     // update only if fix is better than current or fix not 3D
     // leaving fix if in GNSS or RTK mode
