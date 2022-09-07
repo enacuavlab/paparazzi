@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+
+<flight_plan alt="190" ground_alt="185" lat0="43.4625" lon0="1.27288" max_dist_from_home="150" name="Muret safety" security_height="1">
+  <header>
+    #ifndef SwitchServoOn
+    #define SwitchServoOn(_x) {}
+    #endif
+    #ifndef SwitchServoOff
+    #define SwitchServoOff(_x) {}
+    #endif
+    #define DropOpen SwitchServoOff
+    #define DropClose SwitchServoOn
+
+    #define DROP_NONE       0
+    #define DROP_DELIVERY   1
+    #define DROP_UNCERTAIN  2
+    #define DROP_AREA       3
+    #define DROP_SILENT     4
+    #define DROP_TRUCK      5
+    #define SEARCH_UNC      6
+    #define SEARCH_AREA     7
+    #define SEARCH_TRUCK    8
+    #define RUN_TRACK       9
+
+  </header>
+  <waypoints>
+    <waypoint name="HOME" x="40.256" y="59.629"/>
+    <waypoint name="STDBY" x="-8.6" y="1.9"/>
+    <waypoint name="LANDPAD" x="-19.9" y="-4.5"/>
+    <waypoint name="TAG" x="-25.9" y="38.4"/>
+    <waypoint name="DELIVERY" x="-16.2" y="42.9"/>
+    <waypoint name="SILENT" x="30.3" y="21.3"/>
+    <waypoint name="UNC_CENTER" x="16.5" y="44.3"/>
+    <waypoint name="UNCERTAIN" x="26.5" y="40.3"/>
+    <waypoint name="AREA_TAG" x="49.3" y="20.3"/>
+    <waypoint name="TRUCK" x="10" y="10"/>
+    <waypoint name="TRUCK_CENTER" x="6.0" y="25.7"/>
+    <waypoint name="A1" x="65.6" y="0.6"/>
+    <waypoint name="A2" x="-5.5" y="34.1"/>
+    <waypoint name="A3" x="12.4" y="77.4"/>
+    <waypoint name="A4" x="84.8" y="45.8"/>
+    <waypoint name="P1" x="-7.4" y="51.3"/>
+    <waypoint name="P2" x="85.3" y="13.8"/>
+    <waypoint name="_FLY1" x="-5.7" y="101.7"/>
+    <waypoint name="_FLY2" x="113.0" y="57.5"/>
+    <waypoint name="_FLY3" x="79.5" y="-57.7"/>
+    <waypoint name="_FLY4" x="-45.4" y="-14.2"/>
+    <waypoint name="_KILL1" x="-9.9" y="120.7"/>
+    <waypoint name="_KILL2" x="128.4" y="72.6"/>
+    <waypoint name="_KILL3" x="86.9" y="-69.0"/>
+    <waypoint name="_KILL4" x="-61.6" y="-32.3"/>
+    <waypoint name="_HERE" x="6.0" y="-1.2"/>
+  </waypoints>
+  <sectors>
+    <sector color="yellow" name="Search">
+      <corner name="A1"/>
+      <corner name="A2"/>
+      <corner name="A3"/>
+      <corner name="A4"/>
+    </sector>
+    <sector color="orange" name="Flight_Area">
+      <corner name="_FLY1"/>
+      <corner name="_FLY2"/>
+      <corner name="_FLY3"/>
+      <corner name="_FLY4"/>
+    </sector>
+    <sector color="red" name="Kill">
+      <corner name="_KILL1"/>
+      <corner name="_KILL2"/>
+      <corner name="_KILL3"/>
+      <corner name="_KILL4"/>
+    </sector>
+  </sectors>
+  <variables>
+    <variable init="0" type="int" var="mission_nb"/>
+    <variable init="6." var="goto_height" min="0.5" max="15." step="0.1"/>
+    <variable init="1.5" var="drop_height" min="0.5" max="15." step="0.1"/>
+    <variable init="4.5" var="search_height" min="0.5" max="15." step="0.1"/>
+    <variable init="30." var="search_radius" min="20" max="150." step="1.0"/>
+    <variable init="8." var="search_sweep" min="5." max="20." step="0.1"/>
+    <variable init="5." var="goto_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="2.5" var="search_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="8." var="track_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="25." var="truck_radius" min="2." max="50." step="0.5"/>
+    <variable init="42." var="tag_distance"/>
+    <variable init="false" type="bool" var="tag_valid"/>
+  </variables>
+  <blocks>
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <call_once fun="DropOpen()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 10)"/>
+    </block>
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Kill landed">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+
+  </blocks>
+
+</flight_plan>

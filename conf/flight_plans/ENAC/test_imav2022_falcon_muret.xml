@@ -1,6 +1,6 @@
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 
-<flight_plan alt="225" ground_alt="185" lat0="43.4625" lon0="1.27288" max_dist_from_home="500" name="Muret safety" security_height="1">
+<flight_plan alt="235" ground_alt="185" lat0="43.4625" lon0="1.27288" max_dist_from_home="500" name="Muret safety" security_height="1">
   <header>
     #ifndef SwitchServoOn
     #define SwitchServoOn(_x) {}
@@ -10,26 +10,28 @@
     #endif
     #define DropOpen SwitchServoOff
     #define DropClose SwitchServoOn
+
     #define DROP_NONE       0
     #define RUN_TRACK       1
+
   </header>
   <waypoints>
     <waypoint name="HOME" x="40.256" y="59.629"/>
     <waypoint name="STDBY" x="-8.6" y="1.9"/>
     <waypoint name="LANDPAD" x="-19.9" y="-4.5"/>
-    <waypoint alt="190.0" name="DELIVERY" x="-1.4" y="35.8"/>
-    <waypoint alt="190.0" name="O1" x="-118.5" y="56.5"/>
-    <waypoint alt="190.0" name="O2" x="-114.4" y="146.6"/>
-    <waypoint alt="190.0" name="O3" x="188.7" y="125.2"/>
-    <waypoint alt="190.0" name="O4" x="190.2" y="33.1"/>
-    <waypoint alt="190.0" name="P1" x="-91.1" y="93.3"/>
-    <waypoint alt="190.0" name="P2" x="159.3" y="76.1"/>
-    <waypoint alt="190.0" name="_FLY1" x="-215.2" y="236.4"/>
-    <waypoint alt="190.0" name="_FLY2" x="363.4" y="200.4"/>
-    <waypoint alt="190.0" name="_FLY3" x="333.9" y="-66.7"/>
-    <waypoint alt="190.0" name="_FLY4" x="-228.5" y="-28.1"/>
-    <waypoint alt="190.0" name="_KILL1" x="-254.3" y="264.2"/>
-    <waypoint alt="190.0" name="_KILL2" x="398.3" y="229.3"/>
+    <waypoint name="DELIVERY" x="-1.4" y="35.8"/>
+    <waypoint name="O1" x="-118.5" y="56.5"/>
+    <waypoint name="O2" x="-114.4" y="146.6"/>
+    <waypoint name="O3" x="188.7" y="125.2"/>
+    <waypoint name="O4" x="190.2" y="33.1"/>
+    <waypoint name="P1" x="-91.1" y="93.3"/>
+    <waypoint name="P2" x="159.3" y="76.1"/>
+    <waypoint name="_FLY1" x="-215.2" y="236.4"/>
+    <waypoint name="_FLY2" x="363.4" y="200.4"/>
+    <waypoint name="_FLY3" x="333.9" y="-66.7"/>
+    <waypoint name="_FLY4" x="-228.5" y="-28.1"/>
+    <waypoint name="_KILL1" x="-254.3" y="264.2"/>
+    <waypoint name="_KILL2" x="398.3" y="229.3"/>
     <waypoint name="_KILL3" x="368.6" y="-110.1"/>
     <waypoint name="_KILL4" x="-266.2" y="-55.5"/>
     <waypoint name="_HERE" x="6.0" y="-1.2"/>
@@ -50,14 +52,14 @@
   </sectors>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
-    <variable init="6." max="15." min="0.5" step="0.1" var="goto_height"/>
-    <variable init="1.5" max="15." min="0.5" step="0.1" var="drop_height"/>
-    <variable init="1.5" max="15." min="0.5" step="0.1" var="land_height"/>
+    <variable init="50." var="goto_height" min="0.5" max="45." step="0.1"/>
+    <variable init="1.5" var="drop_height" min="0.5" max="15." step="0.1"/>
+    <variable init="10." var="land_height" min="0.5" max="20." step="0.1"/>
   </variables>
-  <exceptions>
-    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 50)      @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
-    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 55)      @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
-  </exceptions>
+  <!--exceptions>
+    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 50) @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
+    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 55) @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
+  </exceptions-->
   <blocks>
     <block name="Wait GPS">
       <call_once fun="NavKillThrottle()"/>
@@ -76,47 +78,68 @@
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
-      <exception cond="GetPosHeight() @GT 3. @AND mission_nb == DROP_NONE" deroute="Standby"/>
-      <exception cond="GetPosHeight() @GT 3. @AND mission_nb == RUN_TRACK" deroute="Run Track"/>
+      <exception cond="GetPosHeight() @GT 4. @AND mission_nb == DROP_NONE" deroute="Standby"/>
+      <exception cond="GetPosHeight() @GT 4. @AND mission_nb == RUN_TRACK" deroute="Run Track"/>
       <call_once fun="ins_reset_vertical_pos()"/>
       <call_once fun="DropClose()"/>
       <call_once fun="NavResurrect()"/>
+      <set value="false" var="force_forward"/>
       <attitude pitch="0" roll="0" throttle="0.1" until="stage_time @GT 2" vmode="throttle"/>
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
       <stay climb="nav_climb_vspeed" vmode="climb" wp="LANDPAD"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
-      <set value="DROP_NONE" var="mission_nb"/>
-      <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
+      <set value="false" var="force_forward"/>
+      <set var="mission_nb" value="DROP_NONE"/>
       <stay wp="STDBY"/>
     </block>
-    <block group="search" name="Track" strip_button="Track and Drop">
-      <set value="RUN_TRACK" var="mission_nb"/>
+
+    <block group="track" name="Track" strip_button="Track and Drop">
+      <set var="mission_nb" value="RUN_TRACK"/>
       <deroute block="Takeoff"/>
     </block>
+
     <block name="Run Track">
-      <set value="DROP_NONE" var="mission_nb"/>
+      <set var="mission_nb" value="DROP_NONE"/>
+      <!-- exception cond="electrical.bat_low" deroute="Goto Delivery"/-->
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <go from="_HERE" height="2*goto_height" hmode="route" wp="P2"/>
+      <set value="true" var="force_forward"/>
+      <go wp="O1" from="_HERE" hmode="route" height="goto_height"/>
+      <!--for var="i" from="1" to="3"-->
       <while cond="!electrical.bat_low">
-        <go from="P2" height="2*goto_height" hmode="route" wp="P1"/>
-        <go from="P1" height="2*goto_height" hmode="route" wp="P2"/>
+        <go from="O1" wp="O2" hmode="route" height="goto_height"/>
+        <go from="O2" wp="O3" hmode="route" height="goto_height"/>
+        <go from="O3" wp="O4" hmode="route" height="goto_height"/>
+        <go from="O4" wp="O1" hmode="route" height="goto_height"/>
       </while>
+      <go from="O1" wp="O2" hmode="route" height="goto_height"/>
+      <!-- for/-->
       <deroute block="Goto Delivery"/>
     </block>
+
+    <block name="Goto Delivery" strip_button="Goto Delivery" group="track">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <set value="true" var="force_forward"/>
+      <go wp="DELIVERY" from="_HERE" hmode="route" height="goto_height"/>
+      <set value="false" var="force_forward"/>
+      <stay wp="DELIVERY" height="goto_height" until="stage_time @GT 10"/>
+      <deroute block="Drop Package"/>
+    </block>
+
     <block name="Drop Package">
-      <stay climb="-0.5" post_call="tag_valid = false" until="((tag_distance @LT drop_height) @AND tag_valid) @OR (GetPosHeight() @LT drop_height/2.)" vmode="climb" wp="TAG"/>
-      <call_once fun="DropOpen()"/>
-      <stay height="search_height" until="stage_time @GT 3" wp="TAG"/>
-      <set value="TAG_TRACKING_FIXED_POS" var="tag_tracking.motion_type"/>
+      <stay wp="DELIVERY" climb="-1.5" vmode="climb" until="GetPosHeight() @LT drop_height"/>
+      <!--call_once fun="DropOpen()"/-->
+      <stay wp="DELIVERY" until="stage_time @GT 3" height="land_height"/>
       <deroute block="Land"/>
     </block>
-    <block group="land" name="Land here" strip_button="Land here" strip_icon="land-right.png">
+
+    <block name="Land here" strip_button="Land here" strip_icon="land-right.png" group="land">
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
     </block>
-    <block group="land" name="Land" strip_button="Land on pad">
+    <block name="Land" strip_button="Land on pad" group="land">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <go from="_HERE" height="goto_height" hmode="route" wp="LANDPAD"/>
+      <set value="false" var="force_forward"/>
+      <go wp="LANDPAD" from="_HERE" hmode="route" height="land_height"/>
     </block>
     <block name="Flare">
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
@@ -126,5 +149,7 @@
       <call_once fun="NavKillThrottle()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
+
   </blocks>
+
 </flight_plan>
