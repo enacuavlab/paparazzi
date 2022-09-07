@@ -126,6 +126,14 @@ float speed_circle = 0.03;
 #define TAG_TRACKING_TIMEOUT 5.f
 #endif
 
+#ifndef TAG_TRACKING_PREDICT_TIME
+#define TAG_TRACKING_PREDICT_TIME 1.f
+#endif
+
+#ifndef TAG_TRACKING_MAX_OFFSET
+#define TAG_TRACKING_MAX_OFFSET 1.5f
+#endif
+
 // generated in modules.h
 static const float tag_track_dt = TAG_TRACKING_PROPAGATE_PERIOD;
 
@@ -228,8 +236,15 @@ void tag_tracking_parse_target_pos(uint8_t *buf)
 static void update_wp(bool report)
 {
 #ifdef TAG_TRACKING_WP
-  struct FloatVect3 target_pos_enu;
+  struct FloatVect3 target_pos_enu, target_pos_pred;
   ENU_OF_TO_NED(target_pos_enu, tag_tracking.pos); // convert local target pos to ENU
+  if (tag_tracking.motion_type == TAG_TRACKING_MOVING) {
+    // when moving mode, predict tag position
+    ENU_OF_TO_NED(target_pos_pred, tag_tracking.speed);
+    VECT2_SMUL(target_pos_pred, target_pos_pred, tag_tracking.predict_time); // pos offset at predict_time
+    VECT2_STRIM(target_pos_pred, -TAG_TRACKING_MAX_OFFSET, TAG_TRACKING_MAX_OFFSET); // trim max offset
+    VECT3_ADD(target_pos_enu, target_pos_pred); // add prediction offset
+  }
   struct EnuCoor_i pos_i;
   ENU_BFP_OF_REAL(pos_i, target_pos_enu);
   if (report) {
@@ -264,6 +279,7 @@ void tag_tracking_init()
 
   tag_tracking.status = TAG_TRACKING_SEARCHING;
   tag_tracking.motion_type = TAG_TRACKING_FIXED_POS;
+  tag_tracking.predict_time = TAG_TRACKING_PREDICT_TIME;
   tag_track_private.timeout = 0.f;
   tag_track_private.updated = false;
 }

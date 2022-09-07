@@ -48,6 +48,7 @@ struct tag_tracking_public {
   struct FloatVect3 speed;      ///< estimated speed
   uint8_t status;               ///< tracking status flag
   uint8_t motion_type;          ///< type of tag motion
+  float predict_time;           ///< prediction time for WP tag
 };
 
 extern struct tag_tracking_public tag_tracking;
