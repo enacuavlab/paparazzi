@@ -15,11 +15,10 @@
     <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/>
 
     <target name="ap" board="tawaki_1.1">
-    <module name="radio_control" type="sbus"/>
+      <module name="radio_control" type="sbus"/>
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
-    <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
+      <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
     </target>
-
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
       <module name="radio_control" type="ppm"/>
@@ -41,6 +40,14 @@
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
       <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
+      <!--
+      <configure name="MAG_LIS3MDL_I2C_DEV" value="i2c2"/>
+      <define name="IMU_MPU_CHAN_X" value="1">
+      <define name="IMU_MPU_CHAN_Y" value="0">
+      <define name="IMU_MPU_Y_SIGN" value="-1"/>
+      <define name="LIS3MDL_CHAN_X_SIGN" value="-"/>
+      <define name="LIS3MDL_CHAN_Y_SIGN" value="-"/>
+      -->
     </module>
 
     <module name="gps" type="ublox">
@@ -49,11 +56,7 @@
     </module>
 
     <module name="stabilization" type="indi"/>
-    <module name="guidance" type="indi">
-      <define name="GUIDANCE_INDI_SPECIFIC_FORCE_GAIN" value="-500.0"/>
-      <define name="GUIDANCE_INDI_THRUST_DYNAMICS" value="0.03"/>
-      <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
-    </module>
+    <module name="guidance" type="indi"/>
 
     <module name="ins"/>
     <module name="ahrs" type="int_cmpl_quat"/>
@@ -67,9 +70,8 @@
     <module name="motor_mixing"/>
 
     <module name="tag_tracking">
-      <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
+      <configure name="JEVOIS_UART" value="UART3"/>
     </module>
-
   </firmware>
 
   <servos driver="Pwm">
@@ -107,24 +109,22 @@
     <define name="ACCEL_X_SIGN" value="-1"/>
     <define name="ACCEL_Y_SIGN" value="-1"/>
     <define name="ACCEL_Z_SIGN" value="1"/>
-
-    <define name="ACCEL_X_NEUTRAL" value="0.0"/>
-    <define name="ACCEL_Y_NEUTRAL" value="0.0"/>
-    <define name="ACCEL_Z_NEUTRAL" value="0.0"/>
-    <define name="ACCEL_X_SENS" value="2.26755822693" integer="16"/>
-    <define name="ACCEL_Y_SENS" value="2.4468957791" integer="16"/>
-    <define name="ACCEL_Z_SENS" value="2.45151941617" integer="16"/>
+    <define name="ACCEL_X_NEUTRAL" value="29"/>
+    <define name="ACCEL_Y_NEUTRAL" value="45"/>
+    <define name="ACCEL_Z_NEUTRAL" value="-10"/>
+    <define name="ACCEL_X_SENS" value="2.521769701216655" integer="16"/>
+    <define name="ACCEL_Y_SENS" value="2.443739538927253" integer="16"/>
+    <define name="ACCEL_Z_SENS" value="2.4586009011109544" integer="16"/>
 
     <define name="MAG_X_SIGN" value="-1"/>
     <define name="MAG_Y_SIGN" value="-1"/>
     <define name="MAG_Z_SIGN" value="1"/>
-
-    <define name="MAG_X_NEUTRAL" value="1350"/>
-    <define name="MAG_Y_NEUTRAL" value="1984"/>
-    <define name="MAG_Z_NEUTRAL" value="1871"/>
-    <define name="MAG_X_SENS" value="0.6078228603951282" integer="16"/>
-    <define name="MAG_Y_SENS" value="0.4706097678723959" integer="16"/>
-    <define name="MAG_Z_SENS" value="0.41911939391407543" integer="16"/>
+    <define name="MAG_X_NEUTRAL" value="1467"/>
+    <define name="MAG_Y_NEUTRAL" value="1857"/>
+    <define name="MAG_Z_NEUTRAL" value="1601"/>
+    <define name="MAG_X_SENS" value="0.7058864855686404" integer="16"/>
+    <define name="MAG_Y_SENS" value="0.7048221194025264" integer="16"/>
+    <define name="MAG_Z_SENS" value="0.7035640661111504" integer="16"/>
 
     <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
@@ -147,7 +147,6 @@
       Normalize[{25795.7, -123.5, 36600.6}]
       Result(0.576084, -0.00275807, 0.817385)
   -->
-
   <section name="INS" prefix="INS_">
     <define name="H_X" value="0.576084"/>
     <define name="H_Y" value="-0.00275807"/>
@@ -167,13 +166,12 @@
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <define name="NUM_ACT" value="4"/>
     <!-- reference acceleration for attitude control -->
-    <define name="REF_ERR_P" value="90"/>
-    <define name="REF_ERR_Q" value="90"/>
+    <define name="REF_ERR_P" value="120"/>
+    <define name="REF_ERR_Q" value="130"/>
     <define name="REF_ERR_R" value="90"/>
-    <define name="REF_RATE_P" value="8.0"/>
+    <define name="REF_RATE_P" value="8.9"/>
     <define name="REF_RATE_Q" value="8.0"/>
     <define name="REF_RATE_R" value="5.0"/>
-
     <define name="MAX_R" value="60" unit="deg/s"/>
 
     <!-- second order filter parameters -->
@@ -195,7 +193,6 @@
     <!-- first order actuator dynamics -->
     <define name="ACT_DYN" value="{0.02, 0.02, 0.02, 0.02}"/>
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
-
     <!--Priority for each axis (roll, pitch, yaw and thrust)-->
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
   </section>
@@ -220,10 +217,17 @@
     <define name="DGAIN" value="108"/>
     <define name="IGAIN" value="20"/>
     <define name="NGAIN" value="0"/>
-      <!-- feedforward -->
+    <!-- feedforward -->
     <define name="AGAIN" value="0"/>
     <define name="REF_MAX_SPEED" value="4."/>
     <define name="REF_MAX_ACCEL" value="2."/>
+  </section>
+
+  <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
+    <define name="SPECIFIC_FORCE_GAIN" value="-500.0"/>
+    <define name="THRUST_DYNAMICS" value="0.03"/>
+    <define name="RC_DEBUG" value="FALSE"/>
+    <define name="SPEED_GAINZ" value="2.0"/>
   </section>
 
   <section name="NAV">
@@ -248,11 +252,6 @@
     <define name="CAM_POS_X" value="0.15"/>
   </section>
 
-  <section name="SWITCH_SERVO" prefix="SWITCH_SERVO_">
-    <define name="ON_VALUE" value="1000"/>
-    <define name="OFF_VALUE" value="2000"/>
-  </section>
-
   <section name="GCS">
     <define name="ALT_SHIFT_PLUS_PLUS" value="3"/>
     <define name="ALT_SHIFT_PLUS" value="1"/>
@@ -266,3 +265,4 @@
   </section>
 
 </airframe>
+

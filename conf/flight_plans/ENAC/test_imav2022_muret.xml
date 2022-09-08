@@ -125,6 +125,7 @@
   <blocks>
     <block name="Wait GPS">
       <call_once fun="NavKillThrottle()"/>
+      <call_once fun="jevois_stream(false)"/>
       <call_once fun="DropOpen()"/>
       <while cond="!GpsFixValid()"/>
     </block>
