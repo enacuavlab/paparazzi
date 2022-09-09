@@ -11,7 +11,7 @@
   </description>
 
   <firmware name="rotorcraft">
-    <configure name="PERIODIC_FREQUENCY" value="512"/>
+    <configure name="PERIODIC_FREQUENCY" value="500"/>
     <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/>
 
     <target name="ap" board="tawaki_1.1">
@@ -75,10 +75,10 @@
   </firmware>
 
   <servos driver="Pwm">
-    <servo name="FR" no="5" min="1040" neutral="1140" max="1900"/>
-    <servo name="BR" no="6" min="1040" neutral="1140" max="1900"/>
-    <servo name="BL" no="7" min="1040" neutral="1140" max="1900"/>
-    <servo name="FL" no="8" min="1040" neutral="1140" max="1900"/>
+    <servo name="FR" no="5" min="1040" neutral="1200" max="1900"/>
+    <servo name="BR" no="6" min="1040" neutral="1200" max="1900"/>
+    <servo name="BL" no="7" min="1040" neutral="1200" max="1900"/>
+    <servo name="FL" no="8" min="1040" neutral="1200" max="1900"/>
     <servo name="SWITCH" no="1" min="1000" neutral="1000" max="2000"/>
   </servos>
 
@@ -184,12 +184,12 @@
 
     <!-- Full INDI -->
     <!-- control effectiveness -->
-    <define name="G1_ROLL"   value="{  -24.0,  -24.0,  24.0,  24.0 }"/>
-    <define name="G1_PITCH"  value="{   24.0,  -24.0, -24.0,  24.0 }"/>
+    <define name="G1_ROLL"   value="{  -20.0,  -20.0,  20.0,  20.0 }"/>
+    <define name="G1_PITCH"  value="{   20.0,  -20.0, -20.0,  20.0 }"/>
     <define name="G1_YAW"    value="{   3,    -3,    3,   -3 }"/>
-    <define name="G1_THRUST" value="{  -2.5, -2.5, -2.5, -2.5}"/>
+    <define name="G1_THRUST" value="{  -1., -1., -1., -1.}"/>
     <!--Counter torque effect of spinning up a rotor-->
-    <define name="G2"        value="{100, -100, 100, -100.0 }"/>
+    <define name="G2"        value="{80, -80, 80, -80.0 }"/>
     <!-- first order actuator dynamics -->
     <define name="ACT_DYN" value="{0.02, 0.02, 0.02, 0.02}"/>
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
@@ -225,9 +225,9 @@
 
   <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
     <define name="SPECIFIC_FORCE_GAIN" value="-500.0"/>
-    <define name="THRUST_DYNAMICS" value="0.03"/>
+    <define name="THRUST_DYNAMICS" value="0.05"/>
     <define name="RC_DEBUG" value="FALSE"/>
-    <define name="SPEED_GAINZ" value="2.0"/>
+    <define name="SPEED_GAINZ" value="2.5"/>
   </section>
 
   <section name="NAV">

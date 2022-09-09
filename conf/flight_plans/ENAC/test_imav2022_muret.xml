@@ -206,6 +206,7 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go wp="DELIVERY" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="NavSetWaypointHere(WP_TAG)"/>
@@ -219,6 +220,7 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go from="_HERE" hmode="route" wp="SILENT" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="NavSetWaypointHere(WP_TAG)"/>
@@ -240,6 +242,7 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go wp="UNCERTAIN" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="NavSetWaypointHere(WP_TAG)"/>
@@ -253,6 +256,7 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go wp="AREA_TAG" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="NavSetWaypointHere(WP_TAG)"/>
@@ -269,6 +273,7 @@
       <!--call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/-->
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <set var="follow_follow_wp_status" value="MODULES_START"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go wp="TRUCK" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="NavSetWaypointHere(WP_TAG)"/>
@@ -284,6 +289,7 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go wp="UNC_CENTER" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="jevois_stream(true)"/>
@@ -298,6 +304,7 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go wp="A1" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="nav_survey_poly_setup_towards(WP_A1, 4, search_sweep, WP_A2)"/>
       <deroute block="Run Search Area"/>
@@ -316,6 +323,7 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go wp="TRUCK_CENTER" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="jevois_stream(true)"/>
@@ -329,6 +337,7 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(track_speed)"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go wp="P2" from="_HERE" hmode="route" height="2*goto_height"/>
       <!--for var="i" from="1" to="3"-->
       <while cond="!electrical.bat_low">
@@ -343,7 +352,7 @@
       <stay wp="TAG" until="(stage_time @GT 2 @AND tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 5)" height="search_height"/>
       <stay wp="TAG" climb="-0.5" vmode="climb" until="((tag_distance @LT drop_height) @AND tag_valid) @OR (GetPosHeight() @LT drop_height/2.)" post_call="tag_valid = false"/>
       <call_once fun="DropOpen()"/>
-      <stay wp="TAG" until="stage_time @GT 3" height="search_height"/>
+      <stay wp="TAG" until="stage_time @GT 3" height="goto_height"/>
       <set var="tag_tracking.motion_type" value="TAG_TRACKING_FIXED_POS"/>
       <deroute block="Land"/>
     </block>
@@ -353,7 +362,7 @@
       <stay wp="TAG" until="stage_time @GT 3" height="truck_height"/>
       <stay wp="TAG" climb="-0.5" vmode="climb" until="((tag_distance @LT drop_height) @AND tag_valid) @OR (GetPosHeight() @LT drop_height+0.5)" post_call="tag_valid = false"/>
       <call_once fun="DropOpen()"/>
-      <stay wp="TAG" until="stage_time @GT 3" height="truck_height"/>
+      <stay wp="TAG" until="stage_time @GT 3" height="goto_height"/>
       <set var="tag_tracking.motion_type" value="TAG_TRACKING_FIXED_POS"/>
       <set var="follow_follow_wp_status" value="MODULES_STOP"/>
       <deroute block="Land"/>
@@ -363,7 +372,7 @@
       <stay wp="TRUCK" until="stage_time @GT 3" height="truck_height"/>
       <stay wp="TRUCK" climb="-0.5" vmode="climb" until="GetPosHeight() @LT drop_height+0.5"/>
       <call_once fun="DropOpen()"/>
-      <stay wp="TRUCK" until="stage_time @GT 3" height="truck_height"/>
+      <stay wp="TRUCK" until="stage_time @GT 3" height="goto_height"/>
       <set var="tag_tracking.motion_type" value="TAG_TRACKING_FIXED_POS"/>
       <set var="follow_follow_wp_status" value="MODULES_STOP"/>
       <deroute block="Land"/>
