@@ -158,24 +158,7 @@
     <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
   </section>
 
-  <!-- Magnetic Field Calculator
-      http://www.ngdc.noaa.gov/geomag-web/#igrfwmm
-      http://www.wolframalpha.com
-
-      Enac : Lat 43.564080°N, Lon 1.481289°E
-      Normalize[{23759.6, 138.7, 39666.4}]
-      Result(0.51385, 0.00299, 0.85787)
-
-      Madrid : 40.1579607° N, 3.3813882° W
-      Normalize[{25795.7, -123.5, 36600.6}]
-      Result(0.576084, -0.00275807, 0.817385)
-  -->
-
-  <section name="INS" prefix="INS_">
-    <define name="H_X" value="0.51385"/>
-    <define name="H_Y" value="0.00299"/>
-    <define name="H_Z" value="0.85787"/>
-  </section>
+  <include href="conf/mag/delft_valkenburg.xml"/>
 
   <section name="STABILIZATION_RATE" prefix="STABILIZATION_RATE_">
     <define name="SP_MAX_P" value="10000"/>

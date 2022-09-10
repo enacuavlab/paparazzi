@@ -11,9 +11,9 @@
    gui_color="#fdd12f992f99"
   />
   <aircraft
-   name="FALCON"
+   name="FALCON_X"
    ac_id="1"
-   airframe="airframes/ENAC/imav2022/falcon_outdoor.xml"
+   airframe="airframes/ENAC/imav2022/falcon_X_outdoor.xml"
    radio="radios/T10CG_SBUS.xml"
    telemetry="telemetry/rotorcraft_imav2022.xml"
    flight_plan="flight_plans/ENAC/test_imav2022_falcon_muret.xml"
