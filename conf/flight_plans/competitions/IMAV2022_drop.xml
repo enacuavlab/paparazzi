@@ -23,6 +23,7 @@
     #define SEARCH_AREA     7
     #define SEARCH_TRUCK    8
     #define RUN_TRACK       9
+    #define DROP_ROPE       10
 
     #ifdef NAV_C
     #ifndef TAG_TRACKING_COORD_TO_M
@@ -48,8 +49,6 @@
     <waypoint lat="52.168377" lon="4.412250" name="TAG"/>
     <waypoint lat="52.171387" lon="4.420618" name="DELIVERY"/>
     <waypoint lat="52.170707" lon="4.418157" name="SILENT"/>
-    <!--waypoint name = "S1" lat = "52.170793" lon = "4.418407"/>
-    <waypoint name = "S2" lat = "52.170620" lon = "4.417906"/-->
     <waypoint lat="52.169916" lon="4.415763" name="UNC_CENTER"/>
     <waypoint lat="52.170271" lon="4.414617" name="UNCERTAIN"/>
     <waypoint lat="52.168736" lon="4.414774" name="AREA_TAG"/>
@@ -138,6 +137,7 @@
     <variable init="2.5" var="search_speed" min="0.5" max="10." step="0.1"/>
     <variable init="8." var="track_speed" min="0.5" max="10." step="0.1"/>
     <variable init="25." var="truck_radius" min="2." max="50." step="0.5"/>
+    <variable init="4." var="rope_length" min="0.5" max="10." step="0.1"/>
     <variable init="42." var="tag_distance"/>
     <variable init="false" type="bool" var="tag_valid"/>
     <abi_binding name="JEVOIS_MSG" handler="fp_tag_cb"/>
@@ -188,6 +188,7 @@
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == SEARCH_AREA" deroute="Start Search Area" />
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == SEARCH_TRUCK" deroute="Run Search Truck" />
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == RUN_TRACK" deroute="Run Track" />
+      <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == DROP_ROPE" deroute="Goto Rope" />
       <call_once fun="ins_reset_vertical_pos()"/>
       <call_once fun="DropClose()"/>
       <call_once fun="NavResurrect()"/>
@@ -237,6 +238,10 @@
       <set var="mission_nb" value="RUN_TRACK"/>
       <deroute block="Takeoff" />
     </block>
+    <block group="mission" name="Start Rope" strip_button="Drop Rope">
+      <set var="mission_nb" value="DROP_ROPE"/>
+      <deroute block="Takeoff" />
+    </block>
 
     <block name="Goto Delivery">
       <set var="mission_nb" value="DROP_NONE"/>
@@ -264,14 +269,20 @@
       <call_once fun="jevois_stream(true)"/>
       <stay wp="SILENT" until="(tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="search_height"/>
       <deroute block="Drop Package"/>
-      <!--go from="_HERE" hmode="route" wp="S1" height="goto_height"/>
+    </block>
+
+    <block name="Goto Rope">
+      <set var="mission_nb" value="DROP_NONE"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
-      <stay wp="S1" climb="nav_descend_vspeed" vmode="climb" until="GetPosHeight() @LT drop_height+1."/>
-      <go from="S1" hmode="route" wp="SILENT" height="drop_height" />
+      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height+rope_length"/>
+      <go from="_HERE" hmode="route" wp="SILENT" height="goto_height+rope_length"/>
+      <stay wp="SILENT" until="stage_time @GT 5" height="search_height"/>
+      <stay wp="SILENT" climb="-0.5" vmode="climb" until="GetPosHeight() @LT drop_height+rope_length"/>
       <call_once fun="DropOpen()"/>
-      <go from="SILENT" hmode="route" wp="S2" height="drop_height"/>
-      <stay wp="S2" height="search_height" until="stage_time @GT 3"/>
-      <deroute block="Land"/-->
+      <stay wp="SILENT" until="stage_time @GT 3" height="goto_height+rope_length"/>
+      <deroute block="Land"/>
     </block>
 
     <block name="Goto Uncertain">
@@ -285,6 +296,7 @@
       <call_once fun="NavSetWaypointHere(WP_TAG)"/>
       <call_once fun="jevois_stream(true)"/>
       <stay wp="UNCERTAIN" until="(tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="search_height"/>
+      <call_once fun="NavSetWaypointHere(WP_UNCERTAIN)"/>
       <deroute block="Drop Package"/>
     </block>
 
