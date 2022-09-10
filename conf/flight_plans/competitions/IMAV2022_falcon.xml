@@ -41,7 +41,7 @@
     <waypoint name="O1" lat="52.1717" lon="4.42184"/>
     <waypoint name="O2" lat="52.1712" lon="4.42239"/>
     <waypoint name="O3" lat="52.1689" lon="4.41529"/>
-    <waypoint name="04" lat="52.1694" lon="4.41479"/>
+    <waypoint name="O4" lat="52.1694" lon="4.41479"/>
   </waypoints>
   <sectors>
     <sector color="orange" name="Flight_Area">
@@ -65,13 +65,14 @@
   </sectors>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
-    <variable init="35." var="goto_height" min="0.5" max="45." step="0.1"/>
+    <variable init="40." var="goto_height" min="10." max="75." step="0.1"/>
     <variable init="1.5" var="drop_height" min="0.5" max="15." step="0.1"/>
+    <variable init="4." var="takeoff_height" min="0.5" max="15." step="0.1"/>
     <variable init="10." var="land_height" min="0.5" max="20." step="0.1"/>
   </variables>
   <exceptions>
-    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 50) @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
-    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 55) @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
+    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 80) @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
+    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 100) @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">
@@ -91,8 +92,8 @@
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
-      <exception cond="GetPosHeight() @GT 4. @AND mission_nb == DROP_NONE" deroute="Standby"/>
-      <exception cond="GetPosHeight() @GT 4. @AND mission_nb == RUN_TRACK" deroute="Run Track"/>
+      <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == DROP_NONE" deroute="Standby"/>
+      <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == RUN_TRACK" deroute="Run Track"/>
       <call_once fun="ins_reset_vertical_pos()"/>
       <call_once fun="DropClose()"/>
       <call_once fun="NavResurrect()"/>
@@ -135,7 +136,7 @@
       <set value="true" var="force_forward"/>
       <go wp="DELIVERY" from="_HERE" hmode="route" height="goto_height"/>
       <set value="false" var="force_forward"/>
-      <stay wp="DELIVERY" height="goto_height" until="stage_time @GT 10"/>
+      <stay wp="DELIVERY" height="goto_height+20." until="stage_time @GT 10"/>
       <deroute block="Drop Package"/>
     </block>
 
