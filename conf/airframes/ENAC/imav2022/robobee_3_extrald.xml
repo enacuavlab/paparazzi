@@ -69,8 +69,8 @@
 
     <module name="motor_mixing"/>
 
-    <!--module name="flight_recorder"/>
-    <module name="logger" type="tune_indi"/-->
+    <module name="flight_recorder"/>
+    <!--module name="logger" type="tune_indi"/-->
   </firmware>
 
   <servos driver="DShot">
@@ -229,13 +229,14 @@
   </section>
 
   <section name="NAV">
-    <define name="ARRIVED_AT_WAYPOINT" value="0.25"/>
+    <define name="ARRIVED_AT_WAYPOINT" value="2.0"/>
     <define name="NAV_DESCEND_VSPEED" value="-0.5"/>
     <define name="NAV_CLIMB_VSPEED" value="0.5"/>
   </section>
 
   <section name="BAT">
-    <define name="CRITIC_BAT_LEVEL" value="9.8" unit="V"/>
+    <define name="LOW_BAT_LEVEL" value="10.1" unit="V"/>
+    <define name="CRITIC_BAT_LEVEL" value="9.6" unit="V"/>
   </section>
 
   <section name="AUTOPILOT">

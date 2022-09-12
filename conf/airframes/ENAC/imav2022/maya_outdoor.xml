@@ -72,6 +72,8 @@
     <module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3"/>
     </module>
+
+    <module name="flight_recorder"/>
   </firmware>
 
   <servos driver="Pwm">

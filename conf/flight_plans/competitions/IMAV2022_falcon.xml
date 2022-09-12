@@ -15,6 +15,21 @@
     #define DROP_NONE       0
     #define RUN_TRACK       1
 
+    static inline bool delay_test_rc(bool test, int delay) {
+      static int nb = 0;
+        if (test) {
+        nb++;
+        if (nb == delay) {
+          nb = 0;
+          return true;
+        }
+        return false;
+      } else {
+        nb = 0;
+        return false;
+      }
+    }
+
   </header>
   <waypoints>
     <waypoint lat="52.170448" lon="4.418138" name="HOME"/>
@@ -69,10 +84,15 @@
     <variable init="1.5" var="drop_height" min="0.5" max="15." step="0.1"/>
     <variable init="4." var="takeoff_height" min="0.5" max="15." step="0.1"/>
     <variable init="10." var="land_height" min="0.5" max="20." step="0.1"/>
+    <variable init="20." var="drop_energy" min="1." max="50." step="1.0"/>
   </variables>
   <exceptions>
     <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 80) @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
     <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 100) @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))
+    @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 20))" deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))
+    @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))" deroute="Land here"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">
@@ -120,7 +140,7 @@
       <set value="true" var="force_forward"/>
       <go wp="O1" from="_HERE" hmode="route" height="goto_height"/>
       <!--for var="i" from="1" to="3"-->
-      <while cond="!electrical.bat_low">
+      <while cond="!electrical.bat_low @OR (electrical.energy @GT drop_energy)">
         <go from="O1" wp="O2" hmode="route" height="goto_height"/>
         <go from="O2" wp="O3" hmode="route" height="goto_height"/>
         <go from="O3" wp="O4" hmode="route" height="goto_height"/>
@@ -142,7 +162,7 @@
 
     <block name="Drop Package">
       <stay wp="DELIVERY" climb="-1.5" vmode="climb" until="GetPosHeight() @LT drop_height"/>
-      <call_once fun="DropOpen()"/>
+      <!--call_once fun="DropOpen()"/-->
       <stay wp="DELIVERY" until="stage_time @GT 3" height="land_height"/>
       <deroute block="Land"/>
     </block>

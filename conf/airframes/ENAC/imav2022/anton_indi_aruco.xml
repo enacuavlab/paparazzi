@@ -75,7 +75,7 @@
       <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
     </module>
 
-    <!--module name="flight_recorder"/-->
+    <module name="flight_recorder"/>
     <!--module name="logger" type="tune_indi"/-->
   </firmware>
 

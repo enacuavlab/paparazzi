@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 
-<flight_plan alt="5" ground_alt="0" lat0="52.171490" lon0="4.417461" max_dist_from_home="610" name="IMAV2022 Drop" security_height="4">
+<flight_plan alt="10" ground_alt="0" lat0="52.171490" lon0="4.417461" max_dist_from_home="610" name="IMAV2022 Drop" security_height="8">
 
   <header>
     #ifndef SwitchServoOn
@@ -40,6 +40,22 @@
         tag_valid = true;
       }
     }
+    
+    static inline bool delay_test_rc(bool test, int delay) {
+      static int nb = 0;
+        if (test) {
+        nb++;
+        if (nb == delay) {
+          nb = 0;
+          return true;
+        }
+        return false;
+      } else {
+        nb = 0;
+        return false;
+      }
+    }
+
     #endif
   </header>
   <waypoints>
@@ -126,7 +142,7 @@
   </sectors>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
-    <variable init="6." var="goto_height" min="0.5" max="15." step="0.1"/>
+    <variable init="10." var="goto_height" min="0.5" max="15." step="0.1"/>
     <variable init="1.5" var="drop_height" min="0.5" max="15." step="0.1"/>
     <variable init="4.5" var="search_height" min="0.5" max="15." step="0.1"/>
     <variable init="5.5" var="truck_height" min="0.5" max="15." step="0.1"/>
@@ -158,6 +174,10 @@
     @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
     <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 50) 
     @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))
+    @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 20))" deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))
+    @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))" deroute="Land here"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">
@@ -169,7 +189,7 @@
     <block name="Geo init">
       <while cond="LessThan(NavBlockTime(), 10)"/>
     </block>
-    <block name="Holding point">
+    <block name="Holding point" strip_button="H. Point" group="home">
       <call_once fun="NavKillThrottle()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
@@ -177,7 +197,7 @@
       <call_once fun="NavResurrect()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
-    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
+    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png" group="home">
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == DROP_NONE" deroute="Standby"/>
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == DROP_DELIVERY" deroute="Goto Delivery"/>
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == DROP_SILENT" deroute="Goto Silent" />
@@ -196,7 +216,7 @@
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
       <stay climb="nav_climb_vspeed" vmode="climb" wp="LANDPAD"/>
     </block>
-    <block name="Standby" strip_button="Standby" strip_icon="home.png">
+    <block name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
       <set var="mission_nb" value="DROP_NONE"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <stay wp="STDBY"/>
@@ -320,13 +340,13 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <!--call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/-->
-      <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
+      <call_once fun="guidance_h_SetMaxSpeed(search_speed+1.)"/>
       <set var="follow_follow_wp_status" value="MODULES_START"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
+      <call_once fun="jevois_stream(true)"/>
       <go wp="TRUCK" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="NavSetWaypointHere(WP_TAG)"/>
-      <call_once fun="jevois_stream(true)"/>
       <stay wp="TRUCK" until="stage_time @GT 5" height="truck_height"/>
       <stay wp="TRUCK" until="(tag_tracking.status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="truck_height"/>
       <deroute block="Drop Package on Truck"/>
@@ -409,7 +429,7 @@
     <block name="Drop Package on Truck">
       <exception cond="tag_tracking.status == TAG_TRACKING_SEARCHING @OR tag_tracking.status == TAG_TRACKING_LOST" deroute="Drop on Truck fallback"/>
       <stay wp="TAG" until="stage_time @GT 3" height="truck_height"/>
-      <stay wp="TAG" climb="-0.5" vmode="climb" until="((tag_distance @LT drop_height) @AND tag_valid) @OR (GetPosHeight() @LT drop_height+0.5)" post_call="tag_valid = false"/>
+      <stay wp="TAG" climb="-0.5" vmode="climb" until="((tag_distance @LT drop_height+0.5) @AND tag_valid) @OR (GetPosHeight() @LT drop_height+1.)" post_call="tag_valid = false"/>
       <call_once fun="DropOpen()"/>
       <stay wp="TAG" until="stage_time @GT 3" height="goto_height"/>
       <set var="tag_tracking.motion_type" value="TAG_TRACKING_FIXED_POS"/>
@@ -419,7 +439,7 @@
 
     <block name="Drop on Truck fallback">
       <stay wp="TRUCK" until="stage_time @GT 3" height="truck_height"/>
-      <stay wp="TRUCK" climb="-0.5" vmode="climb" until="GetPosHeight() @LT drop_height+0.5"/>
+      <stay wp="TRUCK" climb="-0.5" vmode="climb" until="GetPosHeight() @LT drop_height+1.0"/>
       <call_once fun="DropOpen()"/>
       <stay wp="TRUCK" until="stage_time @GT 3" height="goto_height"/>
       <set var="tag_tracking.motion_type" value="TAG_TRACKING_FIXED_POS"/>

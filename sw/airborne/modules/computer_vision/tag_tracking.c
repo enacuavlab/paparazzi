@@ -127,11 +127,11 @@ float speed_circle = 0.03;
 #endif
 
 #ifndef TAG_TRACKING_PREDICT_TIME
-#define TAG_TRACKING_PREDICT_TIME 1.f
+#define TAG_TRACKING_PREDICT_TIME 1.5f
 #endif
 
 #ifndef TAG_TRACKING_MAX_OFFSET
-#define TAG_TRACKING_MAX_OFFSET 1.5f
+#define TAG_TRACKING_MAX_OFFSET 2.0f
 #endif
 
 // generated in modules.h

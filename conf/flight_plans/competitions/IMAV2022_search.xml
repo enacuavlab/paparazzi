@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 
-<flight_plan alt="5" ground_alt="0" lat0="52.171490" lon0="4.417461" max_dist_from_home="610" name="IMAV2022 Drop" security_height="4">
+<flight_plan alt="10" ground_alt="0" lat0="52.171490" lon0="4.417461" max_dist_from_home="610" name="IMAV2022 Drop" security_height="8">
   
   <header>
     #define DROP_NONE       0
@@ -11,6 +11,23 @@
     #ifndef jevois_stream
     #define jevois_stream(_x) {}
     #endif
+    
+    static inline bool delay_test_rc(bool test, int delay) {
+      static int nb = 0;
+        if (test) {
+        nb++;
+        if (nb == delay) {
+          nb = 0;
+          return true;
+        }
+        return false;
+      } else {
+        nb = 0;
+        return false;
+      }
+    }
+
+
   </header>
   <waypoints>
     <waypoint lat="52.170448" lon="4.418138" name="HOME"/>
@@ -20,10 +37,10 @@
     <waypoint lat="52.169916" lon="4.415763" name="UNC_CENTER"/>
     <waypoint lat="52.170271" lon="4.414617" name="UNCERTAIN"/>
     <waypoint lat="52.168736" lon="4.414774" name="AREA_TAG"/>
-    <waypoint lat="52.167796" lon="4.414780" name="A1"/>
-    <waypoint lat="52.170170" lon="4.420680" name="A2"/>
-    <waypoint lat="52.169581" lon="4.421346" name="A3"/>
-    <waypoint lat="52.167203" lon="4.415598" name="A4"/>
+    <waypoint lat="52.169274" lon="4.416938" name="A1"/>
+    <waypoint lat="52.171144" lon="4.422427" name="A2"/>
+    <waypoint lat="52.169930" lon="4.423146" name="A3"/>
+    <waypoint lat="52.168120" lon="4.418073" name="A4"/>
     <waypoint lat="52.168043" lon="4.412970" name="_D1"/>
     <waypoint lat="52.171484" lon="4.423171" name="_D2"/>
     <waypoint lat="52.170171" lon="4.423786" name="_D3"/>
@@ -64,9 +81,9 @@
       <corner name="_FLY2"/>
       <corner name="_FLY3"/>
       <corner name="_FLY4"/>
-      <corner name = "_FLY5" />
-      <corner name = "_FLY6" />
-      <corner name = "_FLY7" />
+      <corner name="_FLY5"/>
+      <corner name="_FLY6"/>
+      <corner name="_FLY7"/>
     </sector>
     <sector color="red" name="Kill">
       <corner name="_KILL1"/>
@@ -81,9 +98,9 @@
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
     <variable init="10." var="goto_height" min="0.5" max="15." step="0.1"/>
-    <variable init="12." var="search_height" min="0.5" max="15." step="0.1"/>
+    <variable init="8." var="search_height" min="0.5" max="15." step="0.1"/>
     <variable init="90." var="search_radius" min="20" max="150." step="1.0"/>
-    <variable init="12." var="search_sweep" min="5." max="20." step="0.1"/>
+    <variable init="8." var="search_sweep" min="5." max="20." step="0.1"/>
     <variable init="6." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="4." var="search_speed" min="0.5" max="10." step="0.1"/>
   </variables>
@@ -99,6 +116,10 @@
     <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 55) 
     @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
     <exception cond="electrical.bat_low @AND autopilot_in_flight() @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Land"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))
+    @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 20))" deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))
+    @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))" deroute="Land here"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">
@@ -145,6 +166,7 @@
     <block name="Run Search Uncertain">
       <set var="mission_nb" value="DROP_NONE"/>
       <exception cond="tag_tracking.status == TAG_TRACKING_RUNNING" deroute="Start Search Area"/>
+      <exception cond="electrical.bat_low" deroute="Land"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
@@ -167,6 +189,7 @@
       <deroute block="Run Search Area"/>
     </block>
     <block name="Run Search Area">
+      <exception cond="electrical.bat_low" deroute="Land"/>
       <exception cond="PolySurveySweepBackNum > 0" deroute="Land"/>
       <call_once fun="jevois_stream(true)"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
