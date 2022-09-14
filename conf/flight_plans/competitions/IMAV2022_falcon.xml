@@ -144,7 +144,7 @@
       <go wp="CLIMB" from="_HERE" hmode="route" height="goto_height"/>
       <go wp="O1" from="CLIMB" hmode="route" height="goto_height"/>
       <!--for var="i" from="1" to="3"-->
-      <while cond="!electrical.bat_low @OR (electrical.energy @GT drop_energy)">
+      <while cond="(!electrical.bat_low) @AND (electrical.energy @LT drop_energy)">
         <go from="O1" wp="O2" hmode="route" height="goto_height"/>
         <go from="O2" wp="O3" hmode="route" height="goto_height"/>
         <go from="O3" wp="O4" hmode="route" height="goto_height"/>
@@ -166,7 +166,7 @@
 
     <block name="Drop Package">
       <stay wp="DELIVERY" climb="-1.5" vmode="climb" until="GetPosHeight() @LT drop_height"/>
-      <!--call_once fun="DropOpen()"/-->
+      <call_once fun="DropOpen()"/>
       <stay wp="DELIVERY" climb="1.0" vmode="climb" until="stage_time @GT 3"/>
       <deroute block="Emergency Land"/>
     </block>
