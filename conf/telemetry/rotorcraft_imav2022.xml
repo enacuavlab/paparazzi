@@ -160,6 +160,7 @@
       <message name="IMU_GYRO_SCALED"          period=".075"/>
       <message name="IMU_ACCEL_SCALED"         period=".075"/>
       <message name="IMU_MAG_SCALED"           period=".2"/>
+      <message name="AHRS_QUAT_INT"          period=".05"/>
       <message name="LIDAR"                    period="0.05"/>
       <message name="GUIDANCE_INDI_HYBRID"   period="0.05"/>
     </mode>

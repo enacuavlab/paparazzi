@@ -255,7 +255,7 @@
 
     <!--define name="ARRIVED_AT_WAYPOINT" value="30.0"/-->
     <!--define name="DEFAULT_CIRCLE_RADIUS" value="50.0"/--> <!-- AKA: NAV_RADIUS -->
-    <define name="ARRIVED_AT_WAYPOINT" value="40.0"/> <!-- For outdoor -->
+    <define name="ARRIVED_AT_WAYPOINT" value="50.0"/> <!-- For outdoor -->
     <define name="DEFAULT_CIRCLE_RADIUS" value="60"/> <!-- For outdoor -->
     <!--Switch advanced INDI scheduling functions on or off-->
     <define name="INDI_FUNCTIONS_RC_CHANNEL" value="6"/>

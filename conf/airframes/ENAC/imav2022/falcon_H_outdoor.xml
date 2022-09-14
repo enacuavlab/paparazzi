@@ -61,13 +61,12 @@
     <define name= "MAG_Y_CURRENT_COEF" value="24.4268225323"/>
     <define name= "MAG_Z_CURRENT_COEF" value="159.518542807"/>
 
-
-    <define name="MAG_X_NEUTRAL" value="2347"/>
-    <define name="MAG_Y_NEUTRAL" value="-4958"/>
-    <define name="MAG_Z_NEUTRAL" value="-9542"/>
-    <define name="MAG_X_SENS" value="0.6601622979028107" integer="16"/>
-    <define name="MAG_Y_SENS" value="0.6591563958719985" integer="16"/>
-    <define name="MAG_Z_SENS" value="0.6641206713803832" integer="16"/>
+<define name="MAG_X_NEUTRAL" value="2000"/>
+<define name="MAG_Y_NEUTRAL" value="-5315"/>
+<define name="MAG_Z_NEUTRAL" value="-8132"/>
+<define name="MAG_X_SENS" value="0.6089196722289625" integer="16"/>
+<define name="MAG_Y_SENS" value="0.6098779925040736" integer="16"/>
+<define name="MAG_Z_SENS" value="0.632633186446429" integer="16"/>
 
 
 <!--     <define name="MAG_X_NEUTRAL" value="-349"/>
@@ -270,7 +269,7 @@
 
     <!--define name="ARRIVED_AT_WAYPOINT" value="30.0"/-->
     <!--define name="DEFAULT_CIRCLE_RADIUS" value="50.0"/--> <!-- AKA: NAV_RADIUS -->
-    <define name="ARRIVED_AT_WAYPOINT" value="40.0"/> <!-- For outdoor -->
+    <define name="ARRIVED_AT_WAYPOINT" value="50.0"/> <!-- For outdoor -->
     <define name="DEFAULT_CIRCLE_RADIUS" value="60"/> <!-- For outdoor -->
     <!--Switch advanced INDI scheduling functions on or off-->
     <define name="INDI_FUNCTIONS_RC_CHANNEL" value="6"/>
@@ -403,7 +402,7 @@
 
     <module name="airspeed" type="sdp3x">
       <define name="SDP3X_i2C_DEV" value="i2c2"/>
-      <define name="SDP3X_PRESSURE_SCALE" value="7.0"/>
+      <define name="SDP3X_PRESSURE_SCALE" value="8.0"/>
       <define name="SDP3X_PRESSURE_OFFSET" value="0.0"/>
       <define name="USE_AIRSPEED_SDP3X" value="TRUE"/>
     </module>

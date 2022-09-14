@@ -654,7 +654,7 @@ struct FloatVect3 nav_get_speed_sp_from_line(struct FloatVect2 line_v_enu, struc
 
   // Bound vertical speed setpoint
   if(stateGetAirspeed_f() > 13.0) {
-    Bound(speed_sp_return.z, -4.0, 5.0);
+    Bound(speed_sp_return.z, -2.0, 2.0);
   } else {
     Bound(speed_sp_return.z, -nav_climb_vspeed, -nav_descend_vspeed);
   }
@@ -710,7 +710,7 @@ struct FloatVect3 nav_get_speed_sp_from_go(struct EnuCoor_i target, float pos_ga
 
   // Bound vertical speed setpoint
   if(stateGetAirspeed_f() > 13.0) {
-    Bound(speed_sp_return.z, -4.0, 5.0);
+    Bound(speed_sp_return.z, -2.0, 2.0);
   } else {
     Bound(speed_sp_return.z, -nav_climb_vspeed, -nav_descend_vspeed);
   }
