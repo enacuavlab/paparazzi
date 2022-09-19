@@ -342,9 +342,9 @@
       <!--call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/-->
       <call_once fun="guidance_h_SetMaxSpeed(search_speed+1.)"/>
       <set var="follow_follow_wp_status" value="MODULES_START"/>
-      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="truck_height+2."/>
       <call_once fun="jevois_stream(true)"/>
-      <go wp="TRUCK" from="_HERE" hmode="route" height="goto_height"/>
+      <go wp="TRUCK" from="_HERE" hmode="route" height="truck_height+2."/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <call_once fun="NavSetWaypointHere(WP_TAG)"/>
       <stay wp="TRUCK" until="stage_time @GT 5" height="truck_height"/>

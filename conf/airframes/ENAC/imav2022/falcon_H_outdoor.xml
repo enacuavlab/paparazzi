@@ -57,9 +57,9 @@
     <define name="MAG_Z_CURRENT_COEF" value="0."/> -->
 
 
-    <define name= "MAG_X_CURRENT_COEF" value="-51.1272562535"/>
-    <define name= "MAG_Y_CURRENT_COEF" value="24.4268225323"/>
-    <define name= "MAG_Z_CURRENT_COEF" value="159.518542807"/>
+    <define name= "MAG_X_CURRENT_COEF" value="-0.511272562535"/>
+    <define name= "MAG_Y_CURRENT_COEF" value="0.244268225323"/>
+    <define name= "MAG_Z_CURRENT_COEF" value="1.59518542807"/>
 
 <define name="MAG_X_NEUTRAL" value="2000"/>
 <define name="MAG_Y_NEUTRAL" value="-5315"/>

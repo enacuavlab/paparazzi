@@ -87,7 +87,7 @@
     <variable init="1.5" var="drop_height" min="0.5" max="15." step="0.1"/>
     <variable init="4." var="takeoff_height" min="0.5" max="15." step="0.1"/>
     <variable init="10." var="land_height" min="0.5" max="20." step="0.1"/>
-    <variable init="20." var="drop_energy" min="1." max="50." step="1.0"/>
+    <variable init="25." var="drop_energy" min="1." max="50." step="1.0"/>
   </variables>
   <exceptions>
     <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 80) @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
