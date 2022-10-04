@@ -140,6 +140,13 @@
       <deroute block="Land"/>
     </block>
 
+    <block name="Goto Rover" strip_button="Goto Rover" group="tag">
+      <go wp="ROVER"/>
+      <call_once fun="jevois_stream(true)"/>
+      <stay wp="ROVER" until="stage_time @GT 2"/>
+      <deroute block="Drop Package"/>
+    </block>
+
     <block name="Land Tag" strip_button="Land Tag" group="tag">
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
       <exception cond="stateGetPositionEnu_f()->z @LT 0.2" deroute="Ramp down"/>
