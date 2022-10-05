@@ -110,6 +110,7 @@ PRINT_CONFIG_VAR(IMU_F1E_BIND_ID)
 static abi_event gyro_ev;
 static abi_event accel_ev;
 static abi_event mag_ev; // only passthrough
+static abi_event aligner_ev; // only passthrough
 
 static void gyro_cb(uint8_t sender_id, uint32_t stamp, struct Int32Rates *gyro)
 {
@@ -179,6 +180,17 @@ static void mag_cb(uint8_t sender_id __attribute__((unused)),
   AbiSendMsgIMU_MAG(IMU_F1E_ID, stamp, mag);
 }
 
+static void aligner_cb(uint8_t sender_id __attribute__((unused)),
+                   uint32_t stamp, struct Int32Rates *lp_gyro,
+                   struct Int32Vect3 *lp_accel, struct Int32Vect3 *lp_mag)
+{
+  if (sender_id == IMU_F1E_ID) {
+    return; // don't process own data
+  }
+
+  AbiSendMsgIMU_LOWPASSED(IMU_F1E_ID, stamp, lp_gyro, lp_accel, lp_mag);
+}
+
 /**
  * Init and bindings
  */
@@ -208,6 +220,7 @@ void filter_1euro_imu_init(void)
   AbiBindMsgIMU_GYRO(IMU_F1E_BIND_ID, &gyro_ev, gyro_cb);
   AbiBindMsgIMU_ACCEL(IMU_F1E_BIND_ID, &accel_ev, accel_cb);
   AbiBindMsgIMU_MAG(IMU_F1E_BIND_ID, &mag_ev, mag_cb);
+  AbiBindMsgIMU_LOWPASSED(AHRS_ICQ_IMU_ID, &aligner_ev, aligner_cb);
 }
 
 /**
