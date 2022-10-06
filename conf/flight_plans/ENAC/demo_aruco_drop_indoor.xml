@@ -120,12 +120,14 @@
 
     <block name="Follow Tag" strip_button="Follow Tag" group="tag">
       <call_once fun="jevois_stream(true)"/>
+      <set var="tag_tracking.motion_type" value="TAG_TRACKING_MOVING"/>
       <stay wp="TAG" height="search_height"/>
     </block>
     <block name="Follow Guided" strip_button="Follow Guided" group="tag">
       <call_once fun="jevois_stream(true)"/>
+      <set var="tag_tracking.motion_type" value="TAG_TRACKING_MOVING"/>
       <go wp="TAG" height="search_height"/>
-      <guided flags="GUIDED_FLAG_XY_VEL" commands="tag_tracking.speed_cmd.x, tag_tracking.speed_cmd.y, -search_height, 0." until="Neq(tag_tracking.status, TAG_TRACKING_RUNNING)"/>
+      <guided flags="GUIDED_FLAG_XY_VEL" commands="tag_tracking.speed_cmd.x, tag_tracking.speed_cmd.y, -search_height, 0." until="Neq(tag_tracking.status, TAG_TRACKING_RUNNING)" pre_call="tag_tracking_compute_speed()"/>
       <deroute block="Standby"/>
     </block>
 
