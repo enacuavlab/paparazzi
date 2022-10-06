@@ -395,9 +395,9 @@ void tag_tracking_compute_speed(void)
   if (tag_tracking.status == TAG_TRACKING_RUNNING) {
     // compute speed command as estimated tag speed + gain * position error
     struct NedCoor_f pos = *stateGetPositionNed_f();
-    tag_tracking.speed_cmd.x = tag_tracking.speed.x + tag_tracking.kp * (pos.x - tag_tracking.pos.x);
-    tag_tracking.speed_cmd.y = tag_tracking.speed.y + tag_tracking.kp * (pos.y - tag_tracking.pos.y);
-    tag_tracking.speed_cmd.z = tag_tracking.speed.z + tag_tracking.kpz * (pos.z - tag_tracking.pos.z);
+    tag_tracking.speed_cmd.x = tag_tracking.speed.x + tag_tracking.kp * (tag_tracking.pos.x - pos.x);
+    tag_tracking.speed_cmd.y = tag_tracking.speed.y + tag_tracking.kp * (tag_tracking.pos.y - pos.y);
+    tag_tracking.speed_cmd.z = tag_tracking.speed.z + tag_tracking.kpz * (tag_tracking.pos.z - pos.z);
     VECT2_STRIM(tag_tracking.speed_cmd, -TAG_TRACKING_MAX_SPEED, TAG_TRACKING_MAX_SPEED); // trim max horizontal speed
     BoundAbs(tag_tracking.speed_cmd.z, TAG_TRACKING_MAX_VZ); // tim max vertical speed
   }
