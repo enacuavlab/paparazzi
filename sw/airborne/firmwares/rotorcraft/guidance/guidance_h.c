@@ -619,6 +619,9 @@ void guidance_h_from_nav(bool in_flight)
 #else
     INT32_VECT2_NED_OF_ENU(guidance_h.sp.pos, navigation_carrot);
 
+    // make run guidance is in position and heading control
+    ClearBit(guidance_h.sp.mask, 5);
+    ClearBit(guidance_h.sp.mask, 7);
     guidance_h_update_reference();
 
 #if GUIDANCE_HEADING_IS_FREE
