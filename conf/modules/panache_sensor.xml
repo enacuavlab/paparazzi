@@ -1,0 +1,15 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="panache_sensor" dir="sensors" task="default">
+  <doc>
+    <description>Get data from Panache sensors, or datalink (for simulation)</description>
+  </doc>
+  <header>
+    <file name="panache_sensor.h"/>
+  </header>
+  <init fun="panache_init()"/>
+  <datalink fun="panache_dl_cb(buf)" message="PAYLOAD_COMMAND"/>
+  <makefile>
+    <file name="panache_sensor.c"/>
+    <test/>
+  </makefile>
+</module>
