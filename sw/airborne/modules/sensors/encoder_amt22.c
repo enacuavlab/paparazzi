@@ -37,8 +37,8 @@ void encoder_amt22_init(void)
 
 void encoder_amt22_periodic(void)
 {
-  amt22_request(&amt22, AMT22_READ_TURNS);
-
+  //amt22_request(&amt22, AMT22_READ_TURNS);
+  amt22_request(&amt22, AMT22_READ_POSITION);
   float f[2] = {amt22.position, amt22.turns};
   DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 2, f);
 
