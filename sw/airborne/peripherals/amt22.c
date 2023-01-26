@@ -109,6 +109,8 @@ bool amt22_checkbit(uint16_t data) {
     even ^= (data>>(2*i)) & 0x01;
     odd  ^= (data>>(2*i+1)) & 0x01;
   }
+  even = !even;
+  odd  = !odd;
   return even == rx_even && odd == rx_odd;
     
 }
