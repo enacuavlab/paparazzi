@@ -51,9 +51,10 @@ void amt22_event(struct amt22_t *amt) {
     if(amt->request == AMT22_READ_POSITION) {
       uint8_t p0 = amt->trans.input_buf[0];
       uint8_t p1 = amt->trans.input_buf[1];
+      uint16_t data = p0 << 8 | p1;
       
-      if(amt22_checkbit(p0,p1)){
-        amt->position = ((p0 << 8 | p1) & 0x3fff) >> 2; // 12 bits so shift 2
+      if(amt22_checkbit(data)){
+        amt->position = (data & 0x3fff) >> 2; // 12 bits so shift 2
       }
     }
     else if(amt->request == AMT22_READ_TURNS) {
@@ -61,8 +62,10 @@ void amt22_event(struct amt22_t *amt) {
       uint8_t p1 = amt->trans.input_buf[1];
       uint8_t t0 = amt->trans.input_buf[2];
       uint8_t t1 = amt->trans.input_buf[3];
-      if(amt22_checkbit(p0,p1)){
-        amt->position = ((p0 << 8 | p1) & 0x3fff) >> 2; // 12 bits so shift 2
+      uint16_t data = p0 << 8 | p1;
+      
+      if(amt22_checkbit(data)){
+        amt->position = (data & 0x3fff) >> 2; // 12 bits so shift 2
       }
       amt->turns =    (t0 << 8 | t1);
       
@@ -96,24 +99,16 @@ void amt22_event(struct amt22_t *amt) {
 
 }
 
-bool amt22_checkbit(uint8_t p0, uint8_t p1) {
-  uint16_t data = ((p0 << 8 | p1) & 0x3fff) >> 2;
+bool amt22_checkbit(uint16_t data) {
+  uint8_t rx_even = (data >> 14) & 0x01;
+  uint8_t rx_odd = (data >> 15) & 0x01;
+
   uint8_t odd = 0;
   uint8_t even = 0;
-  while (data)
-  {
-    even ^= data & 1;
-    data >>= 1;
-    odd ^= data & 1;
-    data >>= 1;
+  for(int i=0; i<7; i++) {
+    even ^= (data>>(2*i)) & 0x01;
+    odd  ^= (data>>(2*i+1)) & 0x01;
   }
-  even = !even;
-  odd = !odd;
- if((even == ((p0 & 0x40) >> 6)) && (odd == ((p0 & 0x80) >> 7))) {
-  return 1;
- }
- else{
-  return 0;
- }
+  return even == rx_even && odd == rx_odd;
     
 }
