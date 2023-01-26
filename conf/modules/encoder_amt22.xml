@@ -21,6 +21,7 @@
     <define name="AMT22_SPI_SLAVE_IDX" value="$(AMT22_SPI_SLAVE_IDX)"/>
     <file name="encoder_amt22.c"/>
     <file name="amt22.c" dir="peripherals"/>
+    <file name="high_gain_filter.c" dir="filters"/>
     <test/>
   </makefile>
 </module>
