@@ -34,4 +34,4 @@ void amt22_event(struct amt22_t *amt);
 
 void amt22_request(struct amt22_t *amt,  enum amt22_request_t request);
 
-bool amt22_checkbit(uint8_t p0, uint8_t p1);
+bool amt22_checkbit(uint16_t data);

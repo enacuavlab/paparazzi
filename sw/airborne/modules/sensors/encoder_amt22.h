@@ -21,6 +21,7 @@
 /** @file "modules/sensors/encoder_amt22.h"
  * @author Flo&Fab <name.surname@enac.fr>
  * Driver for AMT22 encoder from CUI devices.
+ * add <module name="encoder" type="amt22"/>
  */
 
 #ifndef ENCODER_AMT22_H

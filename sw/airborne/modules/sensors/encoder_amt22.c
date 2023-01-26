@@ -27,20 +27,26 @@
 #include "peripherals/amt22.h"
 
 #include "modules/datalink/downlink.h"
+#include "filters/high_gain_filter.h"
+
 
 struct amt22_t amt22;
+
+struct high_gain_filter filter;
 
 void encoder_amt22_init(void)
 {
   amt22_init(&amt22, &AMT22_SPI_DEV, AMT22_SPI_SLAVE_IDX);
+  high_gain_filter_init(&filter, 1, 1.3, 0.06, 50, 0, 0);
 }
 
 void encoder_amt22_periodic(void)
 {
   //amt22_request(&amt22, AMT22_READ_TURNS);
   amt22_request(&amt22, AMT22_READ_POSITION);
-  float f[2] = {amt22.position, amt22.turns};
-  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 2, f);
+  high_gain_filter_process(&filter, amt22.position);
+  float f[4] = {amt22.position, amt22.turns, filter.hatx[0], filter.hatx[1]};
+  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 4, f);
 
 }
 
