@@ -26,6 +26,9 @@ void amt22_init(struct amt22_t *amt, struct spi_periph *periph, uint8_t slave_id
   amt->request = AMT22_READ_POSITION;
   amt->position = 0;
   amt->turns = 0;
+  amt->offset = 0;
+  amt->flag_offset = 0;
+  amt->angle_rad = 0;
 }
 
 void amt22_request(struct amt22_t *amt, enum amt22_request_t request) {
@@ -48,14 +51,20 @@ void amt22_event(struct amt22_t *amt) {
 
   // spi success, read data
   if(amt->trans.status == SPITransSuccess) {
-    if(amt->request == AMT22_READ_POSITION) {
+    if(amt->request == AMT22_READ_POSITION || amt->request == AMT22_SET_ZERO) {
       uint8_t p0 = amt->trans.input_buf[0];
       uint8_t p1 = amt->trans.input_buf[1];
       uint16_t data = p0 << 8 | p1;
       
       if(amt22_checkbit(data)){
-        amt->position = (data & 0x3fff) >> 2; // 12 bits so shift 2
+        if(amt->flag_offset == 0){
+          amt->offset = (data & 0x3fff) >> 2;
+          amt->flag_offset = 1;
+        }
+        amt->position = ((data & 0x3fff) >> 2) - amt->offset; // 12 bits so shift 2
+        amt->angle_rad = amt->position*2*M_PI/4096;
       }
+      
     }
     else if(amt->request == AMT22_READ_TURNS) {
       uint8_t p0 = amt->trans.input_buf[0];
@@ -80,6 +89,13 @@ void amt22_event(struct amt22_t *amt) {
     if(amt->request == AMT22_READ_POSITION) {
       amt->trans.output_buf[0] = 0x00;
       amt->trans.output_buf[1] = 0x00;
+      amt->trans.output_length = 2;
+      amt->trans.input_length = 2;
+      spi_submit(amt->periph, &amt->trans);
+    }
+    if(amt->request == AMT22_SET_ZERO) {
+      amt->trans.output_buf[0] = 0x00;
+      amt->trans.output_buf[1] = 0x70;
       amt->trans.output_length = 2;
       amt->trans.input_length = 2;
       spi_submit(amt->periph, &amt->trans);

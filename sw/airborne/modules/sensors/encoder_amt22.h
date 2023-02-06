@@ -27,6 +27,8 @@
 #ifndef ENCODER_AMT22_H
 #define ENCODER_AMT22_H
 
+extern struct high_gain_filter H_g_filter_rot;
+
 extern void encoder_amt22_init(void);
 extern void encoder_amt22_periodic(void);
 extern void encoder_amt22_event(void);
