@@ -38,7 +38,7 @@ struct high_gain_filter H_g_filter_rot;
 void encoder_amt22_init(void)
 {
   amt22_init(&amt22, &AMT22_SPI_DEV, AMT22_SPI_SLAVE_IDX);
-  high_gain_filter_init(&H_g_filter_rot, 1, 1.3, 0.06, 50, 0, 0);
+  high_gain_filter_init(&H_g_filter_rot, 1, 1.3, 0.06, 500, 0, 0);
 }
 
 void encoder_amt22_periodic(void)
