@@ -400,6 +400,12 @@
 #define IMU_F1E_ID 30
 #endif
 
+// rotate imu
+#ifndef IMU_ROT_ID
+#define IMU_ROT_ID 31
+#endif
+
+
 /*
  * ID for AHRS aligner
  */

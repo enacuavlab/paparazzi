@@ -10,7 +10,7 @@
     <file name="encoder_amt22.h"/>
   </header>
   <init fun="encoder_amt22_init()"/>
-  <periodic fun="encoder_amt22_periodic()" freq="50.0" autorun="TRUE"/>
+  <periodic fun="encoder_amt22_periodic()" freq="500.0" autorun="TRUE"/>
   <event fun="encoder_amt22_event()"/>
   <makefile>
     <configure name="AMT22_SPI_DEV" default="SPI2" case="upper|lower"/>
