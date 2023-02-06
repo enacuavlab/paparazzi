@@ -165,8 +165,8 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
     // compute rotation
     struct FloatVect3 accel_rot_f;
     float_rmat_vmult(&accel_rot_f, &rotate_imu.Rot_mat_f, &accel_f);
-    float f[3] = {accel_rot_f.x, accel_rot_f.y, accel_rot_f.z};
-    DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 3, f);
+    //float f[3] = {accel_rot_f.x, accel_rot_f.y, accel_rot_f.z};
+    //DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 3, f);
 
     // send data
     struct Int32Vect3 accel_rot_i;
