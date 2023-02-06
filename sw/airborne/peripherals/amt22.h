@@ -23,8 +23,11 @@ struct amt22_t {
 
 
   enum amt22_request_t request;
-  uint16_t position;
+  int16_t position;
+  uint16_t offset;
   int16_t turns;
+  bool flag_offset;
+  float angle_rad;
   // timestamp ?
 };
 
