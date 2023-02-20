@@ -668,7 +668,7 @@ static void mavlink_send_gps_global_origin(struct transport_tx *trans, struct li
     mavlink_msg_gps_global_origin_send(MAVLINK_COMM_0,
                                        state.ned_origin_i.lla.lat,
                                        state.ned_origin_i.lla.lon,
-                                       state.ned_origin_i.hmsl);
+                                       state.ned_origin_i.lla.alt);
     MAVLinkSendMessage();
   }
 }
