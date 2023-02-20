@@ -30,9 +30,10 @@
     <module name="mavlink">
       <configure name="MAVLINK_PORT" value="UDP1"/>
       <!-- <define name="UDP1_HOST" value="192.168.56.1"/> -->
-      <define name="UDP1_HOST" value="127.0.0.1"/>
+      <define name="UDP1_HOST" value="10.0.0.2"/>
       <define name="UDP1_PORT_OUT" value="14550"/>
-      <define name="UDP1_PORT_IN" value="14555"/>
+      <define name="UDP1_PORT_IN" value="14550"/>
+      <define name="MAVLINK_DEBUG" value="printf"/>
     </module>
 
 
