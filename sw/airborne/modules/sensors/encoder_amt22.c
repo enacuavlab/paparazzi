@@ -38,7 +38,8 @@ struct high_gain_filter H_g_filter_rot;
 void encoder_amt22_init(void)
 {
   amt22_init(&amt22, &AMT22_SPI_DEV, AMT22_SPI_SLAVE_IDX);
-  high_gain_filter_init(&H_g_filter_rot, 1, 1.3, 0.06, 500, 0, 0);
+  float alpha_gain[3] = {1.5, 1.8, 0.65};
+  high_gain_filter_init(&H_g_filter_rot, alpha_gain, 0.06, 500);
 }
 
 void encoder_amt22_periodic(void)
@@ -46,8 +47,11 @@ void encoder_amt22_periodic(void)
   //amt22_request(&amt22, AMT22_READ_TURNS);
   amt22_request(&amt22, AMT22_READ_POSITION);
   high_gain_filter_process(&H_g_filter_rot, amt22.angle_rad);
-  float f[4] = {amt22.position, amt22.angle_rad, H_g_filter_rot.hatx[0], H_g_filter_rot.hatx[1]};
-  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 4, f);
+  /*
+  float f[5] = {amt22.position, amt22.angle_rad, H_g_filter_rot.hatx[0], H_g_filter_rot.hatx[1], H_g_filter_rot.hatx[2]};
+  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 5, f);
+  */
+  
 
 }
 
