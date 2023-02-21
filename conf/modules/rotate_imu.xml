@@ -27,6 +27,8 @@
     </description>
     <section name="ROTATE_IMU" prefix="ROTATE_IMU_">
       <define name="ENABLED" value="FALSE|TRUE" description="activate or not the rotation by default"/>
+      <define name="POS_CENTER_IN_IMU_X" value="" description="postion selon l'axe x du centre de rotation par rapport à l'imu dans le repere de l'imu en m"/>
+      <define name="POS_CENTER_IN_IMU_Z" value="" description="postion selon l'axe z du centre de rotation par rapport à l'imu dans le repere de l'imu en m"/>
     </section>
   </doc>
   <settings>

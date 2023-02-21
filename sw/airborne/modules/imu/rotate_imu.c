@@ -36,36 +36,11 @@
 #define ROTATE_IMU_ENABLED TRUE
 #endif
 
-
-// these parameters are used in the filtering of the angular acceleration
-// define them in the airframe file if different values are required
-#ifndef ROTATE_IMU_FILT_CUTOFF
-#define ROTATE_IMU_FILT_CUTOFF 8.0
-#endif
-
-// the yaw sometimes requires more filtering
-#ifndef ROTATE_IMU_FILT_CUTOFF_RDOT
-#define ROTATE_IMU_FILT_CUTOFF_RDOT ROTATE_IMU_FILT_CUTOFF
-#endif
-
-#ifndef ROTATE_IMU_POS_CENTER_IN_IMU_X
-#define ROTATE_IMU_POS_CENTER_IN_IMU_X 0.1
-#endif
-
-#ifndef ROTATE_IMU_POS_CENTER_IN_IMU_Y
-#define ROTATE_IMU_POS_CENTER_IN_IMU_Y 0.0
-#endif
-
-#ifndef ROTATE_IMU_POS_CENTER_IN_IMU_Z
-#define ROTATE_IMU_POS_CENTER_IN_IMU_Z -0.1
-#endif
-
-
 /**
  * ABI bindings
  *
- * by default bind to all IMU raw data and send filtered data
- * receivers (AHRS, INS) should bind to this prefilter module
+ * by default bind to all IMU raw data and send rotate data
+ * receivers (AHRS, INS) should bind to this module
  */
 /** IMU (gyro, accel) */
 #ifndef IMU_ROT_IMU_BIND_ID
@@ -79,19 +54,6 @@ static abi_event mag_ev; // only passthrough
 
 struct RotateImu rotate_imu;
 
- static inline void filter_pqr(Butterworth2LowPass *filter, struct FloatRates *new_values)
- {
-   update_butterworth_2_low_pass(&filter[0], new_values->p);
-   update_butterworth_2_low_pass(&filter[1], new_values->q);
-   update_butterworth_2_low_pass(&filter[2], new_values->r);
- }
-  
- static inline void finite_difference_from_filter(float *output, Butterworth2LowPass *filter)
- {
-   for (int8_t i = 0; i < 3; i++) {
-     output[i] = (filter[i].o[0] - filter[i].o[1]) * PERIODIC_FREQUENCY;
-   }
- }
 
 static void gyro_cb(uint8_t sender_id, uint32_t stamp, struct Int32Rates *gyro)
 {
@@ -124,49 +86,23 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
     ACCELS_FLOAT_OF_BFP(accel_f, *accel);
 
 
-    struct FloatVect3 body_rate_f_vect;
-   
-    // Only pass really low frequencies so you don't adapt to noise
-    struct FloatRates *body_rates = stateGetBodyRates_f();
+    struct FloatVect3 accel_pendulum;
 
-    filter_pqr(rotate_imu.rate, body_rates);
-    
-    // Calculate the first (and second) derivatives of the rates 
-    finite_difference_from_filter(rotate_imu.rate_d, rotate_imu.rate);
-    //finite_difference(est->rate_dd, est->rate_d, rate_d_prev);
-
-    body_rate_f_vect.x = body_rates->p;
-    body_rate_f_vect.y = body_rates->q;
-    body_rate_f_vect.z = body_rates->r;
-
-    struct FloatVect3 _tmp;
-    struct FloatVect3 accel_r;
-    struct FloatVect3 accel_theta;
-    
-
-    VECT3_CROSS_PRODUCT(_tmp, body_rate_f_vect, body_rate_f_vect);
-    VECT3_CROSS_PRODUCT(accel_r, _tmp, rotate_imu.centre_rot_2_imu)
-
-    struct FloatVect3 rate_d_f;
-    rate_d_f.x = rotate_imu.rate_d[0];
-    rate_d_f.y = rotate_imu.rate_d[1];
-    rate_d_f.z = rotate_imu.rate_d[2];
-    VECT3_CROSS_PRODUCT(accel_theta, rate_d_f, rotate_imu.centre_rot_2_imu);
+    accel_pendulum.x = - rotate_imu.L * pow(rotate_imu.angular_speed,2); //acceleration centripète
+    accel_pendulum.y = 0;
+    accel_pendulum.z = rotate_imu.L * rotate_imu.angular_accel; //accélération tangentielle
 
     // Rotation de la base de frenet au repere imu
     struct FloatVect3 _tmp1;
-    struct FloatVect3 _tmp2;
-    float_rmat_vmult(&_tmp1, &rotate_imu.Rot_frenet2imu_f, &accel_r);
-    float_rmat_vmult(&_tmp2, &rotate_imu.Rot_frenet2imu_f, &accel_theta);
+    float_rmat_vmult(&_tmp1, &rotate_imu.Rot_frenet2imu_f, &accel_pendulum);
 
     VECT3_SUB(accel_f, _tmp1);
-    VECT3_SUB(accel_f, _tmp2);
 
     // compute rotation
     struct FloatVect3 accel_rot_f;
     float_rmat_vmult(&accel_rot_f, &rotate_imu.Rot_mat_f, &accel_f);
-    //float f[3] = {accel_rot_f.x, accel_rot_f.y, accel_rot_f.z};
-    //DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 3, f);
+    float f[6] = {H_g_filter_rot.hatx[0], H_g_filter_rot.hatx[1], H_g_filter_rot.hatx[2], accel_rot_f.x, accel_rot_f.y, accel_rot_f.z};
+    DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 6, f);
 
     // send data
     struct Int32Vect3 accel_rot_i;
@@ -209,9 +145,13 @@ void rotate_imu_init(void)
 {
   rotate_imu.enabled = ROTATE_IMU_ENABLED;
   rotate_imu.angular_speed = 0.;
-  rotate_imu.centre_rot_2_imu.x = ROTATE_IMU_POS_CENTER_IN_IMU_X;
-  rotate_imu.centre_rot_2_imu.y = ROTATE_IMU_POS_CENTER_IN_IMU_Y;
-  rotate_imu.centre_rot_2_imu.z = ROTATE_IMU_POS_CENTER_IN_IMU_Z;
+  rotate_imu.angular_accel = 0;
+  //rotate_imu.centre_rot_2_imu.x = ROTATE_IMU_POS_CENTER_IN_IMU_X;
+  rotate_imu.centre_rot_2_imu.x = 0.08;
+  rotate_imu.centre_rot_2_imu.y = 0;
+  //rotate_imu.centre_rot_2_imu.z = ROTATE_IMU_POS_CENTER_IN_IMU_Z;
+  rotate_imu.centre_rot_2_imu.z = -0.2;
+  rotate_imu.L = sqrt(pow(rotate_imu.centre_rot_2_imu.x,2) + pow(rotate_imu.centre_rot_2_imu.z,2));
 
   FLOAT_MAT33_DIAG(rotate_imu.Rot_mat_f, 1., 1., 1.);
 
@@ -219,16 +159,6 @@ void rotate_imu_init(void)
   EULERS_ASSIGN(eul_frenet2imu, RadOfDeg(0.), atan(rotate_imu.centre_rot_2_imu.z/rotate_imu.centre_rot_2_imu.x), RadOfDeg(0.));
 
   float_rmat_of_eulers_321(&rotate_imu.Rot_frenet2imu_f, &eul_frenet2imu);
-
-  // tau = 1/(2*pi*Fc)
-   float tau = 1.0 / (2.0 * M_PI * ROTATE_IMU_FILT_CUTOFF);
-   float tau_rdot = 1.0 / (2.0 * M_PI * ROTATE_IMU_FILT_CUTOFF_RDOT);
-   float tau_axis[3] = {tau, tau, tau_rdot};
-   float sample_time = 1.0 / PERIODIC_FREQUENCY;
-   // Filtering of gyroscope and actuators
-   for (int8_t i = 0; i < 3; i++) {
-     init_butterworth_2_low_pass(&rotate_imu.rate[i], tau_axis[i], sample_time, 0.0);
-   }
 
   AbiBindMsgIMU_GYRO(IMU_ROT_IMU_BIND_ID, &gyro_ev, gyro_cb);
   AbiBindMsgIMU_ACCEL(IMU_ROT_IMU_BIND_ID, &accel_ev, accel_cb);
@@ -244,16 +174,15 @@ extern void rotate_imu_update_dcm_matrix(void){
 
   float angle_filter = H_g_filter_rot.hatx[0]; 
   rotate_imu.angular_speed = H_g_filter_rot.hatx[1]; 
+  rotate_imu.angular_accel = H_g_filter_rot.hatx[2];
   struct FloatEulers euler_f = { RadOfDeg(0.), angle_filter, RadOfDeg(0.)};
   float_rmat_of_eulers_321(&rotate_imu.Rot_mat_f, &euler_f);
-
-  //float f[2] = {H_g_filter_rot.hatx[0], H_g_filter_rot.hatx[1]};
-  //DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 2, f);
 }
 
 extern void rotate_imu_reset(float enabled){
   rotate_imu.enabled = enabled;
   rotate_imu.angular_speed = 0;
+  rotate_imu.angular_accel = 0;
   FLOAT_MAT33_DIAG(rotate_imu.Rot_mat_f, 1., 1., 1.);
 }
 
