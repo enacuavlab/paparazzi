@@ -29,21 +29,22 @@
 /** Init all matrix and vectors to the right value
  *
  * @param filter pointer to a filter structure
- * @param kp proportional gain
- * @param kv derivative gain
+ * @param alpha 
  * @param epsilon high gain
  * @param rate data update rate
  */
-void high_gain_filter_init(struct high_gain_filter *filter, float kp, float kv, float epsilon, float rate,  float init_val_theta, float init_val_theta_dot){
-  filter->kp = kp;
-  filter->kv = kv;
+void high_gain_filter_init(struct high_gain_filter *filter, float alpha[3], float epsilon, float rate){
+  filter->alpha[0] = alpha[0];
+  filter->alpha[1] = alpha[1];
+  filter->alpha[2] = alpha[2];
   filter->epsilon = epsilon;
   filter->rate = rate;
-
-  filter->hatx[0] = init_val_theta;
-  filter->hatx[1] = init_val_theta_dot;
+  filter->hatx[0] = 0;
+  filter->hatx[1] = 0;
+  filter->hatx[2] = 0;
   filter->hatx_dot_prev[0] = 0;
   filter->hatx_dot_prev[1] = 0;
+  filter->hatx_dot_prev[2] = 0;
 }
 
 
@@ -57,9 +58,11 @@ void high_gain_filter_init(struct high_gain_filter *filter, float kp, float kv, 
  */
 
 void high_gain_filter_process(struct high_gain_filter *filter, float theta){
-  float hatx_dot[2] = {filter->hatx[1] + (filter->kp/filter->epsilon)*(theta-filter->hatx[0]), (filter->kv/filter->epsilon)*(theta-filter->hatx[0])};
+  float hatx_dot[3] = {filter->hatx[1] + (filter->alpha[0]/filter->epsilon)*(theta-filter->hatx[0]), (filter->hatx[2] + filter->alpha[1]/pow(filter->epsilon,2))*(theta-filter->hatx[0]), (filter->alpha[2]/pow(filter->epsilon, 3))*(theta-filter->hatx[0])};
   filter->hatx[0] += (1/filter->rate)*(filter->hatx_dot_prev[0] + hatx_dot[0])/2;
   filter->hatx[1] += (1/filter->rate)*(filter->hatx_dot_prev[1] + hatx_dot[1])/2;
+  filter->hatx[2] += (1/filter->rate)*(filter->hatx_dot_prev[2] + hatx_dot[2])/2;
   filter->hatx_dot_prev[0] = hatx_dot[0];
   filter->hatx_dot_prev[1] = hatx_dot[1];
+  filter->hatx_dot_prev[2] = hatx_dot[2];
 }

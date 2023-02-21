@@ -34,12 +34,11 @@
 struct high_gain_filter {
 
   //states
-  float hatx[2];  // state 
-  float hatx_dot_prev[2]; // previous state
+  float hatx[3];  // state 
+  float hatx_dot_prev[3]; // previous state
 
   //parameters
-  float kp;                     //
-  float kv;                //
+  float alpha[3];
   float epsilon;                     //
   float rate;                     ///< data update rate (in Hz)
 
@@ -48,14 +47,13 @@ struct high_gain_filter {
 /** Init all matrix and vectors to the right value
  *
  * @param filter pointer to a filter structure
- * @param kp proportional gain
- * @param kv derivative gain
+ * @param alpha 
  * @param epsilon high gain
  * @param rate data update rate
  * @param init_val_theta
  * @param init_val_theta_dot
  */
-extern void high_gain_filter_init(struct high_gain_filter *filter, float kp, float kv, float epsilon, float rate, float init_val_theta, float init_val_theta_dot);
+extern void high_gain_filter_init(struct high_gain_filter *filter, float *alpha, float epsilon, float rate);
 
 /** Process step
  *

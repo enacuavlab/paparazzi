@@ -32,11 +32,11 @@
 struct RotateImu {
   bool enabled;
   float angular_speed;
+  float angular_accel;
   struct FloatRMat Rot_mat_f;
   struct FloatRMat Rot_frenet2imu_f;
-  struct FloatVect3 centre_rot_2_imu;
-  Butterworth2LowPass rate[3];
-  float rate_d[3];
+  struct FloatVect3 centre_rot_2_imu; // in frame of IMU
+  float L;
 };
 
 extern struct RotateImu rotate_imu;
