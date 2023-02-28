@@ -58,11 +58,15 @@
 
     <define name="ACCEL_X_SIGN" value="-1"/>
     <define name="ACCEL_Y_SIGN" value="-1"/>
-    <define name="ACCEL_Z_SIGN" value="-1"/>
+    <define name="ACCEL_Z_SIGN" value="1"/>
 
     <define name="GYRO_P_SIGN" value="-1"/>
     <define name="GYRO_Q_SIGN" value="-1"/>
-    <define name="GYRO_R_SIGN" value="-1"/>
+    <define name="GYRO_R_SIGN" value="1"/>
+
+    <define name="MAG_X_SIGN" value="-1"/>
+    <define name="MAG_Y_SIGN" value="-1"/>
+    <define name="MAG_Z_SIGN" value="1"/>
 
 
     <define name="ACCEL_X_NEUTRAL" value="46"/>
@@ -280,8 +284,8 @@
 
     <module name="sys_mon"/>
 
-    <module name="telemetry" type="xbee_api"/>
-    <!--module name="telemetry" type="transparent_usb"/-->
+    <!--module name="telemetry" type="xbee_api"/-->
+    <module name="telemetry" type="transparent_usb"/>
 
     <!--module name="telemetry_transparent"-->
       <!--define name="MODEM_PORT" value="usb_serial"/-->
@@ -319,7 +323,7 @@
 
 
     <module name="board" type="tawaki">
-      <configure name="BOARD_TAWAKI_ROTATED" value="TRUE"/>
+      <!--configure name="BOARD_TAWAKI_ROTATED" value="TRUE"/-->
     </module>
 
   

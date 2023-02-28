@@ -1,5 +1,5 @@
 <!DOCTYPE module SYSTEM "module.dtd">
-<module name="rotate_imu" dir="imu">
+<module name="rotate_imu" dir="imu" task="estimation">
   <doc>
     <description>
     Module developed to rotate the IMU data before sending it to the state estimation. 
@@ -45,7 +45,7 @@
     <file name="rotate_imu.h"/>
   </header>
   <init fun="rotate_imu_init()"/>
-  <periodic fun="rotate_imu_update_dcm_matrix()" freq="500.0" autorun="TRUE"/>
+  <periodic fun="rotate_imu_update_dcm_matrix()" autorun="TRUE"/>
   <makefile>
     <file name="rotate_imu.c"/>
     <test/>
