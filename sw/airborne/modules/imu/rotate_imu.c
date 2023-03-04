@@ -62,14 +62,12 @@ static void gyro_cb(uint8_t sender_id, uint32_t stamp, struct Int32Rates *gyro)
   }
 
   if (rotate_imu.enabled) {
-    struct FloatRates gyro_f;
-    RATES_FLOAT_OF_BFP(gyro_f, *gyro);
-    // compute rotation
-    gyro_f.q += rotate_imu.angular_speed; 
+    struct FloatRates wing_angular_speed_f ={0, rotate_imu.angular_speed, 0};
+    struct Int32Rates wing_angular_speed_i;
+    RATES_BFP_OF_REAL(wing_angular_speed_i, wing_angular_speed_f);
+    RATES_ADD(*gyro, wing_angular_speed_i)
     // send data
-    struct Int32Rates gyro_i;
-    RATES_BFP_OF_REAL(gyro_i, gyro_f);
-    AbiSendMsgIMU_GYRO(IMU_ROT_ID, stamp, &gyro_i);
+    AbiSendMsgIMU_GYRO(IMU_ROT_ID, stamp, gyro);
   } else {
     AbiSendMsgIMU_GYRO(IMU_ROT_ID, stamp, gyro);
   }
@@ -84,8 +82,9 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
   if (rotate_imu.enabled) {
     struct FloatVect3 accel_f;
     ACCELS_FLOAT_OF_BFP(accel_f, *accel);
-
-
+    
+//OLD
+/*
     struct FloatVect3 accel_pendulum;
 
     accel_pendulum.x = - rotate_imu.L * pow(rotate_imu.angular_speed,2); //acceleration centripète
@@ -97,10 +96,33 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
     float_rmat_vmult(&_tmp1, &rotate_imu.Rot_frenet2imu_f, &accel_pendulum);
 
     VECT3_SUB(accel_f, _tmp1);
+*/
 
+//GOOD
+    // on suppose avoir accès à la vitesse angulaire estimé de l'imu que l'on nomme fuselage_rate_f et l'acceleration angulaire ang_accel_f
+    /*struct FloatVect3 vect_fuselage_rate, _tmp1, _tmp2;
+    vect_fuselage_rate.x = fuselage_rate_f.p;
+    vect_fuselage_rate.y = fuselage_rate_f.q;
+    vect_fuselage_rate.z = fuselage_rate_f.r;
+    */
+
+   /*
+    struct FloatVect3 _tmp1, _tmp2;
+
+    VECT3_CROSS_PRODUCT(_tmp1, fuselage_rate_f, centre_rot_2_imu);
+    VECT3_CROSS_PRODUCT(_tmp2, fuselage_rate_f, _tmp1);
+
+    struct FloatVect3 _tmp3;
+    VECT3_CROSS_PRODUCT(_tmp3, ang_accel_f, centre_rot_2_imu);
+
+    VECT3_ADD(_tmp3, _tmp2);
+    VECT3_ADD(accel_f, _tmp3);
+    */
     // compute rotation
     struct FloatVect3 accel_rot_f;
     float_rmat_vmult(&accel_rot_f, &rotate_imu.Rot_mat_f, &accel_f);
+
+    // debug
     float f[6] = {H_g_filter_rot.hatx[0], H_g_filter_rot.hatx[1], H_g_filter_rot.hatx[2], accel_rot_f.x, accel_rot_f.y, accel_rot_f.z};
     DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 6, f);
 
@@ -151,14 +173,8 @@ void rotate_imu_init(void)
   rotate_imu.centre_rot_2_imu.y = 0;
   //rotate_imu.centre_rot_2_imu.z = ROTATE_IMU_POS_CENTER_IN_IMU_Z;
   rotate_imu.centre_rot_2_imu.z = -0.2;
-  rotate_imu.L = sqrt(pow(rotate_imu.centre_rot_2_imu.x,2) + pow(rotate_imu.centre_rot_2_imu.z,2));
 
   FLOAT_MAT33_DIAG(rotate_imu.Rot_mat_f, 1., 1., 1.);
-
-  struct FloatEulers eul_frenet2imu;
-  EULERS_ASSIGN(eul_frenet2imu, RadOfDeg(0.), atan(rotate_imu.centre_rot_2_imu.z/rotate_imu.centre_rot_2_imu.x), RadOfDeg(0.));
-
-  float_rmat_of_eulers_321(&rotate_imu.Rot_frenet2imu_f, &eul_frenet2imu);
 
   AbiBindMsgIMU_GYRO(IMU_ROT_IMU_BIND_ID, &gyro_ev, gyro_cb);
   AbiBindMsgIMU_ACCEL(IMU_ROT_IMU_BIND_ID, &accel_ev, accel_cb);
