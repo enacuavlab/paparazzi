@@ -49,6 +49,8 @@ static uint32_t samples_idx;
 #ifndef AHRS_ALIGNER_IMU_ID
 #define AHRS_ALIGNER_IMU_ID ABI_BROADCAST
 #endif
+PRINT_CONFIG_VAR(AHRS_ALIGNER_IMU_ID)
+
 static abi_event gyro_ev;
 
 static void gyro_cb(uint8_t sender_id __attribute__((unused)),
