@@ -25,6 +25,7 @@
 #include "modules/imu/rotate_imu.h"
 #include "modules/sensors/encoder_amt22.h"
 #include "filters/high_gain_filter.h"
+#include "filters/low_pass_filter.h"
 #include "math/pprz_algebra_int.h"
 #include "math/pprz_simple_matrix.h"
 #include "modules/core/abi.h"
@@ -43,10 +44,10 @@
  * receivers (AHRS, INS) should bind to this module
  */
 /** IMU (gyro, accel) */
-#ifndef IMU_ROT_IMU_BIND_ID
-#define IMU_ROT_IMU_BIND_ID ABI_BROADCAST
+#ifndef ROT_IMU_BIND_ID
+#define ROT_IMU_BIND_ID ABI_BROADCAST
 #endif
-PRINT_CONFIG_VAR(IMU_ROT_IMU_BIND_ID)
+PRINT_CONFIG_VAR(ROT_IMU_BIND_ID)
 
 static abi_event gyro_ev;
 static abi_event accel_ev;
@@ -54,6 +55,8 @@ static abi_event mag_ev; // only passthrough
 
 struct RotateImu rotate_imu;
 
+float angular_accel[3] = {0., 0., 0.};
+Butterworth2LowPass meas_lowpass_filters[3];
 
 static void gyro_cb(uint8_t sender_id, uint32_t stamp, struct Int32Rates *gyro)
 {
@@ -62,10 +65,12 @@ static void gyro_cb(uint8_t sender_id, uint32_t stamp, struct Int32Rates *gyro)
   }
 
   if (rotate_imu.enabled) {
+    
     struct FloatRates wing_angular_speed_f ={0, rotate_imu.angular_speed, 0};
     struct Int32Rates wing_angular_speed_i;
     RATES_BFP_OF_REAL(wing_angular_speed_i, wing_angular_speed_f);
     RATES_ADD(*gyro, wing_angular_speed_i)
+    
     // send data
     AbiSendMsgIMU_GYRO(IMU_ROT_ID, stamp, gyro);
   } else {
@@ -100,36 +105,52 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
 
 //GOOD
     // on suppose avoir accès à la vitesse angulaire estimé de l'imu que l'on nomme fuselage_rate_f et l'acceleration angulaire ang_accel_f
-    /*struct FloatVect3 vect_fuselage_rate, _tmp1, _tmp2;
-    vect_fuselage_rate.x = fuselage_rate_f.p;
-    vect_fuselage_rate.y = fuselage_rate_f.q;
-    vect_fuselage_rate.z = fuselage_rate_f.r;
-    */
 
-   /*
-    struct FloatVect3 _tmp1, _tmp2;
+    struct FloatRates *body_rates = stateGetBodyRates_f();
 
-    VECT3_CROSS_PRODUCT(_tmp1, fuselage_rate_f, centre_rot_2_imu);
-    VECT3_CROSS_PRODUCT(_tmp2, fuselage_rate_f, _tmp1);
+    struct FloatVect3 vect_fuselage_rate;
+    vect_fuselage_rate.x = body_rates->p;
+    vect_fuselage_rate.y = body_rates->q - rotate_imu.angular_speed;
+    vect_fuselage_rate.z = body_rates->r;
+
+   float rate_vect[3] = {vect_fuselage_rate.x, vect_fuselage_rate.y, vect_fuselage_rate.z};
+   int8_t i;
+   for (i = 0; i < 3; i++) {
+     update_butterworth_2_low_pass(&meas_lowpass_filters[i], rate_vect[i]);
+  
+     //Calculate the angular acceleration via finite difference
+     angular_accel[i] = (meas_lowpass_filters[i].o[0]
+                                - meas_lowpass_filters[i].o[1]) * PERIODIC_FREQUENCY;
+   }
+
+    struct FloatVect3 _tmp1, _tmp2, ang_accel_f;
+
+    ang_accel_f.x = angular_accel[0];
+    ang_accel_f.y = angular_accel[1];
+    ang_accel_f.z = angular_accel[2];
+
+    VECT3_CROSS_PRODUCT(_tmp1, vect_fuselage_rate, rotate_imu.centre_rot_2_imu);
+    VECT3_CROSS_PRODUCT(_tmp2, vect_fuselage_rate, _tmp1);
 
     struct FloatVect3 _tmp3;
-    VECT3_CROSS_PRODUCT(_tmp3, ang_accel_f, centre_rot_2_imu);
+    VECT3_CROSS_PRODUCT(_tmp3, ang_accel_f, rotate_imu.centre_rot_2_imu);
 
     VECT3_ADD(_tmp3, _tmp2);
     VECT3_ADD(accel_f, _tmp3);
-    */
+    
     // compute rotation
     struct FloatVect3 accel_rot_f;
     float_rmat_vmult(&accel_rot_f, &rotate_imu.Rot_mat_f, &accel_f);
 
     // debug
-    float f[6] = {H_g_filter_rot.hatx[0], H_g_filter_rot.hatx[1], H_g_filter_rot.hatx[2], accel_rot_f.x, accel_rot_f.y, accel_rot_f.z};
-    DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 6, f);
+    float f[8] = {H_g_filter_rot.hatx[0], H_g_filter_rot.hatx[1], accel_rot_f.x, accel_rot_f.y, accel_rot_f.z, accel_f.x, accel_f.y, accel_f.z};
+    DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 8, f);
 
     // send data
     struct Int32Vect3 accel_rot_i;
     ACCELS_BFP_OF_REAL(accel_rot_i, accel_rot_f);
     AbiSendMsgIMU_ACCEL(IMU_ROT_ID, stamp, &accel_rot_i);
+
   } else {
     AbiSendMsgIMU_ACCEL(IMU_ROT_ID, stamp, accel);
   }
@@ -169,16 +190,24 @@ void rotate_imu_init(void)
   rotate_imu.angular_speed = 0.;
   rotate_imu.angular_accel = 0;
   //rotate_imu.centre_rot_2_imu.x = ROTATE_IMU_POS_CENTER_IN_IMU_X;
-  rotate_imu.centre_rot_2_imu.x = 0.08;
+  rotate_imu.centre_rot_2_imu.x = 0;
   rotate_imu.centre_rot_2_imu.y = 0;
   //rotate_imu.centre_rot_2_imu.z = ROTATE_IMU_POS_CENTER_IN_IMU_Z;
-  rotate_imu.centre_rot_2_imu.z = -0.2;
+  rotate_imu.centre_rot_2_imu.z = 0.232;
 
   FLOAT_MAT33_DIAG(rotate_imu.Rot_mat_f, 1., 1., 1.);
 
-  AbiBindMsgIMU_GYRO(IMU_ROT_IMU_BIND_ID, &gyro_ev, gyro_cb);
-  AbiBindMsgIMU_ACCEL(IMU_ROT_IMU_BIND_ID, &accel_ev, accel_cb);
-  AbiBindMsgIMU_MAG(IMU_ROT_IMU_BIND_ID, &mag_ev, mag_cb);
+  float tau = 1.0 / (2.0 * M_PI * 20.0);
+  float sample_time = 1.0 / PERIODIC_FREQUENCY;
+  // Filtering of the gyroscope
+  int8_t i;
+  for (i = 0; i < 3; i++) {
+    init_butterworth_2_low_pass(&meas_lowpass_filters[i], tau, sample_time, 0.0);
+  }
+
+  AbiBindMsgIMU_GYRO(ROT_IMU_BIND_ID, &gyro_ev, gyro_cb);
+  AbiBindMsgIMU_ACCEL(ROT_IMU_BIND_ID, &accel_ev, accel_cb);
+  AbiBindMsgIMU_MAG(ROT_IMU_BIND_ID, &mag_ev, mag_cb);
 }
 
 
