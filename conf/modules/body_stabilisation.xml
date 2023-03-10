@@ -1,0 +1,34 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="body_stabilisation" dir="ctrl" task="control">
+  <doc>
+    <description>
+    Module for stabilising the fuselage of a horizontal tiltwing
+    </description>
+    <section name="BODY_STAB" prefix="BODY_STAB_">
+      <define name="ENABLED" value="FALSE|TRUE" description="activate or not the filter by default"/>
+      <define name="KP" value="10." description="propotionnal gain"/>
+      <define name="KD" value="0.1" description="derivative gain"/>
+     </section>
+  </doc>
+  <settings>
+    <dl_settings>
+      <dl_settings name="body_stab">
+        <dl_setting min="0" max="1" step="1" var="body_stab.enabled" module="ctrl/body_stabilisation" shortname="enable" values="DISABLED|ENABLED" handler="reset"/>
+        <dl_setting min="0.1" max="50." step="0.1" var="body_stab.kp" module="ctrl/body_stabilisation" shortname="kp" handler="update_kp"/>
+        <dl_setting min="0.0001" max="1." step="0.001" var="body_stab.kd" module="ctrl/body_stabilisation" shortname="kd" handler="update_kd"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+  <dep>
+    <depends>rotate_imu</depends>
+  </dep>
+  <header>
+    <file name="body_stabilisation.h"/>
+  </header>
+  <init fun="body_stabilisation_init()"/>
+  <periodic fun="body_stabilisation_periodic()" freq="512.0" /> <!--autorun="TRUE"-->
+  <makefile>
+    <file name="body_stabilisation.c"/>
+    <test/>
+  </makefile>
+</module>

@@ -55,6 +55,8 @@ static abi_event mag_ev; // only passthrough
 
 struct RotateImu rotate_imu;
 
+struct FloatVect3 vect_fuselage_rate;
+
 float angular_accel[3] = {0., 0., 0.};
 Butterworth2LowPass meas_lowpass_filters[3];
 
@@ -87,28 +89,9 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
   if (rotate_imu.enabled) {
     struct FloatVect3 accel_f;
     ACCELS_FLOAT_OF_BFP(accel_f, *accel);
-    
-//OLD
-/*
-    struct FloatVect3 accel_pendulum;
-
-    accel_pendulum.x = - rotate_imu.L * pow(rotate_imu.angular_speed,2); //acceleration centripète
-    accel_pendulum.y = 0;
-    accel_pendulum.z = rotate_imu.L * rotate_imu.angular_accel; //accélération tangentielle
-
-    // Rotation de la base de frenet au repere imu
-    struct FloatVect3 _tmp1;
-    float_rmat_vmult(&_tmp1, &rotate_imu.Rot_frenet2imu_f, &accel_pendulum);
-
-    VECT3_SUB(accel_f, _tmp1);
-*/
-
-//GOOD
-    // on suppose avoir accès à la vitesse angulaire estimé de l'imu que l'on nomme fuselage_rate_f et l'acceleration angulaire ang_accel_f
 
     struct FloatRates *body_rates = stateGetBodyRates_f();
 
-    struct FloatVect3 vect_fuselage_rate;
     vect_fuselage_rate.x = body_rates->p;
     vect_fuselage_rate.y = body_rates->q - rotate_imu.angular_speed;
     vect_fuselage_rate.z = body_rates->r;
@@ -193,7 +176,7 @@ void rotate_imu_init(void)
   rotate_imu.centre_rot_2_imu.x = 0;
   rotate_imu.centre_rot_2_imu.y = 0;
   //rotate_imu.centre_rot_2_imu.z = ROTATE_IMU_POS_CENTER_IN_IMU_Z;
-  rotate_imu.centre_rot_2_imu.z = 0.232;
+  rotate_imu.centre_rot_2_imu.z = 0.1369;
 
   FLOAT_MAT33_DIAG(rotate_imu.Rot_mat_f, 1., 1., 1.);
 

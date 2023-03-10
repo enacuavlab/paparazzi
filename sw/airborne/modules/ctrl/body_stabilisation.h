@@ -18,34 +18,32 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-/** @file "modules/imu/rotate_imu.h"
+/** @file "modules/ctrl/body_stabilisation.h"
  * @author Florian Sansou <florian.sansou@enac.fr>
+ * Module for stabilising the fuselage of a horizontal tiltwing
  */
 
-#ifndef ROTATE_IMU_H
-#define ROTATE_IMU_H
+#ifndef BODY_STABILISATION_H
+#define BODY_STABILISATION_H
 
 #include "std.h"
-#include "math/pprz_algebra_float.h"
-#include "filters/low_pass_filter.h"
 
-struct RotateImu {
+struct BodyStab {
   bool enabled;
-  float angular_speed;
-  float angular_accel;
-  struct FloatRMat Rot_mat_f;
-  struct FloatVect3 centre_rot_2_imu; // in frame of IMU
+  float kp;
+  float kd;
 };
 
-extern struct RotateImu rotate_imu;
-extern struct FloatVect3 vect_fuselage_rate;
+extern struct BodyStab body_stab;
 
-extern void rotate_imu_init(void);
-extern void rotate_imu_reset(float enabled);
+extern void body_stabilisation_init(void);
+extern void body_stabilisation_periodic(void);
 
 /**
  * settings handlers
  */
-extern void rotate_imu_update_dcm_matrix(void);
+extern void body_stabilisation_reset(float enabled);
+extern void body_stabilisation_update_kp(float kp);
+extern void body_stabilisation_update_kd(float kd);
 
-#endif  // ROTATE_IMU_H
+#endif  // BODY_STABILISATION_H
