@@ -14,12 +14,12 @@
     <servo name="UL" no="2" min="0" neutral="100" max="2000"/>
   </servos>
 
-  <!--servos driver="Pwm">
-    <servo name="PROFONDEUR_SERVO" no="1" min="1000" neutral="1300" max="2000"/>
-    <servo name="PROFONDEUR_MOTOR" no="1" min="1000" neutral="1300" max="2000"/>
+  <servos driver="Pwm">
     <servo name="ELEVON_L" no="1" min="1000" neutral="1300" max="2000"/>
-    <servo name="ELEVON_R" no="1" min="1000" neutral="1300" max="2000"/>
-  </servos-->
+    <servo name="ELEVON_R" no="2" min="1000" neutral="1300" max="2000"/>
+    <servo name="PROFONDEUR_SERVO" no="3" min="1000" neutral="1300" max="2000"/>
+    <servo name="PROFONDEUR_MOTOR" no="4" min="1000" neutral="1100" max="2000"/>
+  </servos>
 
 
   <commands>
@@ -39,7 +39,10 @@
     <set servo="BR" value="autopilot.motors_on ? actuators_pprz[1] : -MAX_PPRZ"/>
     <set servo="BL" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
     <set servo="UL" value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
-    <!-- <set servo="GEAR" value="@GEAR"/> -->
+    <set servo="ELEVON_L" value="autopilot.motors_on ? actuators_pprz[4] : 0"/>
+    <set servo="ELEVON_R" value="autopilot.motors_on ? actuators_pprz[5] : 0"/>
+    <set servo="PROFONDEUR_SERVO" value="autopilot.motors_on ? actuators_pprz[6] : 0"/>
+    <set servo="PROFONDEUR_MOTOR" value="autopilot.motors_on ? actuators_pprz[7] : -MAX_PPRZ"/>
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
@@ -215,8 +218,7 @@
     <define name="INDI_FUNCTIONS_RC_CHANNEL" value="6"/>
   </section>
 
-<!--   <modules main_freq="500">
-  </modules> -->
+
 
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="UR,BR,BL,UL" type="string[]"/>
@@ -280,6 +282,7 @@
 
     <module name="encoder" type="amt22"/>
     <module name="rotate_imu" />
+    <module name="body_stabilisation" />
 
 
     <module name="sys_mon"/>
@@ -303,10 +306,13 @@
     <module name="flight_recorder"/>
     <!--<module name="logger_spi_link"/>-->
 
-     <module name="actuators" type="pwm"/>
+    <module name="actuators" type="pwm">
+      <define name="STM32_PWM_USE_TIM1" value="TRUE"/> <!-- SERVO A1 TO A4 by default-->
+      <define name="TIM1_SERVO_HZ" value="400"/>
+    </module>
 
     <module name="actuators" type="dshot">
-      <!-- <define name="DSHOT_SPEED" value="300"/> -->
+      <define name="DSHOT_SPEED" value="300"/>
       <!--define name="DSHOT_TIM4_TELEMETRY_NUM" value="DSHOT_TLM_RX"/>
       <define name="STM32_SERIAL_USE_UART4" value="TRUE"/-->
     </module>
@@ -323,7 +329,7 @@
 
 
     <module name="board" type="tawaki">
-      <!--configure name="BOARD_TAWAKI_ROTATED" value="TRUE"/-->
+      
     </module>
 
   
@@ -337,6 +343,7 @@
     <module name="stabilization" type="indi">
       <!--define name="INDI_THRUST_ON_PITCH_EFF" value="23.0"/--> <!--DO NOT DEFINE THIS if you dont want to do special things with flap saturations... -->
       <define name="STABILIZATION_INDI_HYBRID"/>
+      <configure name="INDI_NUM_ACT" value="6"/>
     </module>
 
     <module name="guidance" type="indi_hybrid">
@@ -405,11 +412,11 @@
       <configure name="USE_MAGNETOMETER" value="FALSE"/>
     </module> -->
 
-     
-    
-    <!-- <module name="gps" type="ubx_ucenter"/> -->
+
     <!--module name="tlsf"/>
+
     <module name="pprzlog"/>
+    
     <module name="logger" type="sd_chibios"/-->
     <!--module name="flight_recorder"/-->
 
