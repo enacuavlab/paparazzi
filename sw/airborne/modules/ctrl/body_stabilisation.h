@@ -31,19 +31,25 @@
 struct BodyStab {
   bool enabled;
   float kp;
+  float ki;
   float kd;
+  int u_eq;
+  float state_integrator;
 };
 
 extern struct BodyStab body_stab;
 
 extern void body_stabilisation_init(void);
 extern void body_stabilisation_periodic(void);
+extern void body_stabilisation_report(void);
 
 /**
  * settings handlers
  */
 extern void body_stabilisation_reset(float enabled);
 extern void body_stabilisation_update_kp(float kp);
+extern void body_stabilisation_update_ki(float ki);
 extern void body_stabilisation_update_kd(float kd);
+extern void body_stabilisation_update_ueq(int ueq);
 
 #endif  // BODY_STABILISATION_H

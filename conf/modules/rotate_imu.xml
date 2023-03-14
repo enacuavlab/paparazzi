@@ -46,6 +46,7 @@
   </header>
   <init fun="rotate_imu_init()"/>
   <periodic fun="rotate_imu_update_dcm_matrix()" autorun="TRUE"/>
+  <periodic fun="rotate_imu_report()" freq="5.0" autorun="FALSE"/> <!-- -->
   <makefile>
     <file name="rotate_imu.c"/>
     <test/>
