@@ -125,9 +125,7 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
     struct FloatVect3 accel_rot_f;
     float_rmat_vmult(&accel_rot_f, &rotate_imu.Rot_mat_f, &accel_f);
 
-    // debug
-    float f[8] = {H_g_filter_rot.hatx[0], H_g_filter_rot.hatx[1], accel_rot_f.x, accel_rot_f.y, accel_rot_f.z, accel_f.x, accel_f.y, accel_f.z};
-    DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 8, f);
+    
 
     // send data
     struct Int32Vect3 accel_rot_i;
@@ -176,7 +174,7 @@ void rotate_imu_init(void)
   rotate_imu.centre_rot_2_imu.x = 0;
   rotate_imu.centre_rot_2_imu.y = 0;
   //rotate_imu.centre_rot_2_imu.z = ROTATE_IMU_POS_CENTER_IN_IMU_Z;
-  rotate_imu.centre_rot_2_imu.z = 0.1369;
+  rotate_imu.centre_rot_2_imu.z = 0.1583;
 
   FLOAT_MAT33_DIAG(rotate_imu.Rot_mat_f, 1., 1., 1.);
 
@@ -200,9 +198,9 @@ void rotate_imu_init(void)
 
 extern void rotate_imu_update_dcm_matrix(void){
 
-  float angle_filter = H_g_filter_rot.hatx[0]; 
-  rotate_imu.angular_speed = H_g_filter_rot.hatx[1]; 
-  rotate_imu.angular_accel = H_g_filter_rot.hatx[2];
+  float angle_filter = -H_g_filter_rot.hatx[0]; 
+  rotate_imu.angular_speed = -H_g_filter_rot.hatx[1]; 
+  rotate_imu.angular_accel = -H_g_filter_rot.hatx[2];
   struct FloatEulers euler_f = { RadOfDeg(0.), angle_filter, RadOfDeg(0.)};
   float_rmat_of_eulers_321(&rotate_imu.Rot_mat_f, &euler_f);
 }
@@ -216,3 +214,8 @@ extern void rotate_imu_reset(float enabled){
 
 
 
+extern void rotate_imu_report(void){
+  // debug
+  float f[2] = {H_g_filter_rot.hatx[0], H_g_filter_rot.hatx[1]};
+  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 2, f);
+}
