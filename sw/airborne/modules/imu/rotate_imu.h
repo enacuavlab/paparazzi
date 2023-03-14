@@ -42,10 +42,12 @@ extern struct FloatVect3 vect_fuselage_rate;
 
 extern void rotate_imu_init(void);
 extern void rotate_imu_reset(float enabled);
+extern void rotate_imu_report(void);
 
 /**
  * settings handlers
  */
 extern void rotate_imu_update_dcm_matrix(void);
+
 
 #endif  // ROTATE_IMU_H
