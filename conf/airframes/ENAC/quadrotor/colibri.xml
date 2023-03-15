@@ -213,8 +213,7 @@
     <!--define name="DEFAULT_CIRCLE_RADIUS" value="50.0"/--> <!-- AKA: NAV_RADIUS -->
     <define name="ARRIVED_AT_WAYPOINT" value="50.0"/> <!-- For outdoor -->
     <define name="DEFAULT_CIRCLE_RADIUS" value="60"/> <!-- For outdoor -->
-    <!--Switch advanced INDI scheduling functions on or off-->
-    <define name="INDI_FUNCTIONS_RC_CHANNEL" value="6"/>
+
   </section>
 
 
@@ -256,6 +255,11 @@
 
       <!--Switch advanced INDI scheduling functions on or off-->
       <define name="INDI_FUNCTIONS_RC_CHANNEL" value="6"/>
+
+      <!--Need to define encodeur fonction for simulation-->
+      <module name="encoder" type="amt22"/>
+      <module name="rotate_imu" />
+      <module name="body_stabilisation" />
     </target>
 
     <target name="nps" board="pc">
@@ -279,9 +283,7 @@
 
     </target>
 
-    <module name="encoder" type="amt22"/>
-    <module name="rotate_imu" />
-    <module name="body_stabilisation" />
+   
 
 
     <module name="sys_mon"/>
@@ -290,13 +292,7 @@
       <!--define name="MODEM_PORT" value="UART2"/-->
     </module>
     <!--module name="telemetry" type="transparent_usb"/-->
-
-    <!--module name="telemetry_transparent"-->
-      <!--define name="MODEM_PORT" value="usb_serial"/-->
-      <!--define name="MODEM_PORT" value="UART7"/-->
-    <!--/module-->
-
-   
+  
 
     <module name="tlsf"/>
     <module name="pprzlog">
