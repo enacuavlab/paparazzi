@@ -66,3 +66,30 @@ void high_gain_filter_process(struct high_gain_filter *filter, float theta){
   filter->hatx_dot_prev[1] = hatx_dot[1];
   filter->hatx_dot_prev[2] = hatx_dot[2];
 }
+
+
+
+extern void high_gain_filter_reset(struct high_gain_filter *filter){
+  filter->hatx[0] = 0;
+  filter->hatx[1] = 0;
+  filter->hatx[2] = 0;
+  filter->hatx_dot_prev[0] = 0;
+  filter->hatx_dot_prev[1] = 0;
+  filter->hatx_dot_prev[2] = 0;
+}
+
+extern void high_gain_filter_update_alpha0(struct high_gain_filter *filter, float alpha0){
+  filter->alpha[0] = alpha0;
+}
+extern void high_gain_filter_update_alpha1(struct high_gain_filter *filter, float alpha1){
+  filter->alpha[1] = alpha1;
+}
+extern void high_gain_filter_update_alpha2(struct high_gain_filter *filter, float alpha2){
+  filter->alpha[2] = alpha2;
+}
+extern void high_gain_filter_update_epsilon(struct high_gain_filter *filter, float epsilon){
+  filter->epsilon = epsilon;
+}
+extern void high_gain_filter_update_rate(struct high_gain_filter *filter, float rate){
+  filter->rate = rate;
+}

@@ -31,6 +31,7 @@
       <define name="POS_CENTER_IN_IMU_Z" value="" description="postion selon l'axe z du centre de rotation par rapport à l'imu dans le repere de l'imu en m"/>
     </section>
   </doc>
+
   <settings>
     <dl_settings>
       <dl_settings name="rot_imu">
@@ -38,6 +39,7 @@
       </dl_settings>
     </dl_settings>
   </settings>
+  
   <dep>
     <depends>@imu</depends>
   </dep>
@@ -46,7 +48,7 @@
   </header>
   <init fun="rotate_imu_init()"/>
   <periodic fun="rotate_imu_update_dcm_matrix()" autorun="TRUE"/>
-  <periodic fun="rotate_imu_report()" freq="5.0" autorun="FALSE"/> <!-- -->
+  <periodic fun="rotate_imu_report()" freq="5.0" autorun="TRUE"/> <!--FALSE -->
   <makefile>
     <file name="rotate_imu.c"/>
     <test/>
