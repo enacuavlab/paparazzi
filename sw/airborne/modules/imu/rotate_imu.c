@@ -24,7 +24,6 @@
 
 #include "modules/imu/rotate_imu.h"
 #include "modules/sensors/encoder_amt22.h"
-#include "filters/high_gain_filter.h"
 #include "filters/low_pass_filter.h"
 #include "math/pprz_algebra_int.h"
 #include "math/pprz_simple_matrix.h"
@@ -57,6 +56,10 @@ struct RotateImu rotate_imu;
 
 struct FloatVect3 vect_fuselage_rate;
 
+struct FloatVect3 accel_f;
+struct FloatVect3 accel_rot_f;
+float angle_filter;
+
 float angular_accel[3] = {0., 0., 0.};
 Butterworth2LowPass meas_lowpass_filters[3];
 
@@ -87,7 +90,7 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
   }
 
   if (rotate_imu.enabled) {
-    struct FloatVect3 accel_f;
+    
     ACCELS_FLOAT_OF_BFP(accel_f, *accel);
 
     struct FloatRates *body_rates = stateGetBodyRates_f();
@@ -122,11 +125,10 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
     VECT3_ADD(accel_f, _tmp3);
     
     // compute rotation
-    struct FloatVect3 accel_rot_f;
+    
     float_rmat_vmult(&accel_rot_f, &rotate_imu.Rot_mat_f, &accel_f);
 
-    
-
+  
     // send data
     struct Int32Vect3 accel_rot_i;
     ACCELS_BFP_OF_REAL(accel_rot_i, accel_rot_f);
@@ -198,9 +200,9 @@ void rotate_imu_init(void)
 
 extern void rotate_imu_update_dcm_matrix(void){
 
-  float angle_filter = -H_g_filter_rot.hatx[0]; 
-  rotate_imu.angular_speed = -H_g_filter_rot.hatx[1]; 
-  rotate_imu.angular_accel = -H_g_filter_rot.hatx[2];
+  angle_filter = -encoder_amt22.H_g_filter.hatx[0]; 
+  rotate_imu.angular_speed = -encoder_amt22.H_g_filter.hatx[1]; 
+  rotate_imu.angular_accel = -encoder_amt22.H_g_filter.hatx[2];
   struct FloatEulers euler_f = { RadOfDeg(0.), angle_filter, RadOfDeg(0.)};
   float_rmat_of_eulers_321(&rotate_imu.Rot_mat_f, &euler_f);
 }
@@ -216,6 +218,6 @@ extern void rotate_imu_reset(float enabled){
 
 extern void rotate_imu_report(void){
   // debug
-  float f[2] = {H_g_filter_rot.hatx[0], H_g_filter_rot.hatx[1]};
-  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 2, f);
+  float f[7] = {angle_filter, accel_f.x, accel_f.y, accel_f.z, accel_rot_f.x, accel_rot_f.y, accel_rot_f.z};
+  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 7, f);
 }

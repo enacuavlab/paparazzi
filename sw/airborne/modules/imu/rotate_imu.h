@@ -39,6 +39,7 @@ struct RotateImu {
 
 extern struct RotateImu rotate_imu;
 extern struct FloatVect3 vect_fuselage_rate;
+extern float angle_filter;
 
 extern void rotate_imu_init(void);
 extern void rotate_imu_reset(float enabled);

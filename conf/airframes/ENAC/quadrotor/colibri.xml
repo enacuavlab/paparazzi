@@ -35,19 +35,20 @@
   <!-- </auto_rc_commands> -->
 
   <command_laws>
-    <set servo="UR" value="autopilot.motors_on ? actuators_pprz[0] : -MAX_PPRZ"/>
-    <set servo="BR" value="autopilot.motors_on ? actuators_pprz[1] : -MAX_PPRZ"/>
-    <set servo="BL" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
-    <set servo="UL" value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
+    <set servo="UR" value="autopilot.motors_on ? Min(actuators_pprz[0],MAX_PPRZ/2) : -MAX_PPRZ"/>
+    <set servo="BR" value="autopilot.motors_on ? Min(actuators_pprz[1],MAX_PPRZ/2) : -MAX_PPRZ"/>
+    <set servo="BL" value="autopilot.motors_on ? Min(actuators_pprz[2],MAX_PPRZ/2) : -MAX_PPRZ"/>
+    <set servo="UL" value="autopilot.motors_on ? Min(actuators_pprz[3],MAX_PPRZ/2) : -MAX_PPRZ"/>
     <set servo="ELEVON_L" value="autopilot.motors_on ? actuators_pprz[4] : 0"/>
     <set servo="ELEVON_R" value="autopilot.motors_on ? actuators_pprz[5] : 0"/>
     <set servo="PROFONDEUR_SERVO" value="autopilot.motors_on ? actuators_pprz[6] : 0"/>
     <set servo="PROFONDEUR_MOTOR" value="autopilot.motors_on ? actuators_pprz[7] : -MAX_PPRZ"/>
   </command_laws>
 
+   <!-- IMU calibration tawaki-->
+   <!-- IMU calibration, make sure to calibrate the IMU properly before flight, see the wiki for more info-->
   <section name="IMU" prefix="IMU_">
-    <!-- IMU calibration, make sure to calibrate the IMU properly before flight, see the wiki for more info-->
-
+    
     <define name= "MAG_X_CURRENT_COEF" value="-0.511272562535"/>
     <define name= "MAG_Y_CURRENT_COEF" value="0.244268225323"/>
     <define name= "MAG_Z_CURRENT_COEF" value="1.59518542807"/>
@@ -59,16 +60,16 @@
     <define name="MAG_Y_SENS" value="0.6098779925040736" integer="16"/>
     <define name="MAG_Z_SENS" value="0.632633186446429" integer="16"/>
 
-    <define name="ACCEL_X_SIGN" value="-1"/>
-    <define name="ACCEL_Y_SIGN" value="1"/>
+    <define name="ACCEL_X_SIGN" value="1"/>
+    <define name="ACCEL_Y_SIGN" value="-1"/>
     <define name="ACCEL_Z_SIGN" value="-1"/>
 
-    <define name="GYRO_P_SIGN" value="-1"/>
-    <define name="GYRO_Q_SIGN" value="1"/>
+    <define name="GYRO_P_SIGN" value="1"/>
+    <define name="GYRO_Q_SIGN" value="-1"/>
     <define name="GYRO_R_SIGN" value="-1"/>
 
-    <define name="MAG_X_SIGN" value="-1"/>
-    <define name="MAG_Y_SIGN" value="1"/>
+    <define name="MAG_X_SIGN" value="1"/>
+    <define name="MAG_Y_SIGN" value="-1"/>
     <define name="MAG_Z_SIGN" value="-1"/>
 
     <!--define name="IMU_ACCEL_CALIB" value="{{.abi_id=9, .calibrated={.neutral=true, .scale=true},.neutral={1,37,60}, .scale={{53117,48547,14335},{22179,19806,5829}}}}"/-->
@@ -83,6 +84,8 @@
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_PSI" value="-90." unit="deg"/>  <!-- -90 -->
   </section>
+
+
 
 
   <section name="AUTOPILOT">
@@ -116,20 +119,20 @@
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
     <define name="G1_ROLL"  value="{ -9.0, -9.0,  9.0,  9.0}"/>
     <define name="G1_PITCH" value="{ -9.0,  9.0,  9.0, -9.0}"/>
-    <define name="G1_YAW"   value="{  -7.0,   7.0,  -7.0,   7.0}"/>
+    <define name="G1_YAW"   value="{  7.0,   -7.0,  7.0,   -7.0}"/>
     <define name="G1_THRUST" value="{ -0.6,  -0.6,  -0.6,  -0.6}"/>
   </section>
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!--  UR BR BL UL-->
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-    <define name="G1_ROLL"  value="{ -15.0,     -15.0,    15.0,    15.0}"/>
-    <define name="G1_PITCH" value="{ -19.5,    19.5,   19.5,  -19.5}"/>
-    <define name="G1_YAW"   value="{  -5.0,     5.0,   -5.0,    5.0}"/>
-    <define name="G1_THRUST" value="{ -0.85,  -0.85,  -0.85,  -0.85}"/>
+    <define name="G1_ROLL"  value="{ -40.,     -40.0,    40.0,    40.0}"/>
+    <define name="G1_PITCH" value="{ -40.,    40.,   40.,  -40.}"/>
+    <define name="G1_YAW"   value="{  5.0,     -5.0,   5.0,    -5.0}"/>
+    <define name="G1_THRUST" value="{ -1.5,  -1.5,  -1.5,  -1.5}"/>
 
     <!--Counter torque effect of spinning up a rotor-->
-    <define name="G2" value="{0, 0, 0, 0}"/>
+    <define name="G2" value="{150., 150., 150., 150.}"/>
 
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="100"/>
@@ -294,14 +297,12 @@
     <!--module name="telemetry" type="transparent_usb"/-->
   
 
-    <module name="tlsf"/>
-    <module name="pprzlog">
-      <define name="SDLOG_START_DELAY" value="30"/>
-    </module>
+    <define name="SDLOG_START_DELAY" value="10"/>
     <module name="logger" type="sd_chibios"/>
-    <!--module name="logger_tune_indi_2" /-->
     <module name="flight_recorder"/>
-    <!--<module name="logger_spi_link"/>-->
+    <module name="logger_control_effectiveness">
+      <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
+    </module>
 
     <module name="actuators" type="pwm">
       <define name="STM32_PWM_USE_TIM1" value="TRUE"/> <!-- SERVO A1 TO A4 by default-->
@@ -327,6 +328,10 @@
 
     <module name="board" type="tawaki">
       
+    </module>
+
+    <module name="imu" type="mpu9250_i2c">
+
     </module>
 
   
@@ -377,10 +382,14 @@
       <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/> 
 
        <!--[>Use rotation of data<]-->
-      <define name="AHRS_ICQ_IMU_ID" value="IMU_ROT_ID" />     
-      <define name="AHRS_ICQ_MAG_ID" value="IMU_ROT_ID" />
+      <!--define name="AHRS_ICQ_IMU_ID" value="IMU_ROT_ID" />     
+      <define name="AHRS_ICQ_MAG_ID" value="IMU_ROT_ID" /-->
       <!--define name="AHRS_ALIGNER_IMU_ID" value="IMU_ROT_ID" /-->
 
+      <!--[>Use wing imu<]-->
+      <define name="AHRS_ICQ_IMU_ID" value="IMU_MPU9250_ID" />     
+      <define name="AHRS_ICQ_MAG_ID" value="IMU_MPU9250_ID" />
+      <define name="AHRS_ALIGNER_IMU_ID" value="IMU_MPU9250_ID" />
     </module>
 
     <!--module name="ahrs" type="float_invariant">
@@ -389,7 +398,12 @@
     </module-->
 
     <module name="ins">
+      <!--[>Use rotation of data<]-->
       <define name="INS_INT_IMU_ID" value="IMU_ROT_ID" />
+
+      <!--[>Use wing imu<]-->
+      <define name="INS_INT_IMU_ID" value="IMU_MPU9250_ID" />
+
     </module>
 
     <!--module name="ins" type="ekf2">

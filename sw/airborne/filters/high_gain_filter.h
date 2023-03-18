@@ -64,3 +64,13 @@ extern void high_gain_filter_init(struct high_gain_filter *filter, float *alpha,
  * @param theta measurement value
  */
 extern void high_gain_filter_process(struct high_gain_filter *filter, float theta);
+
+/**
+ * settings handlers
+ */
+extern void high_gain_filter_reset(struct high_gain_filter *filter);
+extern void high_gain_filter_update_alpha0(struct high_gain_filter *filter, float alpha0);
+extern void high_gain_filter_update_alpha1(struct high_gain_filter *filter, float alpha1);
+extern void high_gain_filter_update_alpha2(struct high_gain_filter *filter, float alpha2);
+extern void high_gain_filter_update_epsilon(struct high_gain_filter *filter, float epsilon);
+extern void high_gain_filter_update_rate(struct high_gain_filter *filter, float rate);
