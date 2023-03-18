@@ -25,7 +25,7 @@
 
 #include "modules/ctrl/body_stabilisation.h"
 #include "modules/actuators/actuators.h"
-#include "filters/high_gain_filter.h"
+#include "modules/sensors/encoder_amt22.h"
 #include "modules/imu/rotate_imu.h"
 
 #include "modules/datalink/downlink.h"
@@ -78,7 +78,7 @@ void body_stabilisation_init(void)
 
 void body_stabilisation_periodic(void)
 {
-  angle_wing2fus = H_g_filter_rot.hatx[0];
+  angle_wing2fus = encoder_amt22.H_g_filter.hatx[0];
   QUAT_ASSIGN(quat_wing2fus, cos(angle_wing2fus/2), 0.0, sin(angle_wing2fus/2), 0.0);
 
   float_quat_comp(&quat_fus, stateGetNedToBodyQuat_f(), &quat_wing2fus);

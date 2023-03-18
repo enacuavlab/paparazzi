@@ -27,6 +27,7 @@
 #include "modules/loggers/sdlog_chibios.h"
 #include "mcu_periph/sys_time.h"
 #include "state.h"
+#include "modules/imu/rotate_imu.h"
 
 // define parameters logged by default
 
@@ -69,7 +70,7 @@
 void logger_control_effectiveness_start(void)
 {
   if (pprzLogFile != -1) {
-    sdLogWriteLog(pprzLogFile, "time,gyro_p,gyro_q,gyro_r,ax,ay,az");
+    sdLogWriteLog(pprzLogFile, "time,gyro_p,gyro_q,gyro_r,ax,ay,az,angle,angle_speed");
 #if LOGGER_CONTROL_EFFECTIVENESS_COMMANDS
     for (unsigned int i = 0; i < COMMANDS_NB; i++) {
       sdLogWriteLog(pprzLogFile, ",cmd_%d", i);
@@ -105,14 +106,16 @@ void logger_control_effectiveness_periodic(void)
   struct Int32Vect3 *accel_body = stateGetAccelBody_i();
 
   // log time, rate and accel
-  sdLogWriteLog(pprzLogFile, "%.5f,%ld,%ld,%ld,%ld,%ld,%ld",
+  sdLogWriteLog(pprzLogFile, "%.5f,%ld,%ld,%ld,%ld,%ld,%ld,%f,%f",
       get_sys_time_float(),
       rates->p,
       rates->q,
       rates->r,
       accel_body->x,
       accel_body->y,
-      accel_body->z);
+      accel_body->z,
+      angle_filter,
+      rotate_imu.angular_speed);
 
   // log commands
 #if LOGGER_CONTROL_EFFECTIVENESS_COMMANDS
@@ -129,7 +132,7 @@ void logger_control_effectiveness_periodic(void)
   // log actuators
 #if LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS
   for (unsigned int i = 0; i < ACTUATORS_NB; i++) {
-    sdLogWriteLog(pprzLogFile, ",%d", actuators[i]);
+    sdLogWriteLog(pprzLogFile, ",%d", actuators_pprz[i]);
   }
 #endif
 

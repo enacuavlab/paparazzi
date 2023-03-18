@@ -24,40 +24,83 @@
  */
 
 #include "modules/sensors/encoder_amt22.h"
-#include "peripherals/amt22.h"
-
-#include "filters/high_gain_filter.h"
 
 #include "modules/datalink/downlink.h"
 
+/** Default alpha0 */
+#ifndef ENC_AMT22_ALPHA0
+#define ENC_AMT22_ALPHA0 1.5f
+#endif
+PRINT_CONFIG_VAR(ENC_AMT22_ALPHA0)
 
-struct amt22_t amt22;
+/** Default alpha1 */
+#ifndef ENC_AMT22_ALPHA1
+#define ENC_AMT22_ALPHA1 1.8f
+#endif
+PRINT_CONFIG_VAR(ENC_AMT22_ALPHA1)
 
-struct high_gain_filter H_g_filter_rot;
+/** Default alpha2 */
+#ifndef ENC_AMT22_ALPHA2
+#define ENC_AMT22_ALPHA2 0.65f
+#endif
+PRINT_CONFIG_VAR(ENC_AMT22_ALPHA2)
+
+/** Default epsilon */
+#ifndef ENC_AMT22_EPS
+#define ENC_AMT22_EPS 0.06f
+#endif
+PRINT_CONFIG_VAR(ENC_AMT22_EPS)
+
+
+
+struct EncoderAmt22 encoder_amt22;
 
 void encoder_amt22_init(void)
 {
-  amt22_init(&amt22, &AMT22_SPI_DEV, AMT22_SPI_SLAVE_IDX);
-  float alpha_gain[3] = {1.5, 1.8, 0.65};
-  high_gain_filter_init(&H_g_filter_rot, alpha_gain, 0.06, 500);
+  amt22_init(&encoder_amt22.amt22, &AMT22_SPI_DEV, AMT22_SPI_SLAVE_IDX);
+  float alpha_gain[3] = {ENC_AMT22_ALPHA0, ENC_AMT22_ALPHA1, ENC_AMT22_ALPHA2};
+  high_gain_filter_init(&encoder_amt22.H_g_filter, alpha_gain, ENC_AMT22_EPS, PERIODIC_FREQUENCY);
 }
 
 void encoder_amt22_periodic(void)
 {
   //amt22_request(&amt22, AMT22_READ_TURNS);
-  amt22_request(&amt22, AMT22_READ_POSITION);
-  high_gain_filter_process(&H_g_filter_rot, amt22.angle_rad);
-  /*
-  float f[5] = {amt22.position, amt22.angle_rad, H_g_filter_rot.hatx[0], H_g_filter_rot.hatx[1], H_g_filter_rot.hatx[2]};
-  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 5, f);
-  */
-  
+  amt22_request(&encoder_amt22.amt22, AMT22_READ_POSITION);
+  high_gain_filter_process(&encoder_amt22.H_g_filter, encoder_amt22.amt22.angle_rad);
 
 }
 
 void encoder_amt22_event(void)
 {
-  amt22_event(&amt22);
+  amt22_event(&encoder_amt22.amt22);
+}
+
+extern void encoder_amt22_update_alpha0(float alpha0){
+  high_gain_filter_update_alpha0(&encoder_amt22.H_g_filter, alpha0);
+  high_gain_filter_reset(&encoder_amt22.H_g_filter);
+}
+extern void encoder_amt22_update_alpha1(float alpha1){
+  high_gain_filter_update_alpha1(&encoder_amt22.H_g_filter, alpha1);
+  high_gain_filter_reset(&encoder_amt22.H_g_filter);
+}
+extern void encoder_amt22_update_alpha2(float alpha2){
+  high_gain_filter_update_alpha2(&encoder_amt22.H_g_filter, alpha2);
+  high_gain_filter_reset(&encoder_amt22.H_g_filter);
+}
+extern void encoder_amt22_update_epsilon(float epsilon){
+  high_gain_filter_update_epsilon(&encoder_amt22.H_g_filter, epsilon);
+  high_gain_filter_reset(&encoder_amt22.H_g_filter);
+}
+
+extern void encoder_amt22_report(void){
+
+  float f[5] = {encoder_amt22.amt22.position, 
+                encoder_amt22.amt22.angle_rad,
+                encoder_amt22.H_g_filter.hatx[0],
+                encoder_amt22.H_g_filter.hatx[1],
+                encoder_amt22.H_g_filter.hatx[2]};
+  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 5, f);
+
 }
 
 
