@@ -27,27 +27,27 @@
 
 #include "modules/datalink/downlink.h"
 
-/** Default alpha0 */
+/** Default alpha0 old : 1.5*/
 #ifndef ENC_AMT22_ALPHA0
-#define ENC_AMT22_ALPHA0 1.5f
+#define ENC_AMT22_ALPHA0 2.4f 
 #endif
 PRINT_CONFIG_VAR(ENC_AMT22_ALPHA0)
 
-/** Default alpha1 */
+/** Default alpha1 old : 1.8*/
 #ifndef ENC_AMT22_ALPHA1
-#define ENC_AMT22_ALPHA1 1.8f
+#define ENC_AMT22_ALPHA1 2.97f
 #endif
 PRINT_CONFIG_VAR(ENC_AMT22_ALPHA1)
 
-/** Default alpha2 */
+/** Default alpha2 old : 0.65*/
 #ifndef ENC_AMT22_ALPHA2
-#define ENC_AMT22_ALPHA2 0.65f
+#define ENC_AMT22_ALPHA2 1.3520f
 #endif
 PRINT_CONFIG_VAR(ENC_AMT22_ALPHA2)
 
-/** Default epsilon */
+/** Default epsilon old :0.06*/
 #ifndef ENC_AMT22_EPS
-#define ENC_AMT22_EPS 0.06f
+#define ENC_AMT22_EPS 0.03f
 #endif
 PRINT_CONFIG_VAR(ENC_AMT22_EPS)
 
