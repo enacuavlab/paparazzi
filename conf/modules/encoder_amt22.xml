@@ -2,19 +2,16 @@
 <module name="encoder_amt22" dir="sensors" task="sensors">
   <doc>
     <description>Driver for AMT22 encoder from CUI devices.</description>
-    <section name="ENCODER_AMT22" prefix="ENCODER_AMT22_">
-      <define name="" value="" description="postion selon l'axe x du centre de rotation par rapport à l'imu dans le repere de l'imu en m"/>
-      <define name="" value="" description="postion selon l'axe z du centre de rotation par rapport à l'imu dans le repere de l'imu en m"/>
-    </section>
+    
   </doc>
 
    <settings>
     <dl_settings>
       <dl_settings name="encoder_amt22">
-        <dl_setting min="0." max="10." step="0.1" var="encoder_amt22.H_g_filter.alpha[0]" module="sensors/encoder_amt22" shortname="alpha0" handler="update_alpha0"/>
-        <dl_setting min="0." max="10." step="0.1" var="encoder_amt22.H_g_filter.alpha[1]" module="sensors/encoder_amt22" shortname="alpha1" handler="update_alpha1"/>
-        <dl_setting min="0." max="10." step="0.1" var="encoder_amt22.H_g_filter.alpha[2]" module="sensors/encoder_amt22" shortname="alpha2" handler="update_alpha2"/>
-        <dl_setting min="0." max="10." step="0.1" var="encoder_amt22.H_g_filter.epsilon" module="sensors/encoder_amt22" shortname="epsilon" handler="update_epsilon"/>     
+        <dl_setting min="0." max="10." step="0.01" var="encoder_amt22.H_g_filter.alpha[0]" module="sensors/encoder_amt22" shortname="alpha0" handler="update_alpha0"/>
+        <dl_setting min="0." max="10." step="0.01" var="encoder_amt22.H_g_filter.alpha[1]" module="sensors/encoder_amt22" shortname="alpha1" handler="update_alpha1"/>
+        <dl_setting min="0." max="10." step="0.01" var="encoder_amt22.H_g_filter.alpha[2]" module="sensors/encoder_amt22" shortname="alpha2" handler="update_alpha2"/>
+        <dl_setting min="0." max="10." step="0.01" var="encoder_amt22.H_g_filter.epsilon" module="sensors/encoder_amt22" shortname="epsilon" handler="update_epsilon"/>     
       </dl_settings>
     </dl_settings>
   </settings>
@@ -29,7 +26,7 @@
 
   <init fun="encoder_amt22_init()"/>
   <periodic fun="encoder_amt22_periodic()" autorun="TRUE"/>
-  <periodic fun="encoder_amt22_report()" freq="5.0" autorun="FALSE"/> <!--FALSE -->
+  <periodic fun="encoder_amt22_report()" freq="5.0" autorun="TRUE"/> <!--FALSE -->
   <event fun="encoder_amt22_event()"/>
 
   <makefile>

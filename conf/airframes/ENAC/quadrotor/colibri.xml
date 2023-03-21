@@ -1,11 +1,10 @@
 <!-- Colibri windshape
-	Tawaki v1.01 Chibios
+	Tawaki v1.10 Chibios
 	Xbee API
-	Ublox M8T
+	Ublox M8N
 	SBUS FrSky -->
 
 <airframe name="colibri">
-
 
   <servos driver="DShot">
     <servo name="UR" no="3" min="0" neutral="100" max="2000"/>
@@ -35,10 +34,14 @@
   <!-- </auto_rc_commands> -->
 
   <command_laws>
-    <set servo="UR" value="autopilot.motors_on ? Min(actuators_pprz[0],MAX_PPRZ/2) : -MAX_PPRZ"/>
+    <!--set servo="UR" value="autopilot.motors_on ? Min(actuators_pprz[0],MAX_PPRZ/2) : -MAX_PPRZ"/>
     <set servo="BR" value="autopilot.motors_on ? Min(actuators_pprz[1],MAX_PPRZ/2) : -MAX_PPRZ"/>
     <set servo="BL" value="autopilot.motors_on ? Min(actuators_pprz[2],MAX_PPRZ/2) : -MAX_PPRZ"/>
-    <set servo="UL" value="autopilot.motors_on ? Min(actuators_pprz[3],MAX_PPRZ/2) : -MAX_PPRZ"/>
+    <set servo="UL" value="autopilot.motors_on ? Min(actuators_pprz[3],MAX_PPRZ/2) : -MAX_PPRZ"/-->
+    <set servo="UR" value="autopilot.motors_on ? actuators_pprz[0] : -MAX_PPRZ"/>
+    <set servo="BR" value="autopilot.motors_on ? actuators_pprz[1] : -MAX_PPRZ"/>
+    <set servo="BL" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
+    <set servo="UL" value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
     <set servo="ELEVON_L" value="autopilot.motors_on ? actuators_pprz[4] : 0"/>
     <set servo="ELEVON_R" value="autopilot.motors_on ? actuators_pprz[5] : 0"/>
     <set servo="PROFONDEUR_SERVO" value="autopilot.motors_on ? actuators_pprz[6] : 0"/>
@@ -97,7 +100,7 @@
   </section>
 
   <section name="BAT">
-    <define name="MilliAmpereOfAdc(_adc)" value="_adc*100."/>
+    <define name="VoltageOfAdc(adc)" value="(9.1818 * (3.3f/4096.0f)  * adc)"/>
     <define name="CATASTROPHIC_BAT_LEVEL" value="12.4" unit="V"/>
     <define name="CRITIC_BAT_LEVEL" value="13.8" unit="V"/>
     <define name="LOW_BAT_LEVEL" value="14.5" unit="V"/>
@@ -119,16 +122,16 @@
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
     <define name="G1_ROLL"  value="{ -9.0, -9.0,  9.0,  9.0}"/>
     <define name="G1_PITCH" value="{ -9.0,  9.0,  9.0, -9.0}"/>
-    <define name="G1_YAW"   value="{  7.0,   -7.0,  7.0,   -7.0}"/>
+    <define name="G1_YAW"   value="{  -7.0,   7.0,  -7.0,   7.0}"/>
     <define name="G1_THRUST" value="{ -0.6,  -0.6,  -0.6,  -0.6}"/>
   </section>
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!--  UR BR BL UL-->
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-    <define name="G1_ROLL"  value="{ -40.,     -40.0,    40.0,    40.0}"/>
-    <define name="G1_PITCH" value="{ -40.,    40.,   40.,  -40.}"/>
-    <define name="G1_YAW"   value="{  5.0,     -5.0,   5.0,    -5.0}"/>
+    <define name="G1_ROLL"  value="{ -20.,     -20.0,    20.0,    20.0}"/>
+    <define name="G1_PITCH" value="{ -120.,    120.,   120.,  -120.}"/>  <!-- -40.,    40.,   40.,  -40. -->
+    <define name="G1_YAW"   value="{  -5.0,     5.0,   -5.0,    -5.0}"/>  <!-- 5.0,     -5.0,   5.0,    -5.0 -->
     <define name="G1_THRUST" value="{ -1.5,  -1.5,  -1.5,  -1.5}"/>
 
     <!--Counter torque effect of spinning up a rotor-->
@@ -197,6 +200,7 @@
   </section>
 
   <section name="MISC">
+
     <!--The Quadshot uses (when TRUE) a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
     <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
     <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
@@ -237,6 +241,9 @@
   <firmware name="rotorcraft">
     <configure name="PERIODIC_FREQUENCY" value="500"/>
     <configure name="RTOS_DEBUG" value="0"/>
+
+    <define name="USE_ADC_1"/>
+    <define name="ADC_CHANNEL_VSUPPLY" value="ADC_1"/>
 
     <target name="ap" board="tawaki_1.1">
       
@@ -286,7 +293,9 @@
 
     </target>
 
-   
+    <module name="board" type="tawaki">
+      
+    </module>
 
 
     <module name="sys_mon"/>
@@ -326,9 +335,7 @@
     </module>
 
 
-    <module name="board" type="tawaki">
-      
-    </module>
+    
 
     <module name="imu" type="mpu9250_i2c">
 
@@ -382,14 +389,14 @@
       <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/> 
 
        <!--[>Use rotation of data<]-->
-      <!--define name="AHRS_ICQ_IMU_ID" value="IMU_ROT_ID" />     
-      <define name="AHRS_ICQ_MAG_ID" value="IMU_ROT_ID" /-->
+      <define name="AHRS_ICQ_IMU_ID" value="IMU_ROT_ID" />     
+      <define name="AHRS_ICQ_MAG_ID" value="IMU_ROT_ID" />
       <!--define name="AHRS_ALIGNER_IMU_ID" value="IMU_ROT_ID" /-->
 
       <!--[>Use wing imu<]-->
-      <define name="AHRS_ICQ_IMU_ID" value="IMU_MPU9250_ID" />     
+      <!--define name="AHRS_ICQ_IMU_ID" value="IMU_MPU9250_ID" />     
       <define name="AHRS_ICQ_MAG_ID" value="IMU_MPU9250_ID" />
-      <define name="AHRS_ALIGNER_IMU_ID" value="IMU_MPU9250_ID" />
+      <define name="AHRS_ALIGNER_IMU_ID" value="IMU_MPU9250_ID" /-->
     </module>
 
     <!--module name="ahrs" type="float_invariant">
@@ -402,7 +409,7 @@
       <define name="INS_INT_IMU_ID" value="IMU_ROT_ID" />
 
       <!--[>Use wing imu<]-->
-      <define name="INS_INT_IMU_ID" value="IMU_MPU9250_ID" />
+      <!--define name="INS_INT_IMU_ID" value="IMU_MPU9250_ID" /-->
 
     </module>
 

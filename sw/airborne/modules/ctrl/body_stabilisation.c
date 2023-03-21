@@ -37,19 +37,19 @@
 
 /** Default kp */
 #ifndef BODY_STAB_KP
-#define BODY_STAB_KP 1911.f
+#define BODY_STAB_KP 7000.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KP)
 
-/** Default ki */
+/** Default ki old 1976*/
 #ifndef BODY_STAB_KI
-#define BODY_STAB_KI 1976.f
+#define BODY_STAB_KI 0.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KD)
 
 /** Default kd */
 #ifndef BODY_STAB_KD
-#define BODY_STAB_KD 396.f
+#define BODY_STAB_KD 1565.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KD)
 
@@ -74,6 +74,7 @@ void body_stabilisation_init(void)
   body_stab.kd = BODY_STAB_KD;
   body_stab.u_eq = BODY_STAB_UEQ;
   body_stab.state_integrator = 0;
+  motor_cmd = 0;
 }
 
 void body_stabilisation_periodic(void)
@@ -84,10 +85,12 @@ void body_stabilisation_periodic(void)
   float_quat_comp(&quat_fus, stateGetNedToBodyQuat_f(), &quat_wing2fus);
   
   float_eulers_of_quat(&euler_fus, &quat_fus);
-
-  motor_cmd = body_stab.u_eq - body_stab.kp*euler_fus.theta - body_stab.ki*body_stab.state_integrator - body_stab.kd * vect_fuselage_rate.y;  //check sign 
-  actuators_pprz[7] = TRIM_UPPRZ(motor_cmd);
-  body_stab.state_integrator += euler_fus.theta*1/PERIODIC_FREQUENCY;
+  if(autopilot.motors_on){
+    motor_cmd = body_stab.u_eq + body_stab.kp*euler_fus.theta + body_stab.ki*body_stab.state_integrator + body_stab.kd * vect_fuselage_rate.y;  //check sign 
+    actuators_pprz[7] = TRIM_UPPRZ(motor_cmd);
+    body_stab.state_integrator += euler_fus.theta*1/PERIODIC_FREQUENCY;
+  }
+ 
   
 }
 
