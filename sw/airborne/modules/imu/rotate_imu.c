@@ -31,10 +31,22 @@
 
 #include "modules/datalink/downlink.h"
 
-/** Enable by default */
+/* Enable by default */
 #ifndef ROTATE_IMU_ENABLED
 #define ROTATE_IMU_ENABLED TRUE
 #endif
+
+/* meters */
+#ifndef ROTATE_IMU_POS_CENTER_IN_IMU_X
+#define ROTATE_IMU_POS_CENTER_IN_IMU_X 0.03517f
+#endif
+PRINT_CONFIG_VAR(ROTATE_IMU_POS_CENTER_IN_IMU_X)
+
+/* meters */
+#ifndef ROTATE_IMU_POS_CENTER_IN_IMU_Z
+#define ROTATE_IMU_POS_CENTER_IN_IMU_Z 0.15438f
+#endif
+PRINT_CONFIG_VAR(ROTATE_IMU_POS_CENTER_IN_IMU_Z)
 
 /**
  * ABI bindings
@@ -172,11 +184,10 @@ void rotate_imu_init(void)
   rotate_imu.enabled = ROTATE_IMU_ENABLED;
   rotate_imu.angular_speed = 0.;
   rotate_imu.angular_accel = 0;
-  //rotate_imu.centre_rot_2_imu.x = ROTATE_IMU_POS_CENTER_IN_IMU_X;
-  rotate_imu.centre_rot_2_imu.x = 0;
+  rotate_imu.centre_rot_2_imu.x = ROTATE_IMU_POS_CENTER_IN_IMU_X;
   rotate_imu.centre_rot_2_imu.y = 0;
-  //rotate_imu.centre_rot_2_imu.z = ROTATE_IMU_POS_CENTER_IN_IMU_Z;
-  rotate_imu.centre_rot_2_imu.z = 0.1583;
+  rotate_imu.centre_rot_2_imu.z = ROTATE_IMU_POS_CENTER_IN_IMU_Z;
+  
 
   FLOAT_MAT33_DIAG(rotate_imu.Rot_mat_f, 1., 1., 1.);
 

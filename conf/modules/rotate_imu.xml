@@ -36,6 +36,8 @@
     <dl_settings>
       <dl_settings name="rot_imu">
         <dl_setting min="0" max="1" step="1" var="rotate_imu.enabled" module="imu/rotate_imu" shortname="enable" values="DISABLED|ENABLED" handler="reset"/>
+        <dl_setting min="0." max="1." step="0.001" var="rotate_imu.centre_rot_2_imu.x" module="imu/rotate_imu" shortname="centre_rot_2_imu_X" />
+        <dl_setting min="0." max="1." step="0.001" var="rotate_imu.centre_rot_2_imu.z" module="imu/rotate_imu" shortname="centre_rot_2_imu_Z" />
       </dl_settings>
     </dl_settings>
   </settings>
@@ -48,7 +50,7 @@
   </header>
   <init fun="rotate_imu_init()"/>
   <periodic fun="rotate_imu_update_dcm_matrix()" autorun="TRUE"/>
-  <periodic fun="rotate_imu_report()" freq="5.0" autorun="TRUE"/> <!--FALSE -->
+  <periodic fun="rotate_imu_report()" freq="5.0" autorun="FALSE"/> <!--FALSE -->
   <makefile>
     <file name="rotate_imu.c"/>
     <test/>
