@@ -54,10 +54,31 @@
 #define GVF_PARAMETRIC_CONTROL_KPSI 1
 #endif
 
-/*! Default GCS trajectory painter */
-#ifndef GVF_OCAML_GCS
-#define GVF_OCAML_GCS true
+/*! Default on/off coordination */
+#ifndef GVF_PARAMETRIC_COORDINATION_COORDINATION
+#define GVF_PARAMETRIC_COORDINATION_COORDINATION 0
 #endif
+
+/*! Default gain kc for the coordination algorithm */
+#ifndef GVF_PARAMETRIC_COORDINATION_KC
+#define GVF_PARAMETRIC_COORDINATION_KC 0.01
+#endif
+
+/*! Default timeout for the neighbors' information */
+#ifndef GVF_PARAMETRIC_COORDINATION_TIMEOUT
+#define GVF_PARAMETRIC_COORDINATION_TIMEOUT 1500
+#endif
+
+/*! Default broadcasting time */
+#ifndef GVF_PARAMETRIC_COORDINATION_BROADTIME
+#define GVF_PARAMETRIC_COORDINATION_BROADTIME 200
+#endif
+
+/*! Default number of neighbors per aircraft */
+#ifndef GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS
+#define GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS 4
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,15 +105,41 @@ typedef struct {
   float k_psi;
   float L;
   float beta;
+  float w_dot;
 } gvf_parametric_con;
 
 extern gvf_parametric_con gvf_parametric_control;
+
+/** @typedef gvf_parametric_coord
+* @brief Coordination parameters for the GVF_PARAMETRIC
+* @param coordination If we want to coordinate on a path
+* @param kc Gain for the consensus
+* @param timeout When we stop considering a neighbor if we have not heard from it
+* @param broadtime Period for broadcasting w
+*/
+typedef struct {
+  int8_t coordination;
+  float kc;
+  uint16_t timeout;
+  uint16_t broadtime;
+} gvf_parametric_coord;
+
+extern gvf_parametric_coord gvf_parametric_coordination;
+
+struct gvf_parametric_coord_tab {
+  float tableNei[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS][5];
+  float error_deltaw[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
+  uint32_t last_comm[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
+};
+
+extern struct gvf_parametric_coord_tab gvf_parametric_coordination_tables;
 
 // Parameters for the trajectories
 enum trajectories_parametric {
   TREFOIL_2D = 0,
   ELLIPSE_3D = 1,
   LISSAJOUS_3D = 2,
+  TORUS_3D_SURFACE = 3,
   NONE_PARAMETRIC = 255,
 };
 
@@ -108,10 +155,19 @@ extern gvf_parametric_tra gvf_parametric_trajectory;
 extern void gvf_parametric_init(void);
 
 // Control functions
-extern void gvf_parametric_set_direction(int8_t s);
+extern void gvf_parametric_set_direction(int8_t);
 extern void gvf_parametric_control_2D(float, float, float, float, float, float, float, float);
 extern void gvf_parametric_control_3D(float, float, float, float, float, float, float, float, float,
                                       float, float, float);
+
+// Coordination functions
+extern void gvf_parametric_coordination_send_w_to_nei(void);
+extern void gvf_parametric_coordination_parseRegTable(uint8_t *buf);
+extern void gvf_parametric_coordination_parseWTable(uint8_t *buf);
+
+extern void gvf_parametric_surface_coordination_send_w_to_nei(void);
+extern void gvf_parametric_surface_coordination_parseRegTable(uint8_t *buf);
+extern void gvf_parametric_surface_coordination_parseWTable(uint8_t *buf);
 
 // 2D Trefoil
 extern bool gvf_parametric_2D_trefoil_XY(float, float, float, float, float, float, float);
