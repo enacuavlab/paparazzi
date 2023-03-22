@@ -51,60 +51,50 @@ from __future__ import print_function
 import sys
 from os import path, getenv, getpid
 from time import sleep
+import typing
+import dataclasses
+
+try:
+    from pprzlink.ivy import IvyMessagesInterface
+    from pprzlink.message import PprzMessage
+    pprzImport = True
+except ImportError:
+    pprzImport = False
 
 PPRZ_HOME = getenv("PAPARAZZI_HOME", path.normpath(path.join(path.dirname(path.abspath(__file__)), '../../../')))
 sys.path.append(PPRZ_HOME + "/var/lib/python")
-from pprzlink.ivy import IvyMessagesInterface
-from pprzlink.message import PprzMessage
+
+if not(pprzImport):
+    from pprzlink.ivy import IvyMessagesInterface
+    from pprzlink.message import PprzMessage
+
 from ivy.std_api import *
 
+@dataclasses.dataclass
 class PprzConfig(object):
     """
     Aircraft configuration as sent by the Paparazzi server.
     Getter/setter functions should be used to access the attributes.
     """
 
-    def __init__(self, ac_id, ac_name, airframe, flight_plan, settings, radio, color):
-        self._ac_id = ac_id
-        self._ac_name = ac_name
-        self._airframe = airframe
-        self._flight_plan = flight_plan
-        self._settings = settings
-        self._radio = radio
-        self._color = color
-
-    def __str__(self):
-        conf_str = 'A/C {} with ID {}\n\tairframe: {}\n\tflight plan: {}\n\tsettings: {}\n\tradio: {}\n\tcolor: {}'.format(
-                self._ac_name, self._ac_id, self._airframe, self._flight_plan, self._settings, self._radio, self._color)
-        return conf_str
+    ac_id:int
+    ac_name:str
+    airframe:str
+    flight_plan:str
+    settings:str
+    radio:str
+    color:str
+    
+    def __post_init__(self) -> None:
+        self.ac_id = int(self.ac_id)
 
     @property
-    def id(self):
-        return self._ac_id
+    def id(self) -> int:
+        return self.ac_id 
 
     @property
-    def name(self):
-        return self._ac_name
-
-    @property
-    def airframe(self):
-        return self._airframe
-
-    @property
-    def flight_plan(self):
-        return self._flight_plan
-
-    @property
-    def settings(self):
-        return self._settings
-
-    @property
-    def radio(self):
-        return self._radio
-
-    @property
-    def color(self):
-        return self._color
+    def name(self) -> str:
+        return self.ac_name    
 
 
 class PprzConnect(object):
@@ -114,7 +104,7 @@ class PprzConnect(object):
     and update for the new ones
     """
 
-    def __init__(self, notify=None, ivy=None, verbose=False):
+    def __init__(self, notify:typing.Optional[typing.Callable[[PprzConfig],None]]=None, ivy:typing.Optional[IvyMessagesInterface]=None, verbose:bool=False):
         """
         Init function
         Create an ivy interface if not provided and request for all aircraft
@@ -126,8 +116,8 @@ class PprzConnect(object):
         self.verbose = verbose
         self._notify = notify
 
-        self._conf_list_by_name = {}
-        self._conf_list_by_id = {}
+        self._conf_list_by_name:typing.Dict[str,PprzConfig] = {}
+        self._conf_list_by_id:typing.Dict[int,PprzConfig] = {}
 
         if ivy is None:
             self._ivy = IvyMessagesInterface("PprzConnect")
@@ -177,7 +167,7 @@ class PprzConnect(object):
             return self._conf_list_by_id
 
     @property
-    def ivy(self):
+    def ivy(self) -> IvyMessagesInterface:
         """
         Getter function for the ivy interface
         """
@@ -204,9 +194,9 @@ class PprzConnect(object):
                 print("new aircraft: {}".format(ac_id))
         self._ivy.subscribe(new_ac_cb,PprzMessage('ground','NEW_AIRCRAFT'))
 
-    def get_config(self, ac_id):
+    def get_config(self, ac_id:str):
         """
-        Requsest a config from the server for a given ID
+        Request a config from the server for a given ID
 
         :param ac_id: aircraft ID
         :type ac_id: str
