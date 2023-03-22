@@ -18,7 +18,7 @@
         <dl_setting min="0" max="1" step="1" var="body_stab.enabled" module="ctrl/body_stabilisation" shortname="enable" values="DISABLED|ENABLED" handler="reset"/>
         <dl_setting min="100." max="50000" step="10" var="body_stab.kp" module="ctrl/body_stabilisation" shortname="kp" handler="update_kp"/>
         <dl_setting min="100." max="50000" step="10" var="body_stab.ki" module="ctrl/body_stabilisation" shortname="ki" handler="update_ki"/>
-        <dl_setting min="0.1" max="50." step="0.1" var="body_stab.kd" module="ctrl/body_stabilisation" shortname="kd" handler="update_kd"/>
+        <dl_setting min="0.1" max="50000." step="1" var="body_stab.kd" module="ctrl/body_stabilisation" shortname="kd" handler="update_kd"/>
         <dl_setting min="1" max="9600" step="1" var="body_stab.u_eq" module="ctrl/body_stabilisation" shortname="u_eq" handler="update_ueq"/>
       </dl_settings>
     </dl_settings>
