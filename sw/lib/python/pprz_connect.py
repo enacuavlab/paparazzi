@@ -54,19 +54,10 @@ from time import sleep
 import typing
 import dataclasses
 
-try:
-    from pprzlink.ivy import IvyMessagesInterface
-    from pprzlink.message import PprzMessage
-    pprzImport = True
-except ImportError:
-    pprzImport = False
-
 PPRZ_HOME = getenv("PAPARAZZI_HOME", path.normpath(path.join(path.dirname(path.abspath(__file__)), '../../../')))
 sys.path.append(PPRZ_HOME + "/var/lib/python")
-
-if not(pprzImport):
-    from pprzlink.ivy import IvyMessagesInterface
-    from pprzlink.message import PprzMessage
+from pprzlink.ivy import IvyMessagesInterface
+from pprzlink.message import PprzMessage
 
 from ivy.std_api import *
 
