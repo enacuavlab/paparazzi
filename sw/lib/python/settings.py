@@ -20,7 +20,7 @@
 #
 
 from lxml import etree
-from typing import List
+import typing
 import sys
 from os import path, getenv
 import time
@@ -32,6 +32,40 @@ from pprzlink.ivy import IvyMessagesInterface
 from pprzlink.message import PprzMessage
 
 
+class PprzSetting:
+    """Paparazzi Setting Class"""
+
+    def __init__(self, var, index, shortname, min_value, max_value, step, values, xml):
+        self.var = var              # type: str
+        self.index = index          # type: int
+        self.shortname = shortname  # type: str
+        self.min_value = min_value  # type: float
+        self.max_value = max_value  # type: float
+        self.step = step            # type: float
+        self.values = values        # type: typing.List[str]
+        self.value = None           # type: float
+        self.buttons = []           # type: typing.List[StripButton]
+        self.key_press = []         # type: typing.List[KeyPress]
+        self.xml = xml
+
+    def __str__(self):
+        return "{{var: {}, shortname: {}, index: {}}}".format(self.var, self.shortname, self.index)
+
+    def value_from_name(self, name):
+        """Return the index in 'values' table matching a given name. Raise ValueError if the name is unknown."""
+        if self.values is None:
+            raise ValueError("No named values in this setting")
+        return self.values.index(name) + self.min_value
+
+    def set(self, val):
+        if isinstance(val, str):
+            self.value = self.value_from_name(val)
+        elif isinstance(val, float) or isinstance(val, int):
+            self.value = val
+        else:
+            raise Exception("Bad type!")
+
+
 class PprzSettingsManager:
     def __init__(self, settings_xml_path, ac_id, ivy: IvyMessagesInterface):
         self.ac_id = str(ac_id)
@@ -41,13 +75,36 @@ class PprzSettingsManager:
 
     def update_values(self, sender, msg):
         if self.ac_id == msg.ac_id:
-            for i, value in enumerate(msg.values):
-                if value != '?':
-                    value = float(value)
-                    s = self.settings_grp[i]    # type: PprzSetting
-                    s.set(value)
+            # Recover values from a Python CSV list of strings...
+            # Remove list braces, then split along commas
+            if isinstance(msg.values,str):
+                values_list:typing.List[str] = msg.values[1:-1].split(',')
+                for i, value in enumerate(values_list):
+                    # Remove any whitespaces, then the quotation marks
+                    value = value.strip()[1:-1]
+                    if value != '?':
+                        try:
+                            value = float(value)
+                        except ValueError as e:
+                            print(values_list)
+                            raise e
+                        s = self.settings_grp[i]    # type: PprzSetting
+                        s.set(value)
+            else:
+                for i, value in enumerate(values_list):
+                    if value != '?':
+                        try:
+                            value = float(value)
+                        except ValueError as e:
+                            print(values_list)
+                            raise e
+                        s = self.settings_grp[i]    # type: PprzSetting
+                        s.set(value)
+                
+            	
+	
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> PprzSetting:
         return self.settings_grp.__getitem__(item)
 
     def __setitem__(self, key, value):
@@ -124,40 +181,6 @@ class PprzSettingsParser:
         return group
 
 
-class PprzSetting:
-    """Paparazzi Setting Class"""
-
-    def __init__(self, var, index, shortname, min_value, max_value, step, values, xml):
-        self.var = var              # type: str
-        self.index = index          # type: int
-        self.shortname = shortname  # type: str
-        self.min_value = min_value  # type: float
-        self.max_value = max_value  # type: float
-        self.step = step            # type: float
-        self.values = values        # type: List[str]
-        self.value = None           # type: float
-        self.buttons = []           # type: List[StripButton]
-        self.key_press = []         # type: List[KeyPress]
-        self.xml = xml
-
-    def __str__(self):
-        return "{{var: {}, shortname: {}, index: {}}}".format(self.var, self.shortname, self.index)
-
-    def value_from_name(self, name):
-        """Return the index in 'values' table matching a given name. Raise ValueError if the name is unknown."""
-        if self.values is None:
-            raise ValueError("No named values in this setting")
-        return self.values.index(name) + self.min_value
-
-    def set(self, val):
-        if isinstance(val, str):
-            self.value = self.value_from_name(val)
-        elif isinstance(val, float) or isinstance(val, int):
-            self.value = val
-        else:
-            raise Exception("Bad type!")
-
-
 class StripButton:
     def __init__(self, value, name, icon, group):
         self.value = value
@@ -177,8 +200,8 @@ class PprzSettingsGrp:
 
     def __init__(self, name):
         self.name = name
-        self.settings_list = []     # type: List[PprzSetting]
-        self.groups_list = []       # type: List[PprzSettingsGrp]
+        self.settings_list = []     # type: typing.List[PprzSetting]
+        self.groups_list = []       # type: typing.List[PprzSettingsGrp]
 
     def __str__(self):
         grp_names = [grp.name for grp in self.groups_list]
