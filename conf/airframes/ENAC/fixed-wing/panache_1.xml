@@ -42,9 +42,9 @@
       <configure name="E_ID_BAUD" value="B115200"/>
     </module>
     
-    <module name="flight_recorder"/>
+    <!--<module name="flight_recorder"/>-->
     
-    <!--module name="panache_sensor"/-->
+    <module name="panache_sensor"/>
     
   </firmware>
 
@@ -84,6 +84,18 @@
     <set servo="TAIL_RIGHT"     value="- @PITCH * ELEVATOR_RATE + @YAW * RUDDER_RATE"/>
   </command_laws>
 
+  <section name="GVF" prefix="GVF_">
+    <define name="LINE_KE" value="2.5"/>
+    <define name="ELLIPSE_KE" value="0.8"/>
+    <define name="ELLIPSE_KN" value="0.6"/>
+  </section>
+
+  <section name="GVF_PARAMETRIC" prefix="GVF_PARAMETRIC_">
+    <define name="3D_LISSAJOUS_KX" value="0.001"/>
+    <define name="3D_LISSAJOUS_KY" value="0.001"/>
+    <define name="3D_LISSAJOUS_KZ" value="0.001"/>
+  </section>
+
   <section name="AUTO1" prefix="AUTO1_">
     <define name="MAX_ROLL" value="45." unit="deg"/>
     <define name="MAX_PITCH" value="30." unit="deg"/>
@@ -105,8 +117,8 @@
   <include href="conf/mag/toulouse_muret.xml"/>
 
   <section name="BAT">
-    <define name="CATASTROPHIC_BAT_LEVEL" value="12.4" unit="V"/>
-    <define name="BAT_NB_CELLS" value="4"/>
+    <define name="CATASTROPHIC_BAT_LEVEL" value="8.4" unit="V"/>
+    <!--<define name="BAT_NB_CELLS" value="4"/>-->
   </section>
 
   <section name="MISC">
