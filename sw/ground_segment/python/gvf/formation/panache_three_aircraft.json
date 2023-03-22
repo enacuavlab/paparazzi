@@ -1,0 +1,11 @@
+{
+  "ids": [5, 6, 7],
+  "topology": [
+    [ 1, 0],
+    [-1, 1],
+    [ 0,-1]
+  ],
+  "desired_intervehicle_angles_degrees": [120, 120],
+  "gain": 30,
+  "desired_stationary_radius_meters": 250
+}
