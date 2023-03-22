@@ -130,8 +130,8 @@
     <!--  UR BR BL UL-->
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
     <define name="G1_ROLL"  value="{ -20.,     -20.0,    20.0,    20.0}"/>
-    <define name="G1_PITCH" value="{ -120.,    120.,   120.,  -120.}"/>  <!-- -40.,    40.,   40.,  -40. -->
-    <define name="G1_YAW"   value="{  -5.0,     5.0,   -5.0,    -5.0}"/>  <!-- 5.0,     -5.0,   5.0,    -5.0 -->
+    <define name="G1_PITCH" value="{ -80.,    80.,   80.,  -80.}"/>  <!-- -40.,    40.,   40.,  -40. -->
+    <define name="G1_YAW"   value="{  -14.,     14,   -14,    -14}"/>  <!-- 5.0,     -5.0,   5.0,    -5.0 -->
     <define name="G1_THRUST" value="{ -1.5,  -1.5,  -1.5,  -1.5}"/>
 
     <!--Counter torque effect of spinning up a rotor-->
@@ -140,8 +140,8 @@
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="100"/>
     <define name="REF_ERR_Q" value="80"/>
-    <define name="REF_ERR_R" value="70"/>
-    <define name="REF_RATE_P" value="20."/>
+    <define name="REF_ERR_R" value="30"/>
+    <define name="REF_RATE_P" value="5."/>
     <define name="REF_RATE_Q" value="18.0"/>
     <define name="REF_RATE_R" value="11.0"/> 
 
@@ -269,7 +269,12 @@
       <!--Need to define encodeur fonction for simulation-->
       <module name="encoder" type="amt22"/>
       <module name="rotate_imu" />
-      <module name="body_stabilisation" />
+      <module name="body_stabilisation">
+        <define name="BODY_STAB_KP" value="7000."/>
+        <define name="BODY_STAB_KI" value="0."/>
+        <define name="BODY_STAB_KD" value="3000."/>
+        <define name="BODY_STAB_UEQ" value="3900."/>
+      </module>
     </target>
 
     <target name="nps" board="pc">

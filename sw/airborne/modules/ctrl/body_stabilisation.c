@@ -49,7 +49,7 @@ PRINT_CONFIG_VAR(BODY_STAB_KD)
 
 /** Default kd */
 #ifndef BODY_STAB_KD
-#define BODY_STAB_KD 1565.f
+#define BODY_STAB_KD 3000.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KD)
 
@@ -117,7 +117,7 @@ void body_stabilisation_update_ueq(int ueq){
 }
 
 extern void body_stabilisation_report(void){
-  float f[4] = { motor_cmd, actuators_pprz[7], DegOfRad(-euler_fus.theta), angle_wing2fus};
+  float f[4] = { motor_cmd, actuators_pprz[7], DegOfRad(euler_fus.theta), angle_wing2fus};
   DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 4, f); 
 
   /*float f[16] = {stateGetNedToBodyQuat_f()->qi, stateGetNedToBodyQuat_f()->qx, stateGetNedToBodyQuat_f()->qy, stateGetNedToBodyQuat_f()->qz,
