@@ -61,7 +61,7 @@ void panache_dl_cb(uint8_t* buf)
     float res = float_from_buf(buf);
     send_float(res);
 #ifdef SITL
-    printf("panache sensor: %e\n", res);
+    printf("(%2d) panache sensor: %e\n",AC_ID, res);
 #endif
   }
 
