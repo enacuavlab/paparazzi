@@ -63,6 +63,16 @@
           <dl_setting MAX="180" MIN="-180" STEP="1" VAR="gvf_parametric_3d_lissajous_par.dz" shortname="3d_lis_dz" param="GVF_PARAMETRIC_3D_LISSAJOUS_DZ"/>
           <dl_setting MAX="180" MIN="-180" STEP="1" VAR="gvf_parametric_3d_lissajous_par.alpha" shortname="3d_lis_alpha" param="GVF_PARAMETRIC_3D_LISSAJOUS_ALPHA"/>
         </dl_settings>
+        <dl_settings NAME="3D_sinusoid">
+          <dl_setting MAX="0.01" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_3d_sin_par.kx" shortname="3d_sin_kx" param="GVF_PARAMETRIC_3D_SIN_KX"/>
+          <dl_setting MAX="0.01" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_3d_sin_par.ky" shortname="3d_sin_ky" param="GVF_PARAMETRIC_3D_SIN_KY"/>
+          <dl_setting MAX="0.1" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_3d_sin_par.kz" shortname="3d_sin_kz" param="GVF_PARAMETRIC_3D_SIN_KZ"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="1" VAR="gvf_parametric_3d_sin_par.ay" shortname="3d_sin_ay" param="GVF_PARAMETRIC_3D_SIN_AY"/>
+          <dl_setting MAX="10" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_sin_par.freq_y" shortname="3d_sin_fy" param="GVF_PARAMETRIC_3D_SIN_FREQ_Y"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="1" VAR="gvf_parametric_3d_sin_par.az" shortname="3d_sin_az" param="GVF_PARAMETRIC_3D_SIN_AZ"/>
+          <dl_setting MAX="10" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_sin_par.freq_z" shortname="3d_sin_fz" param="GVF_PARAMETRIC_3D_SIN_FREQ_Z"/>
+          <dl_setting MAX="3.1415" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_sin_par.phase" shortname="3d_sin_phi" param="GVF_PARAMETRIC_3D_SIN_PHASE"/>
+        </dl_settings>
       </dl_settings>
     </dl_settings>
   </settings>
@@ -73,12 +83,15 @@
     <file name="trajectories/gvf_parametric_3d_ellipse.h"/>
     <file name="trajectories/gvf_parametric_3d_lissajous.h"/>
     <file name="trajectories/gvf_parametric_2d_trefoil.h"/>
+    <file name="trajectories/gvf_parametric_3d_sin.h"/>
   </header>
 
   <init fun = "gvf_parametric_init()"/>
 
+<!--
   <datalink message="GVF_PARAMETRIC_REG_TABLE" fun="gvf_parametric_coordination_parseRegTable(buf)"/>
   <datalink message="GVF_PARAMETRIC_W" fun="gvf_parametric_coordination_parseWTable(buf)"/>
+-->
 
   <makefile target="ap|nps" firmware="fixedwing">
     <configure name="CXXSTANDARD" value="-std=c++14"/>
@@ -91,6 +104,7 @@
     <file name="trajectories/gvf_parametric_3d_ellipse.c"/>
     <file name="trajectories/gvf_parametric_3d_lissajous.c"/>
     <file name="trajectories/gvf_parametric_2d_trefoil.c"/>
+    <file name="trajectories/gvf_parametric_3d_sin.c"/>
     <flag name="LDFLAGS" value="lstdc++" />
   </makefile>
 
