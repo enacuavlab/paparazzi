@@ -52,7 +52,7 @@ void gvf_parametric_low_level_control_2D(float heading_rate)
 #endif
 }
 
-void gvf_parametric_low_level_control_3D(float heading_rate, float climbing_rate)
+void gvf_parametric_low_level_control_3d(float heading_rate, float climbing_rate)
 {
 #if defined(FIXEDWING_FIRMWARE)
   if (autopilot_get_mode() == AP_MODE_AUTO2) {
