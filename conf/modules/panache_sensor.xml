@@ -2,13 +2,25 @@
 <module name="panache_sensor" dir="sensors" task="default">
   <doc>
     <description>Get data from Panache sensors, or datalink (for simulation)</description>
+    <configure name="PANACHE_PORT" value="UARTx" description="UART panache board"/>
+    <configure name="PANACHE_BAUD" value="B57600" description="UART baud rate"/>
   </doc>
+    <dep>
+    <depends>extra_dl,flight_recorder</depends>
+  </dep>
   <header>
     <file name="panache_sensor.h"/>
   </header>
   <init fun="panache_init()"/>
   <datalink fun="panache_dl_cb(buf)" message="PAYLOAD_COMMAND"/>
+  <datalink fun="panache_sensors_cb(buf)" message="PAYLOAD_FLOAT" class="telemetry"/>
   <makefile>
+    <configure name="PANACHE_PORT" default="uart6" case="upper|lower"/>
+    <configure name="PANACHE_BAUD" default="B230400"/>
+
+    <configure name="EXTRA_DL_PORT" value="$(PANACHE_PORT)"/>
+    <configure name="EXTRA_DL_BAUD" value="$(PANACHE_BAUD)"/>
+
     <file name="panache_sensor.c"/>
     <test/>
   </makefile>

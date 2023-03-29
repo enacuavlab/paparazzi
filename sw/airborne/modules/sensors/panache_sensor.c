@@ -28,6 +28,8 @@
 #include "pprzlink/messages.h"
 #include "modules/datalink/datalink.h"
 #include "modules/datalink/downlink.h"
+#include "modules/loggers/flight_recorder.h"
+
 
 void panache_init(void)
 {
@@ -64,8 +66,28 @@ void panache_dl_cb(uint8_t* buf)
     printf("(%2d) panache sensor: %e\n",AC_ID, res);
 #endif
   }
+}
 
+void panache_sensors_cb(uint8_t* buf) {
+    float* values = pprzlink_get_DL_PAYLOAD_FLOAT_values(buf);
+    uint8_t len = pprzlink_get_PAYLOAD_FLOAT_values_length(buf);
+    
+    if(sizeof(SensorsData_t) == len*sizeof(float)) {
 
+#if FLIGHTRECORDER_SDLOG
+    // log to SD card
+    pprz_msg_send_PAYLOAD_FLOAT(&pprzlog_tp.trans_tx, &(flightrecorder_sdlog).device, AC_ID, len, values);
+#endif
+    
+    SensorsData_t* data = (SensorsData_t*) values;
+                
+#ifdef SITL
+    printf("[panache] lpl:%e\tspl:%e\tmpl:%e\tpm0:%e\tpm1:%e\tpm2:%e\n", data->gas.lpl, data->gas.spl, data->gas.mpl, data->particle.pm[0], data->particle.pm[1], data->particle.pm[2]);
+#endif
+
+    float resume[6] = {data->gas.lpl, data->gas.spl, data->gas.mpl, data->particle.pm[0], data->particle.pm[1], data->particle.pm[2]};
+    DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 6, resume);
+    }
 }
 
 

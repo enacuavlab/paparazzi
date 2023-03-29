@@ -20,6 +20,10 @@
     <target name="nps" board="pc">
       <module name="radio_control" type="ppm"/>
       <module name="fdm" type="jsbsim"/>
+      
+      <!-- to use real panache board in simulation, remove target="ap" from extra_dl.xml -->
+      <module name="uart"/>
+      <define name="UART6_DEV" value="/dev/ttyUSB0"/>
     </target>
     <module name="telemetry" type="xbee_api"/> 
     <module name="board" type="tawaki"/>

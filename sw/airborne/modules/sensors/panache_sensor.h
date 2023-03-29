@@ -28,7 +28,43 @@
 
 #include "stdint.h"
 
+typedef struct {
+  struct {
+    float  lpl;         //#0
+    float  spl;         //#1
+    float  mpl;         //#2
+    float  pressure;    //#3
+    float  tempNtc0;    //#4
+    float  tempNtc1;    //#5
+    float  tempAduc;    //#6
+    float  humidity;    //#7
+    float  tempBme280;  //#8
+    struct {
+      float  irLow;            //#9,13,17
+      float  irHigh;           //#10,14,18
+      float  irSignal;         //#11,15,19
+      float  irSignalFiltered; //#12,16,20
+    } channels[3];
+  } gas;
+  struct {
+    float  bin[16];             //#21..36
+    float  bin1Mtof;            //#37
+    float  bin3Mtof;            //#38
+    float  bin5Mtof;            //#39
+    float  bin7Mtof;            //#40
+    float  sampleFlowRate;      //#41
+    float  temperature;         //#42
+    float  relativeHumidity;    //#43
+    float  samplePeriod;        //#44
+    float  rejectCountGlitch;   //#45
+    float  rejectCountLong;     //#46
+    float  pm[3];               //#47..49
+  } particle;
+} SensorsData_t;
+
+
 extern void panache_init(void);
-extern void panache_dl_cb(uint8_t* buf);	// PAYLOAD_COMMAND
+extern void panache_dl_cb(uint8_t* buf);  // PAYLOAD_COMMAND
+extern void panache_sensors_cb(uint8_t* buf);  // PAYLOAD_FLOAT
 
 #endif  // PANACHE_SENSOR_H
