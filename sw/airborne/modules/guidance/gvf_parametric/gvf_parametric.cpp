@@ -30,7 +30,7 @@
 
 struct gvf_parametric_affine_transform
 {
-  Eigen::Quaternion<float> rot = Eigen::Quaternion<float>(1,0,0,0);
+  Eigen::Quaternion<float> rot = Eigen::Quaternion<float>::Identity();
   Eigen::Translation3f transalation = Eigen::Translation3f(0., 0., 0.);
   Eigen::Transform<float, 3, Eigen::TransformTraits::Isometry> t = transalation * rot;
 } gvf_parametric_affine_tr;
@@ -80,8 +80,17 @@ extern "C"
 
     if (delta_T < 200)
     {
+      float quaternion[4] = {gvf_parametric_affine_tr.rot.w(),
+                             gvf_parametric_affine_tr.rot.x(),
+                             gvf_parametric_affine_tr.rot.y(),
+                             gvf_parametric_affine_tr.rot.z()};
+
+      float translation[3] = {gvf_parametric_affine_tr.transalation.x(),
+                             gvf_parametric_affine_tr.transalation.y(),
+                             gvf_parametric_affine_tr.transalation.z()};
       pprz_msg_send_GVF_PARAMETRIC(trans, dev, AC_ID, &traj_type, &gvf_parametric_control.s, &wb, gvf_parametric_plen,
-                                   gvf_parametric_trajectory.p_parametric, gvf_parametric_elen, gvf_parametric_trajectory.phi_errors);
+                                   gvf_parametric_trajectory.p_parametric, gvf_parametric_elen, gvf_parametric_trajectory.phi_errors,
+                                   quaternion,translation);
     }
   }
 
@@ -142,7 +151,7 @@ void gvf_parametric_init(void)
   }
 
 #if PERIODIC_TELEMETRY
-  //register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PAR_COORD, send_gvf_parametric_coordination);
+  // register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PAR_COORD, send_gvf_parametric_coordination);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PARAMETRIC, send_gvf_parametric);
 #if GVF_OCAML_GCS
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CIRCLE, send_circle_parametric);
@@ -186,27 +195,23 @@ void gvf_parametric_set_wps_rot(uint8_t wp1, uint8_t wp2)
                                       waypoints[wp2].y - waypoints[wp1].y,
                                       waypoints[wp2].a - waypoints[wp1].a);
 
-  Eigen::Vector3f Base = Eigen::Vector3f(1,0,0);
-  gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>::FromTwoVectors(Base,U).normalized();
+  Eigen::Vector3f Base = Eigen::Vector3f(1, 0, 0);
+  gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>::FromTwoVectors(Base, U).normalized();
 
   gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
-
 }
-
 
 void gvf_parametric_set_wp_rot(uint8_t wp)
 {
   Eigen::Vector3f U = Eigen::Vector3f(waypoints[wp].x,
                                       waypoints[wp].y,
                                       waypoints[wp].a);
-  
-  Eigen::Vector3f Base = Eigen::Vector3f(1,0,0);
-  gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>::FromTwoVectors(Base,U).normalized();
+
+  Eigen::Vector3f Base = Eigen::Vector3f(1, 0, 0);
+  gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>::FromTwoVectors(Base, U).normalized();
 
   gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
-
 }
-
 
 void gvf_parametric_set_affine_tr(float x, float y, float z, float rx, float ry, float rz)
 {
@@ -223,7 +228,7 @@ void gvf_parametric_set_affine_tr_wp(uint8_t wp, float rx, float ry, float rz)
 void gvf_parametric_set_affine_tr_wps(uint8_t wp1, uint8_t wp2)
 {
   gvf_parametric_set_offset(waypoints[wp1].x, waypoints[wp1].y, waypoints[wp1].a);
-  gvf_parametric_set_wps_rot(wp1,wp2);
+  gvf_parametric_set_wps_rot(wp1, wp2);
 }
 
 void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d, float f2d, float f1dd, float f2dd)
@@ -415,6 +420,18 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   // After derivation, only rotation remains
   fd_vec = gvf_parametric_affine_tr.t.linear() * fd_vec;
   fdd_vec = gvf_parametric_affine_tr.t.linear() * fdd_vec;
+
+  f1 = f_vec(0);
+  f2 = f_vec(1);
+  f3 = f_vec(2);
+
+  f1d = fd_vec(0);
+  f2d = fd_vec(1);
+  f3d = fd_vec(2);
+
+  f1dd = fdd_vec(0);
+  f2dd = fdd_vec(1);
+  f3dd = fdd_vec(2);
 
   // Carrot position
   desired_x = f1;
