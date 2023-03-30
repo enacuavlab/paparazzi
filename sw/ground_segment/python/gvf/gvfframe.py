@@ -8,6 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as pl
 import matplotlib.patches as patches
 import numpy as np
+import typing
 
 import sys
 from os import path, getenv
@@ -86,7 +87,7 @@ class GVFFrame(wx.Frame):
 
                 # Ellipse
                 elif int(msg.get_field(1)) == 1:
-                    self.s = int(msg.get_field(2))
+                    self.s = int(msg.get_field(2)) if msg.get_field(2) is not None else 1
                     self.ke = float(msg.get_field(3))
                     param = [float(x) for x in msg.get_field(4)]
                     ex = param[0]

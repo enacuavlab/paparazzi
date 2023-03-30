@@ -2,7 +2,9 @@
 
 import sys
 import wx
-import gvfframe
+#from gvfframe import GVFFrame 
+from modernGVFframe import GVFFrame
+import argparse
 
 class MessagesApp(wx.App):
     def __init__(self, wtf, ac_id):
@@ -10,7 +12,7 @@ class MessagesApp(wx.App):
         wx.App.__init__(self, wtf)
 
     def OnInit(self):
-        self.main = gvfframe.GVFFrame(self.ac_id)
+        self.main = GVFFrame(self.ac_id)
 
         self.main.Show()
         self.SetTopWindow(self.main)
