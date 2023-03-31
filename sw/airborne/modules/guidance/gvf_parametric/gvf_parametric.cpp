@@ -40,6 +40,7 @@ struct gvf_parametric_affine_transform
 #include "./trajectories/gvf_parametric_3d_ellipse.h"
 #include "./trajectories/gvf_parametric_3d_lissajous.h"
 #include "./trajectories/gvf_parametric_2d_trefoil.h"
+#include "./trajectories/gvf_parametric_3d_sin.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -76,7 +77,7 @@ extern "C"
     uint32_t now = get_sys_time_msec();
     uint32_t delta_T = now - gvf_parametric_t0;
 
-    float wb = gvf_parametric_control.w * gvf_parametric_control.beta;
+    float wb = gvf_parametric_control.w * gvf_parametric_control.beta * gvf_parametric_control.s;
 
     if (delta_T < 200)
     {
@@ -164,6 +165,11 @@ void gvf_parametric_set_direction(int8_t s)
   gvf_parametric_control.s = s;
 }
 
+void gvf_parametric_set_w_gain(float b)
+{
+  gvf_parametric_control.beta = b;
+}
+
 void gvf_parametric_set_offset(float x, float y, float z)
 {
   gvf_parametric_affine_tr.transalation = Eigen::Translation3f(x, y, z);
@@ -173,6 +179,11 @@ void gvf_parametric_set_offset(float x, float y, float z)
 void gvf_parametric_set_offset_wp(uint8_t wp)
 {
   gvf_parametric_set_offset(waypoints[wp].x, waypoints[wp].y, waypoints[wp].a);
+}
+
+void gvf_parametric_set_offset_wpa(uint8_t wp, float alt)
+{
+  gvf_parametric_set_offset(waypoints[wp].x, waypoints[wp].y, alt);
 }
 
 void gvf_paremetric_set_euler_rot(float rz, float ry, float rzbis)
@@ -222,6 +233,12 @@ void gvf_parametric_set_affine_tr(float x, float y, float z, float rx, float ry,
 void gvf_parametric_set_affine_tr_wp(uint8_t wp, float rx, float ry, float rz)
 {
   gvf_parametric_set_offset_wp(wp);
+  gvf_paremetric_set_cardan_rot(rx, ry, rz);
+}
+
+void gvf_parametric_set_affine_tr_wpa(uint8_t wp, float alt, float rx, float ry, float rz)
+{
+  gvf_parametric_set_offset_wpa(wp,alt);
   gvf_paremetric_set_cardan_rot(rx, ry, rz);
 }
 
@@ -749,7 +766,7 @@ bool gvf_parametric_3d_sin(float ay, float freq_y, float az, float freq_z, float
   gvf_parametric_trajectory.p_parametric[3] = freq_z;
   gvf_parametric_trajectory.p_parametric[4] = phase;
 
-  gvf_parametric_plen = 4 + gvf_parametric_plen_wps;
+  gvf_parametric_plen = 5 + gvf_parametric_plen_wps;
   gvf_parametric_plen_wps = 0;
 
   float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
