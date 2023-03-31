@@ -125,6 +125,7 @@ extern "C" {
 #include "trajectories/gvf_parametric_3d_ellipse.h"
 #include "trajectories/gvf_parametric_3d_lissajous.h"
 #include "trajectories/gvf_parametric_2d_trefoil.h"
+#include "trajectories/gvf_parametric_3d_sin.h"
 
 /** @typedef gvf_parametric_con
 * @brief Control parameters for the GVF_PARAMETRIC
@@ -198,6 +199,8 @@ extern void gvf_parametric_init(void);
 // Control functions
 extern void gvf_parametric_set_direction(int8_t);
 
+extern void gvf_parametric_set_w_gain(float);
+
 /**
  * @brief Define the affine component of the transformation to apply to the current trajectory
  * 
@@ -214,6 +217,14 @@ void gvf_parametric_set_offset(float x, float y, float z);
  * @param wp Waypoint's ID
  */
 void gvf_parametric_set_offset_wp(uint8_t wp);
+
+/**
+ * @brief Like gvf_parametric_set_offset_wp, but specify a different altitude
+ * 
+ * @param wp Waypoint's ID
+ * @param alt Altitude
+ */
+void gvf_parametric_set_offset_wpa(uint8_t wp, float alt);
 
 /**
  * @brief Define the rotational component (through its Euler's angles) of the transformation to apply to the current trajectory
@@ -279,6 +290,17 @@ void gvf_parametric_set_affine_tr(float x, float y, float z, float rx, float ry,
  * @param rz Rotation around z-axis (in degrees)
  */
 void gvf_parametric_set_affine_tr_wp(uint8_t wp, float rx, float ry, float rz);
+
+/**
+ * @brief Like gvf_parametric_set_affine_tr_wp, but set the altitude manually
+ * 
+ * @param wp Origin waypoint ID 
+ * @param alt Altitude
+ * @param rx Rotation around x-axis (in degrees)
+ * @param ry Rotation around y-axis (in degrees)
+ * @param rz Rotation around z-axis (in degrees)
+ */
+void gvf_parametric_set_affine_tr_wpa(uint8_t wp, float alt, float rx, float ry, float rz);
 
 /**
  * @brief Define the affine transform through the line passing through two waypoints,
