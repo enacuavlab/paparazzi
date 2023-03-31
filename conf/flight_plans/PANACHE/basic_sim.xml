@@ -75,8 +75,10 @@
     </block>
         
     <block name="Downwind sinus">
-      <call_once fun="gvf_parametric_set_affine_tr_wp(WP_SRC,0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
-      <call fun="gvf_parametric_3d_sin(0.5,0.001,0,0.001,0)"/>
+      <call_once fun="gvf_parametric_set_w_gain(1.)"/>
+      <call_once fun="gvf_parametric_set_affine_tr_wpa(WP_SRC,200,0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
+      <call fun="gvf_parametric_3d_sin(200,0.001,0,0,0)"/>
+      <!--<call fun="gvf_parametric_3d_ellipse_wp_delta(WP_SRC, 200,200,30,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>-->
     </block>
     
     <block key="F8" name="Figure 8 around wp 1" strip_button="Figure 8 (wp 1-2)" strip_icon="eight.png" group="base_pattern">
