@@ -22,7 +22,7 @@ class ImplicitLineTrajectory(LineTrajectory,ABC):
     
     @abstractmethod
     def _implicit(self,pos:np.ndarray) -> float:
-        ...
+        raise NotImplementedError()
         
     def implicit(self,pos:np.ndarray) -> float:
         return self._implicit(self.rot.apply(pos - self.XYZoffset,True))
@@ -79,7 +79,7 @@ class Line(ImplicitLineTrajectory):
     def _param_point(self, t:float) -> np.ndarray:
         return np.array([t*np.cos(self.alpha),
                          t*np.sin(self.alpha),
-                         0])
+                         np.zeros(np.shape(t))])
         
     def _grad_param_point(self, t:float, step:float=0.005) -> np.ndarray:
         return np.array([np.cos(self.alpha),np.sin(self.alpha),0])
@@ -145,4 +145,55 @@ class Ellipse(ImplicitLineTrajectory):
     
 @dataclass
 class Sinusoid(ImplicitLineTrajectory):
-    pass
+    name:str = "2D sinusoid"
+    amplitude:float = 1.
+    freq:float = 1.
+    phase:float = 0.
+    
+    
+    @staticmethod
+    def class_id() -> int:
+        return 2
+    
+    @staticmethod
+    def class_dim() -> int:
+        return 2
+    
+    @staticmethod
+    def from_message(msg: PprzMessage) -> Sinusoid:
+        assert msg.name == "GVF" and int(msg.get_field(1)) == Sinusoid.class_id()
+        
+        
+        param = [float(x) for x in msg.get_field(4)]
+        a = param[0]
+        b = param[1]
+        alpha = param[2]
+        w = param[3]
+        off = param[4]
+        A = param[5]
+        rot = Rotation.from_euler('z',alpha-90,False)
+        
+        return Sinusoid(amplitude=A,freq=w,phase=off,
+                           XYZoffset=np.array([a,b,0]),
+                           rot=rot)
+        
+        
+    def _implicit(self, pos: np.ndarray) -> float:
+        return pos[1] - self.amplitude * np.sin(self.freq * pos[0] + self.phase)
+    
+    def _implicit_grad(self, pos: np.ndarray, step: float = 0.005) -> np.ndarray:
+        xs = -self.amplitude * self.freq * np.cos(self.freq * pos[0] + self.phase)
+        ys = np.ones(np.shape(xs))
+        return np.array([xs, ys]) 
+    
+    def _param_point(self, t:float) -> np.ndarray:
+        xs = t
+        ys = self.amplitude * np.sin(self.freq * t + self.phase)
+        return np.stack([xs,ys,np.zeros(np.shape(xs))])
+
+        
+    def _grad_param_point(self, t:float, step:float=0.005) -> np.ndarray:        
+        ys = self.amplitude * self.freq * np.cos(self.freq * t + self.phase)
+        xs = np.ones(np.shape(ys))
+        
+        return  np.stack([xs,ys,np.zeros(np.shape(xs))])
