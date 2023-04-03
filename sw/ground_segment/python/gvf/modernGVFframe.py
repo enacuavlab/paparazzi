@@ -34,11 +34,14 @@ sys.path.append(PPRZ_SRC + "/sw/lib/python")
 def __get_GVF_traj_map() -> typing.Dict[int, object]:
     classes = list(filter(lambda t: inspect.isclass(t[1]) 
                           and issubclass(t[1],(LineTrajectory,SurfaceTrajectory))
-                          and t[1] not in (LineTrajectory,SurfaceTrajectory), inspect.getmembers(GVF)))
+                          and not inspect.isabstract(t[1]), inspect.getmembers(GVF)))
     output = dict()
-    for (_, o) in classes:
-        output[o.class_id()] = o
-    return output
+    for (n, o) in classes:
+        try:
+            output[o.class_id()] = o
+        except Exception as e:
+            print(f"Error with class {n}:\n{o}")
+            raise e
     return output
 
 
@@ -48,10 +51,14 @@ GVF_traj_map = __get_GVF_traj_map()
 def __get_GVF_PARAMETRIC_traj_map() -> typing.Dict[int, object]:
     classes = list(filter(lambda t: inspect.isclass(t[1]) 
                           and issubclass(t[1],(LineTrajectory,SurfaceTrajectory))
-                          and t[1] not in (LineTrajectory,SurfaceTrajectory), inspect.getmembers(GVF_PARAMETRIC)))
+                          and not inspect.isabstract(t[1]), inspect.getmembers(GVF_PARAMETRIC)))
     output = dict()
-    for (_, o) in classes:
-        output[o.class_id()] = o
+    for (n, o) in classes:
+        try:
+            output[o.class_id()] = o
+        except Exception as e:
+            print(f"Error with class {n}:\n{o}")
+            raise e
     return output
 
 
@@ -65,7 +72,7 @@ HEIGHT = 800
 
 
 class GVFFrame(wx.Frame):
-    def __init__(self, ac_id, dim=2):
+    def __init__(self, ac_id, dim:int = 3, w_dist:float = 400, gvf_dist: float = 300, resolution: int = 10):
 
         wx.Frame.__init__(self, id=-1, parent=None,
                           name=u'GVF', size=wx.Size(WIDTH, HEIGHT),
@@ -89,7 +96,7 @@ class GVFFrame(wx.Frame):
         
         # Plotting
         self.dim = dim
-        self.map_gvf = Map(150000,dim)
+        self.map_gvf = Map(150000,dim,w_dist,gvf_dist,resolution)
 
         # Frame
         self.canvas = FigureCanvas(self, -1, self.map_gvf.fig)
@@ -140,13 +147,12 @@ class GVFFrame(wx.Frame):
 
 ########## Map classes (for drawings) ##########
 class Map():
-
-    
-    def __init__(self, area, dim:int, ac_dist: float = 300, resolution: int = 10):
+    def __init__(self, area, dim:int, w_dist:float = 400, gvf_dist: float = 300, resolution: int = 10):
         self.area = area
-        self.dim = dim
-        self.ac_dist: float = ac_dist
-        self.resolution: int = resolution
+        self.dim = dim # Prefered dimension for plotting (if 2, project 3D trajectories on XY plane; if 3, nothing special for 2D)
+        self.gvf_dist: float = gvf_dist # L1 range from the aircraft when computing GVF
+        self.w_dist:float = w_dist # Abstract range from the virtual parameter when computing trajectory (does not affect closed trajectories)
+        self.resolution: int = resolution # Number of points used per dimension when computing GVF (10 times more are used for trajectory)
         self.fig = plt.figure()
         
     def vehicle_patch(self, XY, yaw):
@@ -190,11 +196,11 @@ class Map():
 
         ax = self.fig.add_subplot(111)
 
-        traj_points = traj.calc_traj(np.linspace(w-400,w+400,self.resolution*10))
+        traj_points = traj.calc_traj(np.linspace(w-self.w_dist,w+self.w_dist,self.resolution*10))
         ax.plot(traj_points[:,0],traj_points[:,1], color='Green')
 
-        XYZ_meshgrid = np.asarray(np.meshgrid(np.linspace(XYZ[0]-self.ac_dist, XYZ[0]+self.ac_dist, self.resolution),
-                                  np.linspace(XYZ[1]-self.ac_dist, XYZ[1]+self.ac_dist, self.resolution),
+        XYZ_meshgrid = np.asarray(np.meshgrid(np.linspace(XYZ[0]-self.gvf_dist, XYZ[0]+self.gvf_dist, self.resolution),
+                                  np.linspace(XYZ[1]-self.gvf_dist, XYZ[1]+self.gvf_dist, self.resolution),
                                   np.zeros(self.resolution),indexing='ij'))
 
         vector_field = traj.calc_field(XYZ_meshgrid.transpose(), w).transpose()
@@ -233,10 +239,10 @@ class Map():
         ax.set_xlabel('South [m]')
         ax.set_ylabel('West [m]')
         ax.set_title('2D Map')
-        ax.set_xlim(XYZ[0]-self.ac_dist,
-                    XYZ[0]+self.ac_dist)
-        ax.set_ylim(XYZ[1]-self.ac_dist,
-                    XYZ[1]+self.ac_dist)
+        ax.set_xlim(XYZ[0]-self.gvf_dist,
+                    XYZ[0]+self.gvf_dist)
+        ax.set_ylim(XYZ[1]-self.gvf_dist,
+                    XYZ[1]+self.gvf_dist)
         ax.axis('equal')
         ax.grid()
 
@@ -277,14 +283,14 @@ class Map():
         axz.set_title('XZ Map')
         ayz.set_title('YZ Map')
 
-        XYZ_meshgrid = np.asarray(np.meshgrid(np.linspace(XYZ[0]-self.ac_dist, XYZ[0]+self.ac_dist, self.resolution),
-                                  np.linspace(XYZ[1]-self.ac_dist, XYZ[1]+self.ac_dist, self.resolution),
-                                  np.linspace(XYZ[2]-self.ac_dist, XYZ[2]+self.ac_dist, self.resolution),indexing='ij'))
+        XYZ_meshgrid = np.asarray(np.meshgrid(np.linspace(XYZ[0]-self.gvf_dist, XYZ[0]+self.gvf_dist, self.resolution),
+                                  np.linspace(XYZ[1]-self.gvf_dist, XYZ[1]+self.gvf_dist, self.resolution),
+                                  np.linspace(XYZ[2]-self.gvf_dist, XYZ[2]+self.gvf_dist, self.resolution),indexing='ij'))
 
         vector_field = traj.calc_field(XYZ_meshgrid.transpose(), w).transpose()
         # 3D
         
-        traj_points = traj.calc_traj(np.linspace(w-400,w+400,self.resolution*10))
+        traj_points = traj.calc_traj(np.linspace(w-self.w_dist,w+self.w_dist,self.resolution*10))
         
         virtual_point = traj.param_point(w)
         
