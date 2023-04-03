@@ -64,8 +64,8 @@ extern gvf_st gvf_state;
 
 enum trajectories {
   LINE = 0,
-  ELLIPSE,
-  SIN,
+  ELLIPSE = 1,
+  SIN = 2,
   NONE = 255,
 };
 
