@@ -29,7 +29,7 @@ class Trajectory(ABC):
         Build the object from the corresponding PprzMessage
         (may assert message correctness)
         """
-        ...
+        raise NotImplementedError()
     
     @abstractmethod
     def _param_point(self,t:typing.Union[float,np.ndarray]) -> np.ndarray:
@@ -37,7 +37,7 @@ class Trajectory(ABC):
         Given a parameter (a float most of the time, but may be 2D
         for parametric surfaces), compute its associated point
         """
-        ...
+        raise NotImplementedError()
         
     def param_point(self,t:typing.Union[float,np.ndarray]) -> np.ndarray:
         """
@@ -53,7 +53,7 @@ class Trajectory(ABC):
         """
         The class' ID, as defined in its module's source
         """
-        ...
+        raise NotImplementedError()
     
     @staticmethod
     @abstractmethod
@@ -63,7 +63,7 @@ class Trajectory(ABC):
         Internally, only vectors of dimension 3 are handled (streamline management)
         For a 2D curve, the 3rd coordinate is always neglected/set to 0
         """
-        ...
+        raise NotImplementedError()
         
     @abstractmethod
     def gvf(self, pos:np.ndarray, t:typing.Union[float,np.ndarray]) -> np.ndarray:
@@ -71,7 +71,7 @@ class Trajectory(ABC):
         Given a position and the trajectory's parameter, compute the corresponding vector
         of the guiding field.
         """
-        ...
+        raise NotImplementedError()
         
 
     ##### Shorthands #####
