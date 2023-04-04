@@ -55,9 +55,11 @@
   <define value="1" name="ACCEL_X_SIGN"/>
   <define value="-1" name="ACCEL_Y_SIGN"/>
   <define value="-1" name="ACCEL_Z_SIGN"/>
+
   <define value="1" name="GYRO_P_SIGN"/>
   <define value="-1" name="GYRO_Q_SIGN"/>
   <define value="-1" name="GYRO_R_SIGN"/>
+
   <define value="1" name="MAG_X_SIGN"/>
   <define value="-1" name="MAG_Y_SIGN"/>
   <define value="-1" name="MAG_Z_SIGN"/>
@@ -109,17 +111,17 @@
  <section prefix="STABILIZATION_INDI_" name="STABILIZATION_ATTITUDE_INDI">
   <!--  UR BR BL UL-->
   <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-  <define value="{ -20.,     -20.0,    20.0,    20.0}" name="G1_ROLL"/>
+  <define value="{ -80.,     -80.0,    80.0,    80.0}" name="G1_ROLL"/> <!-- 63-->
   <define value="{ -80.,    80.,   80.,  -80.}" name="G1_PITCH"/>
   <define value="{  -14.0,     14.0,   -14.0,    -14.0}" name="G1_YAW"/>
   <define value="{ -1.5,  -1.5,  -1.5,  -1.5}" name="G1_THRUST"/>
   <!--Counter torque effect of spinning up a rotor-->
   <define value="{150., 150., 150., 150.}" name="G2"/>
   <!-- reference acceleration for attitude control -->
-  <define value="100" name="REF_ERR_P"/>
+  <define value="40" name="REF_ERR_P"/>
   <define value="80" name="REF_ERR_Q"/>
   <define value="30" name="REF_ERR_R"/>
-  <define value="5." name="REF_RATE_P"/>
+  <define value="15." name="REF_RATE_P"/>
   <define value="30.0" name="REF_RATE_Q"/>
   <define value="5.0" name="REF_RATE_R"/>
   <!--Maxium yaw rate, to avoid instability-->
@@ -127,7 +129,7 @@
   <define value="4.0" name="ESTIMATION_FILT_CUTOFF"/>
   <define value="5.0" name="FILT_CUTOFF"/>
   <!-- first order actuator dynamics -->
-  <define value="{0.025, 0.025, 0.025, 0.025}" name="ACT_DYN"/>
+  <define value="{0.027, 0.027, 0.027, 0.027}" name="ACT_DYN"/>
   <define value="{9600, 9600, 9600, 9600}" name="ACT_RATE_LIMIT"/>
   <define value="{0, 0, 0, 0}" name="ACT_IS_SERVO"/>
   <!-- Adaptive Learning Rate -->
@@ -151,8 +153,6 @@
   <!-- <define name="H_Y" value="0.00019"/> -->
   <!-- <define name="H_Z" value="0.8578"/> -->
   <define value="0" name="GRAVITY_HEURISTIC_FACTOR"/>
-  <!-- <define name="USE_GPS_HEADING" value="TRUE"/> -->
-  <!-- <define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/> -->
  </section>
  <section prefix="INS_" name="INS">
   <define value="0.5138" name="H_X"/>
@@ -312,50 +312,43 @@
    <define value="0.0008" name="FE_LIFT_A_AS"/>
    <define value="0.00009" name="FE_LIFT_B_AS"/>
   </module>
+
+   
+   
   <module type="int_cmpl_quat" name="ahrs">
    <!--configure name="USE_MAGNETOMETER" value="TRUE"/-->
    <configure value="FALSE" name="USE_MAGNETOMETER"/>
    <define value="TRUE" name="AHRS_USE_GPS_HEADING"/>
    <define value="TRUE" name="AHRS_GRAVITY_UPDATE_COORDINATED_TURN"/>
    <define value="TRUE" name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION"/>
-   <!--[>Use rotation of data<]-->
+     <!--[>Use rotation of data<]-->
    <define value="IMU_ROT_ID" name="AHRS_ICQ_IMU_ID"/>
    <define value="IMU_ROT_ID" name="AHRS_ICQ_MAG_ID"/>
-   <!--define name="AHRS_ALIGNER_IMU_ID" value="IMU_ROT_ID" /-->
-   <!--[>Use wing imu<]-->
-   <!--define name="AHRS_ICQ_IMU_ID" value="IMU_MPU9250_ID" />     
-      <define name="AHRS_ICQ_MAG_ID" value="IMU_MPU9250_ID" />
-      <define name="AHRS_ALIGNER_IMU_ID" value="IMU_MPU9250_ID" /-->
   </module>
-  <!--module name="ahrs" type="float_invariant">
-      <configure name="USE_MAGNETOMETER" value="TRUE"/> 
-      <define name="AHRS_FINV_OUTPUT_ENABLED" value="FALSE"/> 
-    </module-->
+
+  <!--module type="float_cmpl_quat" name="ahrs">
+    <define value="IMU_ROT_ID" name="AHRS_ICQ_IMU_ID"/>
+   <define value="IMU_ROT_ID" name="AHRS_ICQ_MAG_ID"/>
+  </module-->
+
   <module name="ins">
    <!--[>Use rotation of data<]-->
    <define value="IMU_ROT_ID" name="INS_INT_IMU_ID"/>
    <!--[>Use wing imu<]-->
    <!--define name="INS_INT_IMU_ID" value="IMU_MPU9250_ID" /-->
   </module>
+
   <!--module name="ins" type="ekf2">
         <define name="INS_EKF2_ACCEL_ID" value="IMU_ROT_ID" />
         <define name="INS_EKF2_GYRO_ID" value="IMU_ROT_ID" />
         <define name="INS_EKF2_MAG_ID" value="IMU_ROT_ID" />
     </module-->
+    
   <!--module name="gps"           type="ublox">
       <configure name="GPS_BAUD" value="B115200"/>
       <configure name="UBX_GPS_PORT" value="UART3"/>
     </module-->
   <module type="optitrack" name="gps"/>
-  <!-- <module name="ins" type="gps_passthrough"/> -->
-  <!--  <module name="ahrs" type="int_cmpl_quat">
-      
-    </module> -->
-  <!--module name="tlsf"/>
 
-    <module name="pprzlog"/>
-    
-    <module name="logger" type="sd_chibios"/-->
-  <!--module name="flight_recorder"/-->
  </firmware>
 </airframe>

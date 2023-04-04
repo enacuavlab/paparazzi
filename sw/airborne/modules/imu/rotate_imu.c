@@ -68,12 +68,27 @@ struct RotateImu rotate_imu;
 
 struct FloatVect3 vect_fuselage_rate;
 
-struct FloatVect3 accel_f;
+struct FloatVect3 accel_imu_f;
+struct FloatRates gyro_imu_f;
+struct FloatVect3 mag_imu_f;
 struct FloatVect3 accel_rot_f;
+struct FloatRates gyro_rot_f;
+struct FloatVect3 mag_rot_f;
 float angle_filter;
 
 float angular_accel[3] = {0., 0., 0.};
 Butterworth2LowPass meas_lowpass_filters[3];
+
+
+#if PERIODIC_TELEMETRY
+#include "modules/datalink/telemetry.h"
+static void send_payload_float(struct transport_tx *trans, struct link_device *dev)
+{
+  float f[1] = {angle_filter};
+  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 1, f);
+}
+#endif
+
 
 static void gyro_cb(uint8_t sender_id, uint32_t stamp, struct Int32Rates *gyro)
 {
@@ -82,14 +97,30 @@ static void gyro_cb(uint8_t sender_id, uint32_t stamp, struct Int32Rates *gyro)
   }
 
   if (rotate_imu.enabled) {
-    
+
+    struct FloatRates rates_f;
+    RATES_FLOAT_OF_BFP(rates_f, *gyro);
+    RATES_COPY(gyro_imu_f, rates_f)
+
     struct FloatRates wing_angular_speed_f ={0, rotate_imu.angular_speed, 0};
-    struct Int32Rates wing_angular_speed_i;
-    RATES_BFP_OF_REAL(wing_angular_speed_i, wing_angular_speed_f);
-    RATES_ADD(*gyro, wing_angular_speed_i)
+    RATES_ADD(rates_f, wing_angular_speed_f)
+
+    struct FloatVect3 rates_vect, rates_rot_vect;
+    rates_vect.x = rates_f.p;
+    rates_vect.y = rates_f.q;
+    rates_vect.z = rates_f.r;
+
+    float_quat_vmult(&rates_rot_vect, &rotate_imu.quat_encoder, &rates_vect);
+
+    gyro_rot_f.p = rates_rot_vect.x;
+    gyro_rot_f.q = rates_rot_vect.y;
+    gyro_rot_f.r = rates_rot_vect.z;
     
+    struct Int32Rates gyro_rot_i;
+    RATES_BFP_OF_REAL(gyro_rot_i, gyro_rot_f);
+   
     // send data
-    AbiSendMsgIMU_GYRO(IMU_ROT_ID, stamp, gyro);
+    AbiSendMsgIMU_GYRO(IMU_ROT_ID, stamp, &gyro_rot_i);
   } else {
     AbiSendMsgIMU_GYRO(IMU_ROT_ID, stamp, gyro);
   }
@@ -103,7 +134,9 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
 
   if (rotate_imu.enabled) {
     
+    struct FloatVect3 accel_f;
     ACCELS_FLOAT_OF_BFP(accel_f, *accel);
+    VECT3_COPY(accel_imu_f, accel_f);
 
     struct FloatRates *body_rates = stateGetBodyRates_f();
 
@@ -138,7 +171,7 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
     
     // compute rotation
     
-    float_rmat_vmult(&accel_rot_f, &rotate_imu.Rot_mat_f, &accel_f);
+    float_quat_vmult(&accel_rot_f, &rotate_imu.quat_encoder, &accel_f);
 
   
     // send data
@@ -159,17 +192,17 @@ static void mag_cb(uint8_t sender_id __attribute__((unused)),
   }
    if (rotate_imu.enabled) {
 
-    struct FloatVect3 mag_f;
+    
     //Convert in float
-    MAGS_FLOAT_OF_BFP(mag_f, *mag);
+    MAGS_FLOAT_OF_BFP(mag_imu_f, *mag);
     //Need to rotate magnetometer ?
-    struct FloatVect3 mag_rot;
-    float_rmat_vmult(&mag_rot, &rotate_imu.Rot_mat_f, &mag_f);
+    
+    float_quat_vmult(&mag_rot_f, &rotate_imu.quat_encoder, &mag_imu_f);
 
     // send data
     struct Int32Vect3 mag_rot_i;
     //Convert to int
-    MAGS_BFP_OF_REAL(mag_rot_i, mag_rot);
+    MAGS_BFP_OF_REAL(mag_rot_i, mag_rot_f);
     AbiSendMsgIMU_MAG(IMU_ROT_ID, stamp, &mag_rot_i);
    }
      else {
@@ -188,8 +221,8 @@ void rotate_imu_init(void)
   rotate_imu.centre_rot_2_imu.y = 0;
   rotate_imu.centre_rot_2_imu.z = ROTATE_IMU_POS_CENTER_IN_IMU_Z;
   
-
-  FLOAT_MAT33_DIAG(rotate_imu.Rot_mat_f, 1., 1., 1.);
+  float_quat_identity(&rotate_imu.quat_encoder);
+ 
 
   float tau = 1.0 / (2.0 * M_PI * 20.0);
   float sample_time = 1.0 / PERIODIC_FREQUENCY;
@@ -202,6 +235,10 @@ void rotate_imu_init(void)
   AbiBindMsgIMU_GYRO(ROT_IMU_BIND_ID, &gyro_ev, gyro_cb);
   AbiBindMsgIMU_ACCEL(ROT_IMU_BIND_ID, &accel_ev, accel_cb);
   AbiBindMsgIMU_MAG(ROT_IMU_BIND_ID, &mag_ev, mag_cb);
+
+#if PERIODIC_TELEMETRY
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PAYLOAD_FLOAT, send_payload_float);
+#endif
 }
 
 
@@ -209,26 +246,29 @@ void rotate_imu_init(void)
  * settings handlers
  */
 
-extern void rotate_imu_update_dcm_matrix(void){
+extern void rotate_imu_update_quat(void){
 
   angle_filter = -encoder_amt22.H_g_filter.hatx[0]; 
   rotate_imu.angular_speed = -encoder_amt22.H_g_filter.hatx[1]; 
   rotate_imu.angular_accel = -encoder_amt22.H_g_filter.hatx[2];
-  struct FloatEulers euler_f = { RadOfDeg(0.), angle_filter, RadOfDeg(0.)};
-  float_rmat_of_eulers_321(&rotate_imu.Rot_mat_f, &euler_f);
+  QUAT_ASSIGN(rotate_imu.quat_encoder, cos(angle_filter/2),0,sin(angle_filter/2),0);
 }
 
 extern void rotate_imu_reset(float enabled){
   rotate_imu.enabled = enabled;
   rotate_imu.angular_speed = 0;
   rotate_imu.angular_accel = 0;
-  FLOAT_MAT33_DIAG(rotate_imu.Rot_mat_f, 1., 1., 1.);
+  float_quat_identity(&rotate_imu.quat_encoder);
 }
 
 
 
 extern void rotate_imu_report(void){
   // debug
-  float f[7] = {angle_filter, accel_f.x, accel_f.y, accel_f.z, accel_rot_f.x, accel_rot_f.y, accel_rot_f.z};
-  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 7, f);
+  //float f[5] = {DegOfRad(angle_filter), DegOfRad(rotate_imu.angular_speed), DegOfRad(stateGetNedToBodyEulers_f()->phi), DegOfRad(stateGetNedToBodyEulers_f()->theta), DegOfRad(stateGetNedToBodyEulers_f()->psi)};
+  float f[6] = {DegOfRad(angle_filter), DegOfRad(rotate_imu.angular_speed), stateGetNedToBodyQuat_f()->qi, stateGetNedToBodyQuat_f()->qx, stateGetNedToBodyQuat_f()->qy, stateGetNedToBodyQuat_f()->qz};
+  //float f[8] = {DegOfRad(angle_filter), DegOfRad(rotate_imu.angular_speed), accel_imu_f.x, accel_imu_f.y, accel_imu_f.z, accel_rot_f.x, accel_rot_f.y, accel_rot_f.z};
+  //float f[8] = {DegOfRad(angle_filter), DegOfRad(rotate_imu.angular_speed), gyro_imu_f.p, gyro_imu_f.q, gyro_imu_f.r, gyro_rot_f.p, gyro_rot_f.q, gyro_rot_f.r};
+  //float f[8] = {DegOfRad(angle_filter), DegOfRad(rotate_imu.angular_speed), mag_imu_f.x, mag_imu_f.y, mag_imu_f.z, mag_rot_f.x, mag_rot_f.y, mag_rot_f.z};
+  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 6, f);
 }
