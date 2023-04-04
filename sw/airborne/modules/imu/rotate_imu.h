@@ -33,7 +33,7 @@ struct RotateImu {
   bool enabled;
   float angular_speed;
   float angular_accel;
-  struct FloatRMat Rot_mat_f;
+  struct FloatQuat quat_encoder;
   struct FloatVect3 centre_rot_2_imu; // in frame of IMU
 };
 
@@ -48,7 +48,7 @@ extern void rotate_imu_report(void);
 /**
  * settings handlers
  */
-extern void rotate_imu_update_dcm_matrix(void);
+extern void rotate_imu_update_quat(void);
 
 
 #endif  // ROTATE_IMU_H
