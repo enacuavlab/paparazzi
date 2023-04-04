@@ -45,7 +45,7 @@ class initTable:
         self.list_ids = np.ndarray.tolist(self.ids)
 
         # Start IVY interface
-        self._interface = IvyMessagesInterface("Init GVF_PARAMETRIC coordination tables")
+        self._interface = IvyMessagesInterface("GVF_PARAMETRIC_coordination_table")
 
     def __del__(self):
         self.stop()
