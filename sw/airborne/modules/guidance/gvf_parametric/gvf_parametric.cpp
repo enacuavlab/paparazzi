@@ -87,11 +87,11 @@ extern "C"
                              gvf_parametric_affine_tr.rot.z()};
 
       float translation[3] = {gvf_parametric_affine_tr.transalation.x(),
-                             gvf_parametric_affine_tr.transalation.y(),
-                             gvf_parametric_affine_tr.transalation.z()};
+                              gvf_parametric_affine_tr.transalation.y(),
+                              gvf_parametric_affine_tr.transalation.z()};
       pprz_msg_send_GVF_PARAMETRIC(trans, dev, AC_ID, &traj_type, &gvf_parametric_control.s, &wb, gvf_parametric_plen,
                                    gvf_parametric_trajectory.p_parametric, gvf_parametric_elen, gvf_parametric_trajectory.phi_errors,
-                                   quaternion,translation);
+                                   quaternion, translation);
     }
   }
 
@@ -110,13 +110,13 @@ extern "C"
   }
 #endif // GVF_OCAML_GCS
 
-  /*
+  
   static void send_gvf_parametric_coordination(struct transport_tx *trans, struct link_device *dev)
   {
     if (gvf_parametric_coordination.coordination)
       pprz_msg_send_GVF_PAR_COORD(trans, dev, AC_ID, 5 * GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS, &(gvf_parametric_coordination_tables.tableNei[0][0]), GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS, gvf_parametric_coordination_tables.error_deltaw);
   }
-  */
+  
 
 #endif // PERIODIC TELEMETRY
 
@@ -152,7 +152,7 @@ void gvf_parametric_init(void)
   }
 
 #if PERIODIC_TELEMETRY
-  // register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PAR_COORD, send_gvf_parametric_coordination);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PAR_COORD, send_gvf_parametric_coordination);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PARAMETRIC, send_gvf_parametric);
 #if GVF_OCAML_GCS
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CIRCLE, send_circle_parametric);
@@ -238,7 +238,7 @@ void gvf_parametric_set_affine_tr_wp(uint8_t wp, float rx, float ry, float rz)
 
 void gvf_parametric_set_affine_tr_wpa(uint8_t wp, float alt, float rx, float ry, float rz)
 {
-  gvf_parametric_set_offset_wpa(wp,alt);
+  gvf_parametric_set_offset_wpa(wp, alt);
   gvf_paremetric_set_cardan_rot(rx, ry, rz);
 }
 
@@ -791,10 +791,11 @@ bool gvf_parametric_3d_sin_XYZa(float xo, float yo, float zo, float alpha,
 
 void gvf_parametric_coordination_send_w_to_nei(void)
 {
-  /*
+
   struct pprzlink_msg msg;
 
   for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++)
+  {
     if ((int32_t)(gvf_parametric_coordination_tables.tableNei[i][0]) != -1)
     {
       msg.trans = &(DefaultChannel).trans_tx;
@@ -804,12 +805,12 @@ void gvf_parametric_coordination_send_w_to_nei(void)
       msg.component_id = 0;
       pprzlink_msg_send_GVF_PARAMETRIC_W(&msg, &(gvf_parametric_control.w), &(gvf_parametric_control.w_dot));
     }
-  */
+  }
 }
 
 void gvf_parametric_coordination_parseRegTable(uint8_t *buf)
 {
-  /*
+  
   uint8_t ac_id = DL_GVF_PARAMETRIC_REG_TABLE_ac_id(buf);
   if (ac_id == AC_ID)
   {
@@ -826,30 +827,35 @@ void gvf_parametric_coordination_parseRegTable(uint8_t *buf)
     else
     {
       for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++)
+      {
         if ((int8_t)(gvf_parametric_coordination_tables.tableNei[i][0]) == (int8_t)nei_id)
         {
           gvf_parametric_coordination_tables.tableNei[i][0] = nei_id;
           gvf_parametric_coordination_tables.tableNei[i][3] = desired_deltaw;
           return;
         }
+      }
 
       for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++)
+      {
         if ((int8_t)(gvf_parametric_coordination_tables.tableNei[i][0]) == -1)
         {
           gvf_parametric_coordination_tables.tableNei[i][0] = nei_id;
           gvf_parametric_coordination_tables.tableNei[i][3] = desired_deltaw;
           return;
         }
+      }
     }
   }
-  */
+  
 }
 
 void gvf_parametric_coordination_parseWTable(uint8_t *buf)
 {
-  /*
+
   int16_t sender_id = (int16_t)(SenderIdOfPprzMsg(buf));
   for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++)
+  {
     if ((int16_t)(gvf_parametric_coordination_tables.tableNei[i][0]) == sender_id)
     {
       gvf_parametric_coordination_tables.last_comm[i] = get_sys_time_msec();
@@ -857,5 +863,5 @@ void gvf_parametric_coordination_parseWTable(uint8_t *buf)
       gvf_parametric_coordination_tables.tableNei[i][2] = DL_GVF_PARAMETRIC_W_w_dot(buf);
       break;
     }
-    */
+  }
 }

@@ -88,10 +88,8 @@
 
   <init fun = "gvf_parametric_init()"/>
 
-<!--
   <datalink message="GVF_PARAMETRIC_REG_TABLE" fun="gvf_parametric_coordination_parseRegTable(buf)"/>
   <datalink message="GVF_PARAMETRIC_W" fun="gvf_parametric_coordination_parseWTable(buf)"/>
--->
 
   <makefile target="ap|nps" firmware="fixedwing">
     <configure name="CXXSTANDARD" value="-std=c++14"/>

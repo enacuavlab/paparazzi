@@ -287,7 +287,8 @@ extern void gvf_parametric_surface_coordination_send_w_to_nei(void);
 extern void gvf_parametric_surface_coordination_parseRegTable(uint8_t *buf);
 extern void gvf_parametric_surface_coordination_parseWTable(uint8_t *buf);
 
-// 2D Trefoil
+// 2D Trepowershell
+
 extern bool gvf_parametric_2D_trefoil_XY(float, float, float, float, float, float, float);
 extern bool gvf_parametric_2D_trefoil_wp(uint8_t, float, float, float, float, float);
 
