@@ -171,11 +171,21 @@ class PprzConnect(object):
         """
         def aircrafts_cb(sender, msg):
             ac_list = msg['ac_list']
-            for ac_id in ac_list:
-                self.get_config(ac_id)
-            #ac_list = [int(a) for a in msg['ac_list'].split(',') if a]
             if self.verbose:
                 print("aircrafts: {}".format(ac_list))
+            
+            if isinstance(ac_list,str):
+                # Parse the str of a Python str(int) list:
+                # - Remove the starting and ending brackets 
+                # - Split along ','
+                # - For each element, remove trailing spaces then quotes
+                # - Parse the int
+                ac_list = [int(a.strip()[1:-1]) for a in msg['ac_list'][1:-1].split(',') if a]
+            
+            for ac_id in ac_list:
+                self.get_config(ac_id)
+            
+            
         self._ivy.send_request('ground', "AIRCRAFTS", aircrafts_cb)
 
         def new_ac_cb(sender, msg):
@@ -185,13 +195,18 @@ class PprzConnect(object):
                 print("new aircraft: {}".format(ac_id))
         self._ivy.subscribe(new_ac_cb,PprzMessage('ground','NEW_AIRCRAFT'))
 
-    def get_config(self, ac_id:str):
+    def get_config(self, ac_id:typing.Union[int,str]):
         """
         Request a config from the server for a given ID
 
         :param ac_id: aircraft ID
         :type ac_id: str
         """
+        if isinstance(ac_id,int):
+            ac_id = str(ac_id)
+        else: # Ensure the str represent an int
+            ac_id = str(int(ac_id))
+        
         def conf_cb(sender, msg):
             conf = PprzConfig(msg['ac_id'], msg['ac_name'], msg['airframe'],
                     msg['flight_plan'], msg['settings'], msg['radio'],
