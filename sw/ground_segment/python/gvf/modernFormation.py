@@ -74,13 +74,13 @@ class AbstractFormationController(ABC):
     On abstract class for formation management controllers, based on Python threads
     """
     
-    def __init__(self,freq:float,ivy:typing.Union[str,IvyMessagesInterface],verbose:bool,**kwargs) -> None:
+    def __init__(self,freq:float,ivy:typing.Union[str,IvyMessagesInterface],verbosity:int,**kwargs) -> None:
         self._freq = freq
         if isinstance(ivy,IvyMessagesInterface):
             self._ivy_interface = ivy
         else:
-            self._ivy_interface = IvyMessagesInterface(ivy,True,verbose=verbose)
-        self.verbose:bool = verbose
+            self._ivy_interface = IvyMessagesInterface(ivy,True,verbose=(verbosity>0))
+        self.verbosity:int = verbosity
         
         super().__init__()
     
@@ -146,7 +146,7 @@ class AbstractFormationController(ABC):
             while not self.end_condition():
                 delta_t = time.time() - last_step_at
                 if delta_t < 1/self.msg_freq:
-                    sleep(delta_t - 1/self.msg_freq)
+                    sleep(1/self.msg_freq - delta_t)
                 last_step_at = time.time()
                 self.step()
 
@@ -160,12 +160,13 @@ class AbstractFormationController(ABC):
 ##### Basic, centralized Circular formation controller #####
 
 class CCircularFormationController(AbstractFormationController):
-    def __init__(self, freq: float, ivy:typing.Union[str,IvyMessagesInterface], verbose: bool,
+    def __init__(self, freq: float, ivy:typing.Union[str,IvyMessagesInterface], verbosity: int,
                  formation_file:str,threshold:float=0., elevation:float=0., max_altitude:float=0.) -> None:
             
         self.threshold:float = threshold
         self.elevation:float = elevation
         self.max_altitude:float = max_altitude
+        self.formation_error = np.inf
             
         # Gather data from JSON file
         with open(formation_file,'r') as f:
@@ -180,15 +181,15 @@ class CCircularFormationController(AbstractFormationController):
         if isinstance(ivy,IvyMessagesInterface):
             self._ivy_interface = ivy
         else:
-            self._ivy_interface = IvyMessagesInterface(ivy,True,verbose=verbose)
+            self._ivy_interface = IvyMessagesInterface(ivy,True,verbose=verbosity>1)
             
-        self._pprz_connect = PprzConnect(ivy=self._ivy_interface)
+        self._pprz_connect = PprzConnect(ivy=self._ivy_interface,verbose=verbosity>1)
         
         # Aircrafts' data
         self.aircrafts:typing.Dict[int,Aircraft] = dict()
         self.sigmas = np.zeros(len(self.ids))
         
-        super().__init__(freq, self._ivy_interface, verbose)
+        super().__init__(freq, self._ivy_interface, verbosity)
         
     def on_start(self) -> None:
         """
@@ -198,7 +199,7 @@ class CCircularFormationController(AbstractFormationController):
             success = False
             while not success:
                 try:
-                    self._pprz_connect.get_config(str(i))
+                    self._pprz_connect.get_config(i)
                     conf_msg:PprzConfig = self._pprz_connect.conf_by_id(i)
                     success = True
                 except KeyError:
@@ -258,7 +259,7 @@ Have you forgotten to check gvf.xml in your settings?")
         ready = True
         for ac in self.aircrafts.values():
             if (not ac.initialized_nav) or (not ac.initialized_gvf):
-                if self.verbose:
+                if self.verbosity>0:
                     print("Waiting for state of aircrafts ", ac.id)
                 ready = False
 
@@ -291,7 +292,7 @@ Have you forgotten to check gvf.xml in your settings?")
         u = -self.aircrafts[self.ids[0]].s*self.k*self.B.dot(error_sigma)
         max_error = np.linalg.norm(error_sigma,np.inf)
 
-        if self.verbose:
+        if self.verbosity>0:
             print("Inter-vehicle errors: ", str(error_sigma*180.0/np.pi).replace('[','').replace(']',''))
             print(f"Maximal error: {max_error*180.0/np.pi}")
             print(f"Delta Radius vector: {u}")
@@ -523,7 +524,7 @@ Have you forgotten to check gvf.xml in your settings?")
 
 
 class ParametricFormationController(AbstractFormationController):
-    def __init__(self, freq: float, ivy: typing.Union[str, IvyMessagesInterface], verbose: bool,
+    def __init__(self, freq: float, ivy: typing.Union[str, IvyMessagesInterface], verbosity: int,
                 formation_file:str, max_w:float=0.) -> None:
         self.max_w:float = max_w
             
@@ -543,14 +544,14 @@ class ParametricFormationController(AbstractFormationController):
         if isinstance(ivy,IvyMessagesInterface):
             self._ivy_interface = ivy
         else:
-            self._ivy_interface = IvyMessagesInterface(ivy,True,verbose=verbose)
+            self._ivy_interface = IvyMessagesInterface(ivy,True,verbose=verbosity>1)
             
-        self._pprz_connect = PprzConnect(ivy=self._ivy_interface)
+        self._pprz_connect = PprzConnect(ivy=self._ivy_interface,verbose=verbosity>1)
         
         # Aircrafts' data
         self.aircrafts:typing.Dict[int,Aircraft] = dict()
         
-        super().__init__(freq, self._ivy_interface, verbose)
+        super().__init__(freq, self._ivy_interface, verbosity)
         
     def on_start(self) -> None:
         """
@@ -560,7 +561,7 @@ class ParametricFormationController(AbstractFormationController):
             success = False
             while not success:
                 try:
-                    self._pprz_connect.get_config(str(i))
+                    self._pprz_connect.get_config(i)
                     conf_msg:PprzConfig = self._pprz_connect.conf_by_id(i)
                     success = True
                 except KeyError:
@@ -575,7 +576,11 @@ class ParametricFormationController(AbstractFormationController):
             msg = datalink.PprzMessage_GVF_PARAMETRIC_REG_TABLE()
             msg.ac_id_ = i
             msg.nei_id_ = 0
+            msg.desired_deltaw_ = 0.
             self._ivy_interface.send(msg)
+            
+            if self.verbosity>0:
+                print(msg)
             
         # bind to GVF_PARAMETRIC_W message
         def gvf_cb(ac_id, msg:telemetry.PprzMessage_GVF_PARAMETRIC_W):
@@ -605,30 +610,40 @@ class ParametricFormationController(AbstractFormationController):
                     msgb.desired_deltaw_ = (column[index])[1]*float(self.delta_ws)
                 else:
                     msgb.desired_deltaw_ = (column[index])[1]*float(self.delta_ws[count])
+                    
+                self._ivy_interface.send(msga)
+                self._ivy_interface.send(msgb)
+
+                if self.verbosity>0:
+                    print(msga)
+                    print(msgb)
 
         else:
             if len(self.delta_ws) == 1:
                 delta_ws = itertools.repeat(self.delta_ws,len(self.edge_list))
             else:
                 delta_ws = self.delta_ws
+                
             for w,p in zip(delta_ws,self.edge_list):
                 msga = datalink.PprzMessage_GVF_PARAMETRIC_REG_TABLE()
-                msga.ac_id_ = p[0]
-                msga.nei_id_ = p[1]
-                msga.desired_deltaw_ = w
+                msga.ac_id_ = int(p[0])
+                msga.nei_id_ = int(p[1])
+                msga.desired_deltaw_ = float(w)
                 
                 msgb = datalink.PprzMessage_GVF_PARAMETRIC_REG_TABLE()
-                msgb.ac_id_ = p[1]
-                msgb.nei_id_ = p[0]
-                msgb.desired_deltaw_ = -w
+                msgb.ac_id_ = int(p[1])
+                msgb.nei_id_ = int(p[0])
+                msgb.desired_deltaw_ = float(-w)
+                
+                self._ivy_interface.send(msga)
+                self._ivy_interface.send(msgb)
+
+                if self.verbosity>0:
+                    print(msga)
+                    print(msgb)
             
 
-        self._ivy_interface.send(msga)
-        self._ivy_interface.send(msgb)
-
-        if self.verbose:
-            print(msga)
-            print(msgb)
+        
     
     def end_condition(self) -> bool:
         return np.all([ac.sigma > self.max_w for ac in self.aircrafts.values()])
@@ -647,7 +662,7 @@ def main():
     parser = argparse.ArgumentParser(description="Circular formation")
     parser.add_argument('formation_file', help="JSON configuration file")
     parser.add_argument('-f', '--freq', dest='freq', default=5, type=int, help="control frequency (Hz)")
-    parser.add_argument('-v', '--verbose', dest='verbose', default=False, action='store_true', help="display debug messages")
+    parser.add_argument('-v', '--verbose', dest='verbose', default=0, action='count', help="display debug messages")
     parser.add_argument('-p','--parametric',dest='parametric',default=np.nan,nargs='?',
                         help="Use distributed parametric controller instead (the ground only setup and monitor). If a value is given,\
                         then the controller runs until all drones have their 'virtual coordinate w' above the given value.\
