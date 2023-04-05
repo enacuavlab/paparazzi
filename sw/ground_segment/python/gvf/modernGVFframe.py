@@ -111,7 +111,12 @@ class GVFFrame(wx.Frame):
         self.interface.subscribe(self.message_recv)
 
     def message_recv(self, ac_id, msg: PprzMessage):
-        if int(ac_id) == self.ac_id:
+        try:
+            ac_id = int(ac_id)
+        except ValueError:
+            return
+        
+        if ac_id == self.ac_id:
             if msg.name == 'GPS':
                 self.course = int(msg.get_field(3))*np.pi/1800
                 self.XYZ[2] = float(msg.get_field(4))/1000
