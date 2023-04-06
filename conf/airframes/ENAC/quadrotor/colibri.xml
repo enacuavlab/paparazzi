@@ -118,10 +118,10 @@
   <!--Counter torque effect of spinning up a rotor-->
   <define value="{150., 150., 150., 150.}" name="G2"/>
   <!-- reference acceleration for attitude control -->
-  <define value="40" name="REF_ERR_P"/>
+  <define value="30" name="REF_ERR_P"/>
   <define value="80" name="REF_ERR_Q"/>
   <define value="30" name="REF_ERR_R"/>
-  <define value="15." name="REF_RATE_P"/>
+  <define value="20." name="REF_RATE_P"/>
   <define value="30.0" name="REF_RATE_Q"/>
   <define value="5.0" name="REF_RATE_R"/>
   <!--Maxium yaw rate, to avoid instability-->
