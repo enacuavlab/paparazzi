@@ -1,0 +1,16 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="fdm_simulink" dir="fdm">
+  <doc>
+    <description>
+      Simulink generated FDM for NPS simulator
+    </description>
+  </doc>
+  <header>
+   <file name="colibri_v1.h" dir="nps/simulink/colibri_v1_ert_rtw"/>
+  </header>
+  <makefile target="nps|hitl">
+    <file name="nps_fdm_simulink.c" dir="nps"/>
+    <file name="colibri_v1.c" dir="nps/simulink/colibri_v1_ert_rtw"/>
+  </makefile>
+</module>
