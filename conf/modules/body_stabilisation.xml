@@ -6,9 +6,9 @@
     </description>
     <section name="BODY_STAB" prefix="BODY_STAB_">
       <define name="ENABLED" value="FALSE|TRUE" description="activate or not the filter by default"/>
-      <define name="KP" value="10000." description="propotionnal gain"/>
-      <define name="KD" value="0.1" description="derivative gain"/>
-      <define name="UEQ" value="4800" description="cmd equiibre"/>
+      <define name="KP_M" value="10000." description="propotionnal gain"/>
+      <define name="KD_M" value="0.1" description="derivative gain"/>
+      <define name="UEQ_M" value="4800" description="cmd equiibre"/>
     </section>
   </doc>
 
@@ -16,10 +16,16 @@
     <dl_settings>
       <dl_settings name="body_stab">
         <dl_setting min="0" max="1" step="1" var="body_stab.enabled" module="ctrl/body_stabilisation" shortname="enable" values="DISABLED|ENABLED" handler="reset"/>
-        <dl_setting min="100." max="50000" step="10" var="body_stab.kp" module="ctrl/body_stabilisation" shortname="kp" handler="update_kp"/>
-        <dl_setting min="100." max="50000" step="10" var="body_stab.ki" module="ctrl/body_stabilisation" shortname="ki" handler="update_ki"/>
-        <dl_setting min="0.1" max="50000." step="1" var="body_stab.kd" module="ctrl/body_stabilisation" shortname="kd" handler="update_kd"/>
-        <dl_setting min="1" max="9600" step="1" var="body_stab.u_eq" module="ctrl/body_stabilisation" shortname="u_eq" handler="update_ueq"/>
+        <dl_setting min="100." max="50000" step="10" var="body_stab.kp_m" module="ctrl/body_stabilisation" shortname="kp_m" handler="update_kp_m"/>
+        <dl_setting min="100." max="50000" step="10" var="body_stab.ki_m" module="ctrl/body_stabilisation" shortname="ki_m" handler="update_ki_m"/>
+        <dl_setting min="0.1" max="50000." step="1" var="body_stab.kd_m" module="ctrl/body_stabilisation" shortname="kd_m" handler="update_kd_m"/>
+        <dl_setting min="1" max="9600" step="1" var="body_stab.u_eq_m" module="ctrl/body_stabilisation" shortname="u_eq_m" handler="update_ueq_m"/>
+        <dl_setting min="100." max="50000" step="10" var="body_stab.kp_e" module="ctrl/body_stabilisation" shortname="kp_e" handler="update_kp_e"/>
+        <dl_setting min="100." max="50000" step="10" var="body_stab.ki_e" module="ctrl/body_stabilisation" shortname="ki_e" handler="update_ki_e"/>
+        <dl_setting min="0.1" max="50000." step="1" var="body_stab.kd_e" module="ctrl/body_stabilisation" shortname="kd_e" handler="update_kd_e"/>
+        <dl_setting min="0" max="50000." step="1" var="body_stab.clamp_integrator" module="ctrl/body_stabilisation" shortname="clamp_inte" handler="update_clamp_int"/>
+        <dl_setting min="0" max="50." step="1" var="body_stab.airspeed_lb" module="ctrl/body_stabilisation" shortname="air_lb" handler="update_airspeed_lb"/>
+        <dl_setting min="0" max="50." step="1" var="body_stab.airspeed_ub" module="ctrl/body_stabilisation" shortname="air_ub" handler="update_airspeed_ub"/>
       </dl_settings>
     </dl_settings>
   </settings>
