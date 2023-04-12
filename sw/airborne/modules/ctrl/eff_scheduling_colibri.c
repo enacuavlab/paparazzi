@@ -24,26 +24,80 @@
  */
 
 #include "modules/ctrl/eff_scheduling_colibri.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
+#include "state.h"
 
 // Airspeed at which only with motor
 #ifndef INDI_SCHEDULING_LOW_AIRSPEED
 #define INDI_SCHEDULING_LOW_AIRSPEED 8.0
 #endif
 
-#if INDI_NUM_ACT < 8
-#error "This module works with Colibri with 8 actuators by only 6 are managed by INDI"
+#ifndef INDI_SCHEDULING_HIGH_AIRSPEED
+#define INDI_SCHEDULING_HIGH_AIRSPEED 15.0
 #endif
+
+
+#if INDI_NUM_ACT < 6
+#error "This module works with Colibri with 8 actuators by only 6 are managed by INDI "
+#endif
+
+static float g_forward[4][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL_FWD, STABILIZATION_INDI_G1_PITCH_FWD, STABILIZATION_INDI_G1_YAW_FWD, STABILIZATION_INDI_G1_THRUST_FWD};
+
+static float g_hover[4][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL, STABILIZATION_INDI_G1_PITCH, STABILIZATION_INDI_G1_YAW, STABILIZATION_INDI_G1_THRUST};
+
 
 
 void ctrl_eff_scheduling_init(void)
 {
-  // your init code here
+  for (uint8_t i = 0; i < 4; i++) {
+    g_hover[0][i] = g_hover[0][i] / INDI_G_SCALING;
+    g_hover[1][i] = g_hover[1][i] / INDI_G_SCALING;
+    g_hover[2][i] = g_hover[2][i] / INDI_G_SCALING;
+    g_hover[3][i] = g_hover[3][i] / INDI_G_SCALING;
+
+    g_forward[0][i] = g_forward[0][i] / INDI_G_SCALING;
+    g_forward[1][i] = g_forward[1][i] / INDI_G_SCALING;
+    g_forward[2][i] = g_forward[2][i] / INDI_G_SCALING;
+    g_forward[3][i] = g_forward[3][i] / INDI_G_SCALING;
+  }
 }
 
 void ctrl_eff_scheduling_periodic(void)
 {
-  // your periodic code here.
   // freq = 20.0 Hz
+  float airspeed = stateGetAirspeed_f();
+
+  float ratio = 1/(INDI_SCHEDULING_HIGH_AIRSPEED - INDI_SCHEDULING_LOW_AIRSPEED)*airspeed - INDI_SCHEDULING_LOW_AIRSPEED/(INDI_SCHEDULING_HIGH_AIRSPEED - INDI_SCHEDULING_LOW_AIRSPEED);
+
+  Bound(ratio,0.0,1.0);
+
+  int8_t i;
+  int8_t j;
+  for (i = 0; i < INDI_OUTPUTS; i++) {
+    for (j = 0; j < 4; j++) {
+       // Motor
+      g1g2[i][j] = g_hover[i][j] * (1.0 - ratio) + g_forward[i][j] * ratio;
+    }
+  }
+
+  // calculate squared airspeed
+  Bound(airspeed, 0.0, 30.0);
+  float airspeed2 = airspeed*airspeed;
+
+  float roll_eff = CE_ROLL_A*airspeed2;
+  g1g2[0][4] = -roll_eff/1000;
+  g1g2[0][5] =  roll_eff/1000;
+
+  float pitch_eff = CE_PITCH_A*airspeed2;
+  g1g2[1][4] = -pitch_eff/1000;
+  g1g2[1][5] =  pitch_eff/1000;
+
+  float yaw_eff = CE_YAW_A*airspeed2;
+  g1g2[2][4] = -yaw_eff/1000;
+  g1g2[2][5] = -yaw_eff/1000;
+
+  g1g2[3][4] = 0;
+  g1g2[3][5] = 0;
 }
 
 
