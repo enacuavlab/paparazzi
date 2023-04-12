@@ -30,11 +30,18 @@
 
 struct BodyStab {
   bool enabled;
-  float kp;
-  float ki;
-  float kd;
-  int u_eq;
+  float kp_m;
+  float ki_m;
+  float kd_m;
+  int u_eq_m;
+  float kp_e;
+  float ki_e;
+  float kd_e;
   float state_integrator;
+  float clamp_integrator;
+  float airspeed_lb;
+  float airspeed_ub;
+  bool discrete_state; // 0 -> use motor, 1 -> use elevon
 };
 
 extern struct BodyStab body_stab;
@@ -47,9 +54,17 @@ extern void body_stabilisation_report(void);
  * settings handlers
  */
 extern void body_stabilisation_reset(float enabled);
-extern void body_stabilisation_update_kp(float kp);
-extern void body_stabilisation_update_ki(float ki);
-extern void body_stabilisation_update_kd(float kd);
-extern void body_stabilisation_update_ueq(int ueq);
+extern void body_stabilisation_update_kp_m(float kp);
+extern void body_stabilisation_update_ki_m(float ki);
+extern void body_stabilisation_update_kd_m(float kd);
+extern void body_stabilisation_update_ueq_m(int ueq);
+
+extern void body_stabilisation_update_kp_e(float kp);
+extern void body_stabilisation_update_ki_e(float ki);
+extern void body_stabilisation_update_kd_e(float kd);
+
+extern void body_stabilisation_update_clamp_int(float clamp_val);
+extern void body_stabilisation_update_airspeed_lb(float lb);
+extern void body_stabilisation_update_airspeed_ub(float ub);
 
 #endif  // BODY_STABILISATION_H
