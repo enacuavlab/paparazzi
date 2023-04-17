@@ -63,7 +63,8 @@ class EnvSimu:
         self.stop()
 
     def stop(self):
-        self.writer.close()
+        if self.writer is not None:
+            self.writer.close()
         self.ivy.shutdown()
     
     def update_config(self, config):
@@ -109,7 +110,8 @@ class EnvSimu:
                 msg["ac_id"] = ac_id
                 self.ivy.send(msg)
                 
-            self.writer.write(sampleParser.SamplePoint(coords[-1],coords[-2],coords[-3],coords[-4],pm10[0]))
+            if self.writer is not None:
+                self.writer.write(sampleParser.SamplePoint(coords[-1],coords[-2],coords[-3],coords[-4],pm10[0]))
         except panacheur.EndOfTime:
             print("end of time...")
 
