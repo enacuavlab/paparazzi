@@ -40,10 +40,11 @@ extern "C" {
 * @param ky Gain defining how agressive is the vector field in y coordinate
 * @param kz Gain defining how agressive is the vector field in z coordinate
 * @param ay Oscillations' amplitude along the y-axis
-* @param freq_y Frequency along the y-axis
+* @param freq_y Frequency along the y-axis (in radiants, i.e. before multiplication by 2*PI)
+* @param phase_y Added phase to the y oscillations
 * @param az Oscillations' amplitude along the z-axis
-* @param freq_z Frequency along the z-axis
-* @param phase Added phase to the z oscillations (relative to y)
+* @param freq_z Frequency along the z-axis (in radiants, i.e. before multiplication by 2*PI)
+* @param phase_z Added phase to the z oscillations
 */
 typedef struct {
   float kx;
@@ -51,9 +52,10 @@ typedef struct {
   float kz;
   float ay;
   float freq_y;
+  float phase_y;
   float az;
   float freq_z;
-  float phase;
+  float phase_z;
 } gvf_par_3d_sin_par;
 
 extern gvf_par_3d_sin_par gvf_parametric_3d_sin_par;

@@ -1,7 +1,7 @@
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 <!-- A simple flightplan for automated SITL/HITL verification: it launches and lands itself, giving us an idea whether a given airframe
      can finish it -->
-<flight_plan alt="100" ground_alt="15" lat0="49.435990" lon0="1.068109" max_dist_from_home="1500" name="Basic" security_height="25" qfu="180">
+<flight_plan alt="100" ground_alt="15" lat0="49.435990" lon0="1.068109" max_dist_from_home="15000" name="Basic" security_height="25" qfu="180">
   <header>
 #include "modules/datalink/datalink.h"
 </header>
@@ -75,9 +75,11 @@
     </block>
         
     <block name="Downwind sinus">
-      <call_once fun="gvf_parametric_set_w_gain(1.)"/>
-      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC) + 100*AC_ID,WaypointY(WP_SRC) + 100*AC_ID,200,0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
-      <call fun="gvf_parametric_3d_sin(50,0.001,25,0.001,90 * AC_ID)"/>
+      <call_once fun="gvf_parametric_set_w_gain(-1.)"/>
+      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>
+      <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,atan2(stateGetHorizontalWindspeed_f()->y,stateGetHorizontalWindspeed_f()->x)*180/M_PI)"/>-->
+      <call fun="gvf_parametric_3d_sin(500,0.001,90 * AC_ID, 0,0.001,90 * AC_ID)"/>
+      
       <!--<call fun="gvf_parametric_3d_ellipse_wp_delta(WP_SRC, 200,200,30,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>-->
     </block>
     

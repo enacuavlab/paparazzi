@@ -24,7 +24,7 @@
  * Guiding vector field algorithm for 2D and 3D complex trajectories.
  *
  * 3D sinusoid (oscillations along Y and Z axes)
- * f(t) = [ t ,  ay * sin(2pi * freq_y * t) , az * sin(2pi * freq_z * t) ]
+ * f(t) = [ t ,  ay * sin(2pi * freq_y * t + phase_y) , az * sin(2pi * freq_z * t + phase_z) ]
  */
 
 #include "modules/nav/common_nav.h"
@@ -52,6 +52,12 @@
 #define GVF_PARAMETRIC_3D_SIN_AY 1
 #endif
 
+
+/*! Default phase along y-axis */
+#ifndef GVF_PARAMETRIC_3D_SIN_PHASE_Y
+#define GVF_PARAMETRIC_3D_SIN_PHASE_Y 0
+#endif
+
 /*! Default frequency along z-axis */
 #ifndef GVF_PARAMETRIC_3D_SIN_FREQ_Y
 #define GVF_PARAMETRIC_3D_SIN_FREQ_Y 1
@@ -68,39 +74,41 @@
 #endif
 
 /*! Default phase along z-axis */
-#ifndef GVF_PARAMETRIC_3D_SIN_PHASE
-#define GVF_PARAMETRIC_3D_SIN_PHASE 0
+#ifndef GVF_PARAMETRIC_3D_SIN_PHASE_Z
+#define GVF_PARAMETRIC_3D_SIN_PHASE_Z 0
 #endif
 
 gvf_par_3d_sin_par gvf_parametric_3d_sin_par = {GVF_PARAMETRIC_3D_SIN_KX,
                                                   GVF_PARAMETRIC_3D_SIN_KY, GVF_PARAMETRIC_3D_SIN_KZ, 
-                                                  GVF_PARAMETRIC_3D_SIN_AY, GVF_PARAMETRIC_3D_SIN_FREQ_Y, 
+                                                  GVF_PARAMETRIC_3D_SIN_AY, GVF_PARAMETRIC_3D_SIN_FREQ_Y,
+                                                  GVF_PARAMETRIC_3D_SIN_PHASE_Y,
                                                   GVF_PARAMETRIC_3D_SIN_AZ, GVF_PARAMETRIC_3D_SIN_FREQ_Z,
-                                                  GVF_PARAMETRIC_3D_SIN_PHASE};
+                                                  GVF_PARAMETRIC_3D_SIN_PHASE_Z};
 
 void gvf_parametric_3d_sin_info(float *f1, float *f2, float *f3, float *f1d, float *f2d, float *f3d,
                                   float *f1dd, float *f2dd, float *f3dd)
 {
   float ay = gvf_parametric_trajectory.p_parametric[0];
   float f_y = gvf_parametric_trajectory.p_parametric[1] * 2 * M_PI;
-  float az = gvf_parametric_trajectory.p_parametric[2];
-  float f_z = gvf_parametric_trajectory.p_parametric[3] * 2 * M_PI;
-  float phi = gvf_parametric_trajectory.p_parametric[4];
+  float phi_y = gvf_parametric_trajectory.p_parametric[2];
+  float az = gvf_parametric_trajectory.p_parametric[3];
+  float f_z = gvf_parametric_trajectory.p_parametric[4] * 2 * M_PI;
+  float phi_z = gvf_parametric_trajectory.p_parametric[5];
 
   float w = gvf_parametric_control.w;
   float wb = w * gvf_parametric_control.beta * gvf_parametric_control.s;
 
   // Parametric equations of the trajectory and the partial derivatives w.r.t. 'w'
   *f1 = wb;
-  *f2 = ay * sinf(f_y * wb);
-  *f3 = az * sinf(f_z * wb + phi);
+  *f2 = ay * sinf(f_y * wb + phi_y);
+  *f3 = az * sinf(f_z * wb + phi_z);
 
   *f1d = 1;
-  *f2d = ay * f_y * cosf(f_y * wb);
-  *f3d = az * f_z * cosf(f_z * wb + phi);
+  *f2d = ay * f_y * cosf(f_y * wb + phi_y);
+  *f3d = az * f_z * cosf(f_z * wb + phi_z);
 
   *f1dd = 0;
-  *f2dd = - ay * f_y * f_y * sinf(f_y * wb);
-  *f3dd = - az * f_z * f_z * sinf(f_z * wb + phi);
+  *f2dd = - ay * f_y * f_y * sinf(f_y * wb + phi_y);
+  *f3dd = - az * f_z * f_z * sinf(f_z * wb + phi_z);
 }
 
