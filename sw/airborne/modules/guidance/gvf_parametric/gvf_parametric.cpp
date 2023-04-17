@@ -81,10 +81,17 @@ extern "C"
 
     if (delta_T < 200)
     {
-      float quaternion[4] = {gvf_parametric_affine_tr.rot.w(),
-                             gvf_parametric_affine_tr.rot.x(),
+      float quaternion[4] = {gvf_parametric_affine_tr.rot.x(),
                              gvf_parametric_affine_tr.rot.y(),
-                             gvf_parametric_affine_tr.rot.z()};
+                             gvf_parametric_affine_tr.rot.z(),
+                             gvf_parametric_affine_tr.rot.w()};
+
+      // std::cout << "----------\nRotation: " << std::endl << gvf_parametric_affine_tr.t.rotation() << std::endl;
+      // std::cout << "Buffered Rotation: " << std::endl << gvf_parametric_affine_tr.rot.matrix() << std::endl << "-----\n";
+      // std::cout << "Translation: " << std::endl << gvf_parametric_affine_tr.t.translation() << std::endl;
+      // std::cout << "Buffered Translation: " << std::endl << gvf_parametric_affine_tr.transalation.x() << std::endl << gvf_parametric_affine_tr.transalation.y() << std::endl << gvf_parametric_affine_tr.transalation.z() << std::endl;
+
+      
 
       float translation[3] = {gvf_parametric_affine_tr.transalation.x(),
                               gvf_parametric_affine_tr.transalation.y(),
@@ -442,6 +449,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   // After derivation, only rotation remains
   fd_vec = gvf_parametric_affine_tr.t.linear() * fd_vec;
   fdd_vec = gvf_parametric_affine_tr.t.linear() * fdd_vec;
+  
 
   f1 = f_vec(0);
   f2 = f_vec(1);
@@ -762,16 +770,17 @@ bool gvf_parametric_3d_lissajous_wp_center(uint8_t wp, float zo, float cx, float
 
 // 3D sinusoid
 
-bool gvf_parametric_3d_sin(float ay, float freq_y, float az, float freq_z, float phase)
+bool gvf_parametric_3d_sin(float ay, float freq_y, float phase_y, float az, float freq_z, float phase_z)
 {
   gvf_parametric_trajectory.type = SINUS_3D;
   gvf_parametric_trajectory.p_parametric[0] = ay;
   gvf_parametric_trajectory.p_parametric[1] = freq_y;
-  gvf_parametric_trajectory.p_parametric[2] = az;
-  gvf_parametric_trajectory.p_parametric[3] = freq_z;
-  gvf_parametric_trajectory.p_parametric[4] = phase;
+  gvf_parametric_trajectory.p_parametric[2] = phase_y * M_PI/180;
+  gvf_parametric_trajectory.p_parametric[3] = az;
+  gvf_parametric_trajectory.p_parametric[4] = freq_z;
+  gvf_parametric_trajectory.p_parametric[5] = phase_z * M_PI/180;
 
-  gvf_parametric_plen = 5 + gvf_parametric_plen_wps;
+  gvf_parametric_plen = 6 + gvf_parametric_plen_wps;
   gvf_parametric_plen_wps = 0;
 
   float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
@@ -784,12 +793,12 @@ bool gvf_parametric_3d_sin(float ay, float freq_y, float az, float freq_z, float
 }
 
 bool gvf_parametric_3d_sin_XYZa(float xo, float yo, float zo, float alpha,
-                                float ay, float freq_y, float az, float freq_z, float phase)
+                                float ay, float freq_y, float phase_y, float az, float freq_z, float phase_z)
 {
   gvf_parametric_set_offset(xo, yo, zo);
   gvf_paremetric_set_euler_rot(0, 0, alpha);
 
-  return gvf_parametric_3d_sin(ay, freq_y, az, freq_z, phase);
+  return gvf_parametric_3d_sin(ay, freq_y, phase_y, az, freq_z, phase_z);
 }
 
 // Coordination

@@ -337,9 +337,39 @@ extern bool gvf_parametric_3d_lissajous_wp_center(uint8_t, float, float, float, 
     float, float, float);
 
 // 3D Sinusoid
-bool gvf_parametric_3d_sin(float ay, float freq_y, float az, float freq_z, float phase);
+
+/**
+ * @brief Set parameters for a 3D sinusoid trajectory
+ * 
+ * @param ay Oscillations' amplitude along the y-axis
+ * @param freq_y Frequency along the y-axis (before multiplication by 2*PI)
+ * @param phase_y Added phase to the y oscillations (in degrees)
+ * @param az Oscillations' amplitude along the z-axis
+ * @param freq_z Frequency along the z-axis (before multiplication by 2*PI)
+ * @param phase_z Added phase to the z oscillations (in degrees)
+ * 
+ * @return true 
+ */
+bool gvf_parametric_3d_sin(float ay, float freq_y, float phase_y, float az, float freq_z, float phase_z);
+
+/**
+ * @brief Set parameters for a 3D sinusoid trajectory with affine transform relative to a point and z-axis rotation
+ * 
+ * @param xo Translation coordinate
+ * @param yo Translation coordinate
+ * @param zo Translation coordinate
+ * @param alpha Rotation around z-axis, in degrees
+ * @param ay Oscillations' amplitude along the y-axis
+ * @param freq_y Frequency along the y-axis (before multiplication by 2*PI)
+ * @param phase_y Added phase to the y oscillations (in degrees)
+ * @param az Oscillations' amplitude along the z-axis
+ * @param freq_z Frequency along the z-axis (before multiplication by 2*PI)
+ * @param phase_z Added phase to the z oscillations (in degrees)
+ * 
+ * @return true 
+ */
 bool gvf_parametric_3d_sin_XYZa(float xo, float yo, float zo, float alpha,
-                                float ay, float freq_y, float az, float freq_z, float phase);
+                                float ay, float freq_y, float phase_y, float az, float freq_z, float phase_z);
 
 
 // 3D Lissajous
