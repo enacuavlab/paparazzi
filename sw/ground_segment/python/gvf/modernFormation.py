@@ -71,7 +71,7 @@ class Aircraft:
 
 class AbstractFormationController(ABC):
     """
-    On abstract class for formation management controllers, based on Python threads
+    On abstract class for formation management controllers
     """
     
     def __init__(self,freq:float,ivy:typing.Union[str,IvyMessagesInterface],verbosity:int,**kwargs) -> None:
@@ -232,7 +232,7 @@ Have you forgotten to check gvf.xml in your settings?")
         def gps_cb(ac_id, msg:telemetry.PprzMessage_GPS):
             if ac_id in self.ids:
                 ac = self.aircrafts[ac_id]
-                ac.alt = float(msg.alt_ * 1000) # altitude in the msg is in mm above MSL
+                ac.alt = float(msg.alt_ / 1000) # altitude in the msg is in mm above MSL
         self._ivy_interface.subscribe(gps_cb,telemetry.PprzMessage_GPS())
 
         # bind to GVF message
@@ -327,8 +327,9 @@ Have you forgotten to check gvf.xml in your settings?")
             if np.nan in [ac.alt for ac in self.aircrafts.values()]:
                 altitude_cond = False
             else:
+                print([ac.alt for ac in self.aircrafts.values()])
                 if self.elevation > 0:
-                    altitude_cond = min(ac.alt for ac in self.aircrafts.values()) > self.max_altitude
+                    altitude_cond = min(ac.alt for ac in self.aircrafts.values()) > self.max_altitude    
                 else:# self.elevation < 0:
                     altitude_cond = max(ac.alt for ac in self.aircrafts.values()) < self.max_altitude
         return error_cond and altitude_cond
