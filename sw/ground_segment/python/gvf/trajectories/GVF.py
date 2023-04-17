@@ -114,7 +114,7 @@ class Ellipse(ImplicitLineTrajectory):
                            rot=rot)
     
     def _implicit(self, pos: np.ndarray) -> float:
-        rescaled = pos/np.array([self.ea,self.eb,1])
+        rescaled = pos[:2]/np.array([self.ea,self.eb])
         return np.dot(rescaled,rescaled)-2
     
     def _implicit_grad(self, pos: np.ndarray, step: float = 0.005) -> np.ndarray:

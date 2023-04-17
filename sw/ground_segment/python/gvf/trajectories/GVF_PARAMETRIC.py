@@ -15,7 +15,8 @@ from scipy.spatial.transform import Rotation
 
 class ParametricLineTrajectory(LineTrajectory, ABC):
     def parse_affine_transform(self, msg: PprzMessage) -> None:
-        self.rot = Rotation.from_quat(np.array(msg.get_field(5), dtype=float))
+        xyzw_quaternion = np.array(msg.get_field(5), dtype=float)
+        self.rot = Rotation.from_quat(xyzw_quaternion)
         self.XYZoffset = np.array(msg.get_field(6), dtype=float)
 
     def gvf(self, pos: np.ndarray, t: float) -> np.ndarray:
@@ -212,9 +213,10 @@ class Sinusoid_3D(ParametricLineTrajectory):
     name:str = "Sinusoid 3D"
     ay: float = 1.
     freq_y: float = 1.
+    phase_y: float = 0.
     az: float = 1.
     freq_z: float = 1.
-    phase: float = 0.
+    phase_z: float = 0.
 
     @staticmethod
     def class_id() -> int:
@@ -232,26 +234,27 @@ class Sinusoid_3D(ParametricLineTrajectory):
         param = [float(x) for x in msg.get_field(3)]
         ay = param[0]
         freq_y = param[1]
-        az = param[2]
-        freq_z = param[3]
-        phase = param[4]
+        phase_y = param[2]
+        az = param[3]
+        freq_z = param[4]
+        phase_z = param[5]
 
-        output = Sinusoid_3D(ay=ay, freq_y=freq_y, az=az,
-                             freq_z=freq_z, phase=phase)
+        output = Sinusoid_3D(ay=ay, freq_y=freq_y, phase_y=phase_y, az=az,
+                             freq_z=freq_z, phase_z=phase_z)
         output.parse_affine_transform(msg)
         return output
 
     def _param_point(self, t: float) -> np.ndarray:
         xs = t
-        ys = np.sin(2*np.pi*self.freq_y*t)*self.ay
-        zs = np.sin(2*np.pi*self.freq_z*t + self.phase)*self.az
+        ys = np.sin(2*np.pi*self.freq_y*t + self.phase_y)*self.ay
+        zs = np.sin(2*np.pi*self.freq_z*t + self.phase_z)*self.az
 
         return np.stack([xs, ys, zs])
 
     def _grad_param_point(self, t: float, step: float = 0.005) -> np.ndarray:
         xs = 1
-        ys = np.cos(2*np.pi*self.freq_y*t)*self.ay * 2*np.pi*self.freq_y
-        zs = np.cos(2*np.pi*self.freq_z*t + self.phase)*self.az * 2*np.pi*self.freq_z
+        ys = np.cos(2*np.pi*self.freq_y*t+ self.phase_y)*self.ay * 2*np.pi*self.freq_y
+        zs = np.cos(2*np.pi*self.freq_z*t+ self.phase_z)*self.az * 2*np.pi*self.freq_z
 
         return np.stack([xs, ys, zs])
 

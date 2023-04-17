@@ -72,9 +72,9 @@ HEIGHT = 800
 
 
 class GVFFrame(wx.Frame):
-    def __init__(self, ac_id, dim:int = 3, w_dist:float = 400, gvf_dist: float = 300, resolution: int = 10):
+    def __init__(self, ac_id:int, dim:int = 3, w_dist:float = 400, gvf_dist: float = 300, resolution: int = 10):
 
-        wx.Frame.__init__(self, id=-1, parent=None,
+        super().__init__(None, id=-1,
                           name=u'GVF', size=wx.Size(WIDTH, HEIGHT),
                           style=wx.DEFAULT_FRAME_STYLE, title=u'Guidance Vector Field')
 
@@ -144,6 +144,7 @@ class GVFFrame(wx.Frame):
     def OnClose(self, event):
         self.interface.shutdown()
         self.Destroy()
+        
 
     def OnRedrawTimer(self, event):
         self.draw_gvf(self.XYZ, self.yaw, self.course)
@@ -221,7 +222,7 @@ class Map():
                     vector_field[0][:,:,self.resolution//2], vector_field[1][:,:,self.resolution//2], angles_field,
                     pivot='mid', width=0.005, edgecolor='Black', cmap='seismic', norm=Normalize(-90,90),
                     linewidth=0.1)
-            self.fig.colorbar(quiver_plot)
+            self.fig.colorbar(quiver_plot,label="Vertical inclination (in degrees, up is positive)")
             
         ax.add_patch(self.vehicle_patch(XYZ, yaw))  # In radians
         apex = 45*np.pi/180  # 30 degrees apex angle
@@ -316,8 +317,6 @@ class Map():
         a3d.axis('equal')
 
         # XY
-        z_angles_field = np.rad2deg(np.arctan2(vector_field[2][:,:,self.resolution//2],np.sqrt(np.square(vector_field[0][:,:,self.resolution//2])+np.square(vector_field[1][:,:,self.resolution//2]))))
-
         axy.plot(traj_points[:,0], traj_points[:,1],color='green',
             label='Trajectory')
         axy.add_patch(self.vehicle_patch(XYZ, yaw))  # In radians
@@ -327,40 +326,41 @@ class Map():
         axy.arrow(XYZ[0], XYZ[1],
                   h*np.sin(course), h*np.cos(course),
                   head_width=5, head_length=10, fc='k', ec='k')
-        axy.annotate('HOME', xy=(0, 0))
-        axy.annotate(traj.name, xy=(traj.x_offset, traj.y_offset))
-        axy.plot(0, 0, 'kx', ms=10, mew=2)
-        axy.plot(traj.x_offset, traj.y_offset, 'kx', ms=10, mew=2)
+        #axy.annotate('HOME', xy=(0, 0))
+        #axy.annotate(traj.name, xy=(traj.x_offset, traj.y_offset))
+        #axy.plot(0, 0, 'kx', ms=10, mew=2)
+        #axy.plot(traj.x_offset, traj.y_offset, 'kx', ms=10, mew=2)
         axy.plot(virtual_point[0], virtual_point[1], marker='P',
                  color='r',label='Virtual carrot')
         
+        z_angles_field = np.rad2deg(np.arctan2(vector_field[2][:,:,self.resolution//2],np.sqrt(np.square(vector_field[0][:,:,self.resolution//2])+np.square(vector_field[1][:,:,self.resolution//2]))))
         axy_quiver = axy.quiver(XYZ_meshgrid[0][:,:,self.resolution//2], XYZ_meshgrid[1][:,:,self.resolution//2],
                     vector_field[0][:,:,self.resolution//2], vector_field[1][:,:,self.resolution//2], z_angles_field,
                     color='Teal', pivot='mid', width=0.005, edgecolor='Black', cmap='seismic', norm=Normalize(-90,90),
                     linewidth=0.2)
-        self.fig.colorbar(axy_quiver)
+        self.fig.colorbar(axy_quiver,label="Orthogonal inclination (in degrees, positive is \u2299)")
         axy.axis('equal')
         
-        # XZ
-        y_angles_field = np.rad2deg(np.arctan2(vector_field[1][:,self.resolution//2,:],np.sqrt(np.square(vector_field[0][:,self.resolution//2,:])+np.square(vector_field[2][:,self.resolution//2,:]))))
-        
+        # XZ        
         axz.plot(traj_points[:, 0], traj_points[:, 2], color='green',label='Trajectory')
         axz.plot(XYZ[0], XYZ[2], 'ro', label='Aircraft')
         axz.plot(virtual_point[0], virtual_point[2], marker='P',
                  color='r',label='Virtual carrot')
+        
+        y_angles_field = np.rad2deg(np.arctan2(vector_field[1][:,self.resolution//2,:],np.sqrt(np.square(vector_field[0][:,self.resolution//2,:])+np.square(vector_field[2][:,self.resolution//2,:]))))
         axz_quiver = axz.quiver(XYZ_meshgrid[0][:,self.resolution//2,:], XYZ_meshgrid[2][:,self.resolution//2,:],
                     vector_field[0][:,self.resolution//2,:], vector_field[2][:,self.resolution//2,:], y_angles_field,
                     color='Teal', pivot='mid', width=0.005, edgecolor='Black', cmap='seismic', norm=Normalize(-90,90),
                     linewidth=0.2)
         self.fig.colorbar(axz_quiver)
             
-        # YZ
-        x_angles_field = np.rad2deg(np.arctan2(vector_field[0][self.resolution//2,:,:],np.sqrt(np.square(vector_field[1][self.resolution//2,:,:])+np.square(vector_field[2][self.resolution//2,:,:]))))
-        
+        # YZ        
         ayz.plot(traj_points[:, 1], traj_points[:, 2], color='green',label='Trajectory')
         ayz.plot(XYZ[1], XYZ[2], 'ro', label='Aircraft')
         ayz.plot(virtual_point[1], virtual_point[2], marker='P',
                  color='r',label='Virtual carrot')
+        
+        x_angles_field = np.rad2deg(np.arctan2(vector_field[0][self.resolution//2,:,:],np.sqrt(np.square(vector_field[1][self.resolution//2,:,:])+np.square(vector_field[2][self.resolution//2,:,:]))))
         ayz_quiver = ayz.quiver(XYZ_meshgrid[1][self.resolution//2,:,:], XYZ_meshgrid[2][self.resolution//2,:,:],
                     vector_field[1][self.resolution//2,:,:], vector_field[2][self.resolution//2,:,:], x_angles_field,
                     color='Teal', pivot='mid', width=0.005, edgecolor='Black', cmap='seismic', norm=Normalize(-90,90),
