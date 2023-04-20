@@ -4,12 +4,14 @@ from pprzlink.generated import telemetry,ground
 from pprzlink.message import PprzMessage
 from pprzlink.ivy import IvyMessagesInterface
 import wx
-from time import sleep
+from time import sleep,time
 
 from scipy import linalg as la
 from matplotlib.path import Path
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.figure import SubFigure
+import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.colors import Normalize
@@ -83,6 +85,7 @@ class Aircraft():
     gvf:typing.Optional[telemetry.PprzMessage_GVF] = None
     gvf_parametric:typing.Optional[telemetry.PprzMessage_GVF_PARAMETRIC] = None
     config:typing.Optional[PprzConfig] = None
+    last_timestamp:float = 0.
     
     @property
     def XYZ(self) -> np.ndarray:
@@ -184,6 +187,7 @@ class GVFFrame(wx.Frame):
             if ac_id in self.ac_ids:# and msg.name == "ATTITUDE":
                 ac = self.ac_dict[ac_id]
                 ac.attitude = msg
+                ac.last_timestamp = time()
         self._ivy_interface.subscribe(attitude_cb, telemetry.PprzMessage_ATTITUDE())
             
         # bind to NAVIGATION message
@@ -191,6 +195,7 @@ class GVFFrame(wx.Frame):
             if ac_id in self.ac_ids:# and msg.name == "NAVIGATION":
                 ac = self.ac_dict[ac_id]
                 ac.navigation = msg
+                ac.last_timestamp = time()
         self._ivy_interface.subscribe(nav_cb, telemetry.PprzMessage_NAVIGATION())
 
         # bind to GPS message
@@ -198,6 +203,7 @@ class GVFFrame(wx.Frame):
             if ac_id in self.ac_ids:# and msg.name == "GPS":
                 ac = self.ac_dict[ac_id]
                 ac.gps = msg
+                ac.last_timestamp = time()
         self._ivy_interface.subscribe(gps_cb,telemetry.PprzMessage_GPS())
 
         # bind to GVF message
@@ -205,6 +211,7 @@ class GVFFrame(wx.Frame):
             if ac_id in self.ac_ids:# and msg.name == "GVF":
                 ac = self.ac_dict[ac_id]
                 ac.gvf = msg
+                ac.last_timestamp = time()
                 ac.gvf_parametric = None
         self._ivy_interface.subscribe(gvf_cb, telemetry.PprzMessage_GVF())
         
@@ -213,16 +220,13 @@ class GVFFrame(wx.Frame):
             if ac_id in self.ac_ids:# and msg.name == "GVF_PARAMETRIC":
                 ac = self.ac_dict[ac_id]
                 ac.gvf_parametric = msg
+                ac.last_timestamp = time()
                 ac.gvf = None
         self._ivy_interface.subscribe(gvf_par_cb, telemetry.PprzMessage_GVF_PARAMETRIC())
                 
 
     def draw_gvf(self):
-        self.map_gvf.fig.clear()
-        self.map_gvf.fig.add_subplot(2,2,1,projection='3d')
-        self.map_gvf.fig.add_subplot(2,2,2)
-        self.map_gvf.fig.add_subplot(2,2,3)
-        self.map_gvf.fig.add_subplot(2,2,4)
+        self.map_gvf.clear_axes()
         lines = []
         labels = []
         for id,ac in self.ac_dict.items():
@@ -246,6 +250,7 @@ class GVFFrame(wx.Frame):
 
 
 ########## Map classes (for drawings) ##########
+
 class Map():
     def __init__(self, area, w_dist:float = 400, show_field:bool = False, gvf_dist: float = 300, resolution: int = 10):
         self.area = area
@@ -253,8 +258,20 @@ class Map():
         self.gvf_dist: float = gvf_dist # L1 range from the aircraft when computing GVF
         self.w_dist:float = w_dist # Abstract range from the virtual parameter when computing trajectory (does not affect closed trajectories)
         self.resolution: int = resolution # Number of points used per dimension when computing GVF (10 times more are used for trajectory)
-        self.fig = plt.figure()
         
+        # Setup the figure
+        self.fig = plt.figure()
+        self.fig.clear()
+        self.a3d:Axes3D = self.fig.add_subplot(2,2,1,projection='3d')
+        self.axy:Axes3D = self.fig.add_subplot(2,2,2)
+        self.axz:Axes3D = self.fig.add_subplot(2,2,3)
+        self.ayz:Axes3D = self.fig.add_subplot(2,2,4)
+        
+        self.a3d.set_title('3D Map')
+        self.axy.set_title('XY Map')
+        self.axz.set_title('XZ Map')
+        self.ayz.set_title('YZ Map')
+            
     def vehicle_patch(self, XY, yaw, color:str='red'):
         Rot = np.array([[np.cos(yaw), np.sin(yaw)],
                        [-np.sin(yaw), np.cos(yaw)]])
@@ -283,16 +300,10 @@ class Map():
         return patches.PathPatch(path, facecolor=color, lw=2)
         
     def draw(self, XYZ, yaw, course, traj: LineTrajectory, w:float, name:str, color:str='green'):
-        a3d:Axes3D = self.fig.axes[0]
-        axy:Axes3D = self.fig.axes[1]
-        axz:Axes3D = self.fig.axes[2]
-        ayz:Axes3D = self.fig.axes[3]
-        
-        a3d.set_title('3D Map')
-        axy.set_title('XY Map')
-        axz.set_title('XZ Map')
-        ayz.set_title('YZ Map')
-
+        a3d:Axes3D = self.a3d
+        axy:Axes3D = self.axy
+        axz:Axes3D = self.axz
+        ayz:Axes3D = self.ayz
         
         if self.show_field and traj is not None:
             XYZ_meshgrid = np.asarray(np.meshgrid(np.linspace(XYZ[0]-self.gvf_dist, XYZ[0]+self.gvf_dist, self.resolution),
