@@ -26,6 +26,9 @@ from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 from matplotlib.quiver import Quiver
+from matplotlib.gridspec import GridSpec
+from matplotlib.patches import Rectangle
+from matplotlib.widgets import Button,CheckButtons,RadioButtons
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Line3DCollection,Line3D
 
@@ -140,6 +143,50 @@ class AC_drawings():
             color = f'C{id % 10}'
             
         return AC_drawings(id,name,a3d,axy,axz,ayz,color=color,quiver_dist=quiver_dist,quiver_res=quiver_res,**kwargs)
+
+#################### AC tracking ####################
+
+@dataclass
+class TrackingCode():
+    code:int
+    
+    def to_none(self):
+        self.code = -1
+        
+    def to_barycenter(self):
+        self.code = -2
+    
+    @property
+    def is_none(self) -> bool:
+        return self.code == -1
+    
+    @property
+    def is_barycenter(self) -> bool:
+        return self.code == -2
+    
+    @property
+    def is_ac_id(self) -> bool:
+        return self.code >= 0
+    
+    @staticmethod
+    def none() -> TrackingCode:
+        return TrackingCode(-1)
+    
+    @staticmethod
+    def barycenter() -> TrackingCode:
+        return TrackingCode(-2)
+    
+    def __str__(self) -> str:
+        if self.is_none:
+            return "Nothing"
+        elif self.is_barycenter:
+            return "Barycenter"
+        else:
+            return str(self.code)
+    
+    
+    
+
             
 #################### Main display ####################
 
@@ -152,14 +199,14 @@ class Trajectory3DMap():
                  fps:int = 20,
                  ):
         
-        # Paparazzi interface
+        ## Paparazzi interface
         self.pprzinterface:AC_DataCollector
         if pprzinterface_name is None:
             self.pprzinterface = AC_DataCollector(ac_ids,'GVF_collector')
         else:
             self.pprzinterface = AC_DataCollector(ac_ids,pprzinterface_name)
             
-        # Plotting parameters
+        ## Plotting parameters
         assert w_dist >= 0
         self.w_dist:float = w_dist
         
@@ -175,13 +222,18 @@ class Trajectory3DMap():
         assert history_size >= 0
         self.history_size:int = history_size
             
-        # Matplotlib figure
+        ## Matplotlib figure
         self.main_fig = plt.figure()
+        grid = GridSpec(1,2,self.main_fig,width_ratios=[0.2,0.8])
         
-        self.a3d:Axes3D = self.main_fig.add_subplot(2,2,1,projection='3d')
-        self.axy:Axes = self.main_fig.add_subplot(2,2,2)
-        self.axz:Axes = self.main_fig.add_subplot(2,2,3)
-        self.ayz:Axes = self.main_fig.add_subplot(2,2,4)
+        
+        # Setting drawing
+        self.plot_fig = self.main_fig.add_subfigure(grid[1])
+        
+        self.a3d:Axes3D = self.plot_fig.add_subplot(2,2,1,projection='3d')
+        self.axy:Axes = self.plot_fig.add_subplot(2,2,2)
+        self.axz:Axes = self.plot_fig.add_subplot(2,2,3)
+        self.ayz:Axes = self.plot_fig.add_subplot(2,2,4)
         
         self.a3d.set_title('3D Map')
         self.axy.set_title('XY Map')
@@ -193,7 +245,55 @@ class Trajectory3DMap():
         self.axz.axis('equal')
         self.ayz.axis('equal')
         
-        # Init lines for each aircraft
+        # Setting buttons
+        self.button_fig = self.main_fig.add_subfigure(grid[0])
+        
+        button_col = 2 # One for legend, One for PushButtons
+        button_lines = len(ac_ids) + 4 # One per AC, + 1 for 'Tracking' checkbox, + 1 for 'Reset', + 1 for 'Barycenter', + 1 for legends
+        
+        matrix_to_flat_index = lambda i,j : button_col * i + j + 1
+             
+        self.tracking:bool = len(ac_ids) == 1 # Auto-active if only one AC, disabled otherwise
+        self.tracking_checkbox_ax:Axes = self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(1,1),frameon=False)
+        self.tracking_checkbox:CheckButtons = CheckButtons(self.tracking_checkbox_ax,
+                                                           labels=["Tracking"],
+                                                           actives=[len(ac_ids) == 1], # Auto-active if only one AC, disabled otherwise
+                                                           )
+        
+        def wrapped__tracking_toggle(e):
+            self.__tracking_toggle()
+        
+        self.tracking_checkbox.on_clicked(wrapped__tracking_toggle)
+        
+        self.track_target_code:TrackingCode = TrackingCode.none()
+        
+        self.reset_button_ax:Axes = self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(2,1))
+        self.bary_button_ax:Axes = self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(3,1))
+        self.ac_buttons_axes:typing.List[Axes] = [self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(4+i,1)) for i in range(len(ac_ids))]
+        
+        self.reset_button:Button = Button(self.reset_button_ax,
+                                          'Reset')
+        def track_reset(e):
+            self.track_target_code.to_none()
+        self.reset_button.on_clicked(track_reset)        
+        
+        
+        self.bary_button:Button = Button(self.bary_button_ax,
+                                         'Barycenter')
+        def track_barycenter(e):
+            self.track_target_code.to_barycenter()
+        self.bary_button.on_clicked(track_barycenter)
+        
+        
+        self.ac_buttons:typing.List[Button] = [Button(self.ac_buttons_axes[i],self.get_aircraft(ac_ids[i]).name) for i in range(len(ac_ids))]
+        def track_ac(e,id):
+            print(id)
+            self.track_target_code.code = id
+        for id,b in zip(ac_ids,self.ac_buttons):
+            b.on_clicked(lambda e : track_ac(e,id))
+        
+        
+        ## Init lines for each aircraft
         self.drawings:typing.Dict[int,AC_drawings] = dict()
         for id in self.ac_ids:
             ac_data = self.get_aircraft(id)
@@ -205,7 +305,10 @@ class Trajectory3DMap():
             # Pick any AC
             id = self.ac_ids[0]
             self.main_fig.colorbar(self.drawings[id].gvf_xy,label="Orthogonal inclination (in degrees, positive is \u2299)")
-        # Matplotlib Animator setup
+            self.main_fig.colorbar(self.drawings[id].gvf_xz)
+            self.main_fig.colorbar(self.drawings[id].gvf_yz)
+        
+        ## Matplotlib Animator setup
         self.frame_interval = int(1000/fps)
         self.close_window:bool = False
         
@@ -214,6 +317,8 @@ class Trajectory3DMap():
         self.main_fig.canvas.mpl_connect('close_event',wrapped_close)
         
         def animation_function(frame) -> typing.Iterable:
+            self.__center_axes()
+            print(self.track_target_code)
             return self.__update_all_AC_drawings(frame)
         
         def animation_init() -> typing.Iterable:
@@ -228,11 +333,14 @@ class Trajectory3DMap():
         
         self.animator = animation.FuncAnimation(self.main_fig,
                                                 animation_function,
-                                                #init_func=animation_init,
+                                                init_func=animation_init,
                                                 blit=False,
                                                 interval=self.frame_interval,
                                                 save_count=5*fps,
                                                 frames=frame_generator)
+    
+    def __tracking_toggle(self):
+        self.tracking = not self.tracking
         
     def close(self,any) -> None:
         self.close_window = True
@@ -251,6 +359,53 @@ class Trajectory3DMap():
     
     def get_aircraft(self,id:int) -> Aircraft:
         return self.pprzinterface.ac_dict[id]
+    
+    def get_all_aircraft_pos(self) -> np.ndarray:
+        all_aircrafts = self.ac_data_dict.values()
+        return np.asarray([ac.XYZ for ac in all_aircrafts])
+        
+    
+    def __center_axes(self) -> None:
+        if not self.tracking:
+            return
+        
+        if self.track_target_code.is_none:
+            track_point = np.zeros(3)
+        elif self.track_target_code.is_barycenter:
+            positions = self.get_all_aircraft_pos()
+            track_point = np.average(positions,axis=0)
+        else:
+            track_point = self.get_aircraft(self.track_target_code.code).XYZ
+        
+        def set_limits(ax:Axes,xcenter,ycenter):
+            xleft,xright = ax.get_xlim()
+            xdelta = xright - xleft
+            ax.set_xlim(left=xcenter - xdelta/2,right=xcenter + xdelta/2)
+            
+            ybot,ytop = ax.get_ylim()
+            ydelta = ytop - ybot
+            ax.set_ylim(bottom=ycenter - ydelta/2,top=ycenter + ydelta/2)
+            
+        set_limits(self.axy,track_point[0],track_point[1])
+        set_limits(self.axz,track_point[0],track_point[2])
+        set_limits(self.ayz,track_point[1],track_point[2])
+        
+        xleft,xright = self.a3d.get_xlim()
+        xdelta = xright - xleft
+        self.a3d.set_xlim((track_point[0] - xdelta/2, track_point[0] + xdelta/2))
+        
+
+        ybot,ytop = self.a3d.get_ylim()
+        ydelta = ytop - ybot
+        self.a3d.set_ylim((track_point[1] - ydelta/2, track_point[1] + ydelta/2))
+
+
+        zback,zforw = self.a3d.get_zlim()
+        zdelta = zforw - zback
+        self.a3d.set_zlim((track_point[2] - zdelta/2, track_point[2] + zdelta/2))
+
+
+        
     
     def __updatable_AC_artists(self,ac:typing.Union[int,Aircraft]) -> typing.Iterable:
         if not isinstance(ac,Aircraft):
@@ -272,6 +427,10 @@ class Trajectory3DMap():
         if self.show_field:
             gvf_output = iter([drawings.gvf_xy,drawings.gvf_xz,drawings.gvf_yz])
             output = itertools.chain(output,gvf_output)
+        else:
+            drawings.gvf_xy.set_visible(False)
+            drawings.gvf_xz.set_visible(False)
+            drawings.gvf_yz.set_visible(False)
             
         return output
     
@@ -373,8 +532,7 @@ class Trajectory3DMap():
                 xz_offsets = drawings.base_flat_grid + np.asarray([XYZ[0],XYZ[2]])
                 yz_offsets = drawings.base_flat_grid + np.asarray([XYZ[1],XYZ[2]])
                 
-                
-                                
+                        
                 XY_vec_list = np.stack([xy_offsets[:,0],xy_offsets[:,1],np.repeat(XYZ[2],len(xy_offsets[:,0]))])
                 XZ_vec_list = np.stack([xz_offsets[:,0],np.repeat(XYZ[1],len(xz_offsets[:,0])),xz_offsets[:,1]])
                 YZ_vec_list = np.stack([np.repeat(XYZ[0],len(yz_offsets[:,0])),yz_offsets[:,0],yz_offsets[:,1]])
