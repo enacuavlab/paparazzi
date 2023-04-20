@@ -46,13 +46,15 @@ class AC_drawings():
     
     color:InitVar[str] = 'green' # Color associated to this aircraft
     pos_fmt:InitVar[str] = 'o' # Matplotlib formating string for the aircraft POSITION point
-    carrot_fmt:InitVar[str] = 'p' # Matplotlib formating string for the aircraft CARROT point
+    carrot_fmt:InitVar[str] = 'P' # Matplotlib formating string for the aircraft CARROT point
     traj_fmt:InitVar[str] = ':' # Matplotlib formating string for the aircraft INTENDED TRAJECTORY line
     past_fmt:InitVar[str] = '-' # Matplotlib formating string for the aircraft EFFECTIVE TRAJECTORY line
     
-    quiver_dist:InitVar[float] = 10
-    quiver_res:InitVar[int] = 10
-    quiver_kwargs:InitVar[typing.Dict] = {'pivot':'middle','norm':Normalize(-90,90)} # Additional Matplotlib arguments for the GVF Quiver 2D plots
+    quiver_dist:InitVar[float] = 10 # Maximal distance (in infinite norm) away from current position for plotting GVF 
+    quiver_res:InitVar[int] = 10 # Number of samples (per dimension) for plotting GVF
+    quiver_kwargs:InitVar[typing.Dict] = {'pivot':'mid','norm':Normalize(-90,90),'cmap':'seismic',
+                                          'width':0.005, 'edgecolor':'Black','linewidth':0.2,
+                                          'scale':0.01,'scale_units':'xy','angles':'xy'} # Additional Matplotlib arguments for the GVF Quiver 2D plots
     
     ac_pos_3d:Line3D = field(init=False) # Aircraft position 'line' (actually a point) in 3D space
     ac_pos_xy:Line2D = field(init=False) # Aircraft position 'line' (actually a point) in XY projection
@@ -109,28 +111,16 @@ class AC_drawings():
         self.ac_traj_yz = ayz.plot([],[],traj_fmt,color=color)[0]
         self.ac_past_yz = ayz.plot([],[],past_fmt,color=color)[0]
         
-        XY_meshgrid = np.asarray(np.meshgrid(np.linspace(-quiver_dist, quiver_dist, quiver_res),
-                                np.linspace(-quiver_dist, +quiver_dist, quiver_res),
-                                0,
-                                indexing='ij'))
-        
-        XZ_meshgrid = np.asarray(np.meshgrid(np.linspace(-quiver_dist, quiver_dist, quiver_res),
-                                0,
-                                np.linspace(-quiver_dist, quiver_dist, quiver_res),
-                                indexing='ij'))
-        
-        YZ_meshgrid = np.asarray(np.meshgrid(0,
-                                np.linspace(-quiver_dist, quiver_dist, quiver_res),
-                                np.linspace(-quiver_dist, quiver_dist, quiver_res),
-                                indexing='ij'))
-        
-        
+        base_axis = np.linspace(-quiver_dist, quiver_dist, quiver_res)
         null_arrows = np.zeros((quiver_res,quiver_res))
         
         # self.gvf_3d = a3d.quiver([],[],[],[],[],[],**quiver3d_kwargs)
-        self.gvf_xy = axy.quiver(XY_meshgrid[0][:,:,0],XY_meshgrid[1][:,:,0],null_arrows,null_arrows,null_arrows,**quiver_kwargs)
-        self.gvf_xz = axz.quiver(XZ_meshgrid[0][:,0,:],XZ_meshgrid[2][:,0,:],null_arrows,null_arrows,null_arrows,**quiver_kwargs)
-        self.gvf_yz = ayz.quiver(YZ_meshgrid[1][0,:,:],YZ_meshgrid[2][0,:,:],null_arrows,null_arrows,null_arrows,**quiver_kwargs)
+        self.gvf_xy = axy.quiver(base_axis,base_axis,null_arrows,null_arrows,null_arrows,**quiver_kwargs)
+        self.gvf_xz = axz.quiver(base_axis,base_axis,null_arrows,null_arrows,null_arrows,**quiver_kwargs)
+        self.gvf_yz = ayz.quiver(base_axis,base_axis,null_arrows,null_arrows,null_arrows,**quiver_kwargs)
+        
+        self.base_flat_grid = self.gvf_xy.get_offsets()
+        
         
     @staticmethod
     def from_Aircraft(a:Aircraft,a3d:Axes3D,axy:Axes,axz:Axes,ayz:Axes,
@@ -206,12 +196,22 @@ class Trajectory3DMap():
         # Init lines for each aircraft
         self.drawings:typing.Dict[int,AC_drawings] = dict()
         for id in self.ac_ids:
-            ac_data = self.ac_data_dict[id]
+            ac_data = self.get_aircraft(id)
             self.drawings[id] = AC_drawings.from_Aircraft(ac_data,self.a3d,self.axy,self.axz,self.ayz,
                                                           self.gvf_dist,self.resolution)
             
+        # If GVF is enabled, put a colorbar
+        if self.show_field:
+            # Pick any AC
+            id = self.ac_ids[0]
+            self.main_fig.colorbar(self.drawings[id].gvf_xy,label="Orthogonal inclination (in degrees, positive is \u2299)")
         # Matplotlib Animator setup
         self.frame_interval = int(1000/fps)
+        self.close_window:bool = False
+        
+        def wrapped_close(any):
+            self.close(any)
+        self.main_fig.canvas.mpl_connect('close_event',wrapped_close)
         
         def animation_function(frame) -> typing.Iterable:
             return self.__update_all_AC_drawings(frame)
@@ -219,13 +219,27 @@ class Trajectory3DMap():
         def animation_init() -> typing.Iterable:
             return self.__all_updatable_AC_artists()
         
+        def frame_generator() -> int:
+            frame_nbr = 0
+            while not self.close_window:
+                yield frame_nbr
+                frame_nbr += 1
+        
         
         self.animator = animation.FuncAnimation(self.main_fig,
                                                 animation_function,
                                                 #init_func=animation_init,
                                                 blit=False,
                                                 interval=self.frame_interval,
-                                                save_count=5*fps)
+                                                save_count=5*fps,
+                                                frames=frame_generator)
+        
+    def close(self,any) -> None:
+        self.close_window = True
+        self.pprzinterface.shutdown()
+        
+    def __del__(self):
+        self.close(None)
         
     @property
     def ac_ids(self) -> typing.List[int]:
@@ -355,41 +369,52 @@ class Trajectory3DMap():
                 #                       np.linspace(XYZ[2]-self.gvf_dist, XYZ[2]+self.gvf_dist, self.resolution),indexing='ij'))
                 # vector_field = traj.calc_field(XYZ_meshgrid.transpose(), w).transpose()
                 
-                XY_meshgrid = np.asarray(np.meshgrid(np.linspace(XYZ[0]-self.gvf_dist, XYZ[0]+self.gvf_dist, self.resolution),
-                                      np.linspace(XYZ[1]-self.gvf_dist, XYZ[1]+self.gvf_dist, self.resolution),
-                                      XYZ[2],
-                                      indexing='ij'))
-                
-                XY_vectorfield = traj.calc_field(XY_meshgrid.transpose(), w).transpose()
-                
-                XZ_meshgrid = np.asarray(np.meshgrid(np.linspace(XYZ[0]-self.gvf_dist, XYZ[0]+self.gvf_dist, self.resolution),
-                                      XYZ[1],
-                                      np.linspace(XYZ[2]-self.gvf_dist, XYZ[2]+self.gvf_dist, self.resolution),
-                                      indexing='ij'))
-                
-                XZ_vectorfield = traj.calc_field(XZ_meshgrid.transpose(), w).transpose()
-                
-                YZ_meshgrid = np.asarray(np.meshgrid(XYZ[0],
-                                      np.linspace(XYZ[1]-self.gvf_dist, XYZ[1]+self.gvf_dist, self.resolution),
-                                      np.linspace(XYZ[2]-self.gvf_dist, XYZ[2]+self.gvf_dist, self.resolution),
-                                      indexing='ij'))
-                
-                YZ_vectorfield = traj.calc_field(YZ_meshgrid.transpose(), w).transpose()
-            
+                xy_offsets = drawings.base_flat_grid + np.asarray([XYZ[0],XYZ[1]])
+                xz_offsets = drawings.base_flat_grid + np.asarray([XYZ[0],XYZ[2]])
+                yz_offsets = drawings.base_flat_grid + np.asarray([XYZ[1],XYZ[2]])
                 
                 
+                                
+                XY_vec_list = np.stack([xy_offsets[:,0],xy_offsets[:,1],np.repeat(XYZ[2],len(xy_offsets[:,0]))])
+                XZ_vec_list = np.stack([xz_offsets[:,0],np.repeat(XYZ[1],len(xz_offsets[:,0])),xz_offsets[:,1]])
+                YZ_vec_list = np.stack([np.repeat(XYZ[0],len(yz_offsets[:,0])),yz_offsets[:,0],yz_offsets[:,1]])
                 
-                z_angles_field = np.rad2deg(np.arctan2(XY_vectorfield[2][:,:,0],np.sqrt(np.square(XY_vectorfield[0][:,:,0])+np.square(XY_vectorfield[1][:,:,0]))))
-                drawings.gvf_xy.set_offsets([XYZ[0],XYZ[1]])
-                drawings.gvf_xy.set_UVC(XY_vectorfield[0][:,:,0],XY_vectorfield[1][:,:,0],z_angles_field)
                 
-                y_angles_field = np.rad2deg(np.arctan2(XZ_vectorfield[1][:,0,:],np.sqrt(np.square(XZ_vectorfield[0][:,0,:])+np.square(XZ_vectorfield[2][:,0,:]))))
-                drawings.gvf_xz.set_offsets([XYZ[0],XYZ[2]])
-                drawings.gvf_xz.set_UVC(XZ_vectorfield[0][:,0,:],XZ_vectorfield[2][:,0,:],y_angles_field)
+                XY_vectorfield = traj.calc_field(XY_vec_list.transpose(), w).transpose()
+                XZ_vectorfield = traj.calc_field(XZ_vec_list.transpose(), w).transpose()
+                YZ_vectorfield = traj.calc_field(YZ_vec_list.transpose(), w).transpose()
                 
-                x_angles_field = np.rad2deg(np.arctan2(YZ_vectorfield[0][0,:,:],np.sqrt(np.square(YZ_vectorfield[1][0,:,:])+np.square(YZ_vectorfield[2][0,:,:]))))
-                drawings.gvf_yz.set_offsets([XYZ[1],XYZ[2]])
-                drawings.gvf_yz.set_UVC(YZ_vectorfield[1][0,:,:],YZ_vectorfield[2][0,:,:],x_angles_field)
+                # Normalize
+                XY_max_norm = np.sqrt(np.max(np.square(XY_vectorfield[0])+np.square(XY_vectorfield[1])+np.square(XY_vectorfield[2])))
+                XY_vectorfield /= XY_max_norm
+
+                XZ_max_norm = np.sqrt(np.max(np.square(XZ_vectorfield[0])+np.square(XZ_vectorfield[1])+np.square(XZ_vectorfield[2])))
+                XZ_vectorfield /= XZ_max_norm
+
+                YZ_max_norm = np.sqrt(np.max(np.square(YZ_vectorfield[0])+np.square(YZ_vectorfield[1])+np.square(YZ_vectorfield[2])))
+                YZ_vectorfield /= YZ_max_norm
+                
+                # Compute angles 
+                z_angles_field = np.rad2deg(np.arctan2(XY_vectorfield[2],np.sqrt(np.square(XY_vectorfield[0])+np.square(XY_vectorfield[1]))))
+                y_angles_field = np.rad2deg(np.arctan2(XZ_vectorfield[1],np.sqrt(np.square(XZ_vectorfield[0])+np.square(XZ_vectorfield[2]))))
+                x_angles_field = np.rad2deg(np.arctan2(YZ_vectorfield[0],np.sqrt(np.square(YZ_vectorfield[1])+np.square(YZ_vectorfield[2]))))
+                
+                drawings.gvf_xy.set_offsets(xy_offsets)
+                drawings.gvf_xy.set_UVC(XY_vectorfield[0],XY_vectorfield[1],z_angles_field)
+                
+                drawings.gvf_xz.set_offsets(xz_offsets)
+                drawings.gvf_xz.set_UVC(XZ_vectorfield[0],XZ_vectorfield[2],y_angles_field)
+                
+                drawings.gvf_yz.set_offsets(yz_offsets)
+                drawings.gvf_yz.set_UVC(YZ_vectorfield[1],YZ_vectorfield[2],x_angles_field)
+                
+                #drawings.gvf_xy.set_norm(Normalize(-90,90))                
+                #drawings.gvf_xz.set_norm(Normalize(-90,90))
+                #drawings.gvf_yz.set_norm(Normalize(-90,90))
+
+                #drawings.gvf_xy.autoscale()
+                #drawings.gvf_xz.autoscale()
+                #drawings.gvf_yz.autoscale()
             
                 gvf_output = iter([drawings.gvf_xy,drawings.gvf_xz,drawings.gvf_yz])
                 output = itertools.chain(output,gvf_output)

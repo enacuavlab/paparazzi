@@ -180,3 +180,9 @@ class AC_DataCollector():
                 ac.gvf_parametric = msg
                 ac.gvf = None
         self._ivy_interface.subscribe(gvf_par_cb, telemetry.PprzMessage_GVF_PARAMETRIC())
+        
+    def shutdown(self):
+        self._ivy_interface.shutdown()
+        
+    def __del__(self):
+        self.shutdown()
