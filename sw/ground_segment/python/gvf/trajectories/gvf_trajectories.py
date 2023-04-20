@@ -159,18 +159,23 @@ class LineTrajectory(Trajectory,ABC):
         """
         return self.param_point(range)
         
-    def calc_field(self,meshgrid:np.ndarray,t:float) -> np.ndarray:
+    def calc_field(self,vectors:np.ndarray,t:float) -> np.ndarray:
         """
         Compute and return the vector field given the current state (curve's parameters)
         and the 'virtual coordinate'
         """
-             
-        l_i,l_j,l_k,_ = meshgrid.shape
-        output = meshgrid.copy()
-        for i in range(l_i):
-            for j in range(l_j):
-                for k in range(l_k):
-                    output[i,j,k] = self.gvf(meshgrid[i,j,k],t)
+        if len(vectors.shape) > 3:
+            # Assume it is a meshgrid
+            meshgrid = vectors
+            l_i,l_j,l_k,_ = meshgrid.shape
+            output = meshgrid.copy()
+            for i in range(l_i):
+                for j in range(l_j):
+                    for k in range(l_k):
+                        output[i,j,k] = self.gvf(meshgrid[i,j,k],t)
+        else:
+            # Assume a vector list
+            output = np.asarray([self.gvf(v,t) for v in vectors]) 
         return output
         
 
