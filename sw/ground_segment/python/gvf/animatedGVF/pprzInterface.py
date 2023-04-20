@@ -105,6 +105,13 @@ class Aircraft():
         else:
             return self.gvf_parametric.w_
         
+    @property
+    def name(self) -> str:
+        if self.config is None:
+            return str(self.id)
+        else:
+            return self.config.ac_name
+        
         
 
 #################### Aircraft data collector ####################
