@@ -1,24 +1,16 @@
 <!DOCTYPE module SYSTEM "module.dtd">
-<module name="eff_scheduling_colibri" dir="ctrl" task="control">
+<module name="eff_scheduling_colibri" dir="ctrl">
   <doc>
     <description>Interpolation of control effectivenss matrix of the Colibri.</description>
   </doc>
-
-  <settings>
-    <dl_settings>
-      <dl_settings name="eff_scheduling">
-        <dl_setting shortname="" var="" min="0" step="1" max="1"/>
-      </dl_settings>
-    </dl_settings>
-  </settings>
-  
+ 
   <header>
     <file name="eff_scheduling_colibri.h"/>
   </header>
   <init fun="ctrl_eff_scheduling_init()"/>
   <periodic fun="ctrl_eff_scheduling_periodic()" freq="20.0"/>
-  <makefile>
+  <periodic fun="ctrl_eff_scheduling_report()" freq="0.5" autorun="FALSE"/> <!-- TRUE  FALSE-->
+  <makefile target="ap|nps" firmware="rotorcraft" >
     <file name="eff_scheduling_colibri.c"/>
-    <test/>
   </makefile>
 </module>

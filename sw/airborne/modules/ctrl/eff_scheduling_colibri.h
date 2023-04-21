@@ -28,5 +28,6 @@
 
 extern void ctrl_eff_scheduling_init(void);
 extern void ctrl_eff_scheduling_periodic(void);
+extern void ctrl_eff_scheduling_report(void);
 
 #endif  // EFF_SCHEDULING_COLIBRI_H
