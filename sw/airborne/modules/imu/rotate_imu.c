@@ -84,8 +84,8 @@ Butterworth2LowPass meas_lowpass_filters[3];
 #include "modules/datalink/telemetry.h"
 static void send_payload_float(struct transport_tx *trans, struct link_device *dev)
 {
-  float f[1] = {angle_filter};
-  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 1, f);
+  float f[6] = {-encoder_amt22.amt22.angle_rad, -encoder_amt22.H_g_filter.hatx[0], -encoder_amt22.H_g_filter.hatx[1], gyro_imu_f.p, gyro_imu_f.q, gyro_imu_f.r};
+  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 6, f);
 }
 #endif
 

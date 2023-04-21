@@ -37,7 +37,7 @@
     <file name="body_stabilisation.h"/>
   </header>
   <init fun="body_stabilisation_init()"/>
-  <periodic fun="body_stabilisation_periodic()" freq="500.0" autorun="TRUE"/> <!---->
+  <periodic fun="body_stabilisation_periodic()" freq="500.0" autorun="TRUE"/> <!--FALSE-->
   <periodic fun="body_stabilisation_report()" freq="5.0" autorun="FALSE"/>
   <makefile>
     <file name="body_stabilisation.c"/>

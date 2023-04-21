@@ -62,7 +62,7 @@ PRINT_CONFIG_VAR(BODY_STAB_UEQ_M)
 
 /** Default kp elevator*/
 #ifndef BODY_STAB_KP_E
-#define BODY_STAB_KP_E 7000.f
+#define BODY_STAB_KP_E 10000.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KP_E)
 
@@ -80,7 +80,7 @@ PRINT_CONFIG_VAR(BODY_STAB_KD_E)
 
 /** Max value of integral state  */
 #ifndef BODY_STAB_CLAMP_INT
-#define BODY_STAB_CLAMP_INT 3.f
+#define BODY_STAB_CLAMP_INT 5.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_CLAMP_INT)
 
@@ -92,7 +92,7 @@ PRINT_CONFIG_VAR(BODY_STAB_AIR_LB)
 
 /** Upper bound to switch motor elevator  */
 #ifndef BODY_STAB_AIR_UB
-#define BODY_STAB_AIR_UB 10.f
+#define BODY_STAB_AIR_UB 12.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_AIR_UB)
 
@@ -140,7 +140,7 @@ void body_stabilisation_periodic(void)
 
     if (body_stab.discrete_state){
       // Use elevator
-      elevator_cmd = body_stab.kp_e*euler_fus.theta + body_stab.ki_e*body_stab.state_integrator + body_stab.kd_e * vect_fuselage_rate.y;  
+      elevator_cmd = -(body_stab.kp_e*euler_fus.theta + body_stab.ki_e*body_stab.state_integrator + body_stab.kd_e * vect_fuselage_rate.y);  
       actuators_pprz[6] = TRIM_PPRZ(elevator_cmd); //elevator
       actuators_pprz[7] = TRIM_UPPRZ(0); //motor
     }
@@ -157,6 +157,15 @@ void body_stabilisation_periodic(void)
         body_stab.state_integrator += euler_fus.theta*1/PERIODIC_FREQUENCY;
       }
     }
+  }
+  else
+  {
+    elevator_cmd = 0;
+    motor_cmd = 0;
+    actuators_pprz[6] = TRIM_PPRZ(elevator_cmd); //elevator
+    actuators_pprz[7] = TRIM_UPPRZ(motor_cmd); //motor
+    body_stab.state_integrator = 0;
+    body_stab.discrete_state = 0;
   }
  
   
@@ -209,8 +218,8 @@ void body_stabilisation_update_airspeed_ub(float ub){
 }
 
 extern void body_stabilisation_report(void){
-  float f[4] = { motor_cmd, actuators_pprz[7], DegOfRad(euler_fus.theta), angle_wing2fus};
-  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 4, f); 
+  float f[7] = { motor_cmd, elevator_cmd, actuators_pprz[6], actuators_pprz[7], DegOfRad(euler_fus.theta), angle_wing2fus, body_stab.discrete_state};
+  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 7, f); 
 
   /*float f[16] = {stateGetNedToBodyQuat_f()->qi, stateGetNedToBodyQuat_f()->qx, stateGetNedToBodyQuat_f()->qy, stateGetNedToBodyQuat_f()->qz,
   angle_wing2fus, quat_wing2fus.qi, quat_wing2fus.qx, quat_wing2fus.qy, quat_wing2fus.qz,
