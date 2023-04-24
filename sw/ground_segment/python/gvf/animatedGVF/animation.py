@@ -9,6 +9,7 @@ import typing
 from dataclasses import dataclass,field,InitVar
 import inspect
 import itertools
+import functools
 
 # Paparazzi interaction
 from .pprzInterface import AC_DataCollector,Aircraft
@@ -290,7 +291,7 @@ class Trajectory3DMap():
             print(id)
             self.track_target_code.code = id
         for id,b in zip(ac_ids,self.ac_buttons):
-            b.on_clicked(lambda e : track_ac(e,id))
+            b.on_clicked(functools.partial(track_ac,id=id))
         
         
         ## Init lines for each aircraft
@@ -318,7 +319,7 @@ class Trajectory3DMap():
         
         def animation_function(frame) -> typing.Iterable:
             self.__center_axes()
-            print(self.track_target_code)
+            #print(self.track_target_code)
             return self.__update_all_AC_drawings(frame)
         
         def animation_init() -> typing.Iterable:
