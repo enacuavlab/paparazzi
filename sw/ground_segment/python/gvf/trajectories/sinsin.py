@@ -306,7 +306,7 @@ def main():
     circle = Circle(r=1,w=10)
     vert_circle = Rotate(circle,Rotation.from_euler('y',90,True))
     vert_spir = Sum(vert_circle,vertical_sin)
-    rosace = Rosace(np.pi)
+    rosace = Rosace(4/3)
     
     circ_around_spir = Sum(slow_spiral,vert_circle)
     
@@ -314,9 +314,9 @@ def main():
     a3d:Axes3D = fig.add_subplot(projection='3d')
     
     range_ = np.linspace(-10,10,1000)
-    #base_traj = np.array([slow_spiral.at(t) for t in range_])
+    base_traj = np.array([slow_spiral.at(t) for t in range_])
     #axes = np.array([sinsin.base.mobile_axes(t) for t in range_])
-    traj = np.array([circ_around_spir.at(t) for t in range_])
+    traj = np.array([rosace.at(t) for t in range_])
     #print(traj.shape)
     a3d.plot(traj[:,0],traj[:,1],traj[:,2],label="Composed trajectory",color='blue')
     #a3d.plot(base_traj[:,0],base_traj[:,1],base_traj[:,2],label="Base trajectory",color='black')
