@@ -36,18 +36,12 @@
     <module name="control" type="new"/>
     <module name="navigation"/>
     
-    <!--module name="extra_dl">
-      <configure name="EXTRA_DL_PORT" value="UART3"/>
-      <configure name="EXTRA_DL_BAUD" value="B115200"/>
-    </module-->
-    
     <module name="e_identification_fr">
       <configure name="E_ID_PORT" value="UART3"/>
       <configure name="E_ID_BAUD" value="B115200"/>
     </module>
     
-    <!--<module name="flight_recorder"/>-->
-    
+    <!--  panache_sensor depends on flight_recorder and extra_dl >-->
     <module name="panache_sensor"/>
     
   </firmware>
