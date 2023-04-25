@@ -47,21 +47,21 @@ class Panacheur:
         #print(f"mins: {self.mins}")
 
     def get_spray_interpolator(self, var):
-        x = self.spray.variables["x"]
-        y = self.spray.variables["y"]
+        x = np.asarray(self.spray.variables["x"])
+        y = np.asarray(self.spray.variables["y"])
         # Z: take a vertical slice
-        z = self.spray.variables["Z"][:,0,0]
+        z = np.asarray(self.spray.variables["Z"][:,0,0])
         # time: the last one is the same as the previous
-        t = self.spray.variables["time"][:-1]
-
+        t = np.asarray(self.spray.variables["time"][:-1])
+        # help(self.spray.variables[var])
         # remove last time
         return RegularGridInterpolator((t, z, y, x), self.spray.variables[var][:-1,:,:,:])
     
     def get_swift_interpolator(self, var):
-        x = self.swift.variables["x"]
-        y = self.swift.variables["y"]
-        z = self.swift.variables["z"]
-        t = self.swift.variables["time"]
+        x = np.asarray(self.swift.variables["x"])
+        y = np.asarray(self.swift.variables["y"])
+        z = np.asarray(self.swift.variables["z"])
+        t = np.asarray(self.swift.variables["time"])
         return RegularGridInterpolator((t, z, y, x), self.swift.variables[var])
     
     def transform_coords(self, coord):
