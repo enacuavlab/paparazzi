@@ -41,8 +41,13 @@
       <configure name="E_ID_BAUD" value="B115200"/>
     </module>
     
+    <module name="flight_recorder"/>
+
     <!--  panache_sensor depends on flight_recorder and extra_dl >-->
-    <module name="panache_sensor"/>
+    <!--module name="panache_sensor">
+      <configure name="PANACHE_PORT" value="uart3"/>
+      <configure name="PANACHE_BAUD" value="B230400"/>
+    </module-->
     
   </firmware>
 
@@ -54,8 +59,8 @@
   </commands>
 
   <servos>
-    <servo name="TAIL_RIGHT" no="1" min="1100" neutral="1500" max="1900"/> 
-    <servo name="TAIL_LEFT" no="2" min="1850" neutral="1450" max="1050"/>
+    <servo name="TAIL_RIGHT" no="1" min="1000" neutral="1400" max="1800"/>
+    <servo name="TAIL_LEFT" no="2" min="1950" neutral="1550" max="1150"/>
     <servo name="AILERON_RIGHT" no="3" min="1960" neutral="1660" max="1260"/> 
     <servo name="AILERON_LEFT" no="4" min="1780" neutral="1380" max="1080"/>
     <servo name="MOTOR" no="5" min="1000" neutral="1000" max="2000"/>
@@ -115,8 +120,9 @@
   <include href="conf/mag/toulouse_muret.xml"/>
 
   <section name="BAT">
-    <define name="CATASTROPHIC_BAT_LEVEL" value="8.4" unit="V"/>
-    <!--<define name="BAT_NB_CELLS" value="4"/>-->
+    <define name="CATASTROPHIC_BAT_LEVEL" value="12.6" unit="V"/>
+    <define name="MAX_BAT_LEVEL" value="16.8"/>
+    <define name="BAT_NB_CELLS" value="4"/>
   </section>
 
   <section name="MISC">
@@ -158,6 +164,23 @@
 
     <define name="ROLL_MAX_SETPOINT" value="40" unit="deg"/>
     <define name="ROLL_ATTITUDE_GAIN" value="11770"/>
+  </section>
+
+  <section name="CATAPULT" prefix="NAV_CATAPULT_">
+      <define name="ACCELERATION_THRESHOLD" value="1.2" description="acceleration threshold in multiples of g" unit="g"/>
+      <define name="ACCELERATION_DETECTION" value="2" description="number acceleration measurments above threshold for launch detection"/>
+      <define name="MOTOR_DELAY" value="0.5" description="delay until motor is turned on in seconds" unit="s"/>
+      <define name="HEADING_DELAY" value="3.0" description="delay until heading is unlocked in seconds" unit="s"/>
+      <define name="INITIAL_PITCH" value="15." description="inital pitch in radians (default 10deg)" unit="deg"/>
+      <define name="INITIAL_THROTTLE" value="1.0" description="initial throttle (0.0 to 1.0)" unit="%"/>
+      <define name="CLIMB_DISTANCE" value="200" description="distance of the climb waypoint in front of the catapult" unit="m"/>
+      <define name="TIMEOUT" value="30." description="timeout to disarm the high freq module" unit="s"/>
+    </section>
+
+
+  <section name="NAV_LANDING" prefix="NAV_LANDING_">
+    <define name="AF_HEIGHT" value="25"/>
+    <define name="FLARE_HEIGHT" value="8"/>
   </section>
 
   <section name="FAILSAFE" prefix="FAILSAFE_">
