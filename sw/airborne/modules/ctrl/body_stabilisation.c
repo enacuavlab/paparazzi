@@ -135,33 +135,39 @@ void body_stabilisation_periodic(void)
   if(autopilot.motors_on){
     //hysteresis switch mechanism
     if ((airspeed > body_stab.airspeed_ub && body_stab.discrete_state == 0) ||
-        (airspeed < body_stab.airspeed_lb && body_stab.discrete_state == 1) ||
-        (euler_fus.theta < 0 && body_stab.discrete_state == 0))
+        (airspeed < body_stab.airspeed_lb && body_stab.discrete_state == 1))  //|| (euler_fus.theta < 0 && body_stab.discrete_state == 0)
     {
       body_stab.discrete_state = 1 - body_stab.discrete_state;
     }
 
     if (body_stab.discrete_state){
       // Use elevator discrete_state = 1
-      float kp_without_wind = 30000; //Proportional gain at zero speed
+      /*
+      float kp_without_wind = 20000; //Proportional gain at zero speed
       float speed_at_normal_kp = 8.0;
       Bound(airspeed, 0.0, speed_at_normal_kp); // Bound at max speed_at_normal_kp m/s
       float scale = 1.0 - (1.0/speed_at_normal_kp)*airspeed; // scale zero speed sclae = 0 and speed_at_normal_kp m/s scale = 0
       float kp_schedule = scale*kp_without_wind + (1-scale)*body_stab.kp_e; //linear mapping from kp_without_wind to body_stab.kp_e
       elevator_cmd = -(kp_schedule*euler_fus.theta + body_stab.ki_e*body_stab.state_integrator + body_stab.kd_e * vect_fuselage_rate.y);  
+      */
+      elevator_cmd = -(body_stab.kp_e*euler_fus.theta + body_stab.ki_e*body_stab.state_integrator + body_stab.kd_e * vect_fuselage_rate.y);
       actuators_pprz[6] = TRIM_PPRZ(elevator_cmd); //elevator
       actuators_pprz[7] = TRIM_UPPRZ(0); //motor
     }
     else{
       // Use motor discrete_state = 0
-      if(euler_fus.theta>0){
+      
+      /*
+      if(euler_fus.theta >= 0){
         motor_cmd = body_stab.u_eq_m + body_stab.kp_m*euler_fus.theta + body_stab.ki_m*body_stab.state_integrator + body_stab.kd_m * vect_fuselage_rate.y;
       }
       else{
-        motor_cmd = 0; //moteur ineficace pour tirer vers le bas 
-        body_stab.state_integrator = 0;
+        float gain_multiply = 2.0; //gain for negative angle on fuselage
+        motor_cmd = body_stab.u_eq_m + gain_multiply*body_stab.kp_m*euler_fus.theta + body_stab.ki_m*body_stab.state_integrator + body_stab.kd_m * vect_fuselage_rate.y;
       }
-        
+      */
+
+      motor_cmd = body_stab.u_eq_m + body_stab.kp_m*euler_fus.theta + body_stab.ki_m*body_stab.state_integrator + body_stab.kd_m * vect_fuselage_rate.y;
       actuators_pprz[6] = TRIM_PPRZ(0); //elevator
       actuators_pprz[7] = TRIM_UPPRZ(motor_cmd); //motor
     }
