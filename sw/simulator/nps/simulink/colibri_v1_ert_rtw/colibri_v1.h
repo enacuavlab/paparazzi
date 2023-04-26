@@ -7,9 +7,9 @@
  *
  * Code generated for Simulink model 'colibri_v1'.
  *
- * Model version                  : 4.15
+ * Model version                  : 4.29
  * Simulink Coder version         : 9.9 (R2023a) 19-Nov-2022
- * C/C++ source code generated on : Thu Apr  6 15:01:47 2023
+ * C/C++ source code generated on : Thu Apr 20 16:24:46 2023
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: Intel->x86-64 (Linux 64)
@@ -113,7 +113,9 @@ typedef struct {
   real_T omega[3];                     /* '<Root>/omega' */
   real_T accel[3];                     /* '<Root>/accel' */
   real_T rotaccel[3];                  /* '<Root>/rotaccel' */
-  real_T angle;                        /* '<Root>/angle' */
+  real_T pendulum_angle;               /* '<Root>/pendulum_angle' */
+  real_T pendulum_ang_speed;           /* '<Root>/pendulum_ang_speed' */
+  real_T pendulum_ang_acc;             /* '<Root>/pendulum_ang_acc' */
 } ExtY;
 
 /* Real-time Model Data Structure */
