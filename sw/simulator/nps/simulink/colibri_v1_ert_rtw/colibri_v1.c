@@ -7,9 +7,9 @@
  *
  * Code generated for Simulink model 'colibri_v1'.
  *
- * Model version                  : 4.15
+ * Model version                  : 4.29
  * Simulink Coder version         : 9.9 (R2023a) 19-Nov-2022
- * C/C++ source code generated on : Thu Apr  6 15:01:47 2023
+ * C/C++ source code generated on : Thu Apr 20 16:24:46 2023
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: Intel->x86-64 (Linux 64)
@@ -1824,7 +1824,6 @@ void colibri_v1_step(void)
   real_T b_A[112];
   real_T V[64];
   real_T Q[14];
-  real_T H_p[12];
   real_T L1_p[12];
   real_T L1_p_dot[12];
   real_T L2[12];
@@ -1847,6 +1846,7 @@ void colibri_v1_step(void)
 
   static const real_T d[3] = { 0.0, 0.0, 7.19073 };
 
+  __m128d tmp_5;
   __m128d tmp_6;
   __m128d tmp_7;
   __m128d tmp_8;
@@ -1858,14 +1858,14 @@ void colibri_v1_step(void)
   __m128d tmp_e;
   __m128d tmp_f;
   __m128d tmp_g;
-  __m128d tmp_h;
   real_T b_I_2[308];
-  real_T tmp_4[308];
+  real_T tmp_3[308];
   real_T b_I_0[196];
   real_T b_I_1[196];
   real_T rtb_dxdt[28];
   real_T Q_0[22];
   real_T tmp_1[16];
+  real_T H_p_tmp[12];
   real_T H_tmp[12];
   real_T M_tmp[12];
   real_T M_tmp_0[12];
@@ -1878,10 +1878,10 @@ void colibri_v1_step(void)
   real_T A_tmp_1[4];
   real_T M_tmp_2[4];
   real_T M_tmp_3[4];
-  real_T tmp_3[4];
+  real_T tmp_2[4];
+  real_T H_p_tmp_0[3];
   real_T LAP_0[3];
-  real_T tmp_2[3];
-  real_T tmp_5[3];
+  real_T tmp_4[3];
   real_T A_tmp_2;
   real_T F_motor_UL_idx_0;
   real_T F_motor_UL_idx_2;
@@ -2200,18 +2200,18 @@ void colibri_v1_step(void)
   H_tmp[5] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[8];
   H_tmp[8] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[7];
   H_tmp[11] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6];
-  H_p[0] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[21];
-  H_p[3] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[20];
-  H_p[6] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[23];
-  H_p[9] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[22];
-  H_p[1] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[22];
-  H_p[4] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[23];
-  H_p[7] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[20];
-  H_p[10] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[21];
-  H_p[2] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[23];
-  H_p[5] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[22];
-  H_p[8] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[21];
-  H_p[11] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[20];
+  H_p_tmp[0] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[21];
+  H_p_tmp[3] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[20];
+  H_p_tmp[6] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[23];
+  H_p_tmp[9] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[22];
+  H_p_tmp[1] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[22];
+  H_p_tmp[4] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[23];
+  H_p_tmp[7] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[20];
+  H_p_tmp[10] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[21];
+  H_p_tmp[2] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[23];
+  H_p_tmp[5] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[22];
+  H_p_tmp[8] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[21];
+  H_p_tmp[11] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[20];
   x_idx_0 = rtDW.DiscreteTimeIntegrator_DSTATE[6] *
     rtDW.DiscreteTimeIntegrator_DSTATE[6];
   S_tmp_1 = x_idx_0 * 2.0 - 1.0;
@@ -2388,16 +2388,16 @@ void colibri_v1_step(void)
   M_tmp[11] = S_p_tmp_0;
   for (i = 0; i <= 10; i += 2) {
     /* MATLAB Function: '<Root>/Drone' */
-    tmp_b = _mm_loadu_pd(&L2[i]);
-    tmp_c = _mm_loadu_pd(&tmp[i]);
-    tmp_d = _mm_loadu_pd(&tmp_0[i]);
+    tmp_a = _mm_loadu_pd(&L2[i]);
+    tmp_b = _mm_loadu_pd(&tmp[i]);
+    tmp_c = _mm_loadu_pd(&tmp_0[i]);
     _mm_storeu_pd(&LAB[i], _mm_add_pd(_mm_add_pd(_mm_mul_pd(_mm_set1_pd(0.0),
-      tmp_b), tmp_c), tmp_d));
-    tmp_b = _mm_loadu_pd(&L1_p[i]);
-    tmp_c = _mm_loadu_pd(&M_tmp[i]);
-    tmp_d = _mm_loadu_pd(&L3_p[i]);
+      tmp_a), tmp_b), tmp_c));
+    tmp_a = _mm_loadu_pd(&L1_p[i]);
+    tmp_b = _mm_loadu_pd(&M_tmp[i]);
+    tmp_c = _mm_loadu_pd(&L3_p[i]);
     _mm_storeu_pd(&LAP[i], _mm_add_pd(_mm_add_pd(_mm_mul_pd(_mm_set1_pd(0.0782),
-      tmp_b), tmp_c), _mm_mul_pd(_mm_set1_pd(-0.1556), tmp_d)));
+      tmp_a), tmp_b), _mm_mul_pd(_mm_set1_pd(-0.1556), tmp_c)));
   }
 
   /* MATLAB Function: '<Root>/Drone' incorporates:
@@ -2440,10 +2440,10 @@ void colibri_v1_step(void)
     M[vcol + 8] = varargin_3[3 * i + 1];
     M[vcol + 9] = varargin_3[3 * i + 2];
     M_tmp_tmp = i << 2;
-    M_tmp_0[M_tmp_tmp] = H_p[i];
-    M_tmp_0[M_tmp_tmp + 1] = H_p[i + 3];
-    M_tmp_0[M_tmp_tmp + 2] = H_p[i + 6];
-    M_tmp_0[M_tmp_tmp + 3] = H_p[i + 9];
+    M_tmp_0[M_tmp_tmp] = H_p_tmp[i];
+    M_tmp_0[M_tmp_tmp + 1] = H_p_tmp[i + 3];
+    M_tmp_0[M_tmp_tmp + 2] = H_p_tmp[i + 6];
+    M_tmp_0[M_tmp_tmp + 3] = H_p_tmp[i + 9];
   }
 
   rtb_RateLimiter2 *= rtb_RateLimiter2;
@@ -2492,8 +2492,8 @@ void colibri_v1_step(void)
     S_p_tmp_0 = M_tmp_1[i];
     S_p_tmp_1 = M_tmp_1[i + 8];
     for (vcol = 0; vcol < 4; vcol++) {
-      M[(i + 14 * (vcol + 10)) + 10] = (H_p[3 * vcol + 1] * S_p_tmp + H_p[3 *
-        vcol] * S_p_tmp_0) + H_p[3 * vcol + 2] * S_p_tmp_1;
+      M[(i + 14 * (vcol + 10)) + 10] = (H_p_tmp[3 * vcol + 1] * S_p_tmp +
+        H_p_tmp[3 * vcol] * S_p_tmp_0) + H_p_tmp[3 * vcol + 2] * S_p_tmp_1;
     }
 
     S_p_tmp_0 = tmp[i + 4];
@@ -2513,13 +2513,13 @@ void colibri_v1_step(void)
     }
   }
 
-  tmp_2[0] = ((0.24 * F_motor_UR[2] + 0.24 * F_motor_BR[2]) + -0.24 *
-              rtb_RateLimiter3) + -0.24 * F_motor_UL_idx_2;
-  tmp_2[1] = (((0.011 * F_motor_UR[0] - -0.084 * F_motor_UR[2]) + (0.011 *
+  H_p_tmp_0[0] = ((0.24 * F_motor_UR[2] + 0.24 * F_motor_BR[2]) + -0.24 *
+                  rtb_RateLimiter3) + -0.24 * F_motor_UL_idx_2;
+  H_p_tmp_0[1] = (((0.011 * F_motor_UR[0] - -0.084 * F_motor_UR[2]) + (0.011 *
     F_motor_BR[0] - 0.084 * F_motor_BR[2])) + (0.011 * rtb_RateLimiter4 - 0.084 *
     rtb_RateLimiter3)) + (0.011 * F_motor_UL_idx_0 - -0.084 * F_motor_UL_idx_2);
-  tmp_2[2] = (((-0.0 - 0.24 * F_motor_UR[0]) + (0.0 - 0.24 * F_motor_BR[0])) +
-              (0.0 - -0.24 * rtb_RateLimiter4)) + (-0.0 - -0.24 *
+  H_p_tmp_0[2] = (((-0.0 - 0.24 * F_motor_UR[0]) + (0.0 - 0.24 * F_motor_BR[0]))
+                  + (0.0 - -0.24 * rtb_RateLimiter4)) + (-0.0 - -0.24 *
     F_motor_UL_idx_0);
   S_p_tmp_0 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[25] * -2.0;
   tmp[0] = S_p_tmp_0;
@@ -2550,7 +2550,7 @@ void colibri_v1_step(void)
     S_p_0 = tmp[i + 8];
     for (vcol = 0; vcol < 3; vcol++) {
       M_tmp_tmp = (vcol << 2) + i;
-      S_p_tmp += M_tmp[M_tmp_tmp] * tmp_2[vcol];
+      S_p_tmp += M_tmp[M_tmp_tmp] * H_p_tmp_0[vcol];
       tmp_0[M_tmp_tmp] = (b_y[3 * vcol + 1] * S_p_tmp_0 + b_y[3 * vcol] *
                           S_p_tmp_1) + b_y[3 * vcol + 2] * S_p_0;
     }
@@ -2561,31 +2561,31 @@ void colibri_v1_step(void)
     S_p_0 = tmp_0[i];
     S_p_tmp = tmp_0[i + 8];
     for (vcol = 0; vcol < 4; vcol++) {
-      S_p_tmp_0 += ((H_p[3 * vcol + 1] * S_p_tmp_1 + H_p[3 * vcol] * S_p_0) +
-                    H_p[3 * vcol + 2] * S_p_tmp) *
+      S_p_tmp_0 += ((H_p_tmp[3 * vcol + 1] * S_p_tmp_1 + H_p_tmp[3 * vcol] *
+                     S_p_0) + H_p_tmp[3 * vcol + 2] * S_p_tmp) *
         rtDW.DiscreteTimeIntegrator_DSTATE[vcol + 24];
     }
 
-    tmp_3[i] = S_p_tmp_0;
+    tmp_2[i] = S_p_tmp_0;
     M_tmp_3[i] = (M_tmp_0[i + 4] * rtb_RateLimiter3 + M_tmp_0[i] *
                   rtb_RateLimiter4) + M_tmp_0[i + 8] * -0.0;
   }
 
   for (i = 0; i <= 0; i += 2) {
     /* MATLAB Function: '<Root>/Drone' */
-    tmp_b = _mm_loadu_pd(&S_p[i + 3]);
-    tmp_c = _mm_set1_pd(0.0);
-    tmp_d = _mm_loadu_pd(&S_p[i]);
-    tmp_a = _mm_loadu_pd(&S_p[i + 6]);
+    tmp_a = _mm_loadu_pd(&S_p[i + 3]);
+    tmp_b = _mm_set1_pd(0.0);
+    tmp_c = _mm_loadu_pd(&S_p[i]);
+    tmp_9 = _mm_loadu_pd(&S_p[i + 6]);
     _mm_storeu_pd(&F_motor_BR[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd
-      (tmp_b, tmp_c), _mm_mul_pd(tmp_d, tmp_c)), _mm_mul_pd(tmp_a, _mm_set1_pd
+      (tmp_a, tmp_b), _mm_mul_pd(tmp_c, tmp_b)), _mm_mul_pd(tmp_9, _mm_set1_pd
       (rtb_Saturation7))), _mm_loadu_pd(&d[i])));
-    tmp_b = _mm_loadu_pd(&S[i + 3]);
-    tmp_d = _mm_loadu_pd(&S[i]);
-    tmp_a = _mm_loadu_pd(&S[i + 6]);
-    _mm_storeu_pd(&Q[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd(tmp_b,
-      tmp_c), _mm_mul_pd(tmp_d, _mm_set1_pd(rtb_RateLimiter5))), _mm_mul_pd
-      (tmp_a, _mm_set1_pd(rtb_RateLimiter2))), _mm_loadu_pd(&c[i])));
+    tmp_a = _mm_loadu_pd(&S[i + 3]);
+    tmp_c = _mm_loadu_pd(&S[i]);
+    tmp_9 = _mm_loadu_pd(&S[i + 6]);
+    _mm_storeu_pd(&Q[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd(tmp_a,
+      tmp_b), _mm_mul_pd(tmp_c, _mm_set1_pd(rtb_RateLimiter5))), _mm_mul_pd
+      (tmp_9, _mm_set1_pd(rtb_RateLimiter2))), _mm_loadu_pd(&c[i])));
   }
 
   /* MATLAB Function: '<Root>/Drone' incorporates:
@@ -2615,7 +2615,7 @@ void colibri_v1_step(void)
   rtb_RateLimiter3 = S[3];
   S_p_tmp_0 = S[5];
   for (i = 0; i < 4; i++) {
-    Q[i + 10] = tmp_3[i] + M_tmp_3[i];
+    Q[i + 10] = tmp_2[i] + M_tmp_3[i];
     L2_0 = L2[3 * i];
     rtb_RateLimiter2 = rtb_Saturation7 * L2_0;
     S_p_tmp = rtb_RateLimiter5 * L2_0;
@@ -2759,8 +2759,8 @@ void colibri_v1_step(void)
         scalarLB_tmp = 8 + vcol;
         vectorUB = vcol + 6;
         for (ar = vcol; ar <= vectorUB; ar += 2) {
-          tmp_b = _mm_loadu_pd(&V[ar - 1]);
-          _mm_storeu_pd(&V[ar - 1], _mm_mul_pd(tmp_b, _mm_set1_pd
+          tmp_a = _mm_loadu_pd(&V[ar - 1]);
+          _mm_storeu_pd(&V[ar - 1], _mm_mul_pd(tmp_a, _mm_set1_pd
             (rtb_RateLimiter2)));
         }
 
@@ -2784,10 +2784,10 @@ void colibri_v1_step(void)
           scalarLB = M_tmp_tmp + 9;
           vectorUB = M_tmp_tmp + 7;
           for (b_ic = M_tmp_tmp + 1; b_ic <= vectorUB; b_ic += 2) {
-            tmp_b = _mm_loadu_pd(&V[(ar + b_ic) - M_tmp_tmp]);
-            tmp_c = _mm_loadu_pd(&X_1[b_ic - 1]);
-            _mm_storeu_pd(&X_1[b_ic - 1], _mm_add_pd(_mm_mul_pd(tmp_b,
-              _mm_set1_pd(U[ib - 1])), tmp_c));
+            tmp_a = _mm_loadu_pd(&V[(ar + b_ic) - M_tmp_tmp]);
+            tmp_b = _mm_loadu_pd(&X_1[b_ic - 1]);
+            _mm_storeu_pd(&X_1[b_ic - 1], _mm_add_pd(_mm_mul_pd(tmp_a,
+              _mm_set1_pd(U[ib - 1])), tmp_b));
           }
 
           for (b_ic = scalarLB; b_ic <= M_tmp_tmp + 8; b_ic++) {
@@ -2813,16 +2813,16 @@ void colibri_v1_step(void)
     /* MATLAB Function: '<Root>/Drone' incorporates:
      *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
      */
-    tmp_b = _mm_loadu_pd(&L2[i]);
-    tmp_c = _mm_loadu_pd(&L2[i + 3]);
-    tmp_d = _mm_loadu_pd(&L2[i + 6]);
-    tmp_a = _mm_loadu_pd(&L2[i + 9]);
+    tmp_a = _mm_loadu_pd(&L2[i]);
+    tmp_b = _mm_loadu_pd(&L2[i + 3]);
+    tmp_c = _mm_loadu_pd(&L2[i + 6]);
+    tmp_9 = _mm_loadu_pd(&L2[i + 9]);
     _mm_storeu_pd(&F_motor_UR[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd
-      (_mm_set1_pd(2.0 * S_p_tmp_1), tmp_b), _mm_mul_pd(_mm_set1_pd(2.0 *
-      F_motor_UL_idx_0), tmp_c)), _mm_mul_pd(_mm_set1_pd(2.0 * rtb_Saturation7),
-      tmp_d)), _mm_mul_pd(_mm_set1_pd(2.0 * rtb_RateLimiter5), tmp_a)));
-    tmp_b = _mm_loadu_pd(&S[i + 3]);
-    _mm_storeu_pd(&F_motor_BR[i], _mm_mul_pd(tmp_b, _mm_set1_pd(8.0)));
+      (_mm_set1_pd(2.0 * S_p_tmp_1), tmp_a), _mm_mul_pd(_mm_set1_pd(2.0 *
+      F_motor_UL_idx_0), tmp_b)), _mm_mul_pd(_mm_set1_pd(2.0 * rtb_Saturation7),
+      tmp_c)), _mm_mul_pd(_mm_set1_pd(2.0 * rtb_RateLimiter5), tmp_9)));
+    tmp_a = _mm_loadu_pd(&S[i + 3]);
+    _mm_storeu_pd(&F_motor_BR[i], _mm_mul_pd(tmp_a, _mm_set1_pd(8.0)));
   }
 
   /* MATLAB Function: '<Root>/Drone' incorporates:
@@ -2861,7 +2861,7 @@ void colibri_v1_step(void)
     memcpy(&b_I_2[i * 22 + 14], &A[i << 3], sizeof(real_T) << 3U);
   }
 
-  pinv(b_I_2, tmp_4);
+  pinv(b_I_2, tmp_3);
   S_p_idx_0_0 = -S_p[6];
   S_p_idx_1_0 = -S_p[7];
   S_p_idx_2_0 = -S_p[8];
@@ -2939,75 +2939,75 @@ void colibri_v1_step(void)
   M_tmp[8] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[10] * 0.0;
   M_tmp[11] = S_p_tmp_1;
   S_p_tmp_0 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[12] * -0.026;
-  H_p[0] = S_p_tmp_0;
+  L2[0] = S_p_tmp_0;
   S_p_tmp_1 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[13] * -0.026;
-  H_p[3] = S_p_tmp_1;
-  H_p[6] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[10] * -0.026;
-  H_p[9] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[11] * -0.026;
-  H_p[1] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[11] * -0.026;
-  H_p[4] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[10] * -0.026;
-  H_p[7] = S_p_tmp_1;
-  H_p[10] = S_p_tmp_0;
-  H_p[2] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[10] * -0.026;
-  H_p[5] = -0.0;
-  H_p[8] = -0.0;
-  H_p[11] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[13] * -0.026;
+  L2[3] = S_p_tmp_1;
+  L2[6] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[10] * -0.026;
+  L2[9] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[11] * -0.026;
+  L2[1] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[11] * -0.026;
+  L2[4] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[10] * -0.026;
+  L2[7] = S_p_tmp_1;
+  L2[10] = S_p_tmp_0;
+  L2[2] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[10] * -0.026;
+  L2[5] = -0.0;
+  L2[8] = -0.0;
+  L2[11] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[13] * -0.026;
   for (i = 0; i <= 10; i += 2) {
     /* MATLAB Function: '<Root>/Drone' */
-    tmp_b = _mm_loadu_pd(&L1_p_dot[i]);
-    tmp_c = _mm_loadu_pd(&tmp[i]);
-    tmp_d = _mm_loadu_pd(&L3_p_dot[i]);
+    tmp_a = _mm_loadu_pd(&L1_p_dot[i]);
+    tmp_b = _mm_loadu_pd(&tmp[i]);
+    tmp_c = _mm_loadu_pd(&L3_p_dot[i]);
     _mm_storeu_pd(&tmp_0[i], _mm_add_pd(_mm_add_pd(_mm_mul_pd(_mm_set1_pd(0.0782),
-      tmp_b), tmp_c), _mm_mul_pd(_mm_set1_pd(-0.1556), tmp_d)));
-    tmp_b = _mm_loadu_pd(&L2_dot[i]);
-    tmp_c = _mm_loadu_pd(&M_tmp[i]);
-    tmp_d = _mm_loadu_pd(&H_p[i]);
-    _mm_storeu_pd(&L2[i], _mm_add_pd(_mm_add_pd(_mm_mul_pd(_mm_set1_pd(0.0),
-      tmp_b), tmp_c), tmp_d));
+      tmp_a), tmp_b), _mm_mul_pd(_mm_set1_pd(-0.1556), tmp_c)));
+    tmp_a = _mm_loadu_pd(&L2_dot[i]);
+    tmp_b = _mm_loadu_pd(&M_tmp[i]);
+    tmp_c = _mm_loadu_pd(&L2[i]);
+    _mm_storeu_pd(&L1_p[i], _mm_add_pd(_mm_add_pd(_mm_mul_pd(_mm_set1_pd(0.0),
+      tmp_a), tmp_b), tmp_c));
   }
 
   for (i = 0; i <= 0; i += 2) {
     /* MATLAB Function: '<Root>/Drone' incorporates:
      *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
      */
-    tmp_b = _mm_loadu_pd(&LAP[i + 3]);
-    tmp_c = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[25]);
-    tmp_d = _mm_loadu_pd(&LAP[i]);
-    tmp_a = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[24]);
-    tmp_6 = _mm_loadu_pd(&LAP[i + 6]);
-    tmp_e = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[26]);
-    tmp_7 = _mm_loadu_pd(&LAP[i + 9]);
-    tmp_f = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[27]);
-    _mm_storeu_pd(&LAP_0[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd(tmp_b,
-      tmp_c), _mm_mul_pd(tmp_d, tmp_a)), _mm_mul_pd(tmp_6, tmp_e)), _mm_mul_pd
-      (tmp_7, tmp_f)));
-    tmp_b = _mm_loadu_pd(&L2[i + 3]);
-    tmp_d = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[11]);
-    tmp_6 = _mm_loadu_pd(&L2[i]);
-    tmp_7 = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[10]);
-    tmp_8 = _mm_loadu_pd(&L2[i + 6]);
-    tmp_g = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[12]);
-    tmp_9 = _mm_loadu_pd(&L2[i + 9]);
-    tmp_h = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[13]);
+    tmp_a = _mm_loadu_pd(&LAP[i + 3]);
+    tmp_b = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[25]);
+    tmp_c = _mm_loadu_pd(&LAP[i]);
+    tmp_9 = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[24]);
+    tmp_5 = _mm_loadu_pd(&LAP[i + 6]);
+    tmp_d = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[26]);
+    tmp_6 = _mm_loadu_pd(&LAP[i + 9]);
+    tmp_e = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[27]);
+    _mm_storeu_pd(&LAP_0[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd(tmp_a,
+      tmp_b), _mm_mul_pd(tmp_c, tmp_9)), _mm_mul_pd(tmp_5, tmp_d)), _mm_mul_pd
+      (tmp_6, tmp_e)));
+    tmp_a = _mm_loadu_pd(&L1_p[i + 3]);
+    tmp_c = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[11]);
+    tmp_5 = _mm_loadu_pd(&L1_p[i]);
+    tmp_6 = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[10]);
+    tmp_7 = _mm_loadu_pd(&L1_p[i + 6]);
+    tmp_f = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[12]);
+    tmp_8 = _mm_loadu_pd(&L1_p[i + 9]);
+    tmp_g = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[13]);
     _mm_storeu_pd(&F_motor_UR[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd
-      (tmp_b, tmp_d), _mm_mul_pd(tmp_6, tmp_7)), _mm_mul_pd(tmp_8, tmp_g)),
-      _mm_mul_pd(tmp_9, tmp_h)));
-    tmp_b = _mm_loadu_pd(&tmp_0[i + 3]);
-    tmp_6 = _mm_loadu_pd(&tmp_0[i]);
-    tmp_8 = _mm_loadu_pd(&tmp_0[i + 6]);
-    tmp_9 = _mm_loadu_pd(&tmp_0[i + 9]);
-    _mm_storeu_pd(&tmp_2[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd(tmp_b,
-      tmp_c), _mm_mul_pd(tmp_6, tmp_a)), _mm_mul_pd(tmp_8, tmp_e)), _mm_mul_pd
-      (tmp_9, tmp_f)));
-    tmp_b = _mm_loadu_pd(&LAB[i + 3]);
-    tmp_c = _mm_loadu_pd(&LAB[i]);
-    tmp_a = _mm_loadu_pd(&LAB[i + 6]);
-    tmp_6 = _mm_loadu_pd(&LAB[i + 9]);
-    tmp_e = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 3]);
-    tmp_f = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 17]);
-    _mm_storeu_pd(&tmp_5[i], _mm_sub_pd(_mm_add_pd(_mm_add_pd(_mm_add_pd
-      (_mm_add_pd(_mm_mul_pd(tmp_b, tmp_d), _mm_mul_pd(tmp_c, tmp_7)),
-       _mm_mul_pd(tmp_a, tmp_g)), _mm_mul_pd(tmp_6, tmp_h)), tmp_e), tmp_f));
+      (tmp_a, tmp_c), _mm_mul_pd(tmp_5, tmp_6)), _mm_mul_pd(tmp_7, tmp_f)),
+      _mm_mul_pd(tmp_8, tmp_g)));
+    tmp_a = _mm_loadu_pd(&tmp_0[i + 3]);
+    tmp_5 = _mm_loadu_pd(&tmp_0[i]);
+    tmp_7 = _mm_loadu_pd(&tmp_0[i + 6]);
+    tmp_8 = _mm_loadu_pd(&tmp_0[i + 9]);
+    _mm_storeu_pd(&H_p_tmp_0[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd
+      (tmp_a, tmp_b), _mm_mul_pd(tmp_5, tmp_9)), _mm_mul_pd(tmp_7, tmp_d)),
+      _mm_mul_pd(tmp_8, tmp_e)));
+    tmp_a = _mm_loadu_pd(&LAB[i + 3]);
+    tmp_b = _mm_loadu_pd(&LAB[i]);
+    tmp_9 = _mm_loadu_pd(&LAB[i + 6]);
+    tmp_5 = _mm_loadu_pd(&LAB[i + 9]);
+    tmp_d = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 3]);
+    tmp_e = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 17]);
+    _mm_storeu_pd(&tmp_4[i], _mm_sub_pd(_mm_add_pd(_mm_add_pd(_mm_add_pd
+      (_mm_add_pd(_mm_mul_pd(tmp_a, tmp_c), _mm_mul_pd(tmp_b, tmp_6)),
+       _mm_mul_pd(tmp_9, tmp_f)), _mm_mul_pd(tmp_5, tmp_g)), tmp_d), tmp_e));
   }
 
   /* MATLAB Function: '<Root>/Drone' incorporates:
@@ -3018,15 +3018,15 @@ void colibri_v1_step(void)
                  rtDW.DiscreteTimeIntegrator_DSTATE[24]) + LAP[i + 6] *
                 rtDW.DiscreteTimeIntegrator_DSTATE[26]) + LAP[i + 9] *
       rtDW.DiscreteTimeIntegrator_DSTATE[27];
-    F_motor_UR[i] = ((L2[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[11] + L2[i]
-                      * rtDW.DiscreteTimeIntegrator_DSTATE[10]) + L2[i + 6] *
-                     rtDW.DiscreteTimeIntegrator_DSTATE[12]) + L2[i + 9] *
-      rtDW.DiscreteTimeIntegrator_DSTATE[13];
-    tmp_2[i] = ((tmp_0[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[25] + tmp_0[i]
-                 * rtDW.DiscreteTimeIntegrator_DSTATE[24]) + tmp_0[i + 6] *
-                rtDW.DiscreteTimeIntegrator_DSTATE[26]) + tmp_0[i + 9] *
-      rtDW.DiscreteTimeIntegrator_DSTATE[27];
-    tmp_5[i] = ((((LAB[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[11] + LAB[i] *
+    F_motor_UR[i] = ((L1_p[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[11] +
+                      L1_p[i] * rtDW.DiscreteTimeIntegrator_DSTATE[10]) + L1_p[i
+                     + 6] * rtDW.DiscreteTimeIntegrator_DSTATE[12]) + L1_p[i + 9]
+      * rtDW.DiscreteTimeIntegrator_DSTATE[13];
+    H_p_tmp_0[i] = ((tmp_0[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[25] +
+                     tmp_0[i] * rtDW.DiscreteTimeIntegrator_DSTATE[24]) +
+                    tmp_0[i + 6] * rtDW.DiscreteTimeIntegrator_DSTATE[26]) +
+      tmp_0[i + 9] * rtDW.DiscreteTimeIntegrator_DSTATE[27];
+    tmp_4[i] = ((((LAB[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[11] + LAB[i] *
                    rtDW.DiscreteTimeIntegrator_DSTATE[10]) + LAB[i + 6] *
                   rtDW.DiscreteTimeIntegrator_DSTATE[12]) + LAB[i + 9] *
                  rtDW.DiscreteTimeIntegrator_DSTATE[13]) +
@@ -3070,20 +3070,20 @@ void colibri_v1_step(void)
   Q_0[17] = (((rtb_RateLimiter5 - rtb_RateLimiter3) - S_p_0) - (L2_0 + A_tmp_2) *
              0.5) - ((F_motor_BR[0] * S_p[0] + F_motor_BR[1] * S_p[1]) +
                      F_motor_BR[2] * S_p[2]);
-  Q_0[18] = ((tmp_2[0] - F_motor_UR[0]) - (tmp_5[0] - LAP_0[0]) * 0.5) -
+  Q_0[18] = ((H_p_tmp_0[0] - F_motor_UR[0]) - (tmp_4[0] - LAP_0[0]) * 0.5) -
     (rtDW.DiscreteTimeIntegrator_DSTATE[0] -
      (rtDW.DiscreteTimeIntegrator_DSTATE[14] + 0.0782)) * 8.0;
-  Q_0[19] = ((tmp_2[1] - F_motor_UR[1]) - (tmp_5[1] - LAP_0[1]) * 0.5) -
+  Q_0[19] = ((H_p_tmp_0[1] - F_motor_UR[1]) - (tmp_4[1] - LAP_0[1]) * 0.5) -
     (rtDW.DiscreteTimeIntegrator_DSTATE[1] - rtDW.DiscreteTimeIntegrator_DSTATE
      [15]) * 8.0;
-  Q_0[20] = ((tmp_2[2] - F_motor_UR[2]) - (tmp_5[2] - LAP_0[2]) * 0.5) -
+  Q_0[20] = ((H_p_tmp_0[2] - F_motor_UR[2]) - (tmp_4[2] - LAP_0[2]) * 0.5) -
     ((rtDW.DiscreteTimeIntegrator_DSTATE[2] - 0.026) -
      (rtDW.DiscreteTimeIntegrator_DSTATE[16] - 0.1556)) * 8.0;
   Q_0[21] = Q[12];
   for (i = 0; i < 14; i++) {
     x_idx_0 = 0.0;
     for (vcol = 0; vcol < 22; vcol++) {
-      x_idx_0 += tmp_4[14 * vcol + i] * Q_0[vcol];
+      x_idx_0 += tmp_3[14 * vcol + i] * Q_0[vcol];
     }
 
     Q[i] = x_idx_0;
@@ -3153,52 +3153,76 @@ void colibri_v1_step(void)
    *  MATLAB Function: '<Root>/state'
    */
   rtY.q[3] = rtDW.DiscreteTimeIntegrator_DSTATE[9];
+
+  /* Outport: '<Root>/pendulum_angle' incorporates:
+   *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
+   *  MATLAB Function: '<Root>/state'
+   */
+  rtY.pendulum_angle = acos(((rtDW.DiscreteTimeIntegrator_DSTATE[6] *
+    rtDW.DiscreteTimeIntegrator_DSTATE[20] + rtDW.DiscreteTimeIntegrator_DSTATE
+    [7] * rtDW.DiscreteTimeIntegrator_DSTATE[21]) +
+    rtDW.DiscreteTimeIntegrator_DSTATE[8] * rtDW.DiscreteTimeIntegrator_DSTATE
+    [22]) + rtDW.DiscreteTimeIntegrator_DSTATE[9] *
+    rtDW.DiscreteTimeIntegrator_DSTATE[23]);
   for (i = 0; i <= 0; i += 2) {
     /* DiscreteIntegrator: '<Root>/Discrete-Time Integrator' incorporates:
      *  Outport: '<Root>/p'
      */
-    tmp_b = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i]);
+    tmp_a = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i]);
 
     /* Outport: '<Root>/p' */
-    _mm_storeu_pd(&rtY.p[i], tmp_b);
+    _mm_storeu_pd(&rtY.p[i], tmp_a);
 
     /* DiscreteIntegrator: '<Root>/Discrete-Time Integrator' incorporates:
      *  Outport: '<Root>/p'
      */
-    tmp_b = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 3]);
+    tmp_a = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 3]);
 
     /* Outport: '<Root>/v' incorporates:
      *  Outport: '<Root>/p'
      */
-    _mm_storeu_pd(&rtY.v[i], tmp_b);
+    _mm_storeu_pd(&rtY.v[i], tmp_a);
 
     /* MATLAB Function: '<Root>/state' incorporates:
      *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
      *  Outport: '<Root>/p'
      */
-    tmp_b = _mm_loadu_pd(&rtb_dxdt[i + 3]);
+    tmp_a = _mm_loadu_pd(&rtb_dxdt[i + 3]);
 
     /* Outport: '<Root>/accel' incorporates:
      *  Outport: '<Root>/p'
      */
-    _mm_storeu_pd(&rtY.accel[i], tmp_b);
+    _mm_storeu_pd(&rtY.accel[i], tmp_a);
 
     /* MATLAB Function: '<Root>/state' incorporates:
      *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
      *  Outport: '<Root>/p'
      */
-    tmp_b = _mm_loadu_pd(&H_tmp[i]);
+    tmp_a = _mm_loadu_pd(&H_tmp[i]);
+    tmp_b = _mm_loadu_pd(&H_p_tmp[i]);
     tmp_c = _mm_loadu_pd(&H_tmp[i + 3]);
-    tmp_d = _mm_loadu_pd(&H_tmp[i + 6]);
-    tmp_a = _mm_loadu_pd(&H_tmp[i + 9]);
+    tmp_9 = _mm_loadu_pd(&H_p_tmp[i + 3]);
+    tmp_5 = _mm_loadu_pd(&H_tmp[i + 6]);
+    tmp_d = _mm_loadu_pd(&H_p_tmp[i + 6]);
+    tmp_6 = _mm_loadu_pd(&H_p_tmp[i + 9]);
+    _mm_storeu_pd(&H_p_tmp_0[i], _mm_add_pd(_mm_mul_pd(tmp_6, _mm_set1_pd
+      (rtb_dxdt[27])), _mm_add_pd(_mm_mul_pd(tmp_d, _mm_set1_pd(rtb_dxdt[26])),
+      _mm_add_pd(_mm_mul_pd(tmp_9, _mm_set1_pd(rtb_dxdt[25])), _mm_mul_pd(tmp_b,
+      _mm_set1_pd(rtb_dxdt[24]))))));
+    _mm_storeu_pd(&F_motor_BR[i], _mm_add_pd(_mm_mul_pd(tmp_6, _mm_set1_pd
+      (rtDW.DiscreteTimeIntegrator_DSTATE[27])), _mm_add_pd(_mm_mul_pd(tmp_d,
+      _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[26])), _mm_add_pd
+      (_mm_mul_pd(tmp_9, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[25])),
+       _mm_mul_pd(tmp_b, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[24]))))));
+    tmp_b = _mm_loadu_pd(&H_tmp[i + 9]);
 
     /* Outport: '<Root>/rotaccel' incorporates:
      *  MATLAB Function: '<Root>/state'
      *  Outport: '<Root>/p'
      */
-    _mm_storeu_pd(&rtY.rotaccel[i], _mm_add_pd(_mm_mul_pd(tmp_a, _mm_set1_pd
-      (rtb_dxdt[13])), _mm_add_pd(_mm_mul_pd(tmp_d, _mm_set1_pd(rtb_dxdt[12])),
-      _mm_add_pd(_mm_mul_pd(tmp_c, _mm_set1_pd(rtb_dxdt[11])), _mm_mul_pd(tmp_b,
+    _mm_storeu_pd(&rtY.rotaccel[i], _mm_add_pd(_mm_mul_pd(tmp_b, _mm_set1_pd
+      (rtb_dxdt[13])), _mm_add_pd(_mm_mul_pd(tmp_5, _mm_set1_pd(rtb_dxdt[12])),
+      _mm_add_pd(_mm_mul_pd(tmp_c, _mm_set1_pd(rtb_dxdt[11])), _mm_mul_pd(tmp_a,
       _mm_set1_pd(rtb_dxdt[10]))))));
 
     /* Outport: '<Root>/omega' incorporates:
@@ -3206,11 +3230,11 @@ void colibri_v1_step(void)
      *  MATLAB Function: '<Root>/state'
      *  Outport: '<Root>/p'
      */
-    _mm_storeu_pd(&rtY.omega[i], _mm_add_pd(_mm_mul_pd(tmp_a, _mm_set1_pd
-      (rtDW.DiscreteTimeIntegrator_DSTATE[13])), _mm_add_pd(_mm_mul_pd(tmp_d,
+    _mm_storeu_pd(&rtY.omega[i], _mm_add_pd(_mm_mul_pd(tmp_b, _mm_set1_pd
+      (rtDW.DiscreteTimeIntegrator_DSTATE[13])), _mm_add_pd(_mm_mul_pd(tmp_5,
       _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[12])), _mm_add_pd
       (_mm_mul_pd(tmp_c, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[11])),
-       _mm_mul_pd(tmp_b, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[10]))))));
+       _mm_mul_pd(tmp_a, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[10]))))));
   }
 
   for (i = 2; i < 3; i++) {
@@ -3243,36 +3267,54 @@ void colibri_v1_step(void)
      */
     S_tmp = x_idx_0 * rtb_dxdt[10];
 
-    /* MATLAB Function: '<Root>/state' */
+    /* MATLAB Function: '<Root>/state' incorporates:
+     *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
+     */
+    S_tmp_0 = H_p_tmp[i];
+    S_tmp_1 = S_tmp_0 * rtDW.DiscreteTimeIntegrator_DSTATE[24];
+    S_tmp_2 = S_tmp_0 * rtb_dxdt[24];
     x_idx_0 = H_tmp[i + 3];
 
     /* Outport: '<Root>/omega' incorporates:
      *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
      *  MATLAB Function: '<Root>/state'
      */
-    S_tmp_1 = x_idx_0 * rtDW.DiscreteTimeIntegrator_DSTATE[11] + S_tmp_5;
+    S_tmp_5 += x_idx_0 * rtDW.DiscreteTimeIntegrator_DSTATE[11];
 
     /* Outport: '<Root>/rotaccel' incorporates:
      *  MATLAB Function: '<Root>/state'
      */
     S_tmp += x_idx_0 * rtb_dxdt[11];
 
-    /* MATLAB Function: '<Root>/state' */
+    /* MATLAB Function: '<Root>/state' incorporates:
+     *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
+     */
+    S_tmp_0 = H_p_tmp[i + 3];
+    S_tmp_1 += S_tmp_0 * rtDW.DiscreteTimeIntegrator_DSTATE[25];
+    S_tmp_2 += S_tmp_0 * rtb_dxdt[25];
     x_idx_0 = H_tmp[i + 6];
 
     /* Outport: '<Root>/omega' incorporates:
      *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
      *  MATLAB Function: '<Root>/state'
      */
-    S_tmp_5 = x_idx_0 * rtDW.DiscreteTimeIntegrator_DSTATE[12] + S_tmp_1;
+    S_tmp_5 += x_idx_0 * rtDW.DiscreteTimeIntegrator_DSTATE[12];
 
     /* Outport: '<Root>/rotaccel' incorporates:
      *  MATLAB Function: '<Root>/state'
      */
     S_tmp += x_idx_0 * rtb_dxdt[12];
 
-    /* MATLAB Function: '<Root>/state' */
+    /* MATLAB Function: '<Root>/state' incorporates:
+     *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
+     */
+    S_tmp_0 = H_p_tmp[i + 6];
+    S_tmp_1 += S_tmp_0 * rtDW.DiscreteTimeIntegrator_DSTATE[26];
+    S_tmp_2 += S_tmp_0 * rtb_dxdt[26];
     x_idx_0 = H_tmp[i + 9];
+    S_tmp_0 = H_p_tmp[i + 9];
+    H_p_tmp_0[i] = S_tmp_0 * rtb_dxdt[27] + S_tmp_2;
+    F_motor_BR[i] = S_tmp_0 * rtDW.DiscreteTimeIntegrator_DSTATE[27] + S_tmp_1;
 
     /* Outport: '<Root>/rotaccel' incorporates:
      *  MATLAB Function: '<Root>/state'
@@ -3286,24 +3328,21 @@ void colibri_v1_step(void)
     rtY.omega[i] = x_idx_0 * rtDW.DiscreteTimeIntegrator_DSTATE[13] + S_tmp_5;
   }
 
-  /* Outport: '<Root>/angle' incorporates:
-   *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
+  /* Outport: '<Root>/pendulum_ang_speed' incorporates:
    *  MATLAB Function: '<Root>/state'
    */
-  rtY.angle = acos(((rtDW.DiscreteTimeIntegrator_DSTATE[6] *
-                     rtDW.DiscreteTimeIntegrator_DSTATE[20] +
-                     rtDW.DiscreteTimeIntegrator_DSTATE[7] *
-                     rtDW.DiscreteTimeIntegrator_DSTATE[21]) +
-                    rtDW.DiscreteTimeIntegrator_DSTATE[8] *
-                    rtDW.DiscreteTimeIntegrator_DSTATE[22]) +
-                   rtDW.DiscreteTimeIntegrator_DSTATE[9] *
-                   rtDW.DiscreteTimeIntegrator_DSTATE[23]);
+  rtY.pendulum_ang_speed = F_motor_BR[1];
+
+  /* Outport: '<Root>/pendulum_ang_acc' incorporates:
+   *  MATLAB Function: '<Root>/state'
+   */
+  rtY.pendulum_ang_acc = H_p_tmp_0[1];
   for (i = 0; i <= 26; i += 2) {
     /* Update for DiscreteIntegrator: '<Root>/Discrete-Time Integrator' */
-    tmp_b = _mm_loadu_pd(&rtb_dxdt[i]);
-    tmp_c = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i]);
+    tmp_a = _mm_loadu_pd(&rtb_dxdt[i]);
+    tmp_b = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i]);
     _mm_storeu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i], _mm_add_pd(_mm_mul_pd
-      (_mm_set1_pd(0.000977), tmp_b), tmp_c));
+      (_mm_set1_pd(0.000977), tmp_a), tmp_b));
   }
 }
 

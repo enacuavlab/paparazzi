@@ -36,6 +36,8 @@
 
 #include "simulink/colibri_v1_ert_rtw/colibri_v1.h"
 
+#include "modules/sensors/encoder_sim.h"
+
 #include "state.h"
 
 
@@ -57,6 +59,7 @@ static void fetch_accel(void);
 static void fetch_orient(void);
 static void fetch_angular_vel(void);
 static void fetch_rotaccel(void);
+static void fetch_pendulum(void);
 
 //static void print_state(void);
 static int check_for_nan(void);
@@ -93,6 +96,7 @@ void nps_fdm_init(double dt)
   fetch_orient();
   fetch_angular_vel();
   fetch_rotaccel();
+  fetch_pendulum();
 
   //print_state();
 
@@ -129,6 +133,7 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
     fetch_orient();
     fetch_angular_vel();
     fetch_rotaccel();
+    fetch_pendulum();
 
     /* Check the current state to make sure it is valid (no NaNs) */
     if (check_for_nan()) {
@@ -233,6 +238,10 @@ static void fetch_rotaccel() {
   fdm.body_inertial_rotaccel.p = rtY.rotaccel[0];
   fdm.body_inertial_rotaccel.q = rtY.rotaccel[1];
   fdm.body_inertial_rotaccel.r = rtY.rotaccel[2];
+}
+
+static void fetch_pendulum(){
+  encoder_sim_upadate(rtY.pendulum_angle, rtY.pendulum_ang_speed, rtY.pendulum_ang_acc);
 }
 
 
