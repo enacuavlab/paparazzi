@@ -58,7 +58,10 @@ void high_gain_filter_init(struct high_gain_filter *filter, float alpha[3], floa
  */
 
 void high_gain_filter_process(struct high_gain_filter *filter, float theta){
-  float hatx_dot[3] = {filter->hatx[1] + (filter->alpha[0]/filter->epsilon)*(theta-filter->hatx[0]), (filter->hatx[2] + filter->alpha[1]/pow(filter->epsilon,2))*(theta-filter->hatx[0]), (filter->alpha[2]/pow(filter->epsilon, 3))*(theta-filter->hatx[0])};
+  float diff_theta = theta - filter->hatx[0];
+  float hatx_dot[3] = {filter->hatx[1] + (filter->alpha[0]/filter->epsilon)*diff_theta,
+                       filter->hatx[2] + (filter->alpha[1]/pow(filter->epsilon, 2))*diff_theta,
+                                         (filter->alpha[2]/pow(filter->epsilon, 3))*diff_theta};
   filter->hatx[0] += (1/filter->rate)*(filter->hatx_dot_prev[0] + hatx_dot[0])/2;
   filter->hatx[1] += (1/filter->rate)*(filter->hatx_dot_prev[1] + hatx_dot[1])/2;
   filter->hatx[2] += (1/filter->rate)*(filter->hatx_dot_prev[2] + hatx_dot[2])/2;

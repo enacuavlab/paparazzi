@@ -45,6 +45,12 @@ struct BodyStab {
 };
 
 extern struct BodyStab body_stab;
+extern struct FloatEulers euler_fus;
+extern float motor_cmd;
+extern float elevator_cmd;
+extern float angle_wing2fus;
+
+
 
 extern void body_stabilisation_init(void);
 extern void body_stabilisation_periodic(void);

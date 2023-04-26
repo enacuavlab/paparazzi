@@ -82,10 +82,13 @@ Butterworth2LowPass meas_lowpass_filters[3];
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
+#include "modules/ctrl/body_stabilisation.h"
 static void send_payload_float(struct transport_tx *trans, struct link_device *dev)
 {
-  float f[6] = {-encoder_amt22.amt22.angle_rad, -encoder_amt22.H_g_filter.hatx[0], -encoder_amt22.H_g_filter.hatx[1], gyro_imu_f.p, gyro_imu_f.q, gyro_imu_f.r};
-  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 6, f);
+  float f[13] = {-encoder_amt22.amt22.angle_rad, -encoder_amt22.H_g_filter.hatx[0], -encoder_amt22.H_g_filter.hatx[1],
+                 gyro_imu_f.p, gyro_imu_f.q, gyro_imu_f.r,
+                 motor_cmd, elevator_cmd, actuators_pprz[6], actuators_pprz[7], DegOfRad(euler_fus.theta), angle_wing2fus, body_stab.discrete_state};
+  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 13, f);
 }
 #endif
 
