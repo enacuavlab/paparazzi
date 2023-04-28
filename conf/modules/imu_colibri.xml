@@ -1,0 +1,43 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="imu_colibri" dir="imu" task="sensors">
+  <doc>
+    <description>IMU driver for Colibri
+                 - MPU60X0 tawaki board
+                 - MPU9250 wing frame
+    </description>
+  </doc>
+  <dep>
+    <depends>spi_master,imu_common,intermcu_iomcu,imu_heater,i2c</depends>
+    <provides>imu,mag</provides>
+  </dep>
+  <header>
+    <file name="imu_colibri.h"/>
+  </header>
+  <init fun="imu_colibri_init()"/>
+  <periodic fun="imu_colibri_periodic()"/>
+  <event fun="imu_colibri_event()"/>
+  <makefile target="!sim|nps|fbw">
+
+     <!-- MPU60x0 -->
+    <configure name="IMU_MPU60X0_SPI_DEV" value="spi4" case="upper|lower"/>
+    <configure name="IMU_MPU60X0_SPI_SLAVE_IDX" value="SPI_SLAVE5"/>
+    <define name="IMU_MPU60X0_SPI_DEV" value="$(IMU_MPU60X0_SPI_DEV)"/>
+    <define name="USE_$(IMU_MPU60X0_SPI_DEV_UPPER)"/>
+    <define name="IMU_MPU60X0_SPI_SLAVE_IDX" value="$(IMU_MPU60X0_SPI_SLAVE_IDX)"/>
+    <define name="USE_$(IMU_MPU60X0_SPI_SLAVE_IDX)"/>
+
+
+    <!-- MPU9225 -->
+    <configure name="IMU_MPU9250_I2C_DEV" default="i2c2" case="upper|lower"/>
+    <define name="USE_$(IMU_MPU9250_I2C_DEV_UPPER)"/>
+    <define name="IMU_MPU9250_I2C_DEV" value="$(IMU_MPU9250_I2C_DEV_LOWER)"/>
+    
+
+    <file name="mpu60x0.c" dir="peripherals"/>
+    <file name="mpu60x0_spi.c" dir="peripherals"/>
+    <file name="mpu9250.c" dir="peripherals"/>
+    <file name="mpu9250_i2c.c" dir="peripherals"/>
+    <file name="ak8963.c" dir="peripherals"/>
+    <file name="imu_colibri.c"/>
+  </makefile>
+</module>

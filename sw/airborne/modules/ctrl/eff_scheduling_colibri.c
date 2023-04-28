@@ -35,18 +35,17 @@
 #define INDI_SCHEDULING_LOW_AIRSPEED 4.0
 #endif
 
-#ifndef INDI_SCHEDULING_HIGH_AIRSPEED
-#define INDI_SCHEDULING_HIGH_AIRSPEED 15.0
-#endif
 
 
 #if INDI_NUM_ACT < 6
 #error "This module works with Colibri with 8 actuators by only 6 are managed by INDI "
 #endif
-
+/*
 static float g1g2_forward[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL_FWD,
                                                   STABILIZATION_INDI_G1_PITCH_FWD, STABILIZATION_INDI_G1_YAW_FWD, STABILIZATION_INDI_G1_THRUST_FWD
                                                  };
+*/
+
 
 static float g1g2_hover[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
                                                 STABILIZATION_INDI_G1_PITCH, STABILIZATION_INDI_G1_YAW, STABILIZATION_INDI_G1_THRUST
@@ -60,7 +59,7 @@ void ctrl_eff_scheduling_init(void)
   for (i = 0; i < INDI_OUTPUTS; i++) {
     for (j = 0; j < INDI_NUM_ACT; j++) {
         g1g2_hover[i][j] = g1g2_hover[i][j] / INDI_G_SCALING;
-        g1g2_forward[i][j] = g1g2_forward[i][j] / INDI_G_SCALING;
+        //g1g2_forward[i][j] = g1g2_forward[i][j] / INDI_G_SCALING;
     }
   }
   // fill the motor eff every time the same
@@ -122,21 +121,22 @@ void ctrl_eff_scheduling_periodic(void){
     g1g2[3][4] = 0; 
     g1g2[3][5] = 0;
   }
-  
-  
+  else{
+    //Come back to motor control
+    g1g2[0][4] = 0;
+    g1g2[0][5] = 0;
 
- /*
-  // Go from transition percentage to ratio
-  float ratio = FLOAT_OF_BFP(transition_percentage, INT32_PERCENTAGE_FRAC) / 100;
+    g1g2[1][4] = 0; // elevon_left
+    g1g2[1][5] = 0; // elevon_right
 
-  int8_t i;
-  int8_t j;
-  for (i = 0; i < INDI_OUTPUTS; i++) {
-    for (j = 0; j < INDI_NUM_ACT; j++) {
-      g1g2[i][j] = g1g2_hover[i][j] * (1.0 - ratio) + g1g2_forward[i][j] * ratio;
-    }
+    g1g2[2][4] = 0; // elevon_left
+    g1g2[2][5] = 0; // elevon_right
+
+   
+    g1g2[3][4] = 0; 
+    g1g2[3][5] = 0;
   }
-  */
+  
 }
 
 extern void ctrl_eff_scheduling_report(void){
