@@ -212,6 +212,7 @@
       <message name="BODY_RATES_ACCEL"         period=".002"/>
       <message name="PAYLOAD_FLOAT"            period=".002"/>
       <message name="IMU_MAG_SCALED"           period=".2"/>
+      <message name="IMU_MAG_RAW"              period=".05"/>
       <message name="IMU_GYRO_SCALED"          period=".002"/>
       <message name="IMU_ACCEL_SCALED"         period=".002"/>
       <message name="LIDAR"                    period="0.05"/>
