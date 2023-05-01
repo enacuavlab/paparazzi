@@ -18,7 +18,7 @@
   <event fun="imu_colibri_event()"/>
   <makefile target="!sim|nps|fbw">
 
-     <!-- MPU60x0 -->
+     <!-- MPU60x0 tawaki -->
     <configure name="IMU_MPU60X0_SPI_DEV" value="spi4" case="upper|lower"/>
     <configure name="IMU_MPU60X0_SPI_SLAVE_IDX" value="SPI_SLAVE5"/>
     <define name="IMU_MPU60X0_SPI_DEV" value="$(IMU_MPU60X0_SPI_DEV)"/>
@@ -26,6 +26,11 @@
     <define name="IMU_MPU60X0_SPI_SLAVE_IDX" value="$(IMU_MPU60X0_SPI_SLAVE_IDX)"/>
     <define name="USE_$(IMU_MPU60X0_SPI_SLAVE_IDX)"/>
 
+     <!-- MPU60x0 Wing -->
+    <!--configure name="IMU_MPU60X0_WG_I2C_DEV" value="i2c2" case="upper|lower"/>
+    <define name="USE_$(IMU_MPU60X0_WG_I2C_DEV_UPPER)"/>
+    <define name="IMU_MPU60X0_WG_I2C_DEV" value="$(IMU_MPU60X0_WG_I2C_DEV_LOWER)"/-->
+    
 
     <!-- MPU9225 -->
     <configure name="IMU_MPU9250_I2C_DEV" default="i2c2" case="upper|lower"/>
@@ -35,6 +40,7 @@
 
     <file name="mpu60x0.c" dir="peripherals"/>
     <file name="mpu60x0_spi.c" dir="peripherals"/>
+    <!--file name="mpu60x0_i2c.c" dir="peripherals"/-->
     <file name="mpu9250.c" dir="peripherals"/>
     <file name="mpu9250_i2c.c" dir="peripherals"/>
     <file name="ak8963.c" dir="peripherals"/>
