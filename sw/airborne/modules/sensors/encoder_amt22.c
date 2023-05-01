@@ -33,15 +33,15 @@
 #endif
 PRINT_CONFIG_VAR(ENC_AMT22_ALPHA0)
 
-/** Default alpha1 old : 2.97*/
+/** Default alpha1 old : 2.17*/
 #ifndef ENC_AMT22_ALPHA1
-#define ENC_AMT22_ALPHA1 2.17f
+#define ENC_AMT22_ALPHA1 2.08f
 #endif
 PRINT_CONFIG_VAR(ENC_AMT22_ALPHA1)
 
-/** Default alpha2 old : 1.3520*/
+/** Default alpha2 old : 0.7120*/
 #ifndef ENC_AMT22_ALPHA2
-#define ENC_AMT22_ALPHA2 0.7120f
+#define ENC_AMT22_ALPHA2 0.64f
 #endif
 PRINT_CONFIG_VAR(ENC_AMT22_ALPHA2)
 

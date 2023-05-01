@@ -40,12 +40,6 @@
 #if INDI_NUM_ACT < 6
 #error "This module works with Colibri with 8 actuators by only 6 are managed by INDI "
 #endif
-/*
-static float g1g2_forward[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL_FWD,
-                                                  STABILIZATION_INDI_G1_PITCH_FWD, STABILIZATION_INDI_G1_YAW_FWD, STABILIZATION_INDI_G1_THRUST_FWD
-                                                 };
-*/
-
 
 static float g1g2_hover[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
                                                 STABILIZATION_INDI_G1_PITCH, STABILIZATION_INDI_G1_YAW, STABILIZATION_INDI_G1_THRUST
@@ -53,19 +47,9 @@ static float g1g2_hover[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROL
 
 void ctrl_eff_scheduling_init(void)
 {
-
-  int8_t i;
-  int8_t j;
-  for (i = 0; i < INDI_OUTPUTS; i++) {
-    for (j = 0; j < INDI_NUM_ACT; j++) {
-        g1g2_hover[i][j] = g1g2_hover[i][j] / INDI_G_SCALING;
-        //g1g2_forward[i][j] = g1g2_forward[i][j] / INDI_G_SCALING;
-    }
-  }
-  // fill the motor eff every time the same
-  for (int8_t i_1 = 0; i_1 < INDI_OUTPUTS; i_1++) {
-    for (int8_t j_1 = 0; j_1 < 4; j_1++) { 
-      g1g2[i_1][j_1] = g1g2_hover[i_1][j_1];
+  for (int8_t i = 0; i < INDI_OUTPUTS; i++) {
+    for (int8_t j = 0; j < INDI_NUM_ACT; j++) {
+        g1g2[i][j] = g1g2_hover[i][j] / INDI_G_SCALING;
     }
   }
 }
@@ -123,8 +107,8 @@ void ctrl_eff_scheduling_periodic(void){
   }
   else{
     //Come back to motor control
-    g1g2[0][4] = 0;
-    g1g2[0][5] = 0;
+    g1g2[0][4] = 0; // elevon_left
+    g1g2[0][5] = 0; // elevon_right
 
     g1g2[1][4] = 0; // elevon_left
     g1g2[1][5] = 0; // elevon_right
@@ -133,8 +117,8 @@ void ctrl_eff_scheduling_periodic(void){
     g1g2[2][5] = 0; // elevon_right
 
    
-    g1g2[3][4] = 0; 
-    g1g2[3][5] = 0;
+    g1g2[3][4] = 0; // elevon_left
+    g1g2[3][5] = 0; // elevon_right
   }
   
 }
