@@ -35,6 +35,7 @@ struct EncoderAmt22 {
   struct high_gain_filter H_g_filter;
 };
 
+
 extern struct EncoderAmt22 encoder_amt22;
 
 extern void encoder_amt22_init(void);
@@ -45,7 +46,9 @@ extern void encoder_amt22_update_alpha0(float alpha0);
 extern void encoder_amt22_update_alpha1(float alpha1);
 extern void encoder_amt22_update_alpha2(float alpha2);
 extern void encoder_amt22_update_epsilon(float epsilon);
+extern void encoder_amt22_sim_update(float simulink_angle, float simulink_ag_speed, float simulink_ag_accel);
 
 extern void encoder_amt22_report(void);
 
 #endif  // ENCODER_AMT22_H
+

@@ -51,28 +51,57 @@ PRINT_CONFIG_VAR(ENC_AMT22_ALPHA2)
 #endif
 PRINT_CONFIG_VAR(ENC_AMT22_EPS)
 
+#ifndef BYPASS_HG_FILTER_SIM
+#define BYPASS_HG_FILTER_SIM FALSE
+#endif
+PRINT_CONFIG_VAR(BYPASS_HG_FILTER_SIM)
+
 
 
 struct EncoderAmt22 encoder_amt22;
 
+float sim_angle;
+float sim_ag_speed;
+float sim_ag_accel;
+
 void encoder_amt22_init(void)
 {
-  amt22_init(&encoder_amt22.amt22, &AMT22_SPI_DEV, AMT22_SPI_SLAVE_IDX);
+  #if !USE_NPS
+    amt22_init(&encoder_amt22.amt22, &AMT22_SPI_DEV, AMT22_SPI_SLAVE_IDX);
+  #else
+    sim_angle = 0;
+    sim_ag_speed = 0;
+    sim_ag_accel = 0;
+  #endif
   float alpha_gain[3] = {ENC_AMT22_ALPHA0, ENC_AMT22_ALPHA1, ENC_AMT22_ALPHA2};
   high_gain_filter_init(&encoder_amt22.H_g_filter, alpha_gain, ENC_AMT22_EPS, PERIODIC_FREQUENCY);
 }
 
 void encoder_amt22_periodic(void)
 {
-  //amt22_request(&amt22, AMT22_READ_TURNS);
-  amt22_request(&encoder_amt22.amt22, AMT22_READ_POSITION);
-  high_gain_filter_process(&encoder_amt22.H_g_filter, encoder_amt22.amt22.angle_rad);
-
+  #if !USE_NPS
+    //amt22_request(&amt22, AMT22_READ_TURNS);
+    amt22_request(&encoder_amt22.amt22, AMT22_READ_POSITION);
+  #endif
+  if(!BYPASS_HG_FILTER_SIM){
+    high_gain_filter_process(&encoder_amt22.H_g_filter, encoder_amt22.amt22.angle_rad);
+  }
 }
 
 void encoder_amt22_event(void)
 {
-  amt22_event(&encoder_amt22.amt22);
+  #if !USE_NPS
+    amt22_event(&encoder_amt22.amt22);
+  #else
+    if(BYPASS_HG_FILTER_SIM){
+      encoder_amt22.H_g_filter.hatx[0] = sim_angle;
+      encoder_amt22.H_g_filter.hatx[1] = sim_ag_speed;
+      encoder_amt22.H_g_filter.hatx[2] = sim_ag_accel;
+    }
+    else{
+      encoder_amt22.amt22.angle_rad = sim_angle;
+    }
+  #endif
 }
 
 extern void encoder_amt22_update_alpha0(float alpha0){
@@ -90,6 +119,12 @@ extern void encoder_amt22_update_alpha2(float alpha2){
 extern void encoder_amt22_update_epsilon(float epsilon){
   high_gain_filter_update_epsilon(&encoder_amt22.H_g_filter, epsilon);
   high_gain_filter_reset(&encoder_amt22.H_g_filter);
+}
+
+extern void encoder_amt22_sim_update(float simulink_angle, float simulink_ag_speed, float simulink_ag_accel){
+  sim_angle = simulink_angle;
+  sim_ag_speed = simulink_ag_speed;
+  sim_ag_accel = simulink_ag_accel;
 }
 
 extern void encoder_amt22_report(void){

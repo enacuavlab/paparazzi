@@ -81,6 +81,20 @@ void ctrl_eff_scheduling_periodic(void){
   float airspeed = stateGetAirspeed_f();
 
   if(airspeed>INDI_SCHEDULING_LOW_AIRSPEED){
+    airspeed -= INDI_SCHEDULING_LOW_AIRSPEED; //offset for start eff at zero!
+    struct FloatEulers eulers_zxy;
+    float_eulers_of_quat_zxy(&eulers_zxy, stateGetNedToBodyQuat_f());
+
+    float pitch_ratio = 0.0;
+    if (eulers_zxy.theta > -M_PI_4) {
+      pitch_ratio = 0.0;
+    } 
+    else {
+      pitch_ratio = fabs(1.0 - eulers_zxy.theta/(-M_PI_4));
+    }
+    Bound(pitch_ratio,0.0,1.0);
+
+
     Bound(airspeed, 0.0, 30.0);
     float airspeed2 = airspeed*airspeed;
 
@@ -93,11 +107,11 @@ void ctrl_eff_scheduling_periodic(void){
     g1g2[0][4] = 0;
     g1g2[0][5] = 0;
 
-    float pitch_eff = CE_PITCH_A*airspeed2;
+    float pitch_eff = pitch_ratio * CE_PITCH_A * airspeed2;
     g1g2[1][4] = -pitch_eff/1000; // elevon_left
     g1g2[1][5] =  pitch_eff/1000; // elevon_right
 
-    float yaw_eff = CE_YAW_A*airspeed2;
+    float yaw_eff = pitch_ratio * CE_YAW_A * airspeed2;
     g1g2[2][4] = -yaw_eff/1000; // elevon_left
     g1g2[2][5] = -yaw_eff/1000; // elevon_right
 
