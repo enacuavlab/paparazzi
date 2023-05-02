@@ -36,7 +36,7 @@
 
 #include "simulink/colibri_v1_ert_rtw/colibri_v1.h"
 
-#include "modules/sensors/encoder_sim.h"
+#include "modules/sensors/encoder_amt22.h"
 
 #include "state.h"
 
@@ -241,7 +241,7 @@ static void fetch_rotaccel() {
 }
 
 static void fetch_pendulum(){
-  encoder_sim_upadate(rtY.pendulum_angle, rtY.pendulum_ang_speed, rtY.pendulum_ang_acc);
+  encoder_amt22_sim_update(rtY.pendulum_angle, rtY.pendulum_ang_speed, rtY.pendulum_ang_acc);
 }
 
 

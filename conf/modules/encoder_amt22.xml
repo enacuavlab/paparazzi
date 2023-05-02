@@ -17,7 +17,7 @@
   </settings>
 
   <dep>
-    <depends>spi_master</depends>
+    <!--depends>spi_master</depends-->
   </dep>
 
   <header>
@@ -29,7 +29,18 @@
   <periodic fun="encoder_amt22_report()" freq="5.0" autorun="TRUE"/> <!--FALSE -->
   <event fun="encoder_amt22_event()"/>
 
-  <makefile>
+  <makefile target="nps">
+    <configure name="AMT22_SPI_DEV" default="SPI2" case="upper|lower"/>
+    <configure name="AMT22_SPI_SLAVE_IDX" default="SPI_SLAVE0"/>
+    <define name="USE_$(AMT22_SPI_DEV_UPPER)"/>
+    <define name="USE_$(AMT22_SPI_SLAVE_IDX)"/>
+    <define name="AMT22_SPI_DEV" value="$(AMT22_SPI_DEV_LOWER)"/>
+    <define name="AMT22_SPI_SLAVE_IDX" value="$(AMT22_SPI_SLAVE_IDX)"/>
+    <file name="encoder_amt22.c"/>
+    <file name="high_gain_filter.c" dir="filters"/>
+    <test/>
+  </makefile>
+  <makefile target="ap">
     <configure name="AMT22_SPI_DEV" default="SPI2" case="upper|lower"/>
     <configure name="AMT22_SPI_SLAVE_IDX" default="SPI_SLAVE0"/>
     <define name="USE_$(AMT22_SPI_DEV_UPPER)"/>

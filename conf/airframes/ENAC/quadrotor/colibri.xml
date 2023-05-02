@@ -15,12 +15,13 @@
         <!-- Put the mode on channel AUX1-->
         <define value="RADIO_GAIN1" name="RADIO_KILL_SWITCH"/>
       </module>
+      <module name="spi_master"/>
 
       <!--function of the form: A*airspeed^2-->
       <module name="eff_scheduling_colibri">
         <define name="CE_ROLL_A" value="0"/>
-        <define name="CE_PITCH_A" value="0.9"/> <!--.45 -->
-        <define name="CE_YAW_A" value="0.09"/> <!--.045 -->
+        <define name="CE_PITCH_A" value="0.45"/> <!--.45 -->
+        <define name="CE_YAW_A" value="0.045"/> <!--.045 -->
       </module>
 
       <!--Switch advanced INDI scheduling functions on or off-->
@@ -28,8 +29,25 @@
       <define name="USE_ADC_1"/>
       <define name="ADC_CHANNEL_VSUPPLY" value="ADC_1"/>
 
-      
-      <module name="encoder" type="amt22"/>
+      <!-- description="pressure range in psi (default: 1)"-->
+      <!--description="set to 0 for output type A, to 1 for output type B (default: type A)"/>-->
+      <!--description="flag to enable sending every new measurement via telemetry (default:FALSE)-->
+      <!--description="pressure scaling factor to convert raw output to Pa (default: set according to pressure range and output type according to datasheet)"-->
+      <!-- 8507.3 (positive gcs, increase xml) description="pressure offset in Pa (default: set according to pressure range and output type according to datasheet)-->
+      <!--description="Time constant for second order Butterworth low pass filter"-->
+      <!--description="Set airspeed in state interface for this sensor" -->
+      <module name="airspeed" type="ms45xx_i2c">
+        <define name="USE_I2C2"/>
+        <define name="MS45XX_I2C_DEV" value="i2c2"/>
+        <define name="MS45XX_PRESSURE_RANGE" value="1" />
+        <define name="MS45XX_OUTPUT_TYPE" value="0"/> 
+        <define name="MS45XX_SYNC_SEND" value="TRUE" /> 
+        <define name="MS45XX_PRESSURE_SCALE" value="1.052"/> 
+        <define name="MS45XX_PRESSURE_OFFSET" value="8566.2" />
+        <define name="MS45XX_LOWPASS_TAU" value="0.05"/> 
+        <define name="USE_AIRSPEED_MS45XX" value="TRUE"/> 
+      </module>
+     
       
     </target>
 
@@ -46,10 +64,11 @@
       <define name="NPS_BYPASS_AHRS" value="TRUE"/>
       <define name="NPS_BYPASS_INS"  value="TRUE"/>
 
-      <module name="encoder" type="sim"/>
+      <!--module name="encoder" type="sim"/-->
 
     </target>
 
+    <module name="encoder" type="amt22"/>
     <module name="rotate_imu"/>
 
     <module name="body_stabilisation"/>
@@ -86,24 +105,7 @@
       <define name="LIS3MDL_CHAN_Y" value="0" />
     </module-->
 
-    <!-- description="pressure range in psi (default: 1)"-->
-    <!--description="set to 0 for output type A, to 1 for output type B (default: type A)"/>-->
-    <!--description="flag to enable sending every new measurement via telemetry (default:FALSE)-->
-    <!--description="pressure scaling factor to convert raw output to Pa (default: set according to pressure range and output type according to datasheet)"-->
-    <!-- 8507.3 (positive gcs, increase xml) description="pressure offset in Pa (default: set according to pressure range and output type according to datasheet)-->
-    <!--description="Time constant for second order Butterworth low pass filter"-->
-    <!--description="Set airspeed in state interface for this sensor" -->
-    <module name="airspeed" type="ms45xx_i2c">
-      <define name="USE_I2C2"/>
-      <define name="MS45XX_I2C_DEV" value="i2c2"/>
-      <define name="MS45XX_PRESSURE_RANGE" value="1" />
-      <define name="MS45XX_OUTPUT_TYPE" value="0"/> 
-      <define name="MS45XX_SYNC_SEND" value="TRUE" /> 
-      <define name="MS45XX_PRESSURE_SCALE" value="1.052"/> 
-      <define name="MS45XX_PRESSURE_OFFSET" value="8566.2" />
-      <define name="MS45XX_LOWPASS_TAU" value="0.05"/> 
-      <define name="USE_AIRSPEED_MS45XX" value="TRUE"/> 
-    </module>
+    
 
 
     <module name="sys_mon"/>
@@ -319,7 +321,7 @@
 
     <!--define name="G1_ROLL"   value="{ - 40.0, - 40.0,    40.0,   40.0, 0.0, 0.0}"/--> 
     <define name="G1_ROLL"   value="{ - 27.0, - 27.0,    27.0,   27.0, 0.0, 0.0}"/>
-    <define name="G1_PITCH"  value="{ -60.0,  60.0,   60.0, -60.0, 0.0, 0.0}"/> <!-- 90-->
+    <define name="G1_PITCH"  value="{ -60.0,  60.0,   60.0, -60.0, 0.0, 0.0}"/> <!-- -->
     <define name="G1_YAW"    value="{ -  5.0,    5.0,  -  5.0,    5.0, 0.0, 0.0}"/>
     <define name="G1_THRUST" value="{ -  1.5, -  1.5,  -  1.5, -  1.5, 0.0, 0.0}" />
 

@@ -36,9 +36,9 @@
 #define BODY_STAB_ENABLED TRUE
 #endif
 
-/** Default kp motor */
+/** Default kp motor 7000 */
 #ifndef BODY_STAB_KP_M
-#define BODY_STAB_KP_M 7000.f
+#define BODY_STAB_KP_M 10000.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KP_M)
 
@@ -48,9 +48,9 @@ PRINT_CONFIG_VAR(BODY_STAB_KP_M)
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KI_M)
 
-/** Default kd motor*/
+/** Default kd motor 3000*/
 #ifndef BODY_STAB_KD_M
-#define BODY_STAB_KD_M 3000.f
+#define BODY_STAB_KD_M 4000.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KD_M)
 
@@ -86,13 +86,13 @@ PRINT_CONFIG_VAR(BODY_STAB_CLAMP_INT)
 
 /** Lower bound to switch motor elevator  */
 #ifndef BODY_STAB_AIR_LB
-#define BODY_STAB_AIR_LB 8.f
+#define BODY_STAB_AIR_LB 10.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_AIR_LB)
 
 /** Upper bound to switch motor elevator  */
 #ifndef BODY_STAB_AIR_UB
-#define BODY_STAB_AIR_UB 12.f
+#define BODY_STAB_AIR_UB 14.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_AIR_UB)
 
@@ -139,36 +139,18 @@ void body_stabilisation_periodic(void)
     {
       body_stab.discrete_state = 1 - body_stab.discrete_state;
     }
-
+    elevator_cmd = -(body_stab.kp_e*euler_fus.theta + body_stab.ki_e*body_stab.state_integrator + body_stab.kd_e * vect_fuselage_rate.y);
     if (body_stab.discrete_state){
       // Use elevator discrete_state = 1
-      /*
-      float kp_without_wind = 20000; //Proportional gain at zero speed
-      float speed_at_normal_kp = 8.0;
-      Bound(airspeed, 0.0, speed_at_normal_kp); // Bound at max speed_at_normal_kp m/s
-      float scale = 1.0 - (1.0/speed_at_normal_kp)*airspeed; // scale zero speed sclae = 0 and speed_at_normal_kp m/s scale = 0
-      float kp_schedule = scale*kp_without_wind + (1-scale)*body_stab.kp_e; //linear mapping from kp_without_wind to body_stab.kp_e
-      elevator_cmd = -(kp_schedule*euler_fus.theta + body_stab.ki_e*body_stab.state_integrator + body_stab.kd_e * vect_fuselage_rate.y);  
-      */
-      elevator_cmd = -(body_stab.kp_e*euler_fus.theta + body_stab.ki_e*body_stab.state_integrator + body_stab.kd_e * vect_fuselage_rate.y);
+
       actuators_pprz[6] = TRIM_PPRZ(elevator_cmd); //elevator
       actuators_pprz[7] = TRIM_UPPRZ(0); //motor
     }
     else{
-      // Use motor discrete_state = 0
-      
-      /*
-      if(euler_fus.theta >= 0){
-        motor_cmd = body_stab.u_eq_m + body_stab.kp_m*euler_fus.theta + body_stab.ki_m*body_stab.state_integrator + body_stab.kd_m * vect_fuselage_rate.y;
-      }
-      else{
-        float gain_multiply = 2.0; //gain for negative angle on fuselage
-        motor_cmd = body_stab.u_eq_m + gain_multiply*body_stab.kp_m*euler_fus.theta + body_stab.ki_m*body_stab.state_integrator + body_stab.kd_m * vect_fuselage_rate.y;
-      }
-      */
-
+      // Use motor and elevator discrete_state = 0
+    
       motor_cmd = body_stab.u_eq_m + body_stab.kp_m*euler_fus.theta + body_stab.ki_m*body_stab.state_integrator + body_stab.kd_m * vect_fuselage_rate.y;
-      actuators_pprz[6] = TRIM_PPRZ(0); //elevator
+      actuators_pprz[6] = TRIM_PPRZ(elevator_cmd); //elevator
       actuators_pprz[7] = TRIM_UPPRZ(motor_cmd); //motor
     }
 
