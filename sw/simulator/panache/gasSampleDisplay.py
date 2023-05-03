@@ -8,10 +8,14 @@ import itertools
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import CenteredNorm
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 
 import sampleParser
-import gasGaussianModel
+import gasModel.gasModel as gasModel
+import gasModel.wlineModel as wlineModel
+
+import gasModel.optimize as gasOpt
 
 
 
@@ -24,7 +28,7 @@ def show_raw_samples(samples: np.array) -> None:
     vals = samples[:, 3]+1e-9
 
     fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
+    ax:Axes3D = fig.add_subplot(projection='3d')
 
     # Raw datapoints
     im = ax.scatter(xs, ys, zs, c=vals, marker='8', cmap='magma_r',
@@ -40,145 +44,216 @@ def show_raw_samples(samples: np.array) -> None:
 
     plt.legend()
     plt.show()
-    
-def show_fitted_samples(samples: np.array, model:typing.Union[typing.Literal['gaussian_tube'],typing.Literal['gaussian_simple']]) -> None:
-    
-    filter_fun:typing.Callable
-    fit_fun:typing.Callable
-    descr_fun:typing.Callable
-    sy_fun:typing.Callable
-    sz_fun:typing.Callable
-    
-    if model == 'gaussian_tube':
-        filter_fun = gasGaussianModel.gaussian_tube_sample_filter
-        fit_fun = gasGaussianModel.fit_gaussian_tube
-        descr_fun = gasGaussianModel.gaussian_tube_description
-    elif model == 'gaussian_simple':
-        filter_fun = gasGaussianModel.simple_gaussian_sample_filter
-        fit_fun = gasGaussianModel.fit_simple_gaussian
-        descr_fun = gasGaussianModel.simple_gaussian_description
-    
-    
-    # Provides only the most significant points
-    significant = filter_fun(samples)
-    significant_barycenter = np.average(significant, axis=0)
-    
-    # Model fitting
-    popt, pcov = fit_fun(significant)
 
-    # Recover and display model params
-    descr_fun(popt,pcov)
+gaussian_models = ['gaussian','continued_gaussian','log_gaussian']
 
-    if model == 'gaussian_tube':
-        sy_fun = gasGaussianModel.gaussian_tube_sy(popt)
-        sz_fun = gasGaussianModel.gaussian_tube_sz(popt)
+def show_fitted_samples(samples: np.array,
+                        model:typing.Union[typing.Literal['gaussian'],typing.Literal['continued_gaussian'],typing.Literal['log_gaussian'],
+                                           typing.Literal['hline']],
+                        optimizer:typing.Union[typing.Literal['curve_fit'],typing.Literal['shgo'],typing.Literal['basinhopping']]) -> None:
+
+    # Call approriate model:
+    popt = gasOpt.fit_gas_model(model+'_model',optimizer,np.copy(samples),True)
+    
+    xo=popt[0]
+    yo=popt[1]
+    zo=popt[2]
+    angle=popt[3]
+    if model in gaussian_models:
+        intensity=popt[4]
+        ay=popt[5]
+        az=popt[6]
+    
+    if model == 'gaussian':
+        model_fun = functools.partial(gasModel.gaussian_model,
+                                      xo=popt[0],
+                                      yo=popt[1],
+                                      zo=popt[2],
+                                      angle=popt[3],
+                                      intensity=popt[4],
+                                      ay=popt[5],
+                                      az=popt[6])
+        variables = ['xo','yo','zo','angle','intensity','ay','az']
+        units = ['m','m','m','rad','units/m³','m','m']
+    elif model == 'continued_gaussian':
+        model_fun = functools.partial(gasModel.continued_gaussian_model,
+                                      xo=popt[0],
+                                      yo=popt[1],
+                                      zo=popt[2],
+                                      angle=popt[3],
+                                      intensity=popt[4],
+                                      ay=popt[5],
+                                      az=popt[6])
+        variables = ['xo','yo','zo','angle','intensity','ay','az']
+        units = ['m','m','m','rad','units/m³','m','m']
+    elif model == 'log_gaussian':
+        model_fun = functools.partial(gasModel.log_gaussian_model,
+                                      xo=popt[0],
+                                      yo=popt[1],
+                                      zo=popt[2],
+                                      angle=popt[3],
+                                      intensity=popt[4],
+                                      ay=popt[5],
+                                      az=popt[6])
+        variables = ['xo','yo','zo','angle','intensity','ay','az']
+        units = ['m','m','m','rad','units/m³','m','m']
+    elif model == 'hline':
+        model_fun = functools.partial(wlineModel.weighted_dist2_from_hline,
+                                      x0=popt[0],
+                                      y0=popt[1],
+                                      z0=popt[2],
+                                      z_angle=popt[3])
+        variables = ['xo','yo','zo','angle']
+        units = ['m','m','m','rad']
+    else:
+        raise ValueError(f"Unknown model: {model}")
+    
+    
+    # Print results
+    print("Model parameters:")
+    for i,t in enumerate(zip(variables,units)):
+        v,u = t
+        print(f"\t{v} : {popt[i]:.2f} ({u})")
         
-    elif model == 'gaussian_simple':
-        sy_fun = gasGaussianModel.simple_gaussian_sy(popt)
-        sz_fun = gasGaussianModel.simple_gaussian_sz(popt)
-        
-    src_pt = gasGaussianModel.gaussian_src(popt)
-
+    print("----------------------------------------")
     
-    # Plot acquired data
-    xs = significant[:, 0]
-    ys = significant[:, 1]
-    zs = significant[:, 2]
-    vals = significant[:, 3]+1e-9
+    # Define relevant affine transforms
+    
+    to_model_ref = functools.partial(gasModel.referential_transform,
+                                        xo=xo,
+                                        yo=yo,
+                                        zo=zo,
+                                        angle=angle)
+        
+    from_model_ref = functools.partial(gasModel.inverse_referential_transform,
+                                        xo=xo,
+                                        yo=yo,
+                                        zo=zo,
+                                        angle=angle)
+    
+    ### Plot acquired data
+    xs = samples[:, 0]
+    ys = samples[:, 1]
+    zs = samples[:, 2]
+    
+    # Shift everything by a negligible amount to avoid issues with log scaling
+    vals = samples[:, 3] + np.min(samples[np.nonzero(samples[:, 3])])/1000
 
     fig = plt.figure()
-    ax:Axes3D = fig.add_subplot(projection='3d')
-    ax.plot([src_pt[0]],[src_pt[1]],[src_pt[2]],'gp',label="Estimated source point")
+    ax:Axes3D = fig.add_subplot(1,2,1,projection='3d')
+    err_ax:Axes3D = fig.add_subplot(1,2,2,projection='3d')
 
-    # Test planar fitter
-    if model == 'gaussian_tube':
-        p,res = gasGaussianModel.fit_plan(significant)
-        direction = p[0]
-        offset = p[1]
-        range_x = np.amax(xs) - np.amin(xs)
-        range_y = np.amax(ys) - np.amin(ys)
-        range_z = np.amax(zs) - np.amin(zs)
-        superrange = (range_x + range_y + range_z)
-        pt_forward = offset + superrange * direction
-        pt_backward = offset - superrange * direction
-        ax.plot([pt_backward[0],pt_forward[0]],[pt_backward[1],pt_forward[1]],[pt_backward[2],pt_forward[2]],'b-.',label="Distribution's main axis (using planar fitting)")
-        print("Planar model:", superrange,pt_backward,pt_forward)
-
-    # Distribution's axis
-    affine_transform = functools.partial(gasGaussianModel.gaussian_transform,popt)
-    reverse_affine_transform = functools.partial(gasGaussianModel.gaussian_inv_transform,popt)
-    angle = popt[0]
-    x0 = popt[1]
-    y0 = popt[2]
-    h = popt[3]
-
-
-    if angle != 0:
-        def line_eq(x): return (x0-x)*np.tan(-angle) + y0
-        line_xs = np.asarray([min(xs), max(xs)],dtype=float)
-        line_ys = line_eq(line_xs)
-        line_zs = np.asarray([h,h],dtype=float)
-    else:
-        line_xs = np.asarray([x0,x0],dtype=float)
-        line_ys = np.asarray([min(ys), max(ys)],dtype=float)
-        line_zs = np.asarray([h,h],dtype=float)
-    
-    ax.plot([significant_barycenter[0]],[significant_barycenter[1]],[significant_barycenter[2]],'y*',label="Barycenter of significant data",)
-    ax.plot(line_xs,line_ys,line_zs, 'b-',label="Distribution's main axis")
-    
-    # Plot Gaussian envelope
-    
-    tr_pts = affine_transform(np.stack([line_xs,line_ys,line_zs]).transpose())
-    
-    sy = sy_fun(tr_pts[:,0])
-    sz = sz_fun(tr_pts[:,0])
-    print("Middle line:\n",np.stack([line_xs,line_ys,line_zs]).transpose())
-    
-    v_sy = np.stack([np.zeros(sy.shape),sy,np.zeros(sy.shape)]).transpose()
-    v_sz = np.stack([np.zeros(sz.shape),np.zeros(sz.shape),sz]).transpose()
-    
-    sy_p_pt = tr_pts + v_sy
-    sy_m_pt = tr_pts - v_sy
-    sz_p_pt = tr_pts + v_sz
-    sz_m_pt = tr_pts - v_sz
-    print("Tr Line:\n",tr_pts)
-    
-    print("sy:\n",sy)
-    print("Tr Line+sy:\n",sy_p_pt)
-    print("Tr Line-sy:\n",sy_m_pt)
-
-    sy_p_pt = reverse_affine_transform(sy_p_pt)
-    sy_m_pt = reverse_affine_transform(sy_m_pt)
-    sz_p_pt = reverse_affine_transform(sz_p_pt)
-    sz_m_pt = reverse_affine_transform(sz_m_pt)
-    
-    ax.plot(sy_p_pt[:,0],sy_p_pt[:,1],sy_p_pt[:,2],color='orange',linestyle='--')
-    ax.plot(sy_m_pt[:,0],sy_m_pt[:,1],sy_m_pt[:,2],color='orange',linestyle='--',label='Gaussian horizontal envelope')
-    ax.plot(sz_p_pt[:,0],sz_p_pt[:,1],sz_p_pt[:,2],color='red',linestyle='--')
-    ax.plot(sz_m_pt[:,0],sz_m_pt[:,1],sz_m_pt[:,2],color='red',linestyle='--',label='Gaussian vertical envelope')
-    
-    print("+sy line:\n",sy_p_pt)
-    print("-sy line:\n",sy_m_pt)
-    print("Base director: ", (line_ys[1] - line_ys[0])/(line_xs[1] - line_xs[0]))
-    print("+sy director: ",(sy_p_pt[1,1] - sy_p_pt[0,1])/(sy_p_pt[1,0] - sy_p_pt[0,0]))
-    print("-sy director: ",(sy_m_pt[1,1] - sy_m_pt[0,1])/(sy_m_pt[1,0] - sy_m_pt[0,0]))
-
-    # Raw datapoints
+    ## Raw datapoints
     im = ax.scatter(xs, ys, zs, c=vals, marker='8', cmap='magma_r',
                     norm='log', plotnonfinite=True, alpha=0.7)
-    cbar = ax.figure.colorbar(im, ax=ax)
-    cbar.ax.set_ylabel("Gas concentration (a.u., log scale)",
-                       rotation=-90, va="bottom")
+    cbar = ax.figure.colorbar(im, ax=ax,location='bottom')
+    cbar.ax.set_xlabel("Gas concentration (a.u., log scale)",
+                       rotation=0, va="top")
 
-    ax.set_xlim(min(xs),max(xs))
-    ax.set_ylim(min(ys),max(ys))
-    ax.set_zlim(min(zs),max(zs))
+    ax.set_xlim(np.min(xs),np.max(xs))
+    ax.set_ylim(np.min(ys),np.max(ys))
+    ax.set_zlim(np.min(zs),np.max(zs))
+    
     ax.set_xlabel('X Label')
     ax.set_ylabel('Y Label')
     ax.set_zlabel('Z Label')
     ax.set_aspect('equal')
 
-    plt.legend()
+    ## Error datapoints
+    if model == 'hline':
+        norm_samples = samples.transpose()
+        err_vals = model_fun(norm_samples)
+        
+    elif model == 'log_gaussian':
+        err_vals = vals - np.exp(model_fun(np.stack([xs,ys,zs])))
+    else:
+        err_vals = vals - model_fun(np.stack([xs,ys,zs]))
+        
+    half_range = np.amax(np.abs(err_vals))
+    
+    err_im = err_ax.scatter(xs, ys, zs, c=err_vals, marker='8', cmap='bwr',
+                    norm=CenteredNorm(0.,half_range),
+                    plotnonfinite=True, alpha=0.7)
+    cbar = err_ax.figure.colorbar(err_im, ax=err_ax,location='bottom')
+    cbar.ax.set_xlabel("Relative error values",
+                       rotation=0, va="top")
+
+    err_ax.set_xlim(np.min(xs),np.max(xs))
+    err_ax.set_ylim(np.min(ys),np.max(ys))
+    err_ax.set_zlim(np.min(zs),np.max(zs))
+
+    err_ax.set_xlabel('X Label')
+    err_ax.set_ylabel('Y Label')
+    err_ax.set_zlabel('Z Label')
+    err_ax.set_aspect('equal')
+
+    ### Model values
+    
+    ## Model src
+    if model in gaussian_models:
+        ax.plot([xo],[yo],[zo],'g+',label='Estimated source location')
+        err_ax.plot([xo],[yo],[zo],'g+',label='Estimated source location')
+    
+    ## Model axis
+    
+    # Gather extremal plotting points
+    xmin,xmax = ax.get_xlim()
+    ymin,ymax = ax.get_ylim()
+    zmin,zmax = ax.get_zlim()
+    
+    # Put them in the plume referential
+    
+    line = np.stack([np.array([xmin,ymin,zmin]),np.array([xmax,ymax,zmax])]).transpose()
+    line_in_ref = to_model_ref(line)
+    
+    projected_line_in_ref = np.copy(line_in_ref)
+    projected_line_in_ref[1] *= 0.
+    projected_line_in_ref[2] *= 0.
+    plume_line = from_model_ref(projected_line_in_ref)
+    
+    ax.plot(plume_line[0],plume_line[1],plume_line[2],'b-',label='Estimated plume axis')
+    err_ax.plot(plume_line[0],plume_line[1],plume_line[2],'b-',label='Estimated plume axis')
+    
+    # Standard deviation plot
+    if model in gaussian_models:
+        sy = ay * projected_line_in_ref[0] + 1
+        sz = az * projected_line_in_ref[0] + 1
+            
+        projected_line_in_ref_p_sy = np.copy(projected_line_in_ref)
+        projected_line_in_ref_m_sy = np.copy(projected_line_in_ref)
+            
+        projected_line_in_ref_p_sy[1] = projected_line_in_ref_p_sy[1] + sy
+        projected_line_in_ref_m_sy[1] = projected_line_in_ref_m_sy[1] - sy 
+        
+        projected_line_in_ref_p_sz = np.copy(projected_line_in_ref)
+        projected_line_in_ref_m_sz = np.copy(projected_line_in_ref)
+        
+        projected_line_in_ref_p_sz[2] = projected_line_in_ref_p_sz[2] + sz
+        projected_line_in_ref_m_sz[2] = projected_line_in_ref_m_sz[2] - sz 
+            
+        
+        p_sy_line = from_model_ref(projected_line_in_ref_p_sy)
+        m_sy_line = from_model_ref(projected_line_in_ref_m_sy)
+        p_sz_line = from_model_ref(projected_line_in_ref_p_sz)
+        m_sz_line = from_model_ref(projected_line_in_ref_m_sz)
+        
+        # Plot
+        ax.plot(p_sy_line[0],p_sy_line[1],p_sy_line[2],color='orange',linestyle='-.')
+        err_ax.plot(p_sy_line[0],p_sy_line[1],p_sy_line[2],color='orange',linestyle='-.')
+        
+        ax.plot(m_sy_line[0],m_sy_line[1],m_sy_line[2],color='orange',linestyle='-.',label='Estimated plume horizontal envelope')
+        err_ax.plot(m_sy_line[0],m_sy_line[1],m_sy_line[2],color='orange',linestyle='-.',label='Estimated plume horizontal envelope')
+        
+        ax.plot(p_sz_line[0],p_sz_line[1],p_sz_line[2],color='red',linestyle='-.')
+        err_ax.plot(p_sz_line[0],p_sz_line[1],p_sz_line[2],color='red',linestyle='-.')
+        
+        ax.plot(m_sz_line[0],m_sz_line[1],m_sz_line[2],color='red',linestyle='-.',label='Estimated plume vertical envelope')
+        err_ax.plot(m_sz_line[0],m_sz_line[1],m_sz_line[2],color='red',linestyle='-.',label='Estimated plume vertical envelope')
+
+    ### Finally, show
+
+    ax.legend()
+    err_ax.legend()
     plt.show()
 
 
@@ -189,8 +264,11 @@ def main():
 
     parser.add_argument("file", help="File to read gas samples from.\
         If it has extension '.pkl', use the pickle reader. Otherwise, assume TopoJSON.", nargs='+')
-    parser.add_argument('-m','--model',dest='model',default=None,choices=['gaussian_tube','gt','gaussian_simple','gs'],
+    parser.add_argument('-m','--model',dest='model',default=None,choices=['gaussian','g','continued_gaussian','cg','log_gaussian','lg',
+                                                                          'hline','hl'],
                         help='Model to fit to the samples')
+    parser.add_argument('-o','--optimizer',dest='optimizer',default='curve_fit',choices=['curve_fit','shgo','basinhopping'],
+                        help='Optimizer to use for model fitting (the first three are from scipy.optimize). Default to curve_fit.')
 
     args = parser.parse_args()
 
@@ -205,14 +283,18 @@ def main():
         reader._parse_dict
         samples = itertools.chain(samples,(np.array([s.x, s.y, s.z, s.val], dtype=float) for s in reader))
         
-    samples = np.stack(samples)
+    samples = np.stack(list(samples))
 
     if args.model is None:
         show_raw_samples(samples)
-    elif args.model == 'gaussian_tube' or args.model == 'gt':
-        show_fitted_samples(samples,'gaussian_tube')
-    elif args.model == 'gaussian_simple' or args.model == 'gs':
-        show_fitted_samples(samples,'gaussian_simple')
+    elif args.model == 'gaussian' or args.model == 'g':
+        show_fitted_samples(samples,'gaussian',args.optimizer)
+    elif args.model == 'continued_gaussian' or args.model == 'cg':
+        show_fitted_samples(samples,'continued_gaussian',args.optimizer)
+    elif args.model == 'log_gaussian' or args.model == 'lg':
+        show_fitted_samples(samples,'log_gaussian',args.optimizer)
+    elif args.model == 'hline' or args.model == 'hl':
+        show_fitted_samples(samples,'hline',args.optimizer)
     else:
         raise ValueError('Unknown model: ' + str(args.model))
         
