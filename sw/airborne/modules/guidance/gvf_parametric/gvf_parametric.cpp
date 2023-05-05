@@ -207,6 +207,13 @@ void gvf_paremetric_set_cardan_rot(float rx, float ry, float rz)
   gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
 }
 
+void gvf_paremetric_set_quaternion_rot(float x, float y, float z, float w)
+{
+  gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>(w,x,y,z);
+
+  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
+}
+
 void gvf_parametric_set_wps_rot(uint8_t wp1, uint8_t wp2)
 {
   Eigen::Vector3f U = Eigen::Vector3f(waypoints[wp2].x - waypoints[wp1].x,
@@ -235,6 +242,12 @@ void gvf_parametric_set_affine_tr(float x, float y, float z, float rx, float ry,
 {
   gvf_parametric_set_offset(x, y, z);
   gvf_paremetric_set_cardan_rot(rx, ry, rz);
+}
+
+void gvf_parametric_set_affine_q_tr(float x, float y, float z, float qx, float qy, float qz, float qw)
+{
+  gvf_parametric_set_offset(x, y, z);
+  gvf_paremetric_set_quaternion_rot(qx, qy, qz, qw);
 }
 
 void gvf_parametric_set_affine_tr_wp(uint8_t wp, float rx, float ry, float rz)
@@ -417,7 +430,7 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
   // the vehicle. So it is not only okei but advisable to update it.
   gvf_parametric_control.w += w_dot * gvf_parametric_control.delta_T * 1e-3;
 
-  gvf_parametric_low_level_control_2D(heading_rate);
+  gvf_parametric_low_level_control_2d(heading_rate);
 
   if ((gvf_parametric_coordination.coordination) && (now - last_transmision > gvf_parametric_coordination.broadtime) && (autopilot_get_mode() == AP_MODE_AUTO2))
   {
@@ -630,7 +643,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
 /** 2D TRAJECTORIES **/
 // 2D TREFOIL KNOT
 
-bool gvf_parametric_2D_trefoil_XY(float xo, float yo, float w1, float w2, float ratio, float r, float alpha)
+bool gvf_parametric_2d_trefoil_XY(float xo, float yo, float w1, float w2, float ratio, float r, float alpha)
 {
   gvf_parametric_trajectory.type = TREFOIL_2D;
   gvf_parametric_trajectory.p_parametric[0] = xo;
@@ -646,18 +659,18 @@ bool gvf_parametric_2D_trefoil_XY(float xo, float yo, float w1, float w2, float 
   float f1, f2, f1d, f2d, f1dd, f2dd;
 
   gvf_parametric_2d_trefoil_info(&f1, &f2, &f1d, &f2d, &f1dd, &f2dd);
-  gvf_parametric_control_2D(gvf_parametric_2d_trefoil_par.kx, gvf_parametric_2d_trefoil_par.ky, f1, f2, f1d, f2d, f1dd,
+  gvf_parametric_control_2d(gvf_parametric_2d_trefoil_par.kx, gvf_parametric_2d_trefoil_par.ky, f1, f2, f1d, f2d, f1dd,
                             f2dd);
 
   return true;
 }
 
-bool gvf_parametric_2D_trefoil_wp(uint8_t wp, float w1, float w2, float ratio, float r, float alpha)
+bool gvf_parametric_2d_trefoil_wp(uint8_t wp, float w1, float w2, float ratio, float r, float alpha)
 {
   gvf_parametric_trajectory.p_parametric[7] = wp;
   gvf_parametric_plen_wps = 1;
 
-  gvf_parametric_2D_trefoil_XY(waypoints[wp].x, waypoints[wp].y, w1, w2, ratio, r, alpha);
+  gvf_parametric_2d_trefoil_XY(waypoints[wp].x, waypoints[wp].y, w1, w2, ratio, r, alpha);
   return true;
 }
 

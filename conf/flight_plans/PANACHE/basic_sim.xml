@@ -35,6 +35,8 @@
       <define name="GVF_OCAML_GCS" value="FALSE"/>
     </module>
     <module name="gvf_parametric"/> 
+    <module name="mission_fw"/>
+    <module name="gvf_mission"/>
   </modules>
   
   <exceptions>
