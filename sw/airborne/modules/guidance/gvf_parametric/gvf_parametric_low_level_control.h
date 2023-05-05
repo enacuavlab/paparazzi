@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 // Low level control functions
-extern void gvf_parametric_low_level_control_2D(float);
+extern void gvf_parametric_low_level_control_2d(float);
 extern void gvf_parametric_low_level_control_3d(float, float);
 
 #ifdef __cplusplus

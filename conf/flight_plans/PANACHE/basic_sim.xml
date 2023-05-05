@@ -35,6 +35,8 @@
       <define name="GVF_OCAML_GCS" value="FALSE"/>
     </module>
     <module name="gvf_parametric"/> 
+    <module name="mission_fw"/>
+    <module name="gvf_mission"/>
   </modules>
   
   <exceptions>
@@ -78,7 +80,7 @@
       <call_once fun="gvf_parametric_set_w_gain(-1.)"/>
       <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,atan2(stateGetHorizontalWindspeed_f()->y,stateGetHorizontalWindspeed_f()->x)*180/M_PI)"/>-->
-      <call fun="gvf_parametric_3d_sin(500,0.001,90 * AC_ID, 0,0.001,90 * AC_ID)"/>
+      <call fun="gvf_parametric_3d_sin(1000,0.001,90 * AC_ID, 10,0.0005,90 * AC_ID)"/>
       
       <!--<call fun="gvf_parametric_3d_ellipse_wp_delta(WP_SRC, 200,200,30,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>-->
     </block>
