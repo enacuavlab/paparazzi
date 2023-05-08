@@ -64,21 +64,24 @@
       <define name="NPS_BYPASS_AHRS" value="TRUE"/>
       <define name="NPS_BYPASS_INS"  value="TRUE"/>
 
-      <!--module name="encoder" type="sim"/-->
+      <define name="NPS_COMMANDS_NB" value="8"/>
 
     </target>
 
     <module name="encoder" type="amt22"/>
-    <module name="rotate_imu"/>
+    <module name="rotate_imu">
+      <define name="ROT_IMU_BIND_ID" value="IMU_MPU60X0_ID"/>
+    </module>
 
     <module name="body_stabilisation"/>
-    <module type="tawaki" name="board"/>
+
+    <!--module type="tawaki" name="board"/-->
 
     <!-- Multi imu 
       MPU9250 I2C2 
       & MPU60X0
     -->
-    <!--module name="imu" type="colibri"/-->
+    <module name="imu" type="colibri"/>
 
     <!-- MPU60X0 Tawaki-->
     <!--module name="imu" type="mpu6000">
@@ -89,7 +92,7 @@
       <define name="IMU_MPU_CHAN_X" value="1" />
       <define name="IMU_MPU_CHAN_Y" value="0"/>
       <define name="IMU_MPU_Y_SIGN" value="-1"/>
-    </module>
+    </module-->
 
     <module name="baro" type="bmp3">
       <configure name="BMP3_I2C_DEV" value="I2C4" />
@@ -103,7 +106,7 @@
       <define name="LIS3MDL_CHAN_Y_SIGN" value="-"/>
       <define name="LIS3MDL_CHAN_X" value="1" />
       <define name="LIS3MDL_CHAN_Y" value="0" />
-    </module-->
+    </module>
 
     
 
@@ -129,8 +132,8 @@
 
     <module type="dshot" name="actuators">
       <define name="DSHOT_SPEED" value="300"/>
-      <!--define name="DSHOT_TIM4_TELEMETRY_NUM" value="DSHOT_TLM_RX"/>
-        <define name="STM32_SERIAL_USE_UART4" value="TRUE"/-->
+      <!--define name="DSHOT_TIM4_TELEMETRY_NUM" value="DSHOT_TLM_RX"/-->
+      <!--define name="STM32_SERIAL_USE_UART5" value="TRUE"/-->
     </module>
 
     <module name="air_data">
@@ -205,6 +208,7 @@
       <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/>
       <define name="AHRS_ICQ_IMU_ID" value="IMU_ROT_ID"/>
       <define name="AHRS_ICQ_MAG_ID" value="IMU_ROT_ID"/>
+      <define name="AHRS_ALIGNER_IMU_ID" value="IMU_MPU60X0_ID"/>
     </module>
 
   </firmware>
