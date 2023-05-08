@@ -7,9 +7,9 @@
  *
  * Code generated for Simulink model 'colibri_v1'.
  *
- * Model version                  : 4.29
+ * Model version                  : 4.32
  * Simulink Coder version         : 9.9 (R2023a) 19-Nov-2022
- * C/C++ source code generated on : Thu Apr 20 16:24:46 2023
+ * C/C++ source code generated on : Thu May  4 13:41:43 2023
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: Intel->x86-64 (Linux 64)
@@ -49,50 +49,82 @@ ExtY rtY;
 /* Real-time model */
 static RT_MODEL rtM_;
 RT_MODEL *const rtM = &rtM_;
+extern real_T rt_atan2d_snf(real_T u0, real_T u1);
 
 /* Forward declaration for local functions */
 static real_T xnrm2(int32_T n, const real_T x[112], int32_T ix0);
 static real_T xdotc(int32_T n, const real_T x[112], int32_T ix0, const real_T y
                     [112], int32_T iy0);
 static void xaxpy(int32_T n, real_T a, int32_T ix0, real_T y[112], int32_T iy0);
-static real_T xnrm2_a(int32_T n, const real_T x[8], int32_T ix0);
-static void xaxpy_e(int32_T n, real_T a, const real_T x[112], int32_T ix0,
+static real_T xnrm2_h(int32_T n, const real_T x[8], int32_T ix0);
+static void xaxpy_k(int32_T n, real_T a, const real_T x[112], int32_T ix0,
                     real_T y[14], int32_T iy0);
-static void xaxpy_ea(int32_T n, real_T a, const real_T x[14], int32_T ix0,
+static void xaxpy_kc(int32_T n, real_T a, const real_T x[14], int32_T ix0,
                      real_T y[112], int32_T iy0);
 static real_T xdotc_m(int32_T n, const real_T x[64], int32_T ix0, const real_T
                       y[64], int32_T iy0);
-static void xaxpy_eaq(int32_T n, real_T a, int32_T ix0, real_T y[64], int32_T
+static void xaxpy_kcg(int32_T n, real_T a, int32_T ix0, real_T y[64], int32_T
                       iy0);
 static void xswap(real_T x[64], int32_T ix0, int32_T iy0);
-static void xswap_m(real_T x[112], int32_T ix0, int32_T iy0);
+static void xswap_k(real_T x[112], int32_T ix0, int32_T iy0);
 static void xrotg(real_T *a, real_T *b, real_T *c, real_T *s);
 static void xrot(real_T x[64], int32_T ix0, int32_T iy0, real_T c, real_T s);
-static void xrot_p(real_T x[112], int32_T ix0, int32_T iy0, real_T c, real_T s);
+static void xrot_k(real_T x[112], int32_T ix0, int32_T iy0, real_T c, real_T s);
 static void svd(const real_T A[112], real_T U[112], real_T s[8], real_T V[64]);
 static real_T eps(real_T x);
-static real_T xnrm2_am(int32_T n, const real_T x[308], int32_T ix0);
-static real_T xdotc_mq(int32_T n, const real_T x[308], int32_T ix0, const real_T
+static real_T xnrm2_hk(int32_T n, const real_T x[308], int32_T ix0);
+static real_T xdotc_mz(int32_T n, const real_T x[308], int32_T ix0, const real_T
   y[308], int32_T iy0);
-static void xaxpy_eaq3(int32_T n, real_T a, int32_T ix0, real_T y[308], int32_T
+static void xaxpy_kcgn(int32_T n, real_T a, int32_T ix0, real_T y[308], int32_T
   iy0);
-static real_T xnrm2_amm(int32_T n, const real_T x[14], int32_T ix0);
-static void xaxpy_eaq32(int32_T n, real_T a, const real_T x[308], int32_T ix0,
+static real_T xnrm2_hk0(int32_T n, const real_T x[14], int32_T ix0);
+static void xaxpy_kcgns(int32_T n, real_T a, const real_T x[308], int32_T ix0,
   real_T y[22], int32_T iy0);
-static void xaxpy_eaq32c(int32_T n, real_T a, const real_T x[22], int32_T ix0,
+static void xaxpy_kcgnsa(int32_T n, real_T a, const real_T x[22], int32_T ix0,
   real_T y[308], int32_T iy0);
-static real_T xdotc_mqb(int32_T n, const real_T x[196], int32_T ix0, const
+static real_T xdotc_mzz(int32_T n, const real_T x[196], int32_T ix0, const
   real_T y[196], int32_T iy0);
-static void xaxpy_eaq32cr(int32_T n, real_T a, int32_T ix0, real_T y[196],
+static void xaxpy_kcgnsau(int32_T n, real_T a, int32_T ix0, real_T y[196],
   int32_T iy0);
-static void xswap_mv(real_T x[196], int32_T ix0, int32_T iy0);
-static void xswap_mva(real_T x[308], int32_T ix0, int32_T iy0);
-static void xrot_p3(real_T x[196], int32_T ix0, int32_T iy0, real_T c, real_T s);
-static void xrot_p3i(real_T x[308], int32_T ix0, int32_T iy0, real_T c, real_T s);
-static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196]);
+static void xswap_kp(real_T x[196], int32_T ix0, int32_T iy0);
+static void xswap_kpw(real_T x[308], int32_T ix0, int32_T iy0);
+static void xrot_k5(real_T x[196], int32_T ix0, int32_T iy0, real_T c, real_T s);
+static void xrot_k54(real_T x[308], int32_T ix0, int32_T iy0, real_T c, real_T s);
+static void svd_j(const real_T A[308], real_T U[308], real_T s[14], real_T V[196]);
 static void pinv(const real_T A[308], real_T X_0[308]);
+static void q2e(const real_T q[4], real_T *roll, real_T *pitch, real_T *yaw);
 static real_T rtGetNaN(void);
 static real32_T rtGetNaNF(void);
+
+/*===========*
+ * Constants *
+ *===========*/
+#define RT_PI                          3.14159265358979323846
+#define RT_PIF                         3.1415927F
+#define RT_LN_10                       2.30258509299404568402
+#define RT_LN_10F                      2.3025851F
+#define RT_LOG10E                      0.43429448190325182765
+#define RT_LOG10EF                     0.43429449F
+#define RT_E                           2.7182818284590452354
+#define RT_EF                          2.7182817F
+
+/*
+ * UNUSED_PARAMETER(x)
+ *   Used to specify that a function parameter (argument) is required but not
+ *   accessed by the function body.
+ */
+#ifndef UNUSED_PARAMETER
+#if defined(__LCC__)
+#define UNUSED_PARAMETER(x)                                      /* do nothing */
+#else
+
+/*
+ * This is the semi-ANSI standard way of indicating that an
+ * unused function parameter is required.
+ */
+#define UNUSED_PARAMETER(x)            (void) (x)
+#endif
+#endif
 
 #define NOT_USING_NONFINITE_LITERALS   1
 
@@ -369,7 +401,7 @@ static void xaxpy(int32_T n, real_T a, int32_T ix0, real_T y[112], int32_T iy0)
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static real_T xnrm2_a(int32_T n, const real_T x[8], int32_T ix0)
+static real_T xnrm2_h(int32_T n, const real_T x[8], int32_T ix0)
 {
   real_T y;
   int32_T k;
@@ -405,7 +437,7 @@ static real_T xnrm2_a(int32_T n, const real_T x[8], int32_T ix0)
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xaxpy_e(int32_T n, real_T a, const real_T x[112], int32_T ix0,
+static void xaxpy_k(int32_T n, real_T a, const real_T x[112], int32_T ix0,
                     real_T y[14], int32_T iy0)
 {
   int32_T k;
@@ -431,7 +463,7 @@ static void xaxpy_e(int32_T n, real_T a, const real_T x[112], int32_T ix0,
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xaxpy_ea(int32_T n, real_T a, const real_T x[14], int32_T ix0,
+static void xaxpy_kc(int32_T n, real_T a, const real_T x[14], int32_T ix0,
                      real_T y[112], int32_T iy0)
 {
   int32_T k;
@@ -473,7 +505,7 @@ static real_T xdotc_m(int32_T n, const real_T x[64], int32_T ix0, const real_T
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xaxpy_eaq(int32_T n, real_T a, int32_T ix0, real_T y[64], int32_T
+static void xaxpy_kcg(int32_T n, real_T a, int32_T ix0, real_T y[64], int32_T
                       iy0)
 {
   int32_T k;
@@ -503,7 +535,7 @@ static void xswap(real_T x[64], int32_T ix0, int32_T iy0)
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xswap_m(real_T x[112], int32_T ix0, int32_T iy0)
+static void xswap_k(real_T x[112], int32_T ix0, int32_T iy0)
 {
   int32_T k;
   for (k = 0; k < 14; k++) {
@@ -581,7 +613,7 @@ static void xrot(real_T x[64], int32_T ix0, int32_T iy0, real_T c, real_T s)
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xrot_p(real_T x[112], int32_T ix0, int32_T iy0, real_T c, real_T s)
+static void xrot_k(real_T x[112], int32_T ix0, int32_T iy0, real_T c, real_T s)
 {
   int32_T k;
   for (k = 0; k < 14; k++) {
@@ -693,7 +725,7 @@ static void svd(const real_T A[112], real_T U[112], real_T s[8], real_T V[64])
     }
 
     if (i + 1 <= 6) {
-      nrm = xnrm2_a(7 - i, e, i + 2);
+      nrm = xnrm2_h(7 - i, e, i + 2);
       if (nrm == 0.0) {
         e[i] = 0.0;
       } else {
@@ -736,11 +768,11 @@ static void svd(const real_T A[112], real_T U[112], real_T s[8], real_T V[64])
         }
 
         for (qq = qp1; qq < 9; qq++) {
-          xaxpy_e(13 - i, e[qq - 1], b_A, (i + 14 * (qq - 1)) + 2, work, i + 2);
+          xaxpy_k(13 - i, e[qq - 1], b_A, (i + 14 * (qq - 1)) + 2, work, i + 2);
         }
 
         for (qq = qp1; qq < 9; qq++) {
-          xaxpy_ea(13 - i, -e[qq - 1] / e[i + 1], work, i + 2, b_A, (i + 14 *
+          xaxpy_kc(13 - i, -e[qq - 1] / e[i + 1], work, i + 2, b_A, (i + 14 *
                     (qq - 1)) + 2);
         }
       }
@@ -783,7 +815,7 @@ static void svd(const real_T A[112], real_T U[112], real_T s[8], real_T V[64])
       qq = ((qp1 << 3) + qp1) + 2;
       for (qjj = qp1 + 2; qjj < 9; qjj++) {
         qp1jj = (((qjj - 1) << 3) + qp1) + 2;
-        xaxpy_eaq(7 - qp1, -(xdotc_m(7 - qp1, Vf, qq, Vf, qp1jj) / Vf[qq - 1]),
+        xaxpy_kcg(7 - qp1, -(xdotc_m(7 - qp1, Vf, qq, Vf, qp1jj) / Vf[qq - 1]),
                   qq, Vf, qp1jj);
       }
     }
@@ -931,7 +963,7 @@ static void svd(const real_T A[112], real_T U[112], real_T s[8], real_T V[64])
         smm1 = e[qjj - 1];
         rt = -sqds * smm1;
         e[qjj - 1] = smm1 * ztest;
-        xrot_p(U, 14 * (qjj - 1) + 1, 14 * (qq - 1) + 1, ztest, sqds);
+        xrot_k(U, 14 * (qjj - 1) + 1, 14 * (qq - 1) + 1, ztest, sqds);
       }
       break;
 
@@ -978,7 +1010,7 @@ static void svd(const real_T A[112], real_T U[112], real_T s[8], real_T V[64])
         b_s[qjj] = ztest * -smm1 + sqds * b_s[qjj];
         ztest = smm1 * e[qjj];
         e[qjj] *= sqds;
-        xrot_p(U, 14 * (qjj - 1) + 1, 14 * qjj + 1, sqds, smm1);
+        xrot_k(U, 14 * (qjj - 1) + 1, 14 * qjj + 1, sqds, smm1);
       }
 
       e[i] = rt;
@@ -1007,7 +1039,7 @@ static void svd(const real_T A[112], real_T U[112], real_T s[8], real_T V[64])
         b_s[qq] = b_s[qp1];
         b_s[qp1] = rt;
         xswap(Vf, (qq << 3) + 1, ((qq + 1) << 3) + 1);
-        xswap_m(U, 14 * qq + 1, 14 * (qq + 1) + 1);
+        xswap_k(U, 14 * qq + 1, 14 * (qq + 1) + 1);
         qq = qp1;
         qp1++;
       }
@@ -1044,7 +1076,7 @@ static real_T eps(real_T x)
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static real_T xnrm2_am(int32_T n, const real_T x[308], int32_T ix0)
+static real_T xnrm2_hk(int32_T n, const real_T x[308], int32_T ix0)
 {
   real_T y;
   int32_T k;
@@ -1080,7 +1112,7 @@ static real_T xnrm2_am(int32_T n, const real_T x[308], int32_T ix0)
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static real_T xdotc_mq(int32_T n, const real_T x[308], int32_T ix0, const real_T
+static real_T xdotc_mz(int32_T n, const real_T x[308], int32_T ix0, const real_T
   y[308], int32_T iy0)
 {
   real_T d;
@@ -1096,7 +1128,7 @@ static real_T xdotc_mq(int32_T n, const real_T x[308], int32_T ix0, const real_T
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xaxpy_eaq3(int32_T n, real_T a, int32_T ix0, real_T y[308], int32_T
+static void xaxpy_kcgn(int32_T n, real_T a, int32_T ix0, real_T y[308], int32_T
   iy0)
 {
   int32_T k;
@@ -1110,7 +1142,7 @@ static void xaxpy_eaq3(int32_T n, real_T a, int32_T ix0, real_T y[308], int32_T
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static real_T xnrm2_amm(int32_T n, const real_T x[14], int32_T ix0)
+static real_T xnrm2_hk0(int32_T n, const real_T x[14], int32_T ix0)
 {
   real_T y;
   int32_T k;
@@ -1146,7 +1178,7 @@ static real_T xnrm2_amm(int32_T n, const real_T x[14], int32_T ix0)
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xaxpy_eaq32(int32_T n, real_T a, const real_T x[308], int32_T ix0,
+static void xaxpy_kcgns(int32_T n, real_T a, const real_T x[308], int32_T ix0,
   real_T y[22], int32_T iy0)
 {
   int32_T k;
@@ -1172,7 +1204,7 @@ static void xaxpy_eaq32(int32_T n, real_T a, const real_T x[308], int32_T ix0,
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xaxpy_eaq32c(int32_T n, real_T a, const real_T x[22], int32_T ix0,
+static void xaxpy_kcgnsa(int32_T n, real_T a, const real_T x[22], int32_T ix0,
   real_T y[308], int32_T iy0)
 {
   int32_T k;
@@ -1198,7 +1230,7 @@ static void xaxpy_eaq32c(int32_T n, real_T a, const real_T x[22], int32_T ix0,
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static real_T xdotc_mqb(int32_T n, const real_T x[196], int32_T ix0, const
+static real_T xdotc_mzz(int32_T n, const real_T x[196], int32_T ix0, const
   real_T y[196], int32_T iy0)
 {
   real_T d;
@@ -1214,7 +1246,7 @@ static real_T xdotc_mqb(int32_T n, const real_T x[196], int32_T ix0, const
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xaxpy_eaq32cr(int32_T n, real_T a, int32_T ix0, real_T y[196],
+static void xaxpy_kcgnsau(int32_T n, real_T a, int32_T ix0, real_T y[196],
   int32_T iy0)
 {
   int32_T k;
@@ -1228,7 +1260,7 @@ static void xaxpy_eaq32cr(int32_T n, real_T a, int32_T ix0, real_T y[196],
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xswap_mv(real_T x[196], int32_T ix0, int32_T iy0)
+static void xswap_kp(real_T x[196], int32_T ix0, int32_T iy0)
 {
   int32_T k;
   for (k = 0; k < 14; k++) {
@@ -1244,7 +1276,7 @@ static void xswap_mv(real_T x[196], int32_T ix0, int32_T iy0)
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xswap_mva(real_T x[308], int32_T ix0, int32_T iy0)
+static void xswap_kpw(real_T x[308], int32_T ix0, int32_T iy0)
 {
   int32_T k;
   for (k = 0; k < 22; k++) {
@@ -1260,7 +1292,7 @@ static void xswap_mva(real_T x[308], int32_T ix0, int32_T iy0)
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xrot_p3(real_T x[196], int32_T ix0, int32_T iy0, real_T c, real_T s)
+static void xrot_k5(real_T x[196], int32_T ix0, int32_T iy0, real_T c, real_T s)
 {
   int32_T k;
   for (k = 0; k < 14; k++) {
@@ -1278,7 +1310,7 @@ static void xrot_p3(real_T x[196], int32_T ix0, int32_T iy0, real_T c, real_T s)
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void xrot_p3i(real_T x[308], int32_T ix0, int32_T iy0, real_T c, real_T s)
+static void xrot_k54(real_T x[308], int32_T ix0, int32_T iy0, real_T c, real_T s)
 {
   int32_T k;
   for (k = 0; k < 22; k++) {
@@ -1296,7 +1328,7 @@ static void xrot_p3i(real_T x[308], int32_T ix0, int32_T iy0, real_T c, real_T s
 }
 
 /* Function for MATLAB Function: '<Root>/Drone' */
-static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196])
+static void svd_j(const real_T A[308], real_T U[308], real_T s[14], real_T V[196])
 {
   __m128d tmp;
   real_T b_A[308];
@@ -1333,7 +1365,7 @@ static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196
     qq_tmp = 22 * i + i;
     qq = qq_tmp + 1;
     apply_transform = false;
-    nrm = xnrm2_am(22 - i, b_A, qq_tmp + 1);
+    nrm = xnrm2_hk(22 - i, b_A, qq_tmp + 1);
     if (nrm > 0.0) {
       apply_transform = true;
       if (b_A[qq_tmp] < 0.0) {
@@ -1377,7 +1409,7 @@ static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196
     for (qp1jj = qp1; qp1jj < 15; qp1jj++) {
       qjj = (qp1jj - 1) * 22 + i;
       if (apply_transform) {
-        xaxpy_eaq3(22 - i, -(xdotc_mq(22 - i, b_A, qq_tmp + 1, b_A, qjj + 1) /
+        xaxpy_kcgn(22 - i, -(xdotc_mz(22 - i, b_A, qq_tmp + 1, b_A, qjj + 1) /
                              b_A[qq_tmp]), qq_tmp + 1, b_A, qjj + 1);
       }
 
@@ -1390,7 +1422,7 @@ static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196
     }
 
     if (i + 1 <= 12) {
-      nrm = xnrm2_amm(13 - i, e, i + 2);
+      nrm = xnrm2_hk0(13 - i, e, i + 2);
       if (nrm == 0.0) {
         e[i] = 0.0;
       } else {
@@ -1433,12 +1465,12 @@ static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196
         }
 
         for (qq = qp1; qq < 15; qq++) {
-          xaxpy_eaq32(21 - i, e[qq - 1], b_A, (i + 22 * (qq - 1)) + 2, work, i +
+          xaxpy_kcgns(21 - i, e[qq - 1], b_A, (i + 22 * (qq - 1)) + 2, work, i +
                       2);
         }
 
         for (qq = qp1; qq < 15; qq++) {
-          xaxpy_eaq32c(21 - i, -e[qq - 1] / e[i + 1], work, i + 2, b_A, (i + 22 *
+          xaxpy_kcgnsa(21 - i, -e[qq - 1] / e[i + 1], work, i + 2, b_A, (i + 22 *
             (qq - 1)) + 2);
         }
       }
@@ -1457,7 +1489,7 @@ static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196
     if (b_s[qp1] != 0.0) {
       for (qp1jj = qp1 + 2; qp1jj < 15; qp1jj++) {
         qjj = ((qp1jj - 1) * 22 + qp1) + 1;
-        xaxpy_eaq3(22 - qp1, -(xdotc_mq(22 - qp1, U, qq + 1, U, qjj) / U[qq]),
+        xaxpy_kcgn(22 - qp1, -(xdotc_mz(22 - qp1, U, qq + 1, U, qjj) / U[qq]),
                    qq + 1, U, qjj);
       }
 
@@ -1481,7 +1513,7 @@ static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196
       qq = (14 * qp1 + qp1) + 2;
       for (qjj = qp1 + 2; qjj < 15; qjj++) {
         qp1jj = ((qjj - 1) * 14 + qp1) + 2;
-        xaxpy_eaq32cr(13 - qp1, -(xdotc_mqb(13 - qp1, Vf, qq, Vf, qp1jj) / Vf[qq
+        xaxpy_kcgnsau(13 - qp1, -(xdotc_mzz(13 - qp1, Vf, qq, Vf, qp1jj) / Vf[qq
           - 1]), qq, Vf, qp1jj);
       }
     }
@@ -1617,7 +1649,7 @@ static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196
           e[qjj - 2] = smm1 * ztest;
         }
 
-        xrot_p3(Vf, 14 * (qjj - 1) + 1, 14 * (i + 1) + 1, ztest, sqds);
+        xrot_k5(Vf, 14 * (qjj - 1) + 1, 14 * (i + 1) + 1, ztest, sqds);
       }
       break;
 
@@ -1629,7 +1661,7 @@ static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196
         smm1 = e[qjj - 1];
         rt = -sqds * smm1;
         e[qjj - 1] = smm1 * ztest;
-        xrot_p3i(U, 22 * (qjj - 1) + 1, 22 * (qq - 1) + 1, ztest, sqds);
+        xrot_k54(U, 22 * (qjj - 1) + 1, 22 * (qq - 1) + 1, ztest, sqds);
       }
       break;
 
@@ -1668,7 +1700,7 @@ static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196
         e[qjj - 1] = emm1 * sqds - rt * smm1;
         ztest = smm1 * b_s[qjj];
         b_s[qjj] *= sqds;
-        xrot_p3(Vf, 14 * (qjj - 1) + 1, 14 * qjj + 1, sqds, smm1);
+        xrot_k5(Vf, 14 * (qjj - 1) + 1, 14 * qjj + 1, sqds, smm1);
         b_s[qjj - 1] = rt * sqds + emm1 * smm1;
         xrotg(&b_s[qjj - 1], &ztest, &sqds, &smm1);
         ztest = e[qjj - 1];
@@ -1676,7 +1708,7 @@ static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196
         b_s[qjj] = ztest * -smm1 + sqds * b_s[qjj];
         ztest = smm1 * e[qjj];
         e[qjj] *= sqds;
-        xrot_p3i(U, 22 * (qjj - 1) + 1, 22 * qjj + 1, sqds, smm1);
+        xrot_k54(U, 22 * (qjj - 1) + 1, 22 * qjj + 1, sqds, smm1);
       }
 
       e[i] = rt;
@@ -1704,8 +1736,8 @@ static void svd_b(const real_T A[308], real_T U[308], real_T s[14], real_T V[196
         rt = b_s[qq];
         b_s[qq] = b_s[qp1];
         b_s[qp1] = rt;
-        xswap_mv(Vf, 14 * qq + 1, 14 * (qq + 1) + 1);
-        xswap_mva(U, 22 * qq + 1, 22 * (qq + 1) + 1);
+        xswap_kp(Vf, 14 * qq + 1, 14 * (qq + 1) + 1);
+        xswap_kpw(U, 22 * qq + 1, 22 * (qq + 1) + 1);
         qq = qp1;
         qp1++;
       }
@@ -1757,7 +1789,7 @@ static void pinv(const real_T A[308], real_T X_0[308])
       X_0[r] = (rtNaN);
     }
   } else {
-    svd_b(A, U, s, V);
+    svd_j(A, U, s, V);
     tol = 22.0 * eps(s[0]);
     r = -1;
     vcol = 0;
@@ -1814,6 +1846,69 @@ static void pinv(const real_T A[308], real_T X_0[308])
   }
 }
 
+real_T rt_atan2d_snf(real_T u0, real_T u1)
+{
+  real_T y;
+  if (rtIsNaN(u0) || rtIsNaN(u1)) {
+    y = (rtNaN);
+  } else if (rtIsInf(u0) && rtIsInf(u1)) {
+    int32_T tmp;
+    int32_T tmp_0;
+    if (u0 > 0.0) {
+      tmp = 1;
+    } else {
+      tmp = -1;
+    }
+
+    if (u1 > 0.0) {
+      tmp_0 = 1;
+    } else {
+      tmp_0 = -1;
+    }
+
+    y = atan2(tmp, tmp_0);
+  } else if (u1 == 0.0) {
+    if (u0 > 0.0) {
+      y = RT_PI / 2.0;
+    } else if (u0 < 0.0) {
+      y = -(RT_PI / 2.0);
+    } else {
+      y = 0.0;
+    }
+  } else {
+    y = atan2(u0, u1);
+  }
+
+  return y;
+}
+
+/* Function for MATLAB Function: '<Root>/state' */
+static void q2e(const real_T q[4], real_T *roll, real_T *pitch, real_T *yaw)
+{
+  real_T roll_tmp;
+  real_T sinp;
+  roll_tmp = q[2] * q[2];
+  *roll = rt_atan2d_snf((q[0] * q[1] + q[2] * q[3]) * 2.0, 1.0 - (q[1] * q[1] +
+    roll_tmp) * 2.0);
+  sinp = (q[0] * q[2] - q[1] * q[3]) * 2.0;
+  if (fabs(sinp) >= 1.0) {
+    if (rtIsNaN(sinp)) {
+      sinp = (rtNaN);
+    } else if (sinp < 0.0) {
+      sinp = -1.0;
+    } else {
+      sinp = (sinp > 0.0);
+    }
+
+    *pitch = 1.5707963267948966 * sinp;
+  } else {
+    *pitch = asin(sinp);
+  }
+
+  *yaw = rt_atan2d_snf((q[0] * q[3] + q[1] * q[2]) * 2.0, 1.0 - (q[3] * q[3] +
+    roll_tmp) * 2.0);
+}
+
 /* Model step function */
 void colibri_v1_step(void)
 {
@@ -1834,18 +1929,22 @@ void colibri_v1_step(void)
   real_T LAP[12];
   real_T S[9];
   real_T S_p[9];
+  real_T F_motor_BL[3];
   real_T F_motor_BR[3];
+  real_T F_motor_UL[3];
   real_T F_motor_UR[3];
+  real_T b[3];
   int32_T ar;
   int32_T b_ic;
   int32_T ib;
   int32_T vcol;
   int8_T b_I[196];
   boolean_T p;
-  static const real_T c[3] = { 0.0, 0.0, 6.7394700000000007 };
+  static const real_T d[3] = { 0.0, 0.0, 6.7394700000000007 };
 
-  static const real_T d[3] = { 0.0, 0.0, 7.19073 };
+  static const real_T e[3] = { 0.0, 0.0, 7.19073 };
 
+  __m128d tmp_4;
   __m128d tmp_5;
   __m128d tmp_6;
   __m128d tmp_7;
@@ -1857,13 +1956,13 @@ void colibri_v1_step(void)
   __m128d tmp_d;
   __m128d tmp_e;
   __m128d tmp_f;
-  __m128d tmp_g;
   real_T b_I_2[308];
   real_T tmp_3[308];
   real_T b_I_0[196];
   real_T b_I_1[196];
   real_T rtb_dxdt[28];
   real_T Q_0[22];
+  real_T tmp_0[16];
   real_T tmp_1[16];
   real_T H_p_tmp[12];
   real_T H_tmp[12];
@@ -1871,7 +1970,6 @@ void colibri_v1_step(void)
   real_T M_tmp_0[12];
   real_T M_tmp_1[12];
   real_T tmp[12];
-  real_T tmp_0[12];
   real_T rtb_u[8];
   real_T A_tmp[4];
   real_T A_tmp_0[4];
@@ -1879,22 +1977,20 @@ void colibri_v1_step(void)
   real_T M_tmp_2[4];
   real_T M_tmp_3[4];
   real_T tmp_2[4];
+  real_T F_motor_UR_0[3];
   real_T H_p_tmp_0[3];
-  real_T LAP_0[3];
-  real_T tmp_4[3];
   real_T A_tmp_2;
-  real_T F_motor_UL_idx_0;
-  real_T F_motor_UL_idx_2;
-  real_T F_motor_UR_0;
   real_T F_motor_UR_1;
   real_T F_motor_UR_2;
+  real_T F_motor_UR_3;
+  real_T F_motor_UR_4;
+  real_T F_motor_UR_5;
   real_T L2_0;
   real_T L2_dot_0;
   real_T L2_dot_1;
   real_T L2_dot_2;
   real_T S_0;
   real_T S_1;
-  real_T S_p_0;
   real_T S_p_idx_0;
   real_T S_p_idx_0_0;
   real_T S_p_idx_1;
@@ -1904,6 +2000,7 @@ void colibri_v1_step(void)
   real_T S_p_tmp;
   real_T S_p_tmp_0;
   real_T S_p_tmp_1;
+  real_T S_p_tmp_2;
   real_T S_tmp;
   real_T S_tmp_0;
   real_T S_tmp_1;
@@ -1933,13 +2030,13 @@ void colibri_v1_step(void)
   static const real_T b_y[9] = { 0.0016, 0.0, 0.0, 0.0, 0.0131, 0.0, 0.0, 0.0,
     0.0123 };
 
-  static const real_T d_0[3] = { 0.0, 0.0, 7.19073 };
+  static const real_T e_0[3] = { 0.0, 0.0, 7.19073 };
 
-  static const real_T c_0[3] = { 0.0, 0.0, 6.7394700000000007 };
+  static const real_T d_0[3] = { 0.0, 0.0, 6.7394700000000007 };
 
-  static const int8_T e[9] = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+  static const int8_T f[9] = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
 
-  static const int8_T f[9] = { -1, 0, 0, 0, -1, 0, 0, 0, -1 };
+  static const int8_T g[9] = { -1, 0, 0, 0, -1, 0, 0, 0, -1 };
 
   int32_T scalarLB_tmp;
 
@@ -2264,11 +2361,11 @@ void colibri_v1_step(void)
   S_p[4] = S_tmp_3 * 2.0 + S_p_tmp;
   S_tmp_4 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[22] *
     rtDW.DiscreteTimeIntegrator_DSTATE[23];
-  F_motor_UL_idx_0 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[20] *
+  S_p_tmp_2 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[20] *
     rtDW.DiscreteTimeIntegrator_DSTATE[21];
-  S_p[7] = S_tmp_4 - F_motor_UL_idx_0;
+  S_p[7] = S_tmp_4 - S_p_tmp_2;
   S_p[2] = S_p_tmp_0 - S_p_tmp_1;
-  S_p[5] = S_tmp_4 + F_motor_UL_idx_0;
+  S_p[5] = S_tmp_4 + S_p_tmp_2;
   S_tmp_4 = rtDW.DiscreteTimeIntegrator_DSTATE[23] *
     rtDW.DiscreteTimeIntegrator_DSTATE[23];
   S_p[8] = S_tmp_4 * 2.0 + S_p_tmp;
@@ -2344,34 +2441,34 @@ void colibri_v1_step(void)
   L3_p_dot[5] = 0.0;
   L3_p_dot[8] = 0.0;
   L3_p_dot[11] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[27];
-  tmp[0] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * 0.0;
-  tmp[3] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[7] * 0.0;
-  tmp[6] = 0.0;
-  tmp[9] = 0.0;
+  M_tmp_1[0] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * 0.0;
+  M_tmp_1[3] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[7] * 0.0;
+  M_tmp_1[6] = 0.0;
+  M_tmp_1[9] = 0.0;
   S_p_tmp_0 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[9] * 0.0;
-  tmp[1] = S_p_tmp_0;
-  tmp[4] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[8] * 0.0;
+  M_tmp_1[1] = S_p_tmp_0;
+  M_tmp_1[4] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[8] * 0.0;
   S_p_tmp_1 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[7] * 0.0;
-  tmp[7] = S_p_tmp_1;
-  tmp[10] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * 0.0;
-  tmp[2] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[8] * 0.0;
-  tmp[5] = S_p_tmp_0;
-  tmp[8] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * 0.0;
-  tmp[11] = S_p_tmp_1;
+  M_tmp_1[7] = S_p_tmp_1;
+  M_tmp_1[10] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * 0.0;
+  M_tmp_1[2] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[8] * 0.0;
+  M_tmp_1[5] = S_p_tmp_0;
+  M_tmp_1[8] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * 0.0;
+  M_tmp_1[11] = S_p_tmp_1;
   S_p_tmp_0 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[8] * -0.026;
-  tmp_0[0] = S_p_tmp_0;
+  tmp[0] = S_p_tmp_0;
   S_p_tmp_1 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[9] * -0.026;
-  tmp_0[3] = S_p_tmp_1;
-  tmp_0[6] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * -0.026;
-  tmp_0[9] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[7] * -0.026;
-  tmp_0[1] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[7] * -0.026;
-  tmp_0[4] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * -0.026;
-  tmp_0[7] = S_p_tmp_1;
-  tmp_0[10] = S_p_tmp_0;
-  tmp_0[2] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * -0.026;
-  tmp_0[5] = -0.0;
-  tmp_0[8] = -0.0;
-  tmp_0[11] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[9] * -0.026;
+  tmp[3] = S_p_tmp_1;
+  tmp[6] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * -0.026;
+  tmp[9] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[7] * -0.026;
+  tmp[1] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[7] * -0.026;
+  tmp[4] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * -0.026;
+  tmp[7] = S_p_tmp_1;
+  tmp[10] = S_p_tmp_0;
+  tmp[2] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[6] * -0.026;
+  tmp[5] = -0.0;
+  tmp[8] = -0.0;
+  tmp[11] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[9] * -0.026;
   M_tmp[0] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[23] * 0.0;
   S_p_tmp_0 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[22] * 0.0;
   M_tmp[3] = S_p_tmp_0;
@@ -2388,16 +2485,16 @@ void colibri_v1_step(void)
   M_tmp[11] = S_p_tmp_0;
   for (i = 0; i <= 10; i += 2) {
     /* MATLAB Function: '<Root>/Drone' */
-    tmp_a = _mm_loadu_pd(&L2[i]);
+    tmp_9 = _mm_loadu_pd(&L2[i]);
+    tmp_a = _mm_loadu_pd(&M_tmp_1[i]);
     tmp_b = _mm_loadu_pd(&tmp[i]);
-    tmp_c = _mm_loadu_pd(&tmp_0[i]);
     _mm_storeu_pd(&LAB[i], _mm_add_pd(_mm_add_pd(_mm_mul_pd(_mm_set1_pd(0.0),
-      tmp_a), tmp_b), tmp_c));
-    tmp_a = _mm_loadu_pd(&L1_p[i]);
-    tmp_b = _mm_loadu_pd(&M_tmp[i]);
-    tmp_c = _mm_loadu_pd(&L3_p[i]);
+      tmp_9), tmp_a), tmp_b));
+    tmp_9 = _mm_loadu_pd(&L1_p[i]);
+    tmp_a = _mm_loadu_pd(&M_tmp[i]);
+    tmp_b = _mm_loadu_pd(&L3_p[i]);
     _mm_storeu_pd(&LAP[i], _mm_add_pd(_mm_add_pd(_mm_mul_pd(_mm_set1_pd(0.0782),
-      tmp_a), tmp_b), _mm_mul_pd(_mm_set1_pd(-0.1556), tmp_c)));
+      tmp_9), tmp_a), _mm_mul_pd(_mm_set1_pd(-0.1556), tmp_b)));
   }
 
   /* MATLAB Function: '<Root>/Drone' incorporates:
@@ -2446,39 +2543,6 @@ void colibri_v1_step(void)
     M_tmp_0[M_tmp_tmp + 3] = H_p_tmp[i + 9];
   }
 
-  rtb_RateLimiter2 *= rtb_RateLimiter2;
-  F_motor_UR[0] = rtb_RateLimiter2 * 1.3277417013759314E-6;
-  F_motor_UR[2] = rtb_RateLimiter2 * -4.95519948886292E-6;
-  rtb_RateLimiter3 *= rtb_RateLimiter3;
-  F_motor_BR[0] = rtb_RateLimiter3 * -1.3277417013759314E-6;
-  F_motor_BR[2] = rtb_RateLimiter3 * -4.95519948886292E-6;
-  rtb_RateLimiter3 = rtb_RateLimiter4 * rtb_RateLimiter4;
-  rtb_RateLimiter4 = rtb_RateLimiter3 * -1.3277417013759314E-6;
-  rtb_RateLimiter3 *= -4.95519948886292E-6;
-  rtb_RateLimiter5 *= rtb_RateLimiter5;
-  F_motor_UL_idx_0 = rtb_RateLimiter5 * 1.3277417013759314E-6;
-  F_motor_UL_idx_2 = rtb_RateLimiter5 * -4.95519948886292E-6;
-  rtb_Saturation7 = rtb_Saturation7 * rtb_Saturation7 * -5.13E-6;
-  rtb_RateLimiter5 = ((F_motor_UR[0] + F_motor_BR[0]) + rtb_RateLimiter4) +
-    F_motor_UL_idx_0;
-  rtb_RateLimiter2 = ((F_motor_UR[2] + F_motor_BR[2]) + rtb_RateLimiter3) +
-    F_motor_UL_idx_2;
-  S_p_tmp_0 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[11] * -2.0;
-  tmp[0] = S_p_tmp_0;
-  S_p_tmp_1 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[10] * -2.0;
-  tmp[1] = S_p_tmp_1;
-  tmp[2] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[13] * -2.0;
-  S_p_0 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[12] * -2.0;
-  tmp[3] = S_p_0;
-  tmp[4] = S_p_0;
-  S_p_0 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[13] * -2.0;
-  tmp[5] = S_p_0;
-  tmp[6] = S_p_tmp_1;
-  tmp[7] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[11] * -2.0;
-  tmp[8] = S_p_0;
-  tmp[9] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[12] * -2.0;
-  tmp[10] = S_p_tmp_0;
-  tmp[11] = S_p_tmp_1;
   for (i = 0; i < 4; i++) {
     S_p_tmp = M_tmp_0[i + 4];
     S_p_tmp_0 = M_tmp_0[i];
@@ -2495,97 +2559,162 @@ void colibri_v1_step(void)
       M[(i + 14 * (vcol + 10)) + 10] = (H_p_tmp[3 * vcol + 1] * S_p_tmp +
         H_p_tmp[3 * vcol] * S_p_tmp_0) + H_p_tmp[3 * vcol + 2] * S_p_tmp_1;
     }
+  }
+
+  rtb_RateLimiter2 *= rtb_RateLimiter2;
+  F_motor_UR[0] = rtb_RateLimiter2 * 1.3277417013759314E-6;
+  F_motor_UR[1] = 0.0;
+  F_motor_UR[2] = rtb_RateLimiter2 * -4.95519948886292E-6;
+  rtb_RateLimiter3 *= rtb_RateLimiter3;
+  F_motor_BR[0] = rtb_RateLimiter3 * -1.3277417013759314E-6;
+  F_motor_BR[1] = 0.0;
+  F_motor_BR[2] = rtb_RateLimiter3 * -4.95519948886292E-6;
+  rtb_RateLimiter4 *= rtb_RateLimiter4;
+  F_motor_BL[0] = rtb_RateLimiter4 * -1.3277417013759314E-6;
+  F_motor_BL[1] = 0.0;
+  F_motor_BL[2] = rtb_RateLimiter4 * -4.95519948886292E-6;
+  rtb_RateLimiter5 *= rtb_RateLimiter5;
+  F_motor_UL[0] = rtb_RateLimiter5 * 1.3277417013759314E-6;
+  F_motor_UL[1] = 0.0;
+  F_motor_UL[2] = rtb_RateLimiter5 * -4.95519948886292E-6;
+  rtb_RateLimiter5 = rtb_Saturation7 * rtb_Saturation7 * -5.13E-6;
+  for (i = 0; i < 3; i++) {
+    b[i] = (S_p[3 * i + 1] * 0.0 + S_p[3 * i] * 0.0) + S_p[3 * i + 2];
+    F_motor_UR_0[i] = ((F_motor_UR[i] + F_motor_BR[i]) + F_motor_BL[i]) +
+      F_motor_UL[i];
+  }
+
+  S_p_tmp_0 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[11] * -2.0;
+  M_tmp_1[0] = S_p_tmp_0;
+  S_p_tmp_1 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[10] * -2.0;
+  M_tmp_1[1] = S_p_tmp_1;
+  M_tmp_1[2] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[13] * -2.0;
+  rtb_Saturation7 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[12] * -2.0;
+  M_tmp_1[3] = rtb_Saturation7;
+  M_tmp_1[4] = rtb_Saturation7;
+  rtb_Saturation7 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[13] * -2.0;
+  M_tmp_1[5] = rtb_Saturation7;
+  M_tmp_1[6] = S_p_tmp_1;
+  M_tmp_1[7] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[11] * -2.0;
+  M_tmp_1[8] = rtb_Saturation7;
+  M_tmp_1[9] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[12] * -2.0;
+  M_tmp_1[10] = S_p_tmp_0;
+  M_tmp_1[11] = S_p_tmp_1;
+  for (i = 0; i < 4; i++) {
+    S_p_tmp_0 = M_tmp_1[i + 4];
+    S_p_tmp_1 = M_tmp_1[i];
+    rtb_Saturation7 = M_tmp_1[i + 8];
+    for (vcol = 0; vcol < 3; vcol++) {
+      tmp[i + (vcol << 2)] = (y[3 * vcol + 1] * S_p_tmp_0 + y[3 * vcol] *
+        S_p_tmp_1) + y[3 * vcol + 2] * rtb_Saturation7;
+    }
 
     S_p_tmp_0 = tmp[i + 4];
     S_p_tmp_1 = tmp[i];
-    S_p_0 = tmp[i + 8];
-    for (vcol = 0; vcol < 3; vcol++) {
-      tmp_0[i + (vcol << 2)] = (y[3 * vcol + 1] * S_p_tmp_0 + y[3 * vcol] *
-        S_p_tmp_1) + y[3 * vcol + 2] * S_p_0;
-    }
-
-    S_p_tmp_0 = tmp_0[i + 4];
-    S_p_tmp_1 = tmp_0[i];
-    S_p_0 = tmp_0[i + 8];
+    rtb_Saturation7 = tmp[i + 8];
     for (vcol = 0; vcol < 4; vcol++) {
-      tmp_1[i + (vcol << 2)] = (H_tmp[3 * vcol + 1] * S_p_tmp_0 + H_tmp[3 * vcol]
-        * S_p_tmp_1) + H_tmp[3 * vcol + 2] * S_p_0;
+      tmp_0[i + (vcol << 2)] = (H_tmp[3 * vcol + 1] * S_p_tmp_0 + H_tmp[3 * vcol]
+        * S_p_tmp_1) + H_tmp[3 * vcol + 2] * rtb_Saturation7;
     }
   }
 
   H_p_tmp_0[0] = ((0.24 * F_motor_UR[2] + 0.24 * F_motor_BR[2]) + -0.24 *
-                  rtb_RateLimiter3) + -0.24 * F_motor_UL_idx_2;
+                  F_motor_BL[2]) + -0.24 * F_motor_UL[2];
   H_p_tmp_0[1] = (((0.011 * F_motor_UR[0] - -0.084 * F_motor_UR[2]) + (0.011 *
-    F_motor_BR[0] - 0.084 * F_motor_BR[2])) + (0.011 * rtb_RateLimiter4 - 0.084 *
-    rtb_RateLimiter3)) + (0.011 * F_motor_UL_idx_0 - -0.084 * F_motor_UL_idx_2);
+    F_motor_BR[0] - 0.084 * F_motor_BR[2])) + (0.011 * F_motor_BL[0] - 0.084 *
+    F_motor_BL[2])) + (0.011 * F_motor_UL[0] - -0.084 * F_motor_UL[2]);
   H_p_tmp_0[2] = (((-0.0 - 0.24 * F_motor_UR[0]) + (0.0 - 0.24 * F_motor_BR[0]))
-                  + (0.0 - -0.24 * rtb_RateLimiter4)) + (-0.0 - -0.24 *
-    F_motor_UL_idx_0);
+                  + (0.0 - -0.24 * F_motor_BL[0])) + (-0.0 - -0.24 * F_motor_UL
+    [0]);
   S_p_tmp_0 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[25] * -2.0;
-  tmp[0] = S_p_tmp_0;
+  M_tmp_1[0] = S_p_tmp_0;
   S_p_tmp_1 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[24] * -2.0;
-  tmp[1] = S_p_tmp_1;
-  tmp[2] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[27] * -2.0;
-  S_p_0 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[26] * -2.0;
-  tmp[3] = S_p_0;
-  tmp[4] = S_p_0;
-  S_p_0 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[27] * -2.0;
-  tmp[5] = S_p_0;
-  tmp[6] = S_p_tmp_1;
-  tmp[7] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[25] * -2.0;
-  tmp[8] = S_p_0;
-  tmp[9] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[26] * -2.0;
-  tmp[10] = S_p_tmp_0;
-  tmp[11] = S_p_tmp_1;
-  rtb_RateLimiter4 = 0.0 * rtb_Saturation7;
-  rtb_RateLimiter3 = 0.0 - -0.3062 * rtb_Saturation7;
+  M_tmp_1[1] = S_p_tmp_1;
+  M_tmp_1[2] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[27] * -2.0;
+  rtb_Saturation7 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[26] * -2.0;
+  M_tmp_1[3] = rtb_Saturation7;
+  M_tmp_1[4] = rtb_Saturation7;
+  rtb_Saturation7 = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[27] * -2.0;
+  M_tmp_1[5] = rtb_Saturation7;
+  M_tmp_1[6] = S_p_tmp_1;
+  M_tmp_1[7] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[25] * -2.0;
+  M_tmp_1[8] = rtb_Saturation7;
+  M_tmp_1[9] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[26] * -2.0;
+  M_tmp_1[10] = S_p_tmp_0;
+  M_tmp_1[11] = S_p_tmp_1;
   for (i = 0; i < 4; i++) {
-    A_tmp[i] = ((tmp_1[i + 4] * rtDW.DiscreteTimeIntegrator_DSTATE[11] + tmp_1[i]
-                 * rtDW.DiscreteTimeIntegrator_DSTATE[10]) + tmp_1[i + 8] *
-                rtDW.DiscreteTimeIntegrator_DSTATE[12]) + tmp_1[i + 12] *
+    A_tmp[i] = ((tmp_0[i + 4] * rtDW.DiscreteTimeIntegrator_DSTATE[11] + tmp_0[i]
+                 * rtDW.DiscreteTimeIntegrator_DSTATE[10]) + tmp_0[i + 8] *
+                rtDW.DiscreteTimeIntegrator_DSTATE[12]) + tmp_0[i + 12] *
       rtDW.DiscreteTimeIntegrator_DSTATE[13];
     S_p_tmp = 0.0;
-    S_p_tmp_0 = tmp[i + 4];
-    S_p_tmp_1 = tmp[i];
-    S_p_0 = tmp[i + 8];
+    S_p_tmp_0 = M_tmp_1[i + 4];
+    S_p_tmp_1 = M_tmp_1[i];
+    rtb_Saturation7 = M_tmp_1[i + 8];
     for (vcol = 0; vcol < 3; vcol++) {
       M_tmp_tmp = (vcol << 2) + i;
       S_p_tmp += M_tmp[M_tmp_tmp] * H_p_tmp_0[vcol];
-      tmp_0[M_tmp_tmp] = (b_y[3 * vcol + 1] * S_p_tmp_0 + b_y[3 * vcol] *
-                          S_p_tmp_1) + b_y[3 * vcol + 2] * S_p_0;
+      tmp[M_tmp_tmp] = (b_y[3 * vcol + 1] * S_p_tmp_0 + b_y[3 * vcol] *
+                        S_p_tmp_1) + b_y[3 * vcol + 2] * rtb_Saturation7;
     }
 
     M_tmp_2[i] = S_p_tmp;
-    S_p_tmp_0 = 0.0;
-    S_p_tmp_1 = tmp_0[i + 4];
-    S_p_0 = tmp_0[i];
-    S_p_tmp = tmp_0[i + 8];
+    S_p_tmp_0 = tmp[i + 4];
+    S_p_tmp_1 = tmp[i];
+    rtb_Saturation7 = tmp[i + 8];
     for (vcol = 0; vcol < 4; vcol++) {
-      S_p_tmp_0 += ((H_p_tmp[3 * vcol + 1] * S_p_tmp_1 + H_p_tmp[3 * vcol] *
-                     S_p_0) + H_p_tmp[3 * vcol + 2] * S_p_tmp) *
-        rtDW.DiscreteTimeIntegrator_DSTATE[vcol + 24];
+      tmp_1[i + (vcol << 2)] = (H_p_tmp[3 * vcol + 1] * S_p_tmp_0 + H_p_tmp[3 *
+        vcol] * S_p_tmp_1) + H_p_tmp[3 * vcol + 2] * rtb_Saturation7;
     }
-
-    tmp_2[i] = S_p_tmp_0;
-    M_tmp_3[i] = (M_tmp_0[i + 4] * rtb_RateLimiter3 + M_tmp_0[i] *
-                  rtb_RateLimiter4) + M_tmp_0[i + 8] * -0.0;
   }
 
+  rtb_Saturation7 = -0.562315086 * b[1] - -0.0 * b[0];
+  rtb_RateLimiter4 = (-0.0 * b[2] - 1.118877588 * b[1]) + 0.0 * rtb_RateLimiter5;
+  rtb_RateLimiter3 = (1.118877588 * b[0] - -0.562315086 * b[2]) + (0.0 - -0.3062
+    * rtb_RateLimiter5);
+  S_p_tmp_0 = rtDW.DiscreteTimeIntegrator_DSTATE[25];
+  S_p_tmp_1 = rtDW.DiscreteTimeIntegrator_DSTATE[24];
+  rtb_RateLimiter2 = rtDW.DiscreteTimeIntegrator_DSTATE[26];
+  S_p_tmp = rtDW.DiscreteTimeIntegrator_DSTATE[27];
+  for (i = 0; i <= 2; i += 2) {
+    /* MATLAB Function: '<Root>/Drone' incorporates:
+     *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
+     */
+    tmp_9 = _mm_loadu_pd(&tmp_1[i + 4]);
+    tmp_a = _mm_loadu_pd(&tmp_1[i]);
+    tmp_b = _mm_loadu_pd(&tmp_1[i + 8]);
+    tmp_8 = _mm_loadu_pd(&tmp_1[i + 12]);
+    _mm_storeu_pd(&tmp_2[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd(tmp_9,
+      _mm_set1_pd(S_p_tmp_0)), _mm_mul_pd(tmp_a, _mm_set1_pd(S_p_tmp_1))),
+      _mm_mul_pd(tmp_b, _mm_set1_pd(rtb_RateLimiter2))), _mm_mul_pd(tmp_8,
+      _mm_set1_pd(S_p_tmp))));
+    tmp_9 = _mm_loadu_pd(&M_tmp_0[i + 4]);
+    tmp_a = _mm_loadu_pd(&M_tmp_0[i]);
+    tmp_b = _mm_loadu_pd(&M_tmp_0[i + 8]);
+    _mm_storeu_pd(&M_tmp_3[i], _mm_add_pd(_mm_add_pd(_mm_mul_pd(tmp_9,
+      _mm_set1_pd(rtb_RateLimiter3)), _mm_mul_pd(tmp_a, _mm_set1_pd
+      (rtb_RateLimiter4))), _mm_mul_pd(tmp_b, _mm_set1_pd(rtb_Saturation7))));
+  }
+
+  /* MATLAB Function: '<Root>/Drone' */
+  F_motor_UR_3 = F_motor_UR_0[1];
+  F_motor_UR_4 = F_motor_UR_0[0];
+  F_motor_UR_5 = F_motor_UR_0[2];
   for (i = 0; i <= 0; i += 2) {
     /* MATLAB Function: '<Root>/Drone' */
-    tmp_a = _mm_loadu_pd(&S_p[i + 3]);
-    tmp_b = _mm_set1_pd(0.0);
-    tmp_c = _mm_loadu_pd(&S_p[i]);
-    tmp_9 = _mm_loadu_pd(&S_p[i + 6]);
+    tmp_9 = _mm_loadu_pd(&S_p[i + 3]);
+    tmp_a = _mm_set1_pd(0.0);
+    tmp_b = _mm_loadu_pd(&S_p[i]);
+    tmp_8 = _mm_loadu_pd(&S_p[i + 6]);
     _mm_storeu_pd(&F_motor_BR[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd
-      (tmp_a, tmp_b), _mm_mul_pd(tmp_c, tmp_b)), _mm_mul_pd(tmp_9, _mm_set1_pd
-      (rtb_Saturation7))), _mm_loadu_pd(&d[i])));
-    tmp_a = _mm_loadu_pd(&S[i + 3]);
-    tmp_c = _mm_loadu_pd(&S[i]);
-    tmp_9 = _mm_loadu_pd(&S[i + 6]);
-    _mm_storeu_pd(&Q[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd(tmp_a,
-      tmp_b), _mm_mul_pd(tmp_c, _mm_set1_pd(rtb_RateLimiter5))), _mm_mul_pd
-      (tmp_9, _mm_set1_pd(rtb_RateLimiter2))), _mm_loadu_pd(&c[i])));
+      (tmp_9, tmp_a), _mm_mul_pd(tmp_b, tmp_a)), _mm_mul_pd(tmp_8, _mm_set1_pd
+      (rtb_RateLimiter5))), _mm_loadu_pd(&e[i])));
+    tmp_9 = _mm_loadu_pd(&S[i + 3]);
+    tmp_a = _mm_loadu_pd(&S[i]);
+    tmp_b = _mm_loadu_pd(&S[i + 6]);
+    _mm_storeu_pd(&Q[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd(tmp_9,
+      _mm_set1_pd(F_motor_UR_3)), _mm_mul_pd(tmp_a, _mm_set1_pd(F_motor_UR_4))),
+      _mm_mul_pd(tmp_b, _mm_set1_pd(F_motor_UR_5))), _mm_loadu_pd(&d[i])));
   }
 
   /* MATLAB Function: '<Root>/Drone' incorporates:
@@ -2593,9 +2722,9 @@ void colibri_v1_step(void)
    */
   for (i = 2; i < 3; i++) {
     F_motor_BR[i] = ((S_p[i + 3] * 0.0 + S_p[i] * 0.0) + S_p[i + 6] *
-                     rtb_Saturation7) + d_0[i];
-    Q[i] = ((S[i + 3] * 0.0 + S[i] * rtb_RateLimiter5) + S[i + 6] *
-            rtb_RateLimiter2) + c_0[i];
+                     rtb_RateLimiter5) + e_0[i];
+    Q[i] = ((S[i + 3] * F_motor_UR_3 + S[i] * F_motor_UR_4) + S[i + 6] *
+            F_motor_UR_5) + d_0[i];
   }
 
   Q[3] = A_tmp[0] + M_tmp_2[0];
@@ -2605,32 +2734,32 @@ void colibri_v1_step(void)
   Q[7] = F_motor_BR[0];
   Q[8] = F_motor_BR[1];
   Q[9] = F_motor_BR[2];
-  rtb_Saturation7 = S_p[6];
-  rtb_RateLimiter5 = S_p[0];
-  S_p_tmp_1 = S_p[7];
-  F_motor_UL_idx_0 = S_p[1];
-  F_motor_UL_idx_2 = S_p[2];
-  S_p_0 = S_p[8];
+  rtb_RateLimiter5 = S_p[6];
+  rtb_Saturation7 = S_p[0];
+  S_p_tmp_0 = S_p[7];
+  S_p_tmp_1 = S_p[1];
+  F_motor_UR_3 = S_p[2];
+  F_motor_UR_4 = S_p[8];
   rtb_RateLimiter4 = S[4];
   rtb_RateLimiter3 = S[3];
-  S_p_tmp_0 = S[5];
+  S_p_tmp_2 = S[5];
   for (i = 0; i < 4; i++) {
     Q[i + 10] = tmp_2[i] + M_tmp_3[i];
     L2_0 = L2[3 * i];
-    rtb_RateLimiter2 = rtb_Saturation7 * L2_0;
-    S_p_tmp = rtb_RateLimiter5 * L2_0;
+    rtb_RateLimiter2 = rtb_RateLimiter5 * L2_0;
+    S_p_tmp = rtb_Saturation7 * L2_0;
     vcol = 3 * i + 1;
     L2_0 = L2[vcol];
-    rtb_RateLimiter2 += S_p_tmp_1 * L2_0;
-    S_p_tmp += F_motor_UL_idx_0 * L2_0;
+    rtb_RateLimiter2 += S_p_tmp_0 * L2_0;
+    S_p_tmp += S_p_tmp_1 * L2_0;
     M_tmp_tmp = 3 * i + 2;
     L2_0 = L2[M_tmp_tmp];
     A_tmp_1[i] = (L1_p[3 * i] * rtb_RateLimiter3 + L1_p[vcol] * rtb_RateLimiter4)
-      + L1_p[M_tmp_tmp] * S_p_tmp_0;
-    A_tmp_0[i] = F_motor_UL_idx_2 * L2_0 + S_p_tmp;
+      + L1_p[M_tmp_tmp] * S_p_tmp_2;
+    A_tmp_0[i] = F_motor_UR_3 * L2_0 + S_p_tmp;
     M_tmp_2[i] = (L3_p[3 * i] * rtb_RateLimiter3 + L3_p[vcol] * rtb_RateLimiter4)
-      + L3_p[M_tmp_tmp] * S_p_tmp_0;
-    A_tmp[i] = S_p_0 * L2_0 + rtb_RateLimiter2;
+      + L3_p[M_tmp_tmp] * S_p_tmp_2;
+    A_tmp[i] = F_motor_UR_4 * L2_0 + rtb_RateLimiter2;
   }
 
   A[0] = 0.0;
@@ -2691,9 +2820,9 @@ void colibri_v1_step(void)
   A[107] = A_tmp_1[3];
   for (i = 0; i < 3; i++) {
     vcol = i << 3;
-    A[vcol + 4] = e[3 * i];
-    A[vcol + 5] = e[3 * i + 1];
-    A[vcol + 6] = e[3 * i + 2];
+    A[vcol + 4] = f[3 * i];
+    A[vcol + 5] = f[3 * i + 1];
+    A[vcol + 6] = f[3 * i + 2];
   }
 
   for (i = 0; i < 4; i++) {
@@ -2705,9 +2834,9 @@ void colibri_v1_step(void)
 
   for (i = 0; i < 3; i++) {
     vcol = (i + 7) << 3;
-    A[vcol + 4] = f[3 * i];
-    A[vcol + 5] = f[3 * i + 1];
-    A[vcol + 6] = f[3 * i + 2];
+    A[vcol + 4] = g[3 * i];
+    A[vcol + 5] = g[3 * i + 1];
+    A[vcol + 6] = g[3 * i + 2];
   }
 
   for (i = 0; i < 4; i++) {
@@ -2731,8 +2860,8 @@ void colibri_v1_step(void)
   for (i = 0; i < 112; i++) {
     X_1[i] = 0.0;
     if (p) {
-      rtb_Saturation7 = b_A[i];
-      if (rtIsInf(rtb_Saturation7) || rtIsNaN(rtb_Saturation7)) {
+      rtb_RateLimiter5 = b_A[i];
+      if (rtIsInf(rtb_RateLimiter5) || rtIsNaN(rtb_RateLimiter5)) {
         p = false;
       }
     }
@@ -2759,8 +2888,8 @@ void colibri_v1_step(void)
         scalarLB_tmp = 8 + vcol;
         vectorUB = vcol + 6;
         for (ar = vcol; ar <= vectorUB; ar += 2) {
-          tmp_a = _mm_loadu_pd(&V[ar - 1]);
-          _mm_storeu_pd(&V[ar - 1], _mm_mul_pd(tmp_a, _mm_set1_pd
+          tmp_9 = _mm_loadu_pd(&V[ar - 1]);
+          _mm_storeu_pd(&V[ar - 1], _mm_mul_pd(tmp_9, _mm_set1_pd
             (rtb_RateLimiter2)));
         }
 
@@ -2784,10 +2913,10 @@ void colibri_v1_step(void)
           scalarLB = M_tmp_tmp + 9;
           vectorUB = M_tmp_tmp + 7;
           for (b_ic = M_tmp_tmp + 1; b_ic <= vectorUB; b_ic += 2) {
-            tmp_a = _mm_loadu_pd(&V[(ar + b_ic) - M_tmp_tmp]);
-            tmp_b = _mm_loadu_pd(&X_1[b_ic - 1]);
-            _mm_storeu_pd(&X_1[b_ic - 1], _mm_add_pd(_mm_mul_pd(tmp_a,
-              _mm_set1_pd(U[ib - 1])), tmp_b));
+            tmp_9 = _mm_loadu_pd(&V[(ar + b_ic) - M_tmp_tmp]);
+            tmp_a = _mm_loadu_pd(&X_1[b_ic - 1]);
+            _mm_storeu_pd(&X_1[b_ic - 1], _mm_add_pd(_mm_mul_pd(tmp_9,
+              _mm_set1_pd(U[ib - 1])), tmp_a));
           }
 
           for (b_ic = scalarLB; b_ic <= M_tmp_tmp + 8; b_ic++) {
@@ -2805,33 +2934,33 @@ void colibri_v1_step(void)
     b_I[i + 14 * i] = 1;
   }
 
-  S_p_tmp_1 = rtDW.DiscreteTimeIntegrator_DSTATE[10];
-  F_motor_UL_idx_0 = rtDW.DiscreteTimeIntegrator_DSTATE[11];
-  rtb_Saturation7 = rtDW.DiscreteTimeIntegrator_DSTATE[12];
-  rtb_RateLimiter5 = rtDW.DiscreteTimeIntegrator_DSTATE[13];
+  S_p_tmp_0 = rtDW.DiscreteTimeIntegrator_DSTATE[10];
+  S_p_tmp_1 = rtDW.DiscreteTimeIntegrator_DSTATE[11];
+  rtb_RateLimiter2 = rtDW.DiscreteTimeIntegrator_DSTATE[12];
+  S_p_tmp = rtDW.DiscreteTimeIntegrator_DSTATE[13];
   for (i = 0; i <= 0; i += 2) {
     /* MATLAB Function: '<Root>/Drone' incorporates:
      *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
      */
-    tmp_a = _mm_loadu_pd(&L2[i]);
-    tmp_b = _mm_loadu_pd(&L2[i + 3]);
-    tmp_c = _mm_loadu_pd(&L2[i + 6]);
-    tmp_9 = _mm_loadu_pd(&L2[i + 9]);
+    tmp_9 = _mm_loadu_pd(&L2[i]);
+    tmp_a = _mm_loadu_pd(&L2[i + 3]);
+    tmp_b = _mm_loadu_pd(&L2[i + 6]);
+    tmp_8 = _mm_loadu_pd(&L2[i + 9]);
     _mm_storeu_pd(&F_motor_UR[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd
-      (_mm_set1_pd(2.0 * S_p_tmp_1), tmp_a), _mm_mul_pd(_mm_set1_pd(2.0 *
-      F_motor_UL_idx_0), tmp_b)), _mm_mul_pd(_mm_set1_pd(2.0 * rtb_Saturation7),
-      tmp_c)), _mm_mul_pd(_mm_set1_pd(2.0 * rtb_RateLimiter5), tmp_9)));
-    tmp_a = _mm_loadu_pd(&S[i + 3]);
-    _mm_storeu_pd(&F_motor_BR[i], _mm_mul_pd(tmp_a, _mm_set1_pd(8.0)));
+      (_mm_set1_pd(2.0 * S_p_tmp_0), tmp_9), _mm_mul_pd(_mm_set1_pd(2.0 *
+      S_p_tmp_1), tmp_a)), _mm_mul_pd(_mm_set1_pd(2.0 * rtb_RateLimiter2), tmp_b)),
+      _mm_mul_pd(_mm_set1_pd(2.0 * S_p_tmp), tmp_8)));
+    tmp_9 = _mm_loadu_pd(&S[i + 3]);
+    _mm_storeu_pd(&F_motor_BR[i], _mm_mul_pd(tmp_9, _mm_set1_pd(8.0)));
   }
 
   /* MATLAB Function: '<Root>/Drone' incorporates:
    *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
    */
   for (i = 2; i < 3; i++) {
-    F_motor_UR[i] = ((2.0 * S_p_tmp_1 * L2[i] + 2.0 * F_motor_UL_idx_0 * L2[i +
-                      3]) + 2.0 * rtb_Saturation7 * L2[i + 6]) + 2.0 *
-      rtb_RateLimiter5 * L2[i + 9];
+    F_motor_UR[i] = ((2.0 * S_p_tmp_0 * L2[i] + 2.0 * S_p_tmp_1 * L2[i + 3]) +
+                     2.0 * rtb_RateLimiter2 * L2[i + 6]) + 2.0 * S_p_tmp * L2[i
+      + 9];
     F_motor_BR[i] = S[i + 3] * 8.0;
   }
 
@@ -2847,12 +2976,12 @@ void colibri_v1_step(void)
     }
 
     for (vcol = 0; vcol < 14; vcol++) {
-      rtb_Saturation7 = 0.0;
+      rtb_RateLimiter5 = 0.0;
       for (M_tmp_tmp = 0; M_tmp_tmp < 14; M_tmp_tmp++) {
-        rtb_Saturation7 += b_I_0[14 * M_tmp_tmp + i] * M[14 * vcol + M_tmp_tmp];
+        rtb_RateLimiter5 += b_I_0[14 * M_tmp_tmp + i] * M[14 * vcol + M_tmp_tmp];
       }
 
-      b_I_1[i + 14 * vcol] = rtb_Saturation7;
+      b_I_1[i + 14 * vcol] = rtb_RateLimiter5;
     }
   }
 
@@ -2865,23 +2994,23 @@ void colibri_v1_step(void)
   S_p_idx_0_0 = -S_p[6];
   S_p_idx_1_0 = -S_p[7];
   S_p_idx_2_0 = -S_p[8];
-  rtb_Saturation7 = 0.0;
+  rtb_RateLimiter5 = 0.0;
   rtb_RateLimiter4 = 0.0;
-  F_motor_UL_idx_2 = 0.0;
+  F_motor_UR_3 = 0.0;
   rtb_RateLimiter2 = 0.0;
   S_p_tmp = 0.0;
   S_p_idx_0 = -S_p[0];
   S_p_idx_1 = -S_p[1];
   S_p_idx_2 = -S_p[2];
-  rtb_RateLimiter5 = 0.0;
+  rtb_Saturation7 = 0.0;
   rtb_RateLimiter3 = 0.0;
-  S_p_0 = 0.0;
+  F_motor_UR_4 = 0.0;
   L2_0 = 0.0;
   A_tmp_2 = 0.0;
-  S_p_tmp_0 = S[4];
+  S_p_tmp_2 = S[4];
   S_0 = S[3];
   S_1 = S[5];
-  F_motor_UR_0 = F_motor_UR[1];
+  F_motor_UR_5 = F_motor_UR[1];
   F_motor_UR_1 = F_motor_UR[0];
   F_motor_UR_2 = F_motor_UR[2];
   for (i = 0; i < 4; i++) {
@@ -2890,40 +3019,40 @@ void colibri_v1_step(void)
     L2_dot_1 = L2_dot[3 * i];
     M_tmp_tmp = 3 * i + 2;
     L2_dot_2 = L2_dot[M_tmp_tmp];
-    S_p_tmp_1 = rtDW.DiscreteTimeIntegrator_DSTATE[i + 10];
-    rtb_Saturation7 += ((L2_dot_0 * S_p_idx_1_0 + L2_dot_1 * S_p_idx_0_0) +
-                        L2_dot_2 * S_p_idx_2_0) * S_p_tmp_1;
-    F_motor_UL_idx_0 = rtDW.DiscreteTimeIntegrator_DSTATE[i + 24];
-    rtb_RateLimiter4 += ((L3_p_dot[3 * i] * S_0 + L3_p_dot[vcol] * S_p_tmp_0) +
-                         L3_p_dot[M_tmp_tmp] * S_1) * F_motor_UL_idx_0;
-    F_motor_UL_idx_2 += ((L3_p[3 * i] * F_motor_UR_1 + L3_p[vcol] * F_motor_UR_0)
-                         + L3_p[M_tmp_tmp] * F_motor_UR_2) * F_motor_UL_idx_0;
-    rtb_RateLimiter2 += S_p_tmp_1 * A_tmp[i];
-    S_p_tmp += M_tmp_2[i] * F_motor_UL_idx_0;
-    rtb_RateLimiter5 += ((L2_dot_0 * S_p_idx_1 + L2_dot_1 * S_p_idx_0) +
-                         L2_dot_2 * S_p_idx_2) * S_p_tmp_1;
-    rtb_RateLimiter3 += ((L1_p_dot[3 * i] * S_0 + L1_p_dot[vcol] * S_p_tmp_0) +
-                         L1_p_dot[M_tmp_tmp] * S_1) * F_motor_UL_idx_0;
-    S_p_0 += ((L1_p[3 * i] * F_motor_UR_1 + L1_p[vcol] * F_motor_UR_0) +
-              L1_p[M_tmp_tmp] * F_motor_UR_2) * F_motor_UL_idx_0;
-    L2_0 += S_p_tmp_1 * A_tmp_0[i];
-    A_tmp_2 += A_tmp_1[i] * F_motor_UL_idx_0;
+    S_p_tmp_0 = rtDW.DiscreteTimeIntegrator_DSTATE[i + 10];
+    rtb_RateLimiter5 += ((L2_dot_0 * S_p_idx_1_0 + L2_dot_1 * S_p_idx_0_0) +
+                         L2_dot_2 * S_p_idx_2_0) * S_p_tmp_0;
+    S_p_tmp_1 = rtDW.DiscreteTimeIntegrator_DSTATE[i + 24];
+    rtb_RateLimiter4 += ((L3_p_dot[3 * i] * S_0 + L3_p_dot[vcol] * S_p_tmp_2) +
+                         L3_p_dot[M_tmp_tmp] * S_1) * S_p_tmp_1;
+    F_motor_UR_3 += ((L3_p[3 * i] * F_motor_UR_1 + L3_p[vcol] * F_motor_UR_5) +
+                     L3_p[M_tmp_tmp] * F_motor_UR_2) * S_p_tmp_1;
+    rtb_RateLimiter2 += S_p_tmp_0 * A_tmp[i];
+    S_p_tmp += M_tmp_2[i] * S_p_tmp_1;
+    rtb_Saturation7 += ((L2_dot_0 * S_p_idx_1 + L2_dot_1 * S_p_idx_0) + L2_dot_2
+                        * S_p_idx_2) * S_p_tmp_0;
+    rtb_RateLimiter3 += ((L1_p_dot[3 * i] * S_0 + L1_p_dot[vcol] * S_p_tmp_2) +
+                         L1_p_dot[M_tmp_tmp] * S_1) * S_p_tmp_1;
+    F_motor_UR_4 += ((L1_p[3 * i] * F_motor_UR_1 + L1_p[vcol] * F_motor_UR_5) +
+                     L1_p[M_tmp_tmp] * F_motor_UR_2) * S_p_tmp_1;
+    L2_0 += S_p_tmp_0 * A_tmp_0[i];
+    A_tmp_2 += A_tmp_1[i] * S_p_tmp_1;
   }
 
-  tmp[0] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[27] * 0.0;
+  M_tmp_1[0] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[27] * 0.0;
   S_p_tmp_0 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[26] * 0.0;
-  tmp[3] = S_p_tmp_0;
+  M_tmp_1[3] = S_p_tmp_0;
   S_p_tmp_1 = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[25] * 0.0;
-  tmp[6] = S_p_tmp_1;
-  tmp[9] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[24] * 0.0;
-  tmp[1] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[24] * 0.0;
-  tmp[4] = 0.0;
-  tmp[7] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[26] * 0.0;
-  tmp[10] = 0.0;
-  tmp[2] = S_p_tmp_1;
-  tmp[5] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[24] * 0.0;
-  tmp[8] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[27] * 0.0;
-  tmp[11] = S_p_tmp_0;
+  M_tmp_1[6] = S_p_tmp_1;
+  M_tmp_1[9] = -2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[24] * 0.0;
+  M_tmp_1[1] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[24] * 0.0;
+  M_tmp_1[4] = 0.0;
+  M_tmp_1[7] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[26] * 0.0;
+  M_tmp_1[10] = 0.0;
+  M_tmp_1[2] = S_p_tmp_1;
+  M_tmp_1[5] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[24] * 0.0;
+  M_tmp_1[8] = 2.0 * rtDW.DiscreteTimeIntegrator_DSTATE[27] * 0.0;
+  M_tmp_1[11] = S_p_tmp_0;
   M_tmp[0] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[10] * 0.0;
   M_tmp[3] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[11] * 0.0;
   M_tmp[6] = 0.0;
@@ -2954,83 +3083,83 @@ void colibri_v1_step(void)
   L2[11] = 4.0 * rtDW.DiscreteTimeIntegrator_DSTATE[13] * -0.026;
   for (i = 0; i <= 10; i += 2) {
     /* MATLAB Function: '<Root>/Drone' */
-    tmp_a = _mm_loadu_pd(&L1_p_dot[i]);
-    tmp_b = _mm_loadu_pd(&tmp[i]);
-    tmp_c = _mm_loadu_pd(&L3_p_dot[i]);
-    _mm_storeu_pd(&tmp_0[i], _mm_add_pd(_mm_add_pd(_mm_mul_pd(_mm_set1_pd(0.0782),
-      tmp_a), tmp_b), _mm_mul_pd(_mm_set1_pd(-0.1556), tmp_c)));
-    tmp_a = _mm_loadu_pd(&L2_dot[i]);
-    tmp_b = _mm_loadu_pd(&M_tmp[i]);
-    tmp_c = _mm_loadu_pd(&L2[i]);
+    tmp_9 = _mm_loadu_pd(&L1_p_dot[i]);
+    tmp_a = _mm_loadu_pd(&M_tmp_1[i]);
+    tmp_b = _mm_loadu_pd(&L3_p_dot[i]);
+    _mm_storeu_pd(&tmp[i], _mm_add_pd(_mm_add_pd(_mm_mul_pd(_mm_set1_pd(0.0782),
+      tmp_9), tmp_a), _mm_mul_pd(_mm_set1_pd(-0.1556), tmp_b)));
+    tmp_9 = _mm_loadu_pd(&L2_dot[i]);
+    tmp_a = _mm_loadu_pd(&M_tmp[i]);
+    tmp_b = _mm_loadu_pd(&L2[i]);
     _mm_storeu_pd(&L1_p[i], _mm_add_pd(_mm_add_pd(_mm_mul_pd(_mm_set1_pd(0.0),
-      tmp_a), tmp_b), tmp_c));
+      tmp_9), tmp_a), tmp_b));
   }
 
   for (i = 0; i <= 0; i += 2) {
     /* MATLAB Function: '<Root>/Drone' incorporates:
      *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
      */
-    tmp_a = _mm_loadu_pd(&LAP[i + 3]);
-    tmp_b = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[25]);
-    tmp_c = _mm_loadu_pd(&LAP[i]);
-    tmp_9 = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[24]);
-    tmp_5 = _mm_loadu_pd(&LAP[i + 6]);
-    tmp_d = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[26]);
-    tmp_6 = _mm_loadu_pd(&LAP[i + 9]);
-    tmp_e = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[27]);
-    _mm_storeu_pd(&LAP_0[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd(tmp_a,
-      tmp_b), _mm_mul_pd(tmp_c, tmp_9)), _mm_mul_pd(tmp_5, tmp_d)), _mm_mul_pd
-      (tmp_6, tmp_e)));
-    tmp_a = _mm_loadu_pd(&L1_p[i + 3]);
-    tmp_c = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[11]);
-    tmp_5 = _mm_loadu_pd(&L1_p[i]);
-    tmp_6 = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[10]);
-    tmp_7 = _mm_loadu_pd(&L1_p[i + 6]);
-    tmp_f = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[12]);
-    tmp_8 = _mm_loadu_pd(&L1_p[i + 9]);
-    tmp_g = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[13]);
+    tmp_9 = _mm_loadu_pd(&LAP[i + 3]);
+    tmp_a = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[25]);
+    tmp_b = _mm_loadu_pd(&LAP[i]);
+    tmp_8 = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[24]);
+    tmp_4 = _mm_loadu_pd(&LAP[i + 6]);
+    tmp_c = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[26]);
+    tmp_5 = _mm_loadu_pd(&LAP[i + 9]);
+    tmp_d = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[27]);
+    _mm_storeu_pd(&F_motor_UL[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd
+      (tmp_9, tmp_a), _mm_mul_pd(tmp_b, tmp_8)), _mm_mul_pd(tmp_4, tmp_c)),
+      _mm_mul_pd(tmp_5, tmp_d)));
+    tmp_9 = _mm_loadu_pd(&L1_p[i + 3]);
+    tmp_b = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[11]);
+    tmp_4 = _mm_loadu_pd(&L1_p[i]);
+    tmp_5 = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[10]);
+    tmp_6 = _mm_loadu_pd(&L1_p[i + 6]);
+    tmp_e = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[12]);
+    tmp_7 = _mm_loadu_pd(&L1_p[i + 9]);
+    tmp_f = _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[13]);
     _mm_storeu_pd(&F_motor_UR[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd
-      (tmp_a, tmp_c), _mm_mul_pd(tmp_5, tmp_6)), _mm_mul_pd(tmp_7, tmp_f)),
-      _mm_mul_pd(tmp_8, tmp_g)));
-    tmp_a = _mm_loadu_pd(&tmp_0[i + 3]);
-    tmp_5 = _mm_loadu_pd(&tmp_0[i]);
-    tmp_7 = _mm_loadu_pd(&tmp_0[i + 6]);
-    tmp_8 = _mm_loadu_pd(&tmp_0[i + 9]);
+      (tmp_9, tmp_b), _mm_mul_pd(tmp_4, tmp_5)), _mm_mul_pd(tmp_6, tmp_e)),
+      _mm_mul_pd(tmp_7, tmp_f)));
+    tmp_9 = _mm_loadu_pd(&tmp[i + 3]);
+    tmp_4 = _mm_loadu_pd(&tmp[i]);
+    tmp_6 = _mm_loadu_pd(&tmp[i + 6]);
+    tmp_7 = _mm_loadu_pd(&tmp[i + 9]);
     _mm_storeu_pd(&H_p_tmp_0[i], _mm_add_pd(_mm_add_pd(_mm_add_pd(_mm_mul_pd
-      (tmp_a, tmp_b), _mm_mul_pd(tmp_5, tmp_9)), _mm_mul_pd(tmp_7, tmp_d)),
-      _mm_mul_pd(tmp_8, tmp_e)));
-    tmp_a = _mm_loadu_pd(&LAB[i + 3]);
-    tmp_b = _mm_loadu_pd(&LAB[i]);
-    tmp_9 = _mm_loadu_pd(&LAB[i + 6]);
-    tmp_5 = _mm_loadu_pd(&LAB[i + 9]);
-    tmp_d = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 3]);
-    tmp_e = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 17]);
-    _mm_storeu_pd(&tmp_4[i], _mm_sub_pd(_mm_add_pd(_mm_add_pd(_mm_add_pd
-      (_mm_add_pd(_mm_mul_pd(tmp_a, tmp_c), _mm_mul_pd(tmp_b, tmp_6)),
-       _mm_mul_pd(tmp_9, tmp_f)), _mm_mul_pd(tmp_5, tmp_g)), tmp_d), tmp_e));
+      (tmp_9, tmp_a), _mm_mul_pd(tmp_4, tmp_8)), _mm_mul_pd(tmp_6, tmp_c)),
+      _mm_mul_pd(tmp_7, tmp_d)));
+    tmp_9 = _mm_loadu_pd(&LAB[i + 3]);
+    tmp_a = _mm_loadu_pd(&LAB[i]);
+    tmp_8 = _mm_loadu_pd(&LAB[i + 6]);
+    tmp_4 = _mm_loadu_pd(&LAB[i + 9]);
+    tmp_c = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 3]);
+    tmp_d = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 17]);
+    _mm_storeu_pd(&F_motor_BL[i], _mm_sub_pd(_mm_add_pd(_mm_add_pd(_mm_add_pd
+      (_mm_add_pd(_mm_mul_pd(tmp_9, tmp_b), _mm_mul_pd(tmp_a, tmp_5)),
+       _mm_mul_pd(tmp_8, tmp_e)), _mm_mul_pd(tmp_4, tmp_f)), tmp_c), tmp_d));
   }
 
   /* MATLAB Function: '<Root>/Drone' incorporates:
    *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
    */
   for (i = 2; i < 3; i++) {
-    LAP_0[i] = ((LAP[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[25] + LAP[i] *
-                 rtDW.DiscreteTimeIntegrator_DSTATE[24]) + LAP[i + 6] *
-                rtDW.DiscreteTimeIntegrator_DSTATE[26]) + LAP[i + 9] *
+    F_motor_UL[i] = ((LAP[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[25] +
+                      LAP[i] * rtDW.DiscreteTimeIntegrator_DSTATE[24]) + LAP[i +
+                     6] * rtDW.DiscreteTimeIntegrator_DSTATE[26]) + LAP[i + 9] *
       rtDW.DiscreteTimeIntegrator_DSTATE[27];
     F_motor_UR[i] = ((L1_p[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[11] +
                       L1_p[i] * rtDW.DiscreteTimeIntegrator_DSTATE[10]) + L1_p[i
                      + 6] * rtDW.DiscreteTimeIntegrator_DSTATE[12]) + L1_p[i + 9]
       * rtDW.DiscreteTimeIntegrator_DSTATE[13];
-    H_p_tmp_0[i] = ((tmp_0[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[25] +
-                     tmp_0[i] * rtDW.DiscreteTimeIntegrator_DSTATE[24]) +
-                    tmp_0[i + 6] * rtDW.DiscreteTimeIntegrator_DSTATE[26]) +
-      tmp_0[i + 9] * rtDW.DiscreteTimeIntegrator_DSTATE[27];
-    tmp_4[i] = ((((LAB[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[11] + LAB[i] *
-                   rtDW.DiscreteTimeIntegrator_DSTATE[10]) + LAB[i + 6] *
-                  rtDW.DiscreteTimeIntegrator_DSTATE[12]) + LAB[i + 9] *
-                 rtDW.DiscreteTimeIntegrator_DSTATE[13]) +
-                rtDW.DiscreteTimeIntegrator_DSTATE[i + 3]) -
+    H_p_tmp_0[i] = ((tmp[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[25] + tmp[i]
+                     * rtDW.DiscreteTimeIntegrator_DSTATE[24]) + tmp[i + 6] *
+                    rtDW.DiscreteTimeIntegrator_DSTATE[26]) + tmp[i + 9] *
+      rtDW.DiscreteTimeIntegrator_DSTATE[27];
+    F_motor_BL[i] = ((((LAB[i + 3] * rtDW.DiscreteTimeIntegrator_DSTATE[11] +
+                        LAB[i] * rtDW.DiscreteTimeIntegrator_DSTATE[10]) + LAB[i
+                       + 6] * rtDW.DiscreteTimeIntegrator_DSTATE[12]) + LAB[i +
+                      9] * rtDW.DiscreteTimeIntegrator_DSTATE[13]) +
+                     rtDW.DiscreteTimeIntegrator_DSTATE[i + 3]) -
       rtDW.DiscreteTimeIntegrator_DSTATE[i + 17];
   }
 
@@ -3064,21 +3193,21 @@ void colibri_v1_step(void)
     rtDW.DiscreteTimeIntegrator_DSTATE[26]) +
     rtDW.DiscreteTimeIntegrator_DSTATE[27] * rtDW.DiscreteTimeIntegrator_DSTATE
     [27]);
-  Q_0[16] = (((rtb_Saturation7 - rtb_RateLimiter4) - F_motor_UL_idx_2) -
+  Q_0[16] = (((rtb_RateLimiter5 - rtb_RateLimiter4) - F_motor_UR_3) -
              (rtb_RateLimiter2 + S_p_tmp) * 0.5) - ((F_motor_BR[0] * S_p[6] +
     F_motor_BR[1] * S_p[7]) + F_motor_BR[2] * S_p[8]);
-  Q_0[17] = (((rtb_RateLimiter5 - rtb_RateLimiter3) - S_p_0) - (L2_0 + A_tmp_2) *
-             0.5) - ((F_motor_BR[0] * S_p[0] + F_motor_BR[1] * S_p[1]) +
-                     F_motor_BR[2] * S_p[2]);
-  Q_0[18] = ((H_p_tmp_0[0] - F_motor_UR[0]) - (tmp_4[0] - LAP_0[0]) * 0.5) -
-    (rtDW.DiscreteTimeIntegrator_DSTATE[0] -
-     (rtDW.DiscreteTimeIntegrator_DSTATE[14] + 0.0782)) * 8.0;
-  Q_0[19] = ((H_p_tmp_0[1] - F_motor_UR[1]) - (tmp_4[1] - LAP_0[1]) * 0.5) -
-    (rtDW.DiscreteTimeIntegrator_DSTATE[1] - rtDW.DiscreteTimeIntegrator_DSTATE
-     [15]) * 8.0;
-  Q_0[20] = ((H_p_tmp_0[2] - F_motor_UR[2]) - (tmp_4[2] - LAP_0[2]) * 0.5) -
-    ((rtDW.DiscreteTimeIntegrator_DSTATE[2] - 0.026) -
-     (rtDW.DiscreteTimeIntegrator_DSTATE[16] - 0.1556)) * 8.0;
+  Q_0[17] = (((rtb_Saturation7 - rtb_RateLimiter3) - F_motor_UR_4) - (L2_0 +
+              A_tmp_2) * 0.5) - ((F_motor_BR[0] * S_p[0] + F_motor_BR[1] * S_p[1])
+    + F_motor_BR[2] * S_p[2]);
+  Q_0[18] = ((H_p_tmp_0[0] - F_motor_UR[0]) - (F_motor_BL[0] - F_motor_UL[0]) *
+             0.5) - (rtDW.DiscreteTimeIntegrator_DSTATE[0] -
+                     (rtDW.DiscreteTimeIntegrator_DSTATE[14] + 0.0782)) * 8.0;
+  Q_0[19] = ((H_p_tmp_0[1] - F_motor_UR[1]) - (F_motor_BL[1] - F_motor_UL[1]) *
+             0.5) - (rtDW.DiscreteTimeIntegrator_DSTATE[1] -
+                     rtDW.DiscreteTimeIntegrator_DSTATE[15]) * 8.0;
+  Q_0[20] = ((H_p_tmp_0[2] - F_motor_UR[2]) - (F_motor_BL[2] - F_motor_UL[2]) *
+             0.5) - ((rtDW.DiscreteTimeIntegrator_DSTATE[2] - 0.026) -
+                     (rtDW.DiscreteTimeIntegrator_DSTATE[16] - 0.1556)) * 8.0;
   Q_0[21] = Q[12];
   for (i = 0; i < 14; i++) {
     x_idx_0 = 0.0;
@@ -3109,12 +3238,23 @@ void colibri_v1_step(void)
   rtb_dxdt[18] = Q[8];
   rtb_dxdt[16] = rtDW.DiscreteTimeIntegrator_DSTATE[19];
   rtb_dxdt[19] = Q[9];
+
+  /* MATLAB Function: '<Root>/state' incorporates:
+   *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
+   */
+  q2e(&rtDW.DiscreteTimeIntegrator_DSTATE[6], &rtb_RateLimiter3,
+      &rtb_RateLimiter2, &rtb_RateLimiter4);
+  q2e(&rtDW.DiscreteTimeIntegrator_DSTATE[20], &rtb_RateLimiter3,
+      &rtb_RateLimiter4, &rtb_RateLimiter5);
+
+  /* MATLAB Function: '<Root>/Drone' incorporates:
+   *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
+   */
   rtb_dxdt[20] = rtDW.DiscreteTimeIntegrator_DSTATE[24];
   rtb_dxdt[24] = Q[10];
 
   /* Outport: '<Root>/q' incorporates:
    *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
-   *  MATLAB Function: '<Root>/state'
    */
   rtY.q[0] = rtDW.DiscreteTimeIntegrator_DSTATE[6];
 
@@ -3126,7 +3266,6 @@ void colibri_v1_step(void)
 
   /* Outport: '<Root>/q' incorporates:
    *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
-   *  MATLAB Function: '<Root>/state'
    */
   rtY.q[1] = rtDW.DiscreteTimeIntegrator_DSTATE[7];
 
@@ -3138,7 +3277,6 @@ void colibri_v1_step(void)
 
   /* Outport: '<Root>/q' incorporates:
    *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
-   *  MATLAB Function: '<Root>/state'
    */
   rtY.q[2] = rtDW.DiscreteTimeIntegrator_DSTATE[8];
 
@@ -3150,79 +3288,72 @@ void colibri_v1_step(void)
 
   /* Outport: '<Root>/q' incorporates:
    *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
-   *  MATLAB Function: '<Root>/state'
    */
   rtY.q[3] = rtDW.DiscreteTimeIntegrator_DSTATE[9];
 
   /* Outport: '<Root>/pendulum_angle' incorporates:
-   *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
    *  MATLAB Function: '<Root>/state'
    */
-  rtY.pendulum_angle = acos(((rtDW.DiscreteTimeIntegrator_DSTATE[6] *
-    rtDW.DiscreteTimeIntegrator_DSTATE[20] + rtDW.DiscreteTimeIntegrator_DSTATE
-    [7] * rtDW.DiscreteTimeIntegrator_DSTATE[21]) +
-    rtDW.DiscreteTimeIntegrator_DSTATE[8] * rtDW.DiscreteTimeIntegrator_DSTATE
-    [22]) + rtDW.DiscreteTimeIntegrator_DSTATE[9] *
-    rtDW.DiscreteTimeIntegrator_DSTATE[23]);
+  rtY.pendulum_angle = -(rtb_RateLimiter2 - rtb_RateLimiter4);
   for (i = 0; i <= 0; i += 2) {
     /* DiscreteIntegrator: '<Root>/Discrete-Time Integrator' incorporates:
      *  Outport: '<Root>/p'
      */
-    tmp_a = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i]);
+    tmp_9 = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i]);
 
     /* Outport: '<Root>/p' */
-    _mm_storeu_pd(&rtY.p[i], tmp_a);
+    _mm_storeu_pd(&rtY.p[i], tmp_9);
 
     /* DiscreteIntegrator: '<Root>/Discrete-Time Integrator' incorporates:
      *  Outport: '<Root>/p'
      */
-    tmp_a = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 3]);
+    tmp_9 = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i + 3]);
 
     /* Outport: '<Root>/v' incorporates:
      *  Outport: '<Root>/p'
      */
-    _mm_storeu_pd(&rtY.v[i], tmp_a);
+    _mm_storeu_pd(&rtY.v[i], tmp_9);
 
     /* MATLAB Function: '<Root>/state' incorporates:
      *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
      *  Outport: '<Root>/p'
      */
-    tmp_a = _mm_loadu_pd(&rtb_dxdt[i + 3]);
+    tmp_9 = _mm_loadu_pd(&rtb_dxdt[i + 3]);
 
     /* Outport: '<Root>/accel' incorporates:
      *  Outport: '<Root>/p'
      */
-    _mm_storeu_pd(&rtY.accel[i], tmp_a);
+    _mm_storeu_pd(&rtY.accel[i], tmp_9);
 
     /* MATLAB Function: '<Root>/state' incorporates:
      *  DiscreteIntegrator: '<Root>/Discrete-Time Integrator'
      *  Outport: '<Root>/p'
      */
-    tmp_a = _mm_loadu_pd(&H_tmp[i]);
-    tmp_b = _mm_loadu_pd(&H_p_tmp[i]);
-    tmp_c = _mm_loadu_pd(&H_tmp[i + 3]);
-    tmp_9 = _mm_loadu_pd(&H_p_tmp[i + 3]);
-    tmp_5 = _mm_loadu_pd(&H_tmp[i + 6]);
-    tmp_d = _mm_loadu_pd(&H_p_tmp[i + 6]);
-    tmp_6 = _mm_loadu_pd(&H_p_tmp[i + 9]);
-    _mm_storeu_pd(&H_p_tmp_0[i], _mm_add_pd(_mm_mul_pd(tmp_6, _mm_set1_pd
-      (rtb_dxdt[27])), _mm_add_pd(_mm_mul_pd(tmp_d, _mm_set1_pd(rtb_dxdt[26])),
-      _mm_add_pd(_mm_mul_pd(tmp_9, _mm_set1_pd(rtb_dxdt[25])), _mm_mul_pd(tmp_b,
+    tmp_9 = _mm_loadu_pd(&H_tmp[i]);
+    tmp_a = _mm_loadu_pd(&H_p_tmp[i]);
+    tmp_b = _mm_loadu_pd(&H_tmp[i + 3]);
+    tmp_8 = _mm_loadu_pd(&H_p_tmp[i + 3]);
+    tmp_4 = _mm_loadu_pd(&H_tmp[i + 6]);
+    tmp_c = _mm_loadu_pd(&H_p_tmp[i + 6]);
+    tmp_5 = _mm_loadu_pd(&H_p_tmp[i + 9]);
+    _mm_storeu_pd(&H_p_tmp_0[i], _mm_add_pd(_mm_mul_pd(tmp_5, _mm_set1_pd
+      (rtb_dxdt[27])), _mm_add_pd(_mm_mul_pd(tmp_c, _mm_set1_pd(rtb_dxdt[26])),
+      _mm_add_pd(_mm_mul_pd(tmp_8, _mm_set1_pd(rtb_dxdt[25])), _mm_mul_pd(tmp_a,
       _mm_set1_pd(rtb_dxdt[24]))))));
-    _mm_storeu_pd(&F_motor_BR[i], _mm_add_pd(_mm_mul_pd(tmp_6, _mm_set1_pd
-      (rtDW.DiscreteTimeIntegrator_DSTATE[27])), _mm_add_pd(_mm_mul_pd(tmp_d,
+    _mm_storeu_pd(&F_motor_BR[i], _mm_add_pd(_mm_mul_pd(tmp_5, _mm_set1_pd
+      (rtDW.DiscreteTimeIntegrator_DSTATE[27])), _mm_add_pd(_mm_mul_pd(tmp_c,
       _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[26])), _mm_add_pd
-      (_mm_mul_pd(tmp_9, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[25])),
-       _mm_mul_pd(tmp_b, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[24]))))));
-    tmp_b = _mm_loadu_pd(&H_tmp[i + 9]);
+      (_mm_mul_pd(tmp_8, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[25])),
+       _mm_mul_pd(tmp_a, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[24]))))));
+    tmp_a = _mm_loadu_pd(&H_tmp[i + 9]);
 
     /* Outport: '<Root>/rotaccel' incorporates:
      *  MATLAB Function: '<Root>/state'
      *  Outport: '<Root>/p'
      */
-    _mm_storeu_pd(&rtY.rotaccel[i], _mm_add_pd(_mm_mul_pd(tmp_b, _mm_set1_pd
-      (rtb_dxdt[13])), _mm_add_pd(_mm_mul_pd(tmp_5, _mm_set1_pd(rtb_dxdt[12])),
-      _mm_add_pd(_mm_mul_pd(tmp_c, _mm_set1_pd(rtb_dxdt[11])), _mm_mul_pd(tmp_a,
+    _mm_storeu_pd(&rtY.rotaccel[i], _mm_add_pd(_mm_mul_pd(tmp_a, _mm_set1_pd
+      (rtb_dxdt[13])), _mm_add_pd(_mm_mul_pd(tmp_4, _mm_set1_pd(rtb_dxdt[12])),
+      _mm_add_pd(_mm_mul_pd(tmp_b, _mm_set1_pd(rtb_dxdt[11])), _mm_mul_pd(tmp_9,
       _mm_set1_pd(rtb_dxdt[10]))))));
 
     /* Outport: '<Root>/omega' incorporates:
@@ -3230,11 +3361,11 @@ void colibri_v1_step(void)
      *  MATLAB Function: '<Root>/state'
      *  Outport: '<Root>/p'
      */
-    _mm_storeu_pd(&rtY.omega[i], _mm_add_pd(_mm_mul_pd(tmp_b, _mm_set1_pd
-      (rtDW.DiscreteTimeIntegrator_DSTATE[13])), _mm_add_pd(_mm_mul_pd(tmp_5,
+    _mm_storeu_pd(&rtY.omega[i], _mm_add_pd(_mm_mul_pd(tmp_a, _mm_set1_pd
+      (rtDW.DiscreteTimeIntegrator_DSTATE[13])), _mm_add_pd(_mm_mul_pd(tmp_4,
       _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[12])), _mm_add_pd
-      (_mm_mul_pd(tmp_c, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[11])),
-       _mm_mul_pd(tmp_a, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[10]))))));
+      (_mm_mul_pd(tmp_b, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[11])),
+       _mm_mul_pd(tmp_9, _mm_set1_pd(rtDW.DiscreteTimeIntegrator_DSTATE[10]))))));
   }
 
   for (i = 2; i < 3; i++) {
@@ -3339,10 +3470,10 @@ void colibri_v1_step(void)
   rtY.pendulum_ang_acc = H_p_tmp_0[1];
   for (i = 0; i <= 26; i += 2) {
     /* Update for DiscreteIntegrator: '<Root>/Discrete-Time Integrator' */
-    tmp_a = _mm_loadu_pd(&rtb_dxdt[i]);
-    tmp_b = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i]);
+    tmp_9 = _mm_loadu_pd(&rtb_dxdt[i]);
+    tmp_a = _mm_loadu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i]);
     _mm_storeu_pd(&rtDW.DiscreteTimeIntegrator_DSTATE[i], _mm_add_pd(_mm_mul_pd
-      (_mm_set1_pd(0.000977), tmp_a), tmp_b));
+      (_mm_set1_pd(0.000977), tmp_9), tmp_a));
   }
 }
 

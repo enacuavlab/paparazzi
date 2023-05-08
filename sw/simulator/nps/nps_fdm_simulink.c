@@ -104,6 +104,7 @@ void nps_fdm_init(double dt)
 
 void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int commands_nb __attribute__((unused)))
 {
+  //printf("%d \n", commands_nb);
   feed_cmd(commands, commands_nb);
 
   //autopilot_in_flight()  autopilot.motors_on
@@ -152,7 +153,7 @@ void feed_cmd(double *commands, int commands_nb __attribute__((unused))) {
     printf("commands (%d), ", commands_nb);
   #endif
 
-  if (commands_nb != 4) {exit(-45);}
+  // if (commands_nb != 4) {exit(-45);}
 
   
   for (int i=0; i<commands_nb; i++) {
