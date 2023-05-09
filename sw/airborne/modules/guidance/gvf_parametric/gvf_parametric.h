@@ -213,6 +213,17 @@ void gvf_paremetric_set_euler_rot(float rz, float ry, float rzbis);
  */
 void gvf_paremetric_set_cardan_rot(float rx, float ry, float rz);
 
+/**
+ * @brief Define the rotational component (through its normalized quaternion) of the transformation to apply to the current trajectory
+ * 
+ * q = w + x*i + y*j + z*k
+ * 
+ * @param x Corresponding quaternion value
+ * @param y Corresponding quaternion value
+ * @param z Corresponding quaternion value
+ * @param w Corresponding quaternion value
+ */
+void gvf_paremetric_set_quaternion_rot(float x, float y, float z, float w);
 
 /**
  * @brief Set the rotation such that the x-axis is aligned with the vector from wp1 to wp2
@@ -242,6 +253,21 @@ void gvf_parametric_set_wp_rot(uint8_t wp);
  * @see gvf_paremetric_set_cardan_rot
  */
 void gvf_parametric_set_affine_tr(float x, float y, float z, float rx, float ry, float rz);
+
+/**
+ * @brief Define the affine transform through translation and quaternion
+ * 
+ * @param x x-axis shift
+ * @param y y-axis shift
+ * @param z z-axis shift
+ * @param qx Quaternion coordinate
+ * @param qy Quaternion coordinate
+ * @param qz Quaternion coordinate
+ * @param qw Quaternion coordinate
+ * 
+ * @see gvf_paremetric_set_quaternion_rot
+ */
+void gvf_parametric_set_affine_q_tr(float x, float y, float z, float qx, float qy, float qz, float qw);
 
 
 /**
@@ -274,7 +300,7 @@ void gvf_parametric_set_affine_tr_wpa(uint8_t wp, float alt, float rx, float ry,
  */
 void gvf_parametric_set_affine_tr_wps(uint8_t wp1, uint8_t wp2);
 
-extern void gvf_parametric_control_2D(float, float, float, float, float, float, float, float);
+extern void gvf_parametric_control_2d(float, float, float, float, float, float, float, float);
 extern void gvf_parametric_control_3d(float, float, float, float, float, float, float, float, float,
                                       float, float, float);
 
@@ -287,10 +313,10 @@ extern void gvf_parametric_surface_coordination_send_w_to_nei(void);
 extern void gvf_parametric_surface_coordination_parseRegTable(uint8_t *buf);
 extern void gvf_parametric_surface_coordination_parseWTable(uint8_t *buf);
 
-// 2D Trepowershell
+// 2D Trefoil
 
-extern bool gvf_parametric_2D_trefoil_XY(float, float, float, float, float, float, float);
-extern bool gvf_parametric_2D_trefoil_wp(uint8_t, float, float, float, float, float);
+extern bool gvf_parametric_2d_trefoil_XY(float, float, float, float, float, float, float);
+extern bool gvf_parametric_2d_trefoil_wp(uint8_t, float, float, float, float, float);
 
 // 3D Ellipse
 extern bool gvf_parametric_3d_ellipse_XYZ(float, float, float, float, float, float);
