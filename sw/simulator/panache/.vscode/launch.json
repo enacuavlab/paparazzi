@@ -1,0 +1,25 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: env_simu.py debug",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/env_simu.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": ["-p", "data_nc/spray.bin_n1_d1_t1.nc", "-w","data_nc/swift_merged.nc"],
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}

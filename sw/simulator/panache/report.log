@@ -1,0 +1,49 @@
+2023-04-28 14:59:06,281 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 14:59:39,639 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:00:00,817 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:00:27,982 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:00:47,478 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:00:58,849 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:01:40,477 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:02:15,649 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:02:29,749 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:02:43,582 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:07:13,624 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:09:26,061 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:13:25,756 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:13:35,502 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 101188.92204576124, best pos: [  5894929.44152505 -26950955.64233451  23325801.27255361
+ -72763003.65326211  59507678.54080143  75826132.8348711
+  13549343.03000286]
+2023-04-28 15:16:10,556 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:16:20,227 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 67415.97495004408, best pos: [-3.87752669e+06 -6.69752744e+06 -1.81800376e+06  1.99524291e+00
+  9.76451246e-01  3.39071169e+00  5.98859468e+00]
+2023-04-28 15:16:35,651 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:16:47,213 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 65027.72455733583, best pos: [ 5.86825170e+06  3.75885267e+06  4.18248460e+06 -8.65117268e-01
+  4.26428942e-01  7.12189371e-01  4.81397525e+00]
+2023-04-28 15:17:27,375 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:17:39,168 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 65107.773354411416, best pos: [ 6.88492818e+06 -6.12134470e+06  5.07246196e+03  2.04319123e+00
+  6.23487311e-01  9.01913517e+00  3.00673358e+00]
+2023-04-28 15:17:55,919 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:24:06,064 - pyswarms.single.global_best - INFO - Optimize for 1000 iters with {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+2023-04-28 15:25:38,083 - pyswarms.single.global_best - INFO - Optimization finished | best cost: 65146.21531894637, best pos: [-4.57125271e+06 -9.59916978e+06  7.18074143e+03 -2.71001766e+00
+  9.01073830e-01  1.46502954e+00  7.48132539e-01]
+2023-04-28 16:34:16,796 - pyswarms.backend.generators - ERROR - Bounds and/or init_pos should be of size (7,)
+Traceback (most recent call last):
+  File "/local/users/my_mfeurgard/anaconda3/lib/python3.10/site-packages/pyswarms-1.2.0-py3.10.egg/pyswarms/backend/generators.py", line 65, in generate_swarm
+    np.all(bounds[0] <= init_pos) and np.all(init_pos <= bounds[1])
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+2023-04-28 16:35:07,282 - pyswarms.backend.generators - ERROR - Bounds and/or init_pos should be of size (7,)
+Traceback (most recent call last):
+  File "/local/users/my_mfeurgard/anaconda3/lib/python3.10/site-packages/pyswarms-1.2.0-py3.10.egg/pyswarms/backend/generators.py", line 67, in generate_swarm
+    raise ValueError("User-defined init_pos is out of bounds.")
+ValueError: User-defined init_pos is out of bounds.
+2023-05-02 14:40:04,130 - pyswarms.backend.generators - ERROR - Bounds and/or init_pos should be of size (7,)
+Traceback (most recent call last):
+  File "/local/users/my_mfeurgard/anaconda3/lib/python3.10/site-packages/pyswarms-1.2.0-py3.10.egg/pyswarms/backend/generators.py", line 67, in generate_swarm
+    raise ValueError("User-defined init_pos is out of bounds.")
+ValueError: User-defined init_pos is out of bounds.
+2023-05-02 14:40:52,815 - pyswarms.backend.generators - ERROR - Bounds and/or init_pos should be of size (7,)
+Traceback (most recent call last):
+  File "/local/users/my_mfeurgard/anaconda3/lib/python3.10/site-packages/pyswarms-1.2.0-py3.10.egg/pyswarms/backend/generators.py", line 67, in generate_swarm
+    raise ValueError("User-defined init_pos is out of bounds.")
+ValueError: User-defined init_pos is out of bounds.
