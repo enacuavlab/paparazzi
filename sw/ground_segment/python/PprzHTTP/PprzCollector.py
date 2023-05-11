@@ -135,7 +135,13 @@ class PprzCollector():
         Returns a copy of the dictionary storing the aircrafts' info (indexed by aircraft id)
         """
         return self._ac_collection.copy()
-   
+    
+    def send_message(self,msg:PprzMessage,sender_id:typing.Optional[int] = None) -> None:
+        """
+        Send a message through the Ivy interface.
+        If the PprzMessage to send is of class 'telemetry', a 'sender_id' must be supplied
+        """
+        self.__ivy.send(msg,sender_id)
     
     def __del__(self):
         self.__pprz_connect.shutdown()
