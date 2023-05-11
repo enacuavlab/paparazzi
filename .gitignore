@@ -49,6 +49,9 @@ paparazzi.sublime-workspace
 *.files
 *.includes
 
+# VSCode IDE
+**/.vscode/**
+
 # Vagrant VM files
 /.vagrant
 
