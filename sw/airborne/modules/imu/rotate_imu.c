@@ -74,6 +74,7 @@ struct FloatVect3 mag_imu_f;
 struct FloatVect3 accel_rot_f;
 struct FloatRates gyro_rot_f;
 struct FloatVect3 mag_rot_f;
+struct FloatVect3 rates_vect;
 float angle_filter;
 
 float angular_accel[3] = {0., 0., 0.};
@@ -85,10 +86,10 @@ Butterworth2LowPass meas_lowpass_filters[3];
 #include "modules/ctrl/body_stabilisation.h"
 static void send_payload_float(struct transport_tx *trans, struct link_device *dev)
 {
-  float f[13] = {-encoder_amt22.amt22.angle_rad, -encoder_amt22.H_g_filter.hatx[0], -encoder_amt22.H_g_filter.hatx[1],
+  float f[16] = {-encoder_amt22.amt22.angle_rad, -encoder_amt22.H_g_filter.hatx[0], -encoder_amt22.H_g_filter.hatx[1],
                  motor_cmd, elevator_cmd, actuators_pprz[6], actuators_pprz[7], DegOfRad(euler_fus.theta), angle_wing2fus, body_stab.discrete_state,
-                 gyro_rot_f.p, gyro_rot_f.q, gyro_rot_f.r,};
-  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 13, f);
+                 gyro_rot_f.p, gyro_rot_f.q, gyro_rot_f.r, encoder_amt22.amt22.position, encoder_amt22.amt22.offset, rates_vect.y};
+  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 16, f);
 }
 #endif
 
@@ -105,14 +106,13 @@ static void gyro_cb(uint8_t sender_id, uint32_t stamp, struct Int32Rates *gyro)
     RATES_FLOAT_OF_BFP(rates_f, *gyro);
     RATES_COPY(gyro_imu_f, rates_f)
 
-    struct FloatRates wing_angular_speed_f ={0, rotate_imu.angular_speed, 0};
-    RATES_ADD(rates_f, wing_angular_speed_f)
-
-    struct FloatVect3 rates_vect, rates_rot_vect;
+    rates_f.q += rotate_imu.angular_speed;
+    
     rates_vect.x = rates_f.p;
     rates_vect.y = rates_f.q;
     rates_vect.z = rates_f.r;
-
+    
+     struct FloatVect3 rates_rot_vect;
     float_quat_vmult(&rates_rot_vect, &rotate_imu.quat_encoder, &rates_vect);
 
     gyro_rot_f.p = rates_rot_vect.x;

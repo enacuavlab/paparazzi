@@ -23,7 +23,7 @@ void amt22_init(struct amt22_t *amt, struct spi_periph *periph, uint8_t slave_id
   amt->trans.after_cb = NULL;
   amt->trans.status = SPITransDone;
 
-  amt->request = AMT22_READ_POSITION;
+  amt->request = AMT22_SET_ZERO;
   amt->position = 0;
   amt->turns = 0;
   amt->offset = 0;
@@ -52,18 +52,31 @@ void amt22_event(struct amt22_t *amt) {
   // spi success, read data
   if(amt->trans.status == SPITransSuccess) {
     if(amt->request == AMT22_READ_POSITION || amt->request == AMT22_SET_ZERO) {
+      if(amt->request == AMT22_SET_ZERO){
+        amt->request = AMT22_READ_POSITION;
+      }
       uint8_t p0 = amt->trans.input_buf[0];
       uint8_t p1 = amt->trans.input_buf[1];
       uint16_t data = p0 << 8 | p1;
       
       if(amt22_checkbit(data)){
         if(amt->flag_offset == 0){
-          amt->offset = (data & 0x3fff) >> 2;
+          amt->offset = (data & 0x3fff)>>2; //0x3fff -> 0011111111111111
           amt->flag_offset = 1;
         }
-        amt->position = ((data & 0x3fff) >> 2) - amt->offset; // 12 bits so shift 2
+        amt->position = ((data & 0x3fff)>>2) - amt->offset;
         amt->angle_rad = amt->position*2*M_PI/4096;
       }
+      else{
+        if(amt->flag_offset == 0){
+          amt->offset = ((data & 0x3fff)>>2) + 32; //0x3fff -> 0011111111111111
+          amt->flag_offset = 1;
+        }
+        amt->position = ((data & 0x3fff)>>2) + 32 - amt->offset; //offset de 32 probleme capteur 2^5 = 32
+        amt->angle_rad = amt->position*2*M_PI/4096;
+      }
+      
+      
       
     }
     else if(amt->request == AMT22_READ_TURNS) {
@@ -74,7 +87,7 @@ void amt22_event(struct amt22_t *amt) {
       uint16_t data = p0 << 8 | p1;
       
       if(amt22_checkbit(data)){
-        amt->position = (data & 0x3fff) >> 2; // 12 bits so shift 2
+        amt->position = (data & 0x3fff)>>2; 
       }
       amt->turns =    (t0 << 8 | t1);
       
