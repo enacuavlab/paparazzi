@@ -43,7 +43,7 @@
         <define name="MS45XX_OUTPUT_TYPE" value="0"/> 
         <define name="MS45XX_SYNC_SEND" value="TRUE" /> 
         <define name="MS45XX_PRESSURE_SCALE" value="1.052"/> 
-        <define name="MS45XX_PRESSURE_OFFSET" value="8566.2" />
+        <define name="MS45XX_PRESSURE_OFFSET" value="8579.2" />
         <define name="MS45XX_LOWPASS_TAU" value="0.05"/> 
         <define name="USE_AIRSPEED_MS45XX" value="TRUE"/> 
       </module>
