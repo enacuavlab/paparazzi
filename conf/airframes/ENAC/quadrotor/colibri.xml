@@ -338,10 +338,10 @@
     <define name="G1_THRUST_FWD" value="{ - 1.5, - 1.5,  - 1.5, - 1.5, 0.0, 0.0}" /-->
 
     <!-- reference acceleration for attitude control -->
-    <define name="REF_ERR_P" value="30"/>
+    <define name="REF_ERR_P" value="70"/>
     <define name="REF_ERR_Q" value="80"/>
     <define name="REF_ERR_R" value="38"/>
-    <define name="REF_RATE_P" value="13."/>
+    <define name="REF_RATE_P" value="22.2"/>
     <define name="REF_RATE_Q" value="20.0"/>
     <define name="REF_RATE_R" value="8.5"/>
 
