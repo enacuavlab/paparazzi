@@ -31,7 +31,8 @@
 #include "filters/low_pass_filter.h"
 #endif
 
-int32_t stabilization_cmd[COMMANDS_NB];
+struct Stabilization stabilization;
+//int32_t stabilization_cmd[COMMANDS_NB];
 
 #if STABILIZATION_FILTER_CMD_ROLL_PITCH
 #ifndef STABILIZATION_FILTER_CMD_ROLL_CUTOFF
@@ -56,8 +57,11 @@ struct SecondOrderLowPass_int filter_yaw;
 
 void stabilization_init(void)
 {
+  stabilization.mode = STABILIZATION_MODE_NONE;
+  stabilization.sub_mode = STABILIZATION_ATT_SUBMODE_NONE;
+  FLOAT_EULERS_ZERO(stabilization.rc_sp);
   for (uint8_t i = 0; i < COMMANDS_NB; i++) {
-    stabilization_cmd[i] = 0;
+    stabilization.cmd[i] = 0;
   }
 
   // Initialize low pass filters
@@ -73,6 +77,135 @@ void stabilization_init(void)
 #endif
 
 }
+
+void stabilization_mode_changed(uint8_t new_mode, uint8_t submode)
+{
+  if (new_mode == stabilization.mode && submode == stabilization.att_submode) {
+    return;
+  }
+
+  switch (new_mode) {
+    case STABILIZATION_MODE_NONE:
+      // nothing to do
+      break;
+    case STABILIZATION_MODE_DIRECT:
+      stabilization_none_enter(); // TODO change name to _direct_ ?
+      break;
+#if USE_STABILIZATION_RATE
+    case STABILIZATION_MODE_RATE:
+      stabilization_rate_enter();
+      break;
+#endif
+    case STABILIZATION_MODE_ATTITUDE:
+      if (submode == STABILIZATION_ATT_SUBMODE_CARE_FREE) {
+        stabilization_attitude_reset_care_free_heading();
+      }
+      stabilization_attitude_enter();
+      break;
+    default:
+      break;
+  }
+
+  stabilization.att_submode = submode;
+  stabilization.mode = new_mode;
+}
+
+void stabilization_read_rc(bool in_flight)
+{
+  switch (stabilization.mode) {
+
+    case STABILIZATION_MODE_DIRECT:
+      stabilization_none_read_rc();
+      break;
+#if USE_STABILIZATION_RATE
+    case STABILIZATION_MODE_RATE:
+#if SWITCH_STICKS_FOR_RATE_CONTROL
+      stabilization_rate_read_rc_switched_sticks();
+#else
+      stabilization_rate_read_rc();
+#endif
+      break;
+#endif
+    case GUIDANCE_H_MODE_CARE_FREE:
+      break;
+    case GUIDANCE_H_MODE_FORWARD:
+      break;
+    case STABILIZATION_MODE_ATTITUDE:
+      {
+        switch (stabilization.att_submode) {
+          case STABILIZATION_ATT_SUBMODE_HEADING:
+            stabilization_attitude_read_rc(in_flight, FALSE, FALSE);
+            break;
+          case STABILIZATION_ATT_SUBMODE_CARE_FREE:
+            stabilization_attitude_read_rc(in_flight, TRUE, FALSE);
+            break;
+          case STABILIZATION_ATT_SUBMODE_FORWARD:
+            stabilization_attitude_read_rc(in_flight, FALSE, TRUE);
+            break;
+          default:
+            break;
+        }
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+/** Transition from 0 to 100%, used for pitch offset of hybrids
+ */
+#define TRANSITION_TO_HOVER false
+#define TRANSITION_TO_FORWARD true
+
+#ifndef TRANSITION_TIME
+#define TRANSITION_TIME 3.f
+#endif
+
+static const float transition_increment = 1.f / (TRANSITION_TIME * PERIODIC_FREQUENCY);
+
+static inline void transition_run(bool to_forward)
+{
+  if (to_forward && stabilization.transition_ratio < 1.0f) {
+    stabilization.transition_ratio += transition_increment
+  } else if (!to_forward && stabilization.transition_ratio > 0.f) {
+    stabilization.transition_ratio -= transition_increment
+  }
+  Bound(stabilization.transition_ratio, 0.f, 1.f);
+#ifdef TRANSITION_MAX_OFFSET
+  stabilization.transition_theta_offset = ANGLE_BFP_OF_REAL(stabilization.transition_ratio * TRANSITION_MAX_OFFSET);
+#endif
+}
+
+void stabilization_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd)
+{
+  switch (stabilization.mode) {
+
+    case STABILIZATION_MODE_DIRECT:
+      stabilization_none_run(in_flight, sp, thrust, cmd);
+      break;
+#if USE_STABILIZATION_RATE
+    case STABILIZATION_MODE_RATE:
+      stabilization_rate_run(in_flight, sp, thrust, cmd);
+      break;
+#endif
+    case STABILIZATION_MODE_ATTITUDE:
+      if (stabilization.att_submode == STABILIZATION_ATT_SUBMODE_FORWARD) {
+        transition_run(TRANSITION_TO_FORWARD);
+      } else {
+        transition_run(TRANSITION_TO_HOVER);
+      }
+      stabilization_attitude_run(in_flight, sp, thrust, cmd);
+#if (STABILIZATION_FILTER_CMD_ROLL_PITCH || STABILIZATION_FILTER_CMD_YAW)
+      if (in_flight) {
+        stabilization_filter_commands();
+      }
+#endif
+      break;
+    default:
+      break;
+  }
+}
+
 
 // compute sp_euler phi/theta for debugging/telemetry FIXME really needed ?
 /* Rotate horizontal commands to body frame by psi */
@@ -107,16 +240,16 @@ void stabilization_filter_commands(void)
 {
   /* Filter the commands & bound the result */
 #if STABILIZATION_FILTER_CMD_ROLL_PITCH
-  stabilization_cmd[COMMAND_ROLL] = update_second_order_low_pass_int(&filter_roll, stabilization_cmd[COMMAND_ROLL]);
-  stabilization_cmd[COMMAND_PITCH] = update_second_order_low_pass_int(&filter_pitch, stabilization_cmd[COMMAND_PITCH]);
+  stabilization.cmd[COMMAND_ROLL] = update_second_order_low_pass_int(&filter_roll, stabilization.cmd[COMMAND_ROLL]);
+  stabilization.cmd[COMMAND_PITCH] = update_second_order_low_pass_int(&filter_pitch, stabilization.cmd[COMMAND_PITCH]);
 
-  BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_PITCH], MAX_PPRZ);
+  BoundAbs(stabilization.cmd[COMMAND_ROLL], MAX_PPRZ);
+  BoundAbs(stabilization.cmd[COMMAND_PITCH], MAX_PPRZ);
 #endif
 #if STABILIZATION_FILTER_CMD_YAW
-  stabilization_cmd[COMMAND_YAW] = update_second_order_low_pass_int(&filter_yaw, stabilization_cmd[COMMAND_YAW]);
+  stabilization.cmd[COMMAND_YAW] = update_second_order_low_pass_int(&filter_yaw, stabilization.cmd[COMMAND_YAW]);
 
-  BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
+  BoundAbs(stabilization.cmd[COMMAND_YAW], MAX_PPRZ);
 #endif
 }
 

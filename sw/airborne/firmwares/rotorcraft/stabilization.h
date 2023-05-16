@@ -32,8 +32,18 @@
 #include "math/pprz_algebra_int.h"
 #include "math/pprz_algebra_float.h"
 
-extern void stabilization_init(void);
-extern void stabilization_filter_commands(void);
+/** Stabilization modes
+ */
+#define STABILIZATION_MODE_NONE     0
+#define STABILIZATION_MODE_DIRECT   1
+#define STABILIZATION_MODE_RATE     2
+#define STABILIZATION_MODE_ATTITUDE 3
+
+/** Stabilization sub-modes for attitude
+ */
+#define STABILIZATION_ATT_SUBMODE_HEADING   0 // direct heading control
+#define STABILIZATION_ATT_SUBMODE_CARE_FREE 1 // care free heading mode
+#define STABILIZATION_ATT_SUBMODE_FORWARD  2 // forward flight for hybrid-like
 
 /** Stabilization setpoint.
  *  Struture to store the desired attitude with different
@@ -62,6 +72,52 @@ struct StabilizationSetpoint {
   } sp;
 };
 
+/** Stabilization structure
+ */
+struct Stabilization {
+  uint8_t mode;                     ///< current mode
+  uint8_t att_submode;              ///< current attitude sub-mode
+  struct FloatEulers rc_sp;         ///< RC input
+  struct StabilizationSetpoint sp;  ///< current attitude setpoint (store for messages)
+  int32_t cmd[COMMANDS_NB];         ///< output command vector, range from [-MAX_PPRZ:MAX_PPRZ] (store for messages)
+
+  int32_t transition_theta_offset;  ///< pitch offset for hybrids
+  float transition_ratio;           ///< transition percentage for hybrids (0.: hover; 1.: forward)
+};
+
+extern struct Stabilization stabilization;
+
+/// /** Stabilization commands.
+///  *  Contains the resulting stabilization commands,
+///  *  regardless of whether rate or attitude is currently used.
+///  *  Range -MAX_PPRZ:MAX_PPRZ
+///  */
+/// extern int32_t stabilization_cmd[COMMANDS_NB];
+
+/** Init function
+ */
+extern void stabilization_init(void);
+
+/** Check mode change
+ */
+extern void stabilization_mode_changed(uint8_t new_mode);
+
+/** Read RC setpoint if needed
+ */
+extern void stabilization_read_rc(bool in_flight);
+
+/** Call default stabilization control
+ * @param[in] in_flight true if rotorcraft is flying
+ * @param[in] sp pointer to the stabilization setpoint, computed in guidance or from RC
+ * @param[in] thrust thrust computed by vertical guidance
+ * @param[out] cmd pointer to the output command vector
+ */
+extern void stabilization_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd);
+
+/** Command filter for vibrating airframes
+ */
+extern void stabilization_filter_commands(void);
+
 // helper convert functions
 extern struct Int32Quat stab_sp_to_quat_i(struct StabilizationSetpoint *sp);
 extern struct FloatQuat stab_sp_to_quat_f(struct StabilizationSetpoint *sp);
@@ -79,12 +135,5 @@ extern struct StabilizationSetpoint stab_sp_from_ltp_i(struct Int32Vect2 *vect, 
 extern struct StabilizationSetpoint stab_sp_from_ltp_f(struct FloatVect2 *vect, float heading);
 extern struct StabilizationSetpoint stab_sp_from_rates_i(struct Int32Rates *rates);
 extern struct StabilizationSetpoint stab_sp_from_rates_f(struct FloatRates *rates);
-
-/** Stabilization commands.
- *  Contains the resulting stabilization commands,
- *  regardless of whether rate or attitude is currently used.
- *  Range -MAX_PPRZ:MAX_PPRZ
- */
-extern int32_t stabilization_cmd[COMMANDS_NB];
 
 #endif /* STABILIZATION_H */
