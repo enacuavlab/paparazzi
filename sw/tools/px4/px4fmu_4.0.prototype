@@ -6,8 +6,7 @@
     "build_time": 0, 
     "summary": "Pixracer", 
     "version": "1.0", 
-    "image_size": 0,
-    "image_maxsize": 2064384,
+    "image_size": 0, 
     "git_identity": "", 
     "board_revision": 14
 }

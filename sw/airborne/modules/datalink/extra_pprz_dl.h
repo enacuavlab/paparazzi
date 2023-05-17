@@ -34,7 +34,7 @@
 #include "mcu_periph/udp.h"
 #endif
 
-#if USE_USB_SERIAL || USE_USB_SERIAL_DEBUG
+#if USE_USB_SERIAL
 #include "mcu_periph/usb_serial.h"
 #endif
 

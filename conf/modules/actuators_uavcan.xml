@@ -11,6 +11,7 @@
     <depends>uavcan,actuators</depends>
     <provides>actuators</provides>
   </dep>
+  <autoload name="actuators" type="nps"/>
   <header>
     <file name="actuators_uavcan.h"/>
   </header>

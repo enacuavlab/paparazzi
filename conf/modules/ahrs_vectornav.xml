@@ -12,6 +12,7 @@
     <depends>uart</depends>
     <provides>ahrs,imu</provides>
   </dep>
+  <autoload name="ahrs_sim"/>
   <header>
     <file name="ahrs.h"/>
   </header>

@@ -427,7 +427,7 @@
 /*
  * USB driver system settings.
  */
-#if USE_USB_SERIAL || USE_USB_SERIAL_DEBUG
+#if USE_USB_SERIAL
 #define STM32_USB_USE_OTG1                  TRUE
 #else
 #define STM32_USB_USE_OTG1                  FALSE

@@ -51,6 +51,7 @@ let dl_id = "ground_dl" (* Hack, should be [my_id] *)
 let (//) = Filename.concat
 let logs_path = Env.paparazzi_home // "var" // "logs"
 let conf_xml = ExtXml.parse_file (Env.paparazzi_home // "conf" // "conf.xml")
+let srtm_path = Env.paparazzi_home // "data" // "srtm"
 
 let get_indexed_value = fun ?(text="UNK") t i ->
   if i >= 0 then t.(i) else text
@@ -607,7 +608,7 @@ let new_aircraft = fun get_alive_md5sum real_id ->
     | _ -> None (* more than one *)
   with _ -> None);
 
-  ignore (Glib.Timeout.add ~ms:1000 ~callback:(fun _ -> update (); true));
+  ignore (Glib.Timeout.add 1000 (fun _ -> update (); true));
 
   let messages_xml = ExtXml.parse_file (Env.paparazzi_home // root_dir // "var" // "messages.xml") in
   ac, messages_xml
@@ -635,7 +636,7 @@ let wind_clear = fun _sender vs ->
   Wind.clear (PprzLink.string_assoc "ac_id" vs)
 
 let periodic = fun period cb ->
-  Glib.Timeout.add ~ms:period ~callback:(fun () -> cb (); true)
+  Glib.Timeout.add period (fun () -> cb (); true)
 
 
 let register_periodic = fun ac x ->
@@ -830,27 +831,6 @@ let move_wp = fun logging _sender vs ->
   Dl_Pprz.message_send dl_id "MOVE_WP" vs;
   log logging ac_id "MOVE_WP" vs
 
-(** Got a INFO_MSG_GROUND, and send an INFO_MSG_UP *)
-let info_msg_ground = fun logging _sender vs ->
-  let dest = PprzLink.string_assoc "dest" vs in
-
-  let name, fd = match (Str.split (Str.regexp ":") dest) with
-    | [name; fd] -> (name, int_of_string fd)
-    | [name] -> (name, 0)
-    | _ -> failwith "invalid dest"
-  in
-
-  try
-    let ac_id = int_of_string name in
-    let msg = PprzLink.string_assoc "msg" vs in
-    let vs = [  "ac_id", PprzLink.Int ac_id;
-                "fd", PprzLink.Int fd;
-                "msg", PprzLink.String msg] in
-    Dl_Pprz.message_send dl_id "INFO_MSG_UP" vs;
-    log logging name "INFO_MSG_UP" vs
-  with _ -> ()
-
-
 (** Got a DL_EMERGENCY_CMD, and send an EMERGENCY_CMD *)
 let emergency_cmd = fun logging _sender vs ->
   let ac_id = PprzLink.string_assoc "ac_id" vs in
@@ -939,7 +919,6 @@ let ground_to_uplink = fun logging ->
   bind_log_and_send "GET_DL_SETTING" get_setting;
   bind_log_and_send "JUMP_TO_BLOCK" jump_block;
   bind_log_and_send "RAW_DATALINK" raw_datalink;
-  bind_log_and_send "INFO_MSG_GROUND" info_msg_ground;
   bind_log_and_send "LINK_REPORT" link_report
 
 
@@ -971,6 +950,7 @@ let () =
     (fun x -> Printf.fprintf stderr "%s: Warning: Don't do anything with '%s' argument\n" Sys.argv.(0) x)
     "Usage: ";
 
+  Srtm.add_path srtm_path;
   Ivy.init "Paparazzi server" "READY" (fun _ _ -> ());
   Ivy.start !ivy_bus;
 
@@ -993,7 +973,7 @@ let () =
   ground_to_uplink logging;
 
   (* call periodic_handle_intruders every second *)
-  ignore (Glib.Timeout.add ~ms:1000 ~callback:(fun () -> periodic_handle_intruders (); true));
+  ignore (Glib.Timeout.add 1000 (fun () -> periodic_handle_intruders (); true));
 
   (* Waits for client configurations requests on the Ivy bus *)
   ivy_server !http;

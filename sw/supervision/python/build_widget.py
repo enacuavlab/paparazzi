@@ -27,7 +27,7 @@ class FlashMode:
 
 class BuildWidget(Ui_Build, QWidget):
 
-    spawn_program = QtCore.pyqtSignal(str, list, str, object)
+    spawn_program = QtCore.pyqtSignal(str, list, str)
 
     def __init__(self, parent=None):
         QWidget.__init__(self, parent=parent)
@@ -93,15 +93,13 @@ class BuildWidget(Ui_Build, QWidget):
             cmd.append("PRINT_CONFIG=1")
         shortname = "Build {}".format(self.ac.name)
         self.conf.save(False)
-        self.enable_buttons(False)
-        self.spawn_program.emit(shortname, cmd, None, lambda: self.enable_buttons(True))
+        self.spawn_program.emit(shortname, cmd, None)
 
     def clean(self):
         cmd = ["make", "-C", utils.PAPARAZZI_HOME, "-f", "Makefile.ac",
                "AIRCRAFT={}".format(self.ac.name), "clean_ac"]
         shortname = "Clean {}".format(self.ac.name)
-        self.enable_buttons(False)
-        self.spawn_program.emit(shortname, cmd, None, lambda: self.enable_buttons(True))
+        self.spawn_program.emit(shortname, cmd, None)
 
     def flash(self):
         target = self.target_combo.currentText()
@@ -117,8 +115,5 @@ class BuildWidget(Ui_Build, QWidget):
         cmd = ["make", "-C", utils.PAPARAZZI_HOME, "-f", "Makefile.ac",
                "AIRCRAFT={}".format(self.ac.name)] + vars + ["{}.upload".format(target)]
         shortname = "Flash {}".format(self.ac.name)
-        self.spawn_program.emit(shortname, cmd, None, None)
+        self.spawn_program.emit(shortname, cmd, None)
 
-    def enable_buttons(self, enable: bool):
-        self.build_button.setEnabled(enable)
-        self.clean_button.setEnabled(enable)
