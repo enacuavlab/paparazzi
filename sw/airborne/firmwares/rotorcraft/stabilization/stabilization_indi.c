@@ -356,8 +356,8 @@ void stabilization_indi_init(void)
   calc_g1g2_pseudo_inv();
 #endif
 
-  int8_t i;
   // Initialize the array of pointers to the rows of g1g2
+  uint8_t i;
   for (i = 0; i < INDI_OUTPUTS; i++) {
     Bwls[i] = g1g2[i];
   }
@@ -641,6 +641,7 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight)
 #endif
 
 
+  if (in_flight) {
 #if STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE
   // Calculate the increment for each actuator
   for (i = 0; i < INDI_NUM_ACT; i++) {

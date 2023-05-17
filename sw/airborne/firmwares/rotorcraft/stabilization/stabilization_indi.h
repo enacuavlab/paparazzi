@@ -23,7 +23,6 @@
 #ifndef STABILIZATION_INDI
 #define STABILIZATION_INDI
 
-#include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_common_int.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_quat_int.h"
 
@@ -63,9 +62,7 @@ extern void stabilization_indi_init(void);
 extern void stabilization_indi_enter(void);
 extern void stabilization_indi_set_failsafe_setpoint(void);
 extern void stabilization_indi_set_rpy_setpoint_i(struct Int32Eulers *rpy);
-extern void stabilization_indi_set_quat_setpoint_i(struct Int32Quat *quat);
 extern void stabilization_indi_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading);
-extern void stabilization_indi_set_stab_sp(struct StabilizationSetpoint *sp);
 extern void stabilization_indi_rate_run(struct FloatRates rate_ref, bool in_flight);
 extern void stabilization_indi_set_wls_settings(float use_increment);
 extern void stabilization_indi_attitude_run(struct Int32Quat quat_sp, bool in_flight);

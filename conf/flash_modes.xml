@@ -102,7 +102,6 @@
       <board name="px4fmu_.*"/>
       <board name="px4io_.*"/>
       <board name="cube_.*"/>
-      <board name="matek_.*"/>
     </boards>
   </mode>
   <mode name="JTAG (OpenOCD)">

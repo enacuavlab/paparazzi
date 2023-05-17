@@ -57,15 +57,6 @@ static struct actuators_uavcan_telem_t uavcan1_telem[SERVOS_UAVCAN1_NB] = {0};
 int16_t actuators_uavcan2_values[SERVOS_UAVCAN2_NB];
 static struct actuators_uavcan_telem_t uavcan2_telem[SERVOS_UAVCAN2_NB] = {0};
 #endif
-#ifdef SERVOS_UAVCAN1CMD_NB
-int16_t actuators_uavcan1cmd_values[SERVOS_UAVCAN1CMD_NB];
-#endif
-#ifdef SERVOS_UAVCAN2CMD_NB
-int16_t actuators_uavcan2cmd_values[SERVOS_UAVCAN2CMD_NB];
-#endif
-
-/* UNUSED value for CMD */
-#define UAVCAN_CMD_UNUSED (MIN_PPRZ-1)
 
 /* uavcan EQUIPMENT_ESC_STATUS message definition */
 #define UAVCAN_EQUIPMENT_ESC_STATUS_ID                     1034
@@ -360,16 +351,6 @@ void actuators_uavcan_init(struct uavcan_iface_t *iface __attribute__((unused)))
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ESC, actuators_uavcan_send_esc);
 #endif
 
-  // Set default to not set
-#ifdef SERVOS_UAVCAN1CMD_NB
-  for(uint8_t i = 0; i < SERVOS_UAVCAN1CMD_NB; i++)
-    actuators_uavcan1cmd_values[i] = UAVCAN_CMD_UNUSED;
-#endif
-#ifdef SERVOS_UAVCAN2CMD_NB
-  for(uint8_t i = 0; i < SERVOS_UAVCAN2CMD_NB; i++)
-    actuators_uavcan2cmd_values[i] = UAVCAN_CMD_UNUSED;
-#endif
-
   // Set initialization
   actuators_uavcan_initialized = true;
 
@@ -378,7 +359,7 @@ void actuators_uavcan_init(struct uavcan_iface_t *iface __attribute__((unused)))
 }
 
 /**
- * Commit actuator values to the uavcan interface (EQUIPMENT_ESC_RAWCOMMAND)
+ * Commit actuator values to the uavcan interface
  */
 void actuators_uavcan_commit(struct uavcan_iface_t *iface, int16_t *values, uint8_t nb)
 {
@@ -393,39 +374,5 @@ void actuators_uavcan_commit(struct uavcan_iface_t *iface, int16_t *values, uint
 
   // Broadcast the raw command message on the interface
   uavcan_broadcast(iface, UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_SIGNATURE, UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID,
-                   CANARD_TRANSFER_PRIORITY_HIGH, buffer, (offset + 7) / 8);
-}
-
-/**
- * Commit actuator values to the uavcan interface (EQUIPMENT_ACTUATOR_ARRAYCOMMAND)
- */
-void actuators_uavcan_cmd_commit(struct uavcan_iface_t *iface, int16_t *values, uint8_t nb)
-{
-  uint8_t buffer[UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_MAX_SIZE];
-  uint32_t offset = 0;
-  uint8_t command_type = 0; // 0:UNITLESS, 1:meter or radian, 2:N or Nm, 3:m/s or rad/s
-
-  // Encode the values for each command
-  for (uint8_t i = 0; i < nb; i++) {
-    // Skip unused commands
-    if(values[i] == UAVCAN_CMD_UNUSED || values[i] < MIN_PPRZ || values[i] > MAX_PPRZ)
-      continue;
-
-    // Set the command id
-    canardEncodeScalar(buffer, offset, 8, (void*)&i); // 255
-    offset += 8;
-
-    // Set the command type
-    canardEncodeScalar(buffer, offset, 8, (void*)&command_type); // 255
-    offset += 8;
-
-    // Set the command value
-    uint16_t tmp_float = canardConvertNativeFloatToFloat16((float)values[i] / (float)MAX_PPRZ);
-    canardEncodeScalar(buffer, offset, 16, (void*)&tmp_float); // 32767
-    offset += 16;
-  }
-
-  // Broadcast the raw command message on the interface
-  uavcan_broadcast(iface, UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_SIGNATURE, UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_ID,
                    CANARD_TRANSFER_PRIORITY_HIGH, buffer, (offset + 7) / 8);
 }

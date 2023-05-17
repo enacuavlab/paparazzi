@@ -14,5 +14,4 @@ TBD
     modules
     abi
     logging
-    debug
 

@@ -24,8 +24,6 @@
  */
 
 #include "firmwares/rotorcraft/stabilization.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
-#include "state.h"
 
 #if (STABILIZATION_FILTER_COMMANDS_ROLL_PITCH || STABILIZATION_FILTER_COMMANDS_YAW)
 #include "filters/low_pass_filter.h"
@@ -73,35 +71,6 @@ void stabilization_init(void)
 #endif
 
 }
-
-// compute sp_euler phi/theta for debugging/telemetry FIXME really needed ?
-/* Rotate horizontal commands to body frame by psi */
-static struct Int32Eulers stab_sp_rotate_i(struct Int32Vect2 *vect, int32_t heading)
-{
-  struct Int32Eulers sp;
-  int32_t psi = stateGetNedToBodyEulers_i()->psi;
-  int32_t s_psi, c_psi;
-  PPRZ_ITRIG_SIN(s_psi, psi);
-  PPRZ_ITRIG_COS(c_psi, psi);
-  sp.phi = (-s_psi * vect->x + c_psi * vect->y) >> INT32_TRIG_FRAC;
-  sp.theta = -(c_psi * vect->x + s_psi * vect->y) >> INT32_TRIG_FRAC;
-  sp.psi = heading;
-  return sp;
-}
-
-/* Rotate horizontal commands to body frame by psi */
-static struct FloatEulers stab_sp_rotate_f(struct FloatVect2 *vect, float heading)
-{
-  struct FloatEulers sp;
-  float psi = stateGetNedToBodyEulers_f()->psi;
-  float s_psi = sinf(psi);
-  float c_psi = cosf(psi);
-  sp.phi = -s_psi * vect->x + c_psi * vect->y;
-  sp.theta = -c_psi * vect->x + s_psi * vect->y;
-  sp.psi = heading;
-  return sp;
-}
-
 
 void stabilization_filter_commands(void)
 {

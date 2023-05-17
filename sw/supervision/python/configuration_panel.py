@@ -1,45 +1,115 @@
+import os, sys, copy
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QProcess
 import utils
 from generated.ui_configuration_panel import Ui_ConfigurationPanel
-from program_widget import ProgramWidget, TabProgramsState
+from generated.ui_new_ac_dialog import Ui_Dialog
+from program_widget import ProgramWidget
 from conf import *
 from programs_conf import Tool
 import subprocess
+
+PAPARAZZI_SRC = os.getenv("PAPARAZZI_SRC")
+PAPARAZZI_HOME = os.getenv("PAPARAZZI_HOME", PAPARAZZI_SRC)
+lib_path = os.path.normpath(os.path.join(PAPARAZZI_SRC, 'sw', 'lib', 'python'))
+sys.path.append(lib_path)
+import paparazzi
+
+# TODO make a setting ?
+REMOVE_PROGRAMS_FINISHED = True
 
 
 
 class ConfigurationPanel(QWidget, Ui_ConfigurationPanel):
 
+    msg_error = QtCore.pyqtSignal(str)
     clear_error = QtCore.pyqtSignal()
-    ac_edited = QtCore.pyqtSignal(Aircraft)
-    program_state_changed = QtCore.pyqtSignal(TabProgramsState)
+    ac_changed = QtCore.pyqtSignal(Aircraft)
 
     def __init__(self, parent=None, *args, **kwargs):
         QWidget.__init__(self, parent=parent, *args, **kwargs)
         self.setupUi(self)
         self.console_widget.filter_widget.hide()
-        self.currentAC = None   # type: Aircraft
+        self.conf = None        # type: conf.Conf
+        self.currentAC = None   # type: str
         self.flight_plan_editor = None
-        self.programs_state: TabProgramsState = TabProgramsState.IDLE
+        self.header.set_changed.connect(self.handle_set_changed)
+        self.header.ac_changed.connect(self.update_ac)
+        self.header.id_changed.connect(self.handle_id_changed)
+        self.header.refresh_button.clicked.connect(self.refresh_ac)
+        self.header.color_button.clicked.connect(self.change_color)
+        self.header.save_button.clicked.connect(lambda: self.conf.save())
+        self.addAction(self.save_conf_action)
+        self.save_conf_action.triggered.connect(lambda: self.conf.save())
         self.conf_widget.conf_changed.connect(self.handle_conf_changed)
         self.conf_widget.setting_changed.connect(self.handle_setting_changed)
         self.conf_widget.flight_plan.edit_alt.connect(self.edit_flightplan_gcs)
+        self.header.rename_action.triggered.connect(self.rename_ac)
+        self.header.new_ac_action.triggered.connect(self.new_ac)
+        self.header.duplicate_action.triggered.connect(self.duplicate_ac)
+        self.header.remove_ac_action.triggered.connect(self.remove_ac)
         self.build_widget.spawn_program.connect(self.launch_program)
 
     def init(self):
+        sets = paparazzi.get_list_of_conf_files()
         settings = utils.get_settings()
+        self.header.set_sets(sets, conf_init=Conf.get_current_conf())
+        last_ac: QtCore.QVariant = settings.value("ui/last_AC", None, str)
+        last_target: QtCore.QVariant = settings.value("ui/last_target", None, str)
+        if last_ac is not None:
+            self.header.ac_combo.setCurrentText(last_ac)
+        if last_target is not None:
+            self.build_widget.target_combo.setCurrentText(last_target)
         window_size: QtCore.QSize = settings.value("ui/window_size", QtCore.QSize(1000, 600), QtCore.QSize)
         lpw = settings.value("ui/left_pane_width", 100, int)
         self.splitter.setSizes([lpw, window_size.width() - lpw])
 
-    def set_ac(self, ac: Aircraft):
-        if ac is None:
+    def handle_set_changed(self, conf_file):
+        self.conf = Conf(conf_file)
+        Conf.set_current_conf(conf_file)
+        self.build_widget.set_conf(self.conf)
+        acs = [ac.name for ac in self.conf.aircrafts]
+        self.header.set_acs(acs)
+
+    def disable_sets(self):
+        self.header.set_combo.setDisabled(True)
+
+    def enable_sets(self):
+        self.header.set_combo.setDisabled(False)
+
+    def update_ac(self, ac_name):
+        ac = self.conf[ac_name]
+        if ac_name != "" and ac is not None:
+            self.conf_widget.setDisabled(False)
+            self.currentAC = ac_name
+            status, stderr = ac.update()
+            if status != 0:
+                self.msg_error.emit(stderr.decode().strip())
+            else:
+                self.clear_error.emit()
+            self.header.set_ac(ac)
+            self.conf_widget.set_ac(ac)
+            self.build_widget.update_targets(self.conf[ac_name])
+            self.ac_changed.emit(self.conf[ac_name])
+        else:
+            # self.conf_widget.reset()
             self.conf_widget.setDisabled(True)
-        self.currentAC = ac
-        self.conf_widget.set_ac(ac)
-        self.build_widget.update_targets(ac)
+
+    def get_current_ac(self) -> str:
+        """
+        :return: name of the current AC
+        """
+        return self.currentAC
+
+    def refresh_ac(self):
+        self.update_ac(self.currentAC)
+
+    def handle_id_changed(self, id):
+        self.conf[self.currentAC].ac_id = id
+        if len(self.conf.get_all(id)) > 1:
+            self.header.id_spinBox.setStyleSheet("background-color: red;")
+        else:
+            self.header.id_spinBox.setStyleSheet("background-color: white;")
 
     def handle_setting_changed(self):
         def make_setting(item: QListWidgetItem):
@@ -56,9 +126,8 @@ class ConfigurationPanel(QWidget, Ui_ConfigurationPanel):
             else:
                 settings.append(s)
 
-        self.currentAC.settings_modules = modules
-        self.currentAC.settings = settings
-        self.ac_edited.emit(self.currentAC)
+        self.conf[self.currentAC].settings_modules = modules
+        self.conf[self.currentAC].settings = settings
         # should we save each time a tiny change is made ? very inefficient !
         # self.conf.save()
 
@@ -82,30 +151,16 @@ class ConfigurationPanel(QWidget, Ui_ConfigurationPanel):
             subprocess.Popen(cmd)
             # self.launch_program(self.flight_plan_editor.name, cmd, self.flight_plan_editor.icon)
 
-    def launch_program(self, shortname, cmd, icon, cb):
+    def launch_program(self, shortname, cmd, icon):
         pw = ProgramWidget(shortname, cmd, icon, self.programs_widget)
         self.programs_widget.layout().addWidget(pw)
         pw.ready_read_stderr.connect(lambda: self.console_widget.handle_stderr(pw))
         pw.ready_read_stdout.connect(lambda: self.console_widget.handle_stdout(pw))
-        pw.finished.connect(lambda c, s: self.handle_program_finished(pw, c, s))
-        if cb is not None:
-            pw.finished.connect(cb)
+        pw.finished.connect(lambda c, s: self.console_widget.handle_program_finished(pw, c, s))
         pw.remove.connect(lambda: self.remove_program(pw))
-        settings = utils.get_settings()
-        if not settings.value("keep_build_programs", False, bool):
+        if REMOVE_PROGRAMS_FINISHED:
             pw.finished.connect(lambda: self.remove_program(pw))
         pw.start_program()
-        self.programs_state = TabProgramsState.RUNNING
-        self.program_state_changed.emit(self.programs_state)
-
-    def handle_program_finished(self, pw: ProgramWidget, exit_code: int, exit_status: QProcess.ExitStatus):
-        self.console_widget.handle_program_finished(pw, exit_code, exit_status)
-        if exit_code != 0 and exit_code != 15:
-            self.programs_state = TabProgramsState.ERROR
-        else:
-            if len(self.programs_widget.layout().children()) == 0 and self.programs_state != TabProgramsState.ERROR:
-                self.programs_state = TabProgramsState.IDLE
-        self.program_state_changed.emit(self.programs_state)
 
     def remove_program(self, pw: ProgramWidget):
         self.programs_widget.layout().removeWidget(pw)

@@ -32,7 +32,6 @@
 #define CHIBIOS_MCU_ARCH_H
 
 #include "std.h"
-#include <hal.h>
 
 extern void mcu_arch_init(void);
 

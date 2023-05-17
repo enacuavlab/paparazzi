@@ -108,16 +108,6 @@ void ctrl_eff_scheduling_periodic(void)
 #else
   schdule_control_effectiveness();
 #endif
-
-  act_pref[0] = 0.0;
-  act_pref[1] = 0.0;
-  act_pref[2] = 0.0;
-  act_pref[3] = 0.0;
-  // read settings and trim the aerodynamic surfaces
-  act_pref[4] = -trim_elevator - trim_flaps;
-  act_pref[5] = -trim_elevator - trim_flaps;
-  act_pref[6] = -trim_elevator + trim_flaps;
-  act_pref[7] = -trim_elevator + trim_flaps;
 }
 
 /**

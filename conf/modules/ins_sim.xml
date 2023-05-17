@@ -3,18 +3,25 @@
 <module name="ins_sim" dir="ins" task="estimation">
   <doc>
     <description>
-     Simulated INS.
+     Simulated AHRS and INS.
     </description>
   </doc>
   <dep>
     <depends>@imu,@gps</depends>
-    <provides>ins</provides>
+    <provides>ins,ahrs</provides>
   </dep>
+  <autoload name="imu_sim"/>
+  <autoload name="gps_sim"/>
   <header>
     <file name="ins_gps_passthrough.h"/>
   </header>
   <init fun="ins_gps_passthrough_init()"/>
   <makefile target="sim">
+    <file name="ahrs.c" dir="modules/ahrs"/>
+    <file name="ahrs_sim.c" dir="modules/ahrs"/>
+    <define name="USE_AHRS"/>
+    <define name="AHRS_TYPE_H" value="modules/ahrs/ahrs_sim.h" type="string"/>
+
     <file name="ins.c"/>
     <file name="ins_gps_passthrough_utm.c"/>
     <define name="INS_TYPE_H" value="modules/ins/ins_gps_passthrough.h" type="string"/>

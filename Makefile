@@ -157,10 +157,10 @@ cockpit: libpprz
 cockpit.opt: libpprz
 	$(MAKE) -C $(COCKPIT) opt
 
-tmtc: libpprz
+tmtc: libpprz cockpit
 	$(MAKE) -C $(TMTC)
 
-tmtc.opt: libpprz
+tmtc.opt: libpprz cockpit.opt
 	$(MAKE) -C $(TMTC) opt
 
 generators: libpprz

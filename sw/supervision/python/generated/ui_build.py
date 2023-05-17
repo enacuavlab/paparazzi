@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui/ui_build.ui'
+# Form implementation generated from reading ui file 'ui/build.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
 #
@@ -93,9 +93,8 @@ class Ui_Build(object):
         self.clean_button.setShortcut(_translate("Build", "Ctrl+Shift+B"))
         self.build_button.setToolTip(_translate("Build", "Build"))
         self.build_button.setText(_translate("Build", "..."))
-        self.build_button.setShortcut(_translate("Build", "Ctrl+B"))
         self.print_config_checkbox.setToolTip(_translate("Build", "print config at build time"))
-        self.groupBox_2.setTitle(_translate("Build", "Upload"))
+        self.groupBox_2.setTitle(_translate("Build", "Flash"))
         self.label_15.setText(_translate("Build", "Device"))
         self.flash_button.setToolTip(_translate("Build", "Upload"))
         self.flash_button.setText(_translate("Build", "Flash"))

@@ -29,8 +29,6 @@
 #include "std.h"
 
 #include "generated/airframe.h"
-#include "math/pprz_algebra_int.h"
-#include "math/pprz_algebra_float.h"
 
 extern void stabilization_init(void);
 extern void stabilization_filter_commands(void);

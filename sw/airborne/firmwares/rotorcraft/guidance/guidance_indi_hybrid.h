@@ -34,8 +34,6 @@
 #include "math/pprz_algebra_int.h"
 #include "math/pprz_algebra_float.h"
 #include "filters/high_pass_filter.h"
-#include "firmwares/rotorcraft/guidance.h"
-#include "firmwares/rotorcraft/stabilization.h"
 
 #ifdef GUIDANCE_INDI_QUADPLANE
 #include "firmwares/rotorcraft/guidance/guidance_indi_hybrid_quadplanes.h"
@@ -94,6 +92,7 @@ extern float guidance_indi_thrust_x_eff;
 extern struct guidance_indi_hybrid_params gih_params;
 extern float guidance_indi_specific_force_gain;
 extern float guidance_indi_max_airspeed;
+extern float nav_max_speed;
 extern bool take_heading_control;
 extern float guidance_indi_max_bank;
 extern float guidance_indi_min_pitch;

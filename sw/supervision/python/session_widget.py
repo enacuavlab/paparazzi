@@ -10,7 +10,7 @@ import utils
 import lxml.etree as ET
 import paparazzi
 from typing import List, Optional, Tuple, Dict
-from program_widget import ProgramWidget, TabProgramsState
+from program_widget import ProgramWidget
 from tools_menu import ToolMenu
 from programs_conf import *
 from conf import *
@@ -94,7 +94,6 @@ class SessionWidget(QWidget, Ui_Session):
         return self.control_panel_combo.currentText()
 
     def start_session(self):
-        self.reset_programs_status()
         combo_text = self.sessions_combo.currentText()
         if combo_text == "Simulation":
             self.start_simulation()
@@ -169,7 +168,6 @@ class SessionWidget(QWidget, Ui_Session):
         pw.ready_read_stderr.connect(lambda: self.console.handle_stderr(pw))
         pw.ready_read_stdout.connect(lambda: self.console.handle_stdout(pw))
         pw.finished.connect(lambda c, s: self.handle_program_finished(pw, c, s))
-        pw.started.connect(self.handle_program_started)
         pw.remove.connect(lambda: self.remove_program(pw))
         # if REMOVE_PROGRAMS_FINISHED:
         #     pw.finished.connect(lambda: self.remove_program(pw))
@@ -194,34 +192,17 @@ class SessionWidget(QWidget, Ui_Session):
         if not self.any_program_running():
             self.programs_all_stopped.emit()
 
-        if c != 0 and c != 15:
-            self.programs_state = TabProgramsState.ERROR
-        else:
-            if not self.any_program_running() and self.programs_state != TabProgramsState.ERROR:
-                self.programs_state = TabProgramsState.IDLE
-        self.program_state_changed.emit(self.programs_state)
-
-    def handle_program_started(self):
-        self.programs_state = TabProgramsState.RUNNING
-        self.program_state_changed.emit(self.programs_state)
-    def reset_programs_status(self):
-        self.programs_state = TabProgramsState.IDLE
-        self.program_state_changed.emit(self.programs_state)
-
     def stop_all(self):
         for pw in self.program_widgets:
             pw.terminate()
-        self.reset_programs_status()
 
     def start_all(self):
         for pw in self.program_widgets:
             pw.start_program()
-        self.reset_programs_status()
 
     def remove_all(self):
         for pw in list(self.program_widgets):
             pw.handle_remove()
-        self.reset_programs_status()
 
     def init_tools_menu(self):
         self.tools_menu.clear()
@@ -258,8 +239,6 @@ class SessionWidget(QWidget, Ui_Session):
                 return
         programs = self.get_programs()
         session = Session(session_name, programs)
-        self.sessions_combo.addItem(session_name)
-        self.sessions_combo.setCurrentText(session_name)
         self.sessions.append(session)
         self.save_sessions()
 
@@ -324,8 +303,8 @@ class SessionWidget(QWidget, Ui_Session):
                         arg = Arg(param, None)
                         args.append(arg)
                     else:
-                        if arg is not None and arg.flag.startswith("-") and arg.constant is None:
-                            # if it don't starts with -, but the previous did, and the constant is not yet filled, fill the constant
+                        if arg is not None and arg.flag.startswith("-"):
+                            # if it don't starts with -, but the previous did, fill the constant
                             arg.constant = param
                         else:
                             # if it don't starts with -, nor the previous, its probably a mandatory argument
