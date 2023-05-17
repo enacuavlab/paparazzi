@@ -280,6 +280,9 @@ void gvf_parametric_set_wp_rot(uint8_t wp);
 /**
  * @brief Define the affine transform through translation and Cardan's angles
  * 
+ * Quaternion q is defined as:
+ *  q = w + x*i + y*j + z*k
+ * 
  * @param x x-axis shift
  * @param y y-axis shift
  * @param z z-axis shift

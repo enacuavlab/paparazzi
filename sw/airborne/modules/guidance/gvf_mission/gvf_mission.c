@@ -28,35 +28,35 @@
 bool gvf_mission_set_control(uint8_t nb, float *params, UNUSED enum MissionRunFlag flag)
 {
   gvf_parametric_control.w = params[0];
-  if (nb < 1)
+  if (nb <= 1)
     return false;
 
   gvf_parametric_control.delta_T = params[1];
-  if (nb < 2)
+  if (nb <= 2)
     return false;
 
   gvf_parametric_control.s = params[2];
-  if (nb < 3)
+  if (nb <= 3)
     return false;
 
   gvf_parametric_control.k_roll = params[3];
-  if (nb < 4)
+  if (nb <= 4)
     return false;
 
   gvf_parametric_control.k_climb = params[4];
-  if (nb < 5)
+  if (nb <= 5)
     return false;
 
   gvf_parametric_control.k_psi = params[5];
-  if (nb < 6)
+  if (nb <= 6)
     return false;
 
   gvf_parametric_control.L = params[6];
-  if (nb < 7)
+  if (nb <= 7)
     return false;
 
   gvf_parametric_control.beta = params[7];
-  if (nb < 8)
+  if (nb <= 8)
     return false;
 
   gvf_parametric_control.w_dot = params[8];
@@ -98,6 +98,11 @@ bool gvf_mission_set_trajectory(UNUSED uint8_t nb, float *params, UNUSED enum Mi
 bool gvf_mission_run_trajectory(uint8_t nb, float *params, UNUSED enum MissionRunFlag flag)
 {
   static float w_limit = NAN;
+
+  if (nb > 2)
+  {
+    gvf_parametric_control.w = params[2];
+  }
 
   if (nb > 1)
   {
