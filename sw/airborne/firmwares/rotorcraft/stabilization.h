@@ -100,7 +100,7 @@ extern void stabilization_init(void);
 
 /** Check mode change
  */
-extern void stabilization_mode_changed(uint8_t new_mode);
+extern void stabilization_mode_changed(uint8_t new_mode, uint8_t submode);
 
 /** Read RC setpoint if needed
  */

@@ -24,7 +24,12 @@
  */
 
 #include "firmwares/rotorcraft/stabilization.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_direct.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_rate.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
+#include "modules/radio_control/radio_control.h"
 #include "state.h"
 
 #if (STABILIZATION_FILTER_COMMANDS_ROLL_PITCH || STABILIZATION_FILTER_COMMANDS_YAW)
@@ -58,7 +63,7 @@ struct SecondOrderLowPass_int filter_yaw;
 void stabilization_init(void)
 {
   stabilization.mode = STABILIZATION_MODE_NONE;
-  stabilization.sub_mode = STABILIZATION_ATT_SUBMODE_NONE;
+  stabilization.att_submode = STABILIZATION_ATT_SUBMODE_HEADING;
   FLOAT_EULERS_ZERO(stabilization.rc_sp);
   for (uint8_t i = 0; i < COMMANDS_NB; i++) {
     stabilization.cmd[i] = 0;
@@ -89,7 +94,7 @@ void stabilization_mode_changed(uint8_t new_mode, uint8_t submode)
       // nothing to do
       break;
     case STABILIZATION_MODE_DIRECT:
-      stabilization_none_enter(); // TODO change name to _direct_ ?
+      stabilization_direct_enter();
       break;
 #if USE_STABILIZATION_RATE
     case STABILIZATION_MODE_RATE:
@@ -115,7 +120,7 @@ void stabilization_read_rc(bool in_flight)
   switch (stabilization.mode) {
 
     case STABILIZATION_MODE_DIRECT:
-      stabilization_none_read_rc();
+      stabilization_direct_read_rc();
       break;
 #if USE_STABILIZATION_RATE
     case STABILIZATION_MODE_RATE:
@@ -126,10 +131,6 @@ void stabilization_read_rc(bool in_flight)
 #endif
       break;
 #endif
-    case GUIDANCE_H_MODE_CARE_FREE:
-      break;
-    case GUIDANCE_H_MODE_FORWARD:
-      break;
     case STABILIZATION_MODE_ATTITUDE:
       {
         switch (stabilization.att_submode) {
@@ -166,9 +167,9 @@ static const float transition_increment = 1.f / (TRANSITION_TIME * PERIODIC_FREQ
 static inline void transition_run(bool to_forward)
 {
   if (to_forward && stabilization.transition_ratio < 1.0f) {
-    stabilization.transition_ratio += transition_increment
+    stabilization.transition_ratio += transition_increment;
   } else if (!to_forward && stabilization.transition_ratio > 0.f) {
-    stabilization.transition_ratio -= transition_increment
+    stabilization.transition_ratio -= transition_increment;
   }
   Bound(stabilization.transition_ratio, 0.f, 1.f);
 #ifdef TRANSITION_MAX_OFFSET
@@ -181,7 +182,7 @@ void stabilization_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t
   switch (stabilization.mode) {
 
     case STABILIZATION_MODE_DIRECT:
-      stabilization_none_run(in_flight, sp, thrust, cmd);
+      stabilization_direct_run(in_flight, sp, thrust, cmd);
       break;
 #if USE_STABILIZATION_RATE
     case STABILIZATION_MODE_RATE:
