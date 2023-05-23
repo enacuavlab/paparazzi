@@ -133,6 +133,7 @@
     <module type="dshot" name="actuators">
       <define name="DSHOT_SPEED" value="300"/>
       <define name="DSHOT_TIM4_TELEMETRY_NUM" value="DSHOT_TLM_RX"/>
+      <define name="DSHOT_TELEMETRY_TIMEOUT_MS" value="1000"/>
     </module>
 
     <module name="air_data">
