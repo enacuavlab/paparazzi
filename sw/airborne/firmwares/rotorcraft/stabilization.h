@@ -136,4 +136,12 @@ extern struct StabilizationSetpoint stab_sp_from_ltp_f(struct FloatVect2 *vect, 
 extern struct StabilizationSetpoint stab_sp_from_rates_i(struct Int32Rates *rates);
 extern struct StabilizationSetpoint stab_sp_from_rates_f(struct FloatRates *rates);
 
+#define STAB_SP_SET_EULERS_ZERO(_sp) { \
+  _sp.types = STAB_SP_EULERS; \
+  _sp.format = STAB_SP_INT;   \
+  _sp.eulers_i.phi = 0;       \
+  _sp.eulers_i.theta = 0;     \
+  _sp.eulers_i.psi = 0;       \
+}
+
 #endif /* STABILIZATION_H */

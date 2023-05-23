@@ -60,6 +60,26 @@ struct SecondOrderLowPass_int filter_pitch;
 struct SecondOrderLowPass_int filter_yaw;
 #endif
 
+#if PERIODIC_TELEMETRY
+#include "modules/datalink/telemetry.h"
+
+static void send_tune_hover(struct transport_tx *trans, struct link_device *dev)
+{
+  pprz_msg_send_ROTORCRAFT_TUNE_HOVER(trans, dev, AC_ID,
+                                      &radio_control.values[RADIO_ROLL],
+                                      &radio_control.values[RADIO_PITCH],
+                                      &radio_control.values[RADIO_YAW],
+                                      &stabilization.cmd[COMMAND_ROLL],
+                                      &stabilization.cmd[COMMAND_PITCH],
+                                      &stabilization.cmd[COMMAND_YAW],
+                                      &stabilization.cmd[COMMAND_THRUST],
+                                      &(stateGetNedToBodyEulers_i()->phi),
+                                      &(stateGetNedToBodyEulers_i()->theta),
+                                      &(stateGetNedToBodyEulers_i()->psi));
+}
+
+#endif
+
 void stabilization_init(void)
 {
   stabilization.mode = STABILIZATION_MODE_NONE;
@@ -81,6 +101,9 @@ void stabilization_init(void)
   init_second_order_low_pass_int(&filter_yaw, STABILIZATION_FILTER_CMD_YAW_CUTOFF, 0.7071, 1.0 / PERIODIC_FREQUENCY, 0.0);
 #endif
 
+#if PERIODIC_TELEMETRY
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROTORCRAFT_TUNE_HOVER, send_tune_hover);
+#endif
 }
 
 void stabilization_mode_changed(uint8_t new_mode, uint8_t submode)
