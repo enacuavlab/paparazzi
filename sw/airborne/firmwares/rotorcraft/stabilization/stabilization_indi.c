@@ -401,13 +401,14 @@ void stabilization_indi_set_stab_sp(struct StabilizationSetpoint *sp)
 }
 
 /**
- * @param att_err attitude error
- * @param rate_control boolean that states if we are in rate control or attitude control
  * @param in_flight boolean that states if the UAV is in flight or not
+ * @param rate_sp rate setpoint
+ * @param thrust thrust setpoint
+ * @param cmd output command array
  *
  * Function that calculates the INDI commands
  */
-void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight)
+void stabilization_indi_rate_run(bool in_flight, struct FloatRates rate_sp, int32_t thrust, int32_t *cmd)
 {
   /* Propagate the filter on the gyroscopes */
   struct FloatRates *body_rates = stateGetBodyRates_f();
@@ -453,34 +454,26 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight)
   angular_accel_ref.q = (rate_sp.q - rates_filt.q) * indi_gains.rate.q;
   angular_accel_ref.r = (rate_sp.r - rates_filt.r) * indi_gains.rate.r;
 
-  g2_times_du = 0.0;
+  g2_times_du = 0.0f;
   for (i = 0; i < INDI_NUM_ACT; i++) {
     g2_times_du += g2[i] * indi_du[i];
   }
   //G2 is scaled by INDI_G_SCALING to make it readable
   g2_times_du = g2_times_du / INDI_G_SCALING;
 
-  float use_increment = 0.0;
-  if(in_flight) {
-    use_increment = 1.0;
+  float use_increment = 0.0f;
+  if (in_flight) {
+    use_increment = 1.0f;
   }
 
-  float v_thrust = 0.0;
+  float v_thrust = 0.0f;
   if (indi_thrust_increment_set) {
     v_thrust = indi_thrust_increment;
-
-    //update thrust command such that the current is correctly estimated
-    stabilization_cmd[COMMAND_THRUST] = 0;
-    for (i = 0; i < INDI_NUM_ACT; i++) {
-      stabilization_cmd[COMMAND_THRUST] += actuator_state[i] * -((int32_t) act_is_servo[i] - 1);
-    }
-    stabilization_cmd[COMMAND_THRUST] /= num_thrusters;
-
   } else {
     // incremental thrust
     for (i = 0; i < INDI_NUM_ACT; i++) {
       v_thrust +=
-        (stabilization_cmd[COMMAND_THRUST] - use_increment*actuator_state_filt_vect[i]) * Bwls[3][i];
+        (thrust - use_increment*actuator_state_filt_vect[i]) * Bwls[3][i];
     }
   }
 
@@ -572,9 +565,16 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight)
   }
 
   // Set the stab_cmd to 42 to indicate that it is not used
-  stabilization_cmd[COMMAND_ROLL] = 42;
-  stabilization_cmd[COMMAND_PITCH] = 42;
-  stabilization_cmd[COMMAND_YAW] = 42;
+  cmd[COMMAND_ROLL] = 42;
+  cmd[COMMAND_PITCH] = 42;
+  cmd[COMMAND_YAW] = 42;
+  //update thrust command such that the current is correctly estimated
+  cmd[COMMAND_THRUST] = 0;
+  for (i = 0; i < INDI_NUM_ACT; i++) {
+    cmd[COMMAND_THRUST] += actuator_state[i] * -((int32_t) act_is_servo[i] - 1);
+  }
+  cmd[COMMAND_THRUST] /= num_thrusters;
+
 }
 
 /**
@@ -583,7 +583,7 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight)
  *
  * Function that should be called to run the INDI controller
  */
-void stabilization_indi_attitude_run(struct Int32Quat quat_sp, bool in_flight)
+void stabilization_indi_attitude_run(bool in_flight, struct Int32Quat quat_sp, int32_t thrust, int32_t *cmd)
 {
   /* attitude error                          */
   struct FloatQuat att_err;
@@ -620,7 +620,7 @@ void stabilization_indi_attitude_run(struct Int32Quat quat_sp, bool in_flight)
   /*BoundAbs(rate_sp.r, 5.0);*/
 
   /* compute the INDI command */
-  stabilization_indi_rate_run(rate_sp, in_flight);
+  stabilization_indi_rate_run(in_flight, rate_sp, thrust, cmd);
 
   // Reset thrust increment boolean
   indi_thrust_increment_set = false;

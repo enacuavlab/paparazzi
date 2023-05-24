@@ -104,9 +104,9 @@ static void send_att(struct transport_tx *trans, struct link_device *dev)
                                   &stabilization_att_ff_cmd[COMMAND_ROLL],
                                   &stabilization_att_ff_cmd[COMMAND_PITCH],
                                   &stabilization_att_ff_cmd[COMMAND_YAW],
-                                  &stabilization_cmd[COMMAND_ROLL],
-                                  &stabilization_cmd[COMMAND_PITCH],
-                                  &stabilization_cmd[COMMAND_YAW]);
+                                  &stabilization.cmd[COMMAND_ROLL],
+                                  &stabilization.cmd[COMMAND_PITCH],
+                                  &stabilization.cmd[COMMAND_YAW]);
 }
 
 static void send_att_ref(struct transport_tx *trans, struct link_device *dev)
@@ -219,8 +219,9 @@ void stabilization_attitude_set_stab_sp(struct StabilizationSetpoint *sp)
 
 #define MAX_SUM_ERR 4000000
 
-void stabilization_attitude_run(bool  in_flight)
+void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd)
 {
+  stabilization_attitude_set_stab_sp(sp);
 
   /* update reference */
 #if USE_ATTITUDE_REF
@@ -303,18 +304,21 @@ void stabilization_attitude_run(bool  in_flight)
 #define CMD_SHIFT 11
 
   /* sum feedforward and feedback */
-  stabilization_cmd[COMMAND_ROLL] =
+  cmd[COMMAND_ROLL] =
     OFFSET_AND_ROUND((stabilization_att_fb_cmd[COMMAND_ROLL] + stabilization_att_ff_cmd[COMMAND_ROLL]), CMD_SHIFT);
 
-  stabilization_cmd[COMMAND_PITCH] =
+  cmd[COMMAND_PITCH] =
     OFFSET_AND_ROUND((stabilization_att_fb_cmd[COMMAND_PITCH] + stabilization_att_ff_cmd[COMMAND_PITCH]), CMD_SHIFT);
 
-  stabilization_cmd[COMMAND_YAW] =
+  cmd[COMMAND_YAW] =
     OFFSET_AND_ROUND((stabilization_att_fb_cmd[COMMAND_YAW] + stabilization_att_ff_cmd[COMMAND_YAW]), CMD_SHIFT);
 
+  cmd[COMMAND_THRUST] = thrust;
+
   /* bound the result */
-  BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_PITCH], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_ROLL], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_PITCH], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_YAW], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_THRUST], MAX_PPRZ);
 
 }

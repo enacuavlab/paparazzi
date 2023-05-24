@@ -431,10 +431,13 @@ void stabilization_attitude_init(void)
 #endif
 }
 
-void stabilization_attitude_run(bool in_flight)
+void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd)
 {
   (void) in_flight; // unused variable
   struct IndiController_int *c = &heli_indi_ctl;
+
+  /* set setpoint */
+  stabilization_attitude_set_stab_sp(sp);
 
   /* calculate acceleration in body frame */
   struct NedCoor_i *ltp_accel_nedcoor = stateGetAccelNed_i();
@@ -549,16 +552,16 @@ void stabilization_attitude_run(bool in_flight)
   /* Two correction angles, don't rotate but just add.
    * sin/cos = tan
    */
-  stabilization_cmd[COMMAND_ROLL] = c->command_out[__k][INDI_ROLL]
-                                    + c->command_out[__k][INDI_PITCH] * pprz_itrig_sin(c->pitch_comp_angle) / pprz_itrig_cos(c->pitch_comp_angle);
-  stabilization_cmd[COMMAND_PITCH] = c->command_out[__k][INDI_PITCH]
-                                     + c->command_out[__k][INDI_ROLL] * pprz_itrig_sin(c->roll_comp_angle) / pprz_itrig_cos(c->roll_comp_angle);
-  stabilization_cmd[COMMAND_YAW] = c->command_out[__k][INDI_YAW];
-  /* Thrust is not applied */
+  cmd[COMMAND_ROLL] = c->command_out[__k][INDI_ROLL]
+                      + c->command_out[__k][INDI_PITCH] * pprz_itrig_sin(c->pitch_comp_angle) / pprz_itrig_cos(c->pitch_comp_angle);
+  cmd[COMMAND_PITCH] = c->command_out[__k][INDI_PITCH]
+                       + c->command_out[__k][INDI_ROLL] * pprz_itrig_sin(c->roll_comp_angle) / pprz_itrig_cos(c->roll_comp_angle);
+  cmd[COMMAND_YAW] = c->command_out[__k][INDI_YAW];
+  cmd[COMMAND_THRUST] = thrust;
 
   /* Disable tail when not armed, because this thing goes crazy */
   if (!autopilot_get_motors_on()) {
-    stabilization_cmd[COMMAND_YAW] = 0;
+    cmd[COMMAND_YAW] = 0;
   }
 }
 
@@ -566,6 +569,7 @@ void stabilization_attitude_enter(void)
 {
   /* reset psi setpoint to current psi angle */
   stab_att_sp_euler.psi = stabilization_attitude_get_heading_i();
+  int32_quat_of_eulers(&stab_att_sp_quat, &stab_att_sp_euler);
 }
 
 void stabilization_attitude_set_failsafe_setpoint(void)

@@ -70,9 +70,10 @@ void stabilization_attitude_set_stab_sp(struct StabilizationSetpoint *sp)
   stabilization_indi_set_stab_sp(sp);
 }
 
-void stabilization_attitude_run(bool in_flight)
+void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd)
 {
-  stabilization_indi_attitude_run(stab_att_sp_quat, in_flight);
+  stabilization_indi_set_stab_sp(sp);
+  stabilization_indi_attitude_run(in_flight, stab_att_sp_quat, thrust, cmd);
 }
 
 void stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)

@@ -343,10 +343,12 @@ static inline void finite_difference(float output[3], float new[3], float old[3]
 /**
  * @brief Does the INDI calculations
  *
- * @param indi_commands[] Array of commands that the function will write to
- * @param att_err quaternion attitude error
+ * @param in_flight true aircraft is flying
+ * @param rate_sp rate setpoint
+ * @param thrust thrust setpoint
+ * @param cmd output command array
  */
-void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight __attribute__((unused)))
+void stabilization_indi_rate_run(bool in_flight, struct FloatRates rate_sp, int32_t thrust, int32_t *cmd)
 {
   //Propagate input filters
   //first order actuator dynamics
@@ -400,7 +402,7 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight __att
 
   //Don't increment if thrust is off and on the ground
   //without this the inputs will increment to the maximum before even getting in the air.
-  if (stabilization_cmd[COMMAND_THRUST] < 300 && !in_flight) {
+  if (thrust < 300 && !in_flight) {
     FLOAT_RATES_ZERO(indi.u_in);
 
     // If on the gournd, no increments, just proportional control
@@ -431,14 +433,16 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight __att
 #endif
 
   /*  INDI feedback */
-  stabilization_cmd[COMMAND_ROLL] = indi.u_in.p;
-  stabilization_cmd[COMMAND_PITCH] = indi.u_in.q;
-  stabilization_cmd[COMMAND_YAW] = indi.u_in.r;
+  cmd[COMMAND_ROLL] = indi.u_in.p;
+  cmd[COMMAND_PITCH] = indi.u_in.q;
+  cmd[COMMAND_YAW] = indi.u_in.r;
+  cmd[COMMAND_THRUST] = thrust;
 
   /* bound the result */
-  BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_PITCH], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_ROLL], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_PITCH], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_YAW], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_THRUST], MAX_PPRZ);
 }
 
 /**
@@ -447,7 +451,7 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight __att
  * @param in_flight not used
  * @param rate_control rate control enabled, otherwise attitude control
  */
-void stabilization_indi_attitude_run(struct Int32Quat quat_sp, bool in_flight __attribute__((unused)))
+void stabilization_indi_attitude_run(bool in_flight, struct Int32Quat quat_sp, int32_t thrust, int32_t *cmd)
 {
   /* attitude error                          */
   struct FloatQuat att_err;
@@ -479,7 +483,7 @@ void stabilization_indi_attitude_run(struct Int32Quat quat_sp, bool in_flight __
   rate_sp.r = indi.gains.att.r * att_fb.z / indi.gains.rate.r;
 
   /* compute the INDI command */
-  stabilization_indi_rate_run(rate_sp, in_flight);
+  stabilization_indi_rate_run(in_flight, rate_sp, thrust, cmd);
 }
 
 /**

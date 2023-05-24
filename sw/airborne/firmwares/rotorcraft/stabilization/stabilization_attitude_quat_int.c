@@ -105,9 +105,9 @@ static void send_att(struct transport_tx *trans, struct link_device *dev)   //FI
                                   &stabilization_att_ff_cmd[COMMAND_ROLL],
                                   &stabilization_att_ff_cmd[COMMAND_PITCH],
                                   &stabilization_att_ff_cmd[COMMAND_YAW],
-                                  &stabilization_cmd[COMMAND_ROLL],
-                                  &stabilization_cmd[COMMAND_PITCH],
-                                  &stabilization_cmd[COMMAND_YAW]);
+                                  &stabilization.cmd[COMMAND_ROLL],
+                                  &stabilization.cmd[COMMAND_PITCH],
+                                  &stabilization.cmd[COMMAND_YAW]);
 }
 
 static void send_att_ref(struct transport_tx *trans, struct link_device *dev)
@@ -253,8 +253,10 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
 
 }
 
-void stabilization_attitude_run(bool enable_integrator)
+void stabilization_attitude_run(bool enable_integrator, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd)
 {
+
+  stabilization_attitude_set_stab_sp(sp);
 
   /*
    * Update reference
@@ -307,14 +309,16 @@ void stabilization_attitude_run(bool enable_integrator)
   attitude_run_fb(stabilization_att_fb_cmd, &stabilization_gains, &att_err, &rate_err, &stabilization_att_sum_err_quat);
 
   /* sum feedforward and feedback */
-  stabilization_cmd[COMMAND_ROLL] = stabilization_att_fb_cmd[COMMAND_ROLL] + stabilization_att_ff_cmd[COMMAND_ROLL];
-  stabilization_cmd[COMMAND_PITCH] = stabilization_att_fb_cmd[COMMAND_PITCH] + stabilization_att_ff_cmd[COMMAND_PITCH];
-  stabilization_cmd[COMMAND_YAW] = stabilization_att_fb_cmd[COMMAND_YAW] + stabilization_att_ff_cmd[COMMAND_YAW];
+  cmd[COMMAND_ROLL] = stabilization_att_fb_cmd[COMMAND_ROLL] + stabilization_att_ff_cmd[COMMAND_ROLL];
+  cmd[COMMAND_PITCH] = stabilization_att_fb_cmd[COMMAND_PITCH] + stabilization_att_ff_cmd[COMMAND_PITCH];
+  cmd[COMMAND_YAW] = stabilization_att_fb_cmd[COMMAND_YAW] + stabilization_att_ff_cmd[COMMAND_YAW];
+  cmd[COMMAND_THRUST] = thrust;
 
   /* bound the result */
-  BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_PITCH], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_ROLL], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_PITCH], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_YAW], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_THRUST], MAX_PPRZ);
 }
 
 void stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)

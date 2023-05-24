@@ -72,6 +72,26 @@ struct StabilizationSetpoint {
   } sp;
 };
 
+/** Thrust setpoint // TODO to a setpoint header
+ *  Structure to store the desired thrust with different format
+ */
+struct ThrustSetpoint {
+  enum {
+    THRUST_SP,        ///< absolute thrust setpoint
+    THRUST_INCR_SP    ///< thrust increment
+  } type;
+  enum {
+    THRUST_SP_INT,    ///< int is assumed to be normalized in [-MAX_PPRZ:MAX_PPRZ]
+    THRUST_SP_FLOAT   ///< float is assumed to be normalized in [-1.:1.]
+  } format;
+  union {
+    int32_t thrust_i;
+    float thrust_f;
+    int32_t th_incr_i;
+    float th_incr_f;
+  } sp;
+};
+
 /** Stabilization structure
  */
 struct Stabilization {
@@ -137,11 +157,11 @@ extern struct StabilizationSetpoint stab_sp_from_rates_i(struct Int32Rates *rate
 extern struct StabilizationSetpoint stab_sp_from_rates_f(struct FloatRates *rates);
 
 #define STAB_SP_SET_EULERS_ZERO(_sp) { \
-  _sp.types = STAB_SP_EULERS; \
+  _sp.type = STAB_SP_EULERS;  \
   _sp.format = STAB_SP_INT;   \
-  _sp.eulers_i.phi = 0;       \
-  _sp.eulers_i.theta = 0;     \
-  _sp.eulers_i.psi = 0;       \
+  _sp.sp.eulers_i.phi = 0;    \
+  _sp.sp.eulers_i.theta = 0;  \
+  _sp.sp.eulers_i.psi = 0;    \
 }
 
 #endif /* STABILIZATION_H */

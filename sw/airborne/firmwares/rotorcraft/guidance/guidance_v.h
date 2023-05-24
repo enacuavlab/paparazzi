@@ -37,9 +37,7 @@
 #define GUIDANCE_V_MODE_CLIMB     3
 #define GUIDANCE_V_MODE_HOVER     4
 #define GUIDANCE_V_MODE_NAV       5
-#define GUIDANCE_V_MODE_MODULE    6
-#define GUIDANCE_V_MODE_FLIP      7
-#define GUIDANCE_V_MODE_GUIDED    8
+#define GUIDANCE_V_MODE_GUIDED    6
 
 struct VerticalGuidance {
   uint8_t mode;

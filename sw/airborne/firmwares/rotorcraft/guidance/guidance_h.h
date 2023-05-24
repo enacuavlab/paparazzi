@@ -57,7 +57,6 @@ extern "C" {
 #define GUIDANCE_H_MODE_HOVER       1
 #define GUIDANCE_H_MODE_NAV         2
 #define GUIDANCE_H_MODE_GUIDED      3
-#define GUIDANCE_H_MODE_MODULE      4
 
 /** Max bank controlled by guidance
  */

@@ -138,11 +138,9 @@ void guidance_h_module_read_rc(void)
  */
 void guidance_h_module_run(bool in_flight)
 {
-  /* Update the setpoint */
-  stabilization_attitude_set_rpy_setpoint_i(&opticflow_stab.cmd);
-
+  struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&opticflow_stab.cmd);
   /* Run the default attitude stabilization */
-  stabilization_attitude_run(in_flight);
+  stabilization_attitude_run(in_flight, &sp, stabilization.cmd[COMMAND_THRUST], stabilization.cmd); // FIXME thrust is not correct, need cmd from vertical guidance
 }
 
 /**

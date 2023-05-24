@@ -94,9 +94,9 @@ void guidance_h_init(void)
 
   gh_ref_init();
 
-#if GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE
-  guidance_h_module_init();
-#endif
+//#if GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE // TODO move to ap/module
+//  guidance_h_module_init();
+//#endif
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GUIDANCE_H_INT, send_gh);
@@ -134,11 +134,11 @@ void guidance_h_mode_changed(uint8_t new_mode)
     case GUIDANCE_H_MODE_NAV:
       guidance_h_nav_enter();
       break;
-#if GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE
-    case GUIDANCE_H_MODE_MODULE:
-      guidance_h_module_enter();
-      break;
-#endif
+//#if GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE // TODO move to ap
+//    case GUIDANCE_H_MODE_MODULE:
+//      guidance_h_module_enter();
+//      break;
+//#endif
     default:
       break;
   }
@@ -168,18 +168,13 @@ void guidance_h_read_rc(bool  in_flight)
         FLOAT_EULERS_ZERO(guidance_h.rc_sp);
       }
       break;
-#if GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE
-    case GUIDANCE_H_MODE_MODULE:
-      guidance_h_module_read_rc();
-      break;
-#endif
     default:
       break;
   }
 
 }
 
-struct StabilizationSetpoint guidance_h_run(bool  in_flight)
+struct StabilizationSetpoint guidance_h_run(bool in_flight)
 {
   struct StabilizationSetpoint sp;
   STAB_SP_SET_EULERS_ZERO(sp);
@@ -199,12 +194,6 @@ struct StabilizationSetpoint guidance_h_run(bool  in_flight)
     case GUIDANCE_H_MODE_NAV:
       sp = guidance_h_from_nav(in_flight);
       break;
-
-#if GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE
-    case GUIDANCE_H_MODE_MODULE:
-      sp = guidance_h_module_run(in_flight);
-      break;
-#endif
 
     default:
       break;

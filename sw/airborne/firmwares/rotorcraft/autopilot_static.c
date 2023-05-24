@@ -158,12 +158,28 @@ void autopilot_static_periodic(void)
    * If in FAILSAFE mode, run normal loops with failsafe attitude and
    * downwards velocity setpoints.
    */
-  if (autopilot.mode == AP_MODE_KILL) {
-    SetCommands(commands_failsafe);
-  } else {
-    guidance_v_run(autopilot_in_flight());
-    guidance_h_run(autopilot_in_flight());
-    SetRotorcraftCommands(stabilization_cmd, autopilot.in_flight, autopilot.motors_on);
+  switch (autopilot.mode) {
+    case AP_MODE_KILL:
+      SetCommands(commands_failsafe);
+      break;
+    case AP_MODE_MODULE:
+#if GUIDANCE_V_MODE_MODULE_SETTING == GUIDANCE_V_MODE_MODULE
+      guidance_v_module_run(autopilot_in_flight());
+#else
+      // TODO
+#endif
+#if GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE
+      guidance_h_module_run(autopilot_in_flight());
+#else
+      // TODO
+#endif
+      break;
+    default:
+      guidance_v_run(autopilot_in_flight());
+      guidance_h_run(autopilot_in_flight());
+      stabilization_attitude_run(); // TODO
+      SetRotorcraftCommands(stabilization_cmd, autopilot.in_flight, autopilot.motors_on);
+      break;
   }
   autopilot.throttle = commands[COMMAND_THRUST];
 

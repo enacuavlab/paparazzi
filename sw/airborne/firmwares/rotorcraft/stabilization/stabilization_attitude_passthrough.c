@@ -57,23 +57,27 @@ void stabilization_attitude_enter(void)
 
 }
 
-void stabilization_attitude_run(bool  in_flight __attribute__((unused)))
+void stabilization_attitude_run(bool in_flight __attribute__((unused)), struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd)
 {
+
+  stabilization_attitude_set_stab_sp(sp);
 
   /* For roll and pitch we pass trough the desired angles as stabilization command */
   const int32_t angle2cmd = (MAX_PPRZ / TRAJ_MAX_BANK);
-  stabilization_cmd[COMMAND_ROLL] = stab_att_sp_euler.phi * angle2cmd;
-  stabilization_cmd[COMMAND_PITCH] = stab_att_sp_euler.theta * angle2cmd;
+  cmd[COMMAND_ROLL] = stab_att_sp_euler.phi * angle2cmd;
+  cmd[COMMAND_PITCH] = stab_att_sp_euler.theta * angle2cmd;
+  cmd[COMMAND_THRUST] = thrust;
 
   //TODO: Fix yaw with PID controller
   int32_t yaw_error = stateGetNedToBodyEulers_i()->psi - stab_att_sp_euler.psi;
   INT32_ANGLE_NORMALIZE(yaw_error);
-  //  stabilization_cmd[COMMAND_YAW] = yaw_error * MAX_PPRZ / INT32_ANGLE_PI;
+  //  cmd[COMMAND_YAW] = yaw_error * MAX_PPRZ / INT32_ANGLE_PI;
 
   /* bound the result */
-  BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_PITCH], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_ROLL], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_PITCH], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_YAW], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_THRUST], MAX_PPRZ);
 }
 
 void stabilization_attitude_set_failsafe_setpoint(void)

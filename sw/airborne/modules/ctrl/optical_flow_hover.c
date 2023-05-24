@@ -509,8 +509,6 @@ void horizontal_ctrl_module_run(bool in_flight)
 
   // Compute 0, 1 or 2 horizontal axes with optitrack
   computeOptiTrack(!oscphi, !osctheta, &ofh_sp_eu);
-  // Run the stabilization mode
-  stabilization_attitude_set_rpy_setpoint_i(&ofh_sp_eu);
 
   prev_vision_timeXY = vision_time;
 }
@@ -595,7 +593,7 @@ void vertical_ctrl_module_run(bool in_flight)
     }
   }
 
-  stabilization_cmd[COMMAND_THRUST] = des_inputs.thrust;
+  stabilization.cmd[COMMAND_THRUST] = des_inputs.thrust;
 }
 
 void ofh_optical_flow_cb(uint8_t sender_id __attribute__((unused)), uint32_t stamp, int32_t flow_x, int32_t flow_y,
@@ -635,7 +633,7 @@ void guidance_v_module_enter(void)
   reset_vertical_vars();
 
   // adaptive estimation - assume hover condition when entering the module
-  of_hover_ctrl_Z.nominal_value = (float) stabilization_cmd[COMMAND_THRUST] / MAX_PPRZ;
+  of_hover_ctrl_Z.nominal_value = (float) stabilization_cmd[COMMAND.THRUST] / MAX_PPRZ;
   des_inputs.thrust = (int32_t) of_hover_ctrl_Z.nominal_value * MAX_PPRZ;
 }
 
@@ -671,7 +669,8 @@ void guidance_h_module_run(bool in_flight)
     autopilot_static_set_mode(AP_MODE_NAV);
   } else {
     horizontal_ctrl_module_run(in_flight);
-    stabilization_attitude_run(in_flight);
+    struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&ofh_sp_eu);
+    stabilization_attitude_run(in_flight, &sp, stabilization.cmd[COMMAND_THRUST], stabilization.cmd);
   }
 }
 
