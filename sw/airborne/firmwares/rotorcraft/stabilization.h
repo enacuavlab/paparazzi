@@ -81,8 +81,8 @@ struct ThrustSetpoint {
     THRUST_INCR_SP    ///< thrust increment
   } type;
   enum {
-    THRUST_SP_INT,    ///< int is assumed to be normalized in [-MAX_PPRZ:MAX_PPRZ]
-    THRUST_SP_FLOAT   ///< float is assumed to be normalized in [-1.:1.]
+    THRUST_SP_INT,    ///< int is assumed to be normalized in [0:MAX_PPRZ]
+    THRUST_SP_FLOAT   ///< float is assumed to be normalized in [0.:1.]
   } format;
   union {
     int32_t thrust_i;
@@ -129,10 +129,10 @@ extern void stabilization_read_rc(bool in_flight);
 /** Call default stabilization control
  * @param[in] in_flight true if rotorcraft is flying
  * @param[in] sp pointer to the stabilization setpoint, computed in guidance or from RC
- * @param[in] thrust thrust computed by vertical guidance
+ * @param[in] thrust pointer to thrust setpoint computed by vertical guidance
  * @param[out] cmd pointer to the output command vector
  */
-extern void stabilization_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd);
+extern void stabilization_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd);
 
 /** Command filter for vibrating airframes
  */
@@ -145,6 +145,7 @@ extern struct Int32Eulers stab_sp_to_eulers_i(struct StabilizationSetpoint *sp);
 extern struct FloatEulers stab_sp_to_eulers_f(struct StabilizationSetpoint *sp);
 extern struct Int32Rates stab_sp_to_rates_i(struct StabilizationSetpoint *sp);
 extern struct FloatRates stab_sp_to_rates_f(struct StabilizationSetpoint *sp);
+extern struct int32_t th_sp_to_thrust(struct ThrustSetpoint *th);
 
 // helper make functions
 extern struct StabilizationSetpoint stab_sp_from_quat_i(struct Int32Quat *quat);
@@ -155,6 +156,10 @@ extern struct StabilizationSetpoint stab_sp_from_ltp_i(struct Int32Vect2 *vect, 
 extern struct StabilizationSetpoint stab_sp_from_ltp_f(struct FloatVect2 *vect, float heading);
 extern struct StabilizationSetpoint stab_sp_from_rates_i(struct Int32Rates *rates);
 extern struct StabilizationSetpoint stab_sp_from_rates_f(struct FloatRates *rates);
+extern struct ThrustSetpoint th_sp_from_thrust_i(int32_t thrust);
+extern struct ThrustSetpoint th_sp_from_thrust_f(float thrust);
+extern struct ThrustSetpoint th_sp_from_incr_i(int32_t th_increment);
+extern struct ThrustSetpoint th_sp_from_incr_f(float th_increment);
 
 #define STAB_SP_SET_EULERS_ZERO(_sp) { \
   _sp.type = STAB_SP_EULERS;  \

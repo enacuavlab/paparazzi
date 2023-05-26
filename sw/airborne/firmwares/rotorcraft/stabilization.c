@@ -200,7 +200,7 @@ static inline void transition_run(bool to_forward)
 #endif
 }
 
-void stabilization_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd)
+void stabilization_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
   switch (stabilization.mode) {
 
