@@ -218,6 +218,7 @@
       <message name="IMU_GYRO_SCALED"          period=".002"/>
       <message name="IMU_ACCEL_SCALED"         period=".002"/>
       <message name="LIDAR"                    period="0.05"/>
+      <message name="AHRS_REF_QUAT"            period="0.5"/>
     </mode>
   </process>
 

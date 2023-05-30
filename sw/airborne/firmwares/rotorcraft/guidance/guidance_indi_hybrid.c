@@ -788,10 +788,10 @@ void guidance_indi_propagate_filters(void) {
  *
  * @return The derivative of lift w.r.t. pitch
  */
-float WEAK guidance_indi_get_liftd(float airspeed, float theta) {
-  float liftd = 0.0f;
-
-  if (airspeed < 12.f) {
+float guidance_indi_get_liftd(float airspeed, float theta) {
+  float liftd = 0.0;
+  //TODO: Change the value for colibri, horizontal airspeed measurement at lower speed available
+  if(airspeed < 12) {
   /* Assume the airspeed is too low to be measured accurately
     * Use scheduling based on pitch angle instead.
     * You can define two interpolation segments

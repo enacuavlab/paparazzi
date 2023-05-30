@@ -13,7 +13,7 @@
     <target board="tawaki_1.1" name="ap">
       <module type="sbus" name="radio_control">
         <!-- Put the mode on channel AUX1-->
-        <define value="RADIO_GAIN1" name="RADIO_KILL_SWITCH"/>
+        <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
       </module>
       <module name="spi_master"/>
 
@@ -144,18 +144,18 @@
       <define name="STABILIZATION_INDI_HYBRID"/>
       <configure name="INDI_NUM_ACT" value="6"/>
     </module>
+    
     <module type="indi_hybrid" name="guidance">
       <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
-      <define name="GUIDANCE_INDI_POS_GAIN" value="0.2"/>
+      <define name="GUIDANCE_INDI_POS_GAIN" value="0.8"/>
       <define name="GUIDANCE_INDI_SPEED_GAIN" value="1.0"/>
       <define name="GUIDANCE_INDI_POS_GAINZ" value="0.3"/>
       <define name="GUIDANCE_INDI_SPEED_GAINZ" value="1.0"/>
       <define name="GUIDANCE_INDI_PITCH_LIFT_EFF" value="0.12"/>
       <define name="GUIDANCE_INDI_PITCH_EFF_SCALING" value="1.0"/>
-      <define name="GUIDANCE_H_REF_MAX_SPEED" value="18.0"/>
-      <!--not used-->
-      <define name="GUIDANCE_INDI_MIN_THROTTLE" value="2000"/>
-      <define name="GUIDANCE_INDI_MIN_THROTTLE_FWD" value="10"/>
+      <define name="GUIDANCE_H_REF_MAX_SPEED" value="18.0"/> <!--not used-->
+      <!--define name="GUIDANCE_INDI_MIN_THROTTLE" value="2000"/>
+      <define name="GUIDANCE_INDI_MIN_THROTTLE_FWD" value="10"/-->
       <define name="GUIDANCE_INDI_MAX_AIRSPEED" value="18.0"/>
       <define name="GUIDANCE_HEADING_IS_FREE" value="FALSE"/>
       <!--heading can not be set by navigation -->
@@ -165,10 +165,6 @@
       <define name="MAX_DECELERATION" value="1.0"/>
       <!--<define name="KNIFE_EDGE_TEST" value="TRUE"/>-->
       <!--Flap effectiveness on lift-->
-      <define name="FE_LIFT_A_PITCH" value="0.00018"/>
-      <define name="FE_LIFT_B_PITCH" value="0.00072"/>
-      <define name="FE_LIFT_A_AS" value="0.0008"/>
-      <define name="FE_LIFT_B_AS" value="0.00009"/>
     </module>
 
     <module name="ins">
@@ -185,25 +181,27 @@
       </module-->
       
     <!--External flight-->
-    <module name="gps"           type="ublox">
+    <!--module name="gps"           type="ublox">
         <configure name="GPS_BAUD" value="B115200"/>
         <configure name="UBX_GPS_PORT" value="UART3"/>
-    </module>
+    </module-->
 
-    <!--module type="int_cmpl_quat" name="ahrs">
+    <!--module name="ahrs" type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="TRUE"/>
       <define name="AHRS_GRAVITY_UPDATE_COORDINATED_TURN" value="TRUE"/>
       <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/>
+      <define name="AHRS_ICQ_IMU_ID" value="IMU_ROT_ID"/>
       <define name="AHRS_ICQ_MAG_ID" value="IMU_ROT_ID"/>
-      <define name="AHRS_ICQ_IMU_ID" value="IMU_MPU9250_ID"/>
-      <define name="AHRS_ALIGNER_IMU_ID" value="IMU_MPU9250_ID"/>
+      <define name="AHRS_ALIGNER_IMU_ID" value="IMU_MPU60X0_ID"/>
     </module-->
 
-    <!--Fight arena flight-->
-    <!--module type="optitrack" name="gps"/-->
 
-    <module type="int_cmpl_quat" name="ahrs">
-      <configure name="USE_MAGNETOMETER" value="TRUE"/>
+    <!--Fight arena flight-->
+    <module name="gps" type="optitrack"/>
+
+    <module name="ahrs" type="int_cmpl_quat">
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+      <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
       <define name="AHRS_GRAVITY_UPDATE_COORDINATED_TURN" value="TRUE"/>
       <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/>
       <define name="AHRS_ICQ_IMU_ID" value="IMU_ROT_ID"/>
@@ -290,7 +288,6 @@
   <section name="AUTOPILOT">
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1"  value="AP_MODE_FORWARD"/>
-    <!-- <define name="MODE_AUTO1" value="AP_MODE_HOVER_Z_HOLD"/> -->
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
   </section>
@@ -327,7 +324,7 @@
     <define name="G1_ROLL"   value="{ - 27.0, - 27.0,    27.0,   27.0, 0.0, 0.0}"/>
     <define name="G1_PITCH"  value="{ -60.0,  60.0,   60.0, -60.0, 0.0, 0.0}"/> <!-- -->
     <define name="G1_YAW"    value="{ -  5.0,    5.0,  -  5.0,    5.0, 0.0, 0.0}"/>
-    <define name="G1_THRUST" value="{ -  1.5, -  1.5,  -  1.5, -  1.5, 0.0, 0.0}" />
+    <define name="G1_THRUST" value="{ -  1.19, -  1.19,  -  1.19, -  1.19, 0.0, 0.0}" />
 
     <!--Counter torque effect of spinning up a rotor-->
     <define value="{0., 0., 0., 0.}" name="G2"/>
@@ -363,6 +360,13 @@
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
   </section>
 
+  <!-- Gains for horizontal navigation-->
+  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
+    <define name="PGAIN"  value="100"/>
+    <define name="DGAIN" value="100"/>
+    <define name="IGAIN" value="10"/>
+  </section>
+
   <!-- Gains for vertical navigation -->
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
     <define name="HOVER_KP" value="174"/>
@@ -386,12 +390,7 @@
     <define name="H_Z" value="0.8578"/>
   </section>
 
-  <!-- Gains for horizontal navigation-->
-  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-    <define name="PGAIN"  value="100"/>
-    <define name="DGAIN" value="100"/>
-    <define name="IGAIN" value="10"/>
-  </section>
+  
 
   <section name="MISC">
     <!--The Quadshot uses (when TRUE) a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
