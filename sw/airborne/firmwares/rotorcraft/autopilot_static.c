@@ -158,6 +158,8 @@ void autopilot_static_periodic(void)
    * If in FAILSAFE mode, run normal loops with failsafe attitude and
    * downwards velocity setpoints.
    */
+  struct StabilizationSetpoint stab_sp;
+  struct ThrustSetpoint thrust_sp;
   switch (autopilot.mode) {
     case AP_MODE_KILL:
       SetCommands(commands_failsafe);
@@ -175,13 +177,16 @@ void autopilot_static_periodic(void)
 #endif
       break;
     default:
-      guidance_v_run(autopilot_in_flight());
-      guidance_h_run(autopilot_in_flight());
-      stabilization_attitude_run(); // TODO
+      thrust_sp = guidance_v_run(autopilot_in_flight());
+      stab_sp = guidance_h_run(autopilot_in_flight());
+      stabilization_attitude_run(autopilot_in_flight(), &stab_sp, &thrust_sp, stabilization.cmd);
+      // TODO maybe add RC limiter here as an option ?
       SetRotorcraftCommands(stabilization_cmd, autopilot.in_flight, autopilot.motors_on);
       break;
   }
+#ifdef COMMAND_THRUST
   autopilot.throttle = commands[COMMAND_THRUST];
+#endif
 
 }
 
@@ -219,15 +224,15 @@ void autopilot_static_set_mode(uint8_t new_autopilot_mode)
       case AP_MODE_FAILSAFE:
 #ifndef KILL_AS_FAILSAFE
         stabilization_attitude_set_failsafe_setpoint();
-        guidance_h_mode_changed(GUIDANCE_H_MODE_ATTITUDE);
+        stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
         break;
 #endif
       case AP_MODE_KILL:
         autopilot_set_in_flight(false);
-        guidance_h_mode_changed(GUIDANCE_H_MODE_KILL);
+        stabilization_mode_changed(STABILIZATION_MODE_NONE, 0);
         break;
       case AP_MODE_RC_DIRECT:
-        guidance_h_mode_changed(GUIDANCE_H_MODE_RC_DIRECT);
+        stabilization_mode_changed(STABILIZATION_MODE_DIRECT);
         break;
       case AP_MODE_RATE_RC_CLIMB:
       case AP_MODE_RATE_DIRECT:
