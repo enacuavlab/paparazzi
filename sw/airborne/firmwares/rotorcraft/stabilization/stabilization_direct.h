@@ -34,7 +34,7 @@
 
 extern void stabilization_direct_init(void);
 extern void stabilization_direct_read_rc(void);
-extern void stabilization_direct_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd);
+extern void stabilization_direct_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd);
 extern void stabilization_direct_enter(void);
 
 extern struct Int32Rates stabilization_direct_rc_cmd;

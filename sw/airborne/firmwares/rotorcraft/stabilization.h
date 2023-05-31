@@ -145,7 +145,13 @@ extern struct Int32Eulers stab_sp_to_eulers_i(struct StabilizationSetpoint *sp);
 extern struct FloatEulers stab_sp_to_eulers_f(struct StabilizationSetpoint *sp);
 extern struct Int32Rates stab_sp_to_rates_i(struct StabilizationSetpoint *sp);
 extern struct FloatRates stab_sp_to_rates_f(struct StabilizationSetpoint *sp);
-extern struct int32_t th_sp_to_thrust(struct ThrustSetpoint *th);
+// thrust setpoint helper functions
+// - first param is the thrust setpoint structure
+// - second param is the current thrust (expected in [0:MAX_PPRZ])
+extern int32_t th_sp_to_thrust_i(struct ThrustSetpoint *th, int32_t thrust);
+extern float th_sp_to_thrust_f(struct ThrustSetpoint *th, int32_t thrust);
+extern int32_t th_sp_to_incr_i(struct ThrustSetpoint *th, int32_t thrust);
+extern float th_sp_to_incr_f(struct ThrustSetpoint *th, int32_t thrust);
 
 // helper make functions
 extern struct StabilizationSetpoint stab_sp_from_quat_i(struct Int32Quat *quat);
@@ -167,6 +173,12 @@ extern struct ThrustSetpoint th_sp_from_incr_f(float th_increment);
   _sp.sp.eulers_i.phi = 0;    \
   _sp.sp.eulers_i.theta = 0;  \
   _sp.sp.eulers_i.psi = 0;    \
+}
+
+#define THRUST_SP_SET_ZERO(_sp) { \
+  _sp.type = THRUST_SP;       \
+  _sp.format = THRUST_SP_INT; \
+  _sp.sp.thrust_i = 0;        \
 }
 
 #endif /* STABILIZATION_H */

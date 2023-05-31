@@ -131,7 +131,7 @@ extern void guidance_v_set_ref(int32_t pos, int32_t speed, int32_t accel);
 
 /** Set guidance setpoint from NAV and run hover loop
 */
-extern void guidance_v_from_nav(bool in_flight);
+extern struct ThrustSetpoint guidance_v_from_nav(bool in_flight);
 
 /** Enter GUIDED mode control
 */
@@ -139,7 +139,7 @@ extern void guidance_v_guided_enter(void);
 
 /** Run GUIDED mode control
 */
-extern void guidance_v_guided_run(bool in_flight);
+extern struct ThrustSetpoint guidance_v_guided_run(bool in_flight);
 
 /** Set z position setpoint.
  * @param z Setpoint (down is positive) in meters.

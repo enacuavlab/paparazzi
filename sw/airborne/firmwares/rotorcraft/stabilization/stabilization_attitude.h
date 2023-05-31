@@ -45,7 +45,7 @@ extern void stabilization_attitude_set_rpy_setpoint_i(struct Int32Eulers *rpy);
 extern void stabilization_attitude_set_quat_setpoint_i(struct Int32Quat *quat);
 extern void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading);
 extern void stabilization_attitude_set_stab_sp(struct StabilizationSetpoint *sp);
-extern void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd);
+extern void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd);
 
 #ifdef __cplusplus
 }

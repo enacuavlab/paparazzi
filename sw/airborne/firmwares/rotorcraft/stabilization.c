@@ -473,6 +473,76 @@ struct FloatRates stab_sp_to_rates_f(struct StabilizationSetpoint *sp)
   }
 }
 
+int32_t th_sp_to_thrust_i(struct ThrustSetpoint *th, int32_t thrust)
+{
+  if (th->type == THRUST_SP) {
+    if (th->format == THRUST_SP_INT) {
+      return th->sp.thrust_i;
+    } else {
+      return (int32_t) (th->sp.thrust_f * MAX_PPRZ);
+    }
+  } else {
+    if (th->format == THRUST_SP_INT) {
+      return thrust + th->sp.th_incr_i;
+    } else {
+      return thrust + (int32_t)(th->sp.th_incr_f * MAX_PPRZ);
+    }
+  }
+}
+
+float th_sp_to_thrust_f(struct ThrustSetpoint *th, int32_t thrust)
+{
+  const float MAX_PPRZ_F = (float) MAX_PPRZ;
+  if (th->type == THRUST_SP) {
+    if (th->format == THRUST_SP_FLOAT) {
+      return th->sp.thrust_f;
+    } else {
+      return (float)th->sp.thrust_i / MAX_PPRZ_F;
+    }
+  } else {
+    if (th->format == THRUST_SP_FLOAT) {
+      return ((float)thrust / MAX_PPRZ_F) + th->sp.th_incr_f;
+    } else {
+      return (float)(thrust + th->sp.th_incr_f) / MAX_PPRZ_F;
+    }
+  }
+}
+
+int32_t th_sp_to_incr_i(struct ThrustSetpoint *th, int32_t thrust)
+{
+  if (th->type == THRUST_INCR_SP) {
+    if (th->format == THRUST_SP_INT) {
+      return th->sp.th_incr_i;
+    } else {
+      return (int32_t) (th->sp.th_incr_f * MAX_PPRZ);
+    }
+  } else {
+    if (th->format == THRUST_SP_INT) {
+      return th->sp.thrust_i - thrust;
+    } else {
+      return (int32_t)(th->sp.thrust_f * MAX_PPRZ) - thrust;
+    }
+  }
+}
+
+float th_sp_to_incr_f(struct ThrustSetpoint *th, int32_t thrust)
+{
+  const float MAX_PPRZ_F = (float) MAX_PPRZ;
+  if (th->type == THRUST_INCR_SP) {
+    if (th->format == THRUST_SP_FLOAT) {
+      return th->sp.th_incr_f;
+    } else {
+      return (float)th->sp.th_incr_i / MAX_PPRZ_F;
+    }
+  } else {
+    if (th->format == THRUST_SP_FLOAT) {
+      return th->sp.thrust_f - ((float)thrust / MAX_PPRZ_F);
+    } else {
+      return (float)(th->sp.thrust_i - thrust) / MAX_PPRZ_F;
+    }
+  }
+}
+
 struct StabilizationSetpoint stab_sp_from_quat_i(struct Int32Quat *quat)
 {
   struct StabilizationSetpoint sp = {
@@ -551,6 +621,46 @@ struct StabilizationSetpoint stab_sp_from_rates_f(struct FloatRates *rates)
     .type = STAB_SP_RATES,
     .format = STAB_SP_FLOAT,
     .sp.rates_f = *rates
+  };
+  return sp;
+}
+
+struct ThrustSetpoint th_sp_from_thrust_i(int32_t thrust)
+{
+  struct ThrustSetpoint sp = {
+    .type = THRUST_SP,
+    .format = THRUST_SP_INT,
+    .sp.thrust_i = thrust
+  };
+  return sp;
+}
+
+struct ThrustSetpoint th_sp_from_thrust_f(float thrust)
+{
+  struct ThrustSetpoint sp = {
+    .type = THRUST_SP,
+    .format = THRUST_SP_FLOAT,
+    .sp.thrust_f = thrust
+  };
+  return sp;
+}
+
+struct ThrustSetpoint th_sp_from_incr_i(int32_t th_increment)
+{
+  struct ThrustSetpoint sp = {
+    .type = THRUST_INCR_SP,
+    .format = THRUST_SP_INT,
+    .sp.th_incr_i = th_increment
+  };
+  return sp;
+}
+
+struct ThrustSetpoint th_sp_from_incr_f(float th_increment)
+{
+  struct ThrustSetpoint sp = {
+    .type = THRUST_INCR_SP,
+    .format = THRUST_SP_FLOAT,
+    .sp.th_incr_f = th_increment
   };
   return sp;
 }
