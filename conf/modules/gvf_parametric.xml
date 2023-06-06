@@ -85,6 +85,9 @@
     <file name="trajectories/gvf_parametric_3d_lissajous.h"/>
     <file name="trajectories/gvf_parametric_2d_trefoil.h"/>
     <file name="trajectories/gvf_parametric_3d_sin.h"/>
+    <file name="trajectories/gvf_parametric_3d_log_lissajou.h"/>
+    <file name="trajectories/gvf_parametric_3d_sqrt_lissajou.h"/>
+    <file name="trajectories/gvf_parametric_drift_ellipse.h"/>
   </header>
 
   <init fun = "gvf_parametric_init()"/>
@@ -104,6 +107,9 @@
     <file name="trajectories/gvf_parametric_3d_lissajous.c"/>
     <file name="trajectories/gvf_parametric_2d_trefoil.c"/>
     <file name="trajectories/gvf_parametric_3d_sin.c"/>
+    <file name="trajectories/gvf_parametric_3d_log_lissajou.c"/>
+    <file name="trajectories/gvf_parametric_3d_sqrt_lissajou.c"/>
+    <file name="trajectories/gvf_parametric_drift_ellipse.c"/>
     <flag name="LDFLAGS" value="lstdc++" />
   </makefile>
 

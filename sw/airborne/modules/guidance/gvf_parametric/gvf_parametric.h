@@ -126,6 +126,9 @@ extern "C" {
 #include "trajectories/gvf_parametric_3d_lissajous.h"
 #include "trajectories/gvf_parametric_2d_trefoil.h"
 #include "trajectories/gvf_parametric_3d_sin.h"
+#include "trajectories/gvf_parametric_3d_log_lissajou.h"
+#include "trajectories/gvf_parametric_3d_sqrt_lissajou.h"
+#include "trajectories/gvf_parametric_drift_ellipse.h"
 
 /** @typedef gvf_parametric_con
 * @brief Control parameters for the GVF_PARAMETRIC
@@ -182,6 +185,9 @@ enum trajectories_parametric {
   LISSAJOUS_3D = 2,
   TORUS_3D_SURFACE = 3,
   SINUS_3D = 4,
+  LOG_LISSAJOU = 5,
+  SQRT_LISSAJOU = 6,
+  DRIFT_ELLIPSE = 7,
   NONE_PARAMETRIC = 255,
 };
 
