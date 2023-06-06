@@ -32,6 +32,8 @@
 #include "wls/wls_alloc.h"
 #include "math/pprz_simple_matrix.h"
 #include <stdio.h>
+#include "modules/sensors/serial_act_t4.h"
+#include "modules/core/abi.h"
 
 #include "generated/flight_plan.h"
 
@@ -78,6 +80,15 @@ float tf_state2[2] = {0, 0};
 float tf_state3[2] = {0, 0};
 float tf_state4[2] = {0, 0};
 
+// serial_act_t4 variables:
+struct serial_act_t4_out myserial_act_t4_out_local;
+float serial_act_t4_extra_data_out_local[255] __attribute__((aligned));
+static abi_event SERIAL_ACT_T4_IN;
+
+static abi_event SERIAL_ACT_T4_IN;
+float serial_act_t4_extra_data_in_local[255] __attribute__((aligned));
+struct serial_act_t4_in myserial_act_t4_in_local;
+
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
@@ -94,6 +105,62 @@ static void send_payload_float(struct transport_tx *trans, struct link_device *d
 }
 #endif
 
+/**
+ * ABI routine called by the serial_act_t4 ABI event
+ */
+static void serial_act_t4_abi_in(uint8_t sender_id __attribute__((unused)), struct serial_act_t4_in * myserial_act_t4_in_ptr, float * serial_act_t4_extra_data_in_ptr){
+    memcpy(&myserial_act_t4_in_local,myserial_act_t4_in_ptr,sizeof(struct serial_act_t4_in));
+    memcpy(&serial_act_t4_extra_data_in_local,serial_act_t4_extra_data_in_ptr,255 * sizeof(float));
+}
+
+#if PERIODIC_TELEMETRY
+  static void esc_msg_send(struct transport_tx *trans, struct link_device *dev) {
+    float current1, voltage1, rpm1, current2, voltage2, rpm2;
+    if(autopilot.motors_on) { 
+      
+      current1 = (float)myserial_act_t4_in_local.motor_1_current_int * 0.01f;
+      voltage1 = (float)myserial_act_t4_in_local.motor_1_voltage_int * 0.01f;
+      rpm1 = (float)myserial_act_t4_in_local.motor_1_rpm_int;
+     
+      current2 = (float)myserial_act_t4_in_local.motor_2_current_int * 0.01f;
+      voltage2 = (float)myserial_act_t4_in_local.motor_2_voltage_int * 0.01f;
+      rpm2 = (float)myserial_act_t4_in_local.motor_2_rpm_int;
+    }
+    else{
+      current1 = 0;
+      voltage1 = 0;
+      rpm1 = 0;
+            
+      current2 = 0;
+      voltage2 = 0;
+      rpm2 = 0;
+    }
+    float bat_voltage = electrical.vsupply;
+    float power1 = current1 * bat_voltage;
+    float power2 = current2 * bat_voltage;
+    float energy1 = -1;
+    float energy2 = -1;
+     uint8_t i = 1; 
+    pprz_msg_send_ESC(trans, dev, AC_ID,
+          &current1,
+          &bat_voltage,
+          &power1,
+          &rpm1,
+          &voltage1,
+          &energy1,
+          &i);
+
+      i += 1;
+    pprz_msg_send_ESC(trans, dev, AC_ID,
+      &current2,
+      &bat_voltage,
+      &power2,
+      &rpm2,
+      &voltage2,
+      &energy2,
+      &i);
+  }
+#endif
 
 void stabilization_hover_wind_init(void){
 
@@ -111,8 +178,11 @@ void stabilization_hover_wind_init(void){
 
   #if PERIODIC_TELEMETRY
     register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PAYLOAD_FLOAT, send_payload_float);
+    register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ESC, esc_msg_send);
   #endif
 
+  //Init abi bind msg to Teensy 4.0:
+  AbiBindMsgSERIAL_ACT_T4_IN(ABI_BROADCAST, &SERIAL_ACT_T4_IN, serial_act_t4_abi_in);
 }
 
 void stabilization_hover_wind_run(bool in_flight){
@@ -220,3 +290,29 @@ void stabilization_hover_wind_run(bool in_flight){
   
 
 }
+
+void stabilization_fill_cmd(void){
+
+  if(!autopilot.motors_on) { //kill only the motors, put the servos straight
+    //Arm motor:
+    myserial_act_t4_out_local.motor_arm_int = 0;
+  }
+  else{
+    //Arm motor:
+    myserial_act_t4_out_local.motor_arm_int = 1;
+  }
+
+  if (myserial_act_t4_out_local.motor_arm_int == 1){
+    myserial_act_t4_out_local.motor_1_dshot_cmd_int = 2000*actuators_pprz[3]/MAX_PPRZ; //Left motor
+    myserial_act_t4_out_local.motor_2_dshot_cmd_int = 2000*actuators_pprz[2]/MAX_PPRZ; //Right motor
+  }
+  else{
+    myserial_act_t4_out_local.motor_1_dshot_cmd_int =  (int16_t) (0); 
+    myserial_act_t4_out_local.motor_2_dshot_cmd_int =  (int16_t) (0); 
+
+  }
+  
+  
+  AbiSendMsgSERIAL_ACT_T4_OUT(ABI_SERIAL_ACT_T4_OUT_ID, &myserial_act_t4_out_local, &serial_act_t4_extra_data_out_local[0]);
+}
+

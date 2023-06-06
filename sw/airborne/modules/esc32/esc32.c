@@ -243,7 +243,7 @@ void esc32_init(void) {
   esc32_priv.cmd_seq_id = 1;
 
 #if PERIODIC_TELEMETRY
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ESC, esc32_msg_send);
+  register_periodic_telemetry(DefaultPeriodic, , esc32_msg_send);
 #endif
 
 };

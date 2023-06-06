@@ -98,12 +98,20 @@
       <!-- <define name="USE_PWM_INPUT2" value="FALSE"/> -->
     </module> 
 
-
     <module name="actuators"     type="pwm">
       <define name="SERVO_HZ" value="400"/>
-      <!--define name="USE_SERVOS_7AND8"/-->
     </module>
 
+    <!--module name="actuators" type="dshot">
+      <define name="DSHOT_SPEED" value="300"/>
+      <define name="DSHOT_TIM2_TELEMETRY_NUM" value="DSHOT_TLM_RX"/>
+    </module-->
+
+    <!-- Module needed for the fly by wire communication between the Teensy T4 and the apogee-->
+    <module name="serial_act_t4">
+      <configure name="SERIAL_ACT_T4_PORT" value="UART6"/>
+    </module>
+    
 
     <module name="sys_mon"/>
 
@@ -200,9 +208,14 @@
   <servos driver="Pwm">
     <servo name="ELEVON_LEFT" no="5" min="1190" neutral="1490" max="1790"/>
     <servo name="ELEVON_RIGHT" no="0" min="1270" neutral="1570" max="1870"/>
-    <servo name="RM" no="2" min="1100" neutral="1200" max="2000"/>
-    <servo name="LM" no="3" min="1000" neutral="1100" max="2000"/>
+    <servo name="RM" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="LM" no="3" min="0" neutral="100" max="2000"/>    
   </servos>
+
+  <!--servos driver="DShot">
+    <servo name="RM" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="LM" no="3" min="0" neutral="100" max="2000"/>
+  </servos-->
 
   <commands>
     <axis name="PITCH" failsafe_value="0"/>
@@ -216,6 +229,7 @@
     <set servo="ELEVON_RIGHT" value="autopilot.motors_on ? actuators_pprz[1] : 0"/>
     <set servo="RM" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
     <set servo="LM" value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
+    <call fun="stabilization_fill_cmd()" />
   </command_laws>
 
 
@@ -360,9 +374,9 @@
   </section>
 
   <section name="MISC">
-    <!--The Quadshot uses (when TRUE) a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
+    <!--The Airframe uses (when TRUE) a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
     <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
-    <!-- This is the pitch angle that the Quadshot will have in forward flight, where 0 degrees is hover-->
+    <!-- This is the pitch angle that the Airframe will have in forward flight, where 0 degrees is hover-->
     <define name="TRANSITION_MAX_OFFSET" value="-75.0" unit="deg"/>
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
     <define name="COORDINATED_TURN_AIRSPEED" value="18.0"/>

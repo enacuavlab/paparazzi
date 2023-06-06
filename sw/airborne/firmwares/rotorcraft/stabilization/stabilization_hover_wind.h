@@ -28,7 +28,7 @@
 extern void stabilization_hover_wind_init(void);
 extern void stabilization_hover_wind_run(bool in_flight);
 extern void stabilization_hover_takeoff(void);
-
+extern void stabilization_fill_cmd(void);
 
 
 #endif /* STABILIZATION_HOVER_WIND */
