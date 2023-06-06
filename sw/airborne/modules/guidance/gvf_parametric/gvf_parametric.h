@@ -91,6 +91,9 @@ extern "C" {
 #include "trajectories/gvf_parametric_3d_lissajous.h"
 #include "trajectories/gvf_parametric_2d_trefoil.h"
 #include "trajectories/gvf_parametric_3d_sin.h"
+#include "trajectories/gvf_parametric_3d_log_lissajou.h"
+#include "trajectories/gvf_parametric_3d_sqrt_lissajou.h"
+#include "trajectories/gvf_parametric_drift_ellipse.h"
 
 /** @typedef gvf_parametric_con
 * @brief Control parameters for the GVF_PARAMETRIC
@@ -145,6 +148,9 @@ enum trajectories_parametric {
   LISSAJOUS_3D = 2,
   TORUS_3D_SURFACE = 3,
   SINUS_3D = 4,
+  LOG_LISSAJOU = 5,
+  SQRT_LISSAJOU = 6,
+  DRIFT_ELLIPSE = 7,
   NONE_PARAMETRIC = 255,
 };
 
@@ -366,6 +372,58 @@ bool gvf_parametric_3d_sin(float ay, float freq_y, float phase_y, float az, floa
  */
 bool gvf_parametric_3d_sin_XYZa(float xo, float yo, float zo, float alpha,
                                 float ay, float freq_y, float phase_y, float az, float freq_z, float phase_z);
+
+
+// 3D linear/log growth Lissajou curve
+
+/**
+ * @brief Set parameters for a 3D linear/log growth Lissajou trajectory
+ * 
+ * @param ax Speed along the x-axis
+ * @param ay Oscillations' amplitude along the y-axis
+ * @param az Oscillations' amplitude along the z-axis
+ * @param f_y Frequency along the y-axis (in radiants, i.e. before multiplication by 2*PI)
+ * @param phi_y Phase for the y-oscillations
+ * @param f_z Frequency along the z-axis (in radiants, i.e. before multiplication by 2*PI)
+ * @param phi_z Phase for the z-oscillations
+ * 
+ * @return true 
+ */
+bool gvf_parametric_3d_log_lissajou(float ax, float ay, float az, float f_y, float phi_y, float f_z, float phi_z);
+
+
+// 3D sqrt growth Lissajou curve
+
+/**
+ * @brief Set parameters for a 3D sqrt growth Lissajou trajectory
+ * 
+ * @param ax Speed along the x-axis
+ * @param ay Oscillations' amplitude along the y-axis
+ * @param az Oscillations' amplitude along the z-axis
+ * @param f_y Frequency along the y-axis (in radiants, i.e. before multiplication by 2*PI)
+ * @param phi_y Phase for the y-oscillations
+ * @param f_z Frequency along the z-axis (in radiants, i.e. before multiplication by 2*PI)
+ * @param phi_z Phase for the z-oscillations
+ * 
+ * @return true 
+ */
+bool gvf_parametric_3d_sqrt_lissajou(float ax, float ay, float az, float f_y, float phi_y, float f_z, float phi_z);
+
+
+// Drift ellipse
+
+/**
+ * @brief Set parameters for a 3D drifting ellipse trajectory
+ * 
+ * @param v_x Speed along the x-axis
+ * @param a_x Oscillations' amplitude along the x-axis
+ * @param a_y Oscillations' amplitude along the y-axis
+ * @param freq Frequency (in radiants, i.e. before multiplication by 2*PI)
+ * @param phi Phase 
+ * 
+ * @return true 
+ */
+bool gvf_parametric_3d_drift_ellipse(float v_x, float a_x, float a_y, float freq, float phase);
 
 
 #ifdef __cplusplus

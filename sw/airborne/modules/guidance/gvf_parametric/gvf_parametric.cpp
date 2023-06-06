@@ -809,6 +809,121 @@ bool gvf_parametric_3d_sin_XYZa(float xo, float yo, float zo, float alpha,
   return gvf_parametric_3d_sin(ay, freq_y, phase_y, az, freq_z, phase_z);
 }
 
+// 3D linear/log growth Lissajou curve
+
+/**
+ * @brief Set parameters for a 3D linear/log growth Lissajou trajectory
+ * 
+ * @param ax Speed along the x-axis
+ * @param ay Oscillations' amplitude along the y-axis
+ * @param az Oscillations' amplitude along the z-axis
+ * @param f_y Frequency along the y-axis (in radiants, i.e. before multiplication by 2*PI)
+ * @param phi_y Phase for the y-oscillations
+ * @param f_z Frequency along the z-axis (in radiants, i.e. before multiplication by 2*PI)
+ * @param phi_z Phase for the z-oscillations
+ * 
+ * @return true 
+ */
+bool gvf_parametric_3d_log_lissajou(float ax, float ay, float az, float f_y, float phi_y, float f_z, float phi_z)
+{
+  gvf_parametric_trajectory.type = LOG_LISSAJOU;
+  gvf_parametric_trajectory.p_parametric[0] = ax;
+  gvf_parametric_trajectory.p_parametric[1] = ay;
+  gvf_parametric_trajectory.p_parametric[2] = az;
+  gvf_parametric_trajectory.p_parametric[3] = f_y;
+  gvf_parametric_trajectory.p_parametric[4] = phi_y;
+  gvf_parametric_trajectory.p_parametric[5] = f_z;
+  gvf_parametric_trajectory.p_parametric[6] = phi_z;
+
+  gvf_parametric_plen = 7 + gvf_parametric_plen_wps;
+  gvf_parametric_plen_wps = 0;
+
+  float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
+
+  gvf_parametric_3d_log_lissajou_info(&f1, &f2, &f3, &f1d, &f2d, &f3d, &f1dd, &f2dd, &f3dd);
+  gvf_parametric_control_3d(gvf_parametric_3d_sin_par.kx, gvf_parametric_3d_sin_par.ky,
+                            gvf_parametric_3d_sin_par.kz, f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd);
+
+  return true;
+}
+
+
+// 3D sqrt growth Lissajou curve
+
+/**
+ * @brief Set parameters for a 3D sqrt growth Lissajou trajectory
+ * 
+ * @param ax Speed along the x-axis
+ * @param ay Oscillations' amplitude along the y-axis
+ * @param az Oscillations' amplitude along the z-axis
+ * @param f_y Frequency along the y-axis (in radiants, i.e. before multiplication by 2*PI)
+ * @param phi_y Phase for the y-oscillations
+ * @param f_z Frequency along the z-axis (in radiants, i.e. before multiplication by 2*PI)
+ * @param phi_z Phase for the z-oscillations
+ * 
+ * @return true 
+ */
+bool gvf_parametric_3d_sqrt_lissajou(float ax, float ay, float az, float f_y, float phi_y, float f_z, float phi_z)
+{
+  gvf_parametric_trajectory.type = SQRT_LISSAJOU;
+  gvf_parametric_trajectory.p_parametric[0] = ax;
+  gvf_parametric_trajectory.p_parametric[1] = ay;
+  gvf_parametric_trajectory.p_parametric[2] = az;
+  gvf_parametric_trajectory.p_parametric[3] = f_y;
+  gvf_parametric_trajectory.p_parametric[4] = phi_y;
+  gvf_parametric_trajectory.p_parametric[5] = f_z;
+  gvf_parametric_trajectory.p_parametric[6] = phi_z;
+
+  gvf_parametric_plen = 7 + gvf_parametric_plen_wps;
+  gvf_parametric_plen_wps = 0;
+
+  float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
+
+  gvf_parametric_3d_sqrt_lissajou_info(&f1, &f2, &f3, &f1d, &f2d, &f3d, &f1dd, &f2dd, &f3dd);
+  gvf_parametric_control_3d(gvf_parametric_3d_sin_par.kx, gvf_parametric_3d_sin_par.ky,
+                            gvf_parametric_3d_sin_par.kz, f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd);
+
+  return true;
+}
+
+
+// Drift ellipse
+
+/**
+ * @brief Set parameters for a 3D drifting ellipse trajectory
+ * 
+ * @param v_x Speed along the x-axis
+ * @param a_x Oscillations' amplitude along the x-axis
+ * @param a_y Oscillations' amplitude along the y-axis
+ * @param freq Frequency (in radiants, i.e. before multiplication by 2*PI)
+ * @param phi Phase 
+ * 
+ * @return true 
+ */
+bool gvf_parametric_3d_drift_ellipse(float v_x, float a_x, float a_y, float freq, float phase)
+{
+  gvf_parametric_trajectory.type = DRIFT_ELLIPSE;
+  gvf_parametric_trajectory.p_parametric[0] = v_x;
+  gvf_parametric_trajectory.p_parametric[1] = a_x;
+  gvf_parametric_trajectory.p_parametric[2] = a_y;
+  gvf_parametric_trajectory.p_parametric[3] = freq;
+  gvf_parametric_trajectory.p_parametric[4] = phase;
+
+  gvf_parametric_plen = 5 + gvf_parametric_plen_wps;
+  gvf_parametric_plen_wps = 0;
+
+  float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
+
+  gvf_parametric_drift_ellipse_info(&f1, &f2, &f3, &f1d, &f2d, &f3d, &f1dd, &f2dd, &f3dd);
+  gvf_parametric_control_3d(gvf_parametric_3d_sin_par.kx, gvf_parametric_3d_sin_par.ky,
+                            gvf_parametric_3d_sin_par.kz, f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd);
+
+  return true;
+}
+
+
+
+
 // Coordination
 
 void gvf_parametric_coordination_send_w_to_nei(void)
