@@ -71,18 +71,34 @@
     </block>
     
     <block name="Spiral RDV">
-    	<set var="gvf_ellipse_par.a" value="200 + 10*AC_ID"/>
+    	<call_once fun="gvf_parametric_set_w_gain(0.0001)"/>
+    	<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,90.,0.)"/>
+    	<call fun="gvf_parametric_3d_sin(500 + 10 * AC_ID,3,90 * AC_ID, 500 + 10 * AC_ID,3,90 * (AC_ID+1))"/>
+    	<!--<set var="gvf_ellipse_par.a" value="200 + 10*AC_ID"/>
     	<set var="gvf_ellipse_par.b" value="200 + 10*AC_ID"/>
-    	<call fun="gvf_ellipse_wp(WP_SRC,gvf_ellipse_par.a, gvf_ellipse_par.b, gvf_ellipse_par.alpha)"/>
+    	<call fun="gvf_ellipse_wp(WP_SRC,gvf_ellipse_par.a, gvf_ellipse_par.b, gvf_ellipse_par.alpha)"/>-->
     </block>
         
     <block name="Downwind sinus">
-      <call_once fun="gvf_parametric_set_w_gain(-1.)"/>
-      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>
-      <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,atan2(stateGetHorizontalWindspeed_f()->y,stateGetHorizontalWindspeed_f()->x)*180/M_PI)"/>-->
-      <call fun="gvf_parametric_3d_sin(1000,0.001,90 * AC_ID, 10,0.0005,90 * AC_ID)"/>
+      <call_once fun="gvf_parametric_set_w_gain(1.)"/>
+      <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
+      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID-5),0.,0.,-atan2(stateGetHorizontalWindspeed_f()->y,stateGetHorizontalWindspeed_f()->x)*180/M_PI)"/>
+      <call fun="gvf_parametric_3d_sin(500,0.001,90 * (AC_ID+1), 50,0.0005,90 * AC_ID)"/>
       
       <!--<call fun="gvf_parametric_3d_ellipse_wp_delta(WP_SRC, 200,200,30,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>-->
+    </block>
+    
+    <block name="Downind log Lissajou">
+    	<call_once fun="gvf_parametric_set_w_gain(1.)"/>
+      <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
+      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID-5),0.,0.,-atan2(stateGetHorizontalWindspeed_f()->y,stateGetHorizontalWindspeed_f()->x)*180/M_PI)"/>
+      <call fun="gvf_parametric_3d_sqrt_lissajou(1,1000,25,0.001,90 * (AC_ID+1),0.0005,90 * AC_ID)"/>
+    </block>
+    
+    <block name="Mission GVF">
+    	<while cond="TRUE">
+    		<call fun="mission_run()"/>
+    	</while>
     </block>
     
     <block key="F8" name="Figure 8 around wp 1" strip_button="Figure 8 (wp 1-2)" strip_icon="eight.png" group="base_pattern">

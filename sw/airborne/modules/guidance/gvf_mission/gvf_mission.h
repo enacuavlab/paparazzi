@@ -99,12 +99,13 @@ extern bool gvf_mission_set_trajectory(UNUSED uint8_t nb, float *params, UNUSED 
  * @brief Run the GVF parametric controller
  * This function IS a mission callback function (ID: 'GVFGO')
  * @param nb : Either 0,1 or 2
- * @param params : Array of floats. The first cell may contain a trajectory type, and the second a limit to the parametric value `w`
+ * @param params : Array of floats. The first cell may contain a trajectory type, the second a limit to the parametric value `w`, the third a value for `w`
  * @param flag : UNUSED
  * 
  * If `nb` is 0, simply run the GVF parametric controller with the current parameters, again and again.
  * If `nb` is 1, re-set the trajectory type before running the controller
  * If `nb` is 2, re-set the trajectory type AND add a limit (in absolute value) to the parametric control value `w`
+ * If `nb` is 3, re-set the trajectory type,add a limit (in absolute value) to the parametric control value `w`, AND set the value of `w`
  * 
  * @return true : in most cases (run the controller repeatedly)
  * @return false : If `nb` was set to 2, happen when the parametric control value exceed the given limit 
