@@ -20,11 +20,12 @@ struct amt22_t {
   struct spi_transaction trans;
   volatile uint8_t spi_input_buf[SPI_BUFFER_SIZE];
   volatile uint8_t spi_output_buf[SPI_BUFFER_SIZE];
-
+  int byte_no;
+  uint8_t persistant_buf[SPI_BUFFER_SIZE];
 
   enum amt22_request_t request;
   int16_t position;
-  int16_t offset;
+  uint16_t offset;
   int16_t turns;
   bool flag_offset;
   float angle_rad;
