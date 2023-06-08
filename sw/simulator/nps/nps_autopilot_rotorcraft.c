@@ -44,7 +44,6 @@
 #endif
 #endif
 
-
 #include "modules/core/abi.h"
 
 #include "pprzlink/messages.h"

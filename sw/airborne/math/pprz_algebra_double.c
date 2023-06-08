@@ -135,6 +135,15 @@ void double_quat_inv_comp(struct DoubleQuat *b2c, struct DoubleQuat *a2b, struct
   b2c->qz = a2b->qi * a2c->qz - a2b->qx * a2c->qy + a2b->qy * a2c->qx - a2b->qz * a2c->qi;
 }
 
+void double_quat_comp(struct DoubleQuat *a2c, struct DoubleQuat *a2b, struct DoubleQuat *b2c)
+{
+  a2c->qi = a2b->qi * b2c->qi - a2b->qx * b2c->qx - a2b->qy * b2c->qy - a2b->qz * b2c->qz;
+  a2c->qx = a2b->qi * b2c->qx + a2b->qx * b2c->qi + a2b->qy * b2c->qz - a2b->qz * b2c->qy;
+  a2c->qy = a2b->qi * b2c->qy - a2b->qx * b2c->qz + a2b->qy * b2c->qi + a2b->qz * b2c->qx;
+  a2c->qz = a2b->qi * b2c->qz + a2b->qx * b2c->qy - a2b->qy * b2c->qx + a2b->qz * b2c->qi;
+}
+
+
 void double_rmat_inv(struct DoubleRMat *m_b2a, struct DoubleRMat *m_a2b)
 {
   /*RMAT_ELMT(*m_b2a, 0, 0) = RMAT_ELMT(*m_a2b, 0, 0);*/
