@@ -88,11 +88,11 @@
       <!--<call fun="gvf_parametric_3d_ellipse_wp_delta(WP_SRC, 200,200,30,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>-->
     </block>
     
-    <block name="Downind log Lissajou">
-    	<call_once fun="gvf_parametric_set_w_gain(1.)"/>
+    <block name="Downind growing Lissajou">
+      <call_once fun="gvf_parametric_set_w_gain(1.)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
       <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID-5),0.,0.,-atan2(stateGetHorizontalWindspeed_f()->y,stateGetHorizontalWindspeed_f()->x)*180/M_PI)"/>
-      <call fun="gvf_parametric_3d_sqrt_lissajou(1,1000,25,0.001,90 * (AC_ID+1),0.0005,90 * AC_ID)"/>
+      <call fun="gvf_parametric_3d_growing_lissajou(1,1000,25,0.001,90 * (AC_ID+1),0.0005,90 * AC_ID)"/>
     </block>
     
     <block name="Mission GVF">

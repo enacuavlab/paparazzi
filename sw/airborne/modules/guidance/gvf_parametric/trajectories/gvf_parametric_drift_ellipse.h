@@ -24,7 +24,7 @@
  * Guiding vector field algorithm for 2D and 3D complex trajectories.
  *
  * Drifting growing ellipsis (ellipsis on the XY plane, drifting along X)
- * f(t) = [ -a_y*t*sin(2*pi*f*log(abs(t) + 1) + phi) + t*v_x, a_x*t*cos(2*pi*f*log(abs(t) + 1) + phi), 0 ]
+ * f(t) = [ -a_y*t*sinf(2*pi*f*log(abs(t) + 1) + phi) + t*v_x, a_x*t*cosf(2*pi*f*log(abs(t) + 1) + phi), 0 ]
  */
 
 #ifndef GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_H
