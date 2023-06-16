@@ -74,48 +74,8 @@
 #define GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS 4
 #endif
 
-/*! Default gain kc for the coordination algorithm */
-#ifndef GVF_PARAMETRIC_COORDINATION_KC
-#define GVF_PARAMETRIC_COORDINATION_KC 1
-#endif
-
-/*! Default timeout for the neighbors' information */
-#ifndef GVF_PARAMETRIC_COORDINATION_TIMEOUT
-#define GVF_PARAMETRIC_COORDINATION_TIMEOUT 1500
-#endif
-
-/*! Default broadcasting time */
-#ifndef GVF_PARAMETRIC_COORDINATION_BROADTIME
-#define GVF_PARAMETRIC_COORDINATION_BROADTIME 200
-#endif
-
-/*! Default number of neighbors per aircraft */
-#ifndef GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS
-#define GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS 4
-#endif
-/*! Default gain kc for the coordination algorithm */
-#ifndef GVF_PARAMETRIC_COORDINATION_KC
-#define GVF_PARAMETRIC_COORDINATION_KC 1
-#endif
-
-/*! Default timeout for the neighbors' information */
-#ifndef GVF_PARAMETRIC_COORDINATION_TIMEOUT
-#define GVF_PARAMETRIC_COORDINATION_TIMEOUT 1500
-#endif
-
-/*! Default broadcasting time */
-#ifndef GVF_PARAMETRIC_COORDINATION_BROADTIME
-#define GVF_PARAMETRIC_COORDINATION_BROADTIME 200
-#endif
-
-/*! Default number of neighbors per aircraft */
-#ifndef GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS
-#define GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS 4
-#endif
-
-/*! Default GCS trajectory painter */
-#ifndef GVF_OCAML_GCS
-#define GVF_OCAML_GCS true
+#ifndef GVF_PARAMETRIC_STEP_ADAPTATION
+#define GVF_PARAMETRIC_STEP_ADAPTATION 1
 #endif
 
 #ifdef __cplusplus
@@ -386,7 +346,7 @@ extern bool gvf_parametric_3d_lissajous_wp_center(uint8_t, float, float, float, 
  * 
  * @return true 
  */
-bool gvf_parametric_3d_sin(float ay, float freq_y, float phase_y, float az, float freq_z, float phase_z);
+bool gvf_parametric_3d_sinf(float ay, float freq_y, float phase_y, float az, float freq_z, float phase_z);
 
 /**
  * @brief Set parameters for a 3D sinusoid trajectory with affine transform relative to a point and z-axis rotation
