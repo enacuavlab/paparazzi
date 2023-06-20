@@ -227,7 +227,7 @@
   <command_laws>
     <set servo="ELEVON_LEFT" value="autopilot.motors_on ? actuators_pprz[0] : 0"/>
     <set servo="ELEVON_RIGHT" value="autopilot.motors_on ? actuators_pprz[1] : 0"/>
-    <set servo="RM" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
+    <set servo="RM" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/> 
     <set servo="LM" value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
     <call fun="stabilization_fill_cmd()" />
   </command_laws>
@@ -281,8 +281,8 @@
   </section> 
 
   <section name="BAT">
-    <define name="LOW_BAT_LEVEL" value="10.0" unit="V"/>
-    <define name="CATASTROPHIC_BAT_LEVEL" value="9.5" unit="V"/>
+    <define name="LOW_BAT_LEVEL" value="11.24" unit="V"/>
+    <define name="CATASTROPHIC_BAT_LEVEL" value="11.06" unit="V"/>
   </section>
 
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
