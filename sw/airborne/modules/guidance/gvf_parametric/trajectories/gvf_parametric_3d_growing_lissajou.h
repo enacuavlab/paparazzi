@@ -19,23 +19,23 @@
  */
 
 /**
- * @file modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_sqrt_lissajou.h
+ * @file modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_growing_lissajou.h
  *
  * Guiding vector field algorithm for 2D and 3D complex trajectories.
  *
- * Squared-root growth Lissajou curve along the x-axis 3D, with sqrt adaptation of the oscillations (oscillations along Y and Z axes)
- * f(t) = [ a_x*t, a_y*sqrt(abs(t) + 1)*cos(2*pi*f_y*sqrt(abs(t) + 1) + phi_y), a_z*sqrt(abs(t) + 1)*sin(2*pi*f_z*sqrt(abs(t) + 1) + phi_z) ]
+ * Linear growth Lissajou curve along the x-axis 3D (oscillations along Y and Z axes)
+ * f(t) = [ a_x*t, a_y*t*cosf(2*pi*f_y*t + phi_y), a_z*t*sinf(2*pi*f_z*t + phi_z) ]
  */
 
-#ifndef GVF_PARAMETRIC_3D_SQRT_LISSAJOU_H
-#define GVF_PARAMETRIC_3D_SQRT_LISSAJOU_H
+#ifndef GVF_PARAMETRIC_3D_GROWING_LISSAJOU_H
+#define GVF_PARAMETRIC_3D_GROWING_LISSAJOU_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** @typedef gvf_par_3d_sqrt_lissajou_par
-* @brief Parameters for the GVF parametric 3D sqrt-growth Lissajou curve
+/** @typedef gvf_par_3d_growing_lissajou_par
+* @brief Parameters for the GVF parametric 3D linear/log growth Lissajou curve
 * @param kx Gain defining how agressive is the vector field in x coordinate
 * @param ky Gain defining how agressive is the vector field in y coordinate
 * @param kz Gain defining how agressive is the vector field in z coordinate
@@ -58,15 +58,15 @@ typedef struct {
   float phi_y;
   float f_z;
   float phi_z;
-} gvf_par_3d_sqrt_lissajou_par;
+} gvf_par_3d_growing_lissajou_par;
 
-extern gvf_par_3d_sqrt_lissajou_par gvf_parametric_3d_sqrt_lissajou_par;
+extern gvf_par_3d_growing_lissajou_par gvf_parametric_3d_growing_lissajou_par;
 
-extern void gvf_parametric_3d_sqrt_lissajou_info(float *f1, float *f2, float *f3, float *f1d, float *f2d, float *f3d,
+extern void gvf_parametric_3d_growing_lissajou_info(float *f1, float *f2, float *f3, float *f1d, float *f2d, float *f3d,
     float *f1dd, float *f2dd, float *f3dd);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GVF_PARAMETRIC_3D_SQRT_LISSAJOU_H
+#endif // GVF_PARAMETRIC_3D_GROWING_LISSAJOU_H

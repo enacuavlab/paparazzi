@@ -28,6 +28,7 @@
 #include <Eigen/Dense> // https://eigen.tuxfamily.org/dox/GettingStarted.html
 #include <Eigen/Geometry>
 
+
 struct gvf_parametric_affine_transform
 {
   Eigen::Quaternion<float> rot = Eigen::Quaternion<float>::Identity();
@@ -35,18 +36,14 @@ struct gvf_parametric_affine_transform
   Eigen::Transform<float, 3, Eigen::TransformTraits::Isometry> t = transalation * rot;
 } gvf_parametric_affine_tr;
 
-#include "gvf_parametric.h"
-#include "gvf_parametric_low_level_control.h"
-#include "./trajectories/gvf_parametric_3d_ellipse.h"
-#include "./trajectories/gvf_parametric_3d_lissajous.h"
-#include "./trajectories/gvf_parametric_2d_trefoil.h"
-#include "./trajectories/gvf_parametric_3d_sin.h"
+
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+#include "gvf_parametric.h"
 #include "autopilot.h"
 
   // Control
@@ -553,7 +550,16 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
 
   // Guidance algorithm
   float ground_speed = stateGetHorizontalSpeedNorm_f();
-  float w_dot = (ground_speed * X(3)) / sqrtf(X(0) * X(0) + X(1) * X(1));
+
+  float w_dot;
+  if (GVF_PARAMETRIC_STEP_ADAPTATION)
+  {
+    w_dot = step_adaptation(X(3), f1d, f2d, f3d, f1dd, f2dd, f3dd);
+  }
+  else
+  {
+    w_dot = (ground_speed * X(3)) / sqrtf(X(0) * X(0) + X(1) * X(1));
+  }
 
   Eigen::Vector4f xi_dot;
   struct EnuCoor_f *vel_enu = stateGetSpeedEnu_f();
@@ -824,9 +830,9 @@ bool gvf_parametric_3d_sin_XYZa(float xo, float yo, float zo, float alpha,
  * 
  * @return true 
  */
-bool gvf_parametric_3d_log_lissajou(float ax, float ay, float az, float f_y, float phi_y, float f_z, float phi_z)
+bool gvf_parametric_3d_growing_lissajou(float ax, float ay, float az, float f_y, float phi_y, float f_z, float phi_z)
 {
-  gvf_parametric_trajectory.type = LOG_LISSAJOU;
+  gvf_parametric_trajectory.type = GROWING_LISSAJOU;
   gvf_parametric_trajectory.p_parametric[0] = ax;
   gvf_parametric_trajectory.p_parametric[1] = ay;
   gvf_parametric_trajectory.p_parametric[2] = az;
@@ -838,50 +844,27 @@ bool gvf_parametric_3d_log_lissajou(float ax, float ay, float az, float f_y, flo
   gvf_parametric_plen = 7 + gvf_parametric_plen_wps;
   gvf_parametric_plen_wps = 0;
 
-  float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
-
-  gvf_parametric_3d_log_lissajou_info(&f1, &f2, &f3, &f1d, &f2d, &f3d, &f1dd, &f2dd, &f3dd);
-  gvf_parametric_control_3d(gvf_parametric_3d_sin_par.kx, gvf_parametric_3d_sin_par.ky,
-                            gvf_parametric_3d_sin_par.kz, f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd);
-
-  return true;
-}
-
-
-// 3D sqrt growth Lissajou curve
-
-/**
- * @brief Set parameters for a 3D sqrt growth Lissajou trajectory
- * 
- * @param ax Speed along the x-axis
- * @param ay Oscillations' amplitude along the y-axis
- * @param az Oscillations' amplitude along the z-axis
- * @param f_y Frequency along the y-axis (in radiants, i.e. before multiplication by 2*PI)
- * @param phi_y Phase for the y-oscillations
- * @param f_z Frequency along the z-axis (in radiants, i.e. before multiplication by 2*PI)
- * @param phi_z Phase for the z-oscillations
- * 
- * @return true 
- */
-bool gvf_parametric_3d_sqrt_lissajou(float ax, float ay, float az, float f_y, float phi_y, float f_z, float phi_z)
-{
-  gvf_parametric_trajectory.type = SQRT_LISSAJOU;
-  gvf_parametric_trajectory.p_parametric[0] = ax;
-  gvf_parametric_trajectory.p_parametric[1] = ay;
-  gvf_parametric_trajectory.p_parametric[2] = az;
-  gvf_parametric_trajectory.p_parametric[3] = f_y;
-  gvf_parametric_trajectory.p_parametric[4] = phi_y;
-  gvf_parametric_trajectory.p_parametric[5] = f_z;
-  gvf_parametric_trajectory.p_parametric[6] = phi_z;
-
-  gvf_parametric_plen = 7 + gvf_parametric_plen_wps;
-  gvf_parametric_plen_wps = 0;
+  std::cout << std::endl << "Curve's params: " << std::endl;
+  for(int i = 0; i < 7; i++)
+  {
+    std::cout << gvf_parametric_trajectory.p_parametric[i] << " ; ";
+  }
+  std::cout << std::endl;
+  std::cout << "Beta: " << gvf_parametric_control.beta << std::endl;
+  std::cout << "s   : " << gvf_parametric_control.s << std::endl;
+  std::cout << "w   : " << gvf_parametric_control.w << std::endl;
+  std::cout << std::endl << std::endl;
 
   float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
 
-  gvf_parametric_3d_sqrt_lissajou_info(&f1, &f2, &f3, &f1d, &f2d, &f3d, &f1dd, &f2dd, &f3dd);
-  gvf_parametric_control_3d(gvf_parametric_3d_sin_par.kx, gvf_parametric_3d_sin_par.ky,
-                            gvf_parametric_3d_sin_par.kz, f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd);
+  gvf_parametric_3d_growing_lissajou_info(&f1, &f2, &f3, &f1d, &f2d, &f3d, &f1dd, &f2dd, &f3dd);
+
+  std::cout << f1 << "; " << f2 << "; " << f3 << std::endl;
+  std::cout << f1d << "; " << f2d << "; " << f3d << std::endl;
+  std::cout << f1dd << "; " << f2dd << "; " << f3dd << std::endl;
+  std::cout << std::endl;
+  gvf_parametric_control_3d(gvf_parametric_3d_growing_lissajou_par.kx, gvf_parametric_3d_growing_lissajou_par.ky,
+                            gvf_parametric_3d_growing_lissajou_par.kz, f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd);
 
   return true;
 }
@@ -915,8 +898,8 @@ bool gvf_parametric_3d_drift_ellipse(float v_x, float a_x, float a_y, float freq
   float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
 
   gvf_parametric_drift_ellipse_info(&f1, &f2, &f3, &f1d, &f2d, &f3d, &f1dd, &f2dd, &f3dd);
-  gvf_parametric_control_3d(gvf_parametric_3d_sin_par.kx, gvf_parametric_3d_sin_par.ky,
-                            gvf_parametric_3d_sin_par.kz, f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd);
+  gvf_parametric_control_3d(gvf_parametric_drift_ellipse_par.kx, gvf_parametric_drift_ellipse_par.ky,
+                            gvf_parametric_drift_ellipse_par.kz, f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd);
 
   return true;
 }
