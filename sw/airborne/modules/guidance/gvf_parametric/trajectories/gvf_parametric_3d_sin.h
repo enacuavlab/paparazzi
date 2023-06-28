@@ -24,7 +24,7 @@
  * Guiding vector field algorithm for 2D and 3D complex trajectories.
  *
  * 3D sinusoid (oscillations along Y and Z axes)
- * f(t) = [ t ,  ay * sin(2pi * freq_y * t) , az * sin(2pi * freq_z * t) ]
+ * f(t) = [ t ,  ay * sinf(2pi * freq_y * t) , az * sinf(2pi * freq_z * t) ]
  */
 
 #ifndef GVF_PARAMETRIC_3D_SIN_H
