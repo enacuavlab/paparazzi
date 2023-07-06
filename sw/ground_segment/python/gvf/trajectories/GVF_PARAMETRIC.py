@@ -257,6 +257,58 @@ class Sinusoid_3D(ParametricLineTrajectory):
         zs = np.cos(2*np.pi*self.freq_z*t+ self.phase_z)*self.az * 2*np.pi*self.freq_z
 
         return np.stack([xs, ys, zs])
+    
+@dataclass
+class Growing_Lissajou_3D(ParametricLineTrajectory):
+    name:str = "Growing Lissajou 3D"
+    ax: float = 1.
+    ay: float = 1.
+    freq_y: float = 1.
+    phase_y: float = 0.
+    az: float = 1.
+    freq_z: float = 1.
+    phase_z: float = 0.
+
+    @staticmethod
+    def class_id() -> int:
+        return 5
+
+    @staticmethod
+    def class_dim() -> int:
+        return 3
+
+    @staticmethod
+    def from_message(msg: PprzMessage) -> Growing_Lissajou_3D:
+        assert msg.name == "GVF_PARAMETRIC" and int(
+            msg.get_field(0)) == Growing_Lissajou_3D.class_id()
+
+        param = [float(x) for x in msg.get_field(3)]
+        ax = param[0]
+        ay = param[1]
+        freq_y = param[2]
+        phase_y = param[3]
+        az = param[4]
+        freq_z = param[5]
+        phase_z = param[6]
+
+        output = Growing_Lissajou_3D(ax=ax,ay=ay, freq_y=freq_y, phase_y=phase_y, az=az,
+                             freq_z=freq_z, phase_z=phase_z)
+        output.parse_affine_transform(msg)
+        return output
+
+    def _param_point(self, t: float) -> np.ndarray:
+        xs = self.ax * t
+        ys = np.cos(2*np.pi*self.freq_y*t + self.phase_y)*self.ay*t
+        zs = np.sin(2*np.pi*self.freq_z*t + self.phase_z)*self.az*t
+
+        return np.stack([xs, ys, zs])
+
+    def _grad_param_point(self, t: float, step: float = 0.005) -> np.ndarray:
+        xs = self.ax
+        ys = self.ay * np.cos(2*np.pi*self.freq_y*t + self.phase_y) - self.ay * 2*np.pi*self.freq_y * t * np.sin(2*np.pi*self.freq_y*t + self.phase_y);
+        zs = self.az * np.sin(2*np.pi*self.freq_z*t + self.phase_z) + self.az * 2*np.pi*self.freq_z * t * np.cos(2*np.pi*self.freq_z*t + self.phase_z);
+
+        return np.stack([xs, ys, zs])
 
 
 @dataclass

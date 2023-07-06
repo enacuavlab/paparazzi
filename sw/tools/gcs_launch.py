@@ -54,8 +54,8 @@ def main():
             args = [cmd] + args
             print("Running \"" + " ".join(args) + "\"")
             execvp(cmd, args)
-        except FileNotFoundError:
-            print(error_msg)
+        except FileNotFoundError as e:
+            print(e,error_msg)
 
     if options.gcstype == "pprzgcs":
         run_gcs("pprzgcs", args, "PprzGCS not found!")

@@ -7,7 +7,7 @@
 # This is the common Makefile for finding the arm compiler
 # for bare metal systems like on the ARM7TDMI, cortex M3/4
 
-PREFIX ?= arm-none-eabi-
+PREFIX = arm-none-eabi-
 
 ifeq ($(shell which $(PREFIX)gcc),)
   ifneq ($(MAKECMDGOALS),clean)
