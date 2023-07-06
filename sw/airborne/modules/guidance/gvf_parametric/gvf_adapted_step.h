@@ -27,6 +27,9 @@
 #ifndef GVF_ADAPTED_STEP_H
 #define GVF_ADAPTED_STEP_H
 
+#include <stdio.h>
+#include <math.h>
+
 /**
  * @brief Compute the adapted parametric step given the wanted geometric distance
  * 

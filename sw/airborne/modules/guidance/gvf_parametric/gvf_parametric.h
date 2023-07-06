@@ -41,12 +41,12 @@
 
 /*! Default scale for the error signals */
 #ifndef GVF_PARAMETRIC_CONTROL_L
-#define GVF_PARAMETRIC_CONTROL_L 0.1
+#define GVF_PARAMETRIC_CONTROL_L 1
 #endif
 
 /*! Default scale for w  */
 #ifndef GVF_PARAMETRIC_CONTROL_BETA
-#define GVF_PARAMETRIC_CONTROL_BETA 0.01
+#define GVF_PARAMETRIC_CONTROL_BETA 1
 #endif
 
 /*! Default gain kpsi for tuning the alignment of the vehicle with the vector field */
@@ -83,13 +83,13 @@
 #define GVF_PARAMETRIC_STEP_ADAPTATION 1
 #endif
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//#include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_ellipse.h"
-//#include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_lissajous.h"
-//#include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_2d_trefoil.h"
+#include "gvf_parametric_low_level_control.h"
+#include "gvf_adapted_step.h"
 
 #include "trajectories/gvf_parametric_3d_ellipse.h"
 #include "trajectories/gvf_parametric_3d_lissajous.h"
@@ -354,7 +354,7 @@ extern bool gvf_parametric_3d_lissajous_wp_center(uint8_t, float, float, float, 
  * 
  * @return true 
  */
-bool gvf_parametric_3d_sinf(float ay, float freq_y, float phase_y, float az, float freq_z, float phase_z);
+bool gvf_parametric_3d_sin(float ay, float freq_y, float phase_y, float az, float freq_z, float phase_z);
 
 /**
  * @brief Set parameters for a 3D sinusoid trajectory with affine transform relative to a point and z-axis rotation

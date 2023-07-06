@@ -28,12 +28,12 @@
 
 #define ABS(x) (((x) > 0.) ? (x) : -(x))
 
-float p4_eval(float x, float a4, float a3, float a2, float a1, float a0)
+static float p4_eval(float x, float a4, float a3, float a2, float a1, float a0)
 {
   return a0 + x * (a1 + x * (a2 + x * (a3 + x * (a4))));
 }
 
-float p4_newton(float a4, float a3, float a2, float a1, float a0, float tol, float init)
+static float p4_halley(float a4, float a3, float a2, float a1, float a0, float tol, float init, int max_steps)
 {
   float x = init;
   float p_x = p4_eval(x, a4, a3, a2, a1, a0);
@@ -43,26 +43,134 @@ float p4_newton(float a4, float a3, float a2, float a1, float a0, float tol, flo
   float a1_d = 2*a2;
   float a0_d = a1;
 
-  while (ABS(p_x) > tol)
+  float a4_dd = 0.;
+  float a3_dd = 0.;
+  float a2_dd = 3*a3_d; 
+  float a1_dd = 2*a2_d;
+  float a0_dd = a1_d;
+
+  int step = 0;
+
+  while (ABS(p_x) > tol && step < max_steps)
+  {
+    float p_xd = p4_eval(x,a4_d,a3_d,a2_d,a1_d,a0_d);
+    float p_xdd = p4_eval(x,a4_dd,a3_dd,a2_dd,a1_dd,a0_dd);
+    p_x = p4_eval(x, a4, a3, a2, a1, a0);
+    x = x - (2*p_x*p_xd)/(2*p_xd*p_xd - p_x*p_xdd);
+    step++;
+  }
+
+  /*
+  if (step >= max_steps)
+  {
+    // fprintf(stderr,"No suitable solution found, error is: %f  (x = %f)\n",p_x,x);
+  }
+
+  if (step == 0)
+  {
+    // printf("Initial guess is good enough....\n");
+  }
+  */
+
+  return x;
+} 
+
+static float p4_newton(float a4, float a3, float a2, float a1, float a0, float tol, float init, int max_steps)
+{
+  float x = init;
+  float p_x = p4_eval(x, a4, a3, a2, a1, a0);
+  float a4_d = 0.;
+  float a3_d = 4*a4;
+  float a2_d = 3*a3;
+  float a1_d = 2*a2;
+  float a0_d = a1;
+
+  int step = 0;
+
+  while (ABS(p_x) > tol && step < max_steps)
   {
     float p_xd = p4_eval(x,a4_d,a3_d,a2_d,a1_d,a0_d);
     p_x = p4_eval(x, a4, a3, a2, a1, a0);
     x = x - p_x/p_xd;
+    step++;
   }
 
+  /*
+  if (step >= max_steps)
+  {
+    fprintf(stderr,"No suitable solution found, error is: %f  (x = %f)\n",p_x,x);
+  }
+  
+  if (step == 0)
+  {
+    printf("Initial guess is good enough....\n");
+  }
+  */
   return x;
 }
 
 float step_adaptation(float ds, float f1d, float f2d, float f3d, float f1dd, float f2dd, float f3dd)
 {
   float a4 = (f1dd * f1dd + f2dd * f2dd + f3dd * f3dd) / 4.;
-  float a3 = (f1d * f1dd + f2d * f2dd + f3d * f3dd) / 2.;
+  float a3 = (f1d * f1dd + f2d * f2dd + f3d * f3dd);
   float a2 = (f1d * f1d + f2d * f2d + f3d * f3d);
   float a1 = 0.;
-  float a0 = ds * ds;
+  float a0 = - ds * ds;
 
-  if (ds > 0.)
-    return p4_newton(a4,a3,a2,a1,a0,1e-6,1.);
-  else
-    return p4_newton(a4,a3,a2,a1,a0,1e-6,-1.);
+
+  float init;
+
+  {
+    // Compute derivative's (reduced polynomial) discriminant
+    // float a4_d = 0.; unused
+    float a3_d = 4*a4;
+    float a2_d = 3*a3;
+    float a1_d = 2*a2;
+    // float a0_d = a1; // = 0; unused
+
+    float discr = a2_d * a2_d - 4 * a3_d * a1_d;
+
+    if (discr < 0)
+    { // If there are no additional roots, use the 1st order approx as starting point
+      if (ds > 0)
+      {
+        init = ds/sqrtf(a2);
+      }
+      else
+      {
+        init = -ds/sqrtf(a2);
+      }
+    }
+    else
+    { // If there are additional roots, use the closest one
+      if (ds > 0)
+      { // Positive direction
+        if (a2_d < 0)
+        {
+          // Additional roots are on this side, use the closest to 0 for reference
+          init = (-a2_d - sqrtf(discr))/(4*a3_d);
+        }
+        else
+        { // No additional roots
+          init = -ds/sqrtf(a2);
+        }
+      }
+      else
+      {
+        if (a2_d < 0)
+        { // No additional roots
+          init = ds/sqrtf(a2);
+        }
+        else
+        { 
+          // Additional roots are on this side, use the closest to 0 for reference
+          init = (-a2_d + sqrtf(discr))/(4*a3_d);
+        }
+      }
+    }
+  }
+
+  // printf("P(X) = %f X^4 + %f X^3 + %f X^2 + %f\nInit: %f\n\n",a4,a3,a2,a0,init);
+
+  return p4_halley(a4,a3,a2,a1,a0,1e-2,init,1e6);
 }

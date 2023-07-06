@@ -107,10 +107,10 @@ void gvf_parametric_3d_growing_lissajou_info(float *f1, float *f2, float *f3, fl
   float phi_z = gvf_parametric_trajectory.p_parametric[6];
 
   float w = gvf_parametric_control.w;
-  float wb = w * gvf_parametric_control.beta * gvf_parametric_control.s + 10;
+  float wb = w * gvf_parametric_control.beta * gvf_parametric_control.s;
 
   float u_y = 2*M_PI * f_y;
-  float u_z = 2*P_PI * f_z;
+  float u_z = 2*M_PI * f_z;
 
   *f1 = ax * wb;
   *f2 = ay * wb * cosf(u_y*wb + phi_y);
