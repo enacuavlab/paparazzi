@@ -19,6 +19,7 @@ from generated.ui_supervision_window import Ui_SupervisionWindow
 from generated.ui_new_ac_dialog import Ui_NewACDialog
 from program_widget import TabProgramsState
 
+userTheme = subprocess.check_output("gsettings get org.gnome.desktop.interface icon-theme", shell=True, text=True)[1:-2]
 
 dirname = os.path.dirname(os.path.abspath(__file__))
 
@@ -32,6 +33,10 @@ class PprzCenter(QMainWindow, Ui_SupervisionWindow):
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent=parent)
         self.setWindowTitle("Paparazzi Center")
+        # QtGui.QIcon.setThemeName(userTheme)
+        # self.setupUi(self)
+        self.conf: Conf = None
+        self.currentAc: Aircraft = None
         icon = QtGui.QIcon(os.path.join(utils.PAPARAZZI_HOME, "data", "pictures", "penguin_logo.svg"))
         self.setWindowIcon(icon)
         self.addMenu()
@@ -149,9 +154,14 @@ class PprzCenter(QMainWindow, Ui_SupervisionWindow):
 
 if __name__ == "__main__":
     import sys
+    
     app = QApplication(sys.argv)
     main_window = PprzCenter()
     main_window.show()
     # qApp.aboutToQuit.connect(main_window.quit)
+    
+    #print(QtGui.QIcon.themeName())
+    #print(QtGui.QIcon.themeSearchPaths())
+    
     sys.exit(app.exec_())
 
