@@ -252,7 +252,7 @@ void stabilization_hover_wind_run(bool in_flight){
   MAT_SUM(CTRL_HOVER_WIND_NUM_ACT, 1, u, ueq, u_sub);
 
 
- 
+ // LEFT_MOTOR 
   if (u[0][0]>0){
     u_scale[0][0] = (sqrtf(MAX(u[0][0],0)/kf) / mot_max_speed)*MAX_PPRZ; 
   }
@@ -260,23 +260,29 @@ void stabilization_hover_wind_run(bool in_flight){
     u_scale[0][0] = 0; 
   }
 
+  // RIGHT_MOTOR 
   if (u[1][0]>0){
     u_scale[1][0] = (sqrtf(MAX(u[1][0],0)/kf) / mot_max_speed)*MAX_PPRZ; 
   }
   else{
     u_scale[1][0] = 0; 
   }
- 
+
+ //ELEVON_LEFT  
   u_scale[2][0] = (u[2][0]*6/M_PI)*MAX_PPRZ;
+
+  // ELEVON_RIGHT  
   u_scale[3][0] = (u[3][0]*6/M_PI)*MAX_PPRZ;
 
 
-  actuators_pprz[0]=TRIM_PPRZ(u_scale[3][0]); //ELEVON_LEFT  -
-  actuators_pprz[1]=TRIM_PPRZ(-u_scale[2][0]); // ELEVON_RIGHT  
+  //Cmd negative pitch up 
+  // actuators_pprz[0] -> ELEVON_LEFT, actuators_pprz[1] -> ELEVON_RIGHT,  actuators_pprz[2] -> RIGHT_MOTOR,  actuators_pprz[3] -> LEFT_MOTOR
+  actuators_pprz[0]=TRIM_PPRZ(u_scale[2][0]); 
+  actuators_pprz[1]=TRIM_PPRZ(-u_scale[3][0]);  
 
 
-  actuators_pprz[2]=TRIM_UPPRZ(u_scale[0][0]); // RIGHT_MOTOR 
-  actuators_pprz[3]=TRIM_UPPRZ(u_scale[1][0]); // LEFT_MOTOR 
+  actuators_pprz[2]=TRIM_UPPRZ(u_scale[1][0]);
+  actuators_pprz[3]=TRIM_UPPRZ(u_scale[0][0]); 
 
   
   

@@ -206,8 +206,8 @@
   </firmware>
 
   <servos driver="Pwm">
-    <servo name="ELEVON_LEFT" no="5" min="1190" neutral="1490" max="1790"/>
-    <servo name="ELEVON_RIGHT" no="0" min="1270" neutral="1570" max="1870"/>
+    <servo name="ELEVON_LEFT" no="5" min="1090" neutral="1408" max="1860"/> <!-- min Vers le haut-->
+    <servo name="ELEVON_RIGHT" no="0" min="1270" neutral="1548" max="1870"/> <!-- min Vers le bas-->
     <servo name="RM" no="2" min="0" neutral="100" max="2000"/>
     <servo name="LM" no="3" min="0" neutral="100" max="2000"/>    
   </servos>
