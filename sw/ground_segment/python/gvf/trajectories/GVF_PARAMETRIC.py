@@ -263,9 +263,9 @@ class Growing_Lissajou_3D(ParametricLineTrajectory):
     name:str = "Growing Lissajou 3D"
     ax: float = 1.
     ay: float = 1.
+    az: float = 1.
     freq_y: float = 1.
     phase_y: float = 0.
-    az: float = 1.
     freq_z: float = 1.
     phase_z: float = 0.
 
@@ -285,9 +285,9 @@ class Growing_Lissajou_3D(ParametricLineTrajectory):
         param = [float(x) for x in msg.get_field(3)]
         ax = param[0]
         ay = param[1]
-        freq_y = param[2]
-        phase_y = param[3]
-        az = param[4]
+        az = param[2]
+        freq_y = param[3]
+        phase_y = param[4]
         freq_z = param[5]
         phase_z = param[6]
 
@@ -310,6 +310,54 @@ class Growing_Lissajou_3D(ParametricLineTrajectory):
 
         return np.stack([xs, ys, zs])
 
+
+@dataclass
+class Drifting_Ellipse_3D(ParametricLineTrajectory):
+    name:str = "Drifting Ellipse 3D"
+    vx: float = 1.
+    ax: float = 1.
+    ay: float = 1.
+    freq: float = 1.
+    phase: float = 0.
+
+    @staticmethod
+    def class_id() -> int:
+        return 6
+
+    @staticmethod
+    def class_dim() -> int:
+        return 3
+
+    @staticmethod
+    def from_message(msg: PprzMessage) -> Drifting_Ellipse_3D:
+        assert msg.name == "GVF_PARAMETRIC" and int(
+            msg.get_field(0)) == Drifting_Ellipse_3D.class_id()
+
+        param = [float(x) for x in msg.get_field(3)]
+        vx = param[0]
+        ax = param[1]
+        ay = param[2]
+        freq = param[3]
+        phase = param[4]
+
+        output = Drifting_Ellipse_3D(vx=vx,ax=ax,ay=ay, freq=freq, phase=phase)
+        output.parse_affine_transform(msg)
+        return output
+
+    def _param_point(self, t: float) -> np.ndarray:
+        xs = self.vx * t + self.ax * t * np.cos(2*np.pi*self.freq * t + self.phase)
+        ys = self.ay * t * np.sin(2*np.pi*self.freq * t + self.phase)
+        zs = np.zeros(np.shape(t))
+
+        return np.stack([xs, ys, zs])
+
+    def _grad_param_point(self, t: float, step: float = 0.005) -> np.ndarray:
+        u = 2 * np.pi * self.freq
+        xs = self.vx + self.ax * (np.cos(u*t + self.phase) - u*t*np.sin(u*t+self.phase))
+        ys = self.ay * (np.sin(u*t + self.phase) + u*t*np.cos(u*t+self.phase))
+        zs = np.zeros(np.shape(t))
+        
+        return np.stack([xs, ys, zs])
 
 @dataclass
 class Torus_3D(SurfaceTrajectory):
