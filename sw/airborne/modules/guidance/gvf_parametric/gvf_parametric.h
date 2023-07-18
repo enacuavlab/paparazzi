@@ -41,17 +41,22 @@
 
 /*! Default scale for the error signals */
 #ifndef GVF_PARAMETRIC_CONTROL_L
-#define GVF_PARAMETRIC_CONTROL_L 1
+#define GVF_PARAMETRIC_CONTROL_L 1.05
 #endif
 
 /*! Default scale for w  */
 #ifndef GVF_PARAMETRIC_CONTROL_BETA
-#define GVF_PARAMETRIC_CONTROL_BETA 1
+#define GVF_PARAMETRIC_CONTROL_BETA 0.001
 #endif
 
 /*! Default gain kpsi for tuning the alignment of the vehicle with the vector field */
 #ifndef GVF_PARAMETRIC_CONTROL_KPSI
 #define GVF_PARAMETRIC_CONTROL_KPSI 1
+#endif
+
+/*! Default on/off coordination */
+#ifndef GVF_PARAMETRIC_COORDINATION_COORDINATION
+#define GVF_PARAMETRIC_COORDINATION_COORDINATION 1
 #endif
 
 /*! Default gain kc for the coordination algorithm */
@@ -132,9 +137,19 @@ typedef struct {
 
 extern gvf_parametric_coord gvf_parametric_coordination;
 
+typedef struct gvf_parametric_coord_nei_info
+{
+  int8_t nei_id;
+  float w;
+  float w_dot;
+  float desired_dw;
+  uint32_t timeout;
+} gvf_parametric_coord_nei_info;
+
+
 struct gvf_parametric_coord_tab {
-  int16_t tableNei[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS][5];
-  int16_t error_deltaw[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
+  gvf_parametric_coord_nei_info tableNei[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
+  float error_deltaw[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
   uint32_t last_comm[GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS];
 };
 
