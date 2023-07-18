@@ -110,6 +110,8 @@ static float p4_newton(float a4, float a3, float a2, float a1, float a0, float t
   return x;
 }
 
+
+
 float step_adaptation(float ds, float f1d, float f2d, float f3d, float f1dd, float f2dd, float f3dd)
 {
   float a4 = (f1dd * f1dd + f2dd * f2dd + f3dd * f3dd) / 4.;
@@ -117,6 +119,34 @@ float step_adaptation(float ds, float f1d, float f2d, float f3d, float f1dd, flo
   float a2 = (f1d * f1d + f2d * f2d + f3d * f3d);
   float a1 = 0.;
   float a0 = - ds * ds;
+
+
+  if (a4 < 1e-3 && a2 < 1e-3)
+  {
+    fprintf(stderr,"***** Error: order 2 singularity (f' and f'' are null) *****\n");
+    fprintf(stderr, "Falling back to 'natural' parametrization'\n");
+    return ds;
+  }
+
+  if (a4 < 1e-3 && a2 > 1e-3)
+  {
+    // Second derivative is null; this is a degree 2 polynomial
+    return ds/sqrtf(a2);
+  }
+
+  if (a4 > 1e-3 && a2 < 1e-3)
+  {
+    // First derivative is null, but not the second; immediate analytical solution
+    float output = sqrtf(ABS(ds))/sqrtf(sqrtf(a4));
+    if (ds > 0)
+    {
+      return output;
+    }
+    else
+    {
+      return - output;
+    }
+  }
 
 
   float init;
@@ -133,14 +163,7 @@ float step_adaptation(float ds, float f1d, float f2d, float f3d, float f1dd, flo
 
     if (discr < 0)
     { // If there are no additional roots, use the 1st order approx as starting point
-      if (ds > 0)
-      {
-        init = ds/sqrtf(a2);
-      }
-      else
-      {
-        init = -ds/sqrtf(a2);
-      }
+      init = ds/sqrtf(a2);
     }
     else
     { // If there are additional roots, use the closest one
@@ -153,7 +176,7 @@ float step_adaptation(float ds, float f1d, float f2d, float f3d, float f1dd, flo
         }
         else
         { // No additional roots
-          init = -ds/sqrtf(a2);
+          init = ds/sqrtf(a2);
         }
       }
       else
@@ -173,5 +196,17 @@ float step_adaptation(float ds, float f1d, float f2d, float f3d, float f1dd, flo
 
   // printf("P(X) = %f X^4 + %f X^3 + %f X^2 + %f\nInit: %f\n\n",a4,a3,a2,a0,init);
 
-  return p4_halley(a4,a3,a2,a1,a0,1e-2,init,1e6);
+  float result = p4_halley(a4,a3,a2,a1,a0,1e-2,init,1e6);
+  
+  if (result * ds < 0)
+  {
+    fprintf(stderr,"Incorrect direction! Got %f while expecting %f\n",result,ds);
+  }
+
+  if (isnan(result))
+  {
+    fprintf(stderr,"***** Error: Optimization returned NaN !! *****\n");
+  }
+
+  return result;
 }
