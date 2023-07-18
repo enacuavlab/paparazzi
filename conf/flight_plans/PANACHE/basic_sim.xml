@@ -80,7 +80,8 @@
     </block>
         
     <block name="Downwind sinus">
-      <call_once fun="gvf_parametric_set_w_gain(0.001)"/>
+      <call_once fun="gvf_parametric_set_w_gain(1.)"/>
+      <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
       <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID-5),0.,0.,-atan2(stateGetHorizontalWindspeed_f()->y,stateGetHorizontalWindspeed_f()->x)*180/M_PI)"/>
       <call fun="gvf_parametric_3d_sin(500,0.001,90 * (AC_ID+1), 50,0.0005,90 * AC_ID)"/>
@@ -90,10 +91,18 @@
     
     <block name="Downind growing Lissajou">
       <call_once fun="gvf_parametric_set_w_gain(1.)"/>
-      <call_once fun="gvf_parametric_set_direction(1)"/>
+      <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
-      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID-5),0.,0.,-atan2(stateGetHorizontalWindspeed_f()->y,stateGetHorizontalWindspeed_f()->x)*180/M_PI)"/>
-      <call fun="gvf_parametric_3d_growing_lissajou(10,500,25,0.00001,90 * (AC_ID+1),0.000005,90 * AC_ID)"/>
+      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID-5),0.,0.,180.)"/>
+      <call fun="gvf_parametric_3d_growing_lissajou(1,5,0,0.0005,90 * AC_ID,0.000005,90 * AC_ID)"/>
+    </block>
+    
+    <block name="Downind drifting ellipse">
+      <call_once fun="gvf_parametric_set_w_gain(1.)"/>
+      <call_once fun="gvf_parametric_set_direction(-1)"/>
+      <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
+      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID-5),0.,0.,0.)"/>
+      <call fun="gvf_parametric_3d_drift_ellipse(5,2,4,0.05,90 * AC_ID)"/>
     </block>
     
     <block name="Mission GVF">
