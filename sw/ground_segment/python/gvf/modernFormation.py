@@ -571,6 +571,9 @@ class ParametricFormationController(AbstractFormationController):
                 
             settings_path = os.path.normpath(conf_msg.settings)
             self.aircrafts[i] = Aircraft(i,PprzSettingsManager(settings_path,i,self._ivy_interface))
+            
+            if self.verbosity>0:
+                print(self.aircrafts[i])
         
         for i in self.ids:
             # nei_id = 0, special msg to clean the table onboard
@@ -584,11 +587,18 @@ class ParametricFormationController(AbstractFormationController):
                 print(msg)
             
         # bind to GVF_PARAMETRIC_W message
-        def gvf_cb(ac_id, msg:telemetry.PprzMessage_GVF_PARAMETRIC_W):
+        def gvf_cb(ac_id, msg:telemetry.PprzMessage_GVF_PARAMETRIC_G_W):
             if ac_id in self.ids:# and msg.name == "GVF_PARAMETRIC_W":
                 ac = self.aircrafts[ac_id]
                 ac.sigma = msg.w_
-        self._ivy_interface.subscribe(gvf_cb, telemetry.PprzMessage_GVF_PARAMETRIC_W())
+                
+                echo_msg = datalink.PprzMessage_GVF_PARAMETRIC_W()
+                echo_msg.w_ = msg.w_
+                echo_msg.w_dot_ = msg.w_dot_
+                echo_msg.ac_id_ = ac_id
+                self._ivy_interface.send(echo_msg)
+        
+        self._ivy_interface.subscribe(gvf_cb, telemetry.PprzMessage_GVF_PARAMETRIC_G_W())
             
     def step(self) -> None:
         if self.edge_list is None:
@@ -621,9 +631,10 @@ class ParametricFormationController(AbstractFormationController):
 
         else:
             if len(self.delta_ws) == 1:
-                delta_ws = itertools.repeat(self.delta_ws,len(self.edge_list))
+                delta_ws = itertools.repeat(self.delta_ws[0],len(self.edge_list))
             else:
                 delta_ws = self.delta_ws
+                assert len(delta_ws) == len(self.edge_list)
                 
             for w,p in zip(delta_ws,self.edge_list):
                 msga = datalink.PprzMessage_GVF_PARAMETRIC_REG_TABLE()

@@ -92,9 +92,22 @@ class AC_drawings():
         (axes from which to build the lines, format specifications)
         """
         
+        print(color)
+
+        if type(color) == str:
+            if color[0] == '#' and len(color) > len('#0f0f0f80'):
+                # If the color uses more than 8 bits per color channel...
+                # ... Transform it into a RGB float tuple (naively)
+                colorstring = color[1:]
+                hexlen = len(colorstring)//3
+                color = tuple(int(colorstring[i*hexlen:(i+1)*hexlen],16)/(16**hexlen) for i in range(3))
+                
+        
         if self.name is None:
             self.name = str(self.id)
         
+        print(color)
+
         self.ac_pos_3d = a3d.plot([],[],[],pos_fmt,color=color)[0]
         self.carrot_pos_3d = a3d.plot([],[],[],carrot_fmt,color=color)[0]
         self.ac_traj_3d = a3d.plot([],[],[],traj_fmt,color=color)[0]

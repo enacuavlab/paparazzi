@@ -35,17 +35,17 @@
 
 /*! Default gain kx for the trajectory */
 #ifndef GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KX
-#define GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KX 0.001
+#define GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KX 0.05
 #endif
 
 /*! Default gain ky for the trajectory */
 #ifndef GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KY
-#define GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KY 0.001
+#define GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KY 0.05
 #endif
 
 /*! Default gain kz for the trajectory */
 #ifndef GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KZ
-#define GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KZ 0.001
+#define GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KZ 0.05
 #endif
 
 /*! Default x-speed for the trajectory */
