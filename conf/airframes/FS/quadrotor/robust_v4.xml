@@ -30,25 +30,18 @@
     <module name="tlsf"/>
     <module name="logger" type="sd_chibios"/>
 
-    <!--module name="fault" /-->
-
     <module name="actuators" type="dshot">
-      <define name="DSHOT_SPEED" value="300"/>
-      <define name="DSHOT_TIM4_TELEMETRY_NUM" value="DSHOT_TLM_RX"/>
+      <!--define name="DSHOT_SPEED" value="300"/-->
+      <!--define name="DSHOT_TIM4_TELEMETRY_NUM" value="DSHOT_TLM_RX"/-->
     </module>
 
-    <module name="actuators"     type="pwm">
-      <!-- <define name="TIM1_SERVO_HZ" value="500"/> -->
-      <!-- <define name="TIM4_SERVO_HZ" value="2000"/> -->
-      <define name="STM32_PWM_USE_TIM5" value="TRUE"/>
-      <define name="TIM5_SERVO_HZ" value="300"/>
-      <define name="USE_PWM10" value="TRUE"/>
-      <!-- <define name="USE_PWM11" value="TRUE"/> -->
-    <!-- <define name="" value="6"/> -->
-	</module>
+    <module name="actuators" type="pwm"/>
 
     <module name="board" type="tawaki">
       <define name="USE_DSHOT_TIM1" value="TRUE"/>
+      <define name="USE_PWM1" value="0" />
+      <define name="USE_PWM2" value="0" />
+      <define name="USE_PWM3" value="0" />
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
       <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
@@ -74,18 +67,14 @@
     <module name="air_data"/>
     <!--module name="logger_tune_indi"/-->
 
-    <module name="filter" type="1euro_imu">
+    <!--module name="filter" type="1euro_imu">
       <define name="AHRS_ICQ_IMU_ID" value="IMU_F1E_ID"/>
       <define name="AHRS_ALIGNER_IMU_ID" value="IMU_F1E_ID"/>
-    </module>
+    </module-->
 
     <module name="motor_mixing"/>
 
-    <!--module name="tlsf"/>
-    <module name="pprzlog"/>
-    <module name="logger" type="sd_chibios"/>
-    <module name="flight_recorder"/>
-    <module name="logger" type="tune_indi"/-->
+
   </firmware>
 
   <servos driver="DShot">
@@ -98,7 +87,7 @@
   </servos>
 
   <servos driver="Pwm">
-    <servo name="GEAR" no="10" min="950" neutral="1500" max="2050"/>
+
   </servos>
 
   <commands>
@@ -106,7 +95,6 @@
     <axis name="PITCH" failsafe_value="0"/>
     <axis name="YAW" failsafe_value="0"/>
     <axis name="THRUST" failsafe_value="0"/>
-    <axis name="GEAR" failsafe_value="0"/>
   </commands>
 
   <section name="MIXING" prefix="MOTOR_MIXING_">
@@ -114,17 +102,7 @@
     <define name="REVERSE" value="TRUE"/>
   </section>
 
-  <auto_rc_commands>
-    <set command="GEAR" value="@GAIN2"/>
-  </auto_rc_commands>
 
-  <!--command_laws>
-    <call fun="motor_mixing_run(autopilot_get_motors_on(),FALSE,values)"/>
-    <set servo="FR" value="motor_mixing.commands[MOTOR_FRONT_RIGHT]"/>
-    <set servo="BR" value="motor_mixing.commands[MOTOR_BACK_RIGHT]"/>
-    <set servo="BL" value="motor_mixing.commands[MOTOR_BACK_LEFT]"/>
-    <set servo="FL" value="motor_mixing.commands[MOTOR_FRONT_LEFT]"/>
-  </command_laws-->
   <command_laws>
     <set servo="M1" value="autopilot_get_motors_on() ? actuators_pprz[0] : -MAX_PPRZ"/>
     <set servo="M2" value="autopilot_get_motors_on() ? actuators_pprz[1] : -MAX_PPRZ"/>
@@ -132,7 +110,6 @@
     <set servo="M4" value="autopilot_get_motors_on() ? actuators_pprz[3] : -MAX_PPRZ"/>
     <set servo="M5" value="autopilot_get_motors_on() ? actuators_pprz[4] : -MAX_PPRZ"/>
     <set servo="M6" value="autopilot_get_motors_on() ? actuators_pprz[5] : -MAX_PPRZ"/>
-    <set servo="GEAR" value="@GEAR"/>
   </command_laws>
 
 
@@ -169,32 +146,6 @@
     <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
   </section>
 
-  <!-- Magnetic Field Calculator
-      http://www.ngdc.noaa.gov/geomag-web/#igrfwmm
-      http://www.wolframalpha.com
-
-      Aaechen : Lat 50.788812°N,Lon 6.046862°E
-      Normalize[{19701.3, 445.6, 44569.6}]
-      Result(0.40428, 0.00914, 0.91459)
-
-      Enac : Lat 43.564080°N, Lon 1.481289°E
-      Normalize[{23759.6, 138.7, 39666.4}]
-      Result(0.51385, 0.00299, 0.85787)
-
-      Madrid : 40.1579607° N, 3.3813882° W
-      Normalize[{25795.7, -123.5, 36600.6}]
-      Result(0.576084, -0.00275807, 0.817385)
-  -->
-
-  <!-- Firmware Option (1) > 
-  <section name="INS" prefix="INS_"/>
-  <section name="AHRS" prefix="AHRS_">
-    <define name="H_X" value="0.51385"/>
-    <define name="H_Y" value="0.00299"/>
-    <define name="H_Z" value="0.85787"/>
-  </section-->   
-
-  <!-- Firmware Option (2) -->
   <section name="INS" prefix="INS_">
     <define name="H_X" value="0.576084"/>
     <define name="H_Y" value="-0.00275807"/>
@@ -230,14 +181,6 @@
     <define name="REF_RATE_Q" value="30.0"/>
     <define name="REF_RATE_R" value="15.0"/>
 
-<!--     <define name="REF_ERR_P" value="150"/>
-    <define name="REF_ERR_Q" value="150"/>
-    <define name="REF_ERR_R" value="170"/>
-    <define name="REF_RATE_P" value="20.0"/>
-    <define name="REF_RATE_Q" value="20.0"/>
-    <define name="REF_RATE_R" value="15.0"/> -->
-
-
     <define name="MAX_R" value="120" unit="deg/s"/>
 
     <!-- second order filter parameters -->
@@ -248,37 +191,12 @@
     <define name="USE_ADAPTIVE" value="FALSE"/>
     <define name="ADAPTIVE_MU" value="0.0001"/>
 
-
-    <!-- Full INDI -->
-    <!-- control effectiveness  inverse Y form -->
-<!--     <define name="G1_ROLL"   value="{  0.0,  -30,  -30,  30,   30,  0. }"/>
-    <define name="G1_PITCH"  value="{  30,   -19,  -19, -19,  -19,  30 }"/>
-    <define name="G1_YAW"    value="{   2,   -2,    2,   -2,    2,   -2 }"/>
-    <define name="G1_THRUST" value="{-0.9, -0.9, -0.9, -0.9, -0.9, -0.9 }"/> -->
-
     <!-- control effectiveness Hexa Form-->
     <define name="G1_ROLL"   value="{  -19.0,  -37,  -19,  19.0,  37,   19 }"/>
     <define name="G1_PITCH"  value="{  30,   0,   -30,   -30,    0,  30 }"/>
     <define name="G1_YAW"    value="{   2,   -2,    2,   -2,    2,   -2 }"/>
     <define name="G1_THRUST" value="{-0.9, -0.9, -0.9, -0.9, -0.9, -0.9 }"/>
     <define name="G2"        value="{10.0, -10, 10, -10.0 , 10.0 , -10.0}"/>
-
-    <!-- control effectiveness Hexa with 1st motor reduced eff -->
-<!--     <define name="G1_ROLL"   value="{ -1.0,  -37,  -19,  19.0,  37,   19 }"/>
-    <define name="G1_PITCH"  value="{  2,   0,   -30,   -30,    0,  30 }"/>
-    <define name="G1_YAW"    value="{  0.2,   -2,    2,   -2,    2,   -2 }"/>
-    <define name="G1_THRUST" value="{-0.1, -0.9, -0.9, -0.9, -0.9, -0.9 }"/>
-    <define name="G2"        value="{0.1, -10, 10, -10.0 , 10.0 , -10.0}"/> -->
-
-    <!-- control effectiveness Hexa with 3rd motor reduced eff -->
-<!--     <define name="G1_ROLL"   value="{-19.0, -37,   -1,  19.0,  37,   19 }"/>
-    <define name="G1_PITCH"  value="{  30,    0,   -2,   -30,    0,  30 }"/>
-    <define name="G1_YAW"    value="{   2,   -2,  0.2,   -2,    2,   -2 }"/>
-    <define name="G1_THRUST" value="{-0.9, -0.9, -0.1, -0.9, -0.9, -0.9 }"/>
-    <define name="G2"        value="{10.0, -10.0, 0.1, -10.0 , 10.0 , -10.0}"/> -->
-
-    <!--Counter torque effect of spinning up a rotor-->
-    <!-- <define name="G2"        value="{100, -100, 100, -100.0 , 100.0 , -100.0}"/> -->
 
 
     <!-- first order actuator dynamics -->
