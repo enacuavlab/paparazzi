@@ -32,7 +32,8 @@
 
     <module name="actuators" type="dshot">
       <!--define name="DSHOT_SPEED" value="300"/-->
-      <!--define name="DSHOT_TIM4_TELEMETRY_NUM" value="DSHOT_TLM_RX"/-->
+      <define name="DSHOT_TIM4_TELEMETRY_NUM" value="DSHOT_TLM_RX"/> <!-- DSHTin-->
+      <define name="DSHOT_TIM1_TELEMETRY_NUM" value="DSHOT_TLM_AUX_RX"/> <!-- AUXa2-->
     </module>
 
     <module name="actuators" type="pwm"/>
@@ -42,6 +43,7 @@
       <define name="USE_PWM1" value="0" />
       <define name="USE_PWM2" value="0" />
       <define name="USE_PWM3" value="0" />
+      <define name="USE_UART4"/>
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
       <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
