@@ -29,6 +29,7 @@
     <module name="telemetry" type="xbee_api"/>
     <module name="tlsf"/>
     <module name="logger" type="sd_chibios"/>
+    <module name="flight_recorder"/>
 
     <module name="actuators" type="dshot">
       <!--define name="DSHOT_SPEED" value="300"/-->
@@ -40,10 +41,12 @@
 
     <module name="board" type="tawaki">
       <define name="USE_DSHOT_TIM1" value="TRUE"/>
+      <define name="DSHOT_TELEMETRY_TIMEOUT_MS" value="3"/>
       <define name="USE_PWM1" value="0" />
       <define name="USE_PWM2" value="0" />
       <define name="USE_PWM3" value="0" />
       <define name="USE_UART4"/>
+      <define name="USE_UART4_TX" value="0"/>
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
       <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
