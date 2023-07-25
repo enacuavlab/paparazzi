@@ -80,6 +80,7 @@
     </block>
         
     <block name="Downwind sinus">
+      <set value="1." var="gvf_parametric_control.L"/>
       <call_once fun="gvf_parametric_set_w_gain(1.)"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
@@ -90,6 +91,7 @@
     </block>
     
     <block name="Downind growing Lissajou">
+      <set value="1." var="gvf_parametric_control.L"/>
       <call_once fun="gvf_parametric_set_w_gain(1.)"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
@@ -98,6 +100,10 @@
     </block>
     
     <block name="Downind drifting ellipse">
+      <set value="0.85" var="gvf_parametric_control.L"/>
+      <set value="0.02" var="gvf_parametric_drift_ellipse_par.kx"/>
+      <set value="0.02" var="gvf_parametric_drift_ellipse_par.ky"/>
+      <set value="0.02" var="gvf_parametric_drift_ellipse_par.kz"/>
       <call_once fun="gvf_parametric_set_w_gain(1.)"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
