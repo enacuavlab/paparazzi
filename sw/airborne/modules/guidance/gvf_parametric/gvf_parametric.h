@@ -41,12 +41,12 @@
 
 /*! Default scale for the error signals */
 #ifndef GVF_PARAMETRIC_CONTROL_L
-#define GVF_PARAMETRIC_CONTROL_L 1.1
+#define GVF_PARAMETRIC_CONTROL_L 1.
 #endif
 
 /*! Default scale for w  */
 #ifndef GVF_PARAMETRIC_CONTROL_BETA
-#define GVF_PARAMETRIC_CONTROL_BETA 0.001
+#define GVF_PARAMETRIC_CONTROL_BETA 1.
 #endif
 
 /*! Default gain kpsi for tuning the alignment of the vehicle with the vector field */
@@ -61,7 +61,7 @@
 
 /*! Default gain kc for the coordination algorithm */
 #ifndef GVF_PARAMETRIC_COORDINATION_KC
-#define GVF_PARAMETRIC_COORDINATION_KC 0.0001
+#define GVF_PARAMETRIC_COORDINATION_KC 0.1
 #endif
 
 /*! Default timeout for the neighbors' information */
@@ -142,7 +142,7 @@ typedef struct gvf_parametric_coord_nei_info
   float w;
   float w_dot;
   float desired_dw;
-  uint32_t timeout;
+  uint32_t delta_t;
 } gvf_parametric_coord_nei_info;
 
 
