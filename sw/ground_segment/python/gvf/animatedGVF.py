@@ -41,6 +41,9 @@ def main():
                         (i.e. number of look-up of the current state per second, the state being automatically updated\
                         by the Ivy interface manager.) Default is 30.")
     
+    parser.add_argument('-n','--normalized',dest='normalized',default=False,action='store_true',
+                        help="Consider the GVF normalizing the parametric curve (follows g(t) = f(s(t)) such that ||g(t)|| = 1)")
+    
     args = parser.parse_args()
     
     ac_ids = [int(i) for i in args.ids]
@@ -59,7 +62,7 @@ def main():
             gvf_dist = 300.
     
     map = Trajectory3DMap(ac_ids,args.name,args.w_dist,show_field,gvf_dist,
-                          args.resolution,args.history_size,args.fps)
+                          args.resolution,args.history_size,args.fps,args.normalized)
     
     map.start()
     

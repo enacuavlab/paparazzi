@@ -13,11 +13,22 @@ from scipy.spatial.transform import Rotation
 #################### Abstract class specific to parametric trajectories ####################
 
 
+@dataclass
 class ParametricLineTrajectory(LineTrajectory, ABC):
-    def parse_affine_transform(self, msg: PprzMessage) -> None:
-        xyzw_quaternion = np.array(msg.get_field(5), dtype=float)
+    beta_s:float = 1.
+    L:float = 1.
+    
+    def parse_gvf_config(self, msg:PprzMessage) -> None:
+        config_field = msg.get_field(1)
+        self.beta_s = float(config_field[2])
+        self.L = float(config_field[6])
+        
+        self._parse_affine_transform(msg)
+    
+    def _parse_affine_transform(self, msg: PprzMessage) -> None:
+        xyzw_quaternion = np.array(msg.get_field(4), dtype=float)
         self.rot = Rotation.from_quat(xyzw_quaternion)
-        self.XYZoffset = np.array(msg.get_field(6), dtype=float)
+        self.XYZoffset = np.array(msg.get_field(5), dtype=float)
 
     def gvf(self, pos: np.ndarray, t: float) -> np.ndarray:
         """
@@ -25,10 +36,19 @@ class ParametricLineTrajectory(LineTrajectory, ABC):
         (cf https://doi.org/10.48550/arXiv.2012.01826 ; proof of Theorem 2)
         """
         ft = self.param_point(t)
-        phi = (pos - ft) * self.gain
+        phi = self.L*(pos - ft) * self.gain
 
         dir = 1-2*(self.dim % 2)  # = (-1)^dim
-        return dir * self.grad_param_point(t) - phi
+        return self.L*(self.beta_s* self.L* self.L*dir * self.grad_param_point(t) - phi)
+    
+    def normalized_gvf(self,pos:np.ndarray, t:float) -> np.ndarray:
+        ft = self.param_point(t)
+        phi = self.L*(pos - ft) * self.gain
+
+        dir = 1-2*(self.dim % 2)  # = (-1)^dim
+        fdt = self.grad_param_point(t)
+        return self.L*(self.beta_s* self.L* self.L* dir * fdt/np.sqrt(np.sum(np.square(fdt))) - phi)
+        
 
 #################### Actually defined parametric trajectories ####################
 
@@ -54,7 +74,7 @@ class Trefoil_2D(ParametricLineTrajectory):
         assert msg.name == "GVF_PARAMETRIC" and int(
             msg.get_field(0)) == Trefoil_2D.class_id()
         
-        param = [float(x) for x in msg.get_field(3)]
+        param = [float(x) for x in msg.get_field(2)]
         xo = param[0]
         yo = param[1]
         w1 = param[2]
@@ -64,7 +84,7 @@ class Trefoil_2D(ParametricLineTrajectory):
         alpha = param[6]
         
         output = Trefoil_2D(w1=w1,w2=w2,ratio=ratio,r=r)
-        output.parse_affine_transform(msg)
+        output.parse_gvf_config(msg)
         output.rot *= Rotation.from_euler('z',alpha,degrees=True)
         output.XYZoffset += np.array([xo,yo,0])
         
@@ -109,7 +129,7 @@ class Ellipse_3D(ParametricLineTrajectory):
         assert msg.name == "GVF_PARAMETRIC" and int(
             msg.get_field(0)) == Ellipse_3D.class_id()
 
-        param = [float(x) for x in msg.get_field(3)]
+        param = [float(x) for x in msg.get_field(2)]
         xo = param[0]
         yo = param[1]
         r = param[2]
@@ -119,7 +139,7 @@ class Ellipse_3D(ParametricLineTrajectory):
         zm = (zl+zh)/2
 
         output = Ellipse_3D(r=r, zl=zl-zm, zh=zh-zm, alpha=alpha)
-        output.parse_affine_transform(msg)
+        output.parse_gvf_config(msg)
         output.XYZoffset += np.array([xo, yo, zm])
 
         return output
@@ -172,7 +192,7 @@ class Lissajous_3D(ParametricLineTrajectory):
         assert msg.name == "GVF_PARAMETRIC" and int(
             msg.get_field(0)) == Lissajous_3D.class_id()
 
-        param = [float(x) for x in msg.get_field(3)]
+        param = [float(x) for x in msg.get_field(2)]
         xo = param[0]
         yo = param[1]
         zo = param[2]
@@ -188,7 +208,7 @@ class Lissajous_3D(ParametricLineTrajectory):
         alpha = param[12]
         
         output = Lissajous_3D(cx=cx,cy=cy,cz=cz,wx=wx,wy=wy,wz=wz,deltax=deltax,deltay=deltay,deltaz=deltaz)
-        output.parse_affine_transform(msg)
+        output.parse_gvf_config(msg)
         output.rot *= Rotation.from_euler('z',alpha,degrees=True)
         output.XYZoffset += np.array([xo,yo,zo])
         
@@ -231,7 +251,7 @@ class Sinusoid_3D(ParametricLineTrajectory):
         assert msg.name == "GVF_PARAMETRIC" and int(
             msg.get_field(0)) == Sinusoid_3D.class_id()
 
-        param = [float(x) for x in msg.get_field(3)]
+        param = [float(x) for x in msg.get_field(2)]
         ay = param[0]
         freq_y = param[1]
         phase_y = param[2]
@@ -241,7 +261,7 @@ class Sinusoid_3D(ParametricLineTrajectory):
 
         output = Sinusoid_3D(ay=ay, freq_y=freq_y, phase_y=phase_y, az=az,
                              freq_z=freq_z, phase_z=phase_z)
-        output.parse_affine_transform(msg)
+        output.parse_gvf_config(msg)
         return output
 
     def _param_point(self, t: float) -> np.ndarray:
@@ -282,7 +302,7 @@ class Growing_Lissajou_3D(ParametricLineTrajectory):
         assert msg.name == "GVF_PARAMETRIC" and int(
             msg.get_field(0)) == Growing_Lissajou_3D.class_id()
 
-        param = [float(x) for x in msg.get_field(3)]
+        param = [float(x) for x in msg.get_field(2)]
         ax = param[0]
         ay = param[1]
         az = param[2]
@@ -293,7 +313,7 @@ class Growing_Lissajou_3D(ParametricLineTrajectory):
 
         output = Growing_Lissajou_3D(ax=ax,ay=ay, freq_y=freq_y, phase_y=phase_y, az=az,
                              freq_z=freq_z, phase_z=phase_z)
-        output.parse_affine_transform(msg)
+        output.parse_gvf_config(msg)
         return output
 
     def _param_point(self, t: float) -> np.ndarray:
@@ -333,7 +353,7 @@ class Drifting_Ellipse_3D(ParametricLineTrajectory):
         assert msg.name == "GVF_PARAMETRIC" and int(
             msg.get_field(0)) == Drifting_Ellipse_3D.class_id()
 
-        param = [float(x) for x in msg.get_field(3)]
+        param = [float(x) for x in msg.get_field(2)]
         vx = param[0]
         ax = param[1]
         ay = param[2]
@@ -341,7 +361,7 @@ class Drifting_Ellipse_3D(ParametricLineTrajectory):
         phase = param[4]
 
         output = Drifting_Ellipse_3D(vx=vx,ax=ax,ay=ay, freq=freq, phase=phase)
-        output.parse_affine_transform(msg)
+        output.parse_gvf_config(msg)
         return output
 
     def _param_point(self, t: float) -> np.ndarray:

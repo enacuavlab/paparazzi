@@ -88,7 +88,7 @@ class Aircraft():
     
     
     @property
-    def trajectory(self) -> Trajectory:
+    def trajectory(self) -> typing.Optional[Trajectory]:
         if self.gvf_parametric is None and self.gvf is None:
             return None
         
@@ -99,16 +99,30 @@ class Aircraft():
             return GVF_PARAMETRIC_traj_map[self.gvf_parametric.traj_].from_message(self.gvf_parametric)
     
     @property
-    def w(self) -> float:
+    def w(self) -> typing.Optional[float]:
         if self.gvf_parametric is None:
             return None
         else:
-            return self.gvf_parametric.w_
-        
+            return float(self.gvf_parametric.config_[0])*float(self.gvf_parametric.config_[2])
+    
+    @property
+    def beta_s(self) -> typing.Optional[float]:
+        if self.gvf_parametric is None:
+            return None
+        else:
+            return float(self.gvf_parametric.config_[2])
+    
+    @property
+    def L(self) -> typing.Optional[float]:
+        if self.gvf_parametric is None:
+            return None
+        else:
+            return float(self.gvf_parametric.config_[6])
+    
     @property
     def name(self) -> str:
         if self.config is None:
-            return str(self.id)
+            return f"AC {self.id}"
         else:
             return self.config.ac_name
         
