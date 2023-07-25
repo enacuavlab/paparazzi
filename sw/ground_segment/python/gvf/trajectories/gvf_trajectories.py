@@ -73,6 +73,12 @@ class Trajectory(ABC):
         """
         raise NotImplementedError()
         
+    @abstractmethod
+    def normalized_gvf(self, pos:np.ndarray, t:typing.Union[float,np.ndarray]) -> np.ndarray:
+        """
+        Variation of the standard GVF method, where the associated parametric curve is normalized first
+        """
+        raise NotImplementedError()
 
     ##### Shorthands #####
     
@@ -159,7 +165,7 @@ class LineTrajectory(Trajectory,ABC):
         """
         return self.param_point(range)
         
-    def calc_field(self,vectors:np.ndarray,t:float) -> np.ndarray:
+    def calc_field(self,vectors:np.ndarray,t:float,normalize:bool=False,normalized:bool=False) -> np.ndarray:
         """
         Compute and return the vector field given the current state (curve's parameters)
         and the 'virtual coordinate'
@@ -172,10 +178,23 @@ class LineTrajectory(Trajectory,ABC):
             for i in range(l_i):
                 for j in range(l_j):
                     for k in range(l_k):
-                        output[i,j,k] = self.gvf(meshgrid[i,j,k],t)
+                        if normalized:
+                            output[i,j,k] = self.normalized_gvf(meshgrid[i,j,k],t)
+                        else:
+                            output[i,j,k] = self.gvf(meshgrid[i,j,k],t)
+                        
+                        if normalize:
+                            output[i,j,k] /= np.sum(np.square(output[i,j,k]))
         else:
             # Assume a vector list
-            output = np.asarray([self.gvf(v,t) for v in vectors]) 
+            if normalized:
+                output = np.asarray([self.normalized_gvf(v,t) for v in vectors])
+            else:
+                output = np.asarray([self.gvf(v,t) for v in vectors])
+            if normalize:
+                norms = np.sum(np.square(output),axis=1)
+                output /= np.stack([norms]*3).transpose()
+             
         return output
         
 

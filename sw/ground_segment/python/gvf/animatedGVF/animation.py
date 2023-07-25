@@ -21,7 +21,9 @@ import numpy as np
 # Graphing with Matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.artist import Artist
 from matplotlib.figure import Figure,SubFigure
+from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
 from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
@@ -32,6 +34,39 @@ from matplotlib.patches import Rectangle
 from matplotlib.widgets import Button,CheckButtons,RadioButtons
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Line3DCollection,Line3D
+
+
+########## Nice legend handler for lines ##########
+
+# Found at https://stackoverflow.com/questions/31544489/two-line-styles-in-legend
+
+class HandlerTupleVertical(HandlerTuple):
+    def __init__(self, **kwargs):
+        HandlerTuple.__init__(self, **kwargs)
+
+    def create_artists(self, legend, orig_handle,
+                       xdescent, ydescent, width, height, fontsize, trans):
+        # How many lines are there.
+        numlines = len(orig_handle)
+        handler_map = legend.get_legend_handler_map()
+
+        # divide the vertical space where the lines will go
+        # into equal parts based on the number of lines
+        height_y = (height / numlines)
+
+        leglines = []
+        for i, handle in enumerate(orig_handle):
+            handler = legend.get_legend_handler(handler_map, handle)
+
+            legline = handler.create_artists(legend, handle,
+                                             xdescent,
+                                             (2*i + 1)*height_y,
+                                             width,
+                                             2*height,
+                                             fontsize, trans)
+            leglines.extend(legline)
+
+        return leglines
 
 #################### Aircraft figures ####################
 
@@ -91,8 +126,6 @@ class AC_drawings():
         """Setup the different lines from the Init only arguments
         (axes from which to build the lines, format specifications)
         """
-        
-        print(color)
 
         if type(color) == str:
             if color[0] == '#' and len(color) > len('#0f0f0f80'):
@@ -104,29 +137,27 @@ class AC_drawings():
                 
         
         if self.name is None:
-            self.name = str(self.id)
-        
-        print(color)
+            self.name = f"AC {self.id}"
 
-        self.ac_pos_3d = a3d.plot([],[],[],pos_fmt,color=color)[0]
-        self.carrot_pos_3d = a3d.plot([],[],[],carrot_fmt,color=color)[0]
-        self.ac_traj_3d = a3d.plot([],[],[],traj_fmt,color=color)[0]
-        self.ac_past_3d = a3d.plot([],[],[],past_fmt,color=color)[0]
+        self.ac_pos_3d = a3d.plot([],[],[],pos_fmt,color=color,label=f"{self.name} 's position")[0]
+        self.carrot_pos_3d = a3d.plot([],[],[],carrot_fmt,color=color,label=f"{self.name} 's guiding point")[0]
+        self.ac_traj_3d = a3d.plot([],[],[],traj_fmt,color=color,label=f"{self.name} 's path")[0]
+        self.ac_past_3d = a3d.plot([],[],[],past_fmt,color=color,label=f"{self.name} 's trajectory")[0]
         
-        self.ac_pos_xy = axy.plot([],[],pos_fmt,color=color)[0]
-        self.carrot_pos_xy = axy.plot([],[],carrot_fmt,color=color)[0]
-        self.ac_traj_xy = axy.plot([],[],traj_fmt,color=color)[0]
-        self.ac_past_xy = axy.plot([],[],past_fmt,color=color)[0]
+        self.ac_pos_xy = axy.plot([],[],pos_fmt,color=color,label=f"{self.name} 's position")[0]
+        self.carrot_pos_xy = axy.plot([],[],carrot_fmt,color=color,label=f"{self.name} 's guiding point")[0]
+        self.ac_traj_xy = axy.plot([],[],traj_fmt,color=color,label=f"{self.name} 's path")[0]
+        self.ac_past_xy = axy.plot([],[],past_fmt,color=color,label=f"{self.name} 's trajectory")[0]
         
-        self.ac_pos_xz = axz.plot([],[],pos_fmt,color=color)[0]
-        self.carrot_pos_xz = axz.plot([],[],carrot_fmt,color=color)[0]
-        self.ac_traj_xz = axz.plot([],[],traj_fmt,color=color)[0]
-        self.ac_past_xz = axz.plot([],[],past_fmt,color=color)[0]
+        self.ac_pos_xz = axz.plot([],[],pos_fmt,color=color,label=f"{self.name} 's position")[0]
+        self.carrot_pos_xz = axz.plot([],[],carrot_fmt,color=color,label=f"{self.name} 's guiding point")[0]
+        self.ac_traj_xz = axz.plot([],[],traj_fmt,color=color,label=f"{self.name} 's path")[0]
+        self.ac_past_xz = axz.plot([],[],past_fmt,color=color,label=f"{self.name} 's trajectory")[0]
         
-        self.ac_pos_yz = ayz.plot([],[],pos_fmt,color=color)[0]
-        self.carrot_pos_yz = ayz.plot([],[],carrot_fmt,color=color)[0]
-        self.ac_traj_yz = ayz.plot([],[],traj_fmt,color=color)[0]
-        self.ac_past_yz = ayz.plot([],[],past_fmt,color=color)[0]
+        self.ac_pos_yz = ayz.plot([],[],pos_fmt,color=color,label=f"{self.name} 's position")[0]
+        self.carrot_pos_yz = ayz.plot([],[],carrot_fmt,color=color,label=f"{self.name} 's guiding point")[0]
+        self.ac_traj_yz = ayz.plot([],[],traj_fmt,color=color,label=f"{self.name} 's path")[0]
+        self.ac_past_yz = ayz.plot([],[],past_fmt,color=color,label=f"{self.name} 's trajectory")[0]
         
         base_axis = np.linspace(-quiver_dist, quiver_dist, quiver_res)
         null_arrows = np.zeros((quiver_res,quiver_res))
@@ -138,7 +169,22 @@ class AC_drawings():
         
         self.base_flat_grid = self.gvf_xy.get_offsets()
         
-        
+    
+    def get_3d_artists(self) -> typing.List[Line3D]:
+        return [self.ac_pos_3d,self.carrot_pos_3d,self.ac_traj_3d,self.ac_past_3d]
+    
+    def get_xy_artists(self) -> typing.List[Line2D]:
+        return [self.ac_pos_xy,self.carrot_pos_xy,self.ac_traj_xy,self.ac_past_xy]
+    
+    def get_xz_artists(self) -> typing.List[Line2D]:
+        return [self.ac_pos_xz,self.carrot_pos_xz,self.ac_traj_xz,self.ac_past_xz]
+    
+    def get_yz_artists(self) -> typing.List[Line2D]:
+        return [self.ac_pos_yz,self.carrot_pos_yz,self.ac_traj_yz,self.ac_past_yz]
+    
+    def get_all_artists(self) -> typing.List[Artist]:
+        return self.get_3d_artists() + self.get_xy_artists() + self.get_xz_artists() + self.get_yz_artists()
+
     @staticmethod
     def from_Aircraft(a:Aircraft,a3d:Axes3D,axy:Axes,axz:Axes,ayz:Axes,
                       quiver_dist:float,quiver_res:int,**kwargs)-> AC_drawings:
@@ -211,6 +257,7 @@ class Trajectory3DMap():
                  resolution: int = 10,
                  history_size:int = 10,
                  fps:int = 20,
+                 normalized_fun:bool = False
                  ):
         
         ## Paparazzi interface
@@ -235,6 +282,8 @@ class Trajectory3DMap():
         
         assert history_size >= 0
         self.history_size:int = history_size
+        
+        self.normalized_fun:bool = normalized_fun
             
         ## Matplotlib figure
         self.main_fig = plt.figure()
@@ -254,6 +303,19 @@ class Trajectory3DMap():
         self.axz.set_title('XZ Map')
         self.ayz.set_title('YZ Map')
         
+        self.a3d.set_xlabel("Easting (m)")
+        self.a3d.set_ylabel("Northing (m)")
+        self.a3d.set_zlabel("Altitude (m)")
+
+        self.axy.set_xlabel("Easting (m)")
+        self.axy.set_ylabel("Northing (m)")
+
+        self.axz.set_xlabel("Easting (m)")
+        self.axz.set_ylabel("Altitude (m)")
+
+        self.ayz.set_xlabel("Northing (m)")
+        self.ayz.set_ylabel("Altitude (m)")
+
         self.a3d.axis('equal')
         self.axy.axis('equal')
         self.axz.axis('equal')
@@ -263,12 +325,24 @@ class Trajectory3DMap():
         self.button_fig = self.main_fig.add_subfigure(grid[0])
         
         button_col = 2 # One for legend, One for PushButtons
-        button_lines = len(ac_ids) + 4 # One per AC, + 1 for 'Tracking' checkbox, + 1 for 'Reset', + 1 for 'Barycenter', + 1 for legends
+        button_lines = len(ac_ids) + 5 # One per AC, + 1 for 'Normalize' checkbox, + 1 for 'Tracking' checkbox, + 1 for 'Reset', + 1 for 'Barycenter', + 1 for legends
         
         matrix_to_flat_index = lambda i,j : button_col * i + j + 1
-             
+        
+        self.normalize:bool = show_field
+        self.normalize_checkbox_ax:Axes = self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(1,1),frameon=False)
+        self.normalize_checkbox:CheckButtons = CheckButtons(self.normalize_checkbox_ax,
+                                                           labels=["Normalize field"],
+                                                           actives=[show_field], # Auto-active if field is shown
+                                                           )
+        
+        def wrapped__normalize_toggle(e):
+            self.__normalize_toggle()
+            
+        self.normalize_checkbox.on_clicked(wrapped__normalize_toggle)
+        
         self.tracking:bool = len(ac_ids) == 1 # Auto-active if only one AC, disabled otherwise
-        self.tracking_checkbox_ax:Axes = self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(1,1),frameon=False)
+        self.tracking_checkbox_ax:Axes = self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(2,1),frameon=False)
         self.tracking_checkbox:CheckButtons = CheckButtons(self.tracking_checkbox_ax,
                                                            labels=["Tracking"],
                                                            actives=[len(ac_ids) == 1], # Auto-active if only one AC, disabled otherwise
@@ -281,9 +355,9 @@ class Trajectory3DMap():
         
         self.track_target_code:TrackingCode = TrackingCode.none()
         
-        self.reset_button_ax:Axes = self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(2,1))
-        self.bary_button_ax:Axes = self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(3,1))
-        self.ac_buttons_axes:typing.List[Axes] = [self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(4+i,1)) for i in range(len(ac_ids))]
+        self.reset_button_ax:Axes = self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(3,1))
+        self.bary_button_ax:Axes = self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(4,1))
+        self.ac_buttons_axes:typing.List[Axes] = [self.button_fig.add_subplot(button_lines,button_col,matrix_to_flat_index(5+i,1)) for i in range(len(ac_ids))]
         
         self.reset_button:Button = Button(self.reset_button_ax,
                                           'Reset')
@@ -313,14 +387,26 @@ class Trajectory3DMap():
             ac_data = self.get_aircraft(id)
             self.drawings[id] = AC_drawings.from_Aircraft(ac_data,self.a3d,self.axy,self.axz,self.ayz,
                                                           self.gvf_dist,self.resolution)
-            
+        
+        ac_handles = list(d.ac_pos_xy for d in self.drawings.values())
+        ac_labels = list(d.name for d in self.drawings.values())
+        guiding_point_handle = tuple(d.carrot_pos_xy for d in self.drawings.values())
+        line_handle = tuple(d.ac_traj_xy for d in self.drawings.values())
+        traj_handle = tuple(d.ac_past_xy for d in self.drawings.values())
+        
+        self.plot_fig.legend(ac_handles+[guiding_point_handle,line_handle,traj_handle],
+                             ac_labels + ["Guiding point","Intended path","Trajectory"],
+                             loc='outside left upper',
+                             handler_map={tuple: HandlerTupleVertical(ndivide=None)})
+        
+        
         # If GVF is enabled, put a colorbar
         if self.show_field:
             # Pick any AC
             id = self.ac_ids[0]
             self.main_fig.colorbar(self.drawings[id].gvf_xy,label="Orthogonal inclination (in degrees, positive is \u2299)")
-            self.main_fig.colorbar(self.drawings[id].gvf_xz)
-            self.main_fig.colorbar(self.drawings[id].gvf_yz)
+            self.main_fig.colorbar(self.drawings[id].gvf_xz,label="Orthogonal inclination (in degrees, positive is \u2299)")
+            self.main_fig.colorbar(self.drawings[id].gvf_yz,label="Orthogonal inclination (in degrees, positive is \u2299)")
         
         ## Matplotlib Animator setup
         self.frame_interval = int(1000/fps)
@@ -352,6 +438,9 @@ class Trajectory3DMap():
                                                 interval=self.frame_interval,
                                                 save_count=5*fps,
                                                 frames=frame_generator)
+    
+    def __normalize_toggle(self):
+        self.normalize = not self.normalize
     
     def __tracking_toggle(self):
         self.tracking = not self.tracking
@@ -552,11 +641,12 @@ class Trajectory3DMap():
                 YZ_vec_list = np.stack([np.repeat(XYZ[0],len(yz_offsets[:,0])),yz_offsets[:,0],yz_offsets[:,1]])
                 
                 
-                XY_vectorfield = traj.calc_field(XY_vec_list.transpose(), w).transpose()
-                XZ_vectorfield = traj.calc_field(XZ_vec_list.transpose(), w).transpose()
-                YZ_vectorfield = traj.calc_field(YZ_vec_list.transpose(), w).transpose()
+                XY_vectorfield = traj.calc_field(XY_vec_list.transpose(), w, self.normalize,self.normalized_fun).transpose()
+                XZ_vectorfield = traj.calc_field(XZ_vec_list.transpose(), w, self.normalize,self.normalized_fun).transpose()
+                YZ_vectorfield = traj.calc_field(YZ_vec_list.transpose(), w, self.normalize,self.normalized_fun).transpose()
                 
-                # Normalize
+                
+                # Global Scale Normalization
                 XY_max_norm = np.sqrt(np.max(np.square(XY_vectorfield[0])+np.square(XY_vectorfield[1])+np.square(XY_vectorfield[2])))
                 XY_vectorfield /= XY_max_norm
 
@@ -599,7 +689,9 @@ class Trajectory3DMap():
         for id in self.ac_ids:
             ac = self.get_aircraft(id)
             output = itertools.chain(output,self.__update_AC_drawings(frame,ac))
-            
+        
+        
+        
         #self.a3d.autoscale()
         #self.axy.autoscale()
         #self.axz.autoscale()
