@@ -35,17 +35,17 @@
 
 /*! Default gain kx for the trajectory */
 #ifndef GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KX
-#define GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KX 0.1
+#define GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KX 0.01
 #endif
 
 /*! Default gain ky for the trajectory */
 #ifndef GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KY
-#define GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KY 0.1
+#define GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KY 0.01
 #endif
 
 /*! Default gain kz for the trajectory */
 #ifndef GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KZ
-#define GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KZ 0.1
+#define GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KZ 0.01
 #endif
 
 /*! Default x-speed for the trajectory */

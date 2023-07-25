@@ -34,17 +34,17 @@
 
 /*! Default gain kx for the 3d sin trajectory */
 #ifndef GVF_PARAMETRIC_3D_SIN_KX
-#define GVF_PARAMETRIC_3D_SIN_KX 0.1
+#define GVF_PARAMETRIC_3D_SIN_KX 0.01
 #endif
 
 /*! Default gain ky for the 3d sin trajectory */
 #ifndef GVF_PARAMETRIC_3D_SIN_KY
-#define GVF_PARAMETRIC_3D_SIN_KY 0.1
+#define GVF_PARAMETRIC_3D_SIN_KY 0.01
 #endif
 
 /*! Default gain kz for the 3d sin trajectory */
 #ifndef GVF_PARAMETRIC_3D_SIN_KZ
-#define GVF_PARAMETRIC_3D_SIN_KZ 0.1
+#define GVF_PARAMETRIC_3D_SIN_KZ 0.01
 #endif
 
 /*! Default amplitude along y-axis */
