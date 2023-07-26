@@ -104,6 +104,8 @@
       <set value="0.02" var="gvf_parametric_drift_ellipse_par.kx"/>
       <set value="0.02" var="gvf_parametric_drift_ellipse_par.ky"/>
       <set value="0.02" var="gvf_parametric_drift_ellipse_par.kz"/>
+      <set value="5" var="gvf_parametric_drift_ellipse_par.v_x"/>
+      <set value="1" var="gvf_parametric_coordination.kc"/>
       <call_once fun="gvf_parametric_set_w_gain(1.)"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
