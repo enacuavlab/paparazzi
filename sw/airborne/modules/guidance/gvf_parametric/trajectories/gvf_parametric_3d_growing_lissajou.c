@@ -55,7 +55,7 @@
 
 /*! Default y-amplitude for the trajectory */
 #ifndef GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AY
-#define GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AY 100
+#define GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AY 3
 #endif
 
 /*! Default z-amplitude for the trajectory */
