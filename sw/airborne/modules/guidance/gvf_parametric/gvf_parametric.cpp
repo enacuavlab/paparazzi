@@ -72,7 +72,6 @@ extern "C"
     uint32_t delta_T = now - gvf_parametric_t0;
 
     // float wb = gvf_parametric_control.w * gvf_parametric_control.beta * gvf_parametric_control.s;
-
     if (delta_T < 200)
     {
       float quaternion[4] = {gvf_parametric_affine_tr.rot.x(),
@@ -104,23 +103,9 @@ extern "C"
     }
   }
 
-#if GVF_OCAML_GCS
-  static void send_circle_parametric(struct transport_tx *trans, struct link_device *dev)
-  {
-    uint32_t now = get_sys_time_msec();
-    uint32_t delta_T = now - gvf_parametric_t0;
-
-    if (delta_T < 200)
-      if (gvf_parametric_trajectory.type == ELLIPSE_3D)
-      {
-        pprz_msg_send_CIRCLE(trans, dev, AC_ID, &gvf_parametric_trajectory.p_parametric[0],
-                             &gvf_parametric_trajectory.p_parametric[1], &gvf_parametric_trajectory.p_parametric[2]);
-      }
-  }
-#endif // GVF_OCAML_GCS
-
   static void send_gvf_parametric_coordination(struct transport_tx *trans, struct link_device *dev)
   {
+
     if (gvf_parametric_coordination.coordination)
     {
 
@@ -140,6 +125,27 @@ extern "C"
           &now);
     }
   }
+
+  static void manual_send_gvf_parametric_coordination()
+  {
+    send_gvf_parametric_coordination(&(DefaultChannel).trans_tx,&(DefaultDevice).device);
+  }
+
+
+#if GVF_OCAML_GCS
+  static void send_circle_parametric(struct transport_tx *trans, struct link_device *dev)
+  {
+    uint32_t now = get_sys_time_msec();
+    uint32_t delta_T = now - gvf_parametric_t0;
+
+    if (delta_T < 200)
+      if (gvf_parametric_trajectory.type == ELLIPSE_3D)
+      {
+        pprz_msg_send_CIRCLE(trans, dev, AC_ID, &gvf_parametric_trajectory.p_parametric[0],
+                             &gvf_parametric_trajectory.p_parametric[1], &gvf_parametric_trajectory.p_parametric[2]);
+      }
+  }
+#endif // GVF_OCAML_GCS
 
 #endif // PERIODIC TELEMETRY
 
@@ -455,6 +461,15 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
     return;
   }
 
+  #if PERIODIC_TELEMETRY
+  static uint32_t last_manual_send = 0;
+  if (now - last_manual_send > 200)
+  { 
+    manual_send_gvf_parametric_coordination();
+    last_manual_send = now;
+  }
+  #endif 
+
   if (gvf_parametric_control.delta_T == 0)
   {
     // Avoid potential ill-formed edge case
@@ -565,20 +580,21 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   // Coordination if needed for multi vehicles
   float consensus_term_w = 0;
 
+  
+
   if (gvf_parametric_coordination.coordination)
   {
 
-    // std::cout << "Neighbors : " << std::endl;
+    // std::cout << AC_ID << " Neighbors' : " << std::endl;
 
     for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++)
     {
-      // std::cout << "- " << i << " : ";
       if (gvf_parametric_coordination_tables.tableNei[i].nei_id != -1)
       {
-        // std::cout << "Yes";
+        // std::cout << "- " << gvf_parametric_coordination_tables.tableNei[i].nei_id << " : ";
         uint32_t timeout = now - gvf_parametric_coordination_tables.last_comm[i];
         gvf_parametric_coordination_tables.tableNei[i].delta_t = timeout;
-        if (timeout > gvf_parametric_coordination.timeout)
+        if (timeout < gvf_parametric_coordination.timeout)
         {
 
           float wi = gvf_parametric_control.w;
@@ -592,36 +608,49 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
 
           gvf_parametric_coordination_tables.error_deltaw[i] = error_w;
         }
-      }
-      else
-      {
-        // std::cout << "No ";// << gvf_parametric_coordination_tables.tableNei[i].nei_id << " )";
+        // else
+        // {
+        //   std::cout << ", but timeout " << timeout << " out of " << gvf_parametric_coordination.timeout << " (last seen at " << gvf_parametric_coordination_tables.last_comm[i] << " )";
+        // }
       }
       // std::cout << std::endl;
     }
   }
   else
   {
-    // std::cout << "No coordination !!!" << std::endl;
+    std::cout << AC_ID << ": No coordination !!!" << std::endl;
   }
 
-  // Limit impact of coordination regarding 'Backward' direction,
-  // and amplify it for 'Forward' direction (prefer catch-up to waiting)
-  // See https://en.wikipedia.org/wiki/Activation_function#cite_note-9
-  float w_coordination = gvf_parametric_coordination.kc * consensus_term_w;
-  // std::cout << "Coordination: " << w_coordination << std::endl;
-
-  float w_coordination_adjust = logf(1+expf(w_coordination * gvf_parametric_control.s));
-  if (w_coordination_adjust > 1e3)
+  // Limit impact of coordination using appropriate activation functions
+  // See https://en.wikipedia.org/wiki/Activation_function
+  // float w_coordination = gvf_parametric_coordination.kc * consensus_term_w;
+  // float w_coordination_adjust = 1;
+  
+  // float norm_phi = sqrtf(phi1*phi1 + phi2*phi2 + phi3*phi3);
+  float w_coordination_adjusted = gvf_parametric_coordination.kc * beta *(expf(consensus_term_w) - expf(-consensus_term_w))/(expf(consensus_term_w) + expf(-consensus_term_w));
+  
+  // Handle Limit cases
+  if (!isfinite(w_coordination_adjusted))
   {
-    w_coordination_adjust = 1e3;
-    std::cout << AC_ID <<  " : Bounded catch up" << std::endl;
+    if (consensus_term_w > 0)
+    {
+      w_coordination_adjusted = gvf_parametric_coordination.kc;
+    }
+    else
+    {
+      w_coordination_adjusted = -gvf_parametric_coordination.kc;
+    }
   }
+  
 
-  X(3) += w_coordination * w_coordination_adjust;
+  std::cout << AC_ID << " W_dots : Individual " << X(3);
+  std::cout << " | Consensus "<< consensus_term_w;
+  // std::cout << " | Phi Norm " << norm_phi;
+  std::cout << " | Coordination " << w_coordination_adjusted << std::endl;
 
-  // normalized_parametric_error = std::max(normalized_parametric_error,-5);
-  // normalized_parametric_error = std::min(normalized_parametric_error,5);
+  X(3) += w_coordination_adjusted;
+
+  
 
   // Jacobian
   J.setZero();
@@ -1078,7 +1107,7 @@ void gvf_parametric_coordination_parseWTable(uint8_t *buf)
 
   int16_t sender_id = (int16_t)(DL_GVF_PARAMETRIC_W_ac_id(buf));
 
-  // std::cout << "***** Msg received from " << sender_id;
+  // std::cout << "***** " << AC_ID << " Msg received from " << sender_id;
 
   for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++)
   {
