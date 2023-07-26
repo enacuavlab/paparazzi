@@ -90,8 +90,17 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "gvf_adapted_step.h": "c"
+        "gvf_adapted_step.h": "c",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "unordered_set": "cpp",
+        "ranges": "cpp",
+        "stop_token": "cpp",
+        "valarray": "cpp"
     },
     "C_Cpp.dimInactiveRegions": false,
     "esbonio.sphinx.confDir": "",
+    "python.analysis.extraPaths": [
+        "./sw/lib/python"
+    ],
 }

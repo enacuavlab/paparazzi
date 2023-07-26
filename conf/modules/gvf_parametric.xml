@@ -26,7 +26,7 @@
         </dl_settings>
         <dl_settings NAME="Coordination">
           <dl_setting MAX="1" MIN="0" STEP="1" VAR="gvf_parametric_coordination.coordination" shortname = "Coordination" param="GVF_PARAMETRIC_COORDINATION_COORDINATION"/>
-          <dl_setting MAX="20" MIN="0" STEP="0.1" VAR="gvf_parametric_coordination.kc" shortname = "Gain" param="GVF_PARAMETRIC_COORDINATION_GAIN_KC"/>
+          <dl_setting MAX="100" MIN="0" STEP="0.1" VAR="gvf_parametric_coordination.kc" shortname = "Gain" param="GVF_PARAMETRIC_COORDINATION_GAIN_KC"/>
           <dl_setting MAX="5000" MIN="0" STEP="1" VAR="gvf_parametric_coordination.timeout" shortname = "Timeout" param="GVF_PARAMETRIC_COORDINATION_TIMEOUT"/>
           <dl_setting MAX="1000" MIN="0" STEP="1" VAR="gvf_parametric_coordination.broadtime" shortname = "Broadcasting" param="GVF_PARAMETRIC_COORDINATION_BROADTIME"/>
         </dl_settings>
