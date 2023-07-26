@@ -92,19 +92,19 @@ class CoordLog():
     def register_msg(self, msg:telemetry.PprzMessage_GVF_PAR_COORD):
         
         # Pack status table into packs of 5
-        packed_table = [msg.table_[i,i+5] for i in range(0,len(msg.table_,5))]
+        packed_table = [msg.table_[i:i+5] for i in range(0,len(msg.table_),5)]
         packed_coord_status = dict()
         for l in packed_table:
-            packed_coord_status[int(l[0])] = _Neighbor_Coord_Status(int(l[0]),
+            packed_coord_status[int(float(l[0]))] = _Neighbor_Coord_Status(int(float(l[0])),
                                                                     float(l[1]),
                                                                     float(l[2]),
                                                                     float(l[3]),
-                                                                    int(l[4])) 
+                                                                    int(float(l[4]))) 
         
-        self.neighbor_list.append([int(l[0]) for l in packed_table])
+        self.neighbor_list.append([int(float(l[0])) for l in packed_table])
         self.status_list.append(packed_coord_status)
         self.error_list.append([float(e) for e in msg.errors_])
-        self.timestamps_list.append(int(msg.timestamp_))
+        self.timestamps_list.append(int(float(msg.timestamp_)))
         
     def to_numpy(self) -> typing.Tuple[np.ndarray,
                                        typing.List[typing.List[int]],
@@ -116,9 +116,10 @@ class CoordLog():
         
         
         np_errors = np.asarray(self.error_list)
-        np_neighbors = list(self.neighbor_list)
-        print(np_neighbors)
-        all_neighbors = set.union(*np_neighbors)
+        np_neighbors = np.asarray(self.neighbor_list)
+        set_neighbors = [set(l) for l in self.neighbor_list]
+        all_neighbors = set.union(*set_neighbors)
+        all_neighbors.discard(-1)
         
         np_ws = dict()
         np_w_dots = dict()
@@ -174,7 +175,6 @@ class ErrorLogger():
             
             def gvf_coord_cb(ac_id,msg:telemetry.PprzMessage_GVF_PAR_COORD):
                 if ac_id in self.ac_ids:
-                    print(msg)
                     self.coord_logs[ac_id].register_msg(msg)
             self._ivy_interface.subscribe(gvf_coord_cb, telemetry.PprzMessage_GVF_PAR_COORD())
             
@@ -220,35 +220,36 @@ class ErrorLogger():
             
         
         
-    def __coordination_total_error(self):
+    def __coordination_total_error(self) -> np.ndarray:
         assert self.coordination
         
         # Gather local error data and timestamps (SUPPOSE THE ACs CLOCK ARE SYNCHRONIZED)
-        timed_local_errors = [np.asarray([(np.sum(np.abs(errors),1),timestamps) for errors,_,_,_,_,_,timestamps in v.to_numpy()]) 
-                              for v in self.coord_logs.values()]
-        ## Equivalent to:
-        # timed_local_errors = []
-        # for v in self.coord_logs.values():
-        #   errors,_,_,_,_,_,timestamps = v.to_numpy()
-        #   v_timed_errors = (np.sum(np.abs(errors),1),timestamps)
-        #   timed_local_errors.append(v_timed_errors)
         
+        timed_local_errors = []
+        for v in self.coord_logs.values():
+            np_v = v.to_numpy()
+            errors = np_v[0]
+            timestamps = np_v[6]
+            # print(f"{v.ac_id} : {timestamps}")
+            timed_local_errors.append(np.asarray((np.sum(np.abs(errors),1),timestamps)).transpose())
         
         # Initialise indexes for fusion
         local_indexes = np.zeros(len(timed_local_errors),dtype=int)
-        max_indexes = np.asarray(len(l) for l in timed_local_errors)
+        max_indexes = np.asarray([len(l) for l in timed_local_errors])
         
         # Select the first timestamp from which all local errors are defined
         start_timestamp = max(timed_local_errors[:][0][1])
         
         # Actualize indexes accordingly
-        for nei in len(timed_local_errors):
+        for nei in range(len(timed_local_errors)):
             i = local_indexes[nei]
-            while timed_local_errors[nei][i][1] < start_timestamp:
+            while i < len(timed_local_errors[nei]) and timed_local_errors[nei][i][1] < start_timestamp:
                 i += 1
             local_indexes[nei] = i
         
         # Merge (remember to divide error data by 2, because of the degree/edges formula)
+        # print("Local:",local_indexes)
+        # print("Max:  ",max_indexes)
         output = []
         while np.any(local_indexes < max_indexes):
             min_time_nei = np.argmin([vals[i][1] if i < max_i else np.inf for i,max_i,vals in zip(local_indexes,max_indexes,timed_local_errors)])
@@ -262,7 +263,7 @@ class ErrorLogger():
             output.append((new_global_error/2,timed_local_errors[min_time_nei][local_indexes[min_time_nei]][1]))
             local_indexes[min_time_nei] += 1
             
-        return output
+        return np.asarray(output)
         
         
         
@@ -288,7 +289,7 @@ class ErrorLogger():
             ax1.plot(coord_timestamps*1e-3,np.sum(np.abs(errors),1),label=f"AC {k} L1 local coordination error")
         
         total_timed_errors = self.__coordination_total_error()
-        ax1.plot(total_timed_errors[:][1],total_timed_errors[:][0],label="Global L1 coordination error")
+        ax1.plot(total_timed_errors[:,1]*1e-3,total_timed_errors[:,0],label="Global L1 coordination error")
         
         for k,v in self.logs.items():
             _,ws,timestamps = v.to_numpy()
