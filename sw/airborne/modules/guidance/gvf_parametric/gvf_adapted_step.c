@@ -201,6 +201,8 @@ float step_adaptation(float ds, float f1d, float f2d, float f3d, float f1dd, flo
   if (result * ds < 0)
   {
     fprintf(stderr,"Incorrect direction! Got %f while expecting %f\n",result,ds);
+    result = p4_halley(a4,a3,a2,a1,a0,1e-2,2*init,1e6);
+    fprintf(stderr,"--> Second try: Got %f while expecting %f\n",result,ds);
   }
 
   if (isnan(result))
