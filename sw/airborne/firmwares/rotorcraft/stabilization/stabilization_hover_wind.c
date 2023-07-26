@@ -20,7 +20,8 @@
  */
 
 
-#include "coef.h"
+
+
 
 #include "math/pprz_algebra_float.h"
 #include "state.h"
@@ -51,6 +52,18 @@
 #define SMEUR_TO_BARTH_PSI 0.
 #endif
 
+#define POS_INC 0.04
+
+#define COEFF_DABB 1
+
+#if COEFF_DABB == 1
+  #include "coef_dabb_good.h"
+#else
+  #include "coef.h"
+#endif
+
+
+
 
 /*#include "modules/loggers/sdlog_chibios.h"
 #include "mcu_periph/sys_time.h"
@@ -74,6 +87,9 @@ static struct FloatQuat quat_smeur_2_barth;
 struct FloatQuat quat_att_barth_frame;
 
 struct NedCoor_f pos_target;
+float rc_x;
+float rc_y;
+float rc_z;
 
 float tf_state1[2] = {0, 0};
 float tf_state2[2] = {0, 0};
@@ -94,14 +110,15 @@ struct serial_act_t4_in myserial_act_t4_in_local;
 #include "modules/datalink/telemetry.h"
 static void send_payload_float(struct transport_tx *trans, struct link_device *dev)
 {
-  float f[32] = {pos_target.x, pos_target.y, pos_target.z,
+  float f[35] = {pos_target.x, pos_target.y, pos_target.z,
                  eps[0][0], eps[1][0], eps[2][0], eps[3][0], eps[4][0], eps[5][0], eps[6][0], eps[7][0], eps[8][0], eps[9][0], eps[10][0],
                  u_scale[0][0], u_scale[1][0], u_scale[2][0], u_scale[3][0],
                  u_prop[0][0], u_prop[1][0], u_prop[2][0], u_prop[3][0],
                  u_filter[0][0],u_filter[1][0],u_filter[2][0],u_filter[3][0],
                  u_integrator[0][0], u_integrator[1][0],
-                 u[0][0], u[1][0], u[2][0], u[3][0]};
-  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 32, f);
+                 u[0][0], u[1][0], u[2][0], u[3][0],
+                 rc_x, rc_y, rc_z};
+  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 35, f);
 }
 #endif
 
@@ -187,6 +204,27 @@ void stabilization_hover_wind_init(void){
 
 void stabilization_hover_wind_run(bool in_flight){
 
+  rc_x = -(radio_control.values[RADIO_PITCH]/9600.0); //[-1, 1]
+  rc_y = (radio_control.values[RADIO_ROLL]/9600.0); //[-1, 1]
+  rc_z = -(radio_control.values[RADIO_THROTTLE]/9600.0)- 0.5; //[-0.5, 0.5]
+
+  /*
+  if(fabs(rc_x) >= 0.5){
+    pos_target.x += rc_x*POS_INC;
+  }
+  
+  if(fabs(rc_y) >= 0.5){
+     pos_target.y += rc_y*POS_INC;
+  }
+
+  
+  if(fabs(rc_y) >= 0.125){
+     pos_target.z += 2*rc_z*POS_INC;
+  }
+  */
+  
+  
+  
 
   struct FloatVect3 barth_rate, smeur_rate;
   smeur_rate.x = stateGetBodyRates_f()->p;
@@ -196,22 +234,34 @@ void stabilization_hover_wind_run(bool in_flight){
   float_quat_comp(&quat_att_barth_frame, stateGetNedToBodyQuat_f(), &quat_smeur_2_barth);
   float_quat_vmult(&barth_rate, &quat_smeur_2_barth, &smeur_rate);
 
-  
-  //ENU_OF_TO_NED(nav_target_ned, nav.target) //nav.target ENU
-  //printf("nav target z = %f \n", nav_target_ned.z);
-  eps[0][0] = stateGetPositionNed_f()->x - pos_target.x; 
-  eps[1][0] = stateGetPositionNed_f()->y - pos_target.y;
-  eps[2][0] = stateGetPositionNed_f()->z - pos_target.z;
-  eps[3][0] = stateGetSpeedNed_f()->x;
-  eps[4][0] = stateGetSpeedNed_f()->y;
-  eps[5][0] = stateGetSpeedNed_f()->z;
-  eps[6][0] = quat_att_barth_frame.qx;
-  eps[7][0] = quat_att_barth_frame.qz;
-  eps[8][0] = barth_rate.x;
-  eps[9][0] = barth_rate.y;
-  eps[10][0] = barth_rate.z;
 
-  
+   if(COEFF_DABB){
+    eps[0][0] = stateGetPositionNed_f()->x - pos_target.x; 
+    eps[1][0] = stateGetPositionNed_f()->y - pos_target.y;
+    eps[2][0] = stateGetPositionNed_f()->z - pos_target.z;
+    eps[3][0] = stateGetSpeedNed_f()->x;
+    eps[4][0] = stateGetSpeedNed_f()->y;
+    eps[5][0] = stateGetSpeedNed_f()->z;
+    eps[6][0] = quat_att_barth_frame.qx;
+    eps[7][0] = quat_att_barth_frame.qz;
+    eps[8][0] = barth_rate.x;
+    eps[9][0] = barth_rate.y;
+    eps[10][0] = barth_rate.z;
+  }
+  else{
+    eps[0][0] = pos_target.x - stateGetPositionNed_f()->x; 
+    eps[1][0] = pos_target.y - stateGetPositionNed_f()->y;
+    eps[2][0] = pos_target.z - stateGetPositionNed_f()->z;
+    eps[3][0] = -stateGetSpeedNed_f()->x;
+    eps[4][0] = -stateGetSpeedNed_f()->y;
+    eps[5][0] = -stateGetSpeedNed_f()->z;
+    eps[6][0] = -quat_att_barth_frame.qx;
+    eps[7][0] = -quat_att_barth_frame.qz;
+    eps[8][0] = -barth_rate.x;
+    eps[9][0] = -barth_rate.y;
+    eps[10][0] = -barth_rate.z;
+  }
+
   MAT_MUL_c(CTRL_HOVER_WIND_NUM_INTEGRATOR_STATE, CTRL_HOVER_WIND_INPUT, 1, dot_x_e_dt, H, eps, 1./PERIODIC_FREQUENCY);
   x_e[0][0] +=  dot_x_e_dt[0][0];
   x_e[1][0] +=  dot_x_e_dt[1][0];
@@ -247,7 +297,14 @@ void stabilization_hover_wind_run(bool in_flight){
 
 
   float integrator_repart[CTRL_HOVER_WIND_NUM_ACT][1] = {{u_integrator[0][0]}, {u_integrator[0][0]}, {u_integrator[1][0]}, {u_integrator[1][0]} };
-  MAT_SUB(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_filter);
+
+  if(COEFF_DABB){
+    MAT_SUB(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_filter);
+  }
+  else{
+    MAT_SUM(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_filter);
+  }
+ 
   //MAT_SUB(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_prop);
   MAT_SUM(CTRL_HOVER_WIND_NUM_ACT, 1, u, ueq, u_sub);
 
