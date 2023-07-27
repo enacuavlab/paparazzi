@@ -100,10 +100,10 @@
     </block>
     
     <block name="Downind drifting ellipse">
-      <set value="0.85" var="gvf_parametric_control.L"/>
-      <set value="0.02" var="gvf_parametric_drift_ellipse_par.kx"/>
-      <set value="0.02" var="gvf_parametric_drift_ellipse_par.ky"/>
-      <set value="0.02" var="gvf_parametric_drift_ellipse_par.kz"/>
+      <set value="1." var="gvf_parametric_control.L"/>
+      <set value="0.01" var="gvf_parametric_drift_ellipse_par.kx"/>
+      <set value="0.01" var="gvf_parametric_drift_ellipse_par.ky"/>
+      <set value="0.01" var="gvf_parametric_drift_ellipse_par.kz"/>
       <set value="5" var="gvf_parametric_drift_ellipse_par.v_x"/>
       <set value="1" var="gvf_parametric_coordination.kc"/>
       <call_once fun="gvf_parametric_set_w_gain(1.)"/>
