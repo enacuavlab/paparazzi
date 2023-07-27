@@ -601,7 +601,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
           float wj = gvf_parametric_coordination_tables.tableNei[i].w;
           float desired_dw = gvf_parametric_coordination_tables.tableNei[i].desired_dw;
 
-          float error_w = -beta * (wi - wj) + desired_dw;
+          float error_w = desired_dw - (wi - wj);
           // std::cout << ", contributes " << error_w;
 
           consensus_term_w += error_w;
@@ -616,10 +616,6 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
       // std::cout << std::endl;
     }
   }
-  else
-  {
-    std::cout << AC_ID << ": No coordination !!!" << std::endl;
-  }
 
   // Limit impact of coordination using appropriate activation functions
   // See https://en.wikipedia.org/wiki/Activation_function
@@ -627,7 +623,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   // float w_coordination_adjust = 1;
   
   // float norm_phi = sqrtf(phi1*phi1 + phi2*phi2 + phi3*phi3);
-  float w_coordination_adjusted = gvf_parametric_coordination.kc * beta *(expf(consensus_term_w) - expf(-consensus_term_w))/(expf(consensus_term_w) + expf(-consensus_term_w));
+  float w_coordination_adjusted = gvf_parametric_coordination.kc *(expf(consensus_term_w) - expf(-consensus_term_w))/(expf(consensus_term_w) + expf(-consensus_term_w));
   
   // Handle Limit cases
   if (!isfinite(w_coordination_adjusted))

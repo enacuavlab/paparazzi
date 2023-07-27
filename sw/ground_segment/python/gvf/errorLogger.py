@@ -196,13 +196,13 @@ class ErrorLogger():
         ax1.set_ylabel("Distance (m)")
         
         ax2.set_xlabel("Time ellapsed (s)")
-        ax2.set_ylabel("Guiding parameter (a.u.)")
+        ax2.set_ylabel("Virtual coordinate (a.u.)")
         
         for k,v in self.logs.items():
             errors,ws,timestamps = v.to_numpy()
             # print(k,errors)
             ax1.plot(timestamps*1e-3,np.sqrt(np.sum(np.square(errors),1)),label=f"AC {k} euclidean distance to guiding point")
-            ax2.plot(timestamps*1e-3,ws,label=f"AC {k} guiding parameter")
+            ax2.plot(timestamps*1e-3,ws,label=f"AC {k} virtual coordinate")
             
         ax1.legend()
         ax2.legend()
@@ -282,7 +282,7 @@ class ErrorLogger():
         ax1.set_ylabel("Coordination error (a.u.)")
         
         ax2.set_xlabel("Time ellapsed (s)")
-        ax2.set_ylabel("Guiding parameter (a.u.)")
+        ax2.set_ylabel("Virtual coordinate (a.u.)")
         
         for k,v in self.coord_logs.items():
             errors,_,_,_,_,_,coord_timestamps = v.to_numpy()
@@ -293,7 +293,7 @@ class ErrorLogger():
         
         for k,v in self.logs.items():
             _,ws,timestamps = v.to_numpy()
-            ax2.plot(timestamps*1e-3,ws,label=f"AC {k} guiding parameter values")
+            ax2.plot(timestamps*1e-3,ws,label=f"AC {k} virtual coordinate")
             
             
         ax1.legend()
