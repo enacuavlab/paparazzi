@@ -388,12 +388,20 @@
 #endif
 #endif
 
+//USE_UART4 demmarre le thread donc problème de lecture du thread tlmt pour le dhsot -> solution demmarer par défaut l'uart 4 
+// arch/chibios/mcu_periph/uart_arch.c : 533
+
+
+// #ifndef STM32_SERIAL_USE_UART4
+// #if USE_UART4
+// #define STM32_SERIAL_USE_UART4              TRUE
+// #else
+// #define STM32_SERIAL_USE_UART4              FALSE
+// #endif
+// #endif
+
 #ifndef STM32_SERIAL_USE_UART4
-#if USE_UART4
-#define STM32_SERIAL_USE_UART4              TRUE
-#else
-#define STM32_SERIAL_USE_UART4              FALSE
-#endif
+#define STM32_SERIAL_USE_UART4              TRUE //  dshot telemetry Sva TODO FIXME
 #endif
 
 #ifndef STM32_SERIAL_USE_UART5

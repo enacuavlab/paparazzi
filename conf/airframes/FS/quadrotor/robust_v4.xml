@@ -15,6 +15,7 @@
     <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/>
 
     <target name="ap" board="tawaki_1.0">
+    <configure name="RTOS_DEBUG" value="1" />
     <module name="radio_control" type="sbus"/>
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
     <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
@@ -25,6 +26,10 @@
       <module name="radio_control" type="ppm"/>
     </target>
 
+    <module name="shell">
+      <configure name="SHELL_PORT" value="usb_serial_debug" />
+    </module>
+    <module name="sys_mon"></module>
 
     <module name="telemetry" type="xbee_api"/>
     <module name="tlsf"/>
@@ -45,8 +50,8 @@
       <define name="USE_PWM1" value="0" />
       <define name="USE_PWM2" value="0" />
       <define name="USE_PWM3" value="0" />
-      <define name="USE_UART4"/>
-      <define name="USE_UART4_TX" value="0"/>
+      <!--define name="USE_UART4"/>
+      <define name="USE_UART4_TX" value="0"/-->
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
       <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>

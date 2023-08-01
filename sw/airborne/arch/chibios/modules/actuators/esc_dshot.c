@@ -465,7 +465,15 @@ static noreturn void dshotTlmRec(void *arg)
 
   uint32_t escIdx = 0;
 
-  chRegSetThreadName("dshotTlmRec");
+  if(driver->config->tlm_sd == &SD4){
+    chRegSetThreadName("dshotTlmRec4");
+  }
+  else if(driver->config->tlm_sd == &SD5){
+    chRegSetThreadName("dshotTlmRec5");
+  }
+  else{ 
+    chRegSetThreadName("dshotTlmRec");
+  }
   while (true) {
     chMBFetchTimeout(&driver->mb, (msg_t *) &escIdx, TIME_INFINITE);
     const uint32_t idx = escIdx;
