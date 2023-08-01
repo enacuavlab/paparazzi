@@ -41,7 +41,7 @@ class ParametricLineTrajectory(LineTrajectory, ABC):
         dir = 1-2*(self.dim % 2)  # = (-1)^dim
         return self.L*(self.beta_s* self.L* self.L*dir * self.grad_param_point(t) - phi)
     
-    def normalized_gvf(self,pos:np.ndarray, t:float) -> np.ndarray:
+    def normalized_gvf(self,pos:np.ndarray, t:float) -> np.ndarray:        
         ft = self.param_point(t)
         phi = self.L*(pos - ft) * self.gain
 

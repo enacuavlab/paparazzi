@@ -118,6 +118,13 @@ class Aircraft():
             return None
         else:
             return float(self.gvf_parametric.config_[6])
+        
+    @property
+    def gains(self) -> typing.Optional[np.ndarray]:
+        if self.gvf_parametric is None:
+            return None
+        else:
+            return np.asarray([float(self.gvf_parametric.config_[8]),float(self.gvf_parametric.config_[9]),float(self.gvf_parametric.config_[10])])
     
     @property
     def name(self) -> str:

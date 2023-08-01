@@ -116,6 +116,9 @@ typedef struct {
   float L;
   float beta;
   float w_dot;
+  float kx;
+  float ky;
+  float kz;
 } gvf_parametric_con;
 
 extern gvf_parametric_con gvf_parametric_control;
