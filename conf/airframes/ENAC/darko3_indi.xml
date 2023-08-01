@@ -174,10 +174,9 @@
     <module name="ahrs" type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="FALSE"/>
       <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
-      <define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
-      <define name="AHRS_GRAVITY_UPDATE_COORDINATED_TURN" value="TRUE"/>
-      <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/>
-    </module>
+      <define name="AHRS_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
+    </module> 
+
 
     <!--we were using this normally /-->
     <!--<module name="ins" /> 
@@ -186,12 +185,32 @@
     </module> -->
 
     <module name="gps" type="datalink"/>
-    <module name="ins" type="gps_passthrough"/>
 
+    <!--module name="ins" type="gps_passthrough"/-->
 
-    <!--module name="ins" type="float_invariant">
+    <!--module name="ins" type="ekf2">
+      <define name="INS_EKF2_OPTITRACK" value="true"/>
+    </module-->
+
+    <module name="ins" type="float_invariant">
       <define name="INS_PROPAGATE_FREQUENCY" value="500"/>
-      <define name="INS_FINV_MAG_ID" value="MAG_HMC58XX_SENDER_ID"/>
+      <define name="INS_INV_USE_GPS_HEADING" value="1" />
+      <define name="INS_INV_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
+      <define name="SEND_INVARIANT_FILTER"/>
+      <!-- Setting for optitrack No baro-->
+      <define name="INS_INV_MH" value="0" />
+      <define name="INS_INV_NH" value="0" />
+      <define name="INS_INV_RH" value="0" />
+      <define name="INS_INV_SH" value="0" />
+      <define name="INS_INV_MVZ" value="8." />
+      <define name="INS_INV_NXZ" value="0.8" />
+    </module>
+
+
+    <!--module name="ins" type="extended">
+      <define name="INS_USE_GPS_ALT" value="1"/>
+      <define name="INS_USE_GPS_ALT_SPEED" value="1"/>
+      <define name="INS_VFF_R_GPS" value="0.01"/>
     </module-->
     
     
@@ -359,11 +378,11 @@
     <!-- <define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/> -->
   <!-- </section> -->
 
-  <section name="INS" prefix="INS_">
+  <!--section name="INS" prefix="INS_">
     <define name="H_X" value="0.5138"/>
     <define name="H_Y" value="0.00019"/>
     <define name="H_Z" value="0.8578"/>
-  </section>
+  </section-->
 
   <!-- Gains for horizontal navigation-->
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">

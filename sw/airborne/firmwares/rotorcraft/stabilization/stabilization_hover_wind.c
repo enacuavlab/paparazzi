@@ -21,8 +21,6 @@
 
 
 
-
-
 #include "math/pprz_algebra_float.h"
 #include "state.h"
 #include "generated/airframe.h"
@@ -52,9 +50,9 @@
 #define SMEUR_TO_BARTH_PSI 0.
 #endif
 
-#define POS_INC 0.04
+#define POS_INC 0.02
 
-#define COEFF_DABB 1
+#define COEFF_DABB 0
 
 #if COEFF_DABB == 1
   #include "coef_dabb_good.h"
@@ -191,6 +189,14 @@ void stabilization_hover_wind_init(void){
 
   x_e[0][0] = 0;
   x_e[1][0] = 0;
+  tf_state1[0] = 0;
+  tf_state1[1] = 0;
+  tf_state2[0] = 0;
+  tf_state2[1] = 0;
+  tf_state3[0] = 0;
+  tf_state3[1] = 0;
+  tf_state4[0] = 0;
+  tf_state4[1] = 0;
   pos_target = *stateGetPositionNed_f(); 
 
   #if PERIODIC_TELEMETRY
@@ -208,7 +214,7 @@ void stabilization_hover_wind_run(bool in_flight){
   rc_y = (radio_control.values[RADIO_ROLL]/9600.0); //[-1, 1]
   rc_z = -(radio_control.values[RADIO_THROTTLE]/9600.0)- 0.5; //[-0.5, 0.5]
 
-  /*
+ 
   if(fabs(rc_x) >= 0.5){
     pos_target.x += rc_x*POS_INC;
   }
@@ -217,7 +223,7 @@ void stabilization_hover_wind_run(bool in_flight){
      pos_target.y += rc_y*POS_INC;
   }
 
-  
+   /*
   if(fabs(rc_y) >= 0.125){
      pos_target.z += 2*rc_z*POS_INC;
   }
@@ -235,7 +241,7 @@ void stabilization_hover_wind_run(bool in_flight){
   float_quat_vmult(&barth_rate, &quat_smeur_2_barth, &smeur_rate);
 
 
-   if(COEFF_DABB){
+   if(COEFF_DABB == 1 ){
     eps[0][0] = stateGetPositionNed_f()->x - pos_target.x; 
     eps[1][0] = stateGetPositionNed_f()->y - pos_target.y;
     eps[2][0] = stateGetPositionNed_f()->z - pos_target.z;
@@ -298,7 +304,7 @@ void stabilization_hover_wind_run(bool in_flight){
 
   float integrator_repart[CTRL_HOVER_WIND_NUM_ACT][1] = {{u_integrator[0][0]}, {u_integrator[0][0]}, {u_integrator[1][0]}, {u_integrator[1][0]} };
 
-  if(COEFF_DABB){
+  if(COEFF_DABB == 1){
     MAT_SUB(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_filter);
   }
   else{

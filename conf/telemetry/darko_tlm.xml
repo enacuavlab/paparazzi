@@ -241,6 +241,7 @@
       <message name="AHRS_QUAT_INT"            period=".002"/>
       <message name="ESC"                      period=".002"/>
       <message name="PAYLOAD_FLOAT"            period=".002"/>
+      <message name="INV_FILTER"               period=".002"/>
       <message name="GPS_RTK"                  period="0.1"/>
       <message name="IMU_HEATER"               period="1.0"/>
     </mode>
