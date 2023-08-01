@@ -14,6 +14,7 @@ import functools
 # Paparazzi interaction
 from .pprzInterface import AC_DataCollector,Aircraft
 from trajectories.gvf_trajectories import Trajectory,LineTrajectory
+from trajectories.GVF_PARAMETRIC import ParametricLineTrajectory
 
 # Computations
 import numpy as np
@@ -595,6 +596,7 @@ class Trajectory3DMap():
         traj = ac.trajectory
         if traj is not None:
             # Carrot
+            traj.gain = ac.gains
             w = ac.w
             if w is not None:
                 CARROT = traj.param_point(w)
@@ -615,6 +617,7 @@ class Trajectory3DMap():
             # Work only with Genus-1 trajectories (that is a 'line', only one parameter, mappable on R)
             assert isinstance(traj,LineTrajectory)
             
+            
             traj_points = traj.calc_traj(np.linspace(w-self.w_dist,w+self.w_dist,self.resolution*10))
             drawings.ac_traj_3d.set_data_3d(traj_points[:,0], traj_points[:,1], traj_points[:,2])
             drawings.ac_traj_xy.set_data(traj_points[:,0],traj_points[:,1])
@@ -630,6 +633,10 @@ class Trajectory3DMap():
                 #                       np.linspace(XYZ[1]-self.gvf_dist, XYZ[1]+self.gvf_dist, self.resolution),
                 #                       np.linspace(XYZ[2]-self.gvf_dist, XYZ[2]+self.gvf_dist, self.resolution),indexing='ij'))
                 # vector_field = traj.calc_field(XYZ_meshgrid.transpose(), w).transpose()
+                
+                if isinstance(traj,ParametricLineTrajectory):
+                    traj.beta_s = ac.beta_s
+                    traj.L = ac.L
                 
                 xy_offsets = drawings.base_flat_grid + np.asarray([XYZ[0],XYZ[1]])
                 xz_offsets = drawings.base_flat_grid + np.asarray([XYZ[0],XYZ[2]])

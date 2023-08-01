@@ -88,14 +88,17 @@ extern "C"
                               gvf_parametric_affine_tr.transalation.y(),
                               gvf_parametric_affine_tr.transalation.z()};
 
-      float gvf_parametric_config[8] = {gvf_parametric_control.w,
+      float gvf_parametric_config[11] = {gvf_parametric_control.w,
                                        (float)now,
                                        gvf_parametric_control.s * gvf_parametric_control.beta,
                                        gvf_parametric_control.k_roll,
                                        gvf_parametric_control.k_climb,
                                        gvf_parametric_control.k_psi,
                                        gvf_parametric_control.L,
-                                       gvf_parametric_control.w_dot};
+                                       gvf_parametric_control.w_dot,
+                                       gvf_parametric_control.kx,
+                                       gvf_parametric_control.ky,
+                                       gvf_parametric_control.kz,};
 
       pprz_msg_send_GVF_PARAMETRIC(trans, dev, AC_ID, &traj_type, gvf_parametric_config, gvf_parametric_plen,
                                    gvf_parametric_trajectory.p_parametric, gvf_parametric_elen, gvf_parametric_trajectory.phi_errors,
@@ -164,6 +167,9 @@ void gvf_parametric_init(void)
   gvf_parametric_control.L = GVF_PARAMETRIC_CONTROL_L;
   gvf_parametric_control.beta = GVF_PARAMETRIC_CONTROL_BETA;
   gvf_parametric_control.w_dot = 0;
+  gvf_parametric_control.kx = 1.;
+  gvf_parametric_control.ky = 1.;
+  gvf_parametric_control.kz = 1.;
 
   gvf_parametric_coordination.coordination = GVF_PARAMETRIC_COORDINATION_COORDINATION;
   gvf_parametric_coordination.kc = GVF_PARAMETRIC_COORDINATION_KC;
@@ -302,6 +308,10 @@ void gvf_parametric_control_2d(float kx, float ky, float f1, float f2, float f1d
     gvf_parametric_control.w = 0; // Reset w since we assume the algorithm starts
     return;
   }
+
+  gvf_parametric_control.kx = kx;
+  gvf_parametric_control.ky = ky;
+  gvf_parametric_control.kz = 0.;
 
   // Carrot position
   desired_x = f1;
@@ -461,6 +471,10 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
     return;
   }
 
+  gvf_parametric_control.kx = kx;
+  gvf_parametric_control.ky = ky;
+  gvf_parametric_control.kz = kz;
+
   #if PERIODIC_TELEMETRY
   static uint32_t last_manual_send = 0;
   if (now - last_manual_send > 200)
@@ -499,7 +513,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   f3dd = fdd_vec(2);
 
 
-  #if defined(GVF_PARAMETRIC_STEP_ADAPTATION)
+  #if GVF_PARAMETRIC_STEP_ADAPTATION == 1
   float f_v2 = f1d * f1d + f2d * f2d + f3d * f3d;
   float f_v = sqrtf(f_v2);
 
@@ -514,7 +528,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   float og_f3dd = f3dd;
 
 
-  if (f_v < 1e-6)
+  if (f_v < 1e-6) // i.e, f'(w) = 0
   {
     // Use an arbitrary direction
     f1d = 1/sqrtf(3.);
@@ -689,7 +703,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   */
 
   float w_dot;
-  #if defined(GVF_PARAMETRIC_STEP_ADAPTATION)
+  #if GVF_PARAMETRIC_STEP_ADAPTATION == 1
   w_dot = step_adaptation(ground_speed * X(3) * gvf_parametric_control.delta_T * 1e-3, og_f1d, og_f2d, og_f3d, og_f1dd, og_f2dd, og_f3dd) / (gvf_parametric_control.delta_T * 1e-3);
   // std::cout << "Requested step: " << ground_speed * normalized_parametric_error * gvf_parametric_control.delta_T * 1e-3 << std::endl;
   #else

@@ -34,10 +34,7 @@
     <module name="gvf_module">
       <define name="GVF_OCAML_GCS" value="FALSE"/>
     </module>
-    <module name="gvf_parametric">
-    	<!-- Remove step normalization for benchmarking -->
-    	<define name="GVF_PARAMETRIC_STEP_ADAPTATION" value="0"/>
-    </module>
+    <module name="gvf_parametric"/>
     <module name="mission_fw"/>
     <module name="gvf_mission"/>
   </modules>
