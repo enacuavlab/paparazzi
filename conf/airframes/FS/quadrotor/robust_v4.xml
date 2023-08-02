@@ -47,11 +47,10 @@
     <module name="board" type="tawaki">
       <define name="USE_DSHOT_TIM1" value="TRUE"/>
       <define name="DSHOT_TELEMETRY_TIMEOUT_MS" value="3"/>
-      <define name="USE_PWM1" value="0" />
-      <define name="USE_PWM2" value="0" />
-      <define name="USE_PWM3" value="0" />
-      <!--define name="USE_UART4"/>
-      <define name="USE_UART4_TX" value="0"/-->
+      <define name="USE_PWM1" value="FALSE" />
+      <define name="USE_PWM2" value="FALSE" />
+      <define name="USE_PWM3" value="FALSE" />
+      <define name="STM32_SERIAL_USE_UART4" value="TRUE" />
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
       <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
