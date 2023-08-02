@@ -138,14 +138,17 @@ class Aircraft():
 #################### Aircraft data collector ####################
 
 class AC_DataCollector():
-    def __init__(self,ac_id_list:typing.List[int],name:str="GVF_collector",setup:bool=True) -> None:
+    def __init__(self,ac_id_list:typing.List[int],ivy:typing.Union[str,IvyMessagesInterface]="GVF_collector",setup:bool=True) -> None:
         
         # Vehicle variables
         self.ac_ids:typing.List[int] = ac_id_list
         self.ac_dict:typing.Dict[int,Aircraft] = dict()
         
         # Ivy
-        self._ivy_interface = IvyMessagesInterface(name)
+        if isinstance(ivy,IvyMessagesInterface):
+            self._ivy_interface = ivy
+        else:
+            self._ivy_interface = IvyMessagesInterface(ivy)
         self._pprz_connect = PprzConnect(ivy=self._ivy_interface)
         
         # Setup

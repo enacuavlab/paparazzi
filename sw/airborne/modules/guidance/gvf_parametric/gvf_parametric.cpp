@@ -482,7 +482,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
 
   #if PERIODIC_TELEMETRY
   static uint32_t last_manual_send = 0;
-  if (now - last_manual_send > 200)
+  if (gvf_parametric_coordination.coordination && now - last_manual_send > 200)
   { 
     manual_send_gvf_parametric_coordination();
     last_manual_send = now;
