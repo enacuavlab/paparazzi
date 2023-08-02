@@ -40,6 +40,8 @@ sys.path.append(PPRZ_SRC + "/sw/lib/python")
 from pprzlink.ivy import IvyMessagesInterface
 from pprzlink.generated import telemetry
 
+from animatedGVF.pprzInterface import AC_DataCollector
+
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
@@ -142,6 +144,16 @@ class CoordLog():
             
 ############### Logging ###############
 
+def color_correction(color:str):
+    if type(color) == str:
+        if color[0] == '#' and len(color) > len('#0f0f0f80'):
+            # If the color uses more than 8 bits per color channel...
+            # ... Transform it into a RGB float tuple (naively)
+            colorstring = color[1:]
+            hexlen = len(colorstring)//3
+            color = tuple(int(colorstring[i*hexlen:(i+1)*hexlen],16)/(16**hexlen) for i in range(3))
+    return color
+
 class ErrorLogger():
     def __init__(self,ac_ids:typing.List[int], ivy: typing.Union[str, IvyMessagesInterface], coordination:bool=False,
                  export:bool=False) -> None:
@@ -153,6 +165,7 @@ class ErrorLogger():
             self._ivy_interface = ivy
         else:
             self._ivy_interface = IvyMessagesInterface(ivy,True)
+            
             
         # Init logs
         self.logs:typing.Dict[int,ErrorLog] = dict()
@@ -179,6 +192,9 @@ class ErrorLogger():
             self._ivy_interface.subscribe(gvf_coord_cb, telemetry.PprzMessage_GVF_PAR_COORD())
             
         
+        # Init data collector
+        self.collector = AC_DataCollector(ac_ids,self._ivy_interface,True)
+        
         # Export data as .npz
         self.do_export = export
         
@@ -199,10 +215,13 @@ class ErrorLogger():
         ax2.set_ylabel("Virtual coordinate (a.u.)")
         
         for k,v in self.logs.items():
+            color=color_correction(self.collector.ac_dict[k].config.color)
             errors,ws,timestamps = v.to_numpy()
             # print(k,errors)
-            ax1.plot(timestamps*1e-3,np.sqrt(np.sum(np.square(errors),1)),label=f"AC {k} euclidean distance to guiding point")
-            ax2.plot(timestamps*1e-3,ws,label=f"AC {k} virtual coordinate")
+            ax1.plot(timestamps*1e-3,np.sqrt(np.sum(np.square(errors),1)),label=f"AC {k} euclidean distance to guiding point",
+                     color=color)
+            ax2.plot(timestamps*1e-3,ws,label=f"AC {k} virtual coordinate",
+                     color=color)
             
         ax1.legend()
         ax2.legend()
@@ -285,15 +304,19 @@ class ErrorLogger():
         ax2.set_ylabel("Virtual coordinate (a.u.)")
         
         for k,v in self.coord_logs.items():
+            color=color_correction(self.collector.ac_dict[k].config.color)
             errors,_,_,_,_,_,coord_timestamps = v.to_numpy()
-            ax1.plot(coord_timestamps*1e-3,np.sum(np.abs(errors),1),label=f"AC {k} L1 local coordination error")
+            ax1.plot(coord_timestamps*1e-3,np.sum(np.abs(errors),1),label=f"AC {k} L1 local coordination error",
+            color=color)
         
         total_timed_errors = self.__coordination_total_error()
         ax1.plot(total_timed_errors[:,1]*1e-3,total_timed_errors[:,0],label="Global L1 coordination error")
         
         for k,v in self.logs.items():
+            color=color_correction(self.collector.ac_dict[k].config.color)
             _,ws,timestamps = v.to_numpy()
-            ax2.plot(timestamps*1e-3,ws,label=f"AC {k} virtual coordinate")
+            ax2.plot(timestamps*1e-3,ws,label=f"AC {k} virtual coordinate",
+            color=color)
             
             
         ax1.legend()

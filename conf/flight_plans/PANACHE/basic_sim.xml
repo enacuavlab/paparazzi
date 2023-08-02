@@ -74,43 +74,43 @@
     </block>
     
     <block name="Spiral RDV">
-    	<call_once fun="gvf_parametric_set_w_gain(1.)"/>
-    	<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,90.,0.)"/>
-    	<call fun="gvf_parametric_3d_sin(500 + 10 * AC_ID,3,90 * AC_ID, 500 + 10 * AC_ID,3,90 * (AC_ID+1))"/>
+    	<set value="1." var="gvf_parametric_control.beta"/>
+    	<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID % 10),0.,90.,0.)"/>
+    	<call fun="gvf_parametric_3d_sin(500 + 10 * (AC_ID % 10),3,90 * (AC_ID % 10), 500 + 10 * (AC_ID % 10),3,90 * ((AC_ID % 10)+1))"/>
     	<!--<set var="gvf_ellipse_par.a" value="200 + 10*AC_ID"/>
     	<set var="gvf_ellipse_par.b" value="200 + 10*AC_ID"/>
     	<call fun="gvf_ellipse_wp(WP_SRC,gvf_ellipse_par.a, gvf_ellipse_par.b, gvf_ellipse_par.alpha)"/>-->
     </block>
         
     <block name="3D Lissajous">
-      <set value="1." var="gvf_parametric_control.L"/>
-      <set value="0.01" var="gvf_parametric_3d_lissajous_par.kx"/>
-      <set value="0.01" var="gvf_parametric_3d_lissajous_par.ky"/>
-      <set value="0.01" var="gvf_parametric_3d_lissajous_par.kz"/>
+      <set value="0.1 + (((AC_ID-1) % 10) * 0.45)" var="gvf_parametric_control.L"/>
+      <set value="0.002*(((AC_ID-1) % 10) * 10)" var="gvf_parametric_3d_lissajous_par.kx"/>
+      <set value="0.002*(((AC_ID-1) % 10) * 10)" var="gvf_parametric_3d_lissajous_par.ky"/>
+      <set value="0.0025*(((AC_ID-1) % 10) * 10)" var="gvf_parametric_3d_lissajous_par.kz"/>
       <set value="1" var="gvf_parametric_coordination.kc"/>
-      <call_once fun="gvf_parametric_set_w_gain(1.)"/>
+      <set value="0.01" var="gvf_parametric_control.beta"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
-      <call_once fun="gvf_parametric_3d_lissajous_XYZ(WaypointX(WP_SRC),WaypointY(WP_SRC),300,100,100,10,1,1,1,0,0,0,0)"/>
+      <call_once fun="gvf_parametric_3d_lissajous_XYZ(WaypointX(WP_SRC),WaypointY(WP_SRC),300,225,225,-20,1,2,2,0,0,M_PI/2,0)"/>
     </block>
         
     <block name="Downwind sinus">
       <set value="1." var="gvf_parametric_control.L"/>
-      <call_once fun="gvf_parametric_set_w_gain(1.)"/>
+      <set value="1." var="gvf_parametric_control.beta"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
-      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID-5),0.,0.,-atan2(stateGetHorizontalWindspeed_f()->y,stateGetHorizontalWindspeed_f()->x)*180/M_PI)"/>
-      <call fun="gvf_parametric_3d_sin(500,0.001,90 * (AC_ID+1), 50,0.0005,90 * AC_ID)"/>
+      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID % 10),0.,0.,-atan2(stateGetHorizontalWindspeed_f()->y,stateGetHorizontalWindspeed_f()->x)*180/M_PI)"/>
+      <call fun="gvf_parametric_3d_sin(500,0.001,90 * ((AC_ID+1) % 10 ), 50,0.0005,90 * (AC_ID % 10))"/>
       
       <!--<call fun="gvf_parametric_3d_ellipse_wp_delta(WP_SRC, 200,200,30,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>-->
     </block>
     
     <block name="Downind growing Lissajou">
       <set value="1." var="gvf_parametric_control.L"/>
-      <call_once fun="gvf_parametric_set_w_gain(1.)"/>
+      <set value="1." var="gvf_parametric_control.beta"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
-      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID-5),0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
-      <call fun="gvf_parametric_3d_growing_lissajou(1,5,0,0.0005,90 * AC_ID,0.000005,90 * AC_ID)"/>
+      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID % 10),0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
+      <call fun="gvf_parametric_3d_growing_lissajou(1,5,0,0.0005,90 * (AC_ID % 10),0.000005,90 * (AC_ID % 10))"/>
     </block>
     
     <block name="Downind drifting ellipse">
@@ -120,11 +120,11 @@
       <set value="0.01" var="gvf_parametric_drift_ellipse_par.kz"/>
       <set value="5" var="gvf_parametric_drift_ellipse_par.v_x"/>
       <set value="1" var="gvf_parametric_coordination.kc"/>
-      <call_once fun="gvf_parametric_set_w_gain(1.)"/>
+      <set value="1." var="gvf_parametric_control.beta"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
-      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID-5),0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
-      <call fun="gvf_parametric_3d_drift_ellipse(5,2,4,0.05,90 * AC_ID)"/>
+      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID % 10),0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
+      <call fun="gvf_parametric_3d_drift_ellipse(5,2,4,0.05,90 * (AC_ID % 10))"/>
     </block>
     
     <block name="Mission GVF">

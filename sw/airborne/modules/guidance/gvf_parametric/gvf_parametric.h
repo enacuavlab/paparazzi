@@ -56,7 +56,7 @@
 
 /*! Default on/off coordination */
 #ifndef GVF_PARAMETRIC_COORDINATION_COORDINATION
-#define GVF_PARAMETRIC_COORDINATION_COORDINATION 1
+#define GVF_PARAMETRIC_COORDINATION_COORDINATION 0
 #endif
 
 /*! Default gain kc for the coordination algorithm */
