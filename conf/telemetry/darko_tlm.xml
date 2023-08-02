@@ -227,7 +227,7 @@
       <message name="LIDAR"                    period="0.05"/-->
       <message name="INS_EKF2"                 period="0.05"/>
       <message name="INS_EKF2_EXT"             period="0.1"/>
-      <message name="WIND_INFO_RET"            period="0.2"/>
+      <!-- <message name="WIND_INFO_RET"            period="0.2"/> -->
       <message name="AHRS_BIAS"                period="0.5"/>
       <!--message name="GUIDANCE_H_REF_INT"       period="0.02"/>
       <message name="GUIDANCE_INDI_HYBRID"     period="0.002"/-->

@@ -22,6 +22,7 @@
 #ifndef STABILIZATION_HOVER_WIND
 #define STABILIZATION_HOVER_WIND
 
+#include <inttypes.h>
 
 
 
@@ -29,6 +30,7 @@ extern void stabilization_hover_wind_init(void);
 extern void stabilization_hover_wind_run(bool in_flight);
 extern void stabilization_hover_takeoff(void);
 extern void stabilization_fill_cmd(void);
+extern void parse_wind_info_msg(uint8_t *buf);
 
 
 #endif /* STABILIZATION_HOVER_WIND */

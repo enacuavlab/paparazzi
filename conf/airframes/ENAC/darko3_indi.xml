@@ -171,12 +171,6 @@
       <!--define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/-->
     <!--/module-->
 
-    <module name="ahrs" type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="FALSE"/>
-      <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
-      <define name="AHRS_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
-    </module> 
-
 
     <!--we were using this normally /-->
     <!--<module name="ins" /> 
@@ -188,23 +182,35 @@
 
     <!--module name="ins" type="gps_passthrough"/-->
 
-    <!--module name="ins" type="ekf2">
+    <module name="ins" type="ekf2">
       <define name="INS_EKF2_OPTITRACK" value="true"/>
-    </module-->
+      <define name="INS_EKF2_ACCEL_ID" value="IMU_BOARD_ID"/>
+      <define name="INS_EKF2_GYRO_ID" value="IMU_BOARD_ID"/>
+      <define name="INS_EKF2_MAG_ID" value="MAG_HMC58XX_SENDER_ID"/>
+    </module>
 
-    <module name="ins" type="float_invariant">
+    <!-- <module name="ahrs" type="int_cmpl_quat">
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+      <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
+      <define name="AHRS_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
+      <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/>
+    </module>  -->
+
+    <!-- module name="ins"/ -->
+
+    <!-- <module name="ins" type="float_invariant">
       <define name="INS_PROPAGATE_FREQUENCY" value="500"/>
       <define name="INS_INV_USE_GPS_HEADING" value="1" />
       <define name="INS_INV_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
       <define name="SEND_INVARIANT_FILTER"/>
-      <!-- Setting for optitrack No baro-->
+     
       <define name="INS_INV_MH" value="0" />
       <define name="INS_INV_NH" value="0" />
       <define name="INS_INV_RH" value="0" />
       <define name="INS_INV_SH" value="0" />
       <define name="INS_INV_MVZ" value="8." />
       <define name="INS_INV_NXZ" value="0.8" />
-    </module>
+    </module> -->
 
 
     <!--module name="ins" type="extended">
@@ -369,14 +375,14 @@
     <define name="NAV_DESCEND_VSPEED" 	value="-1.5"/>
   </section>
 
-  <!-- <section name="AHRS" prefix="AHRS_"> -->
-    <!-- <define name="H_X" value="0.5138"/> -->
-    <!-- <define name="H_Y" value="0.00019"/> -->
-    <!-- <define name="H_Z" value="0.8578"/> -->
+  <section name="AHRS" prefix="AHRS_">
+     <define name="H_X" value="0.5138"/>
+     <define name="H_Y" value="0.00019"/> 
+    <define name="H_Z" value="0.8578"/> 
     <!-- <define name="GRAVITY_HEURISTIC_FACTOR" value="0"/> -->
     <!-- <define name="USE_GPS_HEADING" value="TRUE"/> -->
     <!-- <define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/> -->
-  <!-- </section> -->
+   </section> 
 
   <!--section name="INS" prefix="INS_">
     <define name="H_X" value="0.5138"/>

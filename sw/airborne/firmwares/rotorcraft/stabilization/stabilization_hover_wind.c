@@ -33,6 +33,10 @@
 #include <stdio.h>
 #include "modules/sensors/serial_act_t4.h"
 #include "modules/core/abi.h"
+#include "pprzlink/messages.h"
+#include "modules/datalink/datalink.h"
+#include "modules/datalink/downlink.h"
+#include "modules/loggers/flight_recorder.h"
 
 #include "generated/flight_plan.h"
 
@@ -50,14 +54,15 @@
 #define SMEUR_TO_BARTH_PSI 0.
 #endif
 
-#define POS_INC 0.02
+#define POS_INC 0.005
 
-#define COEFF_DABB 0
+#define COEFF_DABB 1
 
 #if COEFF_DABB == 1
   #include "coef_dabb_good.h"
 #else
   #include "coef.h"
+  //#include "coef_dabb_good_feed_neg.h"
 #endif
 
 
@@ -383,5 +388,20 @@ void stabilization_fill_cmd(void){
   
   
   AbiSendMsgSERIAL_ACT_T4_OUT(ABI_SERIAL_ACT_T4_OUT_ID, &myserial_act_t4_out_local, &serial_act_t4_extra_data_out_local[0]);
+}
+
+void parse_wind_info_msg(uint8_t *buf){
+  uint8_t ac_id_send = pprzlink_get_DL_WIND_INFO_ac_id(buf);
+  if(ac_id_send != AC_ID) { return; }
+  float airspeed = pprzlink_get_DL_WIND_INFO_airspeed(buf);
+  uint8_t flags = pprzlink_get_DL_WIND_INFO_flags(buf);
+
+  float empty = -1; 
+
+  #if FLIGHTRECORDER_SDLOG
+      // log to SD card
+      pprz_msg_send_WIND_INFO_RET(&pprzlog_tp.trans_tx, &(flightrecorder_sdlog).device, AC_ID, &flags, &empty, &empty, &empty, &airspeed);
+  #endif
+
 }
 
