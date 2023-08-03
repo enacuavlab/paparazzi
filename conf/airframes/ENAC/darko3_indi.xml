@@ -181,24 +181,24 @@
     <module name="gps" type="datalink"/>
 
     <!--module name="ins" type="gps_passthrough"/-->
+    <!-- module name="ins"/ -->
 
-    <module name="ins" type="ekf2">
+    <!--module name="ins" type="ekf2">
       <define name="INS_EKF2_OPTITRACK" value="true"/>
       <define name="INS_EKF2_ACCEL_ID" value="IMU_BOARD_ID"/>
       <define name="INS_EKF2_GYRO_ID" value="IMU_BOARD_ID"/>
       <define name="INS_EKF2_MAG_ID" value="MAG_HMC58XX_SENDER_ID"/>
-    </module>
+    </module-->
 
-    <!-- <module name="ahrs" type="int_cmpl_quat">
+    <module name="ahrs" type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="FALSE"/>
       <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
       <define name="AHRS_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
       <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/>
-    </module>  -->
+    </module> 
 
-    <!-- module name="ins"/ -->
-
-    <!-- <module name="ins" type="float_invariant">
+  
+    <module name="ins" type="float_invariant">
       <define name="INS_PROPAGATE_FREQUENCY" value="500"/>
       <define name="INS_INV_USE_GPS_HEADING" value="1" />
       <define name="INS_INV_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
@@ -210,7 +210,7 @@
       <define name="INS_INV_SH" value="0" />
       <define name="INS_INV_MVZ" value="8." />
       <define name="INS_INV_NXZ" value="0.8" />
-    </module> -->
+    </module>
 
 
     <!--module name="ins" type="extended">

@@ -56,12 +56,15 @@
 
 #define POS_INC 0.005
 
-#define COEFF_DABB 1
+#define COEFF_DABB 0
+
+#define FILTRE 1
 
 #if COEFF_DABB == 1
   #include "coef_dabb_good.h"
 #else
-  #include "coef.h"
+  //#include "coef.h"
+  #include "coef_systune.h"
   //#include "coef_dabb_good_feed_neg.h"
 #endif
 
@@ -281,42 +284,54 @@ void stabilization_hover_wind_run(bool in_flight){
 
   MAT_MUL(CTRL_HOVER_WIND_NUM_ACT, CTRL_HOVER_WIND_INPUT, 1, u_prop, K, eps);
 
-  float tf1_tmp;
-  float tf2_tmp;
-  float tf3_tmp;
-  float tf4_tmp;
+  if(FILTRE){
+    float tf1_tmp;
+    float tf2_tmp;
+    float tf3_tmp;
+    float tf4_tmp;
 
-  tf1_tmp = u_prop[0][0] - den[1]*tf_state1[0] - den[2]* tf_state1[1];
-  u_filter[0][0] = num[0]*tf1_tmp + num[1]*tf_state1[0] + num[2]*tf_state1[1];
-  tf_state1[1] = tf_state1[0];
-  tf_state1[0] = tf1_tmp;
+    tf1_tmp = u_prop[0][0] - den[1]*tf_state1[0] - den[2]* tf_state1[1];
+    u_filter[0][0] = num[0]*tf1_tmp + num[1]*tf_state1[0] + num[2]*tf_state1[1];
+    tf_state1[1] = tf_state1[0];
+    tf_state1[0] = tf1_tmp;
 
-  tf2_tmp = u_prop[1][0] - den[1]*tf_state2[0] - den[2]* tf_state2[1];
-  u_filter[1][0] = num[0]*tf2_tmp + num[1]*tf_state2[0] + num[2]*tf_state2[1];
-  tf_state2[1] = tf_state2[0];
-  tf_state2[0] = tf2_tmp;
+    tf2_tmp = u_prop[1][0] - den[1]*tf_state2[0] - den[2]* tf_state2[1];
+    u_filter[1][0] = num[0]*tf2_tmp + num[1]*tf_state2[0] + num[2]*tf_state2[1];
+    tf_state2[1] = tf_state2[0];
+    tf_state2[0] = tf2_tmp;
 
-  tf3_tmp = u_prop[2][0] - den[1]*tf_state3[0] - den[2]* tf_state3[1];
-  u_filter[2][0] = num[0]*tf3_tmp + num[1]*tf_state3[0] + num[2]*tf_state3[1];
-  tf_state3[1] = tf_state3[0];
-  tf_state3[0] = tf3_tmp;
+    tf3_tmp = u_prop[2][0] - den[1]*tf_state3[0] - den[2]* tf_state3[1];
+    u_filter[2][0] = num[0]*tf3_tmp + num[1]*tf_state3[0] + num[2]*tf_state3[1];
+    tf_state3[1] = tf_state3[0];
+    tf_state3[0] = tf3_tmp;
 
-  tf4_tmp = u_prop[3][0] - den[1]*tf_state4[0] - den[2]* tf_state4[1];
-  u_filter[3][0] = num[0]*tf4_tmp + num[1]*tf_state4[0] + num[2]*tf_state4[1];
-  tf_state4[1] = tf_state4[0];
-  tf_state4[0] = tf4_tmp;
-
+    tf4_tmp = u_prop[3][0] - den[1]*tf_state4[0] - den[2]* tf_state4[1];
+    u_filter[3][0] = num[0]*tf4_tmp + num[1]*tf_state4[0] + num[2]*tf_state4[1];
+    tf_state4[1] = tf_state4[0];
+    tf_state4[0] = tf4_tmp;
+  }
+  
 
   float integrator_repart[CTRL_HOVER_WIND_NUM_ACT][1] = {{u_integrator[0][0]}, {u_integrator[0][0]}, {u_integrator[1][0]}, {u_integrator[1][0]} };
 
   if(COEFF_DABB == 1){
-    MAT_SUB(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_filter);
+    if(FILTRE){
+      MAT_SUB(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_filter);
+    }
+    else{
+      MAT_SUB(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_prop);
+    }
   }
   else{
-    MAT_SUM(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_filter);
+    if(FILTRE){
+      MAT_SUM(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_filter);
+    }
+    else{
+      MAT_SUM(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_prop);
+    }
   }
  
-  //MAT_SUB(CTRL_HOVER_WIND_NUM_ACT, 1, u_sub, integrator_repart, u_prop);
+  //
   MAT_SUM(CTRL_HOVER_WIND_NUM_ACT, 1, u, ueq, u_sub);
 
 
