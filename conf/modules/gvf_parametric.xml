@@ -78,9 +78,9 @@
           <dl_setting MAX="10" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.kx" shortname="3d_growing_lissajou_kx" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KX"/>
           <dl_setting MAX="10" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.ky" shortname="3d_growing_lissajou_ky" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KY"/>
           <dl_setting MAX="10" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.kz" shortname="3d_growing_lissajou_kz" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KZ"/>
-          <dl_setting MAX="150" MIN="0.0" STEP="1" VAR="gvf_parametric_3d_growing_lissajou_par.ax" shortname="3d_growing_lissajou_ax" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AX"/>
-          <dl_setting MAX="150" MIN="0.0" STEP="1" VAR="gvf_parametric_3d_growing_lissajou_par.ay" shortname="3d_growing_lissajou_ay" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AY"/>
-          <dl_setting MAX="150" MIN="0.0" STEP="1" VAR="gvf_parametric_3d_growing_lissajou_par.az" shortname="3d_growing_lissajou_az" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AZ"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.ax" shortname="3d_growing_lissajou_ax" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AX"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.ay" shortname="3d_growing_lissajou_ay" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AY"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.az" shortname="3d_growing_lissajou_az" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AZ"/>
           <dl_setting MAX="10" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_growing_lissajou_par.f_y" shortname="3d_growing_lissajou_fy" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_F_Y"/>
           <dl_setting MAX="3.1415" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_growing_lissajou_par.phi_y" shortname="3d_growing_lissajou_phi_y" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_PHASE_Y"/>
           <dl_setting MAX="10" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_growing_lissajou_par.f_z" shortname="3d_growing_lissajou_fz" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_F_Z"/>
