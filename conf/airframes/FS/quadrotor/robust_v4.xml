@@ -15,7 +15,7 @@
     <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/>
 
     <target name="ap" board="tawaki_1.0">
-    <configure name="RTOS_DEBUG" value="1" />
+    <configure name="RTOS_DEBUG" value="0" />
     <module name="radio_control" type="sbus"/>
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
     <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
@@ -71,6 +71,9 @@
     <module name="ins" type="gps_passthrough"/>
     <module name="ahrs" type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="FALSE"/>
+      <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
+      <define name="AHRS_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
+      <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/>
     </module>
 
     <module name="air_data"/>
@@ -87,12 +90,19 @@
   </firmware>
 
   <servos driver="DShot">
-    <servo name="M1" no="5" min="0" neutral="100" max="2000"/>
+    <!-- <servo name="M1" no="5" min="0" neutral="100" max="2000"/>
     <servo name="M2" no="6" min="0" neutral="100" max="2000"/>
     <servo name="M3" no="7" min="0" neutral="100" max="2000"/>
     <servo name="M4" no="1" min="0" neutral="100" max="2000"/>
     <servo name="M5" no="2" min="0" neutral="100" max="2000"/>
-    <servo name="M6" no="3" min="0" neutral="100" max="2000"/>
+    <servo name="M6" no="3" min="0" neutral="100" max="2000"/> -->
+
+    <servo name="M1" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="M2" no="1" min="0" neutral="100" max="2000"/>
+    <servo name="M3" no="3" min="0" neutral="100" max="2000"/>
+    <servo name="M4" no="7" min="0" neutral="100" max="2000"/>
+    <servo name="M5" no="6" min="0" neutral="100" max="2000"/>
+    <servo name="M6" no="5" min="0" neutral="100" max="2000"/>
   </servos>
 
   <servos driver="Pwm">
@@ -165,9 +175,7 @@
   </section>
 
   <section name="AHRS" prefix="AHRS_">
-    <!-- Use GPS heading instead of magneto -->
-    <define name="USE_GPS_HEADING" value="1"/>
-    <define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
+
   </section>
 
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
