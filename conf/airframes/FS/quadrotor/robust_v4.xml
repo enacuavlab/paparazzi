@@ -26,10 +26,10 @@
       <module name="radio_control" type="ppm"/>
     </target>
 
-    <module name="shell">
+    <!-- <module name="shell">
       <configure name="SHELL_PORT" value="usb_serial_debug" />
     </module>
-    <module name="sys_mon"></module>
+    <module name="sys_mon"></module> -->
 
     <module name="telemetry" type="xbee_api"/>
     <module name="tlsf"/>
