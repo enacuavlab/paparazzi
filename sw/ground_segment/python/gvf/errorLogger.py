@@ -210,9 +210,11 @@ class ErrorLogger():
         
         ax1.set_xlabel("Time ellapsed (s)")
         ax1.set_ylabel("Distance (m)")
+        ax1.grid(True,'major','x')
         
         ax2.set_xlabel("Time ellapsed (s)")
         ax2.set_ylabel("Virtual coordinate (a.u.)")
+        ax2.grid(True,'major','x')
         
         for k,v in self.logs.items():
             color=color_correction(self.collector.ac_dict[k].config.color)
