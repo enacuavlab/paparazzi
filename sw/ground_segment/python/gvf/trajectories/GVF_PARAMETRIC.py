@@ -318,15 +318,15 @@ class Growing_Lissajou_3D(ParametricLineTrajectory):
 
     def _param_point(self, t: float) -> np.ndarray:
         xs = self.ax * t
-        ys = np.cos(2*np.pi*self.freq_y*t + self.phase_y)*self.ay*t
+        ys = np.sin(2*np.pi*self.freq_y*t + self.phase_y)*self.ay*t
         zs = np.sin(2*np.pi*self.freq_z*t + self.phase_z)*self.az*t
 
         return np.stack([xs, ys, zs])
 
     def _grad_param_point(self, t: float, step: float = 0.005) -> np.ndarray:
         xs = self.ax
-        ys = self.ay * np.cos(2*np.pi*self.freq_y*t + self.phase_y) - self.ay * 2*np.pi*self.freq_y * t * np.sin(2*np.pi*self.freq_y*t + self.phase_y);
-        zs = self.az * np.sin(2*np.pi*self.freq_z*t + self.phase_z) + self.az * 2*np.pi*self.freq_z * t * np.cos(2*np.pi*self.freq_z*t + self.phase_z);
+        ys = self.ay * np.sin(2*np.pi*self.freq_y*t + self.phase_y) + self.ay * 2*np.pi*self.freq_y * t * np.cos(2*np.pi*self.freq_y*t + self.phase_y)
+        zs = self.az * np.sin(2*np.pi*self.freq_z*t + self.phase_z) + self.az * 2*np.pi*self.freq_z * t * np.cos(2*np.pi*self.freq_z*t + self.phase_z)
 
         return np.stack([xs, ys, zs])
 
