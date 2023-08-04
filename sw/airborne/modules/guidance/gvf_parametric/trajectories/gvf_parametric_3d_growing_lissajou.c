@@ -113,12 +113,12 @@ void gvf_parametric_3d_growing_lissajou_info(float *f1, float *f2, float *f3, fl
   float u_z = 2*M_PI * f_z;
 
   *f1 = ax * wb;
-  *f2 = ay * wb * cosf(u_y*wb + phi_y);
+  *f2 = ay * wb * sinf(u_y*wb + phi_y);
   *f3 = az * wb * sinf(u_z*wb + phi_z);
   *f1d = ax;
-  *f2d = ay * cosf(u_y*wb + phi_y) - ay * u_y * wb * sinf(u_y*wb + phi_y);
+  *f2d = ay * sinf(u_y*wb + phi_y) + ay * u_y * wb * cosf(u_y*wb + phi_y);
   *f3d = az * sinf(u_z*wb + phi_z) + az * u_z * wb * cosf(u_z*wb + phi_z);
   *f1dd = 0.;
-  *f2dd = - ay * u_y * (2*sinf(u_y*wb+phi_y) + wb * u_y *cosf(u_y*wb+phi_y));
+  *f2dd = - ay * u_y * (2*cosf(u_y*wb+phi_y) - wb * u_y *sinf(u_y*wb+phi_y));
   *f3dd = az * u_z * (2*cosf(u_z*wb+phi_z) - wb * u_z *sinf(u_z*wb+phi_z));
 }
