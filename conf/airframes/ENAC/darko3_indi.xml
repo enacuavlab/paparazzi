@@ -194,7 +194,7 @@
       <configure name="USE_MAGNETOMETER" value="FALSE"/>
       <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
       <define name="AHRS_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
-      <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/>
+      <!--define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/-->
     </module> 
 
   
@@ -202,7 +202,7 @@
       <define name="INS_PROPAGATE_FREQUENCY" value="500"/>
       <define name="INS_INV_USE_GPS_HEADING" value="1" />
       <define name="INS_INV_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
-      <define name="SEND_INVARIANT_FILTER"/>
+      <define name="SEND_INVARIANT_FILTER" value="FALSE"/>
      
       <define name="INS_INV_MH" value="0" />
       <define name="INS_INV_NH" value="0" />
