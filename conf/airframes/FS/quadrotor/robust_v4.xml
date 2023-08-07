@@ -193,10 +193,10 @@
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="250"/>
     <define name="REF_ERR_Q" value="250"/>
-    <define name="REF_ERR_R" value="170"/>
+    <define name="REF_ERR_R" value="100"/>
     <define name="REF_RATE_P" value="30.0"/>
     <define name="REF_RATE_Q" value="30.0"/>
-    <define name="REF_RATE_R" value="15.0"/>
+    <define name="REF_RATE_R" value="2.0"/>
 
     <define name="MAX_R" value="120" unit="deg/s"/>
 
