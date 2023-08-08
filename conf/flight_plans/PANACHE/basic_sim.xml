@@ -70,7 +70,7 @@
     
     <block key="Ctrl+a" name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
       <circle radius="nav_radius" wp="STDBY"/>
-      <exception cond="NavBlockTime() @GT 30" deroute="Downind growing Lissajou"/>
+      <exception cond="NavBlockTime() @GT 30" deroute="Downind drifting ellipse"/>
     </block>
     
     <block name="Spiral RDV">
@@ -104,12 +104,12 @@
       <!--<call fun="gvf_parametric_3d_ellipse_wp_delta(WP_SRC, 200,200,30,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>-->
     </block>
     
-    <block name="Downind growing Lissajou">
-      <set value="0.5 + (((AC_ID-2) % 10) * 0.49)" var="gvf_parametric_control.L"/>
-      <set value="1*(1+((AC_ID-2) % 10) * 0.99)" var="gvf_parametric_control.beta"/>
-      <set value="0.5+((AC_ID-2) % 10) * 0.49" var="gvf_parametric_3d_growing_lissajou_par.kx"/>
-      <set value="0.5+((AC_ID-2) % 10) * 0.49" var="gvf_parametric_3d_growing_lissajou_par.ky"/>
-      <set value="0.5+((AC_ID-2) % 10) * 0.49" var="gvf_parametric_3d_growing_lissajou_par.kz"/>
+    <block name="Downind growing Lissajous">
+      <set value="1.5 + (((AC_ID-2) % 10) * 0.5)" var="gvf_parametric_control.L"/>
+      <set value="0.2*(1+((AC_ID-2) % 10) * 0.1)" var="gvf_parametric_control.beta"/>
+      <set value="0.002*(1+((AC_ID-1) % 10) * 20)" var="gvf_parametric_3d_growing_lissajou_par.kx"/>
+      <set value="0.002*(1+((AC_ID-1) % 10) * 20)" var="gvf_parametric_3d_growing_lissajou_par.ky"/>
+      <set value="0.0025*(1+((AC_ID-1) % 10) * 20)" var="gvf_parametric_3d_growing_lissajou_par.kz"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
       <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID % 10),0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
@@ -117,13 +117,12 @@
     </block>
     
     <block name="Downind drifting ellipse">
-      <set value="1." var="gvf_parametric_control.L"/>
-      <set value="0.01" var="gvf_parametric_drift_ellipse_par.kx"/>
-      <set value="0.01" var="gvf_parametric_drift_ellipse_par.ky"/>
-      <set value="0.01" var="gvf_parametric_drift_ellipse_par.kz"/>
-      <set value="5" var="gvf_parametric_drift_ellipse_par.v_x"/>
+      <set value="0.2 + (((AC_ID-1) % 10) * 0.2)" var="gvf_parametric_control.L"/>
+      <set value="0.5+(((AC_ID-1) % 10) * 0.1)" var="gvf_parametric_control.beta"/>
+      <set value="0.01+(((AC_ID-1) % 10) * 0.01)" var="gvf_parametric_drift_ellipse_par.kx"/>
+      <set value="0.01+(((AC_ID-1) % 10) * 0.01)" var="gvf_parametric_drift_ellipse_par.ky"/>
+      <set value="0.01+(((AC_ID-1) % 10) * 0.01)" var="gvf_parametric_drift_ellipse_par.kz"/>
       <set value="1" var="gvf_parametric_coordination.kc"/>
-      <set value="1." var="gvf_parametric_control.beta"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
       <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID % 10),0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
