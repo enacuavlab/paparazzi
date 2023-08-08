@@ -224,6 +224,7 @@ class ErrorLogger():
                      color=color)
             ax2.plot(timestamps*1e-3,ws,label=f"AC {k} virtual coordinate",
                      color=color)
+            print(f"AC {k} color: {color}")
             
         ax1.legend()
         ax2.legend()
