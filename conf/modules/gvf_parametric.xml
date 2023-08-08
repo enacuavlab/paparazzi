@@ -20,9 +20,9 @@
           <dl_setting MAX="1" MIN="-1" STEP="2" VAR="gvf_parametric_control.s" shortname = "direction"/>
           <dl_setting MAX="1.25" MIN="0.75" STEP="0.05" VAR="gvf_parametric_control.k_roll" shortname="k_roll" param="GVF_PARAMETRIC_CONTROL_KROLL"/>
           <dl_setting MAX="1.25" MIN="0.75" STEP="0.05" VAR="gvf_parametric_control.k_climb" shortname="k_climb" param="GVF_PARAMETRIC_CONTROL_KCLIMB"/>
-          <dl_setting MAX="10" MIN="0.001" STEP="0.05" VAR="gvf_parametric_control.L" shortname="L" param="GVF_PARAMETRIC_CONTROL_L"/>
-          <dl_setting MAX="2" MIN="0.001" STEP="0.005" VAR="gvf_parametric_control.beta" shortname="beta" param="GVF_PARAMETRIC_CONTROL_BETA"/>
-          <dl_setting MAX="2" MIN="0.5" STEP="0.01" VAR="gvf_parametric_control.k_psi" shortname="k_psi" param="GVF_PARAMETRIC_CONTROL_KPSI"/>
+          <dl_setting MAX="10" MIN="0.001" STEP="0.01" VAR="gvf_parametric_control.L" shortname="L" param="GVF_PARAMETRIC_CONTROL_L"/>
+          <dl_setting MAX="2" MIN="0.001" STEP="0.001" VAR="gvf_parametric_control.beta" shortname="beta" param="GVF_PARAMETRIC_CONTROL_BETA"/>
+          <dl_setting MAX="2" MIN="0.1" STEP="0.01" VAR="gvf_parametric_control.k_psi" shortname="k_psi" param="GVF_PARAMETRIC_CONTROL_KPSI"/>
         </dl_settings>
         <dl_settings NAME="Coordination">
           <dl_setting MAX="1" MIN="0" STEP="1" VAR="gvf_parametric_coordination.coordination" shortname = "Coordination" param="GVF_PARAMETRIC_COORDINATION_COORDINATION"/>
