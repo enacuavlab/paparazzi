@@ -301,7 +301,7 @@ class ErrorLogger():
         fig.suptitle(title)
         
         ax1.set_xlabel("Time ellapsed (s)")
-        ax1.set_ylabel("Coordination error (a.u.)")
+        ax1.set_ylabel("L1 Coordination error (a.u.)")
         
         ax2.set_xlabel("Time ellapsed (s)")
         ax2.set_ylabel("Virtual coordinate (a.u.)")
@@ -309,16 +309,16 @@ class ErrorLogger():
         for k,v in self.coord_logs.items():
             color=color_correction(self.collector.ac_dict[k].config.color)
             errors,_,_,_,_,_,coord_timestamps = v.to_numpy()
-            ax1.plot(coord_timestamps*1e-3,np.sum(np.abs(errors),1),label=f"AC {k} L1 local coordination error",
+            ax1.plot(coord_timestamps*1e-3,np.sum(np.abs(errors),1),label=f"AC {k}",
             color=color)
         
         total_timed_errors = self.__coordination_total_error()
-        ax1.plot(total_timed_errors[:,1]*1e-3,total_timed_errors[:,0],label="Global L1 coordination error")
+        ax1.plot(total_timed_errors[:,1]*1e-3,total_timed_errors[:,0],label="Global error")
         
         for k,v in self.logs.items():
             color=color_correction(self.collector.ac_dict[k].config.color)
             _,ws,timestamps = v.to_numpy()
-            ax2.plot(timestamps*1e-3,ws,label=f"AC {k} virtual coordinate",
+            ax2.plot(timestamps*1e-3,ws,label=f"AC {k}",
             color=color)
             
             
@@ -332,12 +332,12 @@ class ErrorLogger():
         savez_kwargs = dict()
         for k,v in self.coord_logs.items():
             errors,_,_,_,_,_,coord_timestamps = v.to_numpy()
-            savez_kwargs["AC_{}__l1err_ts"] = np.stack(np.sum(np.abs(errors),1),coord_timestamps)
+            savez_kwargs[f"AC_{k}__l1err_ts"] = np.stack([np.sum(np.abs(errors),1),coord_timestamps])
         
         packed_total_err_ts = self.__coordination_total_error()
         total_errs = np.asarray(packed_total_err_ts[:][0])
         total_ts = np.asarray(packed_total_err_ts[:][1])
-        savez_kwargs["Total_err_ts"] = np.stack(total_errs,total_ts)
+        savez_kwargs["Total_err_ts"] = np.stack([total_errs,total_ts])
         
         np.savez_compressed(filename,**savez_kwargs)
         
