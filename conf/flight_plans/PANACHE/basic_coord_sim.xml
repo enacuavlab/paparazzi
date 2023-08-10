@@ -37,6 +37,8 @@
     <module name="gvf_parametric">
     	<!-- Remove step normalization for benchmarking -->
     	<define name="GVF_PARAMETRIC_STEP_ADAPTATION" value="0"/>
+    	<!-- Turn on coordination -->
+    	<define name="GVF_PARAMETRIC_COORDINATION_COORDINATION" value="1"/>
     </module>
     <module name="mission_fw"/>
     <module name="gvf_mission"/>
