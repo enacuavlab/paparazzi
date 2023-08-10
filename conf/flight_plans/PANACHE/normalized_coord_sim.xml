@@ -34,7 +34,10 @@
     <module name="gvf_module">
       <define name="GVF_OCAML_GCS" value="FALSE"/>
     </module>
-    <module name="gvf_parametric"/>
+    <module name="gvf_parametric">
+    	<!-- Turn on coordination -->
+    	<define name="GVF_PARAMETRIC_COORDINATION_COORDINATION" value="1"/>
+    </module>
     <module name="mission_fw"/>
     <module name="gvf_mission"/>
   </modules>
