@@ -631,6 +631,8 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
     }
   }
 
+  #if GVF_PARAMETRIC_STEP_ADAPTATION == 1
+
   // Limit impact of coordination using appropriate activation functions
   // See https://en.wikipedia.org/wiki/Activation_function
   // float w_coordination = gvf_parametric_coordination.kc * consensus_term_w;
@@ -651,7 +653,11 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
       w_coordination_adjusted = -gvf_parametric_coordination.kc;
     }
   }
-  
+  #else
+  float w_coordination_adjusted = gvf_parametric_coordination.kc * consensus_term_w;
+
+  #endif
+
 
   std::cout << AC_ID << " W_dots : Individual " << X(3);
   std::cout << " | Consensus "<< consensus_term_w;
@@ -659,8 +665,6 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   std::cout << " | Coordination " << w_coordination_adjusted << std::endl;
 
   X(3) += w_coordination_adjusted;
-
-  
 
   // Jacobian
   J.setZero();
