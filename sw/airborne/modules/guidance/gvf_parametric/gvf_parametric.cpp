@@ -659,7 +659,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
     }
   }
   #else
-  float w_coordination_adjusted = gvf_parametric_coordination.kc * consensus_term_w;
+  w_coordination_adjusted = gvf_parametric_coordination.kc * consensus_term_w;
 
   #endif
 
