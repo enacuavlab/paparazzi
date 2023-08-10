@@ -70,7 +70,7 @@
     
     <block key="Ctrl+a" name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
       <circle radius="nav_radius" wp="STDBY"/>
-      <exception cond="NavBlockTime() @GT 30" deroute="Downind drifting ellipse"/>
+      <exception cond="NavBlockTime() @GT 30" deroute="3D Lissajous"/>
     </block>
     
     <block name="Spiral RDV">
@@ -110,7 +110,7 @@
       <set value="0.21" var="gvf_parametric_3d_growing_lissajou_par.kx"/>
       <set value="0.21" var="gvf_parametric_3d_growing_lissajou_par.ky"/>
       <set value="0.21" var="gvf_parametric_3d_growing_lissajou_par.kz"/>
-      <set value="1" var="gvf_parametric_coordination.kc"/>
+      <set value="0.01" var="gvf_parametric_coordination.kc"/>
       <set value="1" var="gvf_parametric_control.beta"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->

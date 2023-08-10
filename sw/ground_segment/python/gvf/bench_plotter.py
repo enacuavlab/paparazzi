@@ -5,7 +5,7 @@ from scipy import stats
 
 import argparse
 import typing
-import os
+import os,re
 import itertools
 from dataclasses import dataclass
 ######################################## Misc ########################################
@@ -48,14 +48,13 @@ def error_plot(exp_file:os.PathLike,name:str):
     ax2.grid(True,'major','x')
     
     min_time = np.inf
+    min_of_max_time = np.inf
     
     for k,v in data.items():
         colors = find_matching_colors(color_dict,k) 
         color = None if len(colors) == 0 else colors[0]
         
-        
-        
-        ac_id = k[3:5]
+        ac_id = re.search(r"[0-9]+",k).group(0)
         
         errors,ws,timestamps = v[0],v[1],v[2]
         ax1.plot(timestamps*1e-3,errors,label=f"AC {ac_id}",
@@ -65,8 +64,80 @@ def error_plot(exp_file:os.PathLike,name:str):
         print(f"AC {ac_id} color: {color}")
         
         min_time = min(min_time,np.min(timestamps*(1e-3)))
+        min_of_max_time = min(min_of_max_time,np.max(timestamps*(1e-3)))
         
-    ax1.set_xlim(left=min_time-5)
+    ax1.set_xlim(left=min_time-5,right=min_of_max_time+5)
+    ax1.set_ylim(bottom=-1,top=750)
+    
+    ax2.set_xlim(left=min_time-5)
+    ax2.set_ylim(bottom=0)
+    
+    ax1.legend()
+    ax2.legend()
+    plt.tight_layout()
+    plt.show()
+
+def coord_plot(exp_file:os.PathLike,coord_exp_file:os.PathLike,name:str):
+    data:typing.Dict[str,np.ndarray] = np.load(exp_file)
+    coord_data:typing.Dict[str,np.ndarray] = np.load(coord_exp_file)
+    
+    fig, (ax1,ax2) = plt.subplots(2,1,sharex=True)
+    ax1:Axes
+    ax2:Axes
+    
+    title = name
+    
+    fig.suptitle(title)
+    
+    ax1.set_xlabel("Time ellapsed (s)")
+    ax1.set_ylabel("Euclidean distance to guiding point (m)")
+    ax1.grid(True,'major','x')
+    
+    ax2.set_xlabel("Time ellapsed (s)")
+    ax2.set_ylabel("L1 distance to desired coordination (a.u.)")
+    ax2.grid(True,'major','x')
+    
+    min_time = np.inf
+    min_of_max_time = np.inf
+    
+    for k,v in data.items():
+        colors = find_matching_colors(color_dict,k) 
+        color = None if len(colors) == 0 else colors[0]
+        
+        ac_id = re.search(r"[0-9]+",k).group(0)
+        
+        errors,timestamps = v[0],v[2]
+        ax1.plot(timestamps*1e-3,errors,label=f"AC {ac_id}",
+                 color=color)
+        
+        print(f"AC {ac_id} color: {color}")
+        
+        min_time = min(min_time,np.min(timestamps*(1e-3)))
+        min_of_max_time = min(min_of_max_time,np.max(timestamps*(1e-3)))
+        
+        
+    total_num = 0
+    for k,v in coord_data.items():
+        print(k)
+        colors = find_matching_colors(color_dict,k) 
+        color = None if len(colors) == 0 else colors[0]
+        
+        try:
+            ac_id = re.search(r"[0-9]+",k).group(0)
+        except:
+            ac_id = f"Total {total_num}"
+            total_num += 1
+            
+        c_errors,timestamps = v[0],v[1]
+        if color is None:
+            ax2.plot(timestamps*1e-3,c_errors,"r-." if total_num == 1 else "b-.",
+                     label=ac_id)
+        else:
+            ax2.plot(timestamps*1e-3,c_errors,label=f"AC {ac_id}",
+                 color=color)
+        
+        
+    ax1.set_xlim(left=min_time-5,right=min_of_max_time+5)
     ax1.set_ylim(bottom=-1,top=750)
     
     ax2.set_xlim(left=min_time-5)
@@ -171,7 +242,7 @@ def print_all_error_analysis(exp_file:os.PathLike,name:str):
     data:typing.Dict[str,np.ndarray] = np.load(exp_file)
     
     for k,v in data.items():
-        ac_id = k[3:5]
+        ac_id = re.search(r"[0-9]+",k).group(0)
         __error_analysis(v,f"Exp {name} : AC {ac_id}")
 
 ## Plotting 
@@ -192,7 +263,7 @@ def one_summary_error_plot(exp_file:os.PathLike,name:str):
     for k,v in data.items():
         colors = find_matching_colors(color_dict,k) 
         color = None if len(colors) == 0 else colors[0]
-        ac_id = k[3:5]
+        ac_id = re.search(r"[0-9]+",k).group(0)
         err_results = __error_analysis(v,f"Exp {name} : AC {ac_id}")
         ax1.errorbar([i],[err_results.asympt_mean_err],
                      yerr=[[err_results.asympt_mean_err-err_results.asympt_min_err],
@@ -222,14 +293,17 @@ def one_summary_error_plot(exp_file:os.PathLike,name:str):
     plt.show()
 
 
-def all_summary_error_plot(exp_files:typing.List[os.PathLike],names=typing.List[str]):
+def all_summary_error_plot(exp_files:typing.List[os.PathLike],names=typing.List[str],coord:typing.Optional[typing.List[os.PathLike]]=None):
     fig, (ax1,ax2) = plt.subplots(2,1,sharex=True)
     ax1:Axes
     ax2:Axes
     fig.suptitle(f"Summarized analysis of individual path following benchmarks")
     
     # ax1.set_xlabel("Experiment")
-    ax1.set_ylabel("(min,mean,max) asymptotic error (m)")
+    if coord:
+        ax1.set_ylabel("(min,mean,max) asymptotic error (a.u.)")
+    else:
+        ax1.set_ylabel("(min,mean,max) asymptotic error (m)")
     ax2.set_xlabel("Experiment")
     ax2.set_ylabel("Convergence time (s)")
     
@@ -247,7 +321,7 @@ def all_summary_error_plot(exp_files:typing.List[os.PathLike],names=typing.List[
         for k,v in data.items():
             colors = find_matching_colors(color_dict,k) 
             color = None if len(colors) == 0 else colors[0]
-            ac_id = k[3:5]
+            ac_id = re.search(r"[0-9]+",k).group(0)
             err_results = __error_analysis(v,f"Exp {n} : AC {ac_id}")
             ax1.errorbar([i_offset*10+i],[err_results.asympt_mean_err],
                         yerr=[[err_results.asympt_mean_err-err_results.asympt_min_err],
@@ -281,13 +355,7 @@ def all_summary_error_plot(exp_files:typing.List[os.PathLike],names=typing.List[
     ax2.legend(loc='upper left')
     plt.tight_layout()
     plt.show()
-    
 
-def scatter_plots(exp_files:typing.List[os.PathLike],names=typing.List[str]):
-    for i,f in enumerate(exp_files):
-        data = np.load(f)
-        
-    return
 
 ######################################## Program entry point ########################################
 
@@ -309,16 +377,40 @@ def main():
                         help="List as long as 'bench files'. Precise the names for each plot. By default, it\
                         is left undefined, and the files names are used.")
     
+    parser.add_argument("-m","--merge",dest='merge',default=None,
+                        help="Merge the list of files instead, and output the merged result with the given as argument\
+                        of this flag")
+    
+    parser.add_argument("-c","--coord",dest='coord',nargs='*',default=None,
+                        help="Associated coordination files to the error files given as main argument. If this list is provided,\
+                            it must be as long as the main argument.")
+    
     args = parser.parse_args()
     
     
     files = [os.path.normpath(f) for f in args.files]
     names = [os.path.basename(f) for f in args.files] if args.names is None else args.names
     
-    for f,n in zip(files,names):
-        error_plot(f,n)
+    if args.merge is not None:
+        output = dict()
+        for f,n in zip(files,names):
+            data = np.load(f)
+            for k,v in data.items():
+                output[n+"_"+k] = v
+        np.savez_compressed(args.merge,**output)
+        exit(0)
     
-    all_summary_error_plot(files,names)
+    if args.coord is not None:
+        assert len(args.coord) == len(files)
+        coord_files = [os.path.normpath(f) for f in args.coord]
+        for f,c,n in zip(files,coord_files,names):
+            coord_plot(f,c,n)
+    else:
+        coord_files = None
+        for f,n in zip(files,names):
+            error_plot(f,n)
+    
+    all_summary_error_plot(files,names,coord_files)
 
         
     

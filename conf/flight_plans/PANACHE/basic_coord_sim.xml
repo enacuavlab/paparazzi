@@ -72,7 +72,7 @@
     
     <block key="Ctrl+a" name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
       <circle radius="nav_radius" wp="STDBY"/>
-      <exception cond="NavBlockTime() @GT 30" deroute="Downind drifting ellipse"/>
+      <exception cond="NavBlockTime() @GT 30" deroute="3D Lissajous"/>
     </block>
     
     <block name="Spiral RDV">
@@ -90,7 +90,7 @@
       <set value="0.042" var="gvf_parametric_3d_lissajous_par.ky"/>
       <set value="0.0525" var="gvf_parametric_3d_lissajous_par.kz"/>
       <set value="0.03" var="gvf_parametric_control.beta"/>
-      <set value="1" var="gvf_parametric_coordination.kc"/>
+      <set value="0.01" var="gvf_parametric_coordination.kc"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <call fun="gvf_parametric_3d_lissajous_XYZ(WaypointX(WP_SRC),WaypointY(WP_SRC),400,225,225,-20,1,2,2,0,90,0,0)"/>
     </block>
@@ -112,7 +112,7 @@
       <set value="0.042" var="gvf_parametric_3d_growing_lissajou_par.kx"/>
       <set value="0.042" var="gvf_parametric_3d_growing_lissajou_par.ky"/>
       <set value="0.0525" var="gvf_parametric_3d_growing_lissajou_par.kz"/>
-      <set value="1" var="gvf_parametric_coordination.kc"/>
+      <set value="0.01" var="gvf_parametric_coordination.kc"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
       <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID % 10),0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
@@ -125,7 +125,7 @@
       <set value="0.01" var="gvf_parametric_drift_ellipse_par.kx"/>
       <set value="0.01" var="gvf_parametric_drift_ellipse_par.ky"/>
       <set value="0.01" var="gvf_parametric_drift_ellipse_par.kz"/>
-      <set value="1" var="gvf_parametric_coordination.kc"/>
+      <set value="0.015" var="gvf_parametric_coordination.kc"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
       <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID % 10),0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
