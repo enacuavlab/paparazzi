@@ -77,9 +77,9 @@ def error_plot(exp_file:os.PathLike,name:str):
     plt.tight_layout()
     plt.show()
 
-def coord_plot(exp_file:os.PathLike,coord_exp_file:os.PathLike,name:str):
-    data:typing.Dict[str,np.ndarray] = np.load(exp_file)
-    coord_data:typing.Dict[str,np.ndarray] = np.load(coord_exp_file)
+def coord_plot(exp_files:typing.List[os.PathLike],coord_exp_files:typing.List[os.PathLike],name:str):
+    data_list:typing.Dict[str,np.ndarray] = [np.load(e) for e in exp_files]
+    coord_data_list:typing.Dict[str,np.ndarray] = [np.load(e) for e in coord_exp_files]
     
     fig, (ax1,ax2) = plt.subplots(2,1,sharex=True)
     ax1:Axes
@@ -100,43 +100,33 @@ def coord_plot(exp_file:os.PathLike,coord_exp_file:os.PathLike,name:str):
     min_time = np.inf
     min_of_max_time = np.inf
     
-    for k,v in data.items():
-        colors = find_matching_colors(color_dict,k) 
-        color = None if len(colors) == 0 else colors[0]
-        
-        ac_id = re.search(r"[0-9]+",k).group(0)
-        
-        errors,timestamps = v[0],v[2]
-        ax1.plot(timestamps*1e-3,errors,label=f"AC {ac_id}",
-                 color=color)
-        
-        print(f"AC {ac_id} color: {color}")
-        
-        min_time = min(min_time,np.min(timestamps*(1e-3)))
-        min_of_max_time = min(min_of_max_time,np.max(timestamps*(1e-3)))
-        
-        
-    total_num = 0
-    for k,v in coord_data.items():
-        print(k)
-        colors = find_matching_colors(color_dict,k) 
-        color = None if len(colors) == 0 else colors[0]
-        
-        try:
-            ac_id = re.search(r"[0-9]+",k).group(0)
-        except:
-            ac_id = f"Total {total_num}"
-            total_num += 1
+    for exp_data,coord_data in zip(data_list,coord_data_list):
+        first_color = None
+        ac_ids = []
+        for k,v in exp_data.items():
+            colors = find_matching_colors(color_dict,k) 
+            color = None if len(colors) == 0 else colors[0]
+            if first_color is None:
+                first_color = color
             
-        c_errors,timestamps = v[0],v[1]
-        if color is None:
-            ax2.plot(timestamps*1e-3,c_errors,"r-." if total_num == 1 else "b-.",
-                     label=ac_id)
-        else:
-            ax2.plot(timestamps*1e-3,c_errors,label=f"AC {ac_id}",
-                 color=color)
-        
-        
+            ac_id = re.search(r"[0-9]+",k).group(0)
+            ac_ids.append(ac_id)
+            
+            errors,timestamps = v[0],v[2]
+            ax1.plot(timestamps*1e-3,errors,label=f"AC {ac_id}",
+                    color=color)
+            
+            min_time = min(min_time,np.min(timestamps*(1e-3)))
+            min_of_max_time = min(min_of_max_time,np.max(timestamps*(1e-3)))
+        for k,v in coord_data.items():
+            if "total" in k.lower():
+                print(k)
+                coord_error,timestamps = v[0],v[1]
+                ax2.plot(timestamps*1e-3,coord_error,label=f"AC: {ac_ids}",
+                         color=first_color)
+            else:
+                continue
+                
     ax1.set_xlim(left=min_time-5,right=min_of_max_time+5)
     ax1.set_ylim(bottom=-1,top=750)
     
@@ -293,17 +283,14 @@ def one_summary_error_plot(exp_file:os.PathLike,name:str):
     plt.show()
 
 
-def all_summary_error_plot(exp_files:typing.List[os.PathLike],names=typing.List[str],coord:typing.Optional[typing.List[os.PathLike]]=None):
+def all_summary_error_plot(exp_files:typing.List[os.PathLike],names=typing.List[str]):
     fig, (ax1,ax2) = plt.subplots(2,1,sharex=True)
     ax1:Axes
     ax2:Axes
     fig.suptitle(f"Summarized analysis of individual path following benchmarks")
     
     # ax1.set_xlabel("Experiment")
-    if coord:
-        ax1.set_ylabel("(min,mean,max) asymptotic error (a.u.)")
-    else:
-        ax1.set_ylabel("(min,mean,max) asymptotic error (m)")
+    ax1.set_ylabel("(min,mean,max) asymptotic error (m)")
     ax2.set_xlabel("Experiment")
     ax2.set_ylabel("Convergence time (s)")
     
@@ -375,15 +362,11 @@ def main():
     
     parser.add_argument('--names',dest='names',nargs='*',default=None,
                         help="List as long as 'bench files'. Precise the names for each plot. By default, it\
-                        is left undefined, and the files names are used.")
-    
-    parser.add_argument("-m","--merge",dest='merge',default=None,
-                        help="Merge the list of files instead, and output the merged result with the given as argument\
-                        of this flag")
-    
+                        is left undefined, and the files names are used. If the 'coord' argument is set, only one name is expected")
+        
     parser.add_argument("-c","--coord",dest='coord',nargs='*',default=None,
                         help="Associated coordination files to the error files given as main argument. If this list is provided,\
-                            it must be as long as the main argument.")
+                            it must be as long as the main argument. All values are summarized in one graph.")
     
     args = parser.parse_args()
     
@@ -391,26 +374,17 @@ def main():
     files = [os.path.normpath(f) for f in args.files]
     names = [os.path.basename(f) for f in args.files] if args.names is None else args.names
     
-    if args.merge is not None:
-        output = dict()
-        for f,n in zip(files,names):
-            data = np.load(f)
-            for k,v in data.items():
-                output[n+"_"+k] = v
-        np.savez_compressed(args.merge,**output)
-        exit(0)
     
     if args.coord is not None:
         assert len(args.coord) == len(files)
         coord_files = [os.path.normpath(f) for f in args.coord]
-        for f,c,n in zip(files,coord_files,names):
-            coord_plot(f,c,n)
+        coord_plot(files,coord_files,names[0])
     else:
         coord_files = None
         for f,n in zip(files,names):
             error_plot(f,n)
     
-    all_summary_error_plot(files,names,coord_files)
+        all_summary_error_plot(files,names)
 
         
     
