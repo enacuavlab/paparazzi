@@ -616,4 +616,11 @@
 #define VEL_SP_FCR_ID 1 // Approach Moving Target
 #endif
 
+/*
+ * IDs of SERVO serial (message 37)
+ */
+#ifndef SERVO_POS_ID
+#define SERVO_POS_ID 1
+#endif
+
 #endif /* ABI_SENDER_IDS_H */

@@ -202,6 +202,10 @@ void serial_act_t4_parse_msg_in(void)
     serial_act_t4_extra_data_in[myserial_act_t4_in.rolling_msg_in_id] = myserial_act_t4_in.rolling_msg_in;
     //Send msg through ABI:
     AbiSendMsgSERIAL_ACT_T4_IN(ABI_SERIAL_ACT_T4_IN_ID, &myserial_act_t4_in, &serial_act_t4_extra_data_in[0]);
+
+    // Send RPM message from esc telemetry for INDI Stabilization
+    uint16_t rpm_list[2] = { myserial_act_t4_in.motor_1_rpm_int, myserial_act_t4_in.motor_2_rpm_int };
+    AbiSendMsgRPM(RPM_SENSOR_ID, rpm_list, 2);
 }
 
 /* Event checking if serial packet are available on the bus */

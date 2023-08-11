@@ -101,6 +101,8 @@
 
     <module name="actuators"     type="pwm">
       <define name="SERVO_HZ" value="400"/>
+      <define name="MOTOR_MAX_SPEED" value="16000"/>
+      <define name="MOTOR_MIN_SPEED" value="1000"/>
     </module>
 
     <!--module name="actuators" type="dshot">
@@ -352,8 +354,10 @@
     <define name="FILT_CUTOFF" value="5.0"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN" value="{0.04, 0.04, 0.025, 0.025}"/>
-    <define name="ACT_RATE_LIMIT" value="{120, 120, 9600, 9600}"/>
+    <define name="RPM_FEEDBACK" value="FALSE"/>
+    <define name="SERVO_FEEDBACK" value="FALSE"/>
+    <define name="ACT_DYN" value="{0.04, 0.04, 0.025, 0.025}"/> 
+    <define name="ACT_RATE_LIMIT" value="{120, 120, 9600, 9600}"/> 
     <define name="ACT_IS_SERVO"   value="{1, 1, 0, 0}"/>
 
     <!-- Adaptive Learning Rate -->

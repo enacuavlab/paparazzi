@@ -46,6 +46,7 @@
       <message name="ESC"                      period="0.5"/>
       <message name="AHRS_REF_QUAT"            period="0.1"/>
       <message name="GPS_RTK"                  period="0.1"/>
+      <message name="PAYLOAD_FLOAT"            period=".1"/>
     </mode>
 
     <mode name="calibration">

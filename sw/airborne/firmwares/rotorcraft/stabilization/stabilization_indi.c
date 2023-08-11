@@ -142,6 +142,11 @@ float indi_Wu[INDI_NUM_ACT] = STABILIZATION_INDI_WLS_WU;
 float indi_Wu[INDI_NUM_ACT] = {[0 ... INDI_NUM_ACT-1] = 1.0};
 #endif
 
+
+bool indi_use_rpm_feedback = STABILIZATION_INDI_RPM_FEEDBACK;
+bool indi_use_servo_feedback = STABILIZATION_INDI_SERVO_FEEDBACK;
+
+
 // variables needed for control
 float actuator_state_filt_vect[INDI_NUM_ACT];
 struct FloatRates angular_accel_ref = {0., 0., 0.};
@@ -178,8 +183,13 @@ int32_t num_thrusters;
 struct Int32Eulers stab_att_sp_euler;
 struct Int32Quat   stab_att_sp_quat;
 
+
+
 abi_event rpm_ev;
 static void rpm_cb(uint8_t sender_id, uint16_t *rpm, uint8_t num_act);
+
+abi_event servo_pos_ev;
+static void servo_pos_cb(uint8_t sender_id, uint16_t *pos, uint8_t num_servo);
 
 abi_event thrust_ev;
 static void thrust_cb(uint8_t sender_id, float thrust_increment);
@@ -233,6 +243,12 @@ static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *d
                               &(quat->qy),
                               &(quat->qz));
 }
+// static void send_payload_float(struct transport_tx *trans, struct link_device *dev)
+// {
+//   float f[4] = {actuator_state[0], actuator_state[1], actuator_state[2], actuator_state[3],
+//                };
+//   pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 8, f);
+// }
 #endif
 
 /**
@@ -244,6 +260,7 @@ void stabilization_indi_init(void)
   init_filters();
 
   AbiBindMsgRPM(RPM_SENSOR_ID, &rpm_ev, rpm_cb);
+  AbiBindMsgRPM(SERVO_POS_ID, &servo_pos_ev, servo_pos_cb);
   AbiBindMsgTHRUST(THRUST_INCREMENT_ID, &thrust_ev, thrust_cb);
 
   float_vect_zero(actuator_state_filt_vectd, INDI_NUM_ACT);
@@ -278,6 +295,7 @@ void stabilization_indi_init(void)
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_INDI_G, send_indi_g);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_REF_QUAT, send_ahrs_ref_quat);
+  // register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PAYLOAD_FLOAT, send_payload_float);
 #endif
 }
 
@@ -647,28 +665,52 @@ void stabilization_indi_read_rc(bool in_flight, bool in_carefree, bool coordinat
  */
 void get_actuator_state(void)
 {
-#if INDI_RPM_FEEDBACK
-  float_vect_copy(actuator_state, act_obs, INDI_NUM_ACT);
-#else
-  //actuator dynamics
+// #if INDI_RPM_FEEDBACK
+//   float_vect_copy(actuator_state, act_obs, INDI_NUM_ACT);
+// #else
+//   //actuator dynamics
+//   int8_t i;
+//   float UNUSED prev_actuator_state;
+//   for (i = 0; i < INDI_NUM_ACT; i++) {
+//     prev_actuator_state = actuator_state[i];
+
+//     actuator_state[i] = actuator_state[i]
+//                         + act_dyn[i] * (indi_u[i] - actuator_state[i]);
+
+// #ifdef STABILIZATION_INDI_ACT_RATE_LIMIT
+//     if ((actuator_state[i] - prev_actuator_state) > act_rate_limit[i]) {
+//       actuator_state[i] = prev_actuator_state + act_rate_limit[i];
+//     } else if ((actuator_state[i] - prev_actuator_state) < -act_rate_limit[i]) {
+//       actuator_state[i] = prev_actuator_state - act_rate_limit[i];
+//     }
+// #endif
+//   }
+
+// #endif
   int8_t i;
   float UNUSED prev_actuator_state;
   for (i = 0; i < INDI_NUM_ACT; i++) {
-    prev_actuator_state = actuator_state[i];
-
-    actuator_state[i] = actuator_state[i]
-                        + act_dyn[i] * (indi_u[i] - actuator_state[i]);
-
-#ifdef STABILIZATION_INDI_ACT_RATE_LIMIT
-    if ((actuator_state[i] - prev_actuator_state) > act_rate_limit[i]) {
-      actuator_state[i] = prev_actuator_state + act_rate_limit[i];
-    } else if ((actuator_state[i] - prev_actuator_state) < -act_rate_limit[i]) {
-      actuator_state[i] = prev_actuator_state - act_rate_limit[i];
+    if(indi_use_rpm_feedback && !act_is_servo[i]){
+      actuator_state[i] = act_obs[i];
     }
-#endif
-  }
+    else if(indi_use_servo_feedback && act_is_servo[i]){
+      actuator_state[i] = act_obs[i];
+    }
+    else{
+      prev_actuator_state = actuator_state[i];
 
-#endif
+      actuator_state[i] = actuator_state[i]
+                          + act_dyn[i] * (indi_u[i] - actuator_state[i]);
+
+      #ifdef STABILIZATION_INDI_ACT_RATE_LIMIT
+          if ((actuator_state[i] - prev_actuator_state) > act_rate_limit[i]) {
+            actuator_state[i] = prev_actuator_state + act_rate_limit[i];
+          } else if ((actuator_state[i] - prev_actuator_state) < -act_rate_limit[i]) {
+            actuator_state[i] = prev_actuator_state - act_rate_limit[i];
+          }
+      #endif
+    }
+  }
 }
 
 /**
@@ -846,16 +888,44 @@ void calc_g1g2_pseudo_inv(void)
   }
 }
 
+/**
+ * ABI callback that obtains the rpm from esc
+ */
 static void rpm_cb(uint8_t __attribute__((unused)) sender_id, uint16_t UNUSED *rpm, uint8_t UNUSED num_act)
 {
-#if INDI_RPM_FEEDBACK
-  int8_t i;
-  for (i = 0; i < num_act; i++) {
-    act_obs[i] = (rpm[i] - get_servo_min(i));
-    act_obs[i] *= (MAX_PPRZ / (float)(get_servo_max(i) - get_servo_min(i)));
-    Bound(act_obs[i], 0, MAX_PPRZ);
-  }
-#endif
+  #if STABILIZATION_INDI_RPM_FEEDBACK
+    int8_t i;
+    int8_t idx_motor = 0;
+    for (i = 0; i < INDI_NUM_ACT; i++) {
+      if(!act_is_servo[i]){
+        act_obs[i] = (rpm[idx_motor] - MOTOR_MIN_SPEED);
+        act_obs[i] *= (MAX_PPRZ / (float)(MOTOR_MAX_SPEED - MOTOR_MIN_SPEED));
+        Bound(act_obs[i], 0, MAX_PPRZ);
+        idx_motor +=1;
+      }
+      
+    }
+  #endif
+}
+
+/**
+ * ABI callback that obtains the pos from serial servo (STS3032, ...)
+ */
+static void servo_pos_cb(uint8_t __attribute__((unused)) sender_id, uint16_t UNUSED *pos, uint8_t UNUSED num_servo)
+{
+  #if STABILIZATION_INDI_SERVO_FEEDBACK
+    int8_t i;
+    int8_t idx_servo = 0;
+    for (i = 0; i < INDI_NUM_ACT; i++) {
+      if(act_is_servo[i]){
+        act_obs[i] = (pos[idx_servo] - get_servo_min(i));
+        act_obs[i] *= (MAX_PPRZ / (float)(get_servo_max(i) - get_servo_min(i)));
+        Bound(act_obs[i], 0, MAX_PPRZ);
+        idx_servo += 1;
+      }
+      
+    }
+  #endif
 }
 
 /**
