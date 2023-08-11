@@ -335,8 +335,8 @@ class ErrorLogger():
             savez_kwargs[f"AC_{k}__l1err_ts"] = np.stack([np.sum(np.abs(errors),1),coord_timestamps])
         
         packed_total_err_ts = self.__coordination_total_error()
-        total_errs = np.asarray(packed_total_err_ts[:][0])
-        total_ts = np.asarray(packed_total_err_ts[:][1])
+        total_errs = packed_total_err_ts[:,0]
+        total_ts = packed_total_err_ts[:,1]
         savez_kwargs["Total_err_ts"] = np.stack([total_errs,total_ts])
         
         np.savez_compressed(filename,**savez_kwargs)

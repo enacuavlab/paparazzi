@@ -118,12 +118,14 @@ def coord_plot(exp_files:typing.List[os.PathLike],coord_exp_files:typing.List[os
             
             min_time = min(min_time,np.min(timestamps*(1e-3)))
             min_of_max_time = min(min_of_max_time,np.max(timestamps*(1e-3)))
+            print("Mean path following error:",k,np.mean(errors[len(errors)//2:]))
         for k,v in coord_data.items():
-            if "total" in k.lower():
-                print(k)
+            if "12" in k.lower() or "22" in k.lower():
                 coord_error,timestamps = v[0],v[1]
                 ax2.plot(timestamps*1e-3,coord_error,label=f"AC: {ac_ids}",
                          color=first_color)
+                print("Mean coordination error:",k,np.mean(coord_error[len(coord_error)//2:]))
+
             else:
                 continue
                 
