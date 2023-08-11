@@ -72,7 +72,7 @@
     
     <block key="Ctrl+a" name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
       <circle radius="nav_radius" wp="STDBY"/>
-      <exception cond="NavBlockTime() @GT 30" deroute="3D Lissajous"/>
+      <exception cond="NavBlockTime() @GT 30" deroute="Downind drifting ellipse"/>
     </block>
     
     <block name="Spiral RDV">
