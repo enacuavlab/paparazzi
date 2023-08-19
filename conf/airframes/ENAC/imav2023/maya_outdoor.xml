@@ -216,6 +216,7 @@
     <define name="ARRIVED_AT_WAYPOINT" value="2."/>
     <define name="NAV_CLIMB_VSPEED" value="1.0"/>
     <define name="NAV_DESCEND_VSPEED" value="-0.5"/>
+    <define name="NAV_CARROT_DIST" value="18"/>
   </section>
 
   <section name="BAT">
