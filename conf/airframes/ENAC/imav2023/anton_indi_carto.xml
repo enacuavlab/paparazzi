@@ -66,10 +66,10 @@
     <module name="actuators" type="pwm"/>
     <module name="switch" type="servo"/>
 
-    <module name="filter" type="1euro_imu">
+    <!--module name="filter" type="1euro_imu">
       <define name="AHRS_ICQ_IMU_ID" value="IMU_F1E_ID"/>
       <define name="AHRS_ALIGNER_IMU_ID" value="IMU_F1E_ID"/>
-    </module>
+    </module-->
 
     <!--module name="sonar_adc">
       <configure name="ADC_SONAR" value="ADC_1"/>
@@ -157,7 +157,7 @@
     <define name="LIS3MDL_MAG_TO_IMU_PSI" value="90." unit="deg"/>
   </section>
 
-  <include href="conf/mag/delft_valkenburg.xml"/>
+  <include href="conf/mag/toulouse_muret.xml"/>
 
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
     <!-- setpoints -->

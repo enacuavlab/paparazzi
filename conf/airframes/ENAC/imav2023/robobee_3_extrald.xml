@@ -54,10 +54,10 @@
     </module>
     <module name="air_data"/>
 
-    <module name="filter" type="1euro_imu">
+    <!--module name="filter" type="1euro_imu">
       <define name="AHRS_ICQ_IMU_ID" value="IMU_F1E_ID"/>
       <define name="AHRS_ALIGNER_IMU_ID" value="IMU_F1E_ID"/>
-    </module>
+    </module-->
 
     <module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART4" description="dummy uart in this config"/>

@@ -33,12 +33,6 @@
       <!--Switch advanced INDI scheduling functions on or off-->
       <define name="INDI_FUNCTIONS_RC_CHANNEL" value="6"/>
 
-      <module name="extra_dl">
-        <configure name="EXTRA_DL_PORT" value="uart3"/>
-        <configure name="EXTRA_DL_BAUD" value="B57600"/>
-      </module>
-
-      <define name="DC_SHOT_EXTRA_DL" value="TRUE"/>
     </target>
 
     <target name="nps" board="pc">
@@ -55,10 +49,6 @@
     <module name="eff_scheduling_falcon">
       <define name="EFF_PITCH_A" value="0.35"/>
       <define name="EFF_YAW_A" value="0.045"/>
-    </module>
-
-    <module name="digital_cam">
-      <define name="DC_SHUTTER_GPIO" value="GPIOA,GPIO0"/>
     </module>
 
     <!-- <module name="actuators" type="pwm"> -->
@@ -210,12 +200,12 @@
     <define name= "MAG_Y_CURRENT_COEF" value="-32.4484676944"/>
     <define name= "MAG_Z_CURRENT_COEF" value="-1421.95651899"/>
 
-    <define name="MAG_X_NEUTRAL" value="462"/>
-    <define name="MAG_Y_NEUTRAL" value="328"/>
-    <define name="MAG_Z_NEUTRAL" value="-967"/>
-    <define name="MAG_X_SENS" value="0.6419609542200897" integer="16"/>
-    <define name="MAG_Y_SENS" value="0.646263518106704" integer="16"/>
-    <define name="MAG_Z_SENS" value="0.6330853494804739" integer="16"/>
+    <define name="MAG_X_NEUTRAL" value="-33"/>
+    <define name="MAG_Y_NEUTRAL" value="1485"/>
+    <define name="MAG_Z_NEUTRAL" value="1184"/>
+    <define name="MAG_X_SENS" value="0.6709952296917457" integer="16"/>
+    <define name="MAG_Y_SENS" value="0.6497329786931962" integer="16"/>
+    <define name="MAG_Z_SENS" value="0.6842444448328998" integer="16"/>
 
     <define name="ACCEL_X_SIGN" value="1"/>
     <define name="ACCEL_Y_SIGN" value="1"/>

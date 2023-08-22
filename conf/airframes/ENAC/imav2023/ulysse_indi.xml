@@ -137,7 +137,8 @@
   <section name="MAG">
     <define name="LIS3MDL_MAG_TO_IMU_PHI" value="0." unit="deg"/>
     <define name="LIS3MDL_MAG_TO_IMU_THETA" value="0." unit="deg"/>
-    <define name="LIS3MDL_MAG_TO_IMU_PSI" value="135." unit="deg"/>
+    <define name="LIS3MDL_MAG_TO_IMU_PSI" value="0." unit="deg"/>
+    <!--define name="LIS3MDL_MAG_TO_IMU_PSI" value="135." unit="deg"/-->
   </section>
 
   <include href="conf/mag/germany_aachen.xml"/>

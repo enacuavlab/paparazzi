@@ -241,6 +241,7 @@
       <stay wp="START_DYN" height="dynamic_height"/>
     </block>
     <block name="Run Dynamic" strip_button="Run Dyn" group="mission">
+      <call_once fun="guidance_h_SetMaxSpeed(dynamic_speed)"/>
       <!--path wpts="START_DYN,D1,D2,D3,D4,START_DYN"/-->
       <!--call fun="dynamic_inspection_run()"/-->
       <go wp="D1" from="START_DYN" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_P1)" approaching_time="4"/>
