@@ -279,13 +279,13 @@ void gps_periodic_check(struct GpsState *gps_s)
 
 bool gps_fix_valid(void)
 {
-  bool gps_3d_valid = true;
+  bool gps_3d_timeout_valid = false;
 #ifdef GPS_FIX_TIMEOUT
-  if (get_sys_time_float() - gps_time_since_last_3dfix() >= GPS_FIX_TIMEOUT) {
-    gps_3d_valid = false;
+  if (get_sys_time_float() - gps_time_since_last_3dfix() < GPS_FIX_TIMEOUT) {
+    gps_3d_timeout_valid = true;
   }
 #endif
-  return (gps.fix >= GPS_FIX_3D && gps_3d_valid);
+  return (gps.fix >= GPS_FIX_3D || gps_3d_timeout_valid);
 }
 
 
