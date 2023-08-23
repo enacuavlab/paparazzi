@@ -69,7 +69,7 @@ void mag_lis3mdl_module_init(void)
   };
   int32_rmat_of_eulers(&mag_to_imu, &mag_to_imu_eulers);
 
-  imu_set_defaults_mag(MAG_LIS3MDL_SENDER_ID, &mag_to_imu, NULL, NULL)
+  imu_set_defaults_mag(MAG_LIS3MDL_SENDER_ID, &mag_to_imu, NULL, NULL);
 #endif
 }
 
