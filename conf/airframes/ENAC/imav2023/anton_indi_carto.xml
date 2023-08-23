@@ -139,12 +139,12 @@
     <define name="MAG_X_SIGN" value="-1"/>
     <define name="MAG_Y_SIGN" value="-1"/>
     <define name="MAG_Z_SIGN" value="1"/>
-    <define name="MAG_X_NEUTRAL" value="156"/>
-    <define name="MAG_Y_NEUTRAL" value="-2401"/>
-    <define name="MAG_Z_NEUTRAL" value="1655"/>
-    <define name="MAG_X_SENS" value="0.6661220068138097" integer="16"/>
-    <define name="MAG_Y_SENS" value="0.6668353119336426" integer="16"/>
-    <define name="MAG_Z_SENS" value="0.6535838875513321" integer="16"/>
+    <define name="MAG_X_NEUTRAL" value="594"/>
+    <define name="MAG_Y_NEUTRAL" value="-1878"/>
+    <define name="MAG_Z_NEUTRAL" value="1837"/>
+    <define name="MAG_X_SENS" value="0.7912594540842149" integer="16"/>
+    <define name="MAG_Y_SENS" value="0.7326687982733084" integer="16"/>
+    <define name="MAG_Z_SENS" value="0.6729825749753228" integer="16"/>
 
     <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
@@ -154,7 +154,7 @@
   <section name="MAG">
     <define name="LIS3MDL_MAG_TO_IMU_PHI" value="0." unit="deg"/>
     <define name="LIS3MDL_MAG_TO_IMU_THETA" value="0." unit="deg"/>
-    <define name="LIS3MDL_MAG_TO_IMU_PSI" value="90." unit="deg"/>
+    <define name="LIS3MDL_MAG_TO_IMU_PSI" value="0." unit="deg"/>
   </section>
 
   <include href="conf/mag/toulouse_muret.xml"/>
