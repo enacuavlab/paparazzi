@@ -8,17 +8,17 @@
     #define FP_DYNAMIC    3
     #define FP_HICKERS    4
 
+    #if DIGITAL_CAM
+    #define LINE_START_FUNCTION dc_Survey(mapping_shot_distance);
+    #define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
+    #endif
+
     #ifdef NAV_C
     #ifndef TAG_TRACKING_COORD_TO_M
     #define TAG_TRACKING_COORD_TO_M (1.f / 1000.f)
     #ifdef SITL
     #define jevois_stream(_x) {}
     #endif
-    #endif
-
-    #if DIGITAL_CAM
-    #define LINE_START_FUNCTION dc_Survey(fp_shot_distance);
-    #define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
     #endif
 
     static void fp_tag_cb(uint8_t sender_id UNUSED,
@@ -115,6 +115,7 @@
     <variable init="40." var="mapping_sweep" min="5." max="20." step="0.1"/>
     <variable init="7." var="mapping_speed" min="0.5" max="10." step="0.1"/>
     <variable init="-1." var="mapping_radius" min="-1." max="100." step="1.0"/>
+    <variable init="20." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
     <variable init="15." var="dynamic_height" min="5." max="120." step="0.1"/>
     <variable init="6." var="dynamic_valid_height" min="1." max="10." step="0.1"/>
     <variable init="10." var="dynamic_speed" min="0.5" max="20." step="0.1"/>
