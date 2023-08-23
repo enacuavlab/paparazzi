@@ -46,6 +46,7 @@
     <module name="gps" type="ublox">
       <configure name="GPS_BAUD" value="B115200"/>
       <define name="USE_GPS_UBX_RTCM" value="TRUE"/>
+      <define name="GPS_FIX_TIMEOUT" value="0.5"/>
     </module>
 
     <module name="stabilization" type="indi"/>
