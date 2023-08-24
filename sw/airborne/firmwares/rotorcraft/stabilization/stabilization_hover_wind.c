@@ -64,9 +64,12 @@
   #include "coef_dabb_good.h"
 #else
   //#include "coef.h"
-  //#include "coef_systune.h"
-  //#include "coef_dabb_good_feed_neg_4.h"
-  #include "coef_dabb_good_feed_neg.h"
+  //  #include "coef_systune.h"
+  // #include "coef_systune_struct.h"
+  #include "coef_systune_struct_armand.h"
+  // #include "coef_systune_decouplage.h"
+  //#include "coef_dabb_good_feed_neg_3.h"
+  // #include "coef_dabb_good_feed_neg.h"
 #endif
 
 
@@ -215,13 +218,16 @@ void stabilization_hover_wind_init(void){
 
   //Init abi bind msg to Teensy 4.0:
   AbiBindMsgSERIAL_ACT_T4_IN(ABI_BROADCAST, &SERIAL_ACT_T4_IN, serial_act_t4_abi_in);
+  rc_x = 0;
+  rc_y = 0;
+  rc_z = 0;
 }
 
 void stabilization_hover_wind_run(bool in_flight){
 
   rc_x = -(radio_control.values[RADIO_PITCH]/9600.0); //[-1, 1]
   rc_y = (radio_control.values[RADIO_ROLL]/9600.0); //[-1, 1]
-  rc_z = -(radio_control.values[RADIO_THROTTLE]/9600.0)- 0.5; //[-0.5, 0.5]
+  rc_z = (radio_control.values[RADIO_THROTTLE]/9600.0); 
 
  
   if(fabs(rc_x) >= 0.5){
@@ -231,14 +237,13 @@ void stabilization_hover_wind_run(bool in_flight){
   if(fabs(rc_y) >= 0.5){
      pos_target.y += rc_y*POS_INC;
   }
-
-   /*
-  if(fabs(rc_y) >= 0.125){
-     pos_target.z += 2*rc_z*POS_INC;
+ 
+  if(rc_z == 1){
+     pos_target.x = 2.34;
+     pos_target.y = 1.69;
+     pos_target.z = -1.28;
   }
-  */
-  
-  
+   
   
 
   struct FloatVect3 barth_rate, smeur_rate;
