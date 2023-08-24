@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="215" ground_alt="185" lat0="43.4625" lon0="1.27288" max_dist_from_home="250" name="Muret safety" security_height="10" home_mode_height="30">
+<flight_plan alt="157" ground_alt="147" lat0="43.5634" lon0="1.48448" max_dist_from_home="80" name="Enac test wind quad" security_height="1" wp_frame="ltp">
   <header>
     #define FP_NONE       0
     #define FP_ENDURANCE  1
@@ -12,6 +12,20 @@
     #define LINE_START_FUNCTION dc_Survey(mapping_shot_distance);
     #define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
     #endif
+
+#if DIGITAL_CAM
+#ifndef SITL
+static inline void set_expo(float e) {
+  uint8_t tab[2];
+  tab[0] = 'e';
+  tab[1] = (uint8_t)(e * 10.f);
+  DOWNLINK_SEND_PAYLOAD_COMMAND(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, 0, 2, tab);
+}
+#else
+#include "stdio.h"
+#define set_expo(_e) { printf("setting expo %f\n",_e); fflush(stdout); }
+#endif
+#endif
 
     #ifdef NAV_C
     #ifndef TAG_TRACKING_COORD_TO_M
@@ -58,41 +72,34 @@
     #endif
   </header>
   <waypoints>
-    <waypoint name="HOME" x="40.256" y="59.629"/>
-    <waypoint name="STDBY" x="-8.6" y="1.9"/>
-    <waypoint name="LANDPAD" x="-19.9" y="-4.5"/>
-    <waypoint name="TAG" x="-25.9" y="38.4"/>
-    
-    <waypoint name="SILENT" x="30.3" y="21.3"/>
-    
-    <waypoint name="HICKERS" x="55.617" y="83.606"/>
-    <waypoint name="ENDURANCE" x="33.453" y="93.523"/>
-    <waypoint name="START_DYN" x="10" y="10"/>
-    
-    <waypoint name="D1" x="108.724" y="-22.013"/>
-    <waypoint name="D2" x="-70.894" y="48.611"/>
-    <waypoint name="D3" x="-18.653" y="178.684"/>
-    <waypoint name="D4" x="155.787" y="108.568"/>
-    <waypoint name="P1" x="-7.4" y="51.3"/>
-    <waypoint name="P2" x="85.3" y="13.8"/>
-    <waypoint name="_FLY1" x="-58.218" y="233.713"/>
-    <waypoint name="_FLY2" x="242.538" y="145.974"/>
-    <waypoint name="_FLY3" x="197.631" y="-75.443"/>
-    <waypoint name="_FLY4" x="-156.512" y="16.249"/>
-    <waypoint name="_KILL1" x="-67.8" y="259.468"/>
-    <waypoint name="_KILL2" x="261.724" y="158.522"/>
-    <waypoint name="_KILL3" x="215.901" y="-95.533"/>
-    <waypoint name="_KILL4" x="-186.688" y="5.17"/>
+    <waypoint name="HOME" x="-1.609" y="7.42"/>
+    <waypoint name="STDBY" x="-24.0" y="32.6"/>
+    <waypoint name="LANDPAD" x="-28.0" y="29.0"/>
+    <waypoint name="START_DYN" x="-11.168" y="15.355"/>
+    <waypoint name="S1" x="-38.2" y="18.5"/>
+    <waypoint name="S2" x="-15.3" y="-14.3"/>
+    <waypoint name="S3" x="17.5" y="8.6"/>
+    <waypoint name="S4" x="-5.5" y="41.4"/>
+    <waypoint name="HICKERS" x="5.867" y="-7.539"/>
+    <waypoint name="ENDURANCE" x="5.867" y="-7.539"/>
+    <waypoint name="_FLY1" x="-6.8" y="59.0"/>
+    <waypoint name="_FLY2" x="53.6" y="-25.7"/>
+    <waypoint name="_FLY3" x="5.3" y="-55.8"/>
+    <waypoint name="_FLY4" x="-54.3" y="25.9"/>
+    <waypoint name="_KILL1" x="-6.3" y="68.6"/>
+    <waypoint name="_KILL2" x="62.8" y="-29.8"/>
+    <waypoint name="_KILL3" x="4.4" y="-65.8"/>
+    <waypoint name="_KILL4" x="-67.4" y="29.7"/>
     <waypoint name="_HERE" x="6.0" y="-1.2"/>
   </waypoints>
   <sectors>
     <sector color="yellow" name="Survey">
-      <corner name="D1"/>
-      <corner name="D2"/>
-      <corner name="D3"/>
-      <corner name="D4"/>
+      <corner name="S1"/>
+      <corner name="S2"/>
+      <corner name="S3"/>
+      <corner name="S4"/>
     </sector>
-    <sector color="orange" name="Flight_Area">
+    <sector color="lime" name="Flight_Area">
       <corner name="_FLY1"/>
       <corner name="_FLY2"/>
       <corner name="_FLY3"/>
@@ -107,30 +114,31 @@
   </sectors>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
-    <variable init="20." var="goto_height" min="5." max="120." step="0.1"/>
-    <variable init="7." var="goto_speed" min="0.5" max="10." step="0.1"/>
-    <variable init="5." var="takeoff_height" min="0.5" max="15." step="0.1"/>
-    <variable init="4." var="land_speed" min="0.5" max="10." step="0.1"/>
-    <variable init="40." var="mapping_height" min="5." max="120." step="0.1"/>
-    <variable init="40." var="mapping_sweep" min="5." max="20." step="0.1"/>
-    <variable init="7." var="mapping_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="10." var="goto_height" min="5." max="120." step="0.1"/>
+    <variable init="3." var="goto_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="4." var="takeoff_height" min="0.5" max="15." step="0.1"/>
+    <variable init="2." var="land_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="20." var="mapping_height" min="5." max="120." step="0.1"/>
+    <variable init="10." var="mapping_sweep" min="5." max="20." step="0.1"/>
+    <variable init="5." var="mapping_speed" min="0.5" max="10." step="0.1"/>
     <variable init="-1." var="mapping_radius" min="-1." max="100." step="1.0"/>
-    <variable init="20." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
+    <variable init="10." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
     <variable init="15." var="dynamic_height" min="5." max="120." step="0.1"/>
     <variable init="6." var="dynamic_valid_height" min="1." max="10." step="0.1"/>
-    <variable init="10." var="dynamic_speed" min="0.5" max="20." step="0.1"/>
-    <variable init="50." var="endurance_height" min="5." max="120." step="0.1"/>
-    <variable init="10." var="endurance_speed" min="0.5" max="20." step="0.1"/>
-    <variable init="100." var="endurance_radius" min="-150." max="150." step="1.0"/>
+    <variable init="6." var="dynamic_speed" min="0.5" max="20." step="0.1"/>
+    <variable init="20." var="endurance_height" min="5." max="120." step="0.1"/>
+    <variable init="6." var="endurance_speed" min="0.5" max="20." step="0.1"/>
+    <variable init="20." var="endurance_radius" min="-150." max="150." step="1.0"/>
     <variable init="500" type="int" var="endurance_time" min="1" max="1200" step="1"/>
-    <variable init="20." var="hickers_height" min="5." max="120." step="0.1"/>
+    <variable init="10." var="hickers_height" min="5." max="120." step="0.1"/>
     <variable init="4." var="hickers_inner_radius" min="-60." max="60." step="1.0"/>
-    <variable init="30." var="hickers_outer_radius" min="-60." max="60." step="1.0"/>
+    <variable init="20." var="hickers_outer_radius" min="-60." max="60." step="1.0"/>
     <variable init="3." var="hickers_inner_speed" min="0.5" max="10." step="0.1"/>
     <variable init="6." var="hickers_outer_speed" min="0.5" max="10." step="0.1"/>
     <variable init="42." var="tag_distance"/>
-    <variable init="14" type="int" var="nb_lap" min="2" max="20" step="1"/>
+    <variable init="7" type="int" var="nb_lap" min="2" max="20" step="1"/>
     <variable init="false" type="bool" var="tag_valid"/>
+    <variable var="exposure" init="1." min="0.1" max="20." step="0.1"/>
     <abi_binding name="JEVOIS_MSG" handler="fp_tag_cb"/>
   </variables>
   <modules>
@@ -142,15 +150,10 @@
     </module>
     <module name="tag_tracking">
       <define name="TAG_TRACKING_WP" value="WP_LANDPAD"/>
-      <define name="TAG_TRACKING_SIM_WP" value="WP_TAG"/>
     </module>
-    <module name="dynamic_inspection_imav2023"/>
   </modules>
   <exceptions>
-    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 100)
-      @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
-    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 120)
-      @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
+    <exception cond="Or(!InsideFlight_Area(GetPosX(), GetPosY()), GetPosAlt() @GT GetAltRef() + 40) @AND (nav_block @GT IndexOfBlock('Takeoff')) @AND !(nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">
@@ -159,6 +162,8 @@
     </block>
     <block name="Geo init">
       <while cond="LessThan(NavBlockTime(), 10)"/>
+      <!--call_once fun="NavSetAltitudeReferenceHere()"/-->
+      <!--call_once fun="set_expo(exposure)"/-->
     </block>
     <block name="Holding point">
       <call_once fun="NavKillThrottle()"/>
@@ -218,8 +223,8 @@
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="mapping_height"/>
-      <go wp="D1" from="_HERE" hmode="route" height="mapping_height"/>
-      <call_once fun="nav_survey_hybrid_setup_towards(WP_D1, WP_D2, 4, mapping_sweep, mapping_radius, mapping_height)"/>
+      <go wp="S1" from="_HERE" hmode="route" height="mapping_height"/>
+      <call_once fun="nav_survey_hybrid_setup_towards(WP_S1, WP_S2, 4, mapping_sweep, mapping_radius, mapping_height)"/>
       <deroute block="Run Mapping"/>
     </block>
     <block name="Run Mapping">
@@ -235,7 +240,6 @@
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="dynamic_height"/>
       <go from="_HERE" hmode="route" wp="START_DYN" height="dynamic_height"/>
-      <call_once fun="dynamic_inspection_setup(WP_START_DYN, 4, dynamic_speed)"/>
       <deroute block="Wait Dynamic"/>
     </block>
     <block name="Wait Dynamic">
@@ -243,17 +247,15 @@
     </block>
     <block name="Run Dynamic" strip_button="Run Dyn" group="mission">
       <call_once fun="guidance_h_SetMaxSpeed(dynamic_speed)"/>
-      <!--path wpts="START_DYN,D1,D2,D3,D4,START_DYN"/-->
-      <!--call fun="dynamic_inspection_run()"/-->
-      <go wp="D1" from="START_DYN" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_P1)" approaching_time="4"/>
-      <stay wp="D1" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
-      <go wp="D2" from="D1" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_P1)" approaching_time="4"/>
-      <stay wp="D2" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
-      <go wp="D3" from="D2" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_P1)" approaching_time="4"/>
-      <stay wp="D3" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
-      <go wp="D4" from="D3" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_P1)" approaching_time="4"/>
-      <stay wp="D4" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
-      <go wp="START_DYN" from="D4" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_P1)"/>
+      <go wp="S1" from="START_DYN" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_STDBY)" approaching_time="4"/>
+      <stay wp="S1" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
+      <go wp="S2" from="S1" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_STDBY)" approaching_time="4"/>
+      <stay wp="S2" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
+      <go wp="S3" from="S2" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_STDBY)" approaching_time="4"/>
+      <stay wp="S3" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
+      <go wp="S4" from="S3" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_STDBY)" approaching_time="4"/>
+      <stay wp="S4" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
+      <go wp="START_DYN" from="S4" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_STDBY)"/>
       <deroute block="Landing"/>
     </block>
 
@@ -272,22 +274,6 @@
       <call_once fun="guidance_h_SetMaxSpeed(hickers_outer_speed)"/>
       <circle wp="HICKERS" radius="hickers_outer_radius" height="hickers_height" until="NavCircleCount() @GT 1.5" pre_call="nav_set_heading_towards_waypoint(WP_HICKERS)"/>
       <deroute block="Landing"/>
-    </block>
-
-    <block name="Stay P1">
-      <stay wp="P1"/>
-    </block>
-    <block name="Test Line">
-      <call_once fun="guidance_h_SetMaxSpeed(dynamic_speed)"/>
-      <path wpts="P1,P2,P1"/>
-      <deroute block="Stay P1"/>
-    </block>
-    <block name="Test Distance">
-      <call_once fun="guidance_h_SetMaxSpeed(dynamic_speed)"/>
-      <for var="i" from="1" to="nb_lap">
-        <path wpts="P1,P2,P1"/>
-      </for>
-      <deroute block="Stay P1"/>
     </block>
 
     <block name="Land here" strip_button="Land here" strip_icon="land-right.png" group="land">
@@ -310,5 +296,9 @@
       <call_once fun="NavKillThrottle()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
+    <!--block name="SetExpo">
+      <call_once fun="set_expo(exposure)"/>
+      <return/>
+    </block-->
   </blocks>
 </flight_plan>
