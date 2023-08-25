@@ -23,7 +23,6 @@
         <configure name="EXTRA_DL_PORT" value="uart4"/>
         <configure name="EXTRA_DL_BAUD" value="B57600"/>
       </module>
-      <define name="DC_SHOT_EXTRA_DL" value="TRUE"/>
     </target>
 
     <target name="nps" board="pc">
@@ -78,9 +77,7 @@
     </module>
     <module name="agl_dist"/-->
 
-    <module name="digital_cam">
-      <define name="DC_SHUTTER_GPIO" value="GPIOA,GPIO2"/>
-    </module>
+    <module name="digital_cam" type="pprzlink"/>
 
     <module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
