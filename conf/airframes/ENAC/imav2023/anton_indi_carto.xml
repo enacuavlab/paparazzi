@@ -19,15 +19,12 @@
       <module name="radio_control" type="sbus"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
       <define name="LOW_NOISE_TIME" value="10"/>
-      <module name="extra_dl">
-        <configure name="EXTRA_DL_PORT" value="uart4"/>
-        <configure name="EXTRA_DL_BAUD" value="B57600"/>
-      </module>
     </target>
 
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
       <module name="radio_control" type="ppm"/>
+      <define name="UART4_DEV" value="/tmp/ttya"/>
     </target>
 
     <module name="telemetry" type="xbee_api"/>
@@ -78,6 +75,11 @@
     <module name="agl_dist"/-->
 
     <module name="digital_cam" type="pprzlink"/>
+
+    <module name="extra_dl">
+      <configure name="EXTRA_DL_PORT" value="uart4"/>
+      <configure name="EXTRA_DL_BAUD" value="B57600"/>
+    </module>
 
     <module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
