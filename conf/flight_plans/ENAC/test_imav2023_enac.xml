@@ -208,6 +208,7 @@
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="mapping_height"/>
       <go wp="S1" from="_HERE" hmode="route" height="mapping_height"/>
+      <call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/>
       <call_once fun="nav_survey_hybrid_setup_towards(WP_S1, WP_S2, 4, mapping_sweep, mapping_radius, mapping_height)"/>
       <deroute block="Run Mapping"/>
     </block>

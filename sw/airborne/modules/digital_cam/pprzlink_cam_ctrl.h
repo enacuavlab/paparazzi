@@ -33,7 +33,7 @@ extern void pprzlink_cam_ctrl_periodic(void);
 /** Set expo setting */
 extern float digital_cam_exposure;
 extern void pprzlink_cam_ctrl_set_expo(float expo);
-
+#define PPRZLINK_CAM_AUTO_EXPO 0.f
 
 #endif // PPRZLINK_CAM_CTRL_H
 

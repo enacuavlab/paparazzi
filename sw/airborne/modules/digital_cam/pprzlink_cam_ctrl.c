@@ -62,6 +62,7 @@ void dc_send_command(uint8_t cmd)
 
 void pprzlink_cam_ctrl_set_expo(float expo)
 {
+  digital_cam_exposure = expo;
   uint8_t tab[2];
   tab[0] = 'e';
   tab[1] = (uint8_t)(expo * 10.f);
