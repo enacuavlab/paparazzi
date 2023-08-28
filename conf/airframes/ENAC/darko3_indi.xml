@@ -229,6 +229,7 @@
     <!--module name="flight_recorder"/-->
 
     <module name="stabilization" type="hover_wind"/>
+    <module name="stabilization" type="hover_nonlin"/>
 
   </firmware>
 

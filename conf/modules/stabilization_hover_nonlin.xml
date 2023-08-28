@@ -1,0 +1,36 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="stabilization_hover_nonlin" dir="ctrl">
+  <doc>
+    <description>
+      Stabilization controller for rotorcraft with non linear hover control
+    </description>
+    <section name="STABILIZATION_HOVER_NONLIN" prefix="CTRL_HOVER_NONLIN_">
+      <define name="KAP" value="1." description="bla"/>
+    </section>
+  </doc>
+  <settings target="ap|nps">
+    <dl_settings>
+      <dl_settings name="H Nonlin">
+        <dl_setting var="ctrl_hover_nonlin.kap" min="0.01" step="0.1" max="15." shortname="kap" param="CTRL_HOVER_NONLIN_KAP" module="ctrl/ctrl_hover_nonlin"/>
+        <dl_setting var="ctrl_hover_nonlin.kad" min="0.01" step="0.1" max="15." shortname="kad" param="CTRL_HOVER_NONLIN_KAD"/>
+        <dl_setting var="ctrl_hover_nonlin.kpp" min="0.01" step="0.1" max="15." shortname="kpp" param="CTRL_HOVER_NONLIN_KPP"/>
+        <dl_setting var="ctrl_hover_nonlin.kpd" min="0.01" step="0.1" max="15." shortname="kpd" param="CTRL_HOVER_NONLIN_KPD"/>
+        <dl_setting var="ctrl_hover_nonlin.kdelta" min="0.01" step="0.1" max="15." shortname="kdelta" param="CTRL_HOVER_NONLIN_KDELTA"/>
+        <dl_setting var="ctrl_hover_nonlin.m" min="0.1" step="0.1" max="2." shortname="m" param="CTRL_HOVER_NONLIN_DRONE_MASS"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+  <dep>
+  </dep>
+  <header>
+    <file name="ctrl_hover_nonlin.h"/>
+  </header>
+  <init fun="ctrl_hover_nonlin_init()"/>
+  <makefile target="ap|nps" firmware="rotorcraft">
+    <file name="ctrl_hover_nonlin.c"/>
+    <test firmware="rotorcraft">
+      <define name="PERIODIC_FREQUENCY" value="500"/>
+    </test>
+  </makefile>
+</module>
