@@ -23,7 +23,7 @@
 
 #include "math/pprz_algebra_float.h"
 #include "state.h"
-#include "generated/airframe.h"
+
 #include "modules/radio_control/radio_control.h"
 #include "modules/actuators/actuators.h"
 #include "modules/core/abi.h"
@@ -39,6 +39,7 @@
 #include "modules/loggers/flight_recorder.h"
 
 #include "generated/flight_plan.h"
+#include "generated/airframe.h"
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 

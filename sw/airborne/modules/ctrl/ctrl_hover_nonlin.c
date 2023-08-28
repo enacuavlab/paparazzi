@@ -1,40 +1,53 @@
 #include "modules/ctrl/ctrl_hover_nonlin.h"
 #include "math/pprz_isa.h"
-#include "generated/airframe.h"
+#include "math/pprz_algebra_float.h"
 #include "std.h"
 #include "paparazzi.h"
 #include "state.h"
 #include "mcu_periph/sys_time.h"
+#include "modules/radio_control/radio_control.h"
+#include "modules/actuators/actuators.h"
+
+#include <stdio.h>
+
+#include "generated/flight_plan.h"
+#include "generated/airframe.h"
+
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+
+#define POS_INC 0.005
+
+
 
 #ifndef CTRL_HOVER_NONLIN_DRONE_MASS
-#define CTRL_HOVER_NONLIN_DRONE_MASS 0.492
+#define CTRL_HOVER_NONLIN_DRONE_MASS 0.519
 #endif
 
 #ifndef CTRL_HOVER_NONLIN_DRONE_J1
-#define CTRL_HOVER_NONLIN_DRONE_J1 0.007018
+#define CTRL_HOVER_NONLIN_DRONE_J1 0.007249858398151
 #endif
 
 #ifndef CTRL_HOVER_NONLIN_DRONE_J2
-#define CTRL_HOVER_NONLIN_DRONE_J2 0.002785
+#define CTRL_HOVER_NONLIN_DRONE_J2 0.000407672840112
 #endif
 #ifndef CTRL_HOVER_NONLIN_DRONE_J3
-#define CTRL_HOVER_NONLIN_DRONE_J3 0.00606
+#define CTRL_HOVER_NONLIN_DRONE_J3 0.008567110783194
 #endif
 
 #ifndef CTRL_HOVER_NONLIN_KAP
-#define CTRL_HOVER_NONLIN_KAP 1.f
+#define CTRL_HOVER_NONLIN_KAP 0.08f
 #endif
 
 #ifndef CTRL_HOVER_NONLIN_KAD
-#define CTRL_HOVER_NONLIN_KAD 1.f
+#define CTRL_HOVER_NONLIN_KAD 0.1f
 #endif
 
 #ifndef CTRL_HOVER_NONLIN_KPP
-#define CTRL_HOVER_NONLIN_KPP 1.f
+#define CTRL_HOVER_NONLIN_KPP 0.5f
 #endif
 
 #ifndef CTRL_HOVER_NONLIN_KPD
-#define CTRL_HOVER_NONLIN_KPD 1.f
+#define CTRL_HOVER_NONLIN_KPD 1.2f
 #endif
 
 #ifndef CTRL_HOVER_NONLIN_KDELTA
@@ -55,13 +68,15 @@ static const float ctrl_dt = (1.f / PERIODIC_FREQUENCY);
     (_c).m[8] = 0;          \
 }
 
-static const float Mk[] = {0, 0, -3.22580645161290,
-    -0.880620907001274, -27.7471520515246, -0.292377437525412,
-      0, 0, 3.22580645161290,
-      0.880620907001274, -27.7471520515246, 0.292377437525425
+static const float Mk[] = { 0, 0,  3.458982807987897,
+                            0, 0, -3.458982807987897,
+                            1.350214971288870,  -13.178271493492982, 0.104845049184770,
+                            -1.350214971288870, -13.178271493492982, -0.104845049184770
   };
 
-static const float u_bare[] = {0.504775259676150, 0, 0.504775259676150, 0};
+static const float u_bare[] = {0.565621212259045, 0.565621212259045, 0, 0};
+
+
 
 static void p_v_stab(struct FloatVect3 *fr, struct FloatVect3 ep, struct FloatVect3 ev);
 static void trans_mis(struct FloatVect3 *f_delta, struct FloatVect3 fr, float f, struct FloatQuat qd); //
@@ -73,6 +88,11 @@ static void distribution(float *u, struct FloatVect3 tau_r, float f); //
 static void feedforward(struct FloatVect3 *omega_dotdot, struct FloatVect3 f_delta, struct FloatVect3 ep, struct FloatVect3 ev, struct FloatQuat q, struct FloatQuat qd, struct FloatVect3 omega, struct FloatVect3 omega_d, struct FloatVect3 nu, float f); //
 
 struct CtrlHoverNonlin ctrl_hover_nonlin;
+
+
+
+
+
 
 void ctrl_hover_nonlin_init(void)
 {
@@ -116,23 +136,37 @@ void ctrl_hover_nonlin_init(void)
   FLOAT_VECT3_ZERO(ctrl_hover_nonlin.omega);
   float_quat_identity(&ctrl_hover_nonlin.q);
   float_vect_zero(ctrl_hover_nonlin.u, 4);
+
+  ctrl_hover_nonlin.pos_target = *stateGetPositionNed_f(); 
+
+  ctrl_hover_nonlin.kf = 0.000000018767000;
+  ctrl_hover_nonlin.mot_max_speed = 16066.000000000000000;
 }
 
-void ctrl_hover_nonlin_enter(void)
-{
-  // TODO target = current position
-}
 
-void ctrl_hover_nonlin_run(int32_t cmd[4], struct FloatVect3 pos_cible)
+void ctrl_hover_nonlin_run(bool in_flight)
 {
   /* A transformer pour recuperer la position, la vitesse, l'orientation et la vitesse angulaire du drone
      pour calculer ep et ev en fonction de la consigne.
      */
 
-  VECT3_DIFF(ctrl_hover_nonlin.ep, *stateGetPositionNed_f(), pos_cible);
-  //VECT3_ASSIGN(ctrl_hover_nonlin.ep, stateGetPositionNed_f()->x - pos_cible.x, stateGetPositionNed_f()->y - pos_cible->y, stateGetPositionNed_f()->z - pos_cible->z);
-  VECT3_COPY(ctrl_hover_nonlin.ev, *stateGetSpeedNed_f());
-  //VECT3_ASSIGN(ctrl_hover_nonlin.ev, stateGetSpeedNed_f()->x, stateGetSpeedNed_f()->y, stateGetSpeedNed_f()->z);
+  ctrl_hover_nonlin.rc_x = -(radio_control.values[RADIO_PITCH]/9600.0); //[-1, 1]
+  ctrl_hover_nonlin.rc_y = (radio_control.values[RADIO_ROLL]/9600.0); //[-1, 1]
+  ctrl_hover_nonlin.rc_z = (radio_control.values[RADIO_THROTTLE]/9600.0); 
+
+ 
+  if(fabs(ctrl_hover_nonlin.rc_x) >= 0.5){
+    ctrl_hover_nonlin.pos_target.x += ctrl_hover_nonlin.rc_x*POS_INC;
+  }
+  
+  if(fabs(ctrl_hover_nonlin.rc_y) >= 0.5){
+     ctrl_hover_nonlin.pos_target.y += ctrl_hover_nonlin.rc_y*POS_INC;
+  }
+
+  //VECT3_DIFF(ctrl_hover_nonlin.ep, *stateGetPositionNed_f(), pos_cible);
+  VECT3_ASSIGN(ctrl_hover_nonlin.ep, stateGetPositionNed_f()->x - ctrl_hover_nonlin.pos_target.x, stateGetPositionNed_f()->y - ctrl_hover_nonlin.pos_target.y, stateGetPositionNed_f()->z - ctrl_hover_nonlin.pos_target.z);
+  //VECT3_COPY(ctrl_hover_nonlin.ev, *stateGetSpeedNed_f());
+  VECT3_ASSIGN(ctrl_hover_nonlin.ev, stateGetSpeedNed_f()->x, stateGetSpeedNed_f()->y, stateGetSpeedNed_f()->z);
 
   ctrl_hover_nonlin.q = *stateGetNedToBodyQuat_f();
   VECT3_ASSIGN(ctrl_hover_nonlin.omega, stateGetBodyRates_f()->p, stateGetBodyRates_f()->q, stateGetBodyRates_f()->r);
@@ -147,11 +181,45 @@ void ctrl_hover_nonlin_run(int32_t cmd[4], struct FloatVect3 pos_cible)
   q_o_stab(&ctrl_hover_nonlin.tau_r, ctrl_hover_nonlin.qd, ctrl_hover_nonlin.q, ctrl_hover_nonlin.omega, ctrl_hover_nonlin.omega_d, ctrl_hover_nonlin.omega_dotdot);
   distribution(ctrl_hover_nonlin.u, ctrl_hover_nonlin.tau_r, ctrl_hover_nonlin.f);
 
-  /* A transformer pour affecter la commande*/
-  cmd[COMMAND_T1] = TRIM_UPPRZ(MAX_PPRZ * ctrl_hover_nonlin.u[COMMAND_T1]);
-  cmd[COMMAND_D1] = TRIM_PPRZ(MAX_PPRZ * ctrl_hover_nonlin.u[COMMAND_D1]);
-  cmd[COMMAND_T2] = TRIM_UPPRZ(MAX_PPRZ * ctrl_hover_nonlin.u[COMMAND_T2]);
-  cmd[COMMAND_D2] = TRIM_PPRZ(MAX_PPRZ * ctrl_hover_nonlin.u[COMMAND_D2]);
+   // LEFT_MOTOR 
+  if (ctrl_hover_nonlin.u[0]>0){
+    ctrl_hover_nonlin.u_scale[0] = (sqrtf(MAX(ctrl_hover_nonlin.u[0],0)/ctrl_hover_nonlin.kf) / ctrl_hover_nonlin.mot_max_speed)*MAX_PPRZ; 
+  }
+  else{
+    ctrl_hover_nonlin.u_scale[0] = 0; 
+  }
+
+  // RIGHT_MOTOR 
+  if (ctrl_hover_nonlin.u[1]>0){
+    ctrl_hover_nonlin.u_scale[1] = (sqrtf(MAX(ctrl_hover_nonlin.u[1],0)/ctrl_hover_nonlin.kf) / ctrl_hover_nonlin.mot_max_speed)*MAX_PPRZ; 
+  }
+  else{
+    ctrl_hover_nonlin.u_scale[1] = 0; 
+  }
+
+ //ELEVON_LEFT  
+  ctrl_hover_nonlin.u_scale[2] = (ctrl_hover_nonlin.u[2]*6/M_PI)*MAX_PPRZ;
+
+  // ELEVON_RIGHT  
+  ctrl_hover_nonlin.u_scale[3] = (ctrl_hover_nonlin.u[3]*6/M_PI)*MAX_PPRZ;
+
+   // actuators_pprz[0] -> ELEVON_LEFT, actuators_pprz[1] -> ELEVON_RIGHT,  actuators_pprz[2] -> RIGHT_MOTOR,  actuators_pprz[3] -> LEFT_MOTOR
+  actuators_pprz[0]=TRIM_PPRZ(ctrl_hover_nonlin.u_scale[2]); 
+  actuators_pprz[1]=TRIM_PPRZ(-ctrl_hover_nonlin.u_scale[3]);  
+
+
+  actuators_pprz[2]=TRIM_UPPRZ(ctrl_hover_nonlin.u_scale[1]);
+  actuators_pprz[3]=TRIM_UPPRZ(ctrl_hover_nonlin.u_scale[0]); 
+
+  
+  
+  if (in_flight) {
+    stabilization_cmd[COMMAND_THRUST] = (actuators_pprz[2]+actuators_pprz[3]); // for in_flight detection
+    //printf("in_flight\n");
+  } else {
+    stabilization_cmd[COMMAND_THRUST] = 1000;
+    //printf("Not in_flight\n");
+  };
   //
 }
 

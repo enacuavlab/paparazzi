@@ -3,6 +3,7 @@
 
 #include "std.h"
 #include "math/pprz_algebra_float.h"
+#include "state.h"
 
 struct CtrlHoverNonlin {
   //Drone
@@ -33,15 +34,20 @@ struct CtrlHoverNonlin {
   float f_dot;
   struct FloatQuat q;
   float u[4*1];
+  float u_scale[4];
 
-  int32_t cmd[4];
+  float rc_x;
+  float rc_y;
+  float rc_z;
 
+  struct NedCoor_f pos_target;
+  float kf;
+  float mot_max_speed;
 };
 
 extern struct CtrlHoverNonlin ctrl_hover_nonlin;
 
 extern void ctrl_hover_nonlin_init(void);
-extern void ctrl_hover_nonlin_enter(void);
-extern void ctrl_hover_nonlin_run(int32_t cmd[4], struct FloatVect3 pos_cible);
+extern void ctrl_hover_nonlin_run(bool in_flight);
 
 #endif /* CTRL_HOVER_NONLIN_H */
