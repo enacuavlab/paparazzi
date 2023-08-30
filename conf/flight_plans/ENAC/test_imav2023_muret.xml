@@ -161,6 +161,7 @@
       <while cond="LessThan(NavBlockTime(), 10)"/>
     </block>
     <block name="Holding point">
+      <call_once fun="jevois_stream(false)"/>
       <call_once fun="NavKillThrottle()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
