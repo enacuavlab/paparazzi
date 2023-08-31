@@ -55,6 +55,7 @@
 
   <periodic fun="pprzlink_cam_ctrl_periodic()" freq="10" autorun="TRUE"/>
 
+  <datalink message="PAYLOAD_COMMAND" fun="dc_expo_cb(buf)"/>
   <makefile target="ap|sim|nps">
     <define name="DIGITAL_CAM"/>
     <define name="DC_SHOT_SYNC_SEND"/>

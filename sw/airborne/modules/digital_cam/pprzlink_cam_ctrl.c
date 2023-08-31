@@ -70,3 +70,11 @@ void pprzlink_cam_ctrl_set_expo(float expo)
   DOWNLINK_SEND_PAYLOAD_COMMAND(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &dst_id, 2, tab);
 }
 
+void dc_expo_cb(uint8_t* buf) {
+  if (DL_PAYLOAD_COMMAND_ac_id(buf) != AC_ID) { return; }
+  if(DL_PAYLOAD_COMMAND_command_length(buf) == 2 &&
+     DL_PAYLOAD_COMMAND_command(buf)[0] == 'e'
+  ) {
+    digital_cam_exposure = DL_PAYLOAD_COMMAND_command(buf)[1] / 10.0;
+  }
+}
