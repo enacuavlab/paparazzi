@@ -183,8 +183,8 @@
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
     <define name="REF_MIN_ZDD" value="-0.4*9.81"/>
     <define name="REF_MAX_ZDD" value=" 0.4*9.81"/>
-    <define name="REF_MIN_ZD" value="-1."/>
-    <define name="REF_MAX_ZD" value=" 1."/>
+    <define name="REF_MIN_ZD" value="-2."/>
+    <define name="REF_MAX_ZD" value=" 2."/>
     <define name="HOVER_KP" value="90"/>
     <define name="HOVER_KD" value="110"/>
     <define name="HOVER_KI" value="10"/>
@@ -215,7 +215,7 @@
 
   <section name="NAV">
     <define name="ARRIVED_AT_WAYPOINT" value="2."/>
-    <define name="NAV_CLIMB_VSPEED" value="1.0"/>
+    <define name="NAV_CLIMB_VSPEED" value="1.5"/>
     <define name="NAV_DESCEND_VSPEED" value="-0.5"/>
     <define name="NAV_CARROT_DIST" value="18"/>
   </section>

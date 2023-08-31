@@ -117,7 +117,7 @@
     <variable init="-1." var="mapping_radius" min="-1." max="100." step="1.0"/>
     <variable init="20." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
     <variable init="15." var="dynamic_height" min="5." max="120." step="0.1"/>
-    <variable init="6." var="dynamic_valid_height" min="1." max="10." step="0.1"/>
+    <variable init="10." var="dynamic_valid_height" min="1." max="10." step="0.1"/>
     <variable init="10." var="dynamic_speed" min="0.5" max="20." step="0.1"/>
     <variable init="50." var="endurance_height" min="5." max="120." step="0.1"/>
     <variable init="10." var="endurance_speed" min="0.5" max="20." step="0.1"/>
@@ -254,7 +254,8 @@
       <stay wp="D3" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
       <go wp="D4" from="D3" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_P1)" approaching_time="4"/>
       <stay wp="D4" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
-      <go wp="START_DYN" from="D4" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_P1)"/>
+      <go wp="START_DYN" from="D4" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_P1)" approaching_time="4"/>
+      <stay wp="START_DYN" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
       <deroute block="Landing"/>
     </block>
 
@@ -291,20 +292,35 @@
       <deroute block="Stay P1"/>
     </block>
 
-    <block name="Land here" strip_button="Land here" strip_icon="land-right.png" group="land">
-      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
-    </block>
     <block name="Landing" strip_button="Land on pad" group="land">
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
       <go wp="LANDPAD" from="_HERE" hmode="route" height="goto_height"/>
     </block>
+    <block name="Descend on pad">
+      <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
+      <call_once fun="jevois_stream(true)"/>
+      <stay climb="2*nav.descend_vspeed" vmode="climb" wp="LANDPAD" until="GetPosHeight() @LT 8."/>
+    </block>
+    <block name="Search pad">
+      <exception cond="tag_tracking.status == TAG_TRACKING_RUNNING" deroute="Stabilize on pad"/>
+      <stay wp="LANDPAD" height="4." until="stage_time @GT 5"/>
+      <circle wp="LANDPAD" radius="2." height="4." until="stage_time @GT 10"/>
+    </block>
+    <block name="Stabilize on pad">
+      <stay wp="LANDPAD" height="4." until="stage_time @GT 5"/>
+      <deroute block="Flare"/>
+    </block>
+
+    <block name="Land here" strip_button="Land here" strip_icon="land-right.png" group="land">
+      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+      <stay climb="2*nav.descend_vspeed" vmode="climb" wp="LANDPAD" until="GetPosHeight() @LT 10"/>
+    </block>
     <block name="Flare">
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
       <call_once fun="jevois_stream(true)"/>
-      <stay climb="2*nav.descend_vspeed" vmode="climb" wp="LANDPAD" until="GetPosHeight() @LT 10"/>
       <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
     </block>
     <block name="Kill landed">
