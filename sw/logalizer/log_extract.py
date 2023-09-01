@@ -2,7 +2,7 @@
 import sys
 from collections import namedtuple
 from pyproj import CRS, Proj
-
+import re
 
 LEAP_SECONDS = 18
 Point = namedtuple("Point", ["time", "lat", "lon", "alt"])
@@ -17,12 +17,14 @@ def time_from_tow(tow):
     return utc_time
 
 
-def time_from_filename(logfile):
-    m=re.match("^.*__(\d+)_(\d+)_(\d+)(?:_SD)?.data$", logfile)
+def date_from_filename(logfile):
+    m = re.match("^.*/(\d+)_(\d+)_(\d+)__(\d+)_(\d+)_(\d+)(?:_SD)?.data$", logfile)
     if m is not None:
-        h,m,s = m.groups()
-        time = f"{h:02d}:{m:02d}:{s:02d}"
-        return time
+        year, month ,day, h,m,s = m.groups()
+        print(year, month, day)
+        date = f"20{year}-{month}-{day}"
+        #time = f"{h}:{m}:{s}"
+        return date
 
 
 def main(logfile):
@@ -63,8 +65,9 @@ def main(logfile):
             with open(filename, 'w') as out:
                 print(f"created {filename}")
                 out.write("time,latitude,longitude,altitude\n")
+                date = date_from_filename(logfile)
                 for p in points:
-                    line = f"{p.time},{p.lat:.07f},{p.lon:.07f},{p.alt:.01f}\n"
+                    line = f"{date}T{p.time},{p.lat:.07f},{p.lon:.07f},{p.alt:.01f}\n"
                     out.write(line)
 
 if __name__ == "__main__":
