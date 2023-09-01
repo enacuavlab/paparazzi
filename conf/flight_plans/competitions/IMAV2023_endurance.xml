@@ -4,7 +4,8 @@
 
   <header>
     #define FP_NONE       0
-    #define FP_ENDURANCE  1
+    #define FP_ENDURANCE_CIRCLE  1
+    #define FP_ENDURANCE_SQUARE  2
 
     #ifdef NAV_C
     #ifndef TAG_TRACKING_COORD_TO_M
@@ -57,17 +58,21 @@
     <waypoint lat="50.908377" lon="6.222250" name="TAG"/>
     <waypoint lat="50.9103" lon="6.22656" name="ENDURANCE"/>
     <waypoint lat="50.9109" lon="6.22871" name="_HERE"/>
+    <waypoint name="E1" lat="50.9119497" lon="6.2282323"/>
+    <waypoint name="E2" lat="50.9087217" lon="6.2261601"/>
+    <waypoint name="E3" lat="50.9089480" lon="6.2252023"/>
+    <waypoint name="E4" lat="50.9121462" lon="6.2272771"/>
   </waypoints>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
-    <variable init="20." var="goto_height" min="5." max="120." step="0.1"/>
+    <variable init="30." var="goto_height" min="5." max="120." step="0.1"/>
     <variable init="7." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="5." var="takeoff_height" min="0.5" max="15." step="0.1"/>
     <variable init="4." var="land_speed" min="0.5" max="10." step="0.1"/>
     <variable init="50." var="endurance_height" min="5." max="120." step="0.1"/>
     <variable init="10." var="endurance_speed" min="0.5" max="20." step="0.1"/>
     <variable init="100." var="endurance_radius" min="-150." max="150." step="1.0"/>
-    <variable init="500" type="int" var="endurance_time" min="1" max="1200" step="1"/>
+    <variable init="420" type="int" var="endurance_time" min="1" max="1200" step="1"/>
     <variable init="42." var="tag_distance"/>
     <variable init="false" type="bool" var="tag_valid"/>
     <abi_binding name="JEVOIS_MSG" handler="fp_tag_cb"/>
@@ -76,7 +81,7 @@
     <module name="nav" type="takeoff_and_landing"/>
     <module name="tag_tracking">
       <define name="TAG_TRACKING_WP" value="WP_LANDPAD"/>
-      <define name="TAG_TRACKING_SIM_WP" value="WP_TAG"/>
+      <!--define name="TAG_TRACKING_SIM_WP" value="WP_TAG"/-->
     </module>
   </modules>
   <includes>
@@ -86,7 +91,7 @@
     <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 100)       @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
     <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 120)       @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
     <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))       @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 20))" deroute="Kill landed"/>
-    <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))       @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))" deroute="Land here"/>
+    <!--exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))       @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))" deroute="Land here"/-->
   </exceptions>
   <blocks>
     <block name="Wait GPS">
@@ -107,7 +112,8 @@
     </block>
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png" group="home">
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_NONE" deroute="Standby"/>
-      <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_ENDURANCE" deroute="Run Endurance"/>
+      <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_ENDURANCE_CIRCLE" deroute="Run Endurance Circle"/>
+      <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_ENDURANCE_SQUARE" deroute="Run Endurance Square"/>
       <call_once fun="ins_reset_vertical_pos()"/>
       <call_once fun="NavResurrect()"/>
       <attitude pitch="0" roll="0" throttle="0.1" until="stage_time @GT 2" vmode="throttle"/>
@@ -120,16 +126,31 @@
       <stay wp="STDBY"/>
     </block>
 
-    <block group="mission" name="Start Endurance" strip_button="Endurance">
-      <set var="mission_nb" value="FP_ENDURANCE"/>
+    <block group="mission" name="Start Endurance Square" strip_button="Endurance (square)">
+      <set var="mission_nb" value="FP_ENDURANCE_SQUARE"/>
       <deroute block="Takeoff"/>
     </block>
-    <block name="Run Endurance">
+    <block name="Run Endurance Square">
       <!-- exception cond="electrical.bat_low" deroute="Landing"/-->
       <set var="mission_nb" value="FP_NONE"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(endurance_speed)"/>
-      <circle wp="ENDURANCE" radius="endurance_radius" until="stage_time @GT endurance_time"/>
+      <while cond="block_time @LT endurance_time">
+        <path wpts="E1,E2,E3,E4,E1" alt="endurance_height"/>
+      </while>
+      <deroute block="Landing"/>
+    </block>
+
+    <block group="mission" name="Start Endurance Circle" strip_button="Endurance (cirlce)">
+      <set var="mission_nb" value="FP_ENDURANCE_CIRCLE"/>
+      <deroute block="Takeoff"/>
+    </block>
+    <block name="Run Endurance Circle">
+      <!-- exception cond="electrical.bat_low" deroute="Landing"/-->
+      <set var="mission_nb" value="FP_NONE"/>
+      <call_once fun="jevois_stream(false)"/>
+      <call_once fun="guidance_h_SetMaxSpeed(endurance_speed)"/>
+      <circle wp="ENDURANCE" radius="endurance_radius" height="endurance_height" until="stage_time @GT endurance_time"/>
       <deroute block="Landing"/>
     </block>
 
@@ -140,7 +161,8 @@
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <go wp="LANDPAD" from="_HERE" hmode="route" height="goto_height"/>
+      <go wp="LANDPAD" from="_HERE" hmode="route" height="goto_height" approaching_time="6"/>
+      <go wp="LANDPAD" height="goto_height"/>
     </block>
     <block name="Flare">
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
