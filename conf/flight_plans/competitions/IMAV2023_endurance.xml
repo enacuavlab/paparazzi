@@ -53,7 +53,7 @@
   </header>
   <waypoints>
     <waypoint lat="50.9099" lon="6.22682" name="HOME"/>
-    <waypoint lat="50.9097" lon="6.22773" name="STDBY"/>
+    <waypoint lat="50.9099" lon="6.2279" name="STDBY"/>
     <waypoint lat="50.9097" lon="6.22823" name="LANDPAD"/>
     <waypoint lat="50.908377" lon="6.222250" name="TAG"/>
     <waypoint lat="50.9103" lon="6.22656" name="ENDURANCE"/>
@@ -156,12 +156,14 @@
 
     <block name="Land here" strip_button="Land here" strip_icon="land-right.png" group="land">
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+      <deroute block="Flare"/>
     </block>
     <block name="Landing" strip_button="Land on pad" group="land">
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <go wp="LANDPAD" from="_HERE" hmode="route" height="goto_height" approaching_time="6"/>
+      <go wp="STDBY" from="_HERE" hmode="route" height="goto_height" approaching_time="5"/>
+      <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
       <go wp="LANDPAD" height="goto_height"/>
     </block>
     <block name="Flare">

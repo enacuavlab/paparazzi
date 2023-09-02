@@ -52,7 +52,7 @@
   </header>
   <waypoints>
     <waypoint lat="50.9099" lon="6.22682" name="HOME"/>
-    <waypoint lat="50.9097" lon="6.22773" name="STDBY"/>
+    <waypoint lat="50.9095" lon="6.22773" name="STDBY"/>
     <waypoint lat="50.9097" lon="6.22823" name="LANDPAD"/>
     <waypoint lat="50.908377" lon="6.222250" name="TAG"/>
     <waypoint lat="50.909228" lon="6.226700" name="HICKERS"/>
@@ -64,11 +64,11 @@
     <variable init="7." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="5." var="takeoff_height" min="0.5" max="15." step="0.1"/>
     <variable init="4." var="land_speed" min="0.5" max="10." step="0.1"/>
-    <variable init="20." var="hickers_height" min="5." max="120." step="0.1"/>
+    <variable init="15." var="hickers_height" min="5." max="120." step="0.1"/>
     <variable init="4." var="hickers_inner_radius" min="-60." max="60." step="1.0"/>
     <variable init="30." var="hickers_outer_radius" min="-60." max="60." step="1.0"/>
     <variable init="3." var="hickers_inner_speed" min="0.5" max="10." step="0.1"/>
-    <variable init="6." var="hickers_outer_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="5." var="hickers_outer_speed" min="0.5" max="10." step="0.1"/>
     <variable init="42." var="tag_distance"/>
     <variable init="false" type="bool" var="tag_valid"/>
     <abi_binding name="JEVOIS_MSG" handler="fp_tag_cb"/>
@@ -144,12 +144,15 @@
 
     <block name="Land here" strip_button="Land here" strip_icon="land-right.png" group="land">
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+      <deroute block="Flare"/>
     </block>
     <block name="Landing" strip_button="Land on pad" group="land">
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <go wp="LANDPAD" from="_HERE" hmode="route" height="goto_height"/>
+      <go wp="STDBY" from="_HERE" hmode="route" height="goto_height"/>
+      <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
+      <go wp="LANDPAD" from="STDBY" hmode="route" height="goto_height"/>
     </block>
     <block name="Flare">
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
