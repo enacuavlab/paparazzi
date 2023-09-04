@@ -37,18 +37,19 @@ def get_geo_data(filename):
 
 def process_result(img, out, res, label, geo=None):
     center = (int(res[0][0]), int(res[0][1]))
-    cv2.circle(out, center, 50, (0, 255, 0), 5)
+    cv2.circle(out, center, 50, (0, 255, 0, 255), 5)
     #cv2.putText(out, label, (center[0]+60, center[1]), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), lineType=cv2.LINE_AA)
-    cv2.putText(out, label, (center[0]+60, center[1]), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0))
+    cv2.putText(out, label, (center[0]+60, center[1]), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0, 255))
 
     if geo is not None:
         # get pixel coordinates
-        coord = geo.xy(center[0], center[1])
+        # geo.xy(row, col)
+        coord = geo.xy(center[1], center[0])
         if coord is not None:
             # transform to WGS84
             lons, lats = rasterio.warp.transform(geo.crs, CRS.from_epsg(4326), [coord[0]], [coord[1]])
             print(f"{label} {center} {lats[0]:.07f}, {lons[0]:.07f}")
-            cv2.putText(out, '{:.7f} {:.7f}'.format(lats[0], lons[0]), (center[0]+60, center[1]+30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0))
+            cv2.putText(out, '{:.7f} {:.7f}'.format(lats[0], lons[0]), (center[0]+60, center[1]+30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0, 255))
     box = boxPoints(res)
     ctr = np.array(box).reshape((-1,1,2)).astype(np.int32)
     mask = np.zeros((img.shape[0], img.shape[1], 1), np.uint8)
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     parser.add_argument("-r", "--resolution", help="resolution in pixels per meter", type=float, default=DEFAULT_RESOLUTION)
     args = parser.parse_args()
 
-    img = cv2.imread(args.img)
+    img = cv2.imread(args.img, cv2.IMREAD_UNCHANGED)
     geo = get_geo_data(args.img)
     find_mailboxes(img, args.output, args.scale, args.resolution, geo)
 
