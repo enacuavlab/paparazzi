@@ -3,6 +3,7 @@ import sys
 from collections import namedtuple
 from pyproj import CRS, Proj
 import re
+from os.path import basename
 
 LEAP_SECONDS = 18
 Point = namedtuple("Point", ["time", "lat", "lon", "alt"])
@@ -21,7 +22,6 @@ def date_from_filename(logfile):
     m = re.match("^.*/(\d+)_(\d+)_(\d+)__(\d+)_(\d+)_(\d+)(?:_SD)?.data$", logfile)
     if m is not None:
         year, month ,day, h,m,s = m.groups()
-        print(year, month, day)
         date = f"20{year}-{month}-{day}"
         #time = f"{h}:{m}:{s}"
         return date
@@ -60,7 +60,7 @@ def main(logfile):
                 p = Point(utc_time, lat, lon, up)
                 data.setdefault(ac_id, []).append(p)
         for ac_id, points in data.items():
-            prefix = sys.argv[2] + "_" if len(sys.argv) > 2 else ""
+            prefix = f"{sys.argv[2]}_" if len(sys.argv) > 2 else f"{basename(logfile).strip('.data')}__"
             filename = f"{prefix}{ac_id}.csv"
             with open(filename, 'w') as out:
                 print(f"created {filename}")
