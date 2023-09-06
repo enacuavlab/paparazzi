@@ -10,12 +10,14 @@
   <waypoints>
     <waypoint name="HOME" x="-8.1" y="9.8"/>
     <waypoint name="CLIMB" x="-28.0" y="29.0"/>
-    <waypoint name="STDBY" x="40.209" y="42.714"/>
-    <waypoint name="p1" x="67.492" y="32.136"/>
-    <waypoint name="p2" x="-35.356" y="78.947"/>
-    <waypoint name="p3" x="-16.718" y="133.25"/>
-    <waypoint name="p4" x="90.03" y="73.004"/>
+    <waypoint name="STDBY" x="55.84" y="52.215"/>
+    <waypoint name="p1" x="160.247" y="40.806"/>
+    <waypoint name="p2" x="-76.965" y="120.123"/>
+    <waypoint name="p3" x="-54.721" y="182.9"/>
+    <waypoint name="p4" x="181.917" y="107.247"/>
     <waypoint name="TD" x="31.809" y="46.501"/>
+    <waypoint name="LANDPAD" x="56.784" y="34.473"/>
+    <waypoint name="_HERE" x="6.326" y="71.633"/>
     <waypoint name="_FLY1" x="-120.135" y="264.94"/>
     <waypoint name="_FLY2" x="299.403" y="176.814"/>
     <waypoint name="_FLY3" x="236.684" y="-88.655"/>
@@ -39,8 +41,18 @@
       <corner name="_KILL4"/>
     </sector>
   </sectors>
+  <variables>
+    <variable init="30." var="goto_height" min="5." max="120." step="0.1"/>
+    <variable init="50." var="endurance_height" min="5." max="120." step="0.1"/>
+    <variable init="10." var="endurance_speed" min="0.5" max="20." step="0.1"/>
+    <variable init="420" type="int" var="endurance_time" min="1" max="1200" step="1"/>
+  </variables>
   <modules>
     <module name="nav" type="takeoff_and_landing"/>
+    <module name="tag_tracking">
+      <define name="TAG_TRACKING_WP" value="WP_LANDPAD"/>
+      <!--define name="TAG_TRACKING_SIM_WP" value="WP_TAG"/-->
+    </module>
   </modules>
   <exceptions>
     <!--exception cond="Or(!InsideFlight_Area(GetPosX(), GetPosY()), GetPosAlt() &gt; GetAltRef() + 50) @AND (nav_block &gt;= IndexOfBlock('Takeoff')) @AND !(nav_block == IndexOfBlock('Kill landed'))" deroute="Standby"/-->
@@ -96,11 +108,26 @@
     <block name="oval">
       <oval p1="p2" p2="p1" radius="nav.radius"/>
     </block>
-    <block name="Carto Oval" strip_button="Carto Oval">
-      <oval p1="p2" p2="p1" radius="nav.radius" until="NavOvalCount @GEQ 2"/>
-      <oval p1="p3" p2="p4" radius="nav.radius" until="NavOvalCount @GEQ 2"/>
-      <deroute block="Standby"/>
+    <block name="Run Endurance Square">
+      <call_once fun="jevois_stream(false)"/>
+      <while cond="block_time @LT endurance_time">
+        <path wpts="p1,p2,p3,p4,p1" alt="endurance_height"/>
+      </while>
+      <deroute block="Land on pad"/>
     </block>
+    <block name="Land on pad">
+      <call_once fun="jevois_stream(false)"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="STDBY" from="_HERE" hmode="route" height="goto_height" approaching_time="5"/>
+      <go wp="LANDPAD" height="goto_height"/>
+    </block>
+    <block name="Flare on pad">
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <call_once fun="jevois_stream(true)"/>
+      <stay climb="2*nav.descend_vspeed" vmode="climb" wp="LANDPAD" until="GetPosHeight() @LT 10"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
+    </block>
+
     <block name="Land (module)" strip_button="Land (module)" group="module">
       <call fun="nav_land_at_wp(WP_TD, WP_TD, 0.)"/>
       <deroute block="Kill landed"/>

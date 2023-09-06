@@ -110,9 +110,9 @@
     <module name="guidance" type="indi_hybrid"/>
     <module name="nav" type="hybrid"/>
 
-    <!--module name="tag_tracking">
+    <module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
-    </module-->
+    </module>
 
   </firmware>
 
@@ -313,7 +313,7 @@
 
   <section name="NAV">
     <define name="NAV_CLIMB_VSPEED" value="1.5"/>
-    <define name="NAV_DESCEND_VSPEED" value="-1.5"/>
+    <define name="NAV_DESCEND_VSPEED" value="-0.8"/>
   </section>
 
   <section name="AHRS" prefix="AHRS_">
