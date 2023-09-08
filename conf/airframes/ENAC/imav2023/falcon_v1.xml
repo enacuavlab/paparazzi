@@ -291,7 +291,7 @@
     <define name="GUIDANCE_INDI_MAX_PITCH" value="25."/>
     <define name="GUIDANCE_INDI_MAX_AIRSPEED" value="16.0"/>
     <define name="GUIDANCE_HEADING_IS_FREE" value="FALSE"/> <!--heading can not be set by navigation -->
-    <define name="GUIDANCE_INDI_HEADING_BANK_GAIN" value="5.0"/>
+    <define name="GUIDANCE_INDI_HEADING_BANK_GAIN" value="9.0"/>
     <define name="GUIDANCE_INDI_PITCH_OFFSET_GAIN" value="0.0"/>
     <define name="GUIDANCE_INDI_FILTER_CUTOFF" value="1.5"/>
     <define name="GUIDANCE_INDI_LINE_GAIN" value="0.7"/>

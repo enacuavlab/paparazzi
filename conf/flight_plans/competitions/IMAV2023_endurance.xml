@@ -58,10 +58,10 @@
     <waypoint lat="50.908377" lon="6.222250" name="TAG"/>
     <waypoint lat="50.9103" lon="6.22656" name="ENDURANCE"/>
     <waypoint lat="50.9109" lon="6.22871" name="_HERE"/>
-    <waypoint name="E1" lat="50.9119497" lon="6.2282323"/>
-    <waypoint name="E2" lat="50.9087217" lon="6.2261601"/>
-    <waypoint name="E3" lat="50.9089480" lon="6.2252023"/>
-    <waypoint name="E4" lat="50.9121462" lon="6.2272771"/>
+    <waypoint name="E1" lat="50.9119" lon="6.22861"/>
+    <waypoint name="E2" lat="50.9087" lon="6.2264"/>
+    <waypoint name="E3" lat="50.909" lon="6.22501"/>
+    <waypoint name="E4" lat="50.9123" lon="6.22713"/>
   </waypoints>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
