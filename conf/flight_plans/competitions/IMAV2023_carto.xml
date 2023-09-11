@@ -57,8 +57,8 @@
   </header>
   <waypoints>
     <waypoint lat="50.9099" lon="6.22682" name="HOME"/>
-    <waypoint lat="50.9097" lon="6.22776" name="STDBY"/>
-    <waypoint lat="50.9097" lon="6.22823" name="LANDPAD"/>
+    <waypoint lat="50.9094" lon="6.22707" name="STDBY"/>
+    <waypoint lat="50.9093" lon="6.22731" name="LANDPAD"/>
     <waypoint lat="50.908377" lon="6.222250" name="TAG"/>
     <waypoint lat="50.9110" lon="6.22635" name="S1"/>
     <waypoint lat="50.9071" lon="6.22589" name="S2"/>
@@ -105,10 +105,18 @@
     <include name="Data" procedure="IMAV2023_data.xml"/>
   </includes>
   <exceptions>
-    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 100)       @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
-    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 120)       @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
-    <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))       @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 20))" deroute="Kill landed"/>
-    <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))       @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))" deroute="Land here"/>
+    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 100))
+               @AND (nav_block @GT IndexOfBlock('Holding point')) @AND (nav_block @LT IndexOfBlock('Kill landed'))"
+               deroute="Standby"/>
+    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 120))
+               @AND (nav_block @GT IndexOfBlock('Holding point')) @AND (nav_block @LT IndexOfBlock('Kill landed'))"
+               deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed'))
+               @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 5))"
+               deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed'))
+               @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))"
+               deroute="Kill landed"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">
@@ -169,6 +177,7 @@
     </block>
     <block name="Landing" strip_button="Land on pad" group="land">
       <call_once fun="jevois_stream(false)"/>
+      <call_once fun="dc_send_command(DC_OFF)"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
       <go wp="STDBY" from="_HERE" hmode="route" height="goto_height"/>

@@ -52,10 +52,10 @@
   </header>
   <waypoints>
     <waypoint lat="50.9099" lon="6.22682" name="HOME"/>
-    <waypoint lat="50.9095" lon="6.22773" name="STDBY"/>
-    <waypoint lat="50.9097" lon="6.22823" name="LANDPAD"/>
+    <waypoint lat="50.9092" lon="6.22714" name="STDBY"/>
+    <waypoint lat="50.9093" lon="6.22731" name="LANDPAD"/>
     <waypoint lat="50.908377" lon="6.222250" name="TAG"/>
-    <waypoint lat="50.909228" lon="6.226700" name="HICKERS"/>
+    <waypoint lat="50.9093" lon="6.22662" name="HICKERS"/>
     <waypoint lat="50.9109" lon="6.22871" name="_HERE"/>
   </waypoints>
   <variables>
@@ -64,7 +64,7 @@
     <variable init="7." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="5." var="takeoff_height" min="0.5" max="15." step="0.1"/>
     <variable init="4." var="land_speed" min="0.5" max="10." step="0.1"/>
-    <variable init="15." var="hickers_height" min="5." max="120." step="0.1"/>
+    <variable init="20." var="hickers_height" min="5." max="120." step="0.1"/>
     <variable init="4." var="hickers_inner_radius" min="-60." max="60." step="1.0"/>
     <variable init="30." var="hickers_outer_radius" min="-60." max="60." step="1.0"/>
     <variable init="3." var="hickers_inner_speed" min="0.5" max="10." step="0.1"/>
@@ -84,10 +84,18 @@
     <include name="Data" procedure="IMAV2023_data.xml"/>
   </includes>
   <exceptions>
-    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 100)       @AND (nav_block @GT IndexOfBlock('Standby')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
-    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR GetPosAlt() @GT GetAltRef() + 120)       @AND (nav_block == IndexOfBlock('Standby'))" deroute="Kill landed"/>
-    <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))       @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 20))" deroute="Kill landed"/>
-    <exception cond="(nav_block @GT IndexOfBlock('Standby') @AND nav_block @LT IndexOfBlock('Kill landed'))       @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))" deroute="Land here"/>
+    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 100))
+               @AND (nav_block @GT IndexOfBlock('Holding point')) @AND (nav_block @LT IndexOfBlock('Kill landed'))"
+               deroute="Standby"/>
+    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 120))
+               @AND (nav_block @GT IndexOfBlock('Holding point')) @AND (nav_block @LT IndexOfBlock('Kill landed'))"
+               deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed'))
+               @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 5))"
+               deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed'))
+               @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))"
+               deroute="Kill landed"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">
