@@ -127,19 +127,19 @@
     <define name="MAG_Y_SIGN" value="-1"/>
     <define name="MAG_Z_SIGN" value="1"/>
 
-    <define name="MAG_X_NEUTRAL" value="-3263"/>
-    <define name="MAG_Y_NEUTRAL" value="-8978"/>
-    <define name="MAG_Z_NEUTRAL" value="1086"/>
-    <define name="MAG_X_SENS" value="0.7240673269746855" integer="16"/>
-    <define name="MAG_Y_SENS" value="0.7317705906009686" integer="16"/>
-    <define name="MAG_Z_SENS" value="0.6636411823037094" integer="16"/>
+    <define name="MAG_X_NEUTRAL" value="-3175"/>
+    <define name="MAG_Y_NEUTRAL" value="-9236"/>
+    <define name="MAG_Z_NEUTRAL" value="1310"/>
+    <define name="MAG_X_SENS" value="0.7069644298017022" integer="16"/>
+    <define name="MAG_Y_SENS" value="0.7025889817871941" integer="16"/>
+    <define name="MAG_Z_SENS" value="0.6498915426147098" integer="16"/>
 
     <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
   </section>
 
-  <include href="conf/mag/toulouse_muret.xml"/>
+  <include href="conf/mag/germany_aachen.xml"/>
 
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
     <!-- setpoint limits for attitude stabilization rc flight -->

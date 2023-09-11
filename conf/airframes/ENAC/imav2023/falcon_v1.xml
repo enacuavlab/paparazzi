@@ -148,13 +148,12 @@
     <!--define name= "MAG_X_CURRENT_COEF" value="-0.511272562535"/>
     <define name= "MAG_Y_CURRENT_COEF" value="0.244268225323"/>
     <define name= "MAG_Z_CURRENT_COEF" value="1.59518542807"/-->
-
-    <define name="MAG_X_NEUTRAL" value="-1001"/>
-    <define name="MAG_Y_NEUTRAL" value="-5309"/>
-    <define name="MAG_Z_NEUTRAL" value="-8042"/>
-    <define name="MAG_X_SENS" value="0.7879577398487496" integer="16"/>
-    <define name="MAG_Y_SENS" value="0.8154864220987212" integer="16"/>
-    <define name="MAG_Z_SENS" value="0.7832596532715307" integer="16"/>
+    <define name="MAG_X_NEUTRAL" value="-1057"/>
+    <define name="MAG_Y_NEUTRAL" value="-5436"/>
+    <define name="MAG_Z_NEUTRAL" value="-7865"/>
+    <define name="MAG_X_SENS" value="0.6407900424399927" integer="16"/>
+    <define name="MAG_Y_SENS" value="0.6504650411481829" integer="16"/>
+    <define name="MAG_Z_SENS" value="0.6138129561725305" integer="16"/>
 
     <define name="ACCEL_X_SIGN" value="1"/>
     <define name="ACCEL_Y_SIGN" value="1"/>
@@ -320,9 +319,7 @@
     <define name="GRAVITY_HEURISTIC_FACTOR" value="0"/>
   </section>
 
-  <include href="conf/mag/toulouse_muret.xml"/>
-
-  <include href="conf/mag/toulouse_muret.xml"/>
+  <include href="conf/mag/germany_aachen.xml"/>
 
   <!-- Gains for horizontal navigation-->
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
