@@ -16,7 +16,7 @@ DEFAULT_IMAGE_OUTPUT = "out_detect.png"
 DEFAULT_SCALE_FACTOR = 4
 DEFAULT_RESOLUTION = 20 # pixels per meter
 
-mailbox_blue = MailboxDetector([[93, 90, 0],[138, 255, 255]], 1200, color="BLUE")
+mailbox_blue = MailboxDetector([[82, 114, 0],[97, 191, 255]] , 1200, color="BLUE")
 
 
 def get_geo_data(filename):
