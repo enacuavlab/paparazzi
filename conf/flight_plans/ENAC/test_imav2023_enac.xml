@@ -208,7 +208,7 @@
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="mapping_height"/>
       <go wp="S1" from="_HERE" hmode="route" height="mapping_height"/>
-      <call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/>
+      <!--call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/-->
       <call_once fun="nav_survey_hybrid_setup_towards(WP_S1, WP_S2, 4, mapping_sweep, mapping_radius, mapping_height)"/>
       <deroute block="Run Mapping"/>
     </block>
@@ -243,6 +243,15 @@
       <go wp="START_DYN" from="S4" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_STDBY)"/>
       <deroute block="Landing"/>
     </block>
+    <block name="Run Dynamic Height" strip_button="Run Dyn (height)" group="mission">
+      <go wp="S1" from="START_DYN" hmode="route" height="avoid_height(WaypointAlt(WP_S1), 30., 35., WP_STDBY)" approaching_time="0"/>
+      <go wp="S2" from="S1" hmode="route" height="avoid_height(WaypointAlt(WP_S2), 30., 35., WP_STDBY)" approaching_time="0"/>
+      <go wp="S3" from="S2" hmode="route" height="avoid_height(WaypointAlt(WP_S3), 30., 35., WP_STDBY)" approaching_time="0"/>
+      <go wp="S4" from="S3" hmode="route" height="avoid_height(WaypointAlt(WP_S4), 30., 35., WP_STDBY)" approaching_time="0"/>
+      <go wp="START_DYN" from="S4" hmode="route" height="avoid_height(WaypointAlt(WP_START_DYN), 30., 35., WP_STDBY)"/>
+      <deroute block="Landing"/>
+    </block>
+
 
     <block name="Goto Hickers">
       <set var="mission_nb" value="FP_NONE"/>

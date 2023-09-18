@@ -220,6 +220,7 @@
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="mapping_height"/>
       <go wp="D1" from="_HERE" hmode="route" height="mapping_height"/>
+      <!--call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/-->
       <call_once fun="nav_survey_hybrid_setup_towards(WP_D1, WP_D2, 4, mapping_sweep, mapping_radius, mapping_height)"/>
       <deroute block="Run Mapping"/>
     </block>
@@ -256,6 +257,14 @@
       <stay wp="D4" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
       <go wp="START_DYN" from="D4" hmode="route" height="avoid_height(dynamic_height, 20., 35., WP_P1)" approaching_time="4"/>
       <stay wp="START_DYN" height="dynamic_valid_height" until="(GetPosHeight() @LT dynamic_valid_height + 1.) @OR (stage_time @GT 15)"/>
+      <deroute block="Landing"/>
+    </block>
+    <block name="Run Dynamic Height" strip_button="Run Dyn (height)" group="mission">
+      <go wp="D1" from="START_DYN" hmode="route" height="avoid_height(WaypointAlt(WP_D1), 30., 35., WP_STDBY)" approaching_time="0"/>
+      <go wp="D2" from="D1" hmode="route" height="avoid_height(WaypointAlt(WP_D2), 30., 35., WP_STDBY)" approaching_time="0"/>
+      <go wp="D3" from="D2" hmode="route" height="avoid_height(WaypointAlt(WP_D3), 30., 35., WP_STDBY)" approaching_time="0"/>
+      <go wp="D4" from="D3" hmode="route" height="avoid_height(WaypointAlt(WP_D4), 30., 35., WP_STDBY)" approaching_time="0"/>
+      <go wp="START_DYN" from="D4" hmode="route" height="avoid_height(WaypointAlt(WP_START_DYN), 30., 35., WP_STDBY)"/>
       <deroute block="Landing"/>
     </block>
 
