@@ -14,12 +14,12 @@ def time_from_tow(tow):
     h = int(utc_s // 3600)
     m = int((utc_s//60) % 60)
     s = round(utc_s % 60)
-    utc_time=f"{h:02d}:{m:02d}:{s:02d}"
+    utc_time=f"{h:02d}:{m:02d}:{s:.3f}"
     return utc_time
 
 
 def date_from_filename(logfile):
-    m = re.match("^.*/(\d+)_(\d+)_(\d+)__(\d+)_(\d+)_(\d+)(?:_SD)?.data$", logfile)
+    m = re.match("^(?:.*/)?(\d+)_(\d+)_(\d+)__(\d+)_(\d+)_(\d+)(?:_SD)?.data$", logfile)
     if m is not None:
         year, month ,day, h,m,s = m.groups()
         date = f"20{year}-{month}-{day}"
