@@ -67,7 +67,9 @@
   //#include "coef.h"
   //  #include "coef_systune.h"
   // #include "coef_systune_struct.h"
-  #include "coef_systune_struct_armand.h"
+  // #include "coef_systune_struct_armand.h"
+  // #include "coef_systune_struct_dyn_mot.h"
+  #include "coef_systune_struct_dyn_mot2.h"
   // #include "coef_systune_decouplage.h"
   //#include "coef_dabb_good_feed_neg_3.h"
   // #include "coef_dabb_good_feed_neg.h"
@@ -240,9 +242,9 @@ void stabilization_hover_wind_run(bool in_flight){
   }
  
   if(rc_z == 1){
-     pos_target.x = 2.34;
-     pos_target.y = 1.69;
-     pos_target.z = -1.28;
+     pos_target.x = 2.6197;
+     pos_target.y = 1.6287;
+     pos_target.z = -1.3070;
   }
    
   
