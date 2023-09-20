@@ -170,7 +170,9 @@ static void serial_act_t4_abi_in(uint8_t sender_id __attribute__((unused)), stru
     float power2 = current2 * bat_voltage;
     float energy1 = -1;
     float energy2 = -1;
-     uint8_t i = 1; 
+    float temperature = -1;
+    uint8_t node_idx = 0; 
+    uint8_t motor_idx = 1; 
     pprz_msg_send_ESC(trans, dev, AC_ID,
           &current1,
           &bat_voltage,
@@ -178,9 +180,11 @@ static void serial_act_t4_abi_in(uint8_t sender_id __attribute__((unused)), stru
           &rpm1,
           &voltage1,
           &energy1,
-          &i);
+          &temperature,
+          &node_idx,
+          &motor_idx);
 
-      i += 1;
+      motor_idx += 1;
     pprz_msg_send_ESC(trans, dev, AC_ID,
       &current2,
       &bat_voltage,
@@ -188,7 +192,9 @@ static void serial_act_t4_abi_in(uint8_t sender_id __attribute__((unused)), stru
       &rpm2,
       &voltage2,
       &energy2,
-      &i);
+      &temperature,
+      &node_idx,
+      &motor_idx);
   }
 #endif
 
