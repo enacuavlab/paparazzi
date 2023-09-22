@@ -66,10 +66,10 @@
 #else
   //#include "coef.h"
   //  #include "coef_systune.h"
-  // #include "coef_systune_struct.h"
+  #include "coef_systune_struct.h"
   // #include "coef_systune_struct_armand.h"
   // #include "coef_systune_struct_dyn_mot.h"
-  #include "coef_systune_struct_dyn_mot2.h"
+  // #include "coef_systune_struct_dyn_mot2.h"
   // #include "coef_systune_decouplage.h"
   //#include "coef_dabb_good_feed_neg_3.h"
   // #include "coef_dabb_good_feed_neg.h"
@@ -219,6 +219,9 @@ void stabilization_hover_wind_init(void){
   tf_state4[0] = 0;
   tf_state4[1] = 0;
   pos_target = *stateGetPositionNed_f(); 
+
+  //hack for takeoff
+  pos_target.z = -1.3070;
 
   #if PERIODIC_TELEMETRY
     register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PAYLOAD_FLOAT, send_payload_float);
