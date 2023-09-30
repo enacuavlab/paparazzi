@@ -132,6 +132,7 @@ void electrical_periodic(void)
   electrical.vsupply = VoltageOfAdc((electrical_priv.vsupply_adc_buf.sum /
                                           electrical_priv.vsupply_adc_buf.av_nb_sample));
 #endif
+  electrical.vsupply = MAX_BAT_LEVEL; // FIXME HITL test
 
 #ifdef ADC_CHANNEL_CURRENT
 #ifndef SITL

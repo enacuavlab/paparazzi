@@ -27,11 +27,17 @@
 #ifndef GPS_SIM_HITL_H
 #define GPS_SIM_HITL_H
 
+#include "std.h"
+
 #ifndef PRIMARY_GPS
 #define PRIMARY_GPS GPS_SIM
 #endif
 
-extern void gps_sim_hitl_event(void);
+extern bool gps_has_fix;
+// dummy definition for compilation
+extern void gps_feed_value(void);
+
 extern void gps_sim_hitl_init(void);
+extern void gps_sim_hitl_parse_HITL_GPS(uint8_t *buf);
 
 #endif /* GPS_SIM_HITL_H */

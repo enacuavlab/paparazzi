@@ -9,7 +9,7 @@
   </doc>
   <dep>
     <depends>targets/nps</depends>
-    <suggests>gps_nps</suggests>
+    <suggests>imu_hitl,gps_sim_hitl</suggests>
   </dep>
   <makefile target="hitl">
     <configure name="INS_DEV" default="/dev/ttyUSB1"/>

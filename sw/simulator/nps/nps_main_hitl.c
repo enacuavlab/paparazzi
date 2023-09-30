@@ -50,9 +50,11 @@
 
 void *nps_ins_data_loop(void *data __attribute__((unused)));
 void *nps_ap_data_loop(void *data __attribute__((unused)));
+void *nps_sensors_loop(void *data __attribute__((unused)));
 
 pthread_t th_ins_data; // sends INS packets to the autopilot
 pthread_t th_ap_data; // receives commands from the autopilot
+pthread_t th_sensors; // send sensors over IVY for now
 
 #define NPS_MAX_MSG_SIZE 512
 
@@ -65,8 +67,9 @@ int main(int argc, char **argv)
   }
   pthread_create(&th_display_ivy, NULL, nps_main_display, NULL);
   pthread_create(&th_main_loop, NULL, nps_main_loop, NULL);
-  pthread_create(&th_ins_data, NULL, nps_ins_data_loop, NULL);
-  pthread_create(&th_ap_data, NULL, nps_ap_data_loop, NULL);
+  //pthread_create(&th_ins_data, NULL, nps_ins_data_loop, NULL);
+  //pthread_create(&th_ap_data, NULL, nps_ap_data_loop, NULL);
+  pthread_create(&th_sensors, NULL, nps_sensors_loop, NULL);
   pthread_join(th_main_loop, NULL);
 
   return 0;
@@ -300,6 +303,46 @@ void *nps_ap_data_loop(void *data __attribute__((unused)))
 }
 
 
+void *nps_sensors_loop(void *data __attribute__((unused)))
+{
+  struct timespec requestStart;
+  struct timespec requestEnd;
+  struct timespec waitFor;
+  long int period_ns = (1. / PERIODIC_FREQUENCY) * 1000000000L; // thread period in nanoseconds
+  long int task_ns = 0; // time it took to finish the task in nanoseconds
+
+  while (TRUE) {
+    // lock mutex
+    pthread_mutex_lock(&fdm_mutex);
+
+    // start timing
+    clock_get_current_time(&requestStart);
+
+    nps_ivy_hitl(&sensors);
+
+    // unlock mutex
+    pthread_mutex_unlock(&fdm_mutex);
+
+    clock_get_current_time(&requestEnd);
+
+    // Calculate time it took
+    task_ns = (requestEnd.tv_sec - requestStart.tv_sec) * 1000000000L + (requestEnd.tv_nsec - requestStart.tv_nsec);
+
+    // task took less than one period, sleep for the rest of time
+    if (task_ns < period_ns) {
+      waitFor.tv_sec = 0;
+      waitFor.tv_nsec = period_ns - task_ns;
+      nanosleep(&waitFor, NULL);
+    } else {
+      // task took longer than the period
+#ifdef PRINT_TIME
+      printf("SENSORS: task took longer than one period, exactly %f [ms], but the period is %f [ms]\n",
+             (double)task_ns / 1E6, (double)period_ns / 1E6);
+#endif
+    }
+  }
+  return(NULL);
+}
 
 
 void *nps_main_loop(void *data __attribute__((unused)))

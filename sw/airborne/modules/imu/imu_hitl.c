@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Felix Ruess <felix.ruess@gmail.com>
+ * Copyright (C) 2023 Gautier Hattenberger <gautier.hattenberger@enac.fr>
  *
  * This file is part of paparazzi.
  *
@@ -18,21 +18,21 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#include "modules/imu/imu_nps.h"
+#include "modules/imu/imu_hitl.h"
 #include "modules/imu/imu.h"
 #include "modules/core/abi.h"
 #include "generated/airframe.h"
-#include "modules/imu/imu_nps.h"
-#include "nps_sensors.h"
+#include "modules/datalink/datalink.h"
+#include "nps_sensors_params_common.h"
 
-struct ImuNps imu_nps;
+struct ImuHitl imu_hitl;
 
-void imu_nps_init(void)
+void imu_hitl_init(void)
 {
 
-  imu_nps.gyro_available = false;
-  imu_nps.mag_available = false;
-  imu_nps.accel_available = false;
+  imu_hitl.gyro_available = false;
+  imu_hitl.mag_available = false;
+  imu_hitl.accel_available = false;
 
   // Set the default scaling
   const struct Int32Rates gyro_scale[2] = {
@@ -61,42 +61,46 @@ void imu_nps_init(void)
   imu_set_defaults_mag(IMU_NPS_ID, NULL, &mag_neutral, mag_scale);
 }
 
-
-void imu_feed_gyro_accel(void)
+void imu_hitl_parse_HITL_IMU(uint8_t *buf)
 {
+  if (DL_HITL_IMU_ac_id(buf) != AC_ID) {
+    return;
+  }
 
-  RATES_ASSIGN(imu_nps.gyro, NPS_GYRO_SIGN_P * sensors.gyro.value.x, NPS_GYRO_SIGN_Q * sensors.gyro.value.y, NPS_GYRO_SIGN_R * sensors.gyro.value.z);
-  VECT3_ASSIGN(imu_nps.accel, NPS_ACCEL_SIGN_X * sensors.accel.value.x, NPS_ACCEL_SIGN_Y * sensors.accel.value.y, NPS_ACCEL_SIGN_Z * sensors.accel.value.z);
+  RATES_ASSIGN(imu_hitl.gyro,
+      NPS_GYRO_SIGN_P * DL_HITL_IMU_gp(buf),
+      NPS_GYRO_SIGN_Q * DL_HITL_IMU_gq(buf),
+      NPS_GYRO_SIGN_R * DL_HITL_IMU_gr(buf));
+  VECT3_ASSIGN(imu_hitl.accel,
+      NPS_ACCEL_SIGN_X * DL_HITL_IMU_ax(buf),
+      NPS_ACCEL_SIGN_Y * DL_HITL_IMU_ay(buf),
+      NPS_ACCEL_SIGN_Z * DL_HITL_IMU_az(buf));
+  VECT3_ASSIGN(imu_hitl.mag,
+      NPS_MAG_SIGN_X * DL_HITL_IMU_mx(buf),
+      NPS_MAG_SIGN_Y * DL_HITL_IMU_my(buf),
+      NPS_MAG_SIGN_Z * DL_HITL_IMU_mz(buf));
 
-  // set availability flags...
-  imu_nps.accel_available = true;
-  imu_nps.gyro_available = true;
-
+  imu_hitl.accel_available = true;
+  imu_hitl.gyro_available = true;
+  imu_hitl.mag_available = true;
 }
 
-
-void imu_feed_mag(void)
-{
-
-  VECT3_ASSIGN(imu_nps.mag, NPS_MAG_SIGN_X * sensors.mag.value.x, NPS_MAG_SIGN_Y * sensors.mag.value.y, NPS_MAG_SIGN_Z * sensors.mag.value.z);
-  imu_nps.mag_available = true;
-
-}
-
-
-void imu_nps_event(void)
+void imu_hitl_event(void)
 {
   uint32_t now_ts = get_sys_time_usec();
-  if (imu_nps.gyro_available) {
-    AbiSendMsgIMU_GYRO_RAW(IMU_NPS_ID, now_ts, &imu_nps.gyro, 1, NPS_PROPAGATE, NAN);
-    imu_nps.gyro_available = false;
+  if (imu_hitl.gyro_available) {
+    AbiSendMsgIMU_GYRO_RAW(IMU_NPS_ID, now_ts, &imu_hitl.gyro, 1, NPS_PROPAGATE, NAN);
+    imu_hitl.gyro_available = false;
   }
-  if (imu_nps.accel_available) {
-    AbiSendMsgIMU_ACCEL_RAW(IMU_NPS_ID, now_ts, &imu_nps.accel, 1, NPS_PROPAGATE, NAN);
-    imu_nps.accel_available = false;
+  if (imu_hitl.accel_available) {
+    AbiSendMsgIMU_ACCEL_RAW(IMU_NPS_ID, now_ts, &imu_hitl.accel, 1, NPS_PROPAGATE, NAN);
+    imu_hitl.accel_available = false;
   }
-  if (imu_nps.mag_available) {
-    AbiSendMsgIMU_MAG_RAW(IMU_NPS_ID, now_ts, &imu_nps.mag);
-    imu_nps.mag_available = false;
+  if (imu_hitl.mag_available) {
+    AbiSendMsgIMU_MAG_RAW(IMU_NPS_ID, now_ts, &imu_hitl.mag);
+    imu_hitl.mag_available = false;
   }
 }
+
+void imu_feed_gyro_accel(void) {}
+void imu_feed_mag(void) {}

@@ -43,6 +43,10 @@ static void on_DL_SETTING(IvyClientPtr app __attribute__((unused)),
                           void *user_data __attribute__((unused)),
                           int argc, char *argv[]);
 
+static void on_COMMANDS(IvyClientPtr app __attribute__((unused)),
+                        void *user_data __attribute__((unused)),
+                        int argc, char *argv[]);
+
 void* ivy_main_loop(void* data __attribute__((unused)));
 
 int find_launch_index(void);
@@ -66,6 +70,8 @@ void nps_ivy_init(char *ivy_bus)
 
   // to be able to change datalink_enabled setting back on
   IvyBindMsg(on_DL_SETTING, NULL, "^(\\S*) DL_SETTING (\\S*) (\\S*) (\\S*)");
+
+  IvyBindMsg(on_COMMANDS, NULL, "^(\\S*) COMMANDS (\\S*)");
 
 #ifdef __APPLE__
   const char *default_ivy_bus = "224.255.255.255";
@@ -117,6 +123,38 @@ static void on_WORLD_ENV(IvyClientPtr app __attribute__((unused)),
   gps_has_fix = atoi(argv[6]); // gps_availability
 #endif
 
+}
+
+/*
+ * Parse COMMANDS message for HITL
+ *
+ */
+static void on_COMMANDS(IvyClientPtr app __attribute__((unused)),
+                        void *user_data __attribute__((unused)),
+                        int argc, char *argv[])
+{
+  if (argc < 1) { return; }
+
+  pprz_t  cmd_buf[NPS_COMMANDS_NB];
+  char *pt;
+  int i = 0;
+  pt = strtok (argv[1],",");
+  while (pt != NULL) {
+    cmd_buf[i] = (pprz_t)atoi(pt);
+    pt = strtok (NULL, ",");
+    i++;
+    if (i >= NPS_COMMANDS_NB) {
+      break;
+    }
+  }
+  pthread_mutex_lock(&fdm_mutex);
+  // update commands
+  for (uint8_t i = 0; i < NPS_COMMANDS_NB; i++) {
+    nps_autopilot.commands[i] = (double)cmd_buf[i] / MAX_PPRZ;
+  }
+  // hack: invert pitch to fit most JSBSim models
+  nps_autopilot.commands[COMMAND_PITCH] = -(double)cmd_buf[COMMAND_PITCH] / MAX_PPRZ;
+  pthread_mutex_unlock(&fdm_mutex);
 }
 
 /*
@@ -209,6 +247,45 @@ static void on_DL_SETTING(IvyClientPtr app __attribute__((unused)),
   }
 }
 
+
+void nps_ivy_hitl(struct NpsSensors* sensors_data)
+{
+  struct NpsSensors sensors_ivy;
+
+  // make a local copy with mutex
+  //pthread_mutex_lock(&fdm_mutex);
+  memcpy(&sensors_ivy, sensors_data, sizeof(sensors));
+  //pthread_mutex_unlock(&fdm_mutex);
+
+  // protect Ivy thread
+  pthread_mutex_lock(&ivy_mutex);
+
+  IvySendMsg("nps_hitl HITL_IMU %f %f %f %f %f %f %f %f %f %d\n",
+      (float)sensors_ivy.gyro.value.x,
+      (float)sensors_ivy.gyro.value.y,
+      (float)sensors_ivy.gyro.value.z,
+      (float)sensors_ivy.accel.value.x,
+      (float)sensors_ivy.accel.value.y,
+      (float)sensors_ivy.accel.value.z,
+      (float)sensors_ivy.mag.value.x,
+      (float)sensors_ivy.mag.value.y,
+      (float)sensors_ivy.mag.value.z,
+      AC_ID);
+
+  IvySendMsg("nps_hitl HITL_GPS %.7f %.7f %.4f %.4f %f %f %f %.3f %d %d\n",
+      (float)DegOfRad(sensors_ivy.gps.lla_pos.lat),
+      (float)DegOfRad(sensors_ivy.gps.lla_pos.lon),
+      (float)sensors_ivy.gps.lla_pos.alt,
+      (float)sensors_ivy.gps.hmsl,
+      (float)sensors_ivy.gps.ecef_vel.x,
+      (float)sensors_ivy.gps.ecef_vel.y,
+      (float)sensors_ivy.gps.ecef_vel.z,
+      (float)nps_main.sim_time,
+      3, // GPS fix
+      AC_ID);
+
+  pthread_mutex_unlock(&ivy_mutex);
+}
 
 void nps_ivy_display(struct NpsFdm* fdm_data, struct NpsSensors* sensors_data)
 {

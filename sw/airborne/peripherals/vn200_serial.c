@@ -100,7 +100,7 @@ static inline bool verify_chk(unsigned char data[], unsigned int length, uint16_
   }
 }
 
-
+#include "led.h"
 static inline void vn200_read_buffer(struct VNPacket *vnp)
 {
   struct link_device *dev = &(VN_PORT.device);
@@ -162,6 +162,7 @@ void vn200_parse(struct VNPacket *vnp, uint8_t c)
       if (vnp->msg_idx == (vnp->datalength + 2)) {
         if (verify_chk(vnp->msg_buf, vnp->datalength, &(vnp->calc_chk), &(vnp->rec_chk))) {
           vnp->msg_available = true;
+          LED_TOGGLE(2);
           vnp->counter++;
         } else {
           vnp->msg_available = false;
@@ -183,6 +184,7 @@ void vn200_parse(struct VNPacket *vnp, uint8_t c)
  */
 void vn200_read_message(struct VNPacket *vn_packet, struct VNData *vn_data)
 {
+  LED_TOGGLE(1);
   uint16_t idx = VN_HEADER_SIZE;
 
   // Timestamp [nanoseconds] since startup

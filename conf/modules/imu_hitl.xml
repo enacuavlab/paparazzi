@@ -1,0 +1,25 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="imu_hitl" dir="imu" task="sensors">
+  <doc>
+    <description>
+      Simulated IMU for HITL (HardwareInTheLoop).
+    </description>
+  </doc>
+  <dep>
+    <depends>imu_common</depends>
+    <provides>imu,mag</provides>
+  </dep>
+  <header>
+    <file name="imu_hitl.h"/>
+  </header>
+  <init fun="imu_hitl_init()"/>
+  <event fun="imu_hitl_event()"/>
+  <datalink message="HITL_IMU" fun="imu_hitl_parse_HITL_IMU(buf)"/>
+
+  <makefile target="ap|hitl">
+    <include name="$(PAPARAZZI_HOME)/conf/simulator/nps"/>
+    <file name="imu_hitl.c"/>
+    <test firmware="rotorcraft"/>
+  </makefile>
+</module>
