@@ -21,6 +21,7 @@
     <define name="AP_BAUD" value="$(AP_BAUD)"/>
     <define name="INS_DEV" value="$(INS_DEV)"/>
     <define name="INS_BAUD" value="$(INS_BAUD)"/>
+    <file name="nps_main_hitl.c" dir="$(NPS_DIR)"/>
   </makefile>
 </module>
 

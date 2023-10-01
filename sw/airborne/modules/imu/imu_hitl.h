@@ -40,6 +40,7 @@ extern struct ImuHitl imu_hitl;
 extern void imu_hitl_init(void);
 extern void imu_hitl_event(void);
 extern void imu_hitl_parse_HITL_IMU(uint8_t *buf);
+extern void imu_hitl_parse_HITL_AIR_DATA(uint8_t *buf);
 
 // dummy
 extern void imu_feed_gyro_accel(void);

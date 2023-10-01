@@ -260,29 +260,59 @@ void nps_ivy_hitl(struct NpsSensors* sensors_data)
   // protect Ivy thread
   pthread_mutex_lock(&ivy_mutex);
 
-  IvySendMsg("nps_hitl HITL_IMU %f %f %f %f %f %f %f %f %f %d\n",
-      (float)sensors_ivy.gyro.value.x,
-      (float)sensors_ivy.gyro.value.y,
-      (float)sensors_ivy.gyro.value.z,
-      (float)sensors_ivy.accel.value.x,
-      (float)sensors_ivy.accel.value.y,
-      (float)sensors_ivy.accel.value.z,
-      (float)sensors_ivy.mag.value.x,
-      (float)sensors_ivy.mag.value.y,
-      (float)sensors_ivy.mag.value.z,
-      AC_ID);
+  if (nps_sensors_gyro_available()) {
+    IvySendMsg("nps_hitl HITL_IMU %f %f %f %f %f %f %f %f %f %d\n",
+        (float)sensors_ivy.gyro.value.x,
+        (float)sensors_ivy.gyro.value.y,
+        (float)sensors_ivy.gyro.value.z,
+        (float)sensors_ivy.accel.value.x,
+        (float)sensors_ivy.accel.value.y,
+        (float)sensors_ivy.accel.value.z,
+        (float)sensors_ivy.mag.value.x,
+        (float)sensors_ivy.mag.value.y,
+        (float)sensors_ivy.mag.value.z,
+        AC_ID);
+  }
 
-  IvySendMsg("nps_hitl HITL_GPS %.7f %.7f %.4f %.4f %f %f %f %.3f %d %d\n",
-      (float)DegOfRad(sensors_ivy.gps.lla_pos.lat),
-      (float)DegOfRad(sensors_ivy.gps.lla_pos.lon),
-      (float)sensors_ivy.gps.lla_pos.alt,
-      (float)sensors_ivy.gps.hmsl,
-      (float)sensors_ivy.gps.ecef_vel.x,
-      (float)sensors_ivy.gps.ecef_vel.y,
-      (float)sensors_ivy.gps.ecef_vel.z,
-      (float)nps_main.sim_time,
-      3, // GPS fix
-      AC_ID);
+  if (nps_sensors_gps_available()) {
+    IvySendMsg("nps_hitl HITL_GPS %.7f %.7f %.4f %.4f %f %f %f %.3f %d %d\n",
+        (float)DegOfRad(sensors_ivy.gps.lla_pos.lat),
+        (float)DegOfRad(sensors_ivy.gps.lla_pos.lon),
+        (float)sensors_ivy.gps.lla_pos.alt,
+        (float)sensors_ivy.gps.hmsl,
+        (float)sensors_ivy.gps.ecef_vel.x,
+        (float)sensors_ivy.gps.ecef_vel.y,
+        (float)sensors_ivy.gps.ecef_vel.z,
+        (float)nps_main.sim_time,
+        3, // GPS fix
+        AC_ID);
+  }
+
+  uint8_t air_data_flag = 0;
+  float baro = -1.f;
+  float airspeed = -1.f;
+  float aoa = 0.f;
+  float sideslip = 0.f;
+  if (nps_sensors_baro_available()) {
+    SetBit(air_data_flag, 0);
+    baro = (float) sensors_ivy.baro.value;
+  }
+  if (nps_sensors_airspeed_available()) {
+    SetBit(air_data_flag, 1);
+    airspeed = (float) sensors_ivy.airspeed.value;
+  }
+  if (nps_sensors_aoa_available()) {
+    SetBit(air_data_flag, 2);
+    aoa = (float) sensors_ivy.aoa.value;
+  }
+  if (nps_sensors_sideslip_available()) {
+    SetBit(air_data_flag, 3);
+    sideslip = (float) sensors_ivy.sideslip.value;
+  }
+  if (air_data_flag != 0) {
+    IvySendMsg("nps_hitl HITL_AIR_DATA %f %f %f %f %d %d\n",
+        baro, airspeed, aoa, sideslip, air_data_flag, AC_ID);
+  }
 
   pthread_mutex_unlock(&ivy_mutex);
 }

@@ -58,4 +58,7 @@
       <define name="PRIMARY_GPS" value="GPS_VECTORNAV"/>
     </test>
   </makefile>
+  <makefile target="hitl">
+    <file name="nps_ins_vectornav.c" dir="$(NPS_DIR)"/>
+  </makefile>
 </module>
