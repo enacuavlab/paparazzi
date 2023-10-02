@@ -18,14 +18,14 @@
       <module name="fdm" type="jsbsim"/>
     </target>
 
-    <target name="hitl" board="pc">
+    <!--target name="hitl" board="pc">
       <configure name="AHRS_ALIGNER_LED" value="none"/>
       <module name="fdm" type="jsbsim"/>
       <configure name="INS_DEV" value="/dev/pprz-dbg"/>
       <configure name="INS_BAUD" value="B230400"/>
       <configure name="AP_DEV" value="/dev/pprz-tlm"/>
       <configure name="AP_BAUD" value="B921600"/>
-    </target>
+    </target-->
 
     <module name="radio_control" type="datalink"/>
     <module name="telemetry" type="transparent">
@@ -50,6 +50,14 @@
 
     <module name="sys_mon"/>
     <module name="air_data"/>
+  </firmware>
+
+  <firmware name="fixedwing_hitl">
+    <target name="hitl" board="pc">
+      <configure name="USE_HARD_FAULT_RECOVERY" value="FALSE"/>
+      <module name="fdm" type="jsbsim"/>
+      <module name="nps" type="hitl_sensors"/>
+    </target>
   </firmware>
 
   <!-- commands section -->

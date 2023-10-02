@@ -18,12 +18,9 @@
   <datalink message="HITL_IMU" fun="imu_hitl_parse_HITL_IMU(buf)"/>
   <datalink message="HITL_AIR_DATA" fun="imu_hitl_parse_HITL_AIR_DATA(buf)"/>
 
-  <makefile target="ap|hitl">
+  <makefile target="ap">
     <include name="$(PAPARAZZI_HOME)/conf/simulator/nps"/>
     <file name="imu_hitl.c"/>
     <test firmware="rotorcraft"/>
-  </makefile>
-  <makefile target="hitl">
-    <file name="nps_imu_hitl.c" dir="$(NPS_DIR)"/>
   </makefile>
 </module>

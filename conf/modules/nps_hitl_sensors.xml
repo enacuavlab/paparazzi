@@ -1,0 +1,15 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="nps_hitl_sensors" dir="sensors" task="sensors">
+  <doc>
+    <description>
+      Send simulated sensors for HITL (HardwareInTheLoop).
+    </description>
+  </doc>
+  <dep>
+    <provides>imu,mag,gps,baro,airspeed</provides>
+  </dep>
+  <makefile target="hitl">
+    <file name="nps_hitl_sensors.c" dir="$(NPS_DIR)"/>
+  </makefile>
+</module>

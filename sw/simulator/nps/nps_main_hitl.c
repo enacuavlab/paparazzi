@@ -33,10 +33,11 @@
 #include "nps_main.h"
 #include "nps_sensors.h"
 #include "nps_atmosphere.h"
-//#include "nps_autopilot.h"
 #include "nps_ivy.h"
 #include "nps_flightgear.h"
-//#include "mcu_periph/sys_time.h"
+
+// nps_autopilot.c is not compiled in HITL
+struct NpsAutopilot nps_autopilot;
 
 int main(int argc, char **argv)
 {
@@ -56,20 +57,6 @@ int main(int argc, char **argv)
 
 void nps_radio_and_autopilot_init(void)
 {
-//  enum NpsRadioControlType rc_type;
-//  char *rc_dev = NULL;
-//  if (nps_main.norc) {
-//    rc_type = NORC;
-//  } else if (nps_main.js_dev) {
-//    rc_type = JOYSTICK;
-//    rc_dev = nps_main.js_dev;
-//  } else if (nps_main.spektrum_dev) {
-//    rc_type = SPEKTRUM;
-//    rc_dev = nps_main.spektrum_dev;
-//  } else {
-//    rc_type = SCRIPT;
-//  }
-//  nps_autopilot_init(rc_type, nps_main.rc_script, rc_dev);
 }
 
 void nps_update_launch_from_dl(uint8_t value)

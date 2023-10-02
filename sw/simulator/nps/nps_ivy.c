@@ -17,6 +17,7 @@
 #include "nps_fdm.h"
 #include "nps_sensors.h"
 #include "nps_atmosphere.h"
+#include "paparazzi.h"
 
 #include "generated/settings.h"
 #include "pprzlink/dl_protocol.h"
@@ -198,6 +199,10 @@ void nps_ivy_send_WORLD_ENV_REQ(void)
 
 int find_launch_index(void)
 {
+#ifdef AP_LAUNCH
+#warning "AP_LAUNCH"
+  return AP_LAUNCH-1;
+#else
   static const char ap_launch[] = "aut_lau"; // short name
   char *ap_settings[NB_SETTING] = SETTINGS_NAMES_SHORT;
 
@@ -209,6 +214,7 @@ int find_launch_index(void)
     }
   }
   return -1;
+#endif
 }
 
 static void on_DL_SETTING(IvyClientPtr app __attribute__((unused)),
@@ -228,10 +234,12 @@ static void on_DL_SETTING(IvyClientPtr app __attribute__((unused)),
    */
   uint8_t index = atoi(argv[2]);
   float value = atof(argv[3]);
+#ifndef HITL
   if (!datalink_enabled) {
     DlSetting(index, value);
     DOWNLINK_SEND_DL_VALUE(DefaultChannel, DefaultDevice, &index, &value);
   }
+#endif
   printf("setting %d %f\n", index, value);
 
   /*
@@ -240,6 +248,7 @@ static void on_DL_SETTING(IvyClientPtr app __attribute__((unused)),
    *
    * In case of STIL nps_update_launch_from_dl() is an empty function
    */
+  printf("ap_launch %d\n", ap_launch_index);
   if ((ap_launch_index >= 0) || (ap_launch_index < NB_SETTING)) {
     if (index==ap_launch_index){
       nps_update_launch_from_dl(value);
