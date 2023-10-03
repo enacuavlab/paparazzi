@@ -18,15 +18,6 @@
       <module name="fdm" type="jsbsim"/>
     </target>
 
-    <!--target name="hitl" board="pc">
-      <configure name="AHRS_ALIGNER_LED" value="none"/>
-      <module name="fdm" type="jsbsim"/>
-      <configure name="INS_DEV" value="/dev/pprz-dbg"/>
-      <configure name="INS_BAUD" value="B230400"/>
-      <configure name="AP_DEV" value="/dev/pprz-tlm"/>
-      <configure name="AP_BAUD" value="B921600"/>
-    </target-->
-
     <module name="radio_control" type="datalink"/>
     <module name="telemetry" type="transparent">
       <configure name="MODEM_PORT" value="usb_serial"/>
@@ -39,8 +30,7 @@
       <configure name="VN_PORT" value="usb_serial_debug"/>
       <configure name="VN_BAUD" value="B230400"/>
     </module-->
-    <module name="imu" type="hitl"/>
-    <module name="gps" type="sim_hitl"/>
+    <module name="sensors" type="hitl"/>
     <!--module name="ahrs" type="float_dcm"/>
     <module name="ins" type="alt_float"/-->
     <module name="ins" type="float_invariant">

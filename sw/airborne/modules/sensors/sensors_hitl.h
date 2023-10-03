@@ -18,33 +18,27 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef IMU_HITL_H
-#define IMU_HITL_H
+#ifndef SENSORS_HITL_H
+#define SENSORS_HITL_H
 
-#include "modules/imu/imu.h"
+#include "std.h"
 
-#include "generated/airframe.h"
+#ifndef PRIMARY_GPS
+#define PRIMARY_GPS GPS_SIM
+#endif
 
-struct ImuHitl {
-  uint8_t mag_available;
-  uint8_t accel_available;
-  uint8_t gyro_available;
+extern bool gps_has_fix;
 
-  struct Int32Rates gyro;
-  struct Int32Vect3 accel;
-  struct Int32Vect3 mag;
-};
+extern void sensors_hitl_init(void);
+extern void sensors_hitl_event(void);
+extern void sensors_hitl_parse_HITL_IMU(uint8_t *buf);
+extern void sensors_hitl_parse_HITL_GPS(uint8_t *buf);
+extern void sensors_hitl_parse_HITL_AIR_DATA(uint8_t *buf);
 
-extern struct ImuHitl imu_hitl;
-
-extern void imu_hitl_init(void);
-extern void imu_hitl_event(void);
-extern void imu_hitl_parse_HITL_IMU(uint8_t *buf);
-extern void imu_hitl_parse_HITL_AIR_DATA(uint8_t *buf);
-
-// dummy
+// dummy definition for compilation
 extern void imu_feed_gyro_accel(void);
 extern void imu_feed_mag(void);
+extern void gps_feed_value(void);
 
-#endif /* IMU_HITL_H */
+#endif /* SENSORS_HITL_H */
 

@@ -45,7 +45,7 @@ Again, the sys_mon module has to run at the full main frequency (so the reports 
   <periodic fun="periodic_sysmon()"/>
   <event fun="event_sysmon()"/>
 
-  <makefile target="ap|hitl">
+  <makefile target="ap">
     <raw>
     # for ChibiOS arch include rtos_mon.c and rtos_mon_arch.c
     ifeq ($(ARCH), chibios)

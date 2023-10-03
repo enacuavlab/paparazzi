@@ -1,0 +1,27 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="sensors_hitl" dir="sensors" task="sensors">
+  <doc>
+    <description>
+      Simulated sensors for HITL (HardwareInTheLoop).
+    </description>
+  </doc>
+  <dep>
+    <depends>imu_common,gps</depends>
+    <provides>imu,mag,gps,baro,airspeed</provides>
+  </dep>
+  <header>
+    <file name="sensors_hitl.h"/>
+  </header>
+  <init fun="sensors_hitl_init()"/>
+  <event fun="sensors_hitl_event()"/>
+  <datalink message="HITL_IMU" fun="sensors_hitl_parse_HITL_IMU(buf)"/>
+  <datalink message="HITL_GPS" fun="sensors_hitl_parse_HITL_GPS(buf)"/>
+  <datalink message="HITL_AIR_DATA" fun="sensors_hitl_parse_HITL_AIR_DATA(buf)"/>
+
+  <makefile target="ap">
+    <include name="$(PAPARAZZI_HOME)/conf/simulator/nps"/>
+    <file name="sensors_hitl.c"/>
+    <test firmware="rotorcraft"/>
+  </makefile>
+</module>

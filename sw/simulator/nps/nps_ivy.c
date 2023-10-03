@@ -200,8 +200,7 @@ void nps_ivy_send_WORLD_ENV_REQ(void)
 int find_launch_index(void)
 {
 #ifdef AP_LAUNCH
-#warning "AP_LAUNCH"
-  return AP_LAUNCH-1;
+  return AP_LAUNCH - 1; // index of AP_LAUNCH starts at 1, but it should be 0 here
 #else
   static const char ap_launch[] = "aut_lau"; // short name
   char *ap_settings[NB_SETTING] = SETTINGS_NAMES_SHORT;

@@ -9,8 +9,7 @@
   </doc>
   <dep>
     <depends>math</depends>
-    <provides>no_settings,datalink,telemetry,guidance,commands</provides>
-    <suggests>imu_hitl,gps_sim_hitl</suggests>
+    <suggests>sensors_hitl</suggests>
   </dep>
   <makefile target="hitl">
     <configure name="BARO_PERIODIC_FREQUENCY" default="50"/>
@@ -50,8 +49,6 @@ VPATH += $(PAPARAZZI_SRC)/sw/simulator
     <include name="$(SRC_FIRMWARE)"/>
     <define name="BARO_PERIODIC_FREQUENCY" value="$(BARO_PERIODIC_FREQUENCY)"/>
     <define name="USE_BARO_BOARD" value="FALSE"/>
-    <define name="AP"/>
-    <define name="SITL"/>
     <define name="HITL"/>
     <define name="USE_NPS"/>
     <flag name="LDFLAGS" value="lm -livy $(shell pcre-config --libs) -lgsl -lgslcblas"/>
