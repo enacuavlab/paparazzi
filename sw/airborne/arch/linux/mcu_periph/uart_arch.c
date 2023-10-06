@@ -22,7 +22,7 @@
 /** @file arch/linux/mcu_periph/uart_arch.c
  * linux uart handling
  */
- 
+
 #include BOARD_CONFIG
 
 #include "mcu_periph/uart.h"

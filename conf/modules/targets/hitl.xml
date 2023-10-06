@@ -32,9 +32,10 @@ $(TARGET).CFLAGS  += $(shell pkg-config glib-2.0 --cflags)
 $(TARGET).LDFLAGS += $(shell pkg-config glib-2.0 --libs)
 
 #
-# add the simulator directory to the make searchpath
+# add the simulator and var directory to the make searchpath
 #
 VPATH += $(PAPARAZZI_SRC)/sw/simulator
+VPATH += $(PAPARAZZI_HOME)/var/share
 
     </raw>
     <configure name="PERIODIC_FREQUENCY" default="60"/>

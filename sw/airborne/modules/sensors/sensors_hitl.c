@@ -26,6 +26,9 @@
 #include "generated/airframe.h"
 #include "modules/datalink/datalink.h"
 #include "nps_sensors_params_common.h"
+#if USE_BATTERY_MONITOR
+#include "modules/energy/electrical.h"
+#endif
 
 struct ImuHitl {
   uint8_t mag_available;
@@ -44,9 +47,13 @@ bool gps_has_fix;
 
 void sensors_hitl_init(void)
 {
+#if USE_BATTERY_MONITOR
 #ifdef MAX_BAT_LEVEL
   // init vsupply to MAX_BAT in case battery voltage is not available
   electrical.vsupply = MAX_BAT_LEVEL;
+#else
+  electrical.vsupply = 12.f; // 3S battery
+#endif
 #endif
   gps_has_fix = true;
 

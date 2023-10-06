@@ -12,6 +12,10 @@
     <configure name="USE_HARD_FAULT_RECOVERY" value="FALSE"/>
 
     <target name="ap" board="matek_h743_slim">
+      <module name="extra_dl">
+        <configure name="EXTRA_DL_PORT" value="usb_serial_debug"/>
+        <configure name="EXTRA_DL_BAUD" value="B230400"/>
+      </module>
     </target>
 
     <target name="nps" board="pc">
@@ -46,7 +50,10 @@
     <target name="hitl" board="pc">
       <configure name="USE_HARD_FAULT_RECOVERY" value="FALSE"/>
       <module name="fdm" type="jsbsim"/>
-      <module name="nps" type="hitl_sensors"/>
+      <module name="nps" type="hitl_sensors">
+        <define name="USE_BATTERY_MONITOR"/>
+        <define name="AP_DEV" value="/dev/pprz-dbg" type="string"/>
+      </module>
     </target>
   </firmware>
 

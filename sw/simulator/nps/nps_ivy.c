@@ -17,7 +17,6 @@
 #include "nps_fdm.h"
 #include "nps_sensors.h"
 #include "nps_atmosphere.h"
-#include "paparazzi.h"
 
 #include "generated/settings.h"
 #include "pprzlink/dl_protocol.h"
@@ -44,10 +43,6 @@ static void on_DL_SETTING(IvyClientPtr app __attribute__((unused)),
                           void *user_data __attribute__((unused)),
                           int argc, char *argv[]);
 
-static void on_COMMANDS(IvyClientPtr app __attribute__((unused)),
-                        void *user_data __attribute__((unused)),
-                        int argc, char *argv[]);
-
 void* ivy_main_loop(void* data __attribute__((unused)));
 
 int find_launch_index(void);
@@ -71,8 +66,6 @@ void nps_ivy_init(char *ivy_bus)
 
   // to be able to change datalink_enabled setting back on
   IvyBindMsg(on_DL_SETTING, NULL, "^(\\S*) DL_SETTING (\\S*) (\\S*) (\\S*)");
-
-  IvyBindMsg(on_COMMANDS, NULL, "^(\\S*) COMMANDS (\\S*)");
 
 #ifdef __APPLE__
   const char *default_ivy_bus = "224.255.255.255";
@@ -124,38 +117,6 @@ static void on_WORLD_ENV(IvyClientPtr app __attribute__((unused)),
   gps_has_fix = atoi(argv[6]); // gps_availability
 #endif
 
-}
-
-/*
- * Parse COMMANDS message for HITL
- *
- */
-static void on_COMMANDS(IvyClientPtr app __attribute__((unused)),
-                        void *user_data __attribute__((unused)),
-                        int argc, char *argv[])
-{
-  if (argc < 1) { return; }
-
-  pprz_t  cmd_buf[NPS_COMMANDS_NB];
-  char *pt;
-  int i = 0;
-  pt = strtok (argv[1],",");
-  while (pt != NULL) {
-    cmd_buf[i] = (pprz_t)atoi(pt);
-    pt = strtok (NULL, ",");
-    i++;
-    if (i >= NPS_COMMANDS_NB) {
-      break;
-    }
-  }
-  pthread_mutex_lock(&fdm_mutex);
-  // update commands
-  for (uint8_t i = 0; i < NPS_COMMANDS_NB; i++) {
-    nps_autopilot.commands[i] = (double)cmd_buf[i] / MAX_PPRZ;
-  }
-  // hack: invert pitch to fit most JSBSim models
-  nps_autopilot.commands[COMMAND_PITCH] = -(double)cmd_buf[COMMAND_PITCH] / MAX_PPRZ;
-  pthread_mutex_unlock(&fdm_mutex);
 }
 
 /*
@@ -247,7 +208,6 @@ static void on_DL_SETTING(IvyClientPtr app __attribute__((unused)),
    *
    * In case of STIL nps_update_launch_from_dl() is an empty function
    */
-  printf("ap_launch %d\n", ap_launch_index);
   if ((ap_launch_index >= 0) || (ap_launch_index < NB_SETTING)) {
     if (index==ap_launch_index){
       nps_update_launch_from_dl(value);
@@ -255,75 +215,6 @@ static void on_DL_SETTING(IvyClientPtr app __attribute__((unused)),
   }
 }
 
-
-void nps_ivy_hitl(struct NpsSensors* sensors_data)
-{
-  struct NpsSensors sensors_ivy;
-
-  // make a local copy with mutex
-  //pthread_mutex_lock(&fdm_mutex);
-  memcpy(&sensors_ivy, sensors_data, sizeof(sensors));
-  //pthread_mutex_unlock(&fdm_mutex);
-
-  // protect Ivy thread
-  pthread_mutex_lock(&ivy_mutex);
-
-  if (nps_sensors_gyro_available()) {
-    IvySendMsg("nps_hitl HITL_IMU %f %f %f %f %f %f %f %f %f %d\n",
-        (float)sensors_ivy.gyro.value.x,
-        (float)sensors_ivy.gyro.value.y,
-        (float)sensors_ivy.gyro.value.z,
-        (float)sensors_ivy.accel.value.x,
-        (float)sensors_ivy.accel.value.y,
-        (float)sensors_ivy.accel.value.z,
-        (float)sensors_ivy.mag.value.x,
-        (float)sensors_ivy.mag.value.y,
-        (float)sensors_ivy.mag.value.z,
-        AC_ID);
-  }
-
-  if (nps_sensors_gps_available()) {
-    IvySendMsg("nps_hitl HITL_GPS %.7f %.7f %.4f %.4f %f %f %f %.3f %d %d\n",
-        (float)DegOfRad(sensors_ivy.gps.lla_pos.lat),
-        (float)DegOfRad(sensors_ivy.gps.lla_pos.lon),
-        (float)sensors_ivy.gps.lla_pos.alt,
-        (float)sensors_ivy.gps.hmsl,
-        (float)sensors_ivy.gps.ecef_vel.x,
-        (float)sensors_ivy.gps.ecef_vel.y,
-        (float)sensors_ivy.gps.ecef_vel.z,
-        (float)nps_main.sim_time,
-        3, // GPS fix
-        AC_ID);
-  }
-
-  uint8_t air_data_flag = 0;
-  float baro = -1.f;
-  float airspeed = -1.f;
-  float aoa = 0.f;
-  float sideslip = 0.f;
-  if (nps_sensors_baro_available()) {
-    SetBit(air_data_flag, 0);
-    baro = (float) sensors_ivy.baro.value;
-  }
-  if (nps_sensors_airspeed_available()) {
-    SetBit(air_data_flag, 1);
-    airspeed = (float) sensors_ivy.airspeed.value;
-  }
-  if (nps_sensors_aoa_available()) {
-    SetBit(air_data_flag, 2);
-    aoa = (float) sensors_ivy.aoa.value;
-  }
-  if (nps_sensors_sideslip_available()) {
-    SetBit(air_data_flag, 3);
-    sideslip = (float) sensors_ivy.sideslip.value;
-  }
-  if (air_data_flag != 0) {
-    IvySendMsg("nps_hitl HITL_AIR_DATA %f %f %f %f %d %d\n",
-        baro, airspeed, aoa, sideslip, air_data_flag, AC_ID);
-  }
-
-  pthread_mutex_unlock(&ivy_mutex);
-}
 
 void nps_ivy_display(struct NpsFdm* fdm_data, struct NpsSensors* sensors_data)
 {

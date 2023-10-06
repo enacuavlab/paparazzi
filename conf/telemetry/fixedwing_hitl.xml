@@ -95,7 +95,7 @@
   </process>
   <process name="Fbw">
     <mode name="default">
-      <message name="COMMANDS"            period="0.01"/> <!-- For HITL, important! Do not change! The period must match CONTROL_FREQUENCY -->
+      <message name="COMMANDS"            period="1"/>
       <message name="FBW_STATUS"          period="2"/>
       <message name="ACTUATORS"           period="5"/> <!-- For trimming -->
     </mode>
@@ -111,7 +111,7 @@
     <mode name="default">
       <message name="AUTOPILOT_VERSION"   period="5.0"/>
       <message name="ALIVE"               period="1.0"/>
-      <message name="ACTUATORS"           period="0.01"/> <!-- For trimming & HITL, important! Do not change! The period must match CONTROL_FREQUENCY-->
+      <!--message name="ACTUATORS"           period="0.01"/--> <!-- For trimming & HITL, important! Do not change! The period must match CONTROL_FREQUENCY-->
       <message name="COMMANDS"            period="0.01"/> <!-- For HITL, important! Do not change! The period must match CONTROL_FREQUENCY -->
     </mode>
   </process>

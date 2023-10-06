@@ -10,6 +10,10 @@
     <provides>imu,mag,gps,baro,airspeed</provides>
   </dep>
   <makefile target="hitl">
+    <include name="$(PAPARAZZI_HOME)/var/include"/>
+    <define name="DOWNLINK"/>
     <file name="nps_hitl_sensors.c" dir="$(NPS_DIR)"/>
+    <file name="serial_port.c" dir="arch/linux"/>
+    <file name="pprz_transport.c" dir="pprzlink/src"/>
   </makefile>
 </module>
