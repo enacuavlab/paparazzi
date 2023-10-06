@@ -47,14 +47,6 @@ bool gps_has_fix;
 
 void sensors_hitl_init(void)
 {
-#if USE_BATTERY_MONITOR
-#ifdef MAX_BAT_LEVEL
-  // init vsupply to MAX_BAT in case battery voltage is not available
-  electrical.vsupply = MAX_BAT_LEVEL;
-#else
-  electrical.vsupply = 12.f; // 3S battery
-#endif
-#endif
   gps_has_fix = true;
 
   imu_hitl.gyro_available = false;
@@ -86,6 +78,17 @@ void sensors_hitl_init(void)
   imu_set_defaults_gyro(IMU_NPS_ID, NULL, &gyro_neutral, gyro_scale);
   imu_set_defaults_accel(IMU_NPS_ID, NULL, &accel_neutral, accel_scale);
   imu_set_defaults_mag(IMU_NPS_ID, NULL, &mag_neutral, mag_scale);
+}
+
+void sensors_hitl_periodic(void) {
+#if USE_BATTERY_MONITOR
+#ifdef MAX_BAT_LEVEL
+  // init vsupply to MAX_BAT in case battery voltage is not available
+  electrical.vsupply = MAX_BAT_LEVEL;
+#else
+  electrical.vsupply = 12.f; // 3S battery
+#endif
+#endif
 }
 
 void sensors_hitl_parse_HITL_IMU(uint8_t *buf)

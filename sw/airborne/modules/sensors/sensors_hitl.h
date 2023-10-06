@@ -30,6 +30,7 @@
 extern bool gps_has_fix;
 
 extern void sensors_hitl_init(void);
+extern void sensors_hitl_periodic(void);
 extern void sensors_hitl_event(void);
 extern void sensors_hitl_parse_HITL_IMU(uint8_t *buf);
 extern void sensors_hitl_parse_HITL_GPS(uint8_t *buf);

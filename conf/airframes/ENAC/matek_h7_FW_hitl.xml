@@ -34,7 +34,9 @@
       <configure name="VN_PORT" value="usb_serial_debug"/>
       <configure name="VN_BAUD" value="B230400"/>
     </module-->
-    <module name="sensors" type="hitl"/>
+    <module name="sensors" type="hitl">
+      <define name="USE_BATTERY_MONITOR"/>
+    </module>
     <!--module name="ahrs" type="float_dcm"/>
     <module name="ins" type="alt_float"/-->
     <module name="ins" type="float_invariant">
@@ -51,7 +53,6 @@
       <configure name="USE_HARD_FAULT_RECOVERY" value="FALSE"/>
       <module name="fdm" type="jsbsim"/>
       <module name="nps" type="hitl_sensors">
-        <define name="USE_BATTERY_MONITOR"/>
         <define name="AP_DEV" value="/dev/pprz-dbg" type="string"/>
       </module>
     </target>

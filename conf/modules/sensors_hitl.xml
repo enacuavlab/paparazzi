@@ -14,6 +14,7 @@
     <file name="sensors_hitl.h"/>
   </header>
   <init fun="sensors_hitl_init()"/>
+  <periodic fun="sensors_hitl_periodic()"/>
   <event fun="sensors_hitl_event()"/>
   <datalink message="HITL_IMU" fun="sensors_hitl_parse_HITL_IMU(buf)"/>
   <datalink message="HITL_GPS" fun="sensors_hitl_parse_HITL_GPS(buf)"/>
