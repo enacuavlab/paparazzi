@@ -27,7 +27,7 @@
       <configure name="MODEM_PORT" value="usb_serial"/>
     </module>
 
-    <module name="control"/>
+    <module name="control" type="new"/>
     <module name="navigation"/>
 
     <!--module name="ins"       type="vectornav">
@@ -161,21 +161,43 @@
     <!-- auto throttle inner loop -->
     <define name="AUTO_THROTTLE_NOMINAL_CRUISE_THROTTLE" value="0.65"/>
     <define name="AUTO_THROTTLE_MIN_CRUISE_THROTTLE" value="0.20"/>
-    <define name="AUTO_THROTTLE_MAX_CRUISE_THROTTLE" value="0.70"/>
-    <define name="AUTO_THROTTLE_LOITER_TRIM" value="1500"/>
-    <define name="AUTO_THROTTLE_DASH_TRIM" value="-4000"/>
-    <define name="AUTO_THROTTLE_CLIMB_THROTTLE_INCREMENT" value="0.05" unit="%/(m/s)"/>
-    <define name="AUTO_THROTTLE_PGAIN" value="0.01"/>
-    <define name="AUTO_THROTTLE_IGAIN" value="0.1"/>
-    <define name="AUTO_THROTTLE_PITCH_OF_VZ_PGAIN" value="0.45"/>
-    <define name="THROTTLE_SLEW_LIMITER" value="2" unit="s"/>
+    <define name="AUTO_THROTTLE_MAX_CRUISE_THROTTLE" value="0.80"/>
+    <define name="AUTO_PITCH_MAX_PITCH" value="20." unit="deg"/>
+    <define name="AUTO_PITCH_MIN_PITCH" value="-20." unit="deg"/>
 
-    <!-- auto pitch inner loop -->
-    <!--define name="AUTO_PITCH_PGAIN"      value="0.1"/>
-    <define name="AUTO_PITCH_IGAIN"      value="0.025"/>
-    <define name="AUTO_PITCH_MAX_PITCH"  value="0.31415"     unit="rad"/>
-    <define name="AUTO_PITCH_MIN_PITCH"  value="-0.31415"    unit="rad"/-->
+    <!-- Climb loop (throttle) -->
+    <define name="AUTO_THROTTLE_CLIMB_THROTTLE_INCREMENT" value="0.1" unit="%/(m/s)"/>
+    <define name="AUTO_THROTTLE_PGAIN" value="0.006"/>
+    <define name="AUTO_THROTTLE_DGAIN" value="0.0"/>
+    <define name="AUTO_THROTTLE_IGAIN" value="0.035"/>
+    <define name="AUTO_THROTTLE_PITCH_OF_VZ_PGAIN" value="0.09"/>
 
+    <!-- Climb loop (pitch) -->
+    <define name="AUTO_PITCH_PGAIN" value="0.027"/>
+    <define name="AUTO_PITCH_DGAIN" value="0.01"/>
+    <define name="AUTO_PITCH_IGAIN" value="0.0"/>
+
+    <!-- airspeed control -->
+    <define name="AUTO_AIRSPEED_SETPOINT" value="16."/>
+    <define name="AUTO_AIRSPEED_THROTTLE_PGAIN" value="0.1"/>
+    <define name="AUTO_AIRSPEED_THROTTLE_DGAIN" value="0.12"/>
+    <define name="AUTO_AIRSPEED_THROTTLE_IGAIN" value="0.0"/>
+    <define name="AUTO_AIRSPEED_PITCH_PGAIN" value="0.06"/>
+    <define name="AUTO_AIRSPEED_PITCH_DGAIN" value="0.0"/>
+    <define name="AUTO_AIRSPEED_PITCH_IGAIN" value="0.042"/>
+    <define name="AIRSPEED_MAX" value="30" unit="m/s"/>
+    <define name="AIRSPEED_MIN" value="10" unit="m/s"/>
+
+    <!-- groundspeed control -->
+    <define name="AUTO_GROUNDSPEED_SETPOINT" value="15" unit="m/s"/>
+    <define name="AUTO_GROUNDSPEED_PGAIN" value="1."/>
+    <define name="AUTO_GROUNDSPEED_IGAIN" value="0."/>
+
+    <!-- pitch trim -->
+    <define name="PITCH_LOITER_TRIM" value="0." unit="deg"/>
+    <define name="PITCH_DASH_TRIM" value="0." unit="deg"/>
+
+    <define name="THROTTLE_SLEW" value="0.1"/>
   </section>
 
   <section name="HORIZONTAL CONTROL" prefix="H_CTL_">
@@ -184,18 +206,17 @@
     <define name="ROLL_MAX_SETPOINT" value="0.6" unit="rad"/>
     <define name="PITCH_MAX_SETPOINT" value="0.35" unit="rad"/>
     <define name="PITCH_MIN_SETPOINT" value="-0.2" unit="rad"/>
-    <define name="PITCH_PGAIN" value="4000."/>
 
-    <!-- ORIGINAL GAIN     -->
-    <!--define name="PITCH_DGAIN" value="1.5"/-->
-
-    <!-- SIMULATOR GAIN-->
-    <define name="PITCH_DGAIN" value="70"/>
+    <define name="PITCH_PGAIN" value="10000."/>
+    <define name="PITCH_DGAIN" value="1500"/>
+    <define name="PITCH_IGAIN" value="500"/>
      
-    <define name="ELEVATOR_OF_ROLL" value="1250"/>
     <define name="ROLL_ATTITUDE_GAIN" value="9000"/>
     <define name="ROLL_RATE_GAIN" value="1600"/>
-    <define name="ROLL_SLEW"        value="0.1"/>
+    <define name="ROLL_IGAIN" value="100."/>
+
+    <define name="PITCH_OF_ROLL" value="1." unit="deg"/>
+    <define name="AILERON_OF_THROTTLE" value="0.0"/>
   </section>
 
   <section name="AGGRESSIVE" prefix="AGR_">
