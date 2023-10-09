@@ -163,6 +163,7 @@ int find_launch_index(void)
 #ifdef AP_LAUNCH
   return AP_LAUNCH - 1; // index of AP_LAUNCH starts at 1, but it should be 0 here
 #else
+#if NB_SETTING > 0
   static const char ap_launch[] = "aut_lau"; // short name
   char *ap_settings[NB_SETTING] = SETTINGS_NAMES_SHORT;
 
@@ -173,6 +174,7 @@ int find_launch_index(void)
      return (int)idx;
     }
   }
+#endif
   return -1;
 #endif
 }

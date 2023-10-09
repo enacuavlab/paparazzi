@@ -128,7 +128,7 @@ static int char_available(struct linkdev *d)
 {
   fd_set fds = d->fds;
   if (select(d->port->fd + 1, &fds, NULL, NULL, NULL) < 0) {
-    fprintf(stderr, "uart_thread: select failed!");
+    fprintf(stderr, "uart_thread: select failed!\n");
   } else {
     if (FD_ISSET(d->port->fd, &fds)) {
       return true;

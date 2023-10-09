@@ -135,9 +135,6 @@
 
   <!-- Define current estimator and Battery Level Warnings -->
   <section name="BAT">
-    <define name="MILLIAMP_AT_FULL_THROTTLE" value="50000"/>
-    <define name="CURRENT_ESTIMATION_NONLINEARITY" value="1.3"/>
-
     <!-- Simulator values -->
     <define name="MAX_BAT_LEVEL" value="5.0" unit="V" />
     <define name="LOW_BAT_LEVEL" value="4.0" unit="V"/>
