@@ -29,6 +29,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include "modules/core/abi.h"
+#include "modules/actuators/actuators.h"
 
 //Variables for outbound packet
 static abi_event SERIAL_ACT_T4_OUT;
@@ -204,8 +205,16 @@ void serial_act_t4_parse_msg_in(void)
     AbiSendMsgSERIAL_ACT_T4_IN(ABI_SERIAL_ACT_T4_IN_ID, &myserial_act_t4_in, &serial_act_t4_extra_data_in[0]);
 
     // Send RPM message from esc telemetry for INDI Stabilization
-    uint16_t rpm_list[2] = { myserial_act_t4_in.motor_1_rpm_int, myserial_act_t4_in.motor_2_rpm_int };
-    AbiSendMsgRPM(RPM_SENSOR_ID, rpm_list, 2);
+    struct act_feedback_t feedback[2];
+
+    feedback[0].idx = 0;
+    feedback[0].rpm = myserial_act_t4_in.motor_1_rpm_int;
+    feedback[0].set.rpm = true;
+    feedback[1].idx = 1;
+    feedback[1].rpm = myserial_act_t4_in.motor_2_rpm_int;
+    feedback[1].set.rpm = true;
+
+    AbiSendMsgACT_FEEDBACK(RPM_SENSOR_ACTUATOR_IDX, feedback, 2);
 }
 
 /* Event checking if serial packet are available on the bus */

@@ -113,6 +113,7 @@
     <!-- Module needed for the fly by wire communication between the Teensy T4 and the apogee-->
     <module name="serial_act_t4">
       <configure name="SERIAL_ACT_T4_PORT" value="UART6"/>
+      <define name="RPM_SENSOR_ACTUATOR_IDX" value="0"/>
     </module>
     
 
@@ -142,6 +143,8 @@
     <module name="stabilization" type="indi">
       <define name="INDI_THRUST_ON_PITCH_EFF" value="23.0"/>
       <define name="STABILIZATION_INDI_HYBRID" />
+      <define name="WLS_N_U" value="4"/>
+      <define name="WLS_N_V" value="4"/>
     </module>
 
     <module name="guidance"      type="indi_hybrid">

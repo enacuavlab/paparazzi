@@ -28,7 +28,6 @@
 #include "modules/actuators/actuators.h"
 #include "modules/core/abi.h"
 #include "filters/low_pass_filter.h"
-#include "wls/wls_alloc.h"
 #include "math/pprz_simple_matrix.h"
 #include <stdio.h>
 #include "modules/sensors/serial_act_t4.h"
@@ -171,6 +170,7 @@ static void serial_act_t4_abi_in(uint8_t sender_id __attribute__((unused)), stru
     float energy1 = -1;
     float energy2 = -1;
     float temperature = -1;
+    float temp_dev = 0;
     uint8_t node_idx = 0; 
     uint8_t motor_idx = 1; 
     pprz_msg_send_ESC(trans, dev, AC_ID,
@@ -181,6 +181,7 @@ static void serial_act_t4_abi_in(uint8_t sender_id __attribute__((unused)), stru
           &voltage1,
           &energy1,
           &temperature,
+          &temp_dev,
           &node_idx,
           &motor_idx);
 
@@ -193,6 +194,7 @@ static void serial_act_t4_abi_in(uint8_t sender_id __attribute__((unused)), stru
       &voltage2,
       &energy2,
       &temperature,
+      &temp_dev,
       &node_idx,
       &motor_idx);
   }
