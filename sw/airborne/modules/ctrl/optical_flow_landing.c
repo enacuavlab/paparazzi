@@ -200,6 +200,10 @@ PRINT_CONFIG_VAR(OFL_OPTICAL_FLOW_ID)
 #define OFL_ACTIVE_MOTION 0
 #endif
 
+#ifndef OFL_FRONT_DIV_THRESHOLD
+#define OFL_FRONT_DIV_THRESHOLD 0.3
+#endif
+
 // Normally, horizontal control is done via sending angle commands to INDI, so 0 (false)
 // When this is 1 (true),a change in angle will be commanded instead.
 #define HORIZONTAL_RATE_CONTROL 0
@@ -218,11 +222,15 @@ PRINT_CONFIG_VAR(OFL_OPTICAL_FLOW_ID)
 
 // variables retained between module calls
 
+
+float old_flow_time;
+
 // horizontal loop:
 float optical_flow_x;
 float optical_flow_y;
 float lp_flow_x;
 float lp_flow_y;
+float lp_divergence_front;
 float sum_roll_error;
 float sum_pitch_error;
 
@@ -239,6 +247,8 @@ bool landing;
 float previous_cov_err;
 int32_t thrust_set;
 float divergence_setpoint;
+
+float divergence_front;
 
 // *********************************
 // include and define stuff for SSL:
@@ -290,7 +300,7 @@ static void send_divergence(struct transport_tx *trans, struct link_device *dev)
 {
   pprz_msg_send_DIVERGENCE(trans, dev, AC_ID,
                            &(of_landing_ctrl.divergence), &divergence_vision_dt, &normalized_thrust,
-                           &cov_div, &pstate, &pused, &(of_landing_ctrl.agl));
+                           &cov_div, &pstate, &pused, &(of_landing_ctrl.agl), &lp_divergence_front);
 }
 
 /// Function definitions
@@ -330,7 +340,7 @@ void vertical_ctrl_module_init(void)
   of_landing_ctrl.vel = 0.0f;
   of_landing_ctrl.divergence_setpoint = 0.0f; // For exponential gain landing, pick a negative value
   of_landing_ctrl.cov_set_point = OFL_COV_SETPOINT;
-  of_landing_ctrl.cov_limit = fabsf(OFL_COV_LANDING_LIMIT);
+  of_landing_ctrl.cov_limit = fabsf((float)OFL_COV_LANDING_LIMIT);
   of_landing_ctrl.lp_const = OFL_LP_CONST;
   Bound(of_landing_ctrl.lp_const, 0.001f, 1.f);
   of_landing_ctrl.pgain = OFL_PGAIN;
@@ -370,6 +380,8 @@ void vertical_ctrl_module_init(void)
   of_landing_ctrl.omega_FB = OFL_OMEGA_FB;
   of_landing_ctrl.omega_LR = OFL_OMEGA_LR;
   of_landing_ctrl.active_motion = OFL_ACTIVE_MOTION;
+
+  of_landing_ctrl.front_div_threshold = OFL_FRONT_DIV_THRESHOLD;
 
   int i;
   if (of_landing_ctrl.use_bias) {
@@ -423,6 +435,11 @@ void vertical_ctrl_module_init(void)
 
   lp_flow_x = 0.0f;
   lp_flow_y = 0.0f;
+  lp_divergence_front = 0.0f;
+
+  old_flow_time = get_sys_time_float();
+
+  divergence_front = 0.0f;
 }
 
 /**
@@ -484,6 +501,7 @@ static void reset_all_vars(void)
 
   lp_flow_x = 0.0f;
   lp_flow_y = 0.0f;
+  lp_divergence_front = 0.0f;
 }
 
 /**
@@ -899,7 +917,15 @@ void vertical_ctrl_module_run(bool in_flight)
               optical_flow_x;
   lp_flow_y = of_landing_ctrl.lp_factor_prediction * lp_flow_y + (1.0f - of_landing_ctrl.lp_factor_prediction) *
               optical_flow_y;
+  lp_divergence_front = of_landing_ctrl.lp_factor_prediction * lp_divergence_front + (1.0f - of_landing_ctrl.lp_factor_prediction) *
+              divergence_front;
 
+
+
+  if(lp_divergence_front > of_landing_ctrl.front_div_threshold) {
+      // Stop moving in the longitudinal direction:
+      of_landing_ctrl.omega_FB = 0.0f;
+  }
 
   if (of_landing_ctrl.active_motion == 1) {
     // Active motion through varying ventral flow commands
@@ -1109,6 +1135,28 @@ void vertical_ctrl_optical_flow_cb(uint8_t sender_id, uint32_t stamp,
     divergence_vision = size_divergence;
     //printf("Reading %f, %f, %f\n", optical_flow_x, optical_flow_y, divergence_vision);
     vision_time = ((float)stamp) / 1e6;
+
+
+    // checking fps and newness of images:
+    /*float new_flow_time = get_sys_time_float();
+    float dt = (new_flow_time - old_flow_time);
+     if (dt > 0) {
+      float fps_flow = 1.0f / dt;
+      printf("FPS flow bottom cam in OF landing = %f, optical_flow_x = %f\n", fps_flow, optical_flow_x);
+    }
+    old_flow_time = new_flow_time; */
+  }
+  else {
+
+      float new_flow_time = get_sys_time_float();
+      float dt_flow_front = new_flow_time - old_flow_time;
+      if (dt_flow_front > 0) {
+	//float fps_flow = 1.0f / dt_flow_front;
+	//printf("FPS flow front cam in OF landing = %f\n", fps_flow);
+	old_flow_time = new_flow_time;
+
+	divergence_front = size_divergence / dt_flow_front;
+      }
   }
 }
 
@@ -1125,7 +1173,7 @@ void guidance_h_module_enter(void)
 
 }
 
-void guidance_h_module_run(bool in_flight)
+void guidance_h_module_run(bool UNUSED in_flight)
 {
 
 }
@@ -1248,7 +1296,7 @@ void learn_from_file(void)
   printf("Learned! Fit error = %f\n", fit_error);
 
   // free learning distributions:
-  for (i = 0; i < n_read_samples; i++) {
+  for (i = 0; i < (int) n_read_samples; i++) {
     free(text_dists[i]);
   }
 }
@@ -1312,7 +1360,7 @@ void recursive_least_squares_batch(float *targets, float **samples, uint8_t D, u
   (*fit_error) = sum_abs_err / count;
 }
 
-void recursive_least_squares(float target, float *sample, uint8_t length_sample, float *params)
+void recursive_least_squares(float target, float *sample, uint8_t length_sample, UNUSED float *params)
 {
   // MATLAB procedure:
   /*
