@@ -145,8 +145,8 @@ void imu_colibri_event(void)
 
     mpu60x0.data_available = false;
 
-    AbiSendMsgIMU_GYRO_RAW(IMU_MPU60X0_ID, now_ts, &rates, 1, mpu60x0.temp);
-    AbiSendMsgIMU_ACCEL_RAW(IMU_MPU60X0_ID, now_ts, &accel, 1, mpu60x0.temp);
+    AbiSendMsgIMU_GYRO_RAW(IMU_MPU60X0_ID, now_ts, &rates, 1, IMU_MPU_I2C_PERIODIC_FREQ, mpu60x0.temp);
+    AbiSendMsgIMU_ACCEL_RAW(IMU_MPU60X0_ID, now_ts, &accel, 1, IMU_MPU_I2C_PERIODIC_FREQ, mpu60x0.temp);
    
   }
 /*
@@ -166,8 +166,8 @@ void imu_colibri_event(void)
 
     mpu60x0_wg.data_available = false;
 
-    AbiSendMsgIMU_GYRO_RAW(IMU_MPU60X0_WG_ID, now_ts, &rates, 1, mpu60x0_wg.temp);
-    AbiSendMsgIMU_ACCEL_RAW(IMU_MPU60X0_WG_ID, now_ts, &accel, 1, mpu60x0_wg.temp);
+    AbiSendMsgIMU_GYRO_RAW(IMU_MPU60X0_WG_ID, now_ts, &rates, 1, IMU_MPU_I2C_PERIODIC_FREQ, mpu60x0_wg.temp);
+    AbiSendMsgIMU_ACCEL_RAW(IMU_MPU60X0_WG_ID, now_ts, &accel, 1, IMU_MPU_I2C_PERIODIC_FREQ, mpu60x0_wg.temp);
    
   }
 */
@@ -189,8 +189,8 @@ void imu_colibri_event(void)
 
     mpu60x0.data_available = false;
 
-    AbiSendMsgIMU_GYRO_RAW(IMU_MPU9250_ID, now_ts, &rates, 1, NAN);
-    AbiSendMsgIMU_ACCEL_RAW(IMU_MPU9250_ID, now_ts, &accel, 1, NAN);
+    AbiSendMsgIMU_GYRO_RAW(IMU_MPU9250_ID, now_ts, &rates, 1, IMU_MPU_I2C_PERIODIC_FREQ, NAN);
+    AbiSendMsgIMU_ACCEL_RAW(IMU_MPU9250_ID, now_ts, &accel, 1, IMU_MPU_I2C_PERIODIC_FREQ, NAN);
    
   }
   

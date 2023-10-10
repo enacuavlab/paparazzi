@@ -33,7 +33,7 @@
  * @param epsilon high gain
  * @param rate data update rate
  */
-void high_gain_filter_init(struct high_gain_filter *filter, float alpha[3], float epsilon, float rate){
+void high_gain_filter_init(struct high_gain_filter *filter, float *alpha, float epsilon, float rate){
   filter->alpha[0] = alpha[0];
   filter->alpha[1] = alpha[1];
   filter->alpha[2] = alpha[2];
