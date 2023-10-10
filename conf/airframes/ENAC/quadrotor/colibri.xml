@@ -143,6 +143,8 @@
     <module type="indi" name="stabilization">
       <define name="STABILIZATION_INDI_HYBRID"/>
       <configure name="INDI_NUM_ACT" value="6"/>
+      <define name="WLS_N_U" value="6"/>
+      <define name="WLS_N_V" value="4"/>
     </module>
     
     <module type="indi_hybrid" name="guidance">

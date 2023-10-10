@@ -25,6 +25,8 @@
     <define name="USE_$(IMU_MPU60X0_SPI_DEV_UPPER)"/>
     <define name="IMU_MPU60X0_SPI_SLAVE_IDX" value="$(IMU_MPU60X0_SPI_SLAVE_IDX)"/>
     <define name="USE_$(IMU_MPU60X0_SPI_SLAVE_IDX)"/>
+    <define name="IMU_MPU_I2C_PERIODIC_FREQ" value="512"/>
+
 
      <!-- MPU60x0 Wing -->
     <!--configure name="IMU_MPU60X0_WG_I2C_DEV" value="i2c2" case="upper|lower"/>
