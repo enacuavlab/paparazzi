@@ -31,6 +31,8 @@
 #include "mcu_periph/sys_time_arch.h"
 #include <stdint.h>
 #include "peripherals/sts3032_regs.h"
+#include "modules/actuators/actuators.h"
+#include "modules/core/abi.h"
 
 #ifndef STS3032_IDS
 #error "STS3032_IDS must be defined"
@@ -107,6 +109,15 @@ void actuators_sts3032_periodic(void)
 
   for (int i = 0; i < SERVOS_STS3032_NB; i++) {
     sts3032_read_pos(&sts, sts.ids[i]);
+    uint8_t servo_idx = (i+1);
+    // Feedback ABI RPM messages
+    struct act_feedback_t feedback;
+    feedback.idx =  SERVOS_STS3032_OFFSET + servo_idx;
+    feedback.position = (sts.pos[i] - get_servo_neutral_STS3032(servo_idx))/M_PI_2;
+    feedback.set.position = true;
+
+    // Send ABI message
+    AbiSendMsgACT_FEEDBACK(ACT_FEEDBACK_SERVO_SENSOR_ID, &feedback, 1);
   }
 
 #if STS3032_DEBUG
@@ -117,6 +128,8 @@ void actuators_sts3032_periodic(void)
   }
   DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, SERVOS_STS3032_NB + 1, data);
 #endif
+
+  
 
 }
 
