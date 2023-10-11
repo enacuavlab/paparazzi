@@ -493,6 +493,10 @@
 #define ACT_FEEDBACK_RPM_SENSOR_ID 4
 #endif
 
+#ifndef ACT_FEEDBACK_SERVO_SENSOR_ID
+#define ACT_FEEDBACK_SERVO_SENSOR_ID 5
+#endif
+
 /*
  * IDs of THRUST increment calculation (message 16)
  */

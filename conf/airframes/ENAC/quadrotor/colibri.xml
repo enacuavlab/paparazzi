@@ -109,8 +109,6 @@
     </module>
 
     
-
-
     <module name="sys_mon"/>
     <module type="xbee_api" name="telemetry">
       <!--define name="MODEM_PORT" value="UART2"/-->
@@ -124,16 +122,21 @@
       <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE" />
     </module>
 
-    <module type="pwm" name="actuators">
+    <module name="actuators" type="pwm" >
       <define name="STM32_PWM_USE_TIM1" value="TRUE"/>
       <!-- SERVO A1 TO A4 by default-->
       <define name="TIM1_SERVO_HZ" value="400"/>
     </module>
 
-    <module type="dshot" name="actuators">
+    <module name="actuators" type="dshot" >
       <define name="DSHOT_SPEED" value="300"/>
       <define name="DSHOT_TIM4_TELEMETRY_NUM" value="DSHOT_TLM_RX"/>
       <define name="DSHOT_TELEMETRY_TIMEOUT_MS" value="1000"/>
+    </module>
+
+    <module name="actuators" type="sts3032" >
+       <configure name="STS3032_UART" value="UART7"/>
+      <define name="USE_UART7" />
     </module>
 
     <module name="air_data">
@@ -220,11 +223,15 @@
     <servo max="2000" neutral="100" name="UL" no="2" min="0"/>
   </servos>
   <servos driver="Pwm">
-    <servo max="2000" neutral="1550" name="ELEVON_L" no="1" min="1000"/>
-    <servo max="2000" neutral="1500" name="ELEVON_R" no="2" min="1000"/>
-    <servo max="2000" neutral="1500" name="PROFONDEUR_SERVO" no="3" min="1000"/>
-    <servo max="2000" neutral="1100" name="PROFONDEUR_MOTOR" no="4" min="1000"/>
+    <servo max="2000" neutral="1500" name="PROFONDEUR_SERVO" no="1" min="1000"/>
+    <servo max="2000" neutral="1100" name="PROFONDEUR_MOTOR" no="2" min="1000"/>
   </servos>
+
+  <servos driver="STS3032">
+    <servo name="ELEVON_L" no="1" min="1000" neutral="1500" max="2000"/>
+    <servo name="ELEVON_R" no="2" min="1000" neutral="1500" max="2000"/>
+  </servos>
+
   <commands>
     <axis name="PITCH" failsafe_value="0"/>
     <axis name="ROLL" failsafe_value="0"/>
@@ -237,15 +244,22 @@
       <set servo="BR" value="autopilot.motors_on ? Min(actuators_pprz[1],MAX_PPRZ/4) : -MAX_PPRZ"/>
       <set servo="BL" value="autopilot.motors_on ? Min(actuators_pprz[2],MAX_PPRZ/4) : -MAX_PPRZ"/>
       <set servo="UL" value="autopilot.motors_on ? Min(actuators_pprz[3],MAX_PPRZ/4) : -MAX_PPRZ"/-->
-    <set value="autopilot.motors_on ? actuators_pprz[0] : -MAX_PPRZ" servo="UR"/>
-    <set value="autopilot.motors_on ? actuators_pprz[1] : -MAX_PPRZ" servo="BR"/>
-    <set value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ" servo="BL"/>
-    <set value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ" servo="UL"/>
-    <set value="autopilot.motors_on ? actuators_pprz[4] : 0" servo="ELEVON_L"/>
-    <set value="autopilot.motors_on ? actuators_pprz[5] : 0" servo="ELEVON_R"/>
-    <set value="autopilot.motors_on ? actuators_pprz[6] : 0" servo="PROFONDEUR_SERVO"/>
-    <set value="autopilot.motors_on ? actuators_pprz[7] : -MAX_PPRZ" servo="PROFONDEUR_MOTOR"/>
+    <set servo="UR" value="autopilot.motors_on ? actuators_pprz[0] : -MAX_PPRZ" />
+    <set servo="BR" value="autopilot.motors_on ? actuators_pprz[1] : -MAX_PPRZ" />
+    <set servo="BL" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ" />
+    <set servo="UL" value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ" />
+    <set servo="ELEVON_L" value="autopilot.motors_on ? actuators_pprz[4] : 0" />
+    <set servo="ELEVON_R" value="autopilot.motors_on ? actuators_pprz[5] : 0" />
+    <set servo="PROFONDEUR_SERVO" value="autopilot.motors_on ? actuators_pprz[6] : 0" />
+    <set servo="PROFONDEUR_MOTOR" value="autopilot.motors_on ? actuators_pprz[7] : -MAX_PPRZ" />
   </command_laws>
+
+  <section name="STS3032" prefix="STS3032_">
+    <define name="IDS" value="{1, 2}" description="Ids of the servos (in the actuators order)"/>
+    <define name="DELAY_MSG" value="1000" description="Delay to wait before sending an other message when a response is expected"/>
+    <define name="DELAY_MSG_MIN" value="0" description="Delay when no response is expected"/>
+    <define name="STS3032_RESPONSE_LEVEL" value="1" description="The response level of the servos"/>
+  </section>
 
   <!-- IMU calibration tawaki-->
   <!-- IMU calibration, make sure to calibrate the IMU properly before flight, see the wiki for more info-->
