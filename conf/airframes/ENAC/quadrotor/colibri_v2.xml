@@ -20,11 +20,11 @@
       <module name="spi_master"/>
 
       <!--function of the form: A*airspeed^2-->
-      <module name="eff_scheduling_colibri">
+      <!-- <module name="eff_scheduling_colibri">
         <define name="CE_ROLL_A" value="0"/>
-        <define name="CE_PITCH_A" value="0.45"/> <!--.45 -->
-        <define name="CE_YAW_A" value="0.045"/> <!--.045 -->
-      </module>
+        <define name="CE_PITCH_A" value="0.45"/> 
+        <define name="CE_YAW_A" value="0.045"/> 
+      </module> -->
 
       <!--Switch advanced INDI scheduling functions on or off-->
       <define name="INDI_FUNCTIONS_RC_CHANNEL" value="6"/>
@@ -331,7 +331,7 @@
 
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
-    <!-- UR BR BL UL ELEVON_L ELEVON_R-->
+    <!-- REXT RINT LEXT LINT ELEVON_L ELEVON_R-->
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
     <!--define name="G1_ROLL" value="{ -80.0, -80.0,   80.0,  80.0, 0.0, 0.0}"/> 
     <define name="G1_PITCH" value="{ -80.0,  80.0,   80.0, -80.0, 0.0, 0.0}"/>
@@ -339,8 +339,8 @@
     <define name="G1_THRUST" value="{ - 1.5, - 1.5,  - 1.5, - 1.5, 0.0, 0.0}" /-->
 
     <!--define name="G1_ROLL"   value="{ - 40.0, - 40.0,    40.0,   40.0, 0.0, 0.0}"/--> 
-    <define name="G1_ROLL"   value="{ - 27.0,  - 27.0,     27.0,    27.0,  0.0, 0.0}"/>
-    <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,     0.0,  5.0, 5.0}"/> <!-- -->
+    <define name="G1_ROLL"   value="{ - 60.0,  - 27.0,     60.0,    27.0,  0.0, 0.0}"/>
+    <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,     0.0,  40.0, 40.0}"/> <!-- -->
     <define name="G1_YAW"    value="{ -  5.0,     5.0,      5.0,     -5.0, 0.0, 0.0}"/>
     <define name="G1_THRUST" value="{ -  1.19, -  1.19,  -  1.19, -  1.19, 0.0, 0.0}" />
 
