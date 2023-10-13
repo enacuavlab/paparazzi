@@ -186,8 +186,8 @@
 
     <module name="gps" type="datalink"/>
 
-    <!--module name="ins" type="gps_passthrough"/-->
-    <!-- module name="ins"/ -->
+    <!-- <module name="ins" type="gps_passthrough"/> -->
+    <!-- <module name="ins"/> -->
 
     <!-- <module name="ins" type="ekf2">
       <define name="INS_EKF2_OPTITRACK" value="true"/>
