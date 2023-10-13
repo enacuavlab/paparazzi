@@ -1,8 +1,10 @@
-<!-- Colibri windshape
+<!-- Colibri v2 
 	Tawaki v1.10 Chibios
 	Xbee API
 	Ublox M8N
-	SBUS FrSky -->
+	SBUS FrSky
+    AM32 loop speed control
+    Motor on the wing -->
 <airframe name="colibri">
   <firmware name="rotorcraft">
 
@@ -217,10 +219,10 @@
   </firmware>
 
   <servos driver="DShot">
-    <servo max="2000" neutral="100" name="UR" no="3" min="0"/> 
-    <servo max="2000" neutral="100" name="BR" no="4" min="0"/>
-    <servo max="2000" neutral="100" name="BL" no="1" min="0"/>
-    <servo max="2000" neutral="100" name="UL" no="2" min="0"/>
+    <servo max="2000" neutral="100" name="LEXT" no="3" min="0"/> 
+    <servo max="2000" neutral="100" name="LINT" no="4" min="0"/>
+    <servo max="2000" neutral="100" name="REXT" no="1" min="0"/>
+    <servo max="2000" neutral="100" name="RINT" no="2" min="0"/>
   </servos>
   <servos driver="Pwm">
     <servo max="2000" neutral="1500" name="PROFONDEUR_SERVO" no="1" min="1000"/>
@@ -229,7 +231,7 @@
 
   <servos driver="STS3032">
     <servo name="ELEVON_R" no="0" min="1536" neutral="2048" max="2560"/>
-    <servo name="ELEVON_L" no="1" min="1536" neutral="2048" max="2560"/>
+    <servo name="ELEVON_L" no="1" min="2560" neutral="2048" max="1536"/>
   </servos>
 
   <commands>
@@ -244,10 +246,10 @@
       <set servo="BR" value="autopilot.motors_on ? Min(actuators_pprz[1],MAX_PPRZ/4) : -MAX_PPRZ"/>
       <set servo="BL" value="autopilot.motors_on ? Min(actuators_pprz[2],MAX_PPRZ/4) : -MAX_PPRZ"/>
       <set servo="UL" value="autopilot.motors_on ? Min(actuators_pprz[3],MAX_PPRZ/4) : -MAX_PPRZ"/-->
-    <set servo="UR" value="autopilot.motors_on ? actuators_pprz[0] : -MAX_PPRZ" />
-    <set servo="BR" value="autopilot.motors_on ? actuators_pprz[1] : -MAX_PPRZ" />
-    <set servo="BL" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ" />
-    <set servo="UL" value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ" />
+    <set servo="REXT" value="autopilot.motors_on ? actuators_pprz[0] : -MAX_PPRZ" />
+    <set servo="RINT" value="autopilot.motors_on ? actuators_pprz[1] : -MAX_PPRZ" />
+    <set servo="LEXT" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ" />
+    <set servo="LINT" value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ" />
     <set servo="ELEVON_L" value="autopilot.motors_on ? actuators_pprz[4] : 0" />
     <set servo="ELEVON_R" value="autopilot.motors_on ? actuators_pprz[5] : 0" />
     <set servo="PROFONDEUR_SERVO" value="autopilot.motors_on ? actuators_pprz[6] : 0" />
@@ -337,9 +339,9 @@
     <define name="G1_THRUST" value="{ - 1.5, - 1.5,  - 1.5, - 1.5, 0.0, 0.0}" /-->
 
     <!--define name="G1_ROLL"   value="{ - 40.0, - 40.0,    40.0,   40.0, 0.0, 0.0}"/--> 
-    <define name="G1_ROLL"   value="{ - 27.0, - 27.0,    27.0,   27.0, 0.0, 0.0}"/>
-    <define name="G1_PITCH"  value="{ -60.0,  60.0,   60.0, -60.0, 0.0, 0.0}"/> <!-- -->
-    <define name="G1_YAW"    value="{ -  5.0,    5.0,  -  5.0,    5.0, 0.0, 0.0}"/>
+    <define name="G1_ROLL"   value="{ - 27.0,  - 27.0,     27.0,    27.0,  0.0, 0.0}"/>
+    <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,     0.0,  5.0, 5.0}"/> <!-- -->
+    <define name="G1_YAW"    value="{ -  5.0,     5.0,      5.0,     -5.0, 0.0, 0.0}"/>
     <define name="G1_THRUST" value="{ -  1.19, -  1.19,  -  1.19, -  1.19, 0.0, 0.0}" />
 
     <!--Counter torque effect of spinning up a rotor-->
