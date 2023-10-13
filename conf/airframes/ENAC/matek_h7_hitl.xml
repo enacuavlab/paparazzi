@@ -12,10 +12,6 @@
     <configure name="PERIODIC_FREQUENCY" value="500"/>
 
     <target name="ap" board="matek_h743_slim">
-      <module name="extra_dl">
-        <configure name="EXTRA_DL_PORT" value="usb_serial_debug"/>
-        <configure name="EXTRA_DL_BAUD" value="B230400"/>
-      </module>
     </target>
 
     <target name="nps" board="pc">
@@ -24,9 +20,11 @@
 
     <module name="radio_control" type="datalink"/>
 
+    <configure name="HITL_PORT" value="usb_serial_debug"/>
     <module name="sensors" type="hitl">
       <define name="USE_BATTERY_MONITOR"/>
     </module>
+    <module name="actuators" type="hitl"/>
     <module name="ins" type="ekf2"/>
 
     <module name="stabilization" type="int_quat"/>

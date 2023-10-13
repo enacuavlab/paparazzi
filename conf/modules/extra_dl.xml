@@ -28,6 +28,7 @@
     <configure name="EXTRA_DL_PORT" default="uart1" case="upper|lower"/>
     <define name="EXTRA_DOWNLINK_DEVICE" value="$(EXTRA_DL_PORT_LOWER)"/>
     <define name="USE_$(EXTRA_DL_PORT_UPPER)"/>
+    <define name="$(EXTRA_DL_PORT_UPPER)_BAUD" value="$(EXTRA_DL_BAUD)"/>
     <configure name="TELEMETRY_FREQUENCY" default="$(PERIODIC_FREQUENCY)"/>
     <define name="TELEMETRY_FREQUENCY" value="$(TELEMETRY_FREQUENCY)"/>
     <file name="extra_pprz_dl.c"/>

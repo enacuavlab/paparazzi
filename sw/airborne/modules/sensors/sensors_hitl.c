@@ -25,6 +25,7 @@
 #include "modules/energy/electrical.h"
 #include "generated/airframe.h"
 #include "modules/datalink/datalink.h"
+#include "modules/datalink/telemetry.h"
 #include "nps_sensors_params_common.h"
 #if USE_BATTERY_MONITOR
 #include "modules/energy/electrical.h"
@@ -44,9 +45,14 @@ struct ImuHitl imu_hitl;
 struct GpsState gps_hitl;
 bool gps_has_fix;
 
+static bool sensors_hitl_msg_available = false;
+static uint8_t sensors_hitl_dl_buffer[MSG_SIZE]  __attribute__((aligned));
+static struct pprz_transport sensors_hitl_tp;
 
 void sensors_hitl_init(void)
 {
+  pprz_transport_init(&sensors_hitl_tp); // for receiving only
+
   gps_has_fix = true;
 
   imu_hitl.gyro_available = false;
@@ -224,6 +230,10 @@ void sensors_hitl_event(void)
     AbiSendMsgIMU_MAG_RAW(IMU_NPS_ID, now_ts, &imu_hitl.mag);
     imu_hitl.mag_available = false;
   }
+
+  // parse incoming messages
+  pprz_check_and_parse(&HITL_DEVICE.device, &sensors_hitl_tp, sensors_hitl_dl_buffer, &sensors_hitl_msg_available);
+  DlCheckAndParse(&HITL_DEVICE.device, &sensors_hitl_tp.trans_tx, sensors_hitl_dl_buffer, &sensors_hitl_msg_available, false);
 }
 
 void imu_feed_gyro_accel(void) {}
