@@ -1,9 +1,9 @@
 <!DOCTYPE module SYSTEM "../module.dtd">
 
-<module name="fixedwing_hitl" dir="firmwares" task="core">
+<module name="generic_hitl" dir="firmwares" task="core">
   <doc>
     <description>
-        Hardware In The Loop for Fixedwing
+        Generic firmware config for Hardware In The Loop simualtion
     </description>
   </doc>
   <makefile target="hitl">

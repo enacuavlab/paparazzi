@@ -48,7 +48,7 @@
     <module name="air_data"/>
   </firmware>
 
-  <firmware name="fixedwing_hitl">
+  <firmware name="generic_hitl">
     <target name="hitl" board="pc">
       <configure name="USE_HARD_FAULT_RECOVERY" value="FALSE"/>
       <module name="fdm" type="jsbsim"/>
