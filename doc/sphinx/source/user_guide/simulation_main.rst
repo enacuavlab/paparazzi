@@ -4,6 +4,10 @@
 Simulation
 ===========================
 
+.. figure:: PPRZ_Simulation.png
+
+  Architecture for software or hardware in the loop simulation
+
 Paparazzi currently has two different simulator targets with different degrees of realism and intended purpose:
 
 - **sim**: The basic fixedwing simulator written in OCaml without IMU simulation or any sensor models (noise, bias, etc) and mainly intended to validate your :ref:`flightplans` logic.
