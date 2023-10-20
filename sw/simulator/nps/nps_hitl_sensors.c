@@ -31,6 +31,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/select.h>
 #include "nps_sensors.h"
 #include "nps_main.h"
@@ -48,6 +49,13 @@
 #ifndef AP_BAUD
 #define AP_BAUD B230400
 PRINT_CONFIG_MSG_VALUE("[hitl] Using default baudrate for AP_DEV (B230400)", AP_BAUD)
+#endif
+
+#define NPS_HITL_DEBUG 1
+#if NPS_HITL_DEBUG
+#define DEBUG_PRINT printf
+#else
+#define DEBUG_PRINT(...) {}
 #endif
 
 void *nps_sensors_loop(void *data __attribute__((unused)));
@@ -100,7 +108,7 @@ static void send_message(struct linkdev *d, long fd __attribute__((unused)))
     ret = write((int)(d->port->fd), d->tx_buf, d->tx_idx);
   } while (ret < 1 && errno == EAGAIN); //FIXME: max retry
   if (ret < 1) {
-    printf("[hitl] put_byte: write failed [%d: %s]\n", ret, strerror(errno));
+    DEBUG_PRINT("[hitl] put_byte: write failed [%d: %s]\n", ret, strerror(errno));
   }
   d->tx_idx = 0;
 }
@@ -116,26 +124,26 @@ static uint8_t getch(struct linkdev *d)
     if (d->rx_idx < PPRZLINK_BUFFER_SIZE) {
       d->rx_idx++;
     } else {
-      printf("[hitl] rx buffer overflow\n");
+      DEBUG_PRINT("[hitl] rx buffer overflow\n");
     }
   } else {
-    printf("[hitl] rx read error\n");
+    DEBUG_PRINT("[hitl] rx read error\n");
   }
   return c;
 }
 
+static struct timeval timeout = { .tv_sec = 0, .tv_usec = 100 };
 static int char_available(struct linkdev *d)
 {
   fd_set fds = d->fds;
-  if (select(d->port->fd + 1, &fds, NULL, NULL, NULL) < 0) {
-    fprintf(stderr, "uart_thread: select failed!\n");
+  if (select(d->port->fd + 1, &fds, NULL, NULL, &timeout) < 0) {
+    DEBUG_PRINT("uart_thread: select failed!\n");
   } else {
     if (FD_ISSET(d->port->fd, &fds)) {
       return true;
     }
   }
   return false;
-  //return (int) d->rx_idx;
 }
 
 /// END pprzlink_dev
@@ -293,6 +301,7 @@ void *nps_ap_data_loop(void *data __attribute__((unused)))
       uint8_t msg_id = IdOfPprzMsg(msg_buffer);
 
       if (sender_id != AC_ID) {
+        printf("[hitl] receiving message from wrong id (%d)\n", sender_id);
         return(NULL); // wrong A/C ?
       }
       /* parse telemetry messages coming from the correct AC_ID */
@@ -340,7 +349,7 @@ void *nps_ap_data_loop(void *data __attribute__((unused)))
       msg_available = false;
     }
 
-    // wait before next loopo
+    // wait before next loop
     waitFor.tv_sec = 0;
     waitFor.tv_nsec = 1000;
     nanosleep(&waitFor, NULL);
