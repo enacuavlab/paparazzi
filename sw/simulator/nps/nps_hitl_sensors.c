@@ -32,7 +32,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/select.h>
+#include <sys/poll.h>
 #include "nps_sensors.h"
 #include "nps_main.h"
 #include "paparazzi.h"
@@ -51,7 +51,7 @@
 PRINT_CONFIG_MSG_VALUE("[hitl] Using default baudrate for AP_DEV (B230400)", AP_BAUD)
 #endif
 
-#define NPS_HITL_DEBUG 1
+#define NPS_HITL_DEBUG 0
 #if NPS_HITL_DEBUG
 #define DEBUG_PRINT printf
 #else
@@ -79,7 +79,7 @@ struct linkdev {
   struct pprz_transport pprz_tp;
   /** Serial port */
   struct SerialPort *port;
-  fd_set fds;
+  struct pollfd fds[1];
 };
 
 static struct linkdev dev;
@@ -132,16 +132,19 @@ static uint8_t getch(struct linkdev *d)
   return c;
 }
 
-static struct timeval timeout = { .tv_sec = 0, .tv_usec = 100 };
 static int char_available(struct linkdev *d)
 {
-  fd_set fds = d->fds;
-  if (select(d->port->fd + 1, &fds, NULL, NULL, &timeout) < 0) {
-    DEBUG_PRINT("uart_thread: select failed!\n");
-  } else {
-    if (FD_ISSET(d->port->fd, &fds)) {
+  int ret = poll(d->fds, 1, 1000);
+  if (ret > 0) {
+    if (d->fds[0].revents & POLLHUP) {
+      printf("[hitl] lost connection. Exiting\n");
+      exit(1);
+    }
+    if (d->fds[0].revents & POLLIN) {
       return true;
     }
+  } else if (ret == -1) {
+    DEBUG_PRINT("[hitl] poll failed\n");
   }
   return false;
 }
@@ -170,10 +173,10 @@ void nps_hitl_impl_init(void)
     serial_port_free(dev.port);
   }
 
-  // select
-  FD_ZERO(&dev.fds);
+  // poll
   if (dev.port != NULL) {
-    FD_SET(dev.port->fd, &dev.fds);
+    dev.fds[0].fd = dev.port->fd;
+    dev.fds[0].events = POLLIN;
   }
 }
 
