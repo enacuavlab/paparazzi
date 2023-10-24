@@ -36,6 +36,7 @@
 #include "modules/datalink/datalink.h"
 #include "modules/datalink/downlink.h"
 #include "modules/loggers/flight_recorder.h"
+#include "filters/low_pass_filter.h"
 
 #include "generated/flight_plan.h"
 #include "generated/airframe.h"
@@ -67,8 +68,8 @@
   //  #include "coef_systune.h"
   // #include "coef_systune_struct.h"
   // #include "coef_systune_struct_armand.h"
-  // #include "coef_systune_struct_dyn_mot.h"
-  #include "coef_systune_struct_dyn_mot2.h"
+  #include "coef_systune_struct_dyn_mot.h"
+  // #include "coef_systune_struct_dyn_mot2.h"
   // #include "coef_systune_decouplage.h"
   //#include "coef_dabb_good_feed_neg_3.h"
   // #include "coef_dabb_good_feed_neg.h"
@@ -107,6 +108,10 @@ float tf_state1[2] = {0, 0};
 float tf_state2[2] = {0, 0};
 float tf_state3[2] = {0, 0};
 float tf_state4[2] = {0, 0};
+
+Butterworth2LowPass rates_lowpass_filters[3];
+
+// Butterworth2LowPass rates_lowpass_filters[1];
 
 // serial_act_t4 variables:
 struct serial_act_t4_out myserial_act_t4_out_local;
@@ -235,6 +240,16 @@ void stabilization_hover_wind_init(void){
   rc_x = 0;
   rc_y = 0;
   rc_z = 0;
+
+  float tau = 1.0 / (2.0 * M_PI * 20.0);
+  float sample_time = 1.0 / PERIODIC_FREQUENCY;
+  
+  // Filtering of the gyroscope
+  int8_t i;
+  for (i = 0; i < 3; i++) {
+    init_butterworth_2_low_pass(&rates_lowpass_filters[i], tau, sample_time, 0.0);
+  }
+  // init_butterworth_2_low_pass(&rates_lowpass_filters[0], tau, sample_time, 0.0);
 }
 
 void stabilization_hover_wind_run(bool in_flight){
@@ -257,6 +272,8 @@ void stabilization_hover_wind_run(bool in_flight){
      pos_target.y = 0.464;
      pos_target.z = -1.339;
   }
+
+  
    
   
 
@@ -268,8 +285,16 @@ void stabilization_hover_wind_run(bool in_flight){
   float_quat_comp(&quat_att_barth_frame, stateGetNedToBodyQuat_f(), &quat_smeur_2_barth);
   float_quat_vmult(&barth_rate, &quat_smeur_2_barth, &smeur_rate);
 
+  float rate_vect[3] = {barth_rate.x, barth_rate.y, barth_rate.z};
 
-   if(COEFF_DABB == 1 ){
+  int8_t i;
+  for (i = 0; i < 3; i++) {
+    update_butterworth_2_low_pass(&rates_lowpass_filters[i], rate_vect[i]);
+  }
+
+  // update_butterworth_2_low_pass(&rates_lowpass_filters[0], barth_rate.y);
+
+  if(COEFF_DABB == 1 ){
     eps[0][0] = stateGetPositionNed_f()->x - pos_target.x; 
     eps[1][0] = stateGetPositionNed_f()->y - pos_target.y;
     eps[2][0] = stateGetPositionNed_f()->z - pos_target.z;
@@ -278,9 +303,12 @@ void stabilization_hover_wind_run(bool in_flight){
     eps[5][0] = stateGetSpeedNed_f()->z;
     eps[6][0] = quat_att_barth_frame.qx;
     eps[7][0] = quat_att_barth_frame.qz;
-    eps[8][0] = barth_rate.x;
-    eps[9][0] = barth_rate.y;
-    eps[10][0] = barth_rate.z;
+    eps[8][0] = rates_lowpass_filters[0].o[0];
+    eps[9][0] = rates_lowpass_filters[1].o[0];
+    eps[10][0] = rates_lowpass_filters[2].o[0];
+    // eps[8][0] = barth_rate.x;
+    // eps[9][0] = rates_lowpass_filters[0].o[0];
+    // eps[10][0] = barth_rate.z;
   }
   else{
     eps[0][0] = pos_target.x - stateGetPositionNed_f()->x; 
@@ -291,9 +319,12 @@ void stabilization_hover_wind_run(bool in_flight){
     eps[5][0] = -stateGetSpeedNed_f()->z;
     eps[6][0] = -quat_att_barth_frame.qx;
     eps[7][0] = -quat_att_barth_frame.qz;
-    eps[8][0] = -barth_rate.x;
-    eps[9][0] = -barth_rate.y;
-    eps[10][0] = -barth_rate.z;
+    eps[8][0] = -rates_lowpass_filters[0].o[0];
+    eps[9][0] = -rates_lowpass_filters[1].o[0];
+    eps[10][0] = -rates_lowpass_filters[2].o[0];
+    // eps[8][0] = -barth_rate.x;
+    // eps[9][0] = -rates_lowpass_filters[0].o[0];
+    // eps[10][0] = -barth_rate.z;
   }
 
   MAT_MUL_c(CTRL_HOVER_WIND_NUM_INTEGRATOR_STATE, CTRL_HOVER_WIND_INPUT, 1, dot_x_e_dt, H, eps, 1./PERIODIC_FREQUENCY);
