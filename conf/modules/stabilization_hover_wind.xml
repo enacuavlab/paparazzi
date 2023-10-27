@@ -1,0 +1,35 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="stabilization_hover_wind" dir="stabilization" task="control">
+  <doc>
+    <description>
+      Stabilization controller for flying wing in hover with constant wind disturbance
+    </description>
+
+
+    <section name="STABILIZATION_HOVER_WIND" prefix="STABILIZATION_HOVER_WIND_">
+
+    </section>
+  </doc>
+
+  <settings>
+
+  </settings>
+
+  <dep>
+    <depends>@navigation,stabilization_rotorcraft,@attitude_command</depends>
+    <provides>commands</provides>
+  </dep>
+
+  <header>
+    <file name="stabilization_hover_wind.h"/>
+  </header>
+
+  <init fun="stabilization_hover_wind_init()"/>
+  <datalink message="WIND_INFO" fun="parse_wind_info_msg(buf)"/>
+
+  <makefile target="ap|nps" firmware="rotorcraft">
+    <file name="stabilization_hover_wind.c" dir="$(SRC_FIRMWARE)/stabilization"/>
+
+  </makefile>
+</module>

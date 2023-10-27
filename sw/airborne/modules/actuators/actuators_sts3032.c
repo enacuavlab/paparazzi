@@ -86,6 +86,26 @@ void sts3032_lock_eeprom(struct sts3032 *sts, uint8_t id, uint8_t lock);
 void sts3032_set_response_level(struct sts3032 *sts, uint8_t id, uint8_t level);
 void sts3032_set_id(struct sts3032 *sts, uint8_t id, uint8_t new_id);
 
+#if PERIODIC_TELEMETRY
+  static void servo_msg_send(struct transport_tx *trans, struct link_device *dev) {
+    for (int i = 0; i < SERVOS_STS3032_NB; i++) {
+      uint8_t servo_idx = (i+1);
+      float pos_rad = (sts.pos[i] - get_servo_neutral_STS3032(servo_idx))/M_PI_2;
+      uint8_t servo_id = SERVOS_STS3032_OFFSET + servo_idx;
+      pprz_msg_send_SERVO(trans, dev, AC_ID,
+          &pos_rad,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          &servo_id);
+    }
+  }
+#endif 
+
+
 
 void actuators_sts3032_init(void)
 {
@@ -97,6 +117,10 @@ void actuators_sts3032_init(void)
 
   static const uint8_t tmp_ids[SERVOS_STS3032_NB] = STS3032_IDS;
   memcpy(sts.ids, tmp_ids, sizeof(tmp_ids));
+
+  #if PERIODIC_TELEMETRY
+    register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ESC, servo_msg_send);
+  #endif
 }
 
 void actuators_sts3032_event(void)
@@ -129,7 +153,6 @@ void actuators_sts3032_periodic(void)
   DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, SERVOS_STS3032_NB + 1, data);
 #endif
 
-  
 
 }
 
