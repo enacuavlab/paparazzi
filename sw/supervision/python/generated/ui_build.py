@@ -90,7 +90,10 @@ class Ui_Build(object):
         self.label_14.setText(_translate("Build", "Target"))
         self.clean_button.setToolTip(_translate("Build", "Clean"))
         self.clean_button.setText(_translate("Build", "..."))
+<<<<<<< HEAD
         self.clean_button.setShortcut(_translate("Build", "Ctrl+Shift+B"))
+=======
+>>>>>>> refs/remotes/origin/panache_mfeurgard
         self.build_button.setToolTip(_translate("Build", "Build"))
         self.build_button.setText(_translate("Build", "..."))
         self.print_config_checkbox.setToolTip(_translate("Build", "print config at build time"))
@@ -98,5 +101,8 @@ class Ui_Build(object):
         self.label_15.setText(_translate("Build", "Device"))
         self.flash_button.setToolTip(_translate("Build", "Upload"))
         self.flash_button.setText(_translate("Build", "Flash"))
+<<<<<<< HEAD
         self.flash_button.setShortcut(_translate("Build", "Ctrl+U"))
 from generated import resources_rc
+=======
+>>>>>>> refs/remotes/origin/panache_mfeurgard

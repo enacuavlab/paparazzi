@@ -125,11 +125,10 @@ extern gvf_parametric_con gvf_parametric_control;
 
 /** @typedef gvf_parametric_coord
 * @brief Coordination parameters for the GVF_PARAMETRIC
-* @param w Virtual coordinate from the parametrization of the trajectory
-* @param delta_T Time between iterations needed for integrating w
-* @param s Defines the direction to be tracked. It takes the values -1 or 1.
-* @param k_roll Gain for tuning the coordinated turn.
-* @param k_climb Gain for tuning the climbing setting point.
+* @param coordination If we want to coordinate on a path
+* @param kc Gain for the consensus
+* @param timeout When we stop considering a neighbor if we have not heard from it
+* @param broadtime Period for broadcasting w
 */
 typedef struct {
   int8_t coordination;
@@ -157,7 +156,6 @@ struct gvf_parametric_coord_tab {
 };
 
 extern struct gvf_parametric_coord_tab gvf_parametric_coordination_tables;
-
 
 // Parameters for the trajectories
 enum trajectories_parametric {
@@ -326,8 +324,7 @@ void gvf_parametric_set_affine_tr_wpa(uint8_t wp, float alt, float rx, float ry,
  */
 void gvf_parametric_set_affine_tr_wps(uint8_t wp1, uint8_t wp2);
 
-
-extern void gvf_parametric_control_2D(float, float, float, float, float, float, float, float);
+extern void gvf_parametric_control_2d(float, float, float, float, float, float, float, float);
 extern void gvf_parametric_control_3d(float, float, float, float, float, float, float, float, float,
                                       float, float, float);
 
@@ -336,9 +333,14 @@ extern void gvf_parametric_coordination_send_w_to_nei(void);
 extern void gvf_parametric_coordination_parseRegTable(uint8_t *buf);
 extern void gvf_parametric_coordination_parseWTable(uint8_t *buf);
 
+extern void gvf_parametric_surface_coordination_send_w_to_nei(void);
+extern void gvf_parametric_surface_coordination_parseRegTable(uint8_t *buf);
+extern void gvf_parametric_surface_coordination_parseWTable(uint8_t *buf);
+
 // 2D Trefoil
-extern bool gvf_parametric_2D_trefoil_XY(float, float, float, float, float, float, float);
-extern bool gvf_parametric_2D_trefoil_wp(uint8_t, float, float, float, float, float);
+
+extern bool gvf_parametric_2d_trefoil_XY(float, float, float, float, float, float, float);
+extern bool gvf_parametric_2d_trefoil_wp(uint8_t, float, float, float, float, float);
 
 // 3D Ellipse
 extern bool gvf_parametric_3d_ellipse_XYZ(float, float, float, float, float, float);

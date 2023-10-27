@@ -21,8 +21,11 @@ class SessionWidget(QWidget, Ui_Session):
 
     programs_all_stopped = QtCore.pyqtSignal()
     program_spawned = QtCore.pyqtSignal()
+<<<<<<< HEAD
     program_state_changed = QtCore.pyqtSignal(TabProgramsState)
     tools_changed = QtCore.pyqtSignal(dict) # Dict[str, Tool]
+=======
+>>>>>>> refs/remotes/origin/panache_mfeurgard
 
     def __init__(self, parent=None):
         QWidget.__init__(self, parent=parent)
@@ -33,8 +36,13 @@ class SessionWidget(QWidget, Ui_Session):
         self.sessions = []
         self.tools: Dict[str, Tool] = {}
         self.tools_menu = ToolMenu()
+<<<<<<< HEAD
         self.programs_state: TabProgramsState = TabProgramsState.IDLE
         self.control_panel_combo.currentTextChanged.connect(self.on_control_panel_changed)
+=======
+        self.sessions_combo.addItems(["Simulation", "Replay"])
+        self.sessions_combo.insertSeparator(2)
+>>>>>>> refs/remotes/origin/panache_mfeurgard
         self.menu_button.addAction(self.save_session_action)
         self.menu_button.addAction(self.save_as_action)
         self.menu_button.addAction(self.rename_session_action)

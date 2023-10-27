@@ -18,7 +18,10 @@ import paparazzi
 # TODO make a setting ?
 REMOVE_PROGRAMS_FINISHED = True
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> refs/remotes/origin/panache_mfeurgard
 
 class ConfigurationPanel(QWidget, Ui_ConfigurationPanel):
 
@@ -132,6 +135,7 @@ class ConfigurationPanel(QWidget, Ui_ConfigurationPanel):
         # self.conf.save()
 
     def handle_conf_changed(self):
+<<<<<<< HEAD
         self.currentAC.airframe = self.conf_widget.airframe.path
         self.currentAC.flight_plan = self.conf_widget.flight_plan.path
         self.currentAC.radio = self.conf_widget.radio.path
@@ -141,6 +145,138 @@ class ConfigurationPanel(QWidget, Ui_ConfigurationPanel):
     def handle_tools_changed(self, tools: Dict[str, Tool]):
         if "Flight Plan Editor" in tools:
             self.flight_plan_editor = tools["Flight Plan Editor"]
+=======
+        self.conf[self.currentAC].airframe = self.conf_widget.airframe.path
+        self.conf[self.currentAC].flight_plan = self.conf_widget.flight_plan.path
+        self.conf[self.currentAC].radio = self.conf_widget.radio.path
+        self.conf[self.currentAC].telemetry = self.conf_widget.telemetry.path
+        # reload settings modules, and update UI
+        self.update_ac(self.currentAC)
+
+    def add_ac(self, ac: Aircraft):
+        self.conf.append(ac)
+        self.header.add_ac(ac.name)
+
+    def new_ac(self):
+        orig = Aircraft()
+        self.create_ac(orig)
+
+    def remove_ac(self):
+        button = QMessageBox.question(self, "Remove AC", "Remove AC <strong>{}</strong>?".format(self.currentAC))
+        if button == QMessageBox.Yes:
+            self.conf.remove(self.conf[self.currentAC])
+            self.header.remove_current()
+
+    def duplicate_ac(self):
+        orig = self.conf[self.currentAC]
+        self.create_ac(orig)
+
+    def create_ac(self, orig):
+        ui_dialog = Ui_Dialog()
+        dialog = QDialog(parent=self)
+        ui_dialog.setupUi(dialog)
+
+        def verify():
+            ok = True
+            id = ui_dialog.id_spinbox.value()
+            name = ui_dialog.name_edit.text()
+            if self.conf[id] is not None or id == 0:
+                ui_dialog.id_spinbox.setStyleSheet("background-color: red;")
+                ok = False
+            else:
+                ui_dialog.id_spinbox.setStyleSheet("")
+
+            if self.conf[name] is not None or name == "":
+                ui_dialog.name_edit.setStyleSheet("background-color: red;")
+                ok = False
+            else:
+                ui_dialog.name_edit.setStyleSheet("")
+
+            return ok
+
+        def accept():
+            if verify():
+                dialog.accept()
+
+        def reject():
+            dialog.reject()
+
+        def duplicate(result):
+            if result:
+                new_ac = copy.deepcopy(orig)
+                name = ui_dialog.name_edit.text()
+                ac_id = ui_dialog.id_spinbox.value()
+                new_ac.name = name
+                new_ac.ac_id = ac_id
+                self.add_ac(new_ac)
+                self.header.set_current(name)
+
+        ui_dialog.id_spinbox.setValue(self.conf.get_free_id())
+        ui_dialog.buttonBox.accepted.connect(accept)
+        ui_dialog.buttonBox.rejected.connect(reject)
+        ui_dialog.id_spinbox.valueChanged.connect(verify)
+        ui_dialog.name_edit.textChanged.connect(verify)
+        dialog.finished.connect(duplicate)
+        dialog.open()
+
+    def rename_ac(self):
+        orig = self.conf[self.currentAC]
+        ui_dialog = Ui_Dialog()
+        dialog = QDialog(parent=self)
+        ui_dialog.setupUi(dialog)
+        ui_dialog.name_edit.setText(orig.name)
+        ui_dialog.id_spinbox.setValue(orig.ac_id)
+
+        def verify():
+            ok = True
+            id = ui_dialog.id_spinbox.value()
+            name = ui_dialog.name_edit.text()
+
+            acs_name = self.conf.get_all(name)
+            if len(acs_name) > 1 or (len(acs_name) == 1 and acs_name[0] != orig):
+                ui_dialog.name_edit.setStyleSheet("background-color: red;")
+                ok = False
+            else:
+                ui_dialog.name_edit.setStyleSheet("")
+
+            acs_id = self.conf.get_all(id)
+            if len(acs_id) > 1 or (len(acs_id) == 1 and acs_id[0] != orig):
+                ui_dialog.id_spinbox.setStyleSheet("background-color: red;")
+                ok = False
+            else:
+                ui_dialog.id_spinbox.setStyleSheet("")
+
+            return ok
+
+        def accept():
+            if verify():
+                dialog.accept()
+
+        def reject():
+            dialog.reject()
+
+        def rename(result):
+            if result:
+                orig.name = ui_dialog.name_edit.text()
+                orig.ac_id = ui_dialog.id_spinbox.value()
+                self.header.rename_ac(orig.name)
+
+        ui_dialog.buttonBox.accepted.connect(accept)
+        ui_dialog.buttonBox.rejected.connect(reject)
+        ui_dialog.id_spinbox.valueChanged.connect(verify)
+        ui_dialog.name_edit.textChanged.connect(verify)
+        dialog.finished.connect(rename)
+        dialog.open()
+
+    def change_color(self):
+        ac = self.conf[self.currentAC]
+        initial = QtGui.QColor(ac.get_color())
+        color = QColorDialog.getColor(initial, self, "AC color")
+        if color.isValid():
+            color_name = color.name()
+            ac.set_color(color_name)
+            self.header.set_color(color_name)
+>>>>>>> refs/remotes/origin/panache_mfeurgard
 
     def edit_flightplan_gcs(self, path):
         if self.flight_plan_editor is not None:

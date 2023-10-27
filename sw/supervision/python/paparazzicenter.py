@@ -2,6 +2,7 @@
 # Copyright (C) 2008-2022 The Paparazzi Team
 # released under GNU GPLv2 or later. See COPYING file.
 import os
+<<<<<<< HEAD
 import sys
 import utils
 
@@ -13,13 +14,21 @@ import signal
 import copy
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore, QtGui
+=======
+import conf
+from PyQt5.QtWidgets import *
+from PyQt5 import QtCore, QtGui
+from configuration_panel import ConfigurationPanel
+from operation_panel import OperationPanel
+import utils
+from typing import Dict
+>>>>>>> refs/remotes/origin/panache_mfeurgard
 from lxml import etree as ET
 from app_settings import AppSettings
-from generated.ui_supervision_window import Ui_SupervisionWindow
-from generated.ui_new_ac_dialog import Ui_NewACDialog
-from program_widget import TabProgramsState
+import subprocess
 
 userTheme = subprocess.check_output("gsettings get org.gnome.desktop.interface icon-theme", shell=True, text=True)[1:-2]
+<<<<<<< HEAD
 
 dirname = os.path.dirname(os.path.abspath(__file__))
 
@@ -30,6 +39,10 @@ TAB_ICONS = {TabProgramsState.IDLE: QtGui.QIcon(),
 
 
 class PprzCenter(QMainWindow, Ui_SupervisionWindow):
+=======
+
+class PprzCenter(QMainWindow):
+>>>>>>> refs/remotes/origin/panache_mfeurgard
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent=parent)
         self.setWindowTitle("Paparazzi Center")
@@ -49,6 +62,7 @@ class PprzCenter(QMainWindow, Ui_SupervisionWindow):
         self.status_msg = QLabel()
         self.statusBar().addWidget(self.status_msg)
         self.fill_status_bar()
+<<<<<<< HEAD
 
         self.header.set_changed.connect(self.handle_set_changed)
         self.header.ac_changed.connect(self.handle_ac_changed)
@@ -68,6 +82,14 @@ class PprzCenter(QMainWindow, Ui_SupervisionWindow):
 
         self.operation_panel.session.tools_changed.connect(self.configuration_panel.handle_tools_changed)
 
+=======
+        self.statusBar().show()
+        self.configuration_panel.msg_error.connect(self.handle_error)
+        self.configuration_panel.clear_error.connect(self.clear_error)
+        self.operation_panel.session.program_spawned.connect(self.configuration_panel.disable_sets)
+        self.operation_panel.session.programs_all_stopped.connect(self.configuration_panel.enable_sets)
+        self.configuration_panel.ac_changed.connect(self.operation_panel.session.set_aircraft)
+>>>>>>> refs/remotes/origin/panache_mfeurgard
         self.configuration_panel.splitter.splitterMoved.connect(self.update_left_pane_width)
         settings = utils.get_settings()
         window_size = settings.value("ui/window_size", QtCore.QSize(1000, 600), QtCore.QSize)

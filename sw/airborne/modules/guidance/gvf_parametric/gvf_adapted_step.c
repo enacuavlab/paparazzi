@@ -29,7 +29,6 @@
 #define ABS(x) (((x) > 0.) ? (x) : -(x))
 
 static float p4_eval(float x, float a4, float a3, float a2, float a1, float a0)
-static float p4_eval(float x, float a4, float a3, float a2, float a1, float a0)
 {
   return a0 + x * (a1 + x * (a2 + x * (a3 + x * (a4))));
 }

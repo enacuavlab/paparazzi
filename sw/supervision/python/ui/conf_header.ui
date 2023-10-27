@@ -67,8 +67,13 @@
       <string>...</string>
      </property>
      <property name="icon">
+<<<<<<< HEAD
       <iconset resource="resources.qrc">
        <normaloff>:/icons/icons/refresh.png</normaloff>:/icons/icons/refresh.png</iconset>
+=======
+      <iconset theme="view-refresh">
+       <normaloff>.</normaloff>.</iconset>
+>>>>>>> refs/remotes/origin/panache_mfeurgard
      </property>
     </widget>
    </item>
@@ -81,8 +86,13 @@
       <string>...</string>
      </property>
      <property name="icon">
+<<<<<<< HEAD
       <iconset resource="resources.qrc">
        <normaloff>:/icons/icons/save.png</normaloff>:/icons/icons/save.png</iconset>
+=======
+      <iconset theme="document-save">
+       <normaloff>.</normaloff>.</iconset>
+>>>>>>> refs/remotes/origin/panache_mfeurgard
      </property>
     </widget>
    </item>

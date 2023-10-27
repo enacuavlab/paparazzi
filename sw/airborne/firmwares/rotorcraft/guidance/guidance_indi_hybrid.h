@@ -43,9 +43,6 @@
 #endif
 
 
-// TODO change names for _indi_hybrid_
-
-extern void guidance_indi_init(void);
 extern void guidance_indi_enter(void);
 extern float guidance_indi_get_liftd(float pitch, float theta);
 extern void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angle, float pitch_angle);

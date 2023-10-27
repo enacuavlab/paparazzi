@@ -73,12 +73,8 @@ struct EnuCoor_f last_wp_f = { 0., 0., 0. };
  */
 static inline bool mission_nav_wp(struct _mission_wp *wp)
 {
-  if (nav_approaching_xy(wp->wp.x, wp->wp.y, last_wp_f.x, last_wp_f.y, CARROT)
-#ifdef MISSION_ALT_PROXIMITY
-      && fabsf(stateGetPositionEnu_f()->z - wp->wp.z) <= MISSION_ALT_PROXIMITY
-#endif
-      ) {
-    last_wp_f = wp->wp; // store last wp
+  if (nav_approaching_xy(wp->wp.wp_f.x, wp->wp.wp_f.y, last_wp_f.x, last_wp_f.y, CARROT)) {
+    last_wp_f = wp->wp.wp_f; // store last wp
     return false; // end of mission element
   }
   // set navigation command
@@ -102,12 +98,9 @@ static inline bool mission_nav_circle(struct _mission_circle *circle)
  */
 static inline bool mission_nav_segment(struct _mission_segment *segment)
 {
-  if (nav_approaching_xy(segment->to.x, segment->to.y, segment->from.x, segment->from.y, CARROT)
-#ifdef MISSION_ALT_PROXIMITY
-      && fabsf(stateGetPositionEnu_f()->z - segment->to.z) <= MISSION_ALT_PROXIMITY
-#endif
-      ) {
-    last_wp_f = segment->to;
+  if (nav_approaching_xy(segment->to.to_f.x, segment->to.to_f.y, segment->from.from_f.x, segment->from.from_f.y,
+                         CARROT)) {
+    last_wp_f = segment->to.to_f;
     return false; // end of mission element
   }
   nav_route_xy(segment->from.from_f.x, segment->from.from_f.y, segment->to.to_f.x, segment->to.to_f.y);
@@ -134,16 +127,12 @@ static inline bool mission_nav_path(struct _mission_path *path)
     return false; // end of path
   }
   // normal case
-  struct EnuCoor_f from = path->path[path->path_idx];
-  struct EnuCoor_f to = path->path[path->path_idx + 1];
-  nav_route_xy(from.x, from.y, to.x, to.y);
-  NavVerticalAutoThrottleMode(0.f);
-  NavVerticalAltitudeMode(to.z, 0.f); // both altitude should be the same anyway
-  if (nav_approaching_xy(to.x, to.y, from.x, from.y, CARROT)
-#ifdef MISSION_ALT_PROXIMITY
-      && fabsf(stateGetPositionEnu_f()->z - to.z) <= MISSION_ALT_PROXIMITY
-#endif
-      ) {
+  struct EnuCoor_f from_f = path->path.path_f[path->path_idx];
+  struct EnuCoor_f to_f = path->path.path_f[path->path_idx + 1];
+  nav_route_xy(from_f.x, from_f.y, to_f.x, to_f.y);
+  NavVerticalAutoThrottleMode(0.);
+  NavVerticalAltitudeMode(to_f.z, 0.); // both altitude should be the same anyway
+  if (nav_approaching_xy(to_f.x, to_f.y, from_f.x, from_f.y, CARROT)) {
     path->path_idx++; // go to next segment
   }
   return true;

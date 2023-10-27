@@ -65,9 +65,14 @@ class ProgramWidget(QWidget, Ui_Program):
         self.program_lineedit.setReadOnly(True)
 
     def handle_finished(self, exit_code: int, exit_status: QProcess.ExitStatus):
+<<<<<<< HEAD
         if exit_code not in (0, 15):
             self.program_lineedit.setStyleSheet("background: #f56464")
         self.run_button.setIcon(QIcon(":/icons/icons/play.png"))
+=======
+        icon = QIcon.fromTheme("media-playback-start")
+        self.run_button.setIcon(icon)
+>>>>>>> refs/remotes/origin/panache_mfeurgard
         self.program_lineedit.setReadOnly(False)
         self.finished.emit(exit_code, exit_status)
 

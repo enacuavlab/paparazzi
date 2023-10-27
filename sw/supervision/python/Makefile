@@ -15,6 +15,7 @@ all:
 	pyuic5 ui/app_settings.ui -o generated/ui_app_settings.py
 	pyuic5 ui/conf_settings.ui -o generated/ui_conf_settings.py
 
+<<<<<<< HEAD
 SOURCEDIR = ui
 BUILDDIR = generated
 
@@ -36,4 +37,7 @@ $(BUILDDIR):
 	mkdir -p $@
 
 clean_generated:
+=======
+clean_ui:
+>>>>>>> refs/remotes/origin/panache_mfeurgard
 	rm -r generated

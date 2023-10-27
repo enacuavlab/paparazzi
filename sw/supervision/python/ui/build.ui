@@ -55,9 +55,12 @@
          <iconset resource="resources.qrc">
           <normaloff>:/icons/icons/clean.png</normaloff>:/icons/icons/clean.png</iconset>
         </property>
+<<<<<<< HEAD
         <property name="shortcut">
          <string>Ctrl+Shift+B</string>
         </property>
+=======
+>>>>>>> refs/remotes/origin/panache_mfeurgard
        </widget>
       </item>
       <item>
@@ -69,8 +72,13 @@
          <string>...</string>
         </property>
         <property name="icon">
+<<<<<<< HEAD
          <iconset resource="resources.qrc">
           <normaloff>:/icons/icons/build.png</normaloff>:/icons/icons/build.png</iconset>
+=======
+         <iconset theme="system-run">
+          <normaloff>.</normaloff>.</iconset>
+>>>>>>> refs/remotes/origin/panache_mfeurgard
         </property>
         <property name="toolButtonStyle">
          <enum>Qt::ToolButtonIconOnly</enum>
@@ -127,8 +135,13 @@
          <string>Flash</string>
         </property>
         <property name="icon">
+<<<<<<< HEAD
          <iconset resource="resources.qrc">
           <normaloff>:/icons/icons/flash.png</normaloff>:/icons/icons/flash.png</iconset>
+=======
+         <iconset theme="emblem-downloads">
+          <normaloff>.</normaloff>.</iconset>
+>>>>>>> refs/remotes/origin/panache_mfeurgard
         </property>
        </widget>
       </item>

@@ -68,14 +68,14 @@ void mission_init(void)
   mission.current_idx = 0;
   mission.element_time = 0.;
 
-  for (int i = 0; i < MISSION_REGISTER_NB; i++) {
-    mission.registered[i].cb = NULL;
-    memset(mission.registered[i].type, '\0', MISSION_TYPE_SIZE);
-  }
-
-#if PERIODIC_TELEMETRY
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_MISSION_STATUS, send_mission_status);
-#endif
+  // FIXME
+  // we have no guarantee that nav modules init are called after mission_init
+  // this would erase the already registered elements
+  // for now, rely on the static initialization
+  //for (int i = 0; i < MISSION_REGISTER_NB; i++) {
+  //  mission.registered[i].cb = NULL;
+  //  memset(mission.registered[i].type, '\0', MISSION_TYPE_SIZE);
+  //}
 }
 
 

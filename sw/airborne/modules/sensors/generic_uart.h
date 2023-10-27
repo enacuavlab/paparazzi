@@ -1,5 +1,9 @@
 /*
+<<<<<<<< HEAD:sw/airborne/modules/sensors/generic_uart.h
  * Copyright (C) 2020 Freek van Tienen <freek.v.tienen@gmail.com>
+========
+ * Copyright (C) 2023 Fabien-B <fabien.bonneval@enac.fr>
+>>>>>>>> refs/remotes/origin/panache_mfeurgard:sw/airborne/modules/sensors/panache_sensor.h
  *
  * This file is part of paparazzi
  *
@@ -18,6 +22,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+<<<<<<<< HEAD:sw/airborne/modules/sensors/generic_uart.h
 /**
  * @file "modules/sensors/generic_uart.c"
  * @author F. van Tienen
@@ -32,3 +37,19 @@
 extern void generic_uart_event(void);
 
 #endif
+========
+/** @file "modules/sensors/panache_sensor.h"
+ * @author Fabien-B <fabien.bonneval@enac.fr>
+ * Get data from Panache sensors, or datalink (for simulation)
+ */
+
+#ifndef PANACHE_SENSOR_H
+#define PANACHE_SENSOR_H
+
+#include "stdint.h"
+
+extern void panache_init(void);
+extern void panache_dl_cb(uint8_t* buf);	// PAYLOAD_COMMAND
+
+#endif  // PANACHE_SENSOR_H
+>>>>>>>> refs/remotes/origin/panache_mfeurgard:sw/airborne/modules/sensors/panache_sensor.h

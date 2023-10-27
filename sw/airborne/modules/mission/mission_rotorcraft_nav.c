@@ -119,11 +119,7 @@ static inline bool mission_nav_wp(struct _mission_element *el)
   struct EnuCoor_i *target_wp = &(el->element.mission_wp.wp.wp_i);
 
   //Check proximity and wait for 'duration' seconds in proximity circle if desired
-  if (nav.nav_approaching(target_wp, NULL, CARROT)
-#ifdef MISSION_ALT_PROXIMITY
-      && fabsf(stateGetPositionEnu_f()->z - target_wp->z) <= MISSION_ALT_PROXIMITY
-#endif
-      ) {
+  if (nav_approaching_from(target_wp, NULL, CARROT)) {
     last_mission_wp = *target_wp;
 
     if (el->duration > 0.) {
@@ -168,11 +164,7 @@ static inline bool mission_nav_segment(struct _mission_element *el)
   struct EnuCoor_i *to_wp   = &(el->element.mission_segment.to.to_i);
 
   //Check proximity and wait for 'duration' seconds in proximity circle if desired
-  if (nav.nav_approaching(to_wp, from_wp, CARROT)
-#ifdef MISSION_ALT_PROXIMITY
-      && fabsf(stateGetPositionEnu_f()->z - to_wp->z) <= MISSION_ALT_PROXIMITY
-#endif
-      ) {
+  if (nav_approaching_from(to_wp, from_wp, CARROT)) {
     last_mission_wp = *to_wp;
 
     if (el->duration > 0.) {
@@ -209,11 +201,7 @@ static inline bool mission_nav_path(struct _mission_element *el)
     struct EnuCoor_i *to_wp   = &(el->element.mission_path.path.path_i[el->element.mission_path.path_idx]);
 
     //Check proximity and wait for t seconds in proximity circle if desired
-    if (nav.nav_approaching(to_wp, from_wp, CARROT)
-#ifdef MISSION_ALT_PROXIMITY
-      && fabsf(stateGetPositionEnu_f()->z - from_wp->z) <= MISSION_ALT_PROXIMITY
-#endif
-        ) {
+    if (nav_approaching_from(to_wp, from_wp, CARROT)) {
       last_mission_wp = *to_wp;
 
       if (el->duration > 0.) {

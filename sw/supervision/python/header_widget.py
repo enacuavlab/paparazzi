@@ -3,12 +3,16 @@
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 from generated.ui_conf_header import Ui_ConfHeader
+<<<<<<< HEAD
 from conf import Aircraft, Conf
 import utils
 import os
 import sys
 import paparazzi
 from typing import List
+=======
+import conf
+>>>>>>> refs/remotes/origin/panache_mfeurgard
 
 
 class HeaderWidget(QWidget, Ui_ConfHeader):
