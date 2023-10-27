@@ -36,19 +36,19 @@
 #define BODY_STAB_ENABLED TRUE
 #endif
 
-/** Default kp motor 7000 */
+/** Default kp motor 7000  10000 */
 #ifndef BODY_STAB_KP_M
 #define BODY_STAB_KP_M 10000.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KP_M)
 
-/** Default ki motor old 1976*/
+/** Default ki motor old 1976  0*/
 #ifndef BODY_STAB_KI_M
-#define BODY_STAB_KI_M 0.f
+#define BODY_STAB_KI_M 3000.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KI_M)
 
-/** Default kd motor 3000*/
+/** Default kd motor 3000 4000*/
 #ifndef BODY_STAB_KD_M
 #define BODY_STAB_KD_M 4000.f
 #endif
@@ -96,6 +96,8 @@ PRINT_CONFIG_VAR(BODY_STAB_AIR_LB)
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_AIR_UB)
 
+#define BODY_STAB_ANTIWINDUP 1
+
 struct BodyStab body_stab;
 struct FloatEulers euler_fus;
 struct FloatQuat quat_wing2fus;
@@ -103,13 +105,16 @@ struct FloatQuat quat_fus;
 float motor_cmd;
 float elevator_cmd;
 float angle_wing2fus;
+float a0, a1, a2, b0, b1; // Coefficients du filtre
+float ft_state1, ft_state2; // États passés de l'entrée
+float ft_output; // États passés de la sortie
 
 void body_stabilisation_init(void)
 {
   body_stab.enabled = BODY_STAB_ENABLED;
   body_stab.kp_m = BODY_STAB_KP_M;
   body_stab.ki_m = BODY_STAB_KI_M;
-  body_stab.kd_m = BODY_STAB_KD_M;
+  body_stab.kd_m = BODY_STAB_KD_M; 
   body_stab.u_eq_m = BODY_STAB_UEQ_M;
   body_stab.kp_e = BODY_STAB_KP_E;
   body_stab.ki_e = BODY_STAB_KI_E;
@@ -121,6 +126,22 @@ void body_stabilisation_init(void)
   body_stab.discrete_state = 0;
   motor_cmd = 0;
   elevator_cmd = 0;
+
+  // kd-ki
+  b0 = - 0.0000000205;
+  // -ki
+  b1 = 0.00000002042;
+
+  // kd^2+2*kd*kp+kp^2
+  a0 = 1;
+   // kd*ki+kd*kp+ki*kp*+kp^2
+  a1 = - 1.998;
+  // kd*ki+ki*kp*tau 
+  a2 = 0.9982;
+
+  ft_state1 = 0;
+  ft_state2 = 0;
+  
 }
 
 void body_stabilisation_periodic(void)
@@ -148,8 +169,16 @@ void body_stabilisation_periodic(void)
     }
     else{
       // Use motor and elevator discrete_state = 0
-    
-      motor_cmd = body_stab.u_eq_m + body_stab.kp_m*euler_fus.theta + body_stab.ki_m*body_stab.state_integrator + body_stab.kd_m * vect_fuselage_rate.y;
+      #if BODY_STAB_ANTIWINDUP == 0
+        motor_cmd = body_stab.u_eq_m + body_stab.kp_m*euler_fus.theta + body_stab.ki_m*body_stab.state_integrator + body_stab.kd_m * vect_fuselage_rate.y;
+      #else
+        float tf1_tmp = actuators_pprz[7] - a1*ft_state1 - a2* ft_state2;
+        ft_output = b0*tf1_tmp + b1*ft_state1 ;
+        ft_state2 = ft_state1;
+        ft_state1 = tf1_tmp;
+
+        motor_cmd = body_stab.u_eq_m + (body_stab.kp_m + body_stab.kd_m)*(euler_fus.theta - ft_output);
+      #endif
       actuators_pprz[6] = TRIM_PPRZ(elevator_cmd); //elevator
       actuators_pprz[7] = TRIM_UPPRZ(motor_cmd); //motor
     }
@@ -221,8 +250,8 @@ void body_stabilisation_update_airspeed_ub(float ub){
 }
 
 extern void body_stabilisation_report(void){
-  float f[7] = { motor_cmd, elevator_cmd, actuators_pprz[6], actuators_pprz[7], DegOfRad(euler_fus.theta), angle_wing2fus, body_stab.discrete_state};
-  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 7, f); 
+  float f[8] = { motor_cmd, elevator_cmd, actuators_pprz[6], actuators_pprz[7], DegOfRad(euler_fus.theta), angle_wing2fus, body_stab.discrete_state, body_stab.state_integrator};
+  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 8, f); 
 
   /*float f[16] = {stateGetNedToBodyQuat_f()->qi, stateGetNedToBodyQuat_f()->qx, stateGetNedToBodyQuat_f()->qy, stateGetNedToBodyQuat_f()->qz,
   angle_wing2fus, quat_wing2fus.qi, quat_wing2fus.qx, quat_wing2fus.qy, quat_wing2fus.qz,
