@@ -9,12 +9,20 @@ from PyQt5.QtCore import QProcess
 from PyQt5.QtGui import QIcon
 import utils
 from typing import List
+from enum import Enum
+
+
+class TabProgramsState(Enum):
+    IDLE = 0
+    RUNNING = 1
+    ERROR = 2
 
 
 class ProgramWidget(QWidget, Ui_Program):
 
     ready_read_stdout = QtCore.pyqtSignal()
     ready_read_stderr = QtCore.pyqtSignal()
+    started = QtCore.pyqtSignal()
     finished = QtCore.pyqtSignal(int, QProcess.ExitStatus)
     remove = QtCore.pyqtSignal()
 
@@ -38,13 +46,17 @@ class ProgramWidget(QWidget, Ui_Program):
         self.icon_label.setToolTip(shortname)
 
     def start_program(self):
+        self.program_lineedit.setStyleSheet("")
         if self.process.state() == QProcess.NotRunning:
             self.process.start(self.cmd[0], self.cmd[1:])
+            self.started.emit()
 
     def handle_cmd_return(self):
         if self.process.state() == QProcess.NotRunning:
             self.cmd = self.program_lineedit.text().split(" ")
             self.start_program()
+        elif self.process.state() == QProcess.Running:
+            self.terminate()
 
     def handle_run(self):
         if self.process.state() == QProcess.NotRunning:
@@ -65,14 +77,9 @@ class ProgramWidget(QWidget, Ui_Program):
         self.program_lineedit.setReadOnly(True)
 
     def handle_finished(self, exit_code: int, exit_status: QProcess.ExitStatus):
-<<<<<<< HEAD
         if exit_code not in (0, 15):
             self.program_lineedit.setStyleSheet("background: #f56464")
         self.run_button.setIcon(QIcon(":/icons/icons/play.png"))
-=======
-        icon = QIcon.fromTheme("media-playback-start")
-        self.run_button.setIcon(icon)
->>>>>>> refs/remotes/origin/panache_mfeurgard
         self.program_lineedit.setReadOnly(False)
         self.finished.emit(exit_code, exit_status)
 

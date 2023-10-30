@@ -27,12 +27,8 @@ class FlashMode:
 
 class BuildWidget(Ui_Build, QWidget):
 
-<<<<<<< HEAD
     spawn_program = QtCore.pyqtSignal(str, list, str, object)
     refresh_ac = QtCore.pyqtSignal(object)
-=======
-    spawn_program = QtCore.pyqtSignal(str, list, str)
->>>>>>> refs/remotes/origin/panache_mfeurgard
 
     def __init__(self, parent=None):
         QWidget.__init__(self, parent=parent)
@@ -102,20 +98,17 @@ class BuildWidget(Ui_Build, QWidget):
         shortname = "Build {}".format(self.ac.name)
         self.refresh_ac.emit(self.ac)
         self.conf.save(False)
-<<<<<<< HEAD
         self.target_combo.setCurrentText(target)
         self.enable_buttons(False)
         utils.get_settings().setValue("ui/last_target", target)
         self.spawn_program.emit(shortname, cmd, None, lambda: self.enable_buttons(True))
-=======
-        self.spawn_program.emit(shortname, cmd, None)
->>>>>>> refs/remotes/origin/panache_mfeurgard
 
     def clean(self):
         cmd = ["make", "-C", utils.PAPARAZZI_HOME, "-f", "Makefile.ac",
                "AIRCRAFT={}".format(self.ac.name), "clean_ac"]
         shortname = "Clean {}".format(self.ac.name)
-        self.spawn_program.emit(shortname, cmd, None)
+        self.enable_buttons(False)
+        self.spawn_program.emit(shortname, cmd, None, lambda: self.enable_buttons(True))
 
     def flash(self):
         target = self.target_combo.currentText()
@@ -131,5 +124,8 @@ class BuildWidget(Ui_Build, QWidget):
         cmd = ["make", "-C", utils.PAPARAZZI_HOME, "-f", "Makefile.ac",
                "AIRCRAFT={}".format(self.ac.name)] + vars + ["{}.upload".format(target)]
         shortname = "Flash {}".format(self.ac.name)
-        self.spawn_program.emit(shortname, cmd, None)
+        self.spawn_program.emit(shortname, cmd, None, None)
 
+    def enable_buttons(self, enable: bool):
+        self.build_button.setEnabled(enable)
+        self.clean_button.setEnabled(enable)
