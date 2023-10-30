@@ -25,7 +25,8 @@
  */
 
 #include <iostream>
-#include <Eigen/Dense> // https://eigen.tuxfamily.org/dox/GettingStarted.html
+// https://eigen.tuxfamily.org/dox/GettingStarted.html
+#include <Eigen/Dense> 
 #include <Eigen/Geometry>
 
 struct gvf_parametric_affine_transform
@@ -193,107 +194,6 @@ void gvf_parametric_init(void)
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CIRCLE, send_circle_parametric);
 #endif // GVF_OCAML_GCS
 #endif // PERIODIC_TELEMETRY
-}
-
-void gvf_parametric_set_direction(int8_t s)
-{
-  gvf_parametric_control.s = s;
-}
-
-void gvf_parametric_set_w_gain(float b)
-{
-  gvf_parametric_control.beta = b;
-}
-
-void gvf_parametric_set_offset(float x, float y, float z)
-{
-  gvf_parametric_affine_tr.transalation = Eigen::Translation3f(x, y, z);
-  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
-}
-
-void gvf_parametric_set_offset_wp(uint8_t wp)
-{
-  gvf_parametric_set_offset(waypoints[wp].x, waypoints[wp].y, waypoints[wp].a);
-}
-
-void gvf_parametric_set_offset_wpa(uint8_t wp, float alt)
-{
-  gvf_parametric_set_offset(waypoints[wp].x, waypoints[wp].y, alt);
-}
-
-void gvf_paremetric_set_euler_rot(float rz, float ry, float rzbis)
-{
-  gvf_parametric_affine_tr.rot = Eigen::AngleAxisf(rzbis * M_PI / 180, Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf(ry * M_PI / 180, Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf(rz * M_PI / 180, Eigen::Vector3f::UnitZ());
-
-  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
-}
-
-void gvf_paremetric_set_cardan_rot(float rx, float ry, float rz)
-{
-  gvf_parametric_affine_tr.rot = Eigen::AngleAxisf(rz * M_PI / 180, Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf(ry * M_PI / 180, Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf(rx * M_PI / 180, Eigen::Vector3f::UnitX());
-
-  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
-}
-
-void gvf_paremetric_set_quaternion_rot(float x, float y, float z, float w)
-{
-  gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>(w, x, y, z);
-
-  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
-}
-
-void gvf_parametric_set_wps_rot(uint8_t wp1, uint8_t wp2)
-{
-  Eigen::Vector3f U = Eigen::Vector3f(waypoints[wp2].x - waypoints[wp1].x,
-                                      waypoints[wp2].y - waypoints[wp1].y,
-                                      waypoints[wp2].a - waypoints[wp1].a);
-
-  Eigen::Vector3f Base = Eigen::Vector3f(1, 0, 0);
-  gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>::FromTwoVectors(Base, U).normalized();
-
-  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
-}
-
-void gvf_parametric_set_wp_rot(uint8_t wp)
-{
-  Eigen::Vector3f U = Eigen::Vector3f(waypoints[wp].x,
-                                      waypoints[wp].y,
-                                      waypoints[wp].a);
-
-  Eigen::Vector3f Base = Eigen::Vector3f(1, 0, 0);
-  gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>::FromTwoVectors(Base, U).normalized();
-
-  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
-}
-
-void gvf_parametric_set_affine_tr(float x, float y, float z, float rx, float ry, float rz)
-{
-  gvf_parametric_set_offset(x, y, z);
-  gvf_paremetric_set_cardan_rot(rx, ry, rz);
-}
-
-void gvf_parametric_set_affine_q_tr(float x, float y, float z, float qx, float qy, float qz, float qw)
-{
-  gvf_parametric_set_offset(x, y, z);
-  gvf_paremetric_set_quaternion_rot(qx, qy, qz, qw);
-}
-
-void gvf_parametric_set_affine_tr_wp(uint8_t wp, float rx, float ry, float rz)
-{
-  gvf_parametric_set_offset_wp(wp);
-  gvf_paremetric_set_cardan_rot(rx, ry, rz);
-}
-
-void gvf_parametric_set_affine_tr_wpa(uint8_t wp, float alt, float rx, float ry, float rz)
-{
-  gvf_parametric_set_offset_wpa(wp, alt);
-  gvf_paremetric_set_cardan_rot(rx, ry, rz);
-}
-
-void gvf_parametric_set_affine_tr_wps(uint8_t wp1, uint8_t wp2)
-{
-  gvf_parametric_set_offset(waypoints[wp1].x, waypoints[wp1].y, waypoints[wp1].a);
-  gvf_parametric_set_wps_rot(wp1, wp2);
 }
 
 void gvf_parametric_set_direction(int8_t s)
