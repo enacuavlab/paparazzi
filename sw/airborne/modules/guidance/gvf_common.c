@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 TUDelft
+ * Copyright (C) 2023 Alfredo Gonzalez Calvin <alfredgo@ucm.es>
  *
  * This file is part of paparazzi.
  *
@@ -14,20 +14,11 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with paparazzi; see the file COPYING.  If not, write to
- * the Free Software Foundation, 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
  */
 
+#include "./gvf_common.h"
 
-
-// Guidance actuators: (roll, pitch, thrust) for tailsitters 
-#define GUIDANCE_INDI_HYBRID_U  3
-
-// Guidance control objectives: ax, ay, ay for tailsitters
-#define GUIDANCE_INDI_HYBRID_V  3
-
-#ifndef GUIDANCE_INDI_MIN_PITCH
-#define GUIDANCE_INDI_MIN_PITCH -120
-#define GUIDANCE_INDI_MAX_PITCH 25
-#endif
+gvf_common_omega  gvf_c_omega;
+gvf_common_params gvf_c_info;

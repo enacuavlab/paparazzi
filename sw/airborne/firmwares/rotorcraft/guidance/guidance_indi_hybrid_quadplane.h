@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Sergey Krukowski <softsr@yahoo.de>
+ * Copyright (C) 2023 TUDelft
  *
  * This file is part of paparazzi.
  *
@@ -19,19 +19,19 @@
  * Boston, MA 02111-1307, USA.
  */
 
-/**
- * @file modules/gps/gps_sim_hitl.h
- * GPS subsystem simulation from rotorcrafts horizontal/vertical reference system
- */
+#ifndef GUIDANCE_INDI_HYBRID_QUADPLANE
+#define GUIDANCE_INDI_HYBRID_QUADPLANE
 
-#ifndef GPS_SIM_HITL_H
-#define GPS_SIM_HITL_H
 
-#ifndef PRIMARY_GPS
-#define PRIMARY_GPS GPS_SIM
+extern void guidance_indi_quadplane_init(void);
+extern void guidance_indi_quadplane_propagate_filters(void);
+
+
+#ifndef GUIDANCE_INDI_MIN_PITCH
+#define GUIDANCE_INDI_MIN_PITCH -20
+#define GUIDANCE_INDI_MAX_PITCH 20
 #endif
 
-extern void gps_sim_hitl_event(void);
-extern void gps_sim_hitl_init(void);
 
-#endif /* GPS_SIM_HITL_H */
+
+#endif // GUIDANCE_INDI_HYBRID_QUADPLANE

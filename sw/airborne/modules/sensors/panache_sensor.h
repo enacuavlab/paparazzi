@@ -30,5 +30,13 @@
 
 extern void panache_init(void);
 extern void panache_dl_cb(uint8_t* buf);	// PAYLOAD_COMMAND
+// settings
+extern float nav_max_speed;   // max speed in route mode
+extern float nav_goto_speed; // max speed in goto/stay mode
+extern float nav_max_deceleration_sp;
+
+extern void nav_rotorcraft_hybrid_init(void);
+
+#endif
 
 #endif  // PANACHE_SENSOR_H

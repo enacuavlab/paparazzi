@@ -97,6 +97,7 @@ extern "C" {
 #include "trajectories/gvf_parametric_3d_sin.h"
 #include "trajectories/gvf_parametric_3d_growing_lissajou.h"
 #include "trajectories/gvf_parametric_drift_ellipse.h"
+#include "trajectories/gvf_parametric_2d_bezier_splines.h"
 
 /** @typedef gvf_parametric_con
 * @brief Control parameters for the GVF_PARAMETRIC
@@ -166,6 +167,7 @@ enum trajectories_parametric {
   SINUS_3D = 4,
   GROWING_LISSAJOU = 5,
   DRIFT_ELLIPSE = 6,
+  BEZIER_2D = 7,
   NONE_PARAMETRIC = 255,
 };
 
@@ -176,6 +178,9 @@ typedef struct {
 } gvf_parametric_tra;
 
 extern gvf_parametric_tra gvf_parametric_trajectory;
+
+// Bezier struct
+extern bezier_t gvf_bezier_2D[GVF_PARAMETRIC_2D_BEZIER_N_SEG];
 
 // Init function
 extern void gvf_parametric_init(void);
@@ -341,6 +346,10 @@ extern void gvf_parametric_surface_coordination_parseWTable(uint8_t *buf);
 
 extern bool gvf_parametric_2d_trefoil_XY(float, float, float, float, float, float, float);
 extern bool gvf_parametric_2d_trefoil_wp(uint8_t, float, float, float, float, float);
+
+// 2D BEZIER
+extern bool gvf_parametric_2D_bezier_wp(uint8_t);
+extern bool gvf_parametric_2D_bezier_XY(void);
 
 // 3D Ellipse
 extern bool gvf_parametric_3d_ellipse_XYZ(float, float, float, float, float, float);
