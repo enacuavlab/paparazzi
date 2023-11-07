@@ -34,12 +34,23 @@ extern struct Int32Quat   stab_att_sp_quat;  ///< with #INT32_QUAT_FRAC
 extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
 extern float g1g2[INDI_OUTPUTS][INDI_NUM_ACT];
 extern float actuator_state_filt_vect[INDI_NUM_ACT];
+extern bool act_is_servo[INDI_NUM_ACT];
 
 extern bool indi_use_adaptive;
 
+extern float du_min_stab_indi[INDI_NUM_ACT];
+extern float du_max_stab_indi[INDI_NUM_ACT];
+extern float du_pref_stab_indi[INDI_NUM_ACT];
 extern float *Bwls[INDI_OUTPUTS];
 
+extern float thrust_bx_eff;
+extern float thrust_bx_act_dyn;
+extern float actuator_thrust_bx_pprz;
+extern float thrust_bx_state_filt;
+
 extern float act_pref[INDI_NUM_ACT];
+
+extern float indi_Wu[INDI_NUM_ACT];
 
 struct Indi_gains {
   struct FloatRates att;
@@ -57,6 +68,7 @@ extern void stabilization_indi_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t h
 extern void stabilization_indi_set_stab_sp(struct StabilizationSetpoint *sp);
 extern void stabilization_indi_rate_run(bool in_flight, struct FloatRates rate_ref, int32_t thrust, int32_t *cmd);
 extern void stabilization_indi_attitude_run(bool in_flight, struct Int32Quat quat_sp, int32_t thrust, int32_t *cmd);
+extern void stabilization_indi_set_wls_settings(float use_increment);
 extern void stabilization_indi_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn);
 
 #endif /* STABILIZATION_INDI */

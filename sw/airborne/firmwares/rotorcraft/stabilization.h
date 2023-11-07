@@ -54,7 +54,8 @@ struct StabilizationSetpoint {
     STAB_SP_QUAT,     ///< LTP to Body orientation in unit quaternion
     STAB_SP_EULERS,   ///< LTP to Body orientation in euler angles
     STAB_SP_LTP,      ///< banking and heading in LTP (NED) frame
-    STAB_SP_RATES     ///< body rates
+    STAB_SP_RATES,     ///< body rates
+    STAB_SP_QUAT_FF_RATE  ///< LTP to Body orientation in unit quaternion with precomputed feedforward rates
   } type;
   enum {
     STAB_SP_INT,
@@ -67,9 +68,11 @@ struct StabilizationSetpoint {
     struct FloatEulers eulers_f;
     struct { struct Int32Vect2 vect; int32_t heading; } ltp_i;
     struct { struct FloatVect2 vect; float heading; } ltp_f;
+  } sp;
+  union {
     struct Int32Rates rates_i;
     struct FloatRates rates_f;
-  } sp;
+  } r_sp;
 };
 
 /** Thrust setpoint // TODO to a setpoint header
@@ -156,6 +159,7 @@ extern float th_sp_to_incr_f(struct ThrustSetpoint *th, int32_t thrust);
 // helper make functions
 extern struct StabilizationSetpoint stab_sp_from_quat_i(struct Int32Quat *quat);
 extern struct StabilizationSetpoint stab_sp_from_quat_f(struct FloatQuat *quat);
+extern struct StabilizationSetpoint stab_sp_from_quat_ff_rates_f(struct FloatQuat *quat, struct FloatRates *rates);
 extern struct StabilizationSetpoint stab_sp_from_eulers_i(struct Int32Eulers *eulers);
 extern struct StabilizationSetpoint stab_sp_from_eulers_f(struct FloatEulers *eulers);
 extern struct StabilizationSetpoint stab_sp_from_ltp_i(struct Int32Vect2 *vect, int32_t heading);
