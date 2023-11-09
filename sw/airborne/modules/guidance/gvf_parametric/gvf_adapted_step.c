@@ -28,21 +28,52 @@
 
 #define ABS(x) (((x) > 0.) ? (x) : -(x))
 
+/**
+ * @brief Horner's method for fast degree 4 polynomial evaluation
+ * 
+ * Cf https://en.wikipedia.org/wiki/Horner's_method
+ * 
+ * @param x : Evaluation point for the polynomial
+ * @param a4 : Degree 4 coefficient of the polynomial
+ * @param a3 : Degree 3 coefficient of the polynomial
+ * @param a2 : Degree 2 coefficient of the polynomial
+ * @param a1 : Degree 1 coefficient of the polynomial
+ * @param a0 : Degree 0 coefficient of the polynomial
+ * @return float : Value of the polynomial evaluated at `x`
+ */
 static float p4_eval(float x, float a4, float a3, float a2, float a1, float a0)
 {
   return a0 + x * (a1 + x * (a2 + x * (a3 + x * (a4))));
 }
 
+/**
+ * @brief Implementation of Halley's method for degree 4 polynomial root finding
+ * 
+ * Cf https://en.wikipedia.org/wiki/Halley%27s_method
+ * 
+ * @param a4 : Degree 4 coefficient of the polynomial
+ * @param a3 : Degree 3 coefficient of the polynomial
+ * @param a2 : Degree 2 coefficient of the polynomial
+ * @param a1 : Degree 1 coefficient of the polynomial
+ * @param a0 : Degree 0 coefficient of the polynomial
+ * @param tol : Tolerance; the root is found if the absolute value of the polynomial evaluation is below the tolerance
+ * @param init : Initial guess for the root
+ * @param max_steps : Maximal number of iterations allowed
+ * @return float : The guessed root (or whatever value is left after `max_steps` iteration)
+ */
 static float p4_halley(float a4, float a3, float a2, float a1, float a0, float tol, float init, int max_steps)
 {
   float x = init;
   float p_x = p4_eval(x, a4, a3, a2, a1, a0);
+  
+  // Coefficients of the polynomial first derivative
   float a4_d = 0.;
   float a3_d = 4*a4;
   float a2_d = 3*a3;
   float a1_d = 2*a2;
   float a0_d = a1;
 
+  // Coefficients of the polynomial second derivative
   float a4_dd = 0.;
   float a3_dd = 0.;
   float a2_dd = 3*a3_d; 
@@ -60,25 +91,30 @@ static float p4_halley(float a4, float a3, float a2, float a1, float a0, float t
     step++;
   }
 
-  /*
-  if (step >= max_steps)
-  {
-    // fprintf(stderr,"No suitable solution found, error is: %f  (x = %f)\n",p_x,x);
-  }
-
-  if (step == 0)
-  {
-    // printf("Initial guess is good enough....\n");
-  }
-  */
-
   return x;
 } 
 
+/**
+ * @brief Implementation of Netwon's method for degree 4 polynomial root finding
+ * 
+ * Cf https://en.wikipedia.org/wiki/Newton%27s_method
+ * 
+ * @param a4 : Degree 4 coefficient of the polynomial 
+ * @param a3 : Degree 3 coefficient of the polynomial 
+ * @param a2 : Degree 2 coefficient of the polynomial 
+ * @param a1 : Degree 1 coefficient of the polynomial 
+ * @param a0 : Degree 0 coefficient of the polynomial 
+ * @param tol : Tolerance; the root is found if the absolute value of the polynomial evaluation is below the tolerance
+ * @param init : Initial guess for the root
+ * @param max_steps : Maximal number of iterations allowed
+ * @return float : The guessed root (or whatever value is left after `max_steps` iteration)
+ */
 static float p4_newton(float a4, float a3, float a2, float a1, float a0, float tol, float init, int max_steps)
 {
   float x = init;
   float p_x = p4_eval(x, a4, a3, a2, a1, a0);
+
+  // Coefficients of the polynomial first derivative
   float a4_d = 0.;
   float a3_d = 4*a4;
   float a2_d = 3*a3;
@@ -95,17 +131,6 @@ static float p4_newton(float a4, float a3, float a2, float a1, float a0, float t
     step++;
   }
 
-  /*
-  if (step >= max_steps)
-  {
-    fprintf(stderr,"No suitable solution found, error is: %f  (x = %f)\n",p_x,x);
-  }
-  
-  if (step == 0)
-  {
-    printf("Initial guess is good enough....\n");
-  }
-  */
   return x;
 }
 
@@ -120,20 +145,20 @@ float step_adaptation(float ds, float f1d, float f2d, float f3d, float f1dd, flo
   float a0 = - ds * ds;
 
 
-  if (a4 < 1e-3 && a2 < 1e-3)
+  if (a4 < NULL_TOLERANCE && a2 < NULL_TOLERANCE)
   {
     fprintf(stderr,"***** Error: order 2 singularity (f' and f'' are null) *****\n");
     fprintf(stderr, "Falling back to 'natural' parametrization'\n");
     return ds;
   }
 
-  if (a4 < 1e-3 && a2 > 1e-3)
+  if (a4 < NULL_TOLERANCE && a2 > NULL_TOLERANCE)
   {
     // Second derivative is null; this is a degree 2 polynomial
     return ds/sqrtf(a2);
   }
 
-  if (a4 > 1e-3 && a2 < 1e-3)
+  if (a4 > NULL_TOLERANCE && a2 < NULL_TOLERANCE)
   {
     // First derivative is null, but not the second; immediate analytical solution
     float output = sqrtf(ABS(ds))/sqrtf(sqrtf(a4));
@@ -195,12 +220,12 @@ float step_adaptation(float ds, float f1d, float f2d, float f3d, float f1dd, flo
 
   // printf("P(X) = %f X^4 + %f X^3 + %f X^2 + %f\nInit: %f\n\n",a4,a3,a2,a0,init);
 
-  float result = p4_halley(a4,a3,a2,a1,a0,1e-2,init,1e6);
+  float result = p4_halley(a4,a3,a2,a1,a0,NULL_TOLERANCE,init,1e6);
   
   if (result * ds < 0)
   {
     fprintf(stderr,"Incorrect direction! Got %f while expecting %f\n",result,ds);
-    result = p4_halley(a4,a3,a2,a1,a0,1e-2,2*init,1e6);
+    result = p4_halley(a4,a3,a2,a1,a0,NULL_TOLERANCE,2*init,1e6);
     fprintf(stderr,"--> Second try: Got %f while expecting %f\n",result,ds);
   }
 
