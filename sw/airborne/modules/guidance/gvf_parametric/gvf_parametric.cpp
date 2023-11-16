@@ -246,7 +246,7 @@ void gvf_paremetric_set_cardan_rot(float rx, float ry, float rz)
 
 void gvf_paremetric_set_quaternion_rot(float x, float y, float z, float w)
 {
-  gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>(w, x, y, z);
+  gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>(w, x, y, z).normalized();
 
   gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
 }
@@ -798,7 +798,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   gvf_parametric_control.w += w_dot * gvf_parametric_control.delta_T * 1e-3;
   gvf_parametric_control.w_dot = w_dot;
 
-  gvf_parametric_low_level_control_3D(heading_rate, climbing_rate);
+  gvf_parametric_low_level_control_3d(heading_rate, climbing_rate);
 }
 #endif // FIXED_WING FIRMWARE
 
@@ -841,7 +841,7 @@ bool gvf_parametric_2D_bezier_XY(void)
   gvf_parametric_trajectory.type = BEZIER_2D;
   float fx, fy, fxd, fyd, fxdd, fydd;
   gvf_parametric_2d_bezier_splines_info(gvf_bezier_2D, &fx, &fy, &fxd, &fyd, &fxdd, &fydd);
-  gvf_parametric_control_2D(gvf_parametric_2d_bezier_par.kx, gvf_parametric_2d_bezier_par.ky, fx, fy, fxd, fyd, fxdd,
+  gvf_parametric_control_2d(gvf_parametric_2d_bezier_par.kx, gvf_parametric_2d_bezier_par.ky, fx, fy, fxd, fyd, fxdd,
                             fydd);
   return true;
 }
