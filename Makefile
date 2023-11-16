@@ -147,8 +147,11 @@ libpprzlink.update:
 
 libpprzlink.install:
 	$(Q)Q=$(Q) MAKEFLAGS=-j1 DESTDIR=$(PPRZLINK_INSTALL) PPRZLINK_LIB_VERSION=${PPRZLINK_LIB_VERSION} $(MAKE) -C $(PPRZLINK_DIR) libpprzlink-install
+	
+libpprzlink.pyinstall:
+	$(Q)Q=$(Q) MAKEFLAGS=-j1 DESTDIR=$(PPRZLINK_INSTALL)/python PPRZLINK_LIB_VERSION=${PPRZLINK_LIB_VERSION} $(MAKE) -C $(PPRZLINK_DIR) libpprzlink-pygen-python-install
 
-libpprz: libpprzlink.update libpprzlink.install _save_build_version
+libpprz: libpprzlink.update libpprzlink.install libpprzlink.pyinstall _save_build_version
 	$(MAKE) -C $(LIB)/ocaml
 
 cockpit: libpprz
