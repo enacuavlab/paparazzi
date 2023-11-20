@@ -35,16 +35,17 @@
       <define name="EFF_PITCH_A" value="0.35"/>
       <define name="EFF_YAW_A" value="0.045"/>
     </module-->
-      <module name="ctrl_effectiveness_scheduling">
-        <define name="SQUARED_ROLL_EFF" value="0.0018"/>
-        <define name="PITCH_EFF_AT_60" value="8.0"/>
-        <define name="YAW_EFF_AT_60" value="6.5"/>
-        <!--function of the form: A + B*airspeed^2-->
-        <define name="CE_PITCH_A" value="2.4169"/>
-        <define name="CE_PITCH_B" value="0.0307"/>
-        <define name="CE_YAW_A" value="5.631"/>
-        <define name="CE_YAW_B" value="0.0515"/>
-      </module>
+
+    <!-- <module name="ctrl_effectiveness_scheduling">
+      <define name="SQUARED_ROLL_EFF" value="0.0018"/>
+      <define name="PITCH_EFF_AT_60" value="8.0"/>
+      <define name="YAW_EFF_AT_60" value="6.5"/>
+      
+      <define name="CE_PITCH_A" value="2.4169"/>
+      <define name="CE_PITCH_B" value="0.0307"/>
+      <define name="CE_YAW_A" value="5.631"/>
+      <define name="CE_YAW_B" value="0.0515"/>
+    </module> -->
 
 
     <module name="current_sensor">
@@ -102,12 +103,11 @@
 
     <module name="ins" type="ekf2"/> -->
 
-    <!--module name="ahrs" type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="TRUE"/>
-      <define name="AHRS_GRAVITY_UPDATE_COORDINATED_TURN" value="TRUE"/>
-      <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/>
+    <module name="ahrs" type="int_cmpl_quat">
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+      <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
+      <define name="AHRS_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
     </module>
-    <module name="ins" /-->
 
     <!-- Vol interieur -->
     <module name="gps" type="optitrack"/>
@@ -116,6 +116,8 @@
     <module name="stabilization" type="indi"/>
     <module name="guidance" type="indi_hybrid_tailsitter"/>
     <module name="nav" type="hybrid"/>
+
+    <!-- <module name="preflight_checks"/> -->
 
     <!-- <module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
@@ -229,6 +231,7 @@
     <define name="G1_PITCH" value="{ -19.5,    19.5,   19.5,  -19.5}"/>
     <define name="G1_YAW"   value="{  -7.0,     7.0,   -7.0,    7.0}"/>
     <define name="G1_THRUST" value="{ -0.85,  -0.85,  -0.85,  -0.85}"/>
+    <define name="ALLOCATION_PSEUDO_INVERSE" value="FALSE"/>
 
     <!-- Big Wings -->
     <!-- <define name="G1_ROLL"  value="{ -4.0,     -4.0,    4.0,    4.0}"/>
@@ -291,7 +294,7 @@
     <define name="GUIDANCE_INDI_PITCH_LIFT_EFF" value="0.12"/>
     <define name="GUIDANCE_INDI_PITCH_EFF_SCALING" value="1.0"/>
     <define name="GUIDANCE_H_REF_MAX_SPEED" value="16.0"/> <!--not used-->
-    <define name="GUIDANCE_INDI_MIN_THROTTLE" value="2000"/>
+    <define name="GUIDANCE_INDI_MIN_THROTTLE" value="000"/> <!--2000-->
     <define name="GUIDANCE_INDI_MIN_THROTTLE_FWD" value="1000"/>
     <define name="GUIDANCE_INDI_MIN_PITCH" value="-120."/>
     <define name="GUIDANCE_INDI_MAX_PITCH" value="25."/>
