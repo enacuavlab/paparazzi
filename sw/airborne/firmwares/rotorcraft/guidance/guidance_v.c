@@ -231,7 +231,7 @@ struct ThrustSetpoint guidance_v_run(bool in_flight)
 
     case GUIDANCE_V_MODE_RC_DIRECT:
       guidance_v.z_sp = stateGetPositionNed_i()->z; // for display only
-      guidance_v.thrust = th_sp_from_thrust_i(guidance_v.rc_delta_t);
+      guidance_v.thrust = th_sp_from_thrust_i(guidance_v.rc_delta_t, THRUST_AXIS_Z);
       break;
 
     case GUIDANCE_V_MODE_RC_CLIMB:
@@ -318,7 +318,7 @@ struct ThrustSetpoint guidance_v_from_nav(bool in_flight)
     guidance_v.zd_sp = stateGetSpeedNed_i()->z;
     GuidanceVSetRef(guidance_v.z_sp, guidance_v.zd_sp, 0);
     guidance_v_run_enter();
-    sp = th_sp_from_thrust_i((int32_t)nav.throttle);
+    sp = th_sp_from_thrust_i((int32_t)nav.throttle, THRUST_AXIS_Z);
   } else if (nav.vertical_mode == NAV_VERTICAL_MODE_GUIDED) {
     sp = guidance_v_guided_run(in_flight);
   }
@@ -357,7 +357,7 @@ struct ThrustSetpoint guidance_v_guided_run(bool in_flight)
     case GUIDANCE_V_GUIDED_MODE_THROTTLE:
       // Throttle
       guidance_v.z_sp = stateGetPositionNed_i()->z; // for display only
-      sp = th_sp_from_thrust_i(guidance_v.th_sp);
+      sp = th_sp_from_thrust_i(guidance_v.th_sp, THRUST_AXIS_Z);
       break;
     default:
       break;

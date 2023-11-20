@@ -76,7 +76,7 @@ struct StabilizationSetpoint {
 };
 
 /** Thrust setpoint // TODO to a setpoint header
- *  Structure to store the desired thrust with different format
+ *  Structure to store the desired thrust vector with different format
  */
 struct ThrustSetpoint {
   enum {
@@ -88,10 +88,10 @@ struct ThrustSetpoint {
     THRUST_SP_FLOAT   ///< float is assumed to be normalized in [0.:1.]
   } format;
   union {
-    int32_t thrust_i;
-    float thrust_f;
-    int32_t th_incr_i;
-    float th_incr_f;
+    int32_t thrust_i[3];
+    float thrust_f[3];
+    int32_t th_incr_i[3];
+    float th_incr_f[3];
   } sp;
 };
 
@@ -151,10 +151,10 @@ extern struct FloatRates stab_sp_to_rates_f(struct StabilizationSetpoint *sp);
 // thrust setpoint helper functions
 // - first param is the thrust setpoint structure
 // - second param is the current thrust (expected in [0:MAX_PPRZ])
-extern int32_t th_sp_to_thrust_i(struct ThrustSetpoint *th, int32_t thrust);
-extern float th_sp_to_thrust_f(struct ThrustSetpoint *th, int32_t thrust);
-extern int32_t th_sp_to_incr_i(struct ThrustSetpoint *th, int32_t thrust);
-extern float th_sp_to_incr_f(struct ThrustSetpoint *th, int32_t thrust);
+extern int32_t th_sp_to_thrust_i(struct ThrustSetpoint *th, int32_t thrust, uint8_t axis);
+extern float th_sp_to_thrust_f(struct ThrustSetpoint *th, int32_t thrust, uint8_t axis);
+extern int32_t th_sp_to_incr_i(struct ThrustSetpoint *th, int32_t thrust, uint8_t axis);
+extern float th_sp_to_incr_f(struct ThrustSetpoint *th, int32_t thrust, uint8_t axis);
 
 // helper make functions
 extern struct StabilizationSetpoint stab_sp_from_quat_i(struct Int32Quat *quat);
@@ -166,10 +166,18 @@ extern struct StabilizationSetpoint stab_sp_from_ltp_i(struct Int32Vect2 *vect, 
 extern struct StabilizationSetpoint stab_sp_from_ltp_f(struct FloatVect2 *vect, float heading);
 extern struct StabilizationSetpoint stab_sp_from_rates_i(struct Int32Rates *rates);
 extern struct StabilizationSetpoint stab_sp_from_rates_f(struct FloatRates *rates);
-extern struct ThrustSetpoint th_sp_from_thrust_i(int32_t thrust);
-extern struct ThrustSetpoint th_sp_from_thrust_f(float thrust);
-extern struct ThrustSetpoint th_sp_from_incr_i(int32_t th_increment);
-extern struct ThrustSetpoint th_sp_from_incr_f(float th_increment);
+extern struct ThrustSetpoint th_sp_from_thrust_i(int32_t thrust, uint8_t axis);
+extern struct ThrustSetpoint th_sp_from_thrust_f(float thrust, uint8_t axis);
+extern struct ThrustSetpoint th_sp_from_incr_i(int32_t th_increment, uint8_t axis);
+extern struct ThrustSetpoint th_sp_from_incr_f(float th_increment, uint8_t axis);
+extern struct ThrustSetpoint th_sp_from_thrust_vect_i(int32_t thrust[3]);
+extern struct ThrustSetpoint th_sp_from_thrust_vect_f(float thrust[3]);
+extern struct ThrustSetpoint th_sp_from_incr_vect_i(int32_t th_increment[3]);
+extern struct ThrustSetpoint th_sp_from_incr_vect_f(float th_increment[3]);
+
+#define THRUST_AXIS_X 0
+#define THRUST_AXIS_Y 1
+#define THRUST_AXIS_Z 2
 
 #define STAB_SP_SET_EULERS_ZERO(_sp) { \
   _sp.type = STAB_SP_EULERS;  \
@@ -182,7 +190,7 @@ extern struct ThrustSetpoint th_sp_from_incr_f(float th_increment);
 #define THRUST_SP_SET_ZERO(_sp) { \
   _sp.type = THRUST_SP;       \
   _sp.format = THRUST_SP_INT; \
-  _sp.sp.thrust_i = 0;        \
+  _sp.sp.thrust_i = {0,0,0};  \
 }
 
 #endif /* STABILIZATION_H */

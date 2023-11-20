@@ -473,72 +473,72 @@ struct FloatRates stab_sp_to_rates_f(struct StabilizationSetpoint *sp)
   }
 }
 
-int32_t th_sp_to_thrust_i(struct ThrustSetpoint *th, int32_t thrust)
+int32_t th_sp_to_thrust_i(struct ThrustSetpoint *th, int32_t thrust, uint8_t axis)
 {
   if (th->type == THRUST_SP) {
     if (th->format == THRUST_SP_INT) {
-      return th->sp.thrust_i;
+      return th->sp.thrust_i[axis];
     } else {
-      return (int32_t) (th->sp.thrust_f * MAX_PPRZ);
+      return (int32_t) (th->sp.thrust_f[axis] * MAX_PPRZ);
     }
   } else {
     if (th->format == THRUST_SP_INT) {
-      return thrust + th->sp.th_incr_i;
+      return thrust + th->sp.th_incr_i[axis];
     } else {
-      return thrust + (int32_t)(th->sp.th_incr_f * MAX_PPRZ);
+      return thrust + (int32_t)(th->sp.th_incr_f[axis] * MAX_PPRZ);
     }
   }
 }
 
-float th_sp_to_thrust_f(struct ThrustSetpoint *th, int32_t thrust)
+float th_sp_to_thrust_f(struct ThrustSetpoint *th, int32_t thrust, uint8_t axis)
 {
   const float MAX_PPRZ_F = (float) MAX_PPRZ;
   if (th->type == THRUST_SP) {
     if (th->format == THRUST_SP_FLOAT) {
-      return th->sp.thrust_f;
+      return th->sp.thrust_f[axis];
     } else {
-      return (float)th->sp.thrust_i / MAX_PPRZ_F;
+      return (float)th->sp.thrust_i[axis] / MAX_PPRZ_F;
     }
   } else {
     if (th->format == THRUST_SP_FLOAT) {
-      return ((float)thrust / MAX_PPRZ_F) + th->sp.th_incr_f;
+      return ((float)thrust / MAX_PPRZ_F) + th->sp.th_incr_f[axis];
     } else {
-      return (float)(thrust + th->sp.th_incr_f) / MAX_PPRZ_F;
+      return (float)(thrust + th->sp.th_incr_f[axis]) / MAX_PPRZ_F;
     }
   }
 }
 
-int32_t th_sp_to_incr_i(struct ThrustSetpoint *th, int32_t thrust)
+int32_t th_sp_to_incr_i(struct ThrustSetpoint *th, int32_t thrust, uint8_t axis)
 {
   if (th->type == THRUST_INCR_SP) {
     if (th->format == THRUST_SP_INT) {
-      return th->sp.th_incr_i;
+      return th->sp.th_incr_i[axis];
     } else {
-      return (int32_t) (th->sp.th_incr_f * MAX_PPRZ);
+      return (int32_t) (th->sp.th_incr_f[axis] * MAX_PPRZ);
     }
   } else {
     if (th->format == THRUST_SP_INT) {
-      return th->sp.thrust_i - thrust;
+      return th->sp.thrust_i[axis] - thrust;
     } else {
-      return (int32_t)(th->sp.thrust_f * MAX_PPRZ) - thrust;
+      return (int32_t)(th->sp.thrust_f[axis] * MAX_PPRZ) - thrust;
     }
   }
 }
 
-float th_sp_to_incr_f(struct ThrustSetpoint *th, int32_t thrust)
+float th_sp_to_incr_f(struct ThrustSetpoint *th, int32_t thrust, uint8_t axis)
 {
   const float MAX_PPRZ_F = (float) MAX_PPRZ;
   if (th->type == THRUST_INCR_SP) {
     if (th->format == THRUST_SP_FLOAT) {
-      return th->sp.th_incr_f;
+      return th->sp.th_incr_f[axis];
     } else {
-      return (float)th->sp.th_incr_i / MAX_PPRZ_F;
+      return (float)th->sp.th_incr_i[axis] / MAX_PPRZ_F;
     }
   } else {
     if (th->format == THRUST_SP_FLOAT) {
-      return th->sp.thrust_f - ((float)thrust / MAX_PPRZ_F);
+      return th->sp.thrust_f[axis] - ((float)thrust / MAX_PPRZ_F);
     } else {
-      return (float)(th->sp.thrust_i - thrust) / MAX_PPRZ_F;
+      return (float)(th->sp.thrust_i[axis] - thrust) / MAX_PPRZ_F;
     }
   }
 }
@@ -636,43 +636,91 @@ struct StabilizationSetpoint stab_sp_from_rates_f(struct FloatRates *rates)
   return sp;
 }
 
-struct ThrustSetpoint th_sp_from_thrust_i(int32_t thrust)
+struct ThrustSetpoint th_sp_from_thrust_i(int32_t thrust, uint8_t axis)
 {
   struct ThrustSetpoint sp = {
     .type = THRUST_SP,
-    .format = THRUST_SP_INT,
-    .sp.thrust_i = thrust
+    .format = THRUST_SP_INT
   };
+  sp.sp.thrust_i[axis] = thrust;
   return sp;
 }
 
-struct ThrustSetpoint th_sp_from_thrust_f(float thrust)
+struct ThrustSetpoint th_sp_from_thrust_f(float thrust, uint8_t axis)
 {
   struct ThrustSetpoint sp = {
     .type = THRUST_SP,
-    .format = THRUST_SP_FLOAT,
-    .sp.thrust_f = thrust
+    .format = THRUST_SP_FLOAT
   };
+  sp.sp.thrust_f[axis] = thrust;
   return sp;
 }
 
-struct ThrustSetpoint th_sp_from_incr_i(int32_t th_increment)
+struct ThrustSetpoint th_sp_from_incr_i(int32_t th_increment, uint8_t axis)
 {
   struct ThrustSetpoint sp = {
     .type = THRUST_INCR_SP,
-    .format = THRUST_SP_INT,
-    .sp.th_incr_i = th_increment
+    .format = THRUST_SP_INT
   };
+  sp.sp.th_incr_i[axis] = th_increment;
   return sp;
 }
 
-struct ThrustSetpoint th_sp_from_incr_f(float th_increment)
+struct ThrustSetpoint th_sp_from_incr_f(float th_increment, uint8_t axis)
 {
   struct ThrustSetpoint sp = {
     .type = THRUST_INCR_SP,
-    .format = THRUST_SP_FLOAT,
-    .sp.th_incr_f = th_increment
+    .format = THRUST_SP_FLOAT
   };
+  sp.sp.th_incr_f[axis] = th_increment;
+  return sp;
+}
+
+struct ThrustSetpoint th_sp_from_thrust_vect_i(int32_t thrust[3])
+{
+  struct ThrustSetpoint sp = {
+    .type = THRUST_SP,
+    .format = THRUST_SP_INT
+  };
+  sp.sp.thrust_i[0] = thrust[0];
+  sp.sp.thrust_i[1] = thrust[1];
+  sp.sp.thrust_i[2] = thrust[2];
+  return sp;
+}
+
+struct ThrustSetpoint th_sp_from_thrust_vect_f(float thrust[3])
+{
+  struct ThrustSetpoint sp = {
+    .type = THRUST_SP,
+    .format = THRUST_SP_FLOAT
+  };
+  sp.sp.thrust_f[0] = thrust[0];
+  sp.sp.thrust_f[1] = thrust[1];
+  sp.sp.thrust_f[2] = thrust[2];
+  return sp;
+}
+
+struct ThrustSetpoint th_sp_from_incr_vect_i(int32_t th_increment[3])
+{
+  struct ThrustSetpoint sp = {
+    .type = THRUST_INCR_SP,
+    .format = THRUST_SP_INT
+  };
+  sp.sp.th_incr_i[0] = th_increment[0];
+  sp.sp.th_incr_i[1] = th_increment[1];
+  sp.sp.th_incr_i[2] = th_increment[2];
+  return sp;
+}
+
+struct ThrustSetpoint th_sp_from_incr_vect_f(float th_increment[3])
+{
+  struct ThrustSetpoint sp = {
+    .type = THRUST_INCR_SP,
+    .format = THRUST_SP_FLOAT
+  };
+  sp.sp.th_incr_f[0] = th_increment[0];
+  sp.sp.th_incr_f[1] = th_increment[1];
+  sp.sp.th_incr_f[2] = th_increment[2];
   return sp;
 }
 
