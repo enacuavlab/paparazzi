@@ -8,16 +8,11 @@
   <waypoints>
     <waypoint name="HOME" x="0" y="0"/>
     <waypoint name="STDBY" x="49.5" y="100.1"/>
-    <waypoint name="1" x="10.1" y="189.9"/>
-    <waypoint name="2" x="132.3" y="139.1"/>
-    <waypoint name="MOB" x="137.0" y="-11.6"/>
-    <waypoint name="S1" x="-119.2" y="69.6"/>
-    <waypoint name="S2" x="274.4" y="209.5"/>
     <waypoint alt="215.0" name="AF" x="177.4" y="45.1"/>
     <waypoint alt="185.0" name="TD" x="28.8" y="57.0"/>
     <waypoint name="_BASELEG" x="168.8" y="-13.8"/>
     <waypoint name="CLIMB" x="-160" y="-10"/>
-    <waypoint name="SRC" x="-400" y="150" height="30"/>
+    <waypoint name="SRC" lat="49.4367794" lon="1.0616604" height="30"/>
   </waypoints>
   
   <variables>
@@ -125,11 +120,13 @@
       <set value="0.06" var="gvf_parametric_drift_ellipse_par.ky"/>
       <set value="0.06" var="gvf_parametric_drift_ellipse_par.kz"/>
       <set value="1" var="gvf_parametric_coordination.kc"/>
-      
+      <set value="400" var="gvf_parametric_control.w"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
-      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID % 10),0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
-      <call fun="gvf_parametric_3d_drift_ellipse(5,2,4,0.05,90 * AC_ID)"/>
+      <!-- For Lubrizol experiment, middleline fitter with equation y = m*x+b; m = 0.853, b = 56.051 -->
+      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC)+56.051,200 + 120 * (AC_ID % 10),0.,0.,(180/M_PI)*atan2(1.,0.853))"/>
+      
+      <call fun="gvf_parametric_3d_drift_ellipse(1,0.2,tan(M_PI/8),0.005,(2*M_PI/3) * AC_ID)"/>
     </block>
     
     <block name="Mission GVF">
@@ -138,29 +135,6 @@
     	</while>
     </block>
     
-    <block key="F8" name="Figure 8 around wp 1" strip_button="Figure 8 (wp 1-2)" strip_icon="eight.png" group="base_pattern">
-      <eight center="1" radius="nav_radius" turn_around="2"/>
-      <exception cond="NavBlockTime() @GT 120" deroute="Oval 1-2"/>
-    </block>
-    <block name="Oval 1-2" strip_button="Oval (wp 1-2)" strip_icon="oval.png" group="base_pattern">
-      <oval p1="1" p2="2" radius="nav_radius"/>
-      <exception cond="NavBlockTime() @GT 90" deroute="Survey S1-S2"/>
-    </block>
-    <block name="Survey S1-S2" strip_button="Survey (wp S1-S2)" strip_icon="survey.png" group="extra_pattern">
-      <survey_rectangle grid="150" wp1="S1" wp2="S2"/>
-      <exception cond="NavBlockTime() @GT 180" deroute="Path 1,2,S1,S2,STDBY"/>
-    </block>
-    <block name="Path 1,2,S1,S2,STDBY" strip_button="Path (1,2,S1,S2,STDBY)" strip_icon="path.png" group="extra_pattern">
-      <path wpts="1,2 S1"/>
-      <path wpts="S1, S2 STDBY" approaching_time="1" pitch="auto" throttle="0.4"/>
-      <deroute block="MOB"/>
-    </block>
-    <block name="MOB" strip_button="Circle around here" strip_icon="mob.png" group="base_pattern">
-      <call_once fun="NavSetWaypointHere(WP_MOB)"/>
-      <set value="DEFAULT_CIRCLE_RADIUS" var="nav_radius"/>
-      <circle radius="nav_radius" wp="MOB"/>
-      <exception cond="NavBlockTime() @GT 90" deroute="Land Right AF-TD"/>
-    </block>
     <block name="Land Right AF-TD" strip_button="Land right (wp AF-TD)" strip_icon="land-right.png" group="land">
       <set value="DEFAULT_CIRCLE_RADIUS" var="nav_radius"/>
       <deroute block="land"/>
