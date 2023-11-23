@@ -9,10 +9,6 @@ import numpy as np
 from trajectories import GVF, GVF_PARAMETRIC
 from trajectories.gvf_trajectories import Trajectory, LineTrajectory,SurfaceTrajectory
 
-from pprzlink.generated import telemetry,ground
-from pprzlink.message import PprzMessage
-from pprzlink.ivy import IvyMessagesInterface
-
 import sys
 from os import path, getenv
 PPRZ_HOME = getenv("PAPARAZZI_HOME", path.normpath(
@@ -21,6 +17,11 @@ PPRZ_SRC = getenv("PAPARAZZI_SRC", path.normpath(
     path.join(path.dirname(path.abspath(__file__)), '../../../../../')))
 sys.path.append(PPRZ_HOME + "/var/lib/python")
 sys.path.append(PPRZ_SRC + "/sw/lib/python")
+
+
+from pprzlink.generated import telemetry,ground
+from pprzlink.message import PprzMessage
+from pprzlink.ivy import IvyMessagesInterface
 
 from settings import PprzSettingsManager
 from pprz_connect import PprzConnect,PprzConfig

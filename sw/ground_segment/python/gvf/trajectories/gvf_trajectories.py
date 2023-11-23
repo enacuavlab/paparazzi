@@ -2,11 +2,20 @@ from __future__ import annotations
 
 import typing
 import enum
-from dataclasses import dataclass
+from dataclasses import dataclass,field
 from abc import ABC,abstractmethod
 
 import numpy as np
 from scipy.spatial.transform import Rotation
+
+import sys
+from os import path, getenv
+PPRZ_HOME = getenv("PAPARAZZI_HOME", path.normpath(
+    path.join(path.dirname(path.abspath(__file__)), '../../../../../')))
+PPRZ_SRC = getenv("PAPARAZZI_SRC", path.normpath(
+    path.join(path.dirname(path.abspath(__file__)), '../../../../../')))
+sys.path.append(PPRZ_HOME + "/var/lib/python")
+sys.path.append(PPRZ_SRC + "/sw/lib/python")
 
 from pprzlink.message import PprzMessage
 from pprzlink.generated.telemetry import PprzMessage_GVF,PprzMessage_GVF_PARAMETRIC
@@ -15,9 +24,9 @@ from pprzlink.generated.telemetry import PprzMessage_GVF,PprzMessage_GVF_PARAMET
 
 @dataclass
 class Trajectory(ABC):
-    gain:np.ndarray = np.ones(1) # Gain vector
+    gain = np.ones(1) # Gain vector
     name:str = "Trajectory" # Name for the trajectory
-    XYZoffset:np.ndarray = np.zeros(3)
+    XYZoffset = np.zeros(3)
     rot:Rotation = Rotation.identity() # Rotation applied to the trajectory
     
     ##### Abstract methods #####
@@ -136,7 +145,7 @@ class Trajectory(ABC):
 
 @dataclass
 class LineTrajectory(Trajectory,ABC):
-    gain:np.ndarray = np.ones(3)
+    gain = np.ones(1)
     def _grad_param_point(self, t:float, step:float=0.005) -> np.ndarray:
         """
         Estimated derivative of the curve's equation
@@ -184,7 +193,7 @@ class LineTrajectory(Trajectory,ABC):
                             output[i,j,k] = self.gvf(meshgrid[i,j,k],t)
                         
                         if normalize:
-                            output[i,j,k] /= np.sum(np.square(output[i,j,k]))
+                            output[i,j,k] /= np.linalg.norm(output[i,j,k])
         else:
             # Assume a vector list
             if normalized:
@@ -192,8 +201,7 @@ class LineTrajectory(Trajectory,ABC):
             else:
                 output = np.asarray([self.gvf(v,t) for v in vectors])
             if normalize:
-                norms = np.sum(np.square(output),axis=1)
-                output /= np.stack([norms]*3).transpose()
+                output /= np.linalg.norm(output,axis=1)
              
         return output
         
