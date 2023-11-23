@@ -14,6 +14,15 @@
             "args": ["-p", "data_nc/spray.bin_n1_d1_t1.nc", "-w","data_nc/swift_merged.nc"],
         },
         {
+            "name": "Python: spray_analyser.py debug",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/spray_analyser.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": ["data_nc/spray_stripped.nc"],
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",

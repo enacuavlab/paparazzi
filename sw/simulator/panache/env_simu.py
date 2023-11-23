@@ -12,6 +12,10 @@ import panacheur
 import argparse
 import json
 
+PPRZ_HOME = getenv("PAPARAZZI_HOME", path.normpath(path.join(path.dirname(path.abspath(__file__)),'../../..')))
+sys.path.append(PPRZ_HOME + "/var/lib/python")
+sys.path.append(PPRZ_HOME + "/sw/lib/python")
+
 from pprzlink.ivy import IvyMessagesInterface
 from pprzlink.generated.datalink import PprzMessage_PAYLOAD_COMMAND
 from pprzlink.generated.ground import PprzMessage_WORLD_ENV
