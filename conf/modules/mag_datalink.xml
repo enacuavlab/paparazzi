@@ -1,0 +1,24 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="mag_datalink" dir="sensors" task="sensors">
+  <doc>
+    <description>
+      Optitrack used as indoor magnetometer
+      Optitrack can determine the drone's orientation, we define a magnetic
+      field relative to the optitrack frame of reference and express it in 
+      the body frame.
+      Parses the EXTERNAL_POSE datalink message and publishes it as MAG onboard via ABI (IMU_MAG_RAW).
+    </description>
+  </doc>
+  <dep>
+    <provides>mag</provides>
+  </dep>
+  <header>
+    <file name="mag_datalink.h"/>
+  </header>
+  <init fun="mag_datalink_init()"/>
+  <datalink message="EXTERNAL_POSE" fun="mag_datalink_parse_EXTERNAL_POSE(buf)"/>
+  <makefile target="ap">
+    <file name="mag_datalink.c"/>
+    <test/>
+  </makefile>
+</module>

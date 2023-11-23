@@ -83,7 +83,6 @@
       <define name="IMU_MPU_CHAN_X" value="2"/>      
       <define name="IMU_MPU_CHAN_Z" value="0"/> 
       <define name="IMU_MPU_Z_SIGN" value="-1"/>
-      <!--Set the frequency to 2000 hz with 256 Hz internal low pass-->
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="3"/>
       <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
@@ -91,6 +90,27 @@
       <define name="LIS3MDL_CHAN_Z" value="0" />
       <define name="LIS3MDL_CHAN_Y_SIGN" value="-" />
     </module>
+
+
+    <!-- <module name="baro" type="bmp3">
+      <define name="BMP3_SLAVE_ADDR" value="BMP3_I2C_ADDR_ALT"/>
+      <configure name="BMP3_I2C_DEV" value="i2c4" />
+    </module>
+
+    <module name="imu" type="mpu6000">
+      <define name="IMU_MPU_GYRO_RANGE" value="MPU60X0_GYRO_RANGE_1000"/>
+      <define name="IMU_MPU_ACCEL_RANGE" value="MPU60X0_ACCEL_RANGE_8G"/>
+      <configure name="IMU_MPU_SPI_DEV" value="spi4" />
+      <configure name="IMU_MPU_SPI_SLAVE_IDX" value="SPI_SLAVE5"/>
+      <define name="IMU_MPU_CHAN_X" value="2"/>      
+      <define name="IMU_MPU_CHAN_Z" value="0"/> 
+      <define name="IMU_MPU_Z_SIGN" value="-1"/>
+      <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
+      <define name="IMU_MPU_SMPLRT_DIV" value="3"/>
+      <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
+    </module> -->
+
+    
 
     <module name="air_data"/>
 
@@ -101,26 +121,39 @@
       <define name="GPS_FIX_TIMEOUT" value="0.5"/>
     </module>
 
-    <module name="ins" type="ekf2"/> -->
+     -->
 
-    <module name="ahrs" type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="FALSE"/>
-      <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
-      <define name="AHRS_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
-    </module>
+   
 
     <!-- Vol interieur -->
     <module name="gps" type="optitrack"/>
-    <module name="ins" type="gps_passthrough"/>
+    <module name="ins" type="ekf2">
+      <define name="INS_EKF2_OPTITRACK" value="TRUE" />
+    </module>
+
+    <!-- <module name="mag" type="datalink"/> -->
+    <!-- <module name="ins" type="gps_passthrough"/> -->
+
+    <!-- <module name="ahrs" type="int_cmpl_quat">
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+      <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
+      <define name="AHRS_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
+    </module> -->
 
     <module name="stabilization" type="indi"/>
     <module name="guidance" type="indi_hybrid_tailsitter"/>
     <module name="nav" type="hybrid"/>
 
-    <!-- <module name="preflight_checks"/> -->
+    <module name="preflight_checks"/>
 
     <!-- <module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
+    </module> -->
+
+
+    <!-- <module name="gvf_module">
+      <define name="GVF_ELLIPSE_A" value="2"/>
+      <define name="GVF_ELLIPSE_B" value="2"/>
     </module> -->
 
   </firmware>
@@ -293,12 +326,13 @@
     <define name="GUIDANCE_INDI_SPEED_GAINZ" value="2.0"/>
     <define name="GUIDANCE_INDI_PITCH_LIFT_EFF" value="0.12"/>
     <define name="GUIDANCE_INDI_PITCH_EFF_SCALING" value="1.0"/>
-    <define name="GUIDANCE_H_REF_MAX_SPEED" value="16.0"/> <!--not used-->
-    <define name="GUIDANCE_INDI_MIN_THROTTLE" value="000"/> <!--2000-->
+    <define name="GUIDANCE_H_REF_MAX_SPEED" value="10.0"/> <!--not used-->
+    <define name="GUIDANCE_INDI_MIN_THROTTLE" value="0"/> <!--2000-->
     <define name="GUIDANCE_INDI_MIN_THROTTLE_FWD" value="1000"/>
     <define name="GUIDANCE_INDI_MIN_PITCH" value="-120."/>
     <define name="GUIDANCE_INDI_MAX_PITCH" value="25."/>
-    <define name="GUIDANCE_INDI_MAX_AIRSPEED" value="16.0"/>
+    <define name="GUIDANCE_INDI_MAX_AIRSPEED" value="10.0"/>
+    <define name="GUIDANCE_INDI_GOTO_SPEED" value="0.5"/>
     <define name="GUIDANCE_HEADING_IS_FREE" value="FALSE"/> <!--heading can not be set by navigation -->
     <define name="GUIDANCE_INDI_HEADING_BANK_GAIN" value="9.0"/>
     <define name="GUIDANCE_INDI_PITCH_OFFSET_GAIN" value="0.0"/>
@@ -321,8 +355,8 @@
   </section>
 
   <section name="NAV">
-    <define name="NAV_CLIMB_VSPEED" value="1.5"/>
-    <define name="NAV_DESCEND_VSPEED" value="-0.8"/>
+    <define name="NAV_CLIMB_VSPEED" value="0.5"/>
+    <define name="NAV_DESCEND_VSPEED" value="-0.5"/>
   </section>
 
   <section name="AHRS" prefix="AHRS_">
@@ -353,7 +387,7 @@
     <define name="EFF_SCHED_USE_FUNCTION" value="TRUE"/>
 
     <define name="ARRIVED_AT_WAYPOINT" value="4.0"/> <!-- For outdoor -->
-    <define name="DEFAULT_CIRCLE_RADIUS" value="60"/> <!-- For outdoor -->
+    <define name="DEFAULT_CIRCLE_RADIUS" value="1.5"/> <!-- For outdoor -->
     <define name="CARROT" value="5.0"/>
   </section>
 
