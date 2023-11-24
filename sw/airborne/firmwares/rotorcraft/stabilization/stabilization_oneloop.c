@@ -76,7 +76,7 @@ void stabilization_attitude_set_stab_sp(UNUSED struct StabilizationSetpoint *sp)
 
 }
 
-void stabilization_attitude_run(bool in_flight)
+void stabilization_attitude_run(bool in_flight, UNUSED struct StabilizationSetpoint *sp, UNUSED struct ThrustSetpoint *thrust, UNUSED int32_t *cmd)
 {
   struct FloatVect3 PSA_des    = { 0 };
   int    rm_order_h = 3;

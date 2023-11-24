@@ -902,7 +902,6 @@ void vertical_ctrl_module_run(bool in_flight)
 
     if (in_flight) {
       Bound(thrust_set, 0.25 * of_landing_ctrl.nominal_thrust * MAX_PPRZ, MAX_PPRZ);
-      stabilization_cmd[COMMAND_THRUST] = thrust_set;
     }
   }
 
@@ -987,9 +986,10 @@ void vertical_ctrl_module_run(bool in_flight)
   };
 
   // set the desired roll pitch and yaw:
-  stabilization_indi_set_rpy_setpoint_i(&rpy);
+  struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&rpy);
+  struct ThrustSetpoint th = th_sp_from_thrust_i(thrust_set, THRUST_AXIS_Z);
   // execute attitude stabilization:
-  stabilization_attitude_run(in_flight);
+  stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd);
 }
 
 /**

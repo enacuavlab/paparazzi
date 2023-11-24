@@ -527,13 +527,13 @@ void stabilization_indi_set_stab_sp(struct StabilizationSetpoint *sp)
 
 /**
  * @param in_flight boolean that states if the UAV is in flight or not
- * @param rate_sp rate setpoint
+ * @param sp rate setpoint
  * @param thrust thrust setpoint
  * @param cmd output command array
  *
  * Function that calculates the INDI commands
  */
-void stabilization_indi_rate_run(bool in_flight, struct FloatRates rate_sp, int32_t thrust, int32_t *cmd)
+void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
   /* Propagate the filter on the gyroscopes */
   struct FloatRates *body_rates = stateGetBodyRates_f();
@@ -587,6 +587,7 @@ void stabilization_indi_rate_run(bool in_flight, struct FloatRates rate_sp, int3
 #endif
 
   //calculate the virtual control (reference acceleration) based on a PD controller
+  struct FloatRates rate_sp = stab_sp_to_rates_f(sp);
   angular_accel_ref.p = (rate_sp.p - rates_filt.p) * indi_gains.rate.p;
   angular_accel_ref.q = (rate_sp.q - rates_filt.q) * indi_gains.rate.q;
   angular_accel_ref.r = (rate_sp.r - rates_filt.r) * indi_gains.rate.r;
@@ -598,11 +599,13 @@ void stabilization_indi_rate_run(bool in_flight, struct FloatRates rate_sp, int3
   //G2 is scaled by INDI_G_SCALING to make it readable
   g2_times_du = g2_times_du / INDI_G_SCALING;
 
+  // TODO get ride of use_increment !
   float use_increment = 0.0;
   if (in_flight) {
     use_increment = 1.0;
   }
 
+  // TODO and increment_set !
   struct FloatVect3 v_thrust;
   v_thrust.x = 0.0;
   v_thrust.y = 0.0;
@@ -738,23 +741,23 @@ void WEAK stabilization_indi_set_wls_settings(float use_increment)
 }
 
 /**
- * @param enable_integrator
- * @param rate_control boolean that determines if we are in rate control or attitude control
+ * @param in_flight enable integrator only in flight
+ * @param att_sp attitude stabilization setpoint
+ * @param thrust thrust setpoint
+ * @param[out] output command vector
  *
  * Function that should be called to run the INDI controller
  */
-void stabilization_indi_attitude_run(bool in_flight, struct Int32Quat quat_sp, int32_t thrust, int32_t *cmd)
+void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoint *att_sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
   /* attitude error                          */
   struct FloatQuat att_err;
   struct FloatQuat *att_quat = stateGetNedToBodyQuat_f();
-  struct FloatQuat quat_sp_f;
+  struct FloatQuat quat_sp = stab_sp_to_quat_f(att_sp);
 
-  QUAT_FLOAT_OF_BFP(quat_sp_f, quat_sp);
-  float_quat_inv_comp_norm_shortest(&att_err, att_quat, &quat_sp_f);
+  float_quat_inv_comp_norm_shortest(&att_err, att_quat, &quat_sp);
 
   struct FloatVect3 att_fb;
-
 #if TILT_TWIST_CTRL
   struct FloatQuat tilt;
   struct FloatQuat twist;
@@ -770,14 +773,14 @@ void stabilization_indi_attitude_run(bool in_flight, struct Int32Quat quat_sp, i
 
   // local variable to compute rate setpoints based on attitude error
   struct FloatRates rate_sp;
-
   // calculate the virtual control (reference acceleration) based on a PD controller
   rate_sp.p = indi_gains.att.p * att_fb.x / indi_gains.rate.p;
   rate_sp.q = indi_gains.att.q * att_fb.y / indi_gains.rate.q;
   rate_sp.r = indi_gains.att.r * att_fb.z / indi_gains.rate.r;
 
   // Add feed-forward rates to the attitude feedback part
-  RATES_ADD(rate_sp, stab_att_ff_rates);
+  struct FloatRates ff_rates = stab_sp_to_rates_f(att_sp);
+  RATES_ADD(rate_sp, ff_rates);
 
   // Store for telemetry
   angular_rate_ref.p = rate_sp.p;
@@ -788,10 +791,8 @@ void stabilization_indi_attitude_run(bool in_flight, struct Int32Quat quat_sp, i
   /*BoundAbs(rate_sp.r, 5.0);*/
 
   /* compute the INDI command */
-  stabilization_indi_rate_run(in_flight, rate_sp, thrust, cmd);
-
-  // Reset thrust increment boolean
-  indi_thrust_increment_set = false;
+  struct StabilizationSetpoint sp = stab_sp_to_rates_f(&rate_sp);
+  stabilization_indi_rate_run(in_flight, &sp, thrust, cmd);
 }
 
 // This function reads rc commands

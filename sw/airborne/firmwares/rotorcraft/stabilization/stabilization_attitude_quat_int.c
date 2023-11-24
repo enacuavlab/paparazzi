@@ -253,7 +253,7 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *ga
 
 }
 
-void stabilization_attitude_run(bool enable_integrator, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd)
+void stabilization_attitude_run(bool enable_integrator, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
 
   stabilization_attitude_set_stab_sp(sp);
@@ -312,7 +312,7 @@ void stabilization_attitude_run(bool enable_integrator, struct StabilizationSetp
   cmd[COMMAND_ROLL] = stabilization_att_fb_cmd[COMMAND_ROLL] + stabilization_att_ff_cmd[COMMAND_ROLL];
   cmd[COMMAND_PITCH] = stabilization_att_fb_cmd[COMMAND_PITCH] + stabilization_att_ff_cmd[COMMAND_PITCH];
   cmd[COMMAND_YAW] = stabilization_att_fb_cmd[COMMAND_YAW] + stabilization_att_ff_cmd[COMMAND_YAW];
-  cmd[COMMAND_THRUST] = thrust;
+  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
 
   /* bound the result */
   BoundAbs(cmd[COMMAND_ROLL], MAX_PPRZ);

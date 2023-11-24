@@ -57,7 +57,7 @@ void stabilization_attitude_enter(void)
 
 }
 
-void stabilization_attitude_run(bool in_flight __attribute__((unused)), struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd)
+void stabilization_attitude_run(bool in_flight __attribute__((unused)), struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
 
   stabilization_attitude_set_stab_sp(sp);
@@ -66,7 +66,7 @@ void stabilization_attitude_run(bool in_flight __attribute__((unused)), struct S
   const int32_t angle2cmd = (MAX_PPRZ / TRAJ_MAX_BANK);
   cmd[COMMAND_ROLL] = stab_att_sp_euler.phi * angle2cmd;
   cmd[COMMAND_PITCH] = stab_att_sp_euler.theta * angle2cmd;
-  cmd[COMMAND_THRUST] = thrust;
+  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
 
   //TODO: Fix yaw with PID controller
   int32_t yaw_error = stateGetNedToBodyEulers_i()->psi - stab_att_sp_euler.psi;

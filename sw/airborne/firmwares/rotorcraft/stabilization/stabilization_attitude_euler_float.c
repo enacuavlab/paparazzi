@@ -185,7 +185,7 @@ void stabilization_attitude_set_stab_sp(struct StabilizationSetpoint *sp)
 
 #define MAX_SUM_ERR 200
 
-void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd)
+void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
   stabilization_attitude_set_stab_sp(sp);
 #if USE_ATT_REF
@@ -246,7 +246,7 @@ void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp
   cmd[COMMAND_ROLL] = stabilization_att_fb_cmd[COMMAND_ROLL] + stabilization_att_ff_cmd[COMMAND_ROLL];
   cmd[COMMAND_PITCH] = stabilization_att_fb_cmd[COMMAND_PITCH] + stabilization_att_ff_cmd[COMMAND_PITCH];
   cmd[COMMAND_YAW] = stabilization_att_fb_cmd[COMMAND_YAW] + stabilization_att_ff_cmd[COMMAND_YAW];
-  cmd[COMMAND_THRUST] = thrust;
+  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
 
   /* bound the result */
   BoundAbs(cmd[COMMAND_ROLL], MAX_PPRZ);

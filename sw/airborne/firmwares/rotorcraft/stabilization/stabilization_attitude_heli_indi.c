@@ -431,7 +431,7 @@ void stabilization_attitude_init(void)
 #endif
 }
 
-void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t thrust, int32_t *cmd)
+void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
   (void) in_flight; // unused variable
   struct IndiController_int *c = &heli_indi_ctl;
@@ -557,7 +557,7 @@ void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp
   cmd[COMMAND_PITCH] = c->command_out[__k][INDI_PITCH]
                        + c->command_out[__k][INDI_ROLL] * pprz_itrig_sin(c->roll_comp_angle) / pprz_itrig_cos(c->roll_comp_angle);
   cmd[COMMAND_YAW] = c->command_out[__k][INDI_YAW];
-  cmd[COMMAND_THRUST] = thrust;
+  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
 
   /* Disable tail when not armed, because this thing goes crazy */
   if (!autopilot_get_motors_on()) {

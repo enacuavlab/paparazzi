@@ -670,7 +670,8 @@ void guidance_h_module_run(bool in_flight)
   } else {
     horizontal_ctrl_module_run(in_flight);
     struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&ofh_sp_eu);
-    stabilization_attitude_run(in_flight, &sp, stabilization.cmd[COMMAND_THRUST], stabilization.cmd);
+    struct ThrustSetpoint th = th_sp_from_thrust_i(stabilization.cmd[COMMAND_THRUST], THRUST_AXIS_Z);
+    stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd);
   }
 }
 

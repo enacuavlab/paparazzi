@@ -161,8 +161,8 @@ void stabilization_rate_read_rc_switched_sticks(void)
 /**
  * @brief Run indi rate interface from the "stabilization_rate_run" function
  */
-void stabilization_rate_run(bool in_flight)
+void stabilization_rate_run(bool in_flight, struct StabilizationSetpoint *rate_sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
   /* compute the INDI rate command */
-  stabilization_indi_rate_run(stabilization_rate_sp, in_flight);
+  stabilization_indi_rate_run(in_flight, rate_sp, thrust, cmd);
 }

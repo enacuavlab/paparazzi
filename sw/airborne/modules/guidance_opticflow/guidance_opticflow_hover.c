@@ -139,8 +139,9 @@ void guidance_h_module_read_rc(void)
 void guidance_h_module_run(bool in_flight)
 {
   struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&opticflow_stab.cmd);
+  struct ThrustSetpoint th = th_sp_from_thrust_i(stabilization.cmd[COMMAND_THRUST], THRUST_AXIS_Z);
   /* Run the default attitude stabilization */
-  stabilization_attitude_run(in_flight, &sp, stabilization.cmd[COMMAND_THRUST], stabilization.cmd); // FIXME thrust is not correct, need cmd from vertical guidance
+  stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd); // FIXME thrust is not correct, need cmd from vertical guidance
 }
 
 /**

@@ -80,8 +80,10 @@ void guidance_h_module_run(bool in_flight)
   ctrl.cmd.phi = ANGLE_BFP_OF_REAL(roll);
   ctrl.cmd.theta = ANGLE_BFP_OF_REAL(pitch);
 
-  stabilization_attitude_set_rpy_setpoint_i(&(ctrl.cmd));
-  stabilization_attitude_run(in_flight);
+  struct StabilizationSetpoint sp = stab_sp_from_eulers_i(&(ctrl.cmd));
+  struct ThrustSetpoint th = th_sp_from_thrust_i(stabilization.cmd[COMMAND_THRUST], THRUST_AXIS_Z);
+  // execute attitude stabilization:
+  stabilization_attitude_run(in_flight, &sp, &th, stabilization.cmd);
 
   // Alternatively, use the indi_guidance and send AbiMsgACCEL_SP to it instead of setting pitch and roll
 }

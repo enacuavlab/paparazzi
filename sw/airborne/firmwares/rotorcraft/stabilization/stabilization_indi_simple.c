@@ -368,12 +368,13 @@ static inline void finite_difference(float output[3], float new[3], float old[3]
  * @brief Does the INDI calculations
  *
  * @param in_flight true aircraft is flying
- * @param rate_sp rate setpoint
+ * @param sp rate setpoint
  * @param thrust thrust setpoint
  * @param cmd output command array
  */
-void stabilization_indi_rate_run(bool in_flight, struct FloatRates rate_sp, int32_t thrust, int32_t *cmd)
+void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
+
   //Propagate input filters
   //first order actuator dynamics
   indi.u_act_dyn.p = indi.u_act_dyn.p + STABILIZATION_INDI_ACT_DYN_P * (indi.u_in.p - indi.u_act_dyn.p);
@@ -409,6 +410,7 @@ void stabilization_indi_rate_run(bool in_flight, struct FloatRates rate_sp, int3
 #endif
 
   //This lets you impose a maximum yaw rate.
+  struct FloatRates rate_sp = stab_sp_to_rates_f(sp);
   BoundAbs(rate_sp.r, indi.attitude_max_yaw_rate);
 
   // Compute reference angular acceleration:
@@ -460,7 +462,7 @@ void stabilization_indi_rate_run(bool in_flight, struct FloatRates rate_sp, int3
   cmd[COMMAND_ROLL] = indi.u_in.p;
   cmd[COMMAND_PITCH] = indi.u_in.q;
   cmd[COMMAND_YAW] = indi.u_in.r;
-  cmd[COMMAND_THRUST] = thrust;
+  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust);
 
   /* bound the result */
   BoundAbs(cmd[COMMAND_ROLL], MAX_PPRZ);
@@ -475,18 +477,16 @@ void stabilization_indi_rate_run(bool in_flight, struct FloatRates rate_sp, int3
  * @param in_flight not used
  * @param rate_control rate control enabled, otherwise attitude control
  */
-void stabilization_indi_attitude_run(bool in_flight, struct Int32Quat quat_sp, int32_t thrust, int32_t *cmd)
+void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoint *att_sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
   /* attitude error                          */
   struct FloatQuat att_err;
   struct FloatQuat *att_quat = stateGetNedToBodyQuat_f();
-  struct FloatQuat quat_sp_f;
+  struct FloatQuat quat_sp = stab_sp_to_quat_f(att_sp);
 
-  QUAT_FLOAT_OF_BFP(quat_sp_f, quat_sp);
-  float_quat_inv_comp_norm_shortest(&att_err, att_quat, &quat_sp_f);
+  float_quat_inv_comp_norm_shortest(&att_err, att_quat, &quat_sp);
 
   struct FloatVect3 att_fb;
-
 #if TILT_TWIST_CTRL
   struct FloatQuat tilt;
   struct FloatQuat twist;
@@ -507,10 +507,12 @@ void stabilization_indi_attitude_run(bool in_flight, struct Int32Quat quat_sp, i
   rate_sp.r = indi.gains.att.r * att_fb.z / indi.gains.rate.r;
 
   // Add feed-forward rates to the attitude feedback part
-  RATES_ADD(rate_sp, stab_att_ff_rates);
+  struct FloatRates ff_rates = stab_sp_to_rates_f(att_sp);
+  RATES_ADD(rate_sp, ff_rates);
 
   /* compute the INDI command */
-  stabilization_indi_rate_run(in_flight, rate_sp, thrust, cmd);
+  struct StabilizationSetpoint sp = stab_sp_to_rates_f(&rate_sp);
+  stabilization_indi_rate_run(in_flight, &sp, thrust, cmd);
 }
 
 /**
