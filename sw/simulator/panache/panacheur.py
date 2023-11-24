@@ -22,7 +22,10 @@ class EndOfTime(Exception):
 
 
 class Panacheur:
-    def __init__(self, spray_file, swift_file, time_offset=None, time_scale=1, y_offset=0, y_scale=1, x_offset=0, x_scale=1, z_offset=0, z_scale=1):
+    def __init__(self, spray_file, swift_file, 
+                 time_offset=None, time_scale=1,
+                 wind_scale=1,
+                 y_offset=0, y_scale=1, x_offset=0, x_scale=1, z_offset=0, z_scale=1):
         #print(time_offset, time_scale)
         self.spray = Dataset(spray_file, "r")
         self.swift = Dataset(swift_file, "r")
@@ -33,7 +36,7 @@ class Panacheur:
         self.interpolators["W"] = self.get_swift_interpolator("W")
         
         if time_offset is None:
-            time_offset = time.time() - self.spray.variables["time"][0]
+            time_offset=0
         
         self.mins = np.array([
             self.spray.variables["time"][0],
@@ -41,8 +44,9 @@ class Panacheur:
             self.spray.variables["y"][0],
             self.spray.variables["x"][0],
         ])
-        self.offsets = np.array([time_offset, z_offset, y_offset, x_offset])
+        self.offsets = np.array([time_offset+time.time() - self.spray.variables["time"][0], z_offset, y_offset, x_offset])
         self.scales = np.array([time_scale, z_scale, y_scale, x_scale])
+        self.wind_scale = float(wind_scale)
 
         #print(f"mins: {self.mins}")
 
@@ -65,7 +69,7 @@ class Panacheur:
         return RegularGridInterpolator((t, z, y, x), self.swift.variables[var])
     
     def transform_coords(self, coord):
-        true_coord = (coord - self.mins - self.offsets) * self.scales + self.mins
+        true_coord = (coord - self.offsets - self.mins) * self.scales + self.mins
         return true_coord
 
     def get_true_sample(self, interp, t, z, y, x):
@@ -78,7 +82,10 @@ class Panacheur:
         if v in self.interpolators:
             true_coord = self.transform_coords(coord)
             #print(true_coord)
-            return self.interpolators[v](true_coord)
+            if v in ["U","V","W"]:
+                return self.interpolators[v](true_coord) * self.wind_scale
+            else:
+                return self.interpolators[v](true_coord)
         else:
             raise UnknownVariable(v)
     

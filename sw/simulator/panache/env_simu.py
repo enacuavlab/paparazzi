@@ -41,7 +41,10 @@ class EnvSimu:
         self.ivy = IvyMessagesInterface("Glover",verbose=True)
         self.ac_ids = []
         self.pprzconnect = pprz_connect.PprzConnect(notify=self.update_config, ivy=self.ivy)
-        self.panache = panacheur.Panacheur(args.spray, args.swift, time_scale=args.time_scale)
+        self.panache = panacheur.Panacheur(args.spray, args.swift, 
+                                           time_offset=int(args.time_offset),
+                                           time_scale=args.time_scale,
+                                           wind_scale=args.wind_scale)
         # lambert 93 CRS
         crs_lamb93 = pyproj.CRS.from_epsg(2154)
         self.proj_lamb93 = pyproj.Proj(crs_lamb93)
@@ -127,6 +130,9 @@ if __name__ == '__main__':
     parser.add_argument('-w', '--swift', default=swift_file)
     parser.add_argument('-p', '--spray', default=spray_file)
     parser.add_argument('-ts', '--time-scale', default=1, type=float)
+    parser.add_argument('-to', '--time-offset', default=0, type=int,help="Time offset (in seconds), with regards to simulation start.\
+        The 'now' timestamp is always included.")
+    parser.add_argument('-ws','--wind-scale',default=1, type=float, help="Rescale the wind provided by the simulation.")
     parser.add_argument('--save',dest='save',default=None,type=str,
                         help="If set, save all concentration measurement in the given file.\
                             If the file has extension '.pkl', use the Python pickle protocol for saving.\

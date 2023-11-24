@@ -11,54 +11,38 @@ from scipy.optimize import least_squares,curve_fit
 
 from netCDF4 import Dataset
 
-def show_data(xs:np.ndarray,ys:np.ndarray,vals:np.ndarray,estimated_src:np.ndarray,plume_coefs:np.ndarray,delta_direction:float):
-    fig,ax = plt.subplots()
-    
-    min_xs = np.min(xs)
-    max_xs = np.max(xs)
-    # min_ys = np.min(ys)
-    # max_ys = np.max(ys)
-    
-    minmax_xs = np.asarray([min_xs,max_xs])
-    
-    plot = ax.scatter(xs,ys,
-                      c=vals,norm='log',
-                      cmap='inferno_r',
-                      s=1.6)
-    fig.colorbar(plot)
-    
-    plume_direction = plume_coefs[0]
-    plume_ord_at_0 = plume_coefs[1]
-    
-    ax.scatter(estimated_src[0],estimated_src[1],marker='x',c='lightgreen',label='Estimated source location')
-    ax.plot(minmax_xs,(minmax_xs-estimated_src[0])*plume_direction + estimated_src[1]+plume_ord_at_0,'-g',label='Estimated plume direction')
-    
-    r_plus = (plume_direction + delta_direction)/(1-plume_direction*delta_direction)
-    r_minus = (plume_direction - delta_direction)/(1+plume_direction*delta_direction)
-    
-    ax.plot(minmax_xs,(minmax_xs-estimated_src[0])*r_plus + estimated_src[1]+plume_ord_at_0,color='g',linestyle='dashed',label='Plume border')
-    ax.plot(minmax_xs,(minmax_xs-estimated_src[0])*r_minus + estimated_src[1]+plume_ord_at_0,color='g',linestyle='dashed')
-    
-    ax.set_xlim(xmin=np.min(xs),xmax=np.max(xs))
-    ax.set_ylim(ymin=np.min(ys),ymax=np.max(ys))
-    ax.set_aspect('equal')
-    ax.set_title('Airborne gas mass per ground surface, log scale (g/m²)')
-    ax.legend()
-    plt.show()
-    
-def show_histogram(vals:np.ndarray,bins:int,tol:float,title:str):
-    """Plot an histogram of the gas samples
+#################### Data extraction from .nc file ####################
 
-    Args:
-        vals (np.ndarray): N-D array of floats: gas concentration
-        bins (int): Number of bins for the histogram
-        tol (float): Truncation, remove all datapoints smaller than tol
-        title (str): Name for the plot
-    """
-    flat_vals = vals.flatten()
-    plt.hist(flat_vals[flat_vals > tol],bins)
-    plt.title(title)
-    plt.show()
+
+
+def extract_2d_stripped_sample_lists(d_file:str) -> typing.Tuple[np.ndarray,np.ndarray,np.ndarray]:
+    d = Dataset(d_file,'r')
+    xs = np.ma.getdata(d.variables['x'][:])
+    ys = np.ma.getdata(d.variables['y'][:])
+    max_h_pm10 = np.ma.getdata(d.variables['MaxFlatPM10'][:])
+    
+    d.close()
+    
+    meshgrid = np.meshgrid(xs,ys)
+    
+    return meshgrid[0],meshgrid[1],max_h_pm10
+    
+
+def extract_3d_sample_lists(d_file:str,time:int=2) -> typing.Tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray]:
+    d = Dataset(d_file,'r')
+    xs = d.variables['x'][:]
+    ys = d.variables['y'][:]
+    zs = d.variables['Z'][:,0,0]
+    
+    _,m_ys,m_xs = np.meshgrid(zs,ys,xs)
+    m_zs = np.ma.getdata(d.variables['Z'][:])
+    vals = np.ma.getdata(d.variables['PM10'][time])
+    d.close()
+    
+    return np.ma.getdata(m_xs),np.ma.getdata(m_ys),m_zs,vals
+
+#################### Data analysis ####################
+
     
 def find_middleline_coefs(xs:np.ndarray,ys:np.ndarray,ws:np.ndarray) -> np.ndarray:
     """Given positions and weights, find (r,b) such that y = r*x + b 
@@ -123,35 +107,155 @@ def gaussian_interpolation(xs:np.ndarray,ys:np.ndarray,
         plt.show()
         
     return val[0],val[1]
+
+#################### Plotting ####################
+
+def show_data(xs:np.ndarray,ys:np.ndarray,vals:np.ndarray,estimated_src:np.ndarray,plume_coefs:np.ndarray,delta_direction:float):
+    fig,ax = plt.subplots()
+    
+    min_xs = np.min(xs)
+    max_xs = np.max(xs)
+    # min_ys = np.min(ys)
+    # max_ys = np.max(ys)
+    
+    minmax_xs = np.asarray([min_xs,max_xs])
+    
+    plot = ax.scatter(xs,ys,
+                      c=vals,norm='log',
+                      cmap='inferno_r',
+                      s=1.6)
+    fig.colorbar(plot)
+    
+    plume_direction = plume_coefs[0]
+    plume_ord_at_0 = plume_coefs[1]
+    
+    ax.scatter(estimated_src[0],estimated_src[1],marker='x',c='lightgreen',label='Estimated source location')
+    ax.plot(minmax_xs,(minmax_xs-estimated_src[0])*plume_direction + estimated_src[1]+plume_ord_at_0,'-g',label='Estimated plume direction')
+    
+    r_plus = (plume_direction + delta_direction)/(1-plume_direction*delta_direction)
+    r_minus = (plume_direction - delta_direction)/(1+plume_direction*delta_direction)
+    
+    ax.plot(minmax_xs,(minmax_xs-estimated_src[0])*r_plus + estimated_src[1]+plume_ord_at_0,color='g',linestyle='dashed',label='Plume border')
+    ax.plot(minmax_xs,(minmax_xs-estimated_src[0])*r_minus + estimated_src[1]+plume_ord_at_0,color='g',linestyle='dashed')
+    
+    ax.set_xlim(xmin=np.min(xs),xmax=np.max(xs))
+    ax.set_ylim(ymin=np.min(ys),ymax=np.max(ys))
+    ax.set_aspect('equal')
+    ax.set_title('Airborne gas mass per ground surface, log scale (g/m²)')
+    ax.legend()
+    plt.show()
+        
+def show_histogram(vals:np.ndarray,bins:int,tol:float,title:str):
+    """Plot an histogram of the gas samples
+
+    Args:
+        vals (np.ndarray): N-D array of floats: gas concentration
+        bins (int): Number of bins for the histogram
+        tol (float): Truncation, remove all datapoints smaller than tol
+        title (str): Name for the plot
+    """
+    flat_vals = vals.flatten()
+    plt.hist(flat_vals[flat_vals > tol],bins)
+    plt.title(title)
+    plt.show()
+
+def plot_3d(xs:np.ndarray,ys:np.ndarray,zs:np.ndarray,ws:np.ndarray,cutoff:float=1e-3):
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    
+    wanted = ws > cutoff
+    
+    cs = ax.scatter(xs[wanted],ys[wanted],zs[wanted],c=ws[wanted],
+               norm='log',label=f'PM10 plume, points with concentration above {cutoff:.2E} g/m³')
+    
+    ax.set_aspect('equal')
+    ax.set_xlabel('Lambert93 lon')
+    ax.set_ylabel('Lambert93 lat')
+    ax.set_zlabel('Altitude (m)')
+    
+    
+    fig.colorbar(cs,pad=0.2).ax.set_ylabel("PM10 concentration (g/m³)",rotation=-90,va="bottom")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+#################### Core programs ####################
+
+def analysis_3d(file:str,tol:float,hour:typing.Optional[str]):
+    if hour is None:
+        d = Dataset(file,'r')
+    
+        all_h_pm10 = np.sum(d.variables['PM10'],axis=1)
+        max_hour = np.argmax(np.sum(all_h_pm10,axis=(1,2)))
+        print(f"Time index with maximal concentration: {max_hour}")
+        max_h_pm10 = all_h_pm10[max_hour]
+        d.close()
+        
+        hour = max_hour
+    else:
+        hour = int(hour)
+        
+    xs,ys,zs,ws = extract_3d_sample_lists(file,hour)
+    
+    flat_xs = xs.flatten()
+    flat_ys = ys.flatten()
+    flat_zs = zs.flatten()
+    flat_ws = ws.flatten()
+    plot_3d(flat_xs,flat_ys,flat_zs,flat_ws,tol)
+    
+    ### Estimate the source location (highest concentration point)
+    
+    high_concentration_indexes = flat_ws > 0.1
+    estimated_src = np.asarray([np.average(flat_xs[high_concentration_indexes]),np.average(flat_ys[high_concentration_indexes])])
+    print(f"Estimated source location:\n\t{estimated_src}")
+    
+    ### Estimate main axis ('middle line' of the points)  
+    
+    coefs = find_middleline_coefs(flat_xs-estimated_src[0],flat_ys-estimated_src[1],flat_ws)
+    print(f"Center line (m,b) coefficients (y = m*x+b):\n\t{coefs}")
+    
+    ### Weighted average altitude
+    
+    significant_gas = ws > tol
+    
+    avg_zs = np.sum(zs*significant_gas,axis=0) * np.nan_to_num(1/np.count_nonzero(significant_gas,axis=0),posinf=0,neginf=0)
+    avg_zs = avg_zs.flatten()
+    ys_2d = ys[:,0,:].flatten()
+    xs_2d = xs[:,0,:].flatten()
+    
+    above_ground = avg_zs > 10
+    
+    fig,ax = plt.subplots()
+    
+    cs = ax.scatter(xs_2d[above_ground],ys_2d[above_ground],c=avg_zs[above_ground])
+    fig.colorbar(cs).ax.set_ylabel("Average altitude (m)",rotation=-90,va="bottom")
+    ax.set_xlabel('Lambert93 lon')
+    ax.set_ylabel('Lambert93 lat')
+    plt.show()
+    
+    ### Change of referential: use the middle line as x-axis, y-axis becomes distance to line
+    
+    line_d_vector = np.asarray([1,coefs[0]])
+    line_d_vector = line_d_vector/np.linalg.norm(line_d_vector)
+    line_n_vector = np.asarray([-line_d_vector[1],line_d_vector[0]])
+    
+    to_line_ref_matrix = np.stack([line_d_vector,line_n_vector])
+    
+    ds_ts_list = to_line_ref_matrix @ np.stack([flat_xs-estimated_src[0],flat_ys-estimated_src[1] - coefs[1]])
+    
+    return
     
 
-def main():
-    parser = argparse.ArgumentParser("Spray Analyser",
-                                     description="Try to find good parameters for the exploring the gass cone provided")
-    
-    parser.add_argument("file_in",help="Input .nc file")
-    
-    args = parser.parse_args()
+def analysis_2d(file:str):
     
     ### Load dataset from .nc file
     
-    d = Dataset(args.file_in,'r')
-    xs = np.ma.getdata(d.variables['x'][:])
-    ys = np.ma.getdata(d.variables['y'][:])
-    max_h_pm10 = np.ma.getdata(d.variables['MaxFlatPM10'][:])
-    d.close()
+    xs_flat,ys_flat,ws_list = extract_2d_stripped_sample_lists(file)
     
-    ### Flatten the data into a point list
+    # ### Plot the gas concentration repartition
     
-    meshgrid = np.meshgrid(xs,ys)
-    
-    xs_flat = meshgrid[0].flatten()
-    ys_flat = meshgrid[1].flatten()
-    ws_list = max_h_pm10.flatten()
-    
-    ### Plot the gas concentration repartition
-    
-    show_histogram(ws_list,100,0.1,f'Airborne gas concentration distribution (g/m², values higher than 0.1)')
+    # show_histogram(ws_list,100,0.1,f'Airborne gas concentration distribution (g/m², values higher than 0.1)')
     
     ### Estimate the source location (highest concentration point)
     
@@ -178,36 +282,11 @@ def main():
     
     ds_ts_list = to_line_ref_matrix @ np.stack([xs_flat-estimated_src[0],ys_flat-estimated_src[1] - coefs[1]])
     
-    ### Focus on points close to the line to study gas linear spread coefficient (how much the concentration drops along the line)
     
-    # #show_histogram(np.abs(ts_ds_list[0]),100,0,"Distance to centerline")
-    # close_indices = np.logical_and(np.abs(ds_ts_list[1]) < 50,ds_ts_list[0] > 100)
-    # close_xs = xs_flat[close_indices]
-    # close_ys = ys_flat[close_indices]
-    # close_ds = ds_ts_list[0][close_indices]
-    # close_ws = ws_list[close_indices]
-    # close_log_ws = np.log10(close_ws[close_ws>0])
-    # close_ds = close_ds[close_ws>0]
-    
-    # close_log_ws = close_log_ws[close_ds>2000]
-    # close_ds = close_ds[close_ds>2000]
-    
-    # # show_data(close_xs,close_ys,close_ws,estimated_src,coefs,np.arctan(np.pi/8))
-    
-    # minmax_ds = np.asarray([np.min(close_ds),np.max(close_ds)])
-    # line_gas_dispersion_coef,_,_,_ = lstsq(np.stack([close_ds,np.ones(len(close_ds))]).T,close_log_ws)
-    
-    # plt.plot(close_ds,close_log_ws,'x k',label="Log10 Gas concentration of measurements close to the middle line")
-    # plt.plot(minmax_ds,minmax_ds*line_gas_dispersion_coef[0]+line_gas_dispersion_coef[1],'-b',label="Interpolated linear coefficient")
-    # plt.xlabel("Linear abscissa (m)")
-    # plt.ylabel("Log10 Gas concentration (g/m²)")
-    # plt.legend()
-    # plt.show()
-    
-    ### Plot all points at a given linear abscissa
+    ### Fit gaussian at regular linear abscissa to study how well-aligned is the middle line
     deviation_from_middle = []
-    ts_sampling_space = np.linspace(1000,7000,100)
-    for target in ts_sampling_space:
+    ds_sampling_space = np.linspace(1000,7000,100)
+    for target in ds_sampling_space:
         
         target_tol = 10
         target_indices = np.abs(ds_ts_list[0] - target) < target_tol
@@ -219,16 +298,39 @@ def main():
         mean,std = gaussian_interpolation(target_ts,target_ws,plotting=False)
         deviation_from_middle.append(mean)
         
-    plt.scatter(ts_sampling_space,np.asarray(deviation_from_middle),label="Distance to ref")
-    plt.hlines(0,np.min(ts_sampling_space),np.max(ts_sampling_space),label="Current middle axis")
+    plt.scatter(ds_sampling_space,np.asarray(deviation_from_middle),label="Distance to ref")
+    plt.hlines(0,np.min(ds_sampling_space),np.max(ds_sampling_space),label="Current middle axis")
     plt.legend()
     plt.show()
-        
-    
-    
     
     
     return
+
+
+
+#################### Main entry point ####################
+
+def main():
+    parser = argparse.ArgumentParser("Spray Analyser",
+                                     description="Try to find good parameters for the exploring the gass cone provided")
+    
+    parser.add_argument("file_in",help="Input .nc file")
+    parser.add_argument("-3d",dest='d3',help="If this flag is set, show a 3D scatter plot then close. The value given is the tolerance\
+        (only points with concentration above are plotted).")
+    parser.add_argument('--hour',default=None,help="For 3D analysis, the selected hour among the 20 existing hour timestamp.\
+                        Default to selecting the one with maximal total concentration")
+    
+    args = parser.parse_args()
+    
+
+    ### 3D plot if requested
+    
+    if args.d3:
+        analysis_3d(args.file_in,float(args.d3),args.hour)
+    else:
+        analysis_2d(args.file_in)
+    
+    
 
 if __name__ == "__main__":
     main()
