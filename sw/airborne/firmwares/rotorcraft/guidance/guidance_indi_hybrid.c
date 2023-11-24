@@ -114,7 +114,7 @@ float guidance_indi_pitch_pref_deg = 0;
 #endif
 
 /*Boolean to force the heading to a static value (only use for specific experiments)*/
-bool take_heading_control = false;
+bool take_heading_control = true;
 
 bool force_forward = false;
 

@@ -141,8 +141,10 @@
     </module> -->
 
     <module name="stabilization" type="indi"/>
-    <module name="guidance" type="indi_hybrid_tailsitter"/>
-    <module name="nav" type="hybrid"/>
+    <module name="guidance" type="indi"/>
+
+    <!-- <module name="guidance" type="indi_hybrid_tailsitter"/>
+    <module name="nav" type="hybrid"/> -->
 
     <module name="preflight_checks"/>
 
@@ -387,7 +389,7 @@
     <define name="EFF_SCHED_USE_FUNCTION" value="TRUE"/>
 
     <define name="ARRIVED_AT_WAYPOINT" value="4.0"/> <!-- For outdoor -->
-    <define name="DEFAULT_CIRCLE_RADIUS" value="1.5"/> <!-- For outdoor -->
+    <define name="DEFAULT_CIRCLE_RADIUS" value="1.5"/> <!-- For indoor -->
     <define name="CARROT" value="5.0"/>
   </section>
 
