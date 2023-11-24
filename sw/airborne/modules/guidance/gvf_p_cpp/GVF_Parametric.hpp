@@ -23,13 +23,13 @@
 typedef struct 
 {
   // Position of the carrot
-  Eigen::Vector4f target;
+  Eigen::Vector3f target;
 
   // Direction provided by GVF Parametric
-  Eigen::Vector4f direction;
+  Eigen::Vector3f direction;
 
-  // Jacobian matrix of the direction vector
-  Eigen::Matrix4f jac;
+  // Acceleration computed from GVF Parametric
+  Eigen::Vector3f acceleration;
 } full_output;
 
 
@@ -47,11 +47,8 @@ class GVF_Parametric
   // Additionnal gains (L for error function scaling, beta for trajectory following scaling)
   float L,beta;
 
-  // Time step size (in seconds)
+  // Time step size (in milliseconds)
   float delta_T;
-
-  // Ground speed (m/s)
-  float ground_speed;
 
   // Limit value under witch a float is considered to be null
   const float tolerance = 1e-6;
