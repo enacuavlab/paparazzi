@@ -424,7 +424,7 @@ bool gvf_parametric_3d_growing_lissajou(float ax, float ay, float az, float f_y,
  * @param a_x Oscillations' amplitude along the x-axis
  * @param a_y Oscillations' amplitude along the y-axis
  * @param freq Frequency (in radiants, i.e. before multiplication by 2*PI)
- * @param phi Phase 
+ * @param phi Phase (direct value, no multiplication by PI)
  * 
  * @return true 
  */

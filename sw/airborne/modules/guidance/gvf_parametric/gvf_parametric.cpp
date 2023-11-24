@@ -370,9 +370,11 @@ void gvf_parametric_control_2d(float kx, float ky, float f1, float f2, float f1d
 
           float wi = gvf_parametric_control.w;
           float wj = gvf_parametric_coordination_tables.tableNei[i].w;
+          float delta_t_j = gvf_parametric_coordination_tables.tableNei[i].delta_t;
+          float wdot_j = gvf_parametric_coordination_tables.tableNei[i].w_dot;
           float desired_dw = gvf_parametric_coordination_tables.tableNei[i].desired_dw;
 
-          float error_w = -beta * (wi - wj) + desired_dw;
+          float error_w = -beta * (wi - (wj+wdot_j*delta_t_j)) + desired_dw;
 
           consensus_term_w += error_w;
 
@@ -620,7 +622,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
     {
       if (gvf_parametric_coordination_tables.tableNei[i].nei_id != -1)
       {
-        // std::cout << "- " << gvf_parametric_coordination_tables.tableNei[i].nei_id << " : ";
+        // std::cout << "- " << (int)(gvf_parametric_coordination_tables.tableNei[i].nei_id) << " : ";
         uint32_t timeout = now - gvf_parametric_coordination_tables.last_comm[i];
         gvf_parametric_coordination_tables.tableNei[i].delta_t = timeout;
         if (timeout < gvf_parametric_coordination.timeout)
@@ -628,9 +630,11 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
 
           float wi = gvf_parametric_control.w;
           float wj = gvf_parametric_coordination_tables.tableNei[i].w;
+          float delta_t_j = gvf_parametric_coordination_tables.tableNei[i].delta_t;
+          float wdot_j = gvf_parametric_coordination_tables.tableNei[i].w_dot;
           float desired_dw = gvf_parametric_coordination_tables.tableNei[i].desired_dw;
 
-          float error_w = desired_dw - (wi - wj);
+          float error_w = -beta * (wi - (wj+wdot_j*delta_t_j)) + desired_dw;
           // std::cout << ", contributes " << error_w;
 
           consensus_term_w += error_w;
@@ -645,6 +649,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
       // std::cout << std::endl;
     }
   }
+
 
 #if GVF_PARAMETRIC_STEP_ADAPTATION == 1
 
@@ -668,8 +673,11 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
       w_coordination_adjusted = -gvf_parametric_coordination.kc;
     }
   }
+  X(3) *= (1+w_coordination_adjusted);
+
 #else
   w_coordination_adjusted = gvf_parametric_coordination.kc * consensus_term_w;
+  X(3) += w_coordination_adjusted;
 
 #endif
 
@@ -678,7 +686,6 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   // std::cout << " | Phi Norm " << norm_phi;
   std::cout << " | Coordination " << w_coordination_adjusted << std::endl;
 
-  X(3) += w_coordination_adjusted;
 
   // Jacobian
   J.setZero();
@@ -797,6 +804,12 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   // the vehicle. So it is not only okei but advisable to update it.
   gvf_parametric_control.w += w_dot * gvf_parametric_control.delta_T * 1e-3;
   gvf_parametric_control.w_dot = w_dot;
+
+  if ((gvf_parametric_coordination.coordination) && (now - last_transmision > gvf_parametric_coordination.broadtime))
+  {
+    gvf_parametric_coordination_send_w_to_nei();
+    last_transmision = now;
+  }
 
   gvf_parametric_low_level_control_3d(heading_rate, climbing_rate);
 }
