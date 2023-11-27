@@ -197,3 +197,9 @@ tests/results/*
 
 # K-develop
 *.kate-swp
+
+
+
+# /sw/simulator/panache
+/sw/simulator/panache/data_nc/*
+/sw/simulator/panache/data_samples/*
