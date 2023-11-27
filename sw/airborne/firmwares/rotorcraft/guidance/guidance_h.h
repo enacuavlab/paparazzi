@@ -83,7 +83,7 @@ struct HorizontalGuidanceSetpoint {
   
   float heading;
   float heading_rate;
-  uint8_t mask;             ///< bit 5: vx & vy, bit 6: vz, bit 7: vyaw; bits 5&7: ax & ay
+  uint8_t mask;             ///< bit 4: ax & ay, bit 5: vx & vy, bit 6: vz, bit 7: vyaw; 
 };
 
 struct HorizontalGuidanceReference {

@@ -341,7 +341,7 @@ static void guidance_h_update_reference(void)
 {
   /* compute reference even if usage temporarily disabled via guidance_h_use_ref */
 #if GUIDANCE_H_USE_REF
-  if (bit_is_set(guidance_h.sp.mask, 5) && !bit_is_set(guidance_h.sp.mask, 7)) {
+  if (bit_is_set(guidance_h.sp.mask, 5)) {
     struct FloatVect2 sp_speed;
     sp_speed.x = SPEED_FLOAT_OF_BFP(guidance_h.sp.speed.x);
     sp_speed.y = SPEED_FLOAT_OF_BFP(guidance_h.sp.speed.y);
@@ -397,7 +397,7 @@ static void guidance_h_update_reference(void)
 #endif
 
   /* update heading setpoint from rate */
-  if (bit_is_set(guidance_h.sp.mask, 7) && !bit_is_set(guidance_h.sp.mask,5)) {
+  if (bit_is_set(guidance_h.sp.mask, 7)) {
     guidance_h.sp.heading += guidance_h.sp.heading_rate / PERIODIC_FREQUENCY;
     FLOAT_ANGLE_NORMALIZE(guidance_h.sp.heading);
   }
@@ -603,8 +603,7 @@ void guidance_h_set_body_acc(float ax, float ay)
 
 void guidance_h_set_acc(float ax, float ay)
 {
-  SetBit(guidance_h.sp.mask, 5);
-  SetBit(guidance_h.sp.mask, 7);
+  SetBit(guidance_h.sp.mask, 4);
   guidance_h.sp.accel.x = ACCEL_BFP_OF_REAL(ax);
   guidance_h.sp.accel.y = ACCEL_BFP_OF_REAL(ay);
 }
