@@ -2,10 +2,10 @@
 
 <!--  DarkO3 Onyx Airframe
 
-     * Autopilot:   Apogee v1.0 Chibios
+     * Autopilot:   Tawaki v1.0 Chibios
      * IMU:         
      * Actuators:   AIKON AK32 35A firmware AM32, speed loop pid Kp = 25, Ki = 0.1, Kd = 150 RPM in [1000, 16000]    
-     * GPS:         Ublox                    
+     * GPS:         Ublox / Optitrack                  
      * RC:          SBUS Futaba
 -->
 
@@ -23,7 +23,7 @@
         <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
       </module>
 
-      <module name="ctrl_effectiveness_scheduling">
+      <module name="eff_scheduling_cyfoam">
         <define name="SQUARED_ROLL_EFF" value="0.0018"/>
         <define name="PITCH_EFF_AT_60" value="8.0"/>
         <define name="YAW_EFF_AT_60" value="6.5"/>
@@ -65,17 +65,10 @@
     <!--<module name="gps" type="ubx_ucenter"/>-->
 
     <module name="board" type="tawaki">
-      <configure name="BOARD_TAWAKI_ROTATED" value="TRUE"/>
-      <define name="IMU_MPU_CHAN_X" value="2"/>      
-      <define name="IMU_MPU_CHAN_Z" value="0"/> 
-      <define name="IMU_MPU_Z_SIGN" value="-1"/>
       <!--Set the frequency to 2000 hz with 256 Hz internal low pass-->
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="3"/>
       <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
-      <define name="LIS3MDL_CHAN_X" value="2" />
-      <define name="LIS3MDL_CHAN_Z" value="0" />
-      <define name="LIS3MDL_CHAN_Y_SIGN" value="-" />
     </module>
 
     <module name="logger" type="sd_chibios"/>
@@ -163,6 +156,8 @@
   <servos driver="DShot">
     <servo name="RM" no="1" min="0" neutral="100" max="2000"/>
     <servo name="LM" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="dummy1" no="3" min="0" neutral="100" max="2000"/>
+    <servo name="dummy2" no="4" min="0" neutral="100" max="2000"/>
   </servos>
 
   <commands>
@@ -177,7 +172,6 @@
     <set servo="ELEVON_RIGHT" value="autopilot.motors_on ? actuators_pprz[1] : 0"/>
     <set servo="RM" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/> 
     <set servo="LM" value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
-    <!-- <call fun="stabilization_fill_cmd()" /> -->
   </command_laws>
 
 
@@ -185,39 +179,11 @@
   <section name="IMU" prefix="IMU_">
     <!-- IMU calibration, make sure to calibrate the IMU properly before flight, see the wiki for more info-->
 
+  	<define name="IMU_ACCEL_CALIB" value="{{.abi_id=9, .calibrated={.neutral=true, .scale=true},.neutral={-7,-39,46}, .scale={{7769,43497,34523},{3167,17459,14095}}}}"/>
 
-    <define name="MAG_X_NEUTRAL" value="5"/>
-    <define name="MAG_Y_NEUTRAL" value="-58"/>
-    <define name="MAG_Z_NEUTRAL" value="165"/>
-    <define name="MAG_X_SENS" value="3.71354805418" integer="16"/>
-    <define name="MAG_Y_SENS" value="3.75590767311" integer="16"/>
-    <define name="MAG_Z_SENS" value="3.74419647413" integer="16"/>
-
-
-  	<define name= "MAG_X_CURRENT_COEF" value="-0.00462369791064"/>
-  	<define name= "MAG_Y_CURRENT_COEF" value="-0.00181303355141"/>
-  	<define name= "MAG_Z_CURRENT_COEF" value="0.0202730948887"/>
-
-
-    <define name="ACCEL_X_SIGN" value="1"/>
-    <define name="ACCEL_Y_SIGN" value="1"/>
-    <define name="ACCEL_Z_SIGN" value="1"/>
-
-    <define name="GYRO_P_SIGN" value="1"/>
-    <define name="GYRO_Q_SIGN" value="1"/>
-    <define name="GYRO_R_SIGN" value="1"/>
-
-
-  	<define name="ACCEL_X_NEUTRAL" value="81"/>
-  	<define name="ACCEL_Y_NEUTRAL" value="35"/>
-  	<define name="ACCEL_Z_NEUTRAL" value="14"/>
-  	<define name="ACCEL_X_SENS" value="4.9140362898" integer="16"/>
-  	<define name="ACCEL_Y_SENS" value="4.89936358816" integer="16"/>
-  	<define name="ACCEL_Z_SENS" value="4.88345640197" integer="16"/>
-
-    <define name="BODY_TO_IMU_PHI" 		value="0." unit="deg"/>
-    <define name="BODY_TO_IMU_THETA" 	value="17." unit="deg"/>
-    <define name="BODY_TO_IMU_PSI" 		value="0." unit="deg"/>
+    <define name="BODY_TO_IMU_PHI" 		value="90." unit="deg"/>
+    <define name="BODY_TO_IMU_THETA" 	value="0." unit="deg"/> 
+    <define name="BODY_TO_IMU_PSI" 		value="-90." unit="deg"/>
   </section>
  
    <section name="AUTOPILOT">
@@ -298,6 +264,10 @@
   <section name="NAV">
     <define name="NAV_CLIMB_VSPEED" 	value="1.5"/>
     <define name="NAV_DESCEND_VSPEED" 	value="-1.5"/>
+  </section>
+
+  <section name="AHRS" prefix="AHRS_">
+    <define name="GRAVITY_HEURISTIC_FACTOR" value="0"/>
   </section>
 
   <!-- Gains for horizontal navigation-->
