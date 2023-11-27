@@ -23,13 +23,14 @@
 #include <math.h>
 #include "std.h"
 
-#include "modules/guidance/gvf/gvf.h"
-#include "modules/guidance/gvf/gvf_low_level_control.h"
-#include "modules/guidance/gvf/trajectories/gvf_ellipse.h"
-#include "modules/guidance/gvf/trajectories/gvf_line.h"
-#include "modules/guidance/gvf/trajectories/gvf_sin.h"
+#include "gvf.h"
+#include "gvf_low_level_control.h"
+#include "trajectories/gvf_ellipse.h"
+#include "trajectories/gvf_line.h"
+#include "trajectories/gvf_sin.h"
 #include "autopilot.h"
 #include "../gvf_common.h"
+
 
 // Control
 gvf_con gvf_control;
@@ -170,6 +171,15 @@ void gvf_control_2D(float ke, float kn, float e,
   float pd_dot_dot_x = Apd_dot_dot_x + Bpd_dot_dot_x;
   float pd_dot_dot_y = Apd_dot_dot_y + Bpd_dot_dot_y;
 
+  #ifdef ROTORCRAFT_FIRMWARE
+
+  nav.speed.x = pdx_dot;
+  nav.speed.y = pdy_dot;
+
+  nav.accel.x = pd_dot_dot_x;
+  nav.accel.y = pd_dot_dot_y;
+
+  #else
   float md_dot_const = -(md_x * pd_dot_dot_y - md_y * pd_dot_dot_x)
                        / norm_pd_dot;
 
@@ -190,6 +200,8 @@ void gvf_control_2D(float ke, float kn, float e,
   gvf_c_info.kappa   = (nx*(H12*ny - nx*H22) + ny*(H21*nx - H11*ny))/powf(nx*nx + ny*ny,1.5);
   gvf_c_info.ori_err = 1 - (md_x*cosf(course) + md_y*sinf(course));
   gvf_low_level_control_2D(omega);
+
+  #endif
 }
 
 void gvf_set_direction(int8_t s)
