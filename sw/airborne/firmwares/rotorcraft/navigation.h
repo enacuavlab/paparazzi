@@ -126,7 +126,7 @@ struct RotorcraftNavigation {
   struct EnuCoor_f target;  ///< final target position (in meters)
   struct EnuCoor_f carrot;  ///< carrot position (also used for GCS display)
   struct EnuCoor_f speed;   ///< speed setpoint (in m/s)
-  struct EnuCoor_f accel;   ///< accel setpoint (in m/s)
+  struct EnuCoor_f accel;   ///< accel setpoint (in m/s²)
   uint32_t throttle;        ///< throttle command (in pprz_t)
   int32_t cmd_roll;         ///< roll command (in pprz_t)
   int32_t cmd_pitch;        ///< pitch command (in pprz_t)
