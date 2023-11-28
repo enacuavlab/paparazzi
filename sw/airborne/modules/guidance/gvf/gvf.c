@@ -179,6 +179,11 @@ void gvf_control_2D(float ke, float kn, float e,
   nav.accel.x = pd_dot_dot_x;
   nav.accel.y = pd_dot_dot_y;
 
+  //printf("Give accel command: (%f , %f)\n",nav.accel.x,nav.accel.y);
+  //printf("Guidance_H mode: %d\n",guidance_h.mode);
+  //printf("Nav Horizontal mode: %d\n",nav.horizontal_mode);
+  //guidance_h_run(true);
+
   #else
   float md_dot_const = -(md_x * pd_dot_dot_y - md_y * pd_dot_dot_x)
                        / norm_pd_dot;

@@ -39,8 +39,8 @@ void gvf_low_level_getState(void)
     gvf_state.course = stateGetHorizontalSpeedDir_f();
     gvf_state.px_dot = ground_speed * sinf(gvf_state.course);
     gvf_state.py_dot = ground_speed * cosf(gvf_state.course);
-    
-  #elif defined(ROVER_FIRMWARE)
+
+  #elif defined(ROVER_FIRMWARE) || defined(ROTORCRAFT_FIRMWARE)
     // We assume that the course and psi
     // of the rover (steering wheel) are the same
     gvf_state.course = stateGetNedToBodyEulers_f()->psi;
