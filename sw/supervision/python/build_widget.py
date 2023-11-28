@@ -7,7 +7,7 @@ import lxml.etree as ET
 import os
 import utils
 from conf import Aircraft, Conf
-from typing import List, Dict
+from typing import List, Dict,Set
 from dataclasses import dataclass, field
 import re
 
@@ -41,6 +41,7 @@ class BuildWidget(Ui_Build, QWidget):
         self.clean_button.clicked.connect(self.clean)
         self.flash_button.clicked.connect(self.flash)
         self.target_combo.currentTextChanged.connect(self.update_flash_mode)
+        self.wip_ac_ids: Set[bool] = set()
 
     def set_conf(self, conf: Conf):
         self.conf = conf
@@ -71,6 +72,10 @@ class BuildWidget(Ui_Build, QWidget):
     def update_targets(self, ac: Aircraft):
         self.ac = ac
         self.target_combo.clear()
+        if self.current_ac_is_busy():
+            self.enable_buttons(False)
+        else:
+            self.enable_buttons(True)
 
         for target in ac.boards.keys():
             self.target_combo.addItem(target)
@@ -89,8 +94,26 @@ class BuildWidget(Ui_Build, QWidget):
     def get_current_target(self) -> str:
         return self.target_combo.currentText()
 
+    def current_ac_is_busy(self) -> bool:
+        return self.ac.ac_id in self.wip_ac_ids
+        
+    def set_ac_busy(self,ac_id:int):
+        self.wip_ac_ids.add(ac_id)
+    
+    def clear_ac_busy(self,ac_id:int):
+        self.wip_ac_ids.remove(ac_id)
+        if ac_id == self.ac.ac_id:
+            self.enable_buttons(True)
+
     def build(self):
-        target = self.target_combo.currentText()
+        target = self.get_current_target()
+        if self.current_ac_is_busy():
+            #print(f"{self.ac.ac_id} is busy")
+            return
+        else:
+            self.set_ac_busy(self.ac.ac_id)
+            self.enable_buttons(False)
+        
         cmd = ["make", "-C", utils.PAPARAZZI_HOME, "-f", "Makefile.ac",
                "AIRCRAFT={}".format(self.ac.name), "{}.compile".format(target)]
         if self.print_config_checkbox.isChecked():
@@ -99,16 +122,25 @@ class BuildWidget(Ui_Build, QWidget):
         self.refresh_ac.emit(self.ac)
         self.conf.save(False)
         self.target_combo.setCurrentText(target)
-        self.enable_buttons(False)
+        # self.enable_buttons(False)
         utils.get_settings().setValue("ui/last_target", target)
-        self.spawn_program.emit(shortname, cmd, None, lambda: self.enable_buttons(True))
+        target_ac = self.ac.ac_id
+        cb_fun = lambda : self.clear_ac_busy(target_ac)
+        self.spawn_program.emit(shortname, cmd, None, cb_fun)
 
     def clean(self):
+        if self.current_ac_is_busy():
+            return
+        else:
+            self.set_ac_busy(self.ac.ac_id)
+            self.enable_buttons(False)
         cmd = ["make", "-C", utils.PAPARAZZI_HOME, "-f", "Makefile.ac",
                "AIRCRAFT={}".format(self.ac.name), "clean_ac"]
         shortname = "Clean {}".format(self.ac.name)
-        self.enable_buttons(False)
-        self.spawn_program.emit(shortname, cmd, None, lambda: self.enable_buttons(True))
+        # self.enable_buttons(False)
+        target_ac = self.ac.ac_id
+        cb_fun = lambda : self.clear_ac_busy(target_ac)
+        self.spawn_program.emit(shortname, cmd, None, cb_fun)
 
     def flash(self):
         target = self.target_combo.currentText()
