@@ -251,7 +251,10 @@ def analysis_2d(file:str):
     
     ### Load dataset from .nc file
     
-    xs_flat,ys_flat,ws_list = extract_2d_stripped_sample_lists(file)
+    xs,ys,ws = extract_2d_stripped_sample_lists(file)
+    xs_flat = xs.flatten()
+    ys_flat = ys.flatten()
+    ws_list = ws.flatten()
     
     # ### Plot the gas concentration repartition
     
