@@ -294,8 +294,8 @@ class Trajectory3DMap():
         # Setting drawing
         self.plot_fig = self.main_fig.add_subfigure(grid[1])
         
-        self.a3d:Axes3D = self.plot_fig.add_subplot(2,2,1,projection='3d')
-        self.axy:Axes = self.plot_fig.add_subplot(2,2,2)
+        self.a3d:Axes3D = self.plot_fig.add_subplot(2,2,2,projection='3d')
+        self.axy:Axes = self.plot_fig.add_subplot(2,2,1)
         self.axz:Axes = self.plot_fig.add_subplot(2,2,3)
         self.ayz:Axes = self.plot_fig.add_subplot(2,2,4)
         
