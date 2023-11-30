@@ -177,11 +177,13 @@ void gvf_parametric_init(void)
   gvf_parametric_control.kx = 1.;
   gvf_parametric_control.ky = 1.;
   gvf_parametric_control.kz = 1.;
+  gvf_parametric_control.step_adaptation = GVF_PARAMETRIC_STEP_ADAPTATION;
 
   gvf_parametric_coordination.coordination = GVF_PARAMETRIC_COORDINATION_COORDINATION;
   gvf_parametric_coordination.kc = GVF_PARAMETRIC_COORDINATION_KC;
   gvf_parametric_coordination.timeout = GVF_PARAMETRIC_COORDINATION_TIMEOUT;
   gvf_parametric_coordination.broadtime = GVF_PARAMETRIC_COORDINATION_BROADTIME;
+  gvf_parametric_coordination.speed_ctl = GVF_PARAMETRIC_COORDINATION_SPEED_CTL;
 
   for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++)
   {
@@ -374,7 +376,7 @@ void gvf_parametric_control_2d(float kx, float ky, float f1, float f2, float f1d
           float wdot_j = gvf_parametric_coordination_tables.tableNei[i].w_dot;
           float desired_dw = gvf_parametric_coordination_tables.tableNei[i].desired_dw;
 
-          float error_w = -beta * (wi - (wj+wdot_j*delta_t_j)) + desired_dw;
+          float error_w = -beta * (wi - (wj + wdot_j * delta_t_j)) + desired_dw;
 
           consensus_term_w += error_w;
 
@@ -469,7 +471,7 @@ void gvf_parametric_control_2d(float kx, float ky, float f1, float f2, float f1d
   // the vehicle. So it is not only okei but advisable to update it.
   gvf_parametric_control.w += w_dot * gvf_parametric_control.delta_T * 1e-3;
 
-  gvf_parametric_low_level_control_2d(heading_rate);
+  gvf_parametric_low_level_control_2d(heading_rate, 0.);
 
   if ((gvf_parametric_coordination.coordination) && (now - last_transmision > gvf_parametric_coordination.broadtime) && (autopilot_get_mode() == AP_MODE_AUTO2))
   {
@@ -478,12 +480,12 @@ void gvf_parametric_control_2d(float kx, float ky, float f1, float f2, float f1d
   }
 }
 
-
 // Core 3D control algorithm
 #ifdef FIXEDWING_FIRMWARE
 void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2, float f3, float f1d, float f2d,
                                float f3d, float f1dd, float f2dd, float f3dd)
 {
+  // ----- Setup ----- //
   uint32_t now = get_sys_time_msec();
   gvf_parametric_control.delta_T = now - gvf_parametric_t0;
   gvf_parametric_t0 = now;
@@ -513,6 +515,8 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
     return;
   }
 
+  // ----- Pre-transformations ----- //
+
   Eigen::Vector3f f_vec(f1, f2, f3);
   Eigen::Vector3f fd_vec(f1d, f2d, f3d);
   Eigen::Vector3f fdd_vec(f1dd, f2dd, f3dd);
@@ -535,7 +539,8 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   f2dd = fdd_vec(1);
   f3dd = fdd_vec(2);
 
-#if GVF_PARAMETRIC_STEP_ADAPTATION == 1
+  // Additional values required for using step adaptation
+
   float f_v2 = f1d * f1d + f2d * f2d + f3d * f3d;
   float f_v = sqrtf(f_v2);
 
@@ -549,39 +554,35 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   float og_f2dd = f2dd;
   float og_f3dd = f3dd;
 
-  if (f_v < 1e-6) // i.e, f'(w) = 0
+  if (gvf_parametric_control.step_adaptation)
   {
-    // Use an arbitrary direction
-    f1d = 1 / sqrtf(3.);
-    f2d = 1 / sqrtf(3.);
-    f3d = 1 / sqrtf(3.);
+    if (f_v < 1e-6) // i.e, f'(w) = 0
+    {
+      // Use an arbitrary direction
+      f1d = 1 / sqrtf(3.);
+      f2d = 1 / sqrtf(3.);
+      f3d = 1 / sqrtf(3.);
 
-    f1dd = 0.;
-    f2dd = 0.;
-    f3dd = 0.;
+      f1dd = 0.;
+      f2dd = 0.;
+      f3dd = 0.;
+    }
+    else
+    {
+      f1dd = (f1dd - f_d_dot_f_dd * f1d / f_v2) / f_v2;
+      f2dd = (f2dd - f_d_dot_f_dd * f2d / f_v2) / f_v2;
+      f3dd = (f3dd - f_d_dot_f_dd * f3d / f_v2) / f_v2;
+
+      f1d = f1d / f_v;
+      f2d = f2d / f_v;
+      f3d = f3d / f_v;
+    }
   }
-  else
-  {
-    f1dd = (f1dd - f_d_dot_f_dd * f1d / f_v2) / f_v2;
-    f2dd = (f2dd - f_d_dot_f_dd * f2d / f_v2) / f_v2;
-    f3dd = (f3dd - f_d_dot_f_dd * f3d / f_v2) / f_v2;
 
-    f1d = f1d / f_v;
-    f2d = f2d / f_v;
-    f3d = f3d / f_v;
-  }
-
-#endif
-
-  // Carrot position
-  desired_x = f1;
-  desired_y = f2;
-
+  // ----- Core algorithm ----- //
+  
   float L = gvf_parametric_control.L;
   float beta = gvf_parametric_control.beta * gvf_parametric_control.s;
-
-  Eigen::Vector4f X;
-  Eigen::Matrix4f J;
 
   // Error signals phi_x phi_y and phi_z
   struct EnuCoor_f *pos_enu = stateGetPositionEnu_f();
@@ -593,12 +594,14 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   float phi2 = L * (y - f2);
   float phi3 = L * (z - f3);
 
-  gvf_parametric_trajectory.phi_errors[0] = phi1 / L; // Error signals in meters for the telemetry
+  // Error signals in meters for the telemetry
+  gvf_parametric_trajectory.phi_errors[0] = phi1 / L; 
   gvf_parametric_trajectory.phi_errors[1] = phi2 / L;
   gvf_parametric_trajectory.phi_errors[2] = phi3 / L;
   gvf_parametric_elen = 3;
 
   // Chi
+  Eigen::Vector4f X;
   X(0) = -f1d * L * L * beta - kx * phi1;
   X(1) = -f2d * L * L * beta - ky * phi2;
   X(2) = -f3d * L * L * beta - kz * phi3;
@@ -606,23 +609,16 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
 
   X *= L;
 
-  // std::cout << "|| ------------------------------ ||" << std::endl;
-  // std::cout << "Chi : " << X << std::endl;
-  // std::cout << "Normalized Chi(3): " << normalized_parametric_error << std::endl;
-
   // Coordination if needed for multi vehicles
   float consensus_term_w = 0;
 
   if (gvf_parametric_coordination.coordination)
   {
 
-    // std::cout << AC_ID << " Neighbors' : " << std::endl;
-
     for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++)
     {
       if (gvf_parametric_coordination_tables.tableNei[i].nei_id != -1)
       {
-        // std::cout << "- " << (int)(gvf_parametric_coordination_tables.tableNei[i].nei_id) << " : ";
         uint32_t timeout = now - gvf_parametric_coordination_tables.last_comm[i];
         gvf_parametric_coordination_tables.tableNei[i].delta_t = timeout;
         if (timeout < gvf_parametric_coordination.timeout)
@@ -634,60 +630,67 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
           float wdot_j = gvf_parametric_coordination_tables.tableNei[i].w_dot;
           float desired_dw = gvf_parametric_coordination_tables.tableNei[i].desired_dw;
 
-          float error_w = -beta * (wi - (wj+wdot_j*delta_t_j)) + desired_dw;
-          // std::cout << ", contributes " << error_w;
+          float error_w = -beta * (wi - (wj + wdot_j * delta_t_j * 1e-3)) + desired_dw;
 
           consensus_term_w += error_w;
 
           gvf_parametric_coordination_tables.error_deltaw[i] = error_w;
         }
-        // else
-        // {
-        //   std::cout << ", but timeout " << timeout << " out of " << gvf_parametric_coordination.timeout << " (last seen at " << gvf_parametric_coordination_tables.last_comm[i] << " )";
-        // }
       }
-      // std::cout << std::endl;
     }
   }
 
+  // Virtual coordinate update
+  float ground_speed = stateGetHorizontalSpeedNorm_f();
+  float w_dot;
+  float w_coordination_adjusted;
 
-#if GVF_PARAMETRIC_STEP_ADAPTATION == 1
+std::cout << "AC ID: " << AC_ID << " || ";
 
-  // Limit impact of coordination using appropriate activation functions
-  // See https://en.wikipedia.org/wiki/Activation_function
-  // float w_coordination = gvf_parametric_coordination.kc * consensus_term_w;
-  // float w_coordination_adjust = 1;
-
-  // float norm_phi = sqrtf(phi1*phi1 + phi2*phi2 + phi3*phi3);
-  float w_coordination_adjusted = gvf_parametric_coordination.kc * (expf(consensus_term_w) - expf(-consensus_term_w)) / (expf(consensus_term_w) + expf(-consensus_term_w));
-
-  // Handle Limit cases
-  if (!isfinite(w_coordination_adjusted))
+  if (gvf_parametric_control.step_adaptation)
   {
-    if (consensus_term_w > 0)
-    {
-      w_coordination_adjusted = gvf_parametric_coordination.kc;
-    }
-    else
-    {
-      w_coordination_adjusted = -gvf_parametric_coordination.kc;
-    }
+    w_dot = step_adaptation(ground_speed * X(3) * gvf_parametric_control.delta_T * 1e-3, og_f1d, og_f2d, og_f3d, og_f1dd, og_f2dd, og_f3dd) / (gvf_parametric_control.delta_T * 1e-3);
+    // Reverse the step adaptation formula to find the appropriate change induces by coordination
+    w_coordination_adjusted = consensus_term_w;
+    BoundAbs(w_coordination_adjusted, ABS(w_dot*gvf_parametric_coordination.kc));
+
+    Eigen::Vector3f og_fd(og_f1d,og_f2d,og_f3d);
+    Eigen::Vector3f og_fdd(og_f1dd,og_f2dd,og_f3dd);
+    float abs_ds = (w_coordination_adjusted*og_fd+(w_coordination_adjusted*w_coordination_adjusted)*og_fdd/2).norm();
+    X(3) += abs_ds * ((w_coordination_adjusted > 0) - (w_coordination_adjusted < 0));
+    w_dot += w_coordination_adjusted;
   }
-  X(3) *= (1+w_coordination_adjusted);
+  else
+  {
+    w_coordination_adjusted = gvf_parametric_coordination.kc * consensus_term_w;
+    X(3) += w_coordination_adjusted;
+    w_dot = (ground_speed * X(3)) / sqrtf(X(0) * X(0) + X(1) * X(1));
+  }
+  
+  std::cout << "Coordination contrib: " << w_coordination_adjusted << " | ";
 
-#else
-  w_coordination_adjusted = gvf_parametric_coordination.kc * consensus_term_w;
-  X(3) += w_coordination_adjusted;
+  float coord_speed_mod;
+  if (gvf_parametric_coordination.speed_ctl)
+  {
+    coord_speed_mod = w_coordination_adjusted;
+  }
+  else
+  {
+    coord_speed_mod = 0;
+  }
 
-#endif
+  std::cout << "w   : " << gvf_parametric_control.w << " | ";
+  std::cout << "wdot: " << w_dot << std::endl;
 
-  std::cout << AC_ID << " W_dots : Individual " << X(3);
-  std::cout << " | Consensus " << consensus_term_w;
-  // std::cout << " | Phi Norm " << norm_phi;
-  std::cout << " | Coordination " << w_coordination_adjusted << std::endl;
 
+  // ----- Control algorithm ----- //
+  // Carrot position
+  desired_x = f1;
+  desired_y = f2;
 
   // Jacobian
+  Eigen::Matrix4f J;
+
   J.setZero();
   J(0, 0) = -kx * L;
   J(1, 1) = -ky * L;
@@ -700,43 +703,6 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   J(2, 3) = -(beta * L) * (beta * L * f3dd - kz * f3d);
   J(3, 3) = beta * beta * (kx * (phi1 * f1dd - L * f1d * f1d) + ky * (phi2 * f2dd - L * f2d * f2d) + kz * (phi3 * f3dd - L * f3d * f3d));
   J *= L;
-
-  // Guidance algorithm
-  float ground_speed = stateGetHorizontalSpeedNorm_f();
-
-  /*
-  std::cout << "Ground speed: " << ground_speed << std::endl;
-
-  std::cout << std::endl << "Curve's params: " << std::endl;
-  for (int i = 0; i < 7; i++)
-  {
-    std::cout << gvf_parametric_trajectory.p_parametric[i] << " ; ";
-  }
-  std::cout << std::endl;
-  std::cout << "Beta: " << gvf_parametric_control.beta << std::endl;
-  std::cout << "s   : " << (int)(gvf_parametric_control.s) << std::endl;
-  std::cout << "L   : " << gvf_parametric_control.L << std::endl;
-  std::cout << "w   : " << gvf_parametric_control.w << std::endl;
-  std::cout << "Delta_t: " << gvf_parametric_control.delta_T << std::endl;
-  std::cout << std::endl << std::endl;
-
-  std::cout << "f(w) = [ " << f1 << "; " << f2 << "; " << f3 << " ] " << std::endl;
-  std::cout << "f'(w) = [ " << f1d << "; " << f2d << "; " << f3d << " ] " << std::endl;
-  std::cout << "f''(w) = [ " << f1dd << "; " << f2dd << "; " << f3dd << " ] " << std::endl;
-
-  std::cout << std::endl;
-  */
-
-  float w_dot;
-#if GVF_PARAMETRIC_STEP_ADAPTATION == 1
-  w_dot = step_adaptation(ground_speed * X(3) * gvf_parametric_control.delta_T * 1e-3, og_f1d, og_f2d, og_f3d, og_f1dd, og_f2dd, og_f3dd) / (gvf_parametric_control.delta_T * 1e-3);
-// std::cout << "Requested step: " << ground_speed * normalized_parametric_error * gvf_parametric_control.delta_T * 1e-3 << std::endl;
-#else
-  w_dot = (ground_speed * X(3)) / sqrtf(X(0) * X(0) + X(1) * X(1));
-#endif
-
-  // std::cout << "w   : " << gvf_parametric_control.w << std::endl;
-  // std::cout << "wdot: " << w_dot << std::endl;
 
   Eigen::Vector4f xi_dot;
   struct EnuCoor_f *vel_enu = stateGetSpeedEnu_f();
@@ -811,7 +777,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
     last_transmision = now;
   }
 
-  gvf_parametric_low_level_control_3d(heading_rate, climbing_rate);
+  gvf_parametric_low_level_control_3d(heading_rate, climbing_rate, coord_speed_mod);
 }
 #endif // FIXED_WING FIRMWARE
 
@@ -917,7 +883,6 @@ bool gvf_parametric_2D_bezier_wp(uint8_t first_wp)
   gvf_parametric_2D_bezier_XY();
   return true;
 }
-
 
 /** 3D TRAJECTORIES **/
 #ifdef FIXEDWING_FIRMWARE
@@ -1180,7 +1145,6 @@ void gvf_parametric_coordination_parseRegTable(uint8_t *buf)
         {
           gvf_parametric_coordination_tables.tableNei[i].nei_id = nei_id;
           gvf_parametric_coordination_tables.tableNei[i].desired_dw = desired_deltaw;
-          // print_gvf_parametric_coordination_regTable();
           return;
         }
       }
@@ -1191,7 +1155,6 @@ void gvf_parametric_coordination_parseRegTable(uint8_t *buf)
         {
           gvf_parametric_coordination_tables.tableNei[i].nei_id = nei_id;
           gvf_parametric_coordination_tables.tableNei[i].desired_dw = desired_deltaw;
-          // print_gvf_parametric_coordination_regTable();
           return;
         }
       }
@@ -1204,8 +1167,6 @@ void gvf_parametric_coordination_parseWTable(uint8_t *buf)
 
   int16_t sender_id = (int16_t)(DL_GVF_PARAMETRIC_W_ac_id(buf));
 
-  // std::cout << "***** " << AC_ID << " Msg received from " << sender_id;
-
   for (int i = 0; i < GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS; i++)
   {
     if (gvf_parametric_coordination_tables.tableNei[i].nei_id == sender_id)
@@ -1213,7 +1174,6 @@ void gvf_parametric_coordination_parseWTable(uint8_t *buf)
       gvf_parametric_coordination_tables.last_comm[i] = get_sys_time_msec();
       gvf_parametric_coordination_tables.tableNei[i].w = DL_GVF_PARAMETRIC_W_w(buf);
       gvf_parametric_coordination_tables.tableNei[i].w_dot = DL_GVF_PARAMETRIC_W_w_dot(buf);
-      // std::cout << " at " << gvf_parametric_coordination_tables.last_comm[i] << " *****" << std::endl;
       return;
     }
   }

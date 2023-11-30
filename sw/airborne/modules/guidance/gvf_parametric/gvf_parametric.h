@@ -54,6 +54,11 @@
 #define GVF_PARAMETRIC_CONTROL_KPSI 1
 #endif
 
+/*! Default state for step adaptation (ON) */
+#ifndef GVF_PARAMETRIC_STEP_ADAPTATION
+#define GVF_PARAMETRIC_STEP_ADAPTATION 1
+#endif
+
 /*! Default on/off coordination */
 #ifndef GVF_PARAMETRIC_COORDINATION_COORDINATION
 #define GVF_PARAMETRIC_COORDINATION_COORDINATION 0
@@ -79,14 +84,16 @@
 #define GVF_PARAMETRIC_COORDINATION_MAX_NEIGHBORS 4
 #endif
 
-#ifndef GVF_PARAMETRIC_STEP_ADAPTATION
-#define GVF_PARAMETRIC_STEP_ADAPTATION 1
+/*! Default state for the coordination control through speed (OFF) */
+#ifndef GVF_PARAMETRIC_COORDINATION_SPEED_CTL
+#define GVF_PARAMETRIC_COORDINATION_SPEED_CTL 0
 #endif
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 #include "gvf_parametric_low_level_control.h"
 #include "gvf_adapted_step.h"
@@ -106,6 +113,14 @@ extern "C" {
 * @param s Defines the direction to be tracked. It takes the values -1 or 1.
 * @param k_roll Gain for tuning the coordinated turn.
 * @param k_climb Gain for tuning the climbing setting point.
+* @param k_psi Gain for tuning the heading angle turn speed.
+* @param L Gain for the attractive component of the field
+* @param beta Gain for the parametric speed of the curve
+* @param w_dot Current change of virtual coordinate
+* @param kx X gain regarding the distance between the attractor and the virtual position on the curve
+* @param ky Y gain regarding the distance between the attractor and the virtual position on the curve
+* @param kz Z gain regarding the distance between the attractor and the virtual position on the curve
+* @param step_adaptation Boolean activating step adaption. If used, beta should be set to 1 and L can be set to 1
 */
 typedef struct {
   float w;
@@ -120,6 +135,7 @@ typedef struct {
   float kx;
   float ky;
   float kz;
+  bool step_adaptation;
 } gvf_parametric_con;
 
 extern gvf_parametric_con gvf_parametric_control;
@@ -129,13 +145,15 @@ extern gvf_parametric_con gvf_parametric_control;
 * @param coordination If we want to coordinate on a path
 * @param kc Gain for the consensus
 * @param timeout When we stop considering a neighbor if we have not heard from it
+* @param speed_ctl Boolean setting whether or not coordination can use throttle command
 * @param broadtime Period for broadcasting w
 */
 typedef struct {
-  int8_t coordination;
+  bool coordination;
   float kc;
   uint16_t timeout;
   uint16_t broadtime;
+  bool speed_ctl;
 } gvf_parametric_coord;
 
 extern gvf_parametric_coord gvf_parametric_coordination;
