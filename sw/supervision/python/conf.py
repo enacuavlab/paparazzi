@@ -79,7 +79,7 @@ class Aircraft:
 
         new_settings_modules = []
         for module_path in completed.stdout.decode().strip().split():
-            module = utils.remove_prefix(module_path, utils.CONF_DIR)
+            module = utils.removeprefix(module_path, utils.CONF_DIR)
             xml = ET.parse(module_path)
             for xml_setting in xml.getroot().findall("settings"):
                 name = xml_setting.get("name")
