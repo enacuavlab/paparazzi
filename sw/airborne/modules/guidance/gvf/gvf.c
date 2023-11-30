@@ -156,10 +156,6 @@ void gvf_control_2D(float ke, float kn, float e,
   float pdx_dot = tx - ke * e * nx;
   float pdy_dot = ty - ke * e * ny;
 
-  float norm_pd_dot = sqrtf(pdx_dot * pdx_dot + pdy_dot * pdy_dot);
-  float md_x = pdx_dot / norm_pd_dot;
-  float md_y = pdy_dot / norm_pd_dot;
-
   float Apd_dot_dot_x = -ke * (nx * px_dot + ny * py_dot) * nx;
   float Apd_dot_dot_y = -ke * (nx * px_dot + ny * py_dot) * ny;
 
@@ -171,20 +167,10 @@ void gvf_control_2D(float ke, float kn, float e,
   float pd_dot_dot_x = Apd_dot_dot_x + Bpd_dot_dot_x;
   float pd_dot_dot_y = Apd_dot_dot_y + Bpd_dot_dot_y;
 
-  #ifdef ROTORCRAFT_FIRMWARE
+  float norm_pd_dot = sqrtf(pdx_dot * pdx_dot + pdy_dot * pdy_dot);
+  float md_x = pdx_dot / norm_pd_dot;
+  float md_y = pdy_dot / norm_pd_dot;
 
-  nav.speed.x = pdx_dot;
-  nav.speed.y = pdy_dot;
-
-  nav.accel.x = pd_dot_dot_x;
-  nav.accel.y = pd_dot_dot_y;
-
-  //printf("Give accel command: (%f , %f)\n",nav.accel.x,nav.accel.y);
-  //printf("Guidance_H mode: %d\n",guidance_h.mode);
-  //printf("Nav Horizontal mode: %d\n",nav.horizontal_mode);
-  //guidance_h_run(true);
-
-  #else
   float md_dot_const = -(md_x * pd_dot_dot_y - md_y * pd_dot_dot_x)
                        / norm_pd_dot;
 
@@ -199,6 +185,35 @@ void gvf_control_2D(float ke, float kn, float e,
   float omega = omega_d + kn * (mr_x * md_y - mr_y * md_x);
   
   gvf_control.omega = omega;
+
+
+  #ifdef ROTORCRAFT_FIRMWARE
+  // Speed normalization
+
+  float pd_dot_norm = sqrtf(pdx_dot*pdx_dot + pdy_dot*pdy_dot);
+  pdx_dot *= (kn/pd_dot_norm);
+  pdy_dot *= (kn/pd_dot_norm);
+
+  #endif
+
+  #ifdef ROTORCRAFT_FIRMWARE
+
+  nav.speed.x = pdx_dot;
+  nav.speed.y = pdy_dot;
+
+  nav.accel.x = pd_dot_dot_x;
+  nav.accel.y = pd_dot_dot_y;
+
+  nav.heading = atan2f(pdx_dot,pdy_dot);
+
+  printf("Give heading command (°): %f\n",nav.heading*(180/M_PI));
+  printf("Give speed command: (%f , %f)\n",nav.speed.x,nav.speed.y);
+  printf("Give accel command: (%f , %f)\n",nav.accel.x,nav.accel.y);
+  printf("Guidance_H mode: %d\n",guidance_h.mode);
+  printf("Nav Horizontal mode: %d\n",nav.horizontal_mode);
+  //guidance_h_run(true);
+
+  #else
   
   // From gvf_common.h TODO: derivative of curvature and ori_err
   gvf_c_omega.omega  = omega; 

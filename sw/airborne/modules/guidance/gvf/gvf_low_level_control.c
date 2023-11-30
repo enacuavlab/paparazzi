@@ -34,7 +34,7 @@
 
 void gvf_low_level_getState(void)
 {
-  #if defined(FIXEDWING_FIRMWARE)
+  #if defined(FIXEDWING_FIRMWARE) 
     float ground_speed = stateGetHorizontalSpeedNorm_f();
     gvf_state.course = stateGetHorizontalSpeedDir_f();
     gvf_state.px_dot = ground_speed * sinf(gvf_state.course);
