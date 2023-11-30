@@ -7,7 +7,7 @@
    telemetry="telemetry/GVF/gvf_default_fixedwing.xml"
    flight_plan="flight_plans/PANACHE/normalized_coord_sim.xml"
    settings="settings/fixedwing_basic.xml"
-   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/e_identification_fr.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/gvf_module.xml modules/gvf_parametric.xml modules/imu_common.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
+   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/e_identification_fr.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/gvf_module.xml modules/gvf_parametric.xml modules/imu_common.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
    gui_color="#35008400e400"
   />
   <aircraft
@@ -18,7 +18,7 @@
    telemetry="telemetry/GVF/gvf_default_fixedwing.xml"
    flight_plan="flight_plans/PANACHE/normalized_coord_sim.xml"
    settings="settings/fixedwing_basic.xml"
-   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/e_identification_fr.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/gvf_module.xml modules/gvf_parametric.xml modules/imu_common.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
+   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/e_identification_fr.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/gvf_module.xml modules/gvf_parametric.xml modules/imu_common.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
    gui_color="#3300d1007a00"
   />
   <aircraft
@@ -29,8 +29,8 @@
    telemetry="telemetry/GVF/gvf_default_fixedwing.xml"
    flight_plan="flight_plans/PANACHE/normalized_coord_sim.xml"
    settings="settings/fixedwing_basic.xml"
-   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/e_identification_fr.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/gvf_module.xml modules/gvf_parametric.xml modules/imu_common.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
-   gui_color="#98006a004400"
+   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/e_identification_fr.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/gvf_module.xml modules/gvf_parametric.xml modules/imu_common.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
+   gui_color="#e0001b002400"
   />
   <aircraft
    name="panache_old_GVF_1"
