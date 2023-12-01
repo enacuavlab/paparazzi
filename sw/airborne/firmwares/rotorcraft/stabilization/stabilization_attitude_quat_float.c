@@ -226,37 +226,6 @@ void stabilization_attitude_set_failsafe_setpoint(void)
   stab_att_sp_quat.qz = sinf(heading2);
 }
 
-void stabilization_attitude_set_rpy_setpoint_i(struct Int32Eulers *rpy)
-{
-  // copy euler setpoint for debugging
-  EULERS_FLOAT_OF_BFP(stab_att_sp_euler, *rpy);
-
-  float_quat_of_eulers(&stab_att_sp_quat, &stab_att_sp_euler);
-}
-
-void stabilization_attitude_set_quat_setpoint_i(struct Int32Quat *quat)
-{
-  QUAT_FLOAT_OF_BFP(stab_att_sp_quat, *quat);
-  float_eulers_of_quat(&stab_att_sp_euler, &stab_att_sp_quat);
-}
-
-void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
-{
-  struct FloatVect2 cmd_f;
-  cmd_f.x = ANGLE_FLOAT_OF_BFP(cmd->x);
-  cmd_f.y = ANGLE_FLOAT_OF_BFP(cmd->y);
-  float heading_f;
-  heading_f = ANGLE_FLOAT_OF_BFP(heading);
-
-  quat_from_earth_cmd_f(&stab_att_sp_quat, &cmd_f, heading_f);
-}
-
-void stabilization_attitude_set_stab_sp(struct StabilizationSetpoint *sp)
-{
-  stab_att_sp_euler = stab_sp_to_eulers_f(sp);
-  stab_att_sp_quat = stab_sp_to_quat_f(sp);
-}
-
 #ifndef GAIN_PRESCALER_FF
 #define GAIN_PRESCALER_FF 1
 #endif
@@ -325,8 +294,8 @@ static void attitude_run_fb(float fb_commands[], struct FloatAttitudeGains *gain
 
 void stabilization_attitude_run(bool enable_integrator, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
-
-  stabilization_attitude_set_stab_sp(sp);
+  stab_att_sp_euler = stab_sp_to_eulers_f(sp);
+  stab_att_sp_quat = stab_sp_to_quat_f(sp);
 
   /*
    * Update reference

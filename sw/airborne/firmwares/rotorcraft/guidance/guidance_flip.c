@@ -75,9 +75,10 @@ void guidance_flip_run(void)
     case 0:
       flip_cmd_earth.x = 0;
       flip_cmd_earth.y = 0;
-      stabilization_attitude_set_earth_cmd_i(&flip_cmd_earth,
-                                             heading_save);
-      stabilization_attitude_run(autopilot_in_flight());
+      // FIXME maybe better remove the flip guidance
+      //stabilization_attitude_set_earth_cmd_i(&flip_cmd_earth,
+      //                                       heading_save);
+      //stabilization_attitude_run(autopilot_in_flight());
       stabilization_cmd[COMMAND_THRUST] = 8000; //Thrust to go up first
       timer_save = 0;
 

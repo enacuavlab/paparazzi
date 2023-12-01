@@ -437,7 +437,8 @@ void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp
   struct IndiController_int *c = &heli_indi_ctl;
 
   /* set setpoint */
-  stabilization_attitude_set_stab_sp(sp);
+  stab_att_sp_euler = stab_sp_to_eulers_i(sp);
+  stab_att_sp_quat = stab_sp_to_quat_i(sp);
 
   /* calculate acceleration in body frame */
   struct NedCoor_i *ltp_accel_nedcoor = stateGetAccelNed_i();
@@ -580,43 +581,6 @@ void stabilization_attitude_set_failsafe_setpoint(void)
   stab_att_sp_quat.qx = 0;
   stab_att_sp_quat.qy = 0;
   PPRZ_ITRIG_SIN(stab_att_sp_quat.qz, heading2);
-}
-
-void stabilization_attitude_set_rpy_setpoint_i(struct Int32Eulers *rpy)
-{
-  // stab_att_sp_euler.psi still used in ref..
-  stab_att_sp_euler = *rpy;
-
-  int32_quat_of_eulers(&stab_att_sp_quat, &stab_att_sp_euler);
-}
-
-void stabilization_attitude_set_quat_setpoint_i(struct Int32Quat *quat)
-{
-  stab_att_sp_quat = *quat;
-  int32_eulers_of_quat(&stab_att_sp_euler, quat);
-}
-
-void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
-{
-  // stab_att_sp_euler.psi still used in ref..
-  stab_att_sp_euler.psi = heading;
-
-  // compute sp_euler phi/theta for debugging/telemetry
-  /* Rotate horizontal commands to body frame by psi */
-  int32_t psi = stateGetNedToBodyEulers_i()->psi;
-  int32_t s_psi, c_psi;
-  PPRZ_ITRIG_SIN(s_psi, psi);
-  PPRZ_ITRIG_COS(c_psi, psi);
-  stab_att_sp_euler.phi = (-s_psi * cmd->x + c_psi * cmd->y) >> INT32_TRIG_FRAC;
-  stab_att_sp_euler.theta = -(c_psi * cmd->x + s_psi * cmd->y) >> INT32_TRIG_FRAC;
-
-  quat_from_earth_cmd_i(&stab_att_sp_quat, cmd, heading);
-}
-
-void stabilization_attitude_set_stab_sp(struct StabilizationSetpoint *sp)
-{
-  stab_att_sp_euler = stab_sp_to_eulers_i(sp);
-  stab_att_sp_quat = stab_sp_to_quat_i(sp);
 }
 
 void stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)

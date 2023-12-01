@@ -92,7 +92,6 @@
 
 struct Int32Eulers stab_att_sp_euler;
 struct Int32Quat   stab_att_sp_quat;
-struct FloatRates  stab_att_ff_rates;
 
 static struct FirstOrderLowPass rates_filt_fo[3];
 
@@ -260,67 +259,6 @@ void stabilization_indi_set_failsafe_setpoint(void)
   stab_att_sp_quat.qx = 0;
   stab_att_sp_quat.qy = 0;
   PPRZ_ITRIG_SIN(stab_att_sp_quat.qz, heading2);
-  FLOAT_RATES_ZERO(stab_att_ff_rates);
-}
-
-/**
- * @brief Set attitude quaternion setpoint from rpy
- *
- * @param rpy roll pitch yaw input
- */
-void stabilization_indi_set_rpy_setpoint_i(struct Int32Eulers *rpy)
-{
-  // stab_att_sp_euler.psi still used in ref..
-  stab_att_sp_euler = *rpy;
-
-  int32_quat_of_eulers(&stab_att_sp_quat, &stab_att_sp_euler);
-  FLOAT_RATES_ZERO(stab_att_ff_rates);
-}
-
-/**
- * @param quat quaternion setpoint
- */
-void stabilization_indi_set_quat_setpoint_i(struct Int32Quat *quat)
-{
-  stab_att_sp_quat = *quat;
-  int32_eulers_of_quat(&stab_att_sp_euler, quat);
-  FLOAT_RATES_ZERO(stab_att_ff_rates);
-}
-
-/**
- * @brief Set attitude setpoint from command in earth axes
- *
- * @param cmd The command in earth axes (North East)
- * @param heading The desired heading
- */
-void stabilization_indi_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
-{
-  // stab_att_sp_euler.psi still used in ref..
-  stab_att_sp_euler.psi = heading;
-
-  // compute sp_euler phi/theta for debugging/telemetry
-  /* Rotate horizontal commands to body frame by psi */
-  int32_t psi = stateGetNedToBodyEulers_i()->psi;
-  int32_t s_psi, c_psi;
-  PPRZ_ITRIG_SIN(s_psi, psi);
-  PPRZ_ITRIG_COS(c_psi, psi);
-  stab_att_sp_euler.phi = (-s_psi * cmd->x + c_psi * cmd->y) >> INT32_TRIG_FRAC;
-  stab_att_sp_euler.theta = -(c_psi * cmd->x + s_psi * cmd->y) >> INT32_TRIG_FRAC;
-
-  quat_from_earth_cmd_i(&stab_att_sp_quat, cmd, heading);
-  FLOAT_RATES_ZERO(stab_att_ff_rates);
-}
-
-/**
- * @brief Set attitude setpoint from stabilization setpoint struct
- *
- * @param sp Stabilization setpoint structure
- */
-void stabilization_indi_set_stab_sp(struct StabilizationSetpoint *sp)
-{
-  stab_att_sp_euler = stab_sp_to_eulers_i(sp);
-  stab_att_sp_quat = stab_sp_to_quat_i(sp);
-  stab_att_ff_rates = stab_sp_to_rates_f(sp);
 }
 
 /**
@@ -479,7 +417,10 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
  */
 void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoint *att_sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
-  /* attitude error                          */
+  stab_att_sp_euler = stab_sp_to_eulers_i(sp);  // stab_att_sp_euler.psi still used in ref..
+  stab_att_sp_quat = stab_sp_to_quat_i(sp);     // quat attitude setpoint
+
+  /* attitude error in float */
   struct FloatQuat att_err;
   struct FloatQuat *att_quat = stateGetNedToBodyQuat_f();
   struct FloatQuat quat_sp = stab_sp_to_quat_f(att_sp);

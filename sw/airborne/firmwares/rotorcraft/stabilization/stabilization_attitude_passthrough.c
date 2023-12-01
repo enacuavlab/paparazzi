@@ -59,8 +59,7 @@ void stabilization_attitude_enter(void)
 
 void stabilization_attitude_run(bool in_flight __attribute__((unused)), struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
-
-  stabilization_attitude_set_stab_sp(sp);
+  stab_att_sp_euler = stab_sp_to_eulers_i(sp);
 
   /* For roll and pitch we pass trough the desired angles as stabilization command */
   const int32_t angle2cmd = (MAX_PPRZ / TRAJ_MAX_BANK);
@@ -85,32 +84,5 @@ void stabilization_attitude_set_failsafe_setpoint(void)
   stab_att_sp_euler.phi = 0;
   stab_att_sp_euler.theta = 0;
   stab_att_sp_euler.psi = stateGetNedToBodyEulers_i()->psi;
-}
-
-void stabilization_attitude_set_rpy_setpoint_i(struct Int32Eulers *rpy)
-{
-  stab_att_sp_euler = *rpy;
-}
-
-void stabilization_attitude_set_quat_setpoint_i(struct Int32Quat *quat)
-{
-  int32_eulers_of_quat(&stab_att_sp_euler, quat);
-}
-
-void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
-{
-  /* Rotate horizontal commands to body frame by psi */
-  int32_t psi = stateGetNedToBodyEulers_i()->psi;
-  int32_t s_psi, c_psi;
-  PPRZ_ITRIG_SIN(s_psi, psi);
-  PPRZ_ITRIG_COS(c_psi, psi);
-  stab_att_sp_euler.phi = (-s_psi * cmd->x + c_psi * cmd->y) >> INT32_TRIG_FRAC;
-  stab_att_sp_euler.theta = -(c_psi * cmd->x + s_psi * cmd->y) >> INT32_TRIG_FRAC;
-  stab_att_sp_euler.psi = heading;
-}
-
-void stabilization_attitude_set_stab_sp(struct StabilizationSetpoint *sp)
-{
-  stab_att_sp_euler = stab_sp_to_eulers_i(sp);
 }
 
