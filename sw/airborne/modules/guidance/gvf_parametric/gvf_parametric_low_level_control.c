@@ -48,7 +48,7 @@ void gvf_parametric_low_level_control_2D(float heading_rate)
     BoundAbs(h_ctl_roll_setpoint, h_ctl_roll_max_setpoint); // Setting point for roll angle
   }
 // Allow for rover operation
-#elif defined(ROVER_FIRMWARE)
+#elif defined(ROVER_FIRMWARE) || defined(ROTORCRAFT_FIRMWARE)
 #else
 #error gvf_parametric does not support your firmware yet
 #endif
@@ -75,7 +75,7 @@ void gvf_parametric_low_level_control_3D(float heading_rate, float climbing_rate
     BoundAbs(h_ctl_roll_setpoint, h_ctl_roll_max_setpoint); // Setting point for roll angle
   }
 // Allow for rover operation
-#elif defined(ROVER_FIRMWARE)
+#elif defined(ROVER_FIRMWARE) || defined(ROTORCRAFT_FIRMWARE)
 #else
 #error gvf_parametric does not support your firmware yet
 #endif

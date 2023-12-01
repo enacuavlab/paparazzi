@@ -63,6 +63,8 @@
 extern "C" {
 #endif
 
+#include "std.h"
+
 #include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_ellipse.h"
 #include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_lissajous.h"
 #include "modules/guidance/gvf_parametric/trajectories/gvf_parametric_2d_trefoil.h"

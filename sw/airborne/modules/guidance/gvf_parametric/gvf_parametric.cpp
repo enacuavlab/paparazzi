@@ -35,6 +35,12 @@
 #include "./trajectories/gvf_parametric_2d_bezier_splines.h"
 #include "../gvf_common.h"
 
+#include "autopilot.h"
+
+#ifdef ROTORCRAFT_FIRMWARE
+#include "firmwares/rotorcraft/navigation.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -223,7 +229,7 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
   gvf_parametric_low_level_control_2D(heading_rate);
 }
 
-#ifdef FIXEDWING_FIRMWARE
+
 void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2, float f3, float f1d, float f2d,
                                float f3d, float f1dd, float f2dd, float f3dd)
 {
@@ -236,9 +242,12 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
     return;
   }
 
+#ifdef FIXEDWING_FIRMWARE
   // Carrot position
   desired_x = f1;
   desired_y = f2;
+#endif
+
 
   float L = gvf_parametric_control.L;
   float beta = gvf_parametric_control.beta * gvf_parametric_control.s;
@@ -288,11 +297,34 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
   float ground_speed = stateGetHorizontalSpeedNorm_f();
   float w_dot = (ground_speed * X(3)) / sqrtf(X(0) * X(0) + X(1) * X(1));
 
+  gvf_parametric_control.w += w_dot * gvf_parametric_control.delta_T * 1e-3;
+
   Eigen::Vector4f xi_dot;
   struct EnuCoor_f *vel_enu = stateGetSpeedEnu_f();
   float course = stateGetHorizontalSpeedDir_f();
 
   xi_dot << vel_enu->x, vel_enu->y, vel_enu->z, w_dot;
+
+  #if defined(ROTORCRAFT_FIRMWARE)
+
+  nav.speed.x = X(0);
+  nav.speed.y = X(1);
+  nav.speed.z = X(2);
+
+  //nav.accel.x = xi_dot(0);
+  //nav.accel.y = xi_dot(1);
+  //nav.accel.z = xi_dot(2);
+
+  nav.heading = atan2f(X(0),X(1));
+
+  printf("Give heading command (°): %f\n",nav.heading*(180/M_PI));
+  printf("Give speed command: (%f , %f)\n",nav.speed.x,nav.speed.y);
+  // printf("Give accel command: (%f , %f)\n",nav.accel.x,nav.accel.y);
+  printf("Guidance_H mode: %d\n",guidance_h.mode);
+  printf("Nav Horizontal mode: %d\n",nav.horizontal_mode);
+  //guidance_h_run(true);
+
+  #elif defined(FIXEDWING_FIRMWARE)
 
   Eigen::Matrix2f E;
   Eigen::Matrix<float, 2, 4> F;
@@ -326,11 +358,13 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
 
   // Virtual coordinate update, even if the vehicle is not in autonomous mode, the parameter w will get "closer" to
   // the vehicle. So it is not only okei but advisable to update it.
-  gvf_parametric_control.w += w_dot * gvf_parametric_control.delta_T * 1e-3;
+  
 
   gvf_parametric_low_level_control_3D(heading_rate, climbing_rate);
+
+  #endif // FIXED_WING FIRMWARE
+
 }
-#endif // FIXED_WING FIRMWARE
 
 /** 2D TRAJECTORIES **/
 // 2D TREFOIL KNOT
@@ -428,10 +462,13 @@ bool gvf_parametric_2D_bezier_wp(uint8_t first_wp)
 
 /** 3D TRAJECTORIES **/
 // 3D ELLIPSE
-#ifdef FIXEDWING_FIRMWARE
 bool gvf_parametric_3D_ellipse_XYZ(float xo, float yo, float r, float zl, float zh, float alpha)
 {
+  #ifdef FIXEDWING_FIRMWARE
   horizontal_mode = HORIZONTAL_MODE_CIRCLE; //  Circle for the 2D GCS
+  #elif defined(ROTORCRAFT_FIRWARE)
+  nav.horizontal_mode = HORIZONTAL_MODE_CIRCLE; 
+  #endif
 
   // Safety first! If the asked altitude is low
   if (zl > zh) {
@@ -469,7 +506,7 @@ bool gvf_parametric_3D_ellipse_wp(uint8_t wp, float r, float zl, float zh, float
   gvf_parametric_trajectory.p_parametric[6] = wp;
   gvf_parametric_plen_wps = 1;
 
-  gvf_parametric_3D_ellipse_XYZ(waypoints[wp].x, waypoints[wp].y, r, zl, zh, alpha);
+  gvf_parametric_3D_ellipse_XYZ(WaypointX(wp), WaypointY(wp), r, zl, zh, alpha);
   return true;
 }
 
@@ -478,7 +515,7 @@ bool gvf_parametric_3D_ellipse_wp_delta(uint8_t wp, float r, float alt_center, f
   float zl = alt_center - delta;
   float zh = alt_center + delta;
 
-  gvf_parametric_3D_ellipse_XYZ(waypoints[wp].x, waypoints[wp].y, r, zl, zh, alpha);
+  gvf_parametric_3D_ellipse_XYZ(WaypointX(wp), WaypointY(wp), r, zl, zh, alpha);
   return true;
 }
 
@@ -525,7 +562,6 @@ bool gvf_parametric_3D_lissajous_wp_center(uint8_t wp, float zo, float cx, float
   gvf_parametric_trajectory.p_parametric[13] = wp;
   gvf_parametric_plen_wps = 1;
 
-  gvf_parametric_3D_lissajous_XYZ(waypoints[wp].x, waypoints[wp].y, zo, cx, cy, cz, wx, wy, wz, dx, dy, dz, alpha);
+  gvf_parametric_3D_lissajous_XYZ(WaypointX(wp), WaypointY(wp), zo, cx, cy, cz, wx, wy, wz, dx, dy, dz, alpha);
   return true;
 }
-#endif // FIXEDWING_FIRMWARE
