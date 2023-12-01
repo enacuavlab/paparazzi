@@ -201,8 +201,8 @@ void gvf_control_2D(float ke, float kn, float e,
   nav.speed.x = pdx_dot;
   nav.speed.y = pdy_dot;
 
-  nav.accel.x = pd_dot_dot_x;
-  nav.accel.y = pd_dot_dot_y;
+  nav.accel.x = pd_dot_dot_x * kn;
+  nav.accel.y = pd_dot_dot_y * kn;
 
   nav.heading = atan2f(pdx_dot,pdy_dot);
 
