@@ -230,6 +230,15 @@ void stabilization_run(bool in_flight, struct StabilizationSetpoint *sp, struct 
   }
 }
 
+struct StabilizationSetpoint stabilization_get_failsafe_sp(void)
+{
+  struct FloatEulers failsafe_sp = {
+    .phi = 0.f,
+    .theta = 0.f,
+    .psi = stateGetNedToBodyEulers_f()->psi;
+  };
+  return stab_sp_from_eulers_f(&failsafe_sp);
+}
 
 // compute sp_euler phi/theta for debugging/telemetry FIXME really needed ?
 /* Rotate horizontal commands to body frame by psi */

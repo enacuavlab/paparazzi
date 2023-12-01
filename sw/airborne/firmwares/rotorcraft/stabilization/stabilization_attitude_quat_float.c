@@ -216,16 +216,6 @@ void stabilization_attitude_enter(void)
   float_quat_identity(&stabilization_att_sum_err_quat);
 }
 
-void stabilization_attitude_set_failsafe_setpoint(void)
-{
-  /* set failsafe to zero roll/pitch and current heading */
-  float heading2 = stabilization_attitude_get_heading_f() / 2;
-  stab_att_sp_quat.qi = cosf(heading2);
-  stab_att_sp_quat.qx = 0.0;
-  stab_att_sp_quat.qy = 0.0;
-  stab_att_sp_quat.qz = sinf(heading2);
-}
-
 #ifndef GAIN_PRESCALER_FF
 #define GAIN_PRESCALER_FF 1
 #endif

@@ -79,10 +79,3 @@ void stabilization_attitude_run(bool in_flight __attribute__((unused)), struct S
   BoundAbs(cmd[COMMAND_THRUST], MAX_PPRZ);
 }
 
-void stabilization_attitude_set_failsafe_setpoint(void)
-{
-  stab_att_sp_euler.phi = 0;
-  stab_att_sp_euler.theta = 0;
-  stab_att_sp_euler.psi = stateGetNedToBodyEulers_i()->psi;
-}
-

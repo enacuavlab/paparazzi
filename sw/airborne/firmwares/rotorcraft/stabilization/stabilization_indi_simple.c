@@ -251,16 +251,6 @@ void stabilization_indi_enter(void)
   indi_init_filters();
 }
 
-void stabilization_indi_set_failsafe_setpoint(void)
-{
-  /* set failsafe to zero roll/pitch and current heading */
-  int32_t heading2 = stabilization_attitude_get_heading_i() / 2;
-  PPRZ_ITRIG_COS(stab_att_sp_quat.qi, heading2);
-  stab_att_sp_quat.qx = 0;
-  stab_att_sp_quat.qy = 0;
-  PPRZ_ITRIG_SIN(stab_att_sp_quat.qz, heading2);
-}
-
 /**
  * @brief Update butterworth filter for p, q and r of a FloatRates struct
  *

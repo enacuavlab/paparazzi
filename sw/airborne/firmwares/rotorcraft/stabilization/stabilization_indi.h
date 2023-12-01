@@ -61,7 +61,6 @@ extern struct Indi_gains indi_gains;
 
 extern void stabilization_indi_init(void);
 extern void stabilization_indi_enter(void);
-extern void stabilization_indi_set_failsafe_setpoint(void);
 extern void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *rate_sp, struct ThrustSetpoint *thrust, int32_t *cmd);
 extern void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoint *att_sp, struct ThrustSetpoint *thrust, int32_t *cmd);
 extern void stabilization_indi_set_wls_settings(float use_increment);

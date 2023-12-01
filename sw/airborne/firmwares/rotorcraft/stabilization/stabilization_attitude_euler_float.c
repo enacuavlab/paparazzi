@@ -144,13 +144,6 @@ void stabilization_attitude_enter(void)
   FLOAT_EULERS_ZERO(stabilization_att_sum_err);
 }
 
-void stabilization_attitude_set_failsafe_setpoint(void)
-{
-  stab_att_sp_euler.phi = 0.0;
-  stab_att_sp_euler.theta = 0.0;
-  stab_att_sp_euler.psi = stateGetNedToBodyEulers_f()->psi;
-}
-
 #define MAX_SUM_ERR 200
 
 void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)

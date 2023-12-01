@@ -51,11 +51,6 @@ void stabilization_attitude_enter(void)
   oneloop_andi_enter(true);
 }
 
-void stabilization_attitude_set_failsafe_setpoint(void)
-{
-
-}
-
 void stabilization_attitude_run(bool in_flight, UNUSED struct StabilizationSetpoint *sp, UNUSED struct ThrustSetpoint *thrust, UNUSED int32_t *cmd)
 {
   struct FloatVect3 PSA_des    = { 0 };

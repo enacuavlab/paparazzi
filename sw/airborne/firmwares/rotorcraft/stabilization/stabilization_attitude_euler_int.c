@@ -180,13 +180,6 @@ void stabilization_attitude_enter(void)
   INT_EULERS_ZERO(stabilization_att_sum_err);
 }
 
-void stabilization_attitude_set_failsafe_setpoint(void)
-{
-  stab_att_sp_euler.phi = 0;
-  stab_att_sp_euler.theta = 0;
-  stab_att_sp_euler.psi = stateGetNedToBodyEulers_i()->psi;
-}
-
 #define OFFSET_AND_ROUND(_a, _b) (((_a)+(1<<((_b)-1)))>>(_b))
 #define OFFSET_AND_ROUND2(_a, _b) (((_a)+(1<<((_b)-1))-((_a)<0?1:0))>>(_b))
 

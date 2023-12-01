@@ -42,11 +42,6 @@ void stabilization_attitude_enter(void)
   stabilization_indi_enter();
 }
 
-void stabilization_attitude_set_failsafe_setpoint(void)
-{
-  stabilization_indi_set_failsafe_setpoint();
-}
-
 void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
   stabilization_indi_attitude_run(in_flight, sp, thrust, cmd);

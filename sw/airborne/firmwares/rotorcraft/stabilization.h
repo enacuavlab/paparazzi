@@ -43,7 +43,7 @@
  */
 #define STABILIZATION_ATT_SUBMODE_HEADING   0 // direct heading control
 #define STABILIZATION_ATT_SUBMODE_CARE_FREE 1 // care free heading mode
-#define STABILIZATION_ATT_SUBMODE_FORWARD  2 // forward flight for hybrid-like
+#define STABILIZATION_ATT_SUBMODE_FORWARD   2 // forward flight for hybrid-like
 
 /** Stabilization setpoint.
  *  Struture to store the desired attitude with different
@@ -136,6 +136,10 @@ extern void stabilization_read_rc(bool in_flight);
  * @param[out] cmd pointer to the output command vector
  */
 extern void stabilization_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd);
+
+/** Get stabilization setpoint for failsafe
+ */
+extern struct StabilizationSetpoint stabilization_get_failsafe_sp(void);
 
 /** Command filter for vibrating airframes
  */

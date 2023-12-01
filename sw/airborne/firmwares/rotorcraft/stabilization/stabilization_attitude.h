@@ -40,7 +40,6 @@ extern "C" {
 extern void stabilization_attitude_init(void);
 extern void stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn);
 extern void stabilization_attitude_enter(void);
-extern void stabilization_attitude_set_failsafe_setpoint(void);
 extern void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd);
 
 #ifdef __cplusplus
