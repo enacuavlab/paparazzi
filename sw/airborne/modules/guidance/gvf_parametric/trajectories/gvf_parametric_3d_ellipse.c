@@ -27,7 +27,8 @@
  */
 
 #include "modules/nav/common_nav.h"
-#include "modules/guidance/gvf_parametric/gvf_parametric.h"
+//#include "modules/guidance/gvf_parametric/gvf_parametric.h"
+#include "../gvf_parametric.h"
 #include "gvf_parametric_3d_ellipse.h"
 
 /*! Default gain kx for the 3d ellipse trajectory */

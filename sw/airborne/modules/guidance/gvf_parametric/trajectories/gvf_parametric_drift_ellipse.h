@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Hector Garcia de Marina <hgarciad@ucm.es>
+ * Copyright (C) 2020 Mael Feurgard <maelfeurgard@gmail.com>
  *
  * This file is part of paparazzi.
  *
@@ -19,47 +19,50 @@
  */
 
 /**
- * @file modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_ellipse.h
+ * @file modules/guidance/gvf_parametric/trajectories/gvf_parametric_drift_ellipse.h
  *
  * Guiding vector field algorithm for 2D and 3D complex trajectories.
  *
- * 3D ellipse (intersection between a cylinder and a tilted plane)
+ * Drifting growing ellipsis (ellipsis on the XY plane, drifting along X)
+ * f(t) = [ -a_y*t*sinf(2*pi*f*log(abs(t) + 1) + phi) + t*v_x, a_x*t*cosf(2*pi*f*log(abs(t) + 1) + phi), 0 ]
  */
 
-#ifndef GVF_PARAMETRIC_3D_ELLIPSE_H
-#define GVF_PARAMETRIC_3D_ELLIPSE_H
+#ifndef GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_H
+#define GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** @typedef gvf_3d_ell_par
-* @brief Parameters for the GVF parametric 3D ellipse
+/** @typedef gvf_par_drift_ellipse_par
+* @brief Parameters for the GVF parametric 3D linear/log growth Lissajou curve
 * @param kx Gain defining how agressive is the vector field in x coordinate
 * @param ky Gain defining how agressive is the vector field in y coordinate
 * @param kz Gain defining how agressive is the vector field in z coordinate
-* @param r Radius of the cylinder in meters
-* @param zl Altitude of the lowest point of the ellipse
-* @param zh Altitude of the highest point of the ellipse
-* @param alpha Heading of the lowest point zl in rads
+* @param v_x Speed along the x-axis
+* @param a_x Oscillations' amplitude along the x-axis
+* @param a_y Oscillations' amplitude along the y-axis
+* @param freq Frequency (in radiants, i.e. before multiplication by 2*PI)
+* @param phi Phase 
 */
 typedef struct {
   float kx;
   float ky;
   float kz;
-  float r;
-  float zl;
-  float zh;
-  float alpha;
-} gvf_par_3d_ell_par;
+  float v_x;
+  float a_x;
+  float a_y;
+  float freq;
+  float phi;
+} gvf_par_drift_ellipse_par;
 
-extern gvf_par_3d_ell_par gvf_parametric_3d_ellipse_par;
+extern gvf_par_drift_ellipse_par gvf_parametric_drift_ellipse_par;
 
-extern void gvf_parametric_3d_ellipse_info(float *f1, float *f2, float *f3, float *f1d, float *f2d, float *f3d,
+extern void gvf_parametric_drift_ellipse_info(float *f1, float *f2, float *f3, float *f1d, float *f2d, float *f3d,
     float *f1dd, float *f2dd, float *f3dd);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GVF_PARAMETRIC_3D_ELLIPSE_H
+#endif // GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_H
