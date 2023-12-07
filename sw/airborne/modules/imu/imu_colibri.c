@@ -145,8 +145,8 @@ void imu_colibri_event(void)
 
     mpu60x0.data_available = false;
 
-    AbiSendMsgIMU_GYRO_RAW(IMU_MPU60X0_ID, now_ts, &rates, 1, IMU_MPU_I2C_PERIODIC_FREQ, mpu60x0.temp);
-    AbiSendMsgIMU_ACCEL_RAW(IMU_MPU60X0_ID, now_ts, &accel, 1, IMU_MPU_I2C_PERIODIC_FREQ, mpu60x0.temp);
+    AbiSendMsgIMU_GYRO_RAW(IMU_MPU60X0_ID, now_ts, &rates, 1, IMU_MPU_SPI_PERIODIC_FREQ, mpu60x0.temp);
+    AbiSendMsgIMU_ACCEL_RAW(IMU_MPU60X0_ID, now_ts, &accel, 1, IMU_MPU_SPI_PERIODIC_FREQ, mpu60x0.temp);
    
   }
 /*

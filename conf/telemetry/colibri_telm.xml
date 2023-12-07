@@ -120,8 +120,6 @@
       <message name="STAB_ATTITUDE_REF_INT"   period=".03"/>
       <message name="STAB_ATTITUDE_FLOAT"     period=".03"/>
       <message name="STAB_ATTITUDE_REF_FLOAT" period=".03"/>
-      <message name="STAB_ATTITUDE_INDI"      period=".25"/>
-      <message name="INDI_G"            period="2.0"/>
     </mode>
 
     <mode name="vert_loop" key_press="v">
@@ -140,7 +138,6 @@
       <message name="ALIVE" period="0.9"/>
       <message name="HYBRID_GUIDANCE" period="0.062"/>
       <message name="GUIDANCE_INDI_HYBRID"     period="0.1"/>
-      <!--<message name="STAB_ATTITUDE_REF" period="0.4"/>-->
       <message name="ROTORCRAFT_FP" period="0.8"/>
       <message name="ROTORCRAFT_STATUS" period="1.2"/>
       <message name="ROTORCRAFT_NAV_STATUS" period="1.6"/>
@@ -156,7 +153,6 @@
       <message name="GUIDANCE_H_REF_INT"    period="0.062"/>
       <message name="STAB_ATTITUDE_INT"     period="0.4"/>
       <message name="STAB_ATTITUDE_FLOAT"   period="0.4"/>
-      <!--<message name="STAB_ATTITUDE_REF_INT" period="0.4"/>-->
       <message name="ROTORCRAFT_FP"         period="0.8"/>
       <message name="ROTORCRAFT_STATUS"     period="1.2"/>
       <message name="ROTORCRAFT_NAV_STATUS" period="1.6"/>
@@ -213,7 +209,6 @@
       <message name="BODY_RATES_ACCEL"         period=".002"/>
       <message name="PAYLOAD_FLOAT"            period=".002"/>
       <message name="ESC"                      period=".002"/>
-      <message name="SERVO"                      period=".002"/>
       <message name="IMU_MAG_SCALED"           period=".2"/>
       <message name="IMU_MAG_RAW"              period=".05"/>
       <message name="IMU_GYRO_SCALED"          period=".002"/>

@@ -38,19 +38,19 @@
 
 /** Default kp motor 7000  10000 */
 #ifndef BODY_STAB_KP_M
-#define BODY_STAB_KP_M 10000.f
+#define BODY_STAB_KP_M 7000.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KP_M)
 
 /** Default ki motor old 1976  0*/
 #ifndef BODY_STAB_KI_M
-#define BODY_STAB_KI_M 3000.f
+#define BODY_STAB_KI_M 0.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KI_M)
 
 /** Default kd motor 3000 4000*/
 #ifndef BODY_STAB_KD_M
-#define BODY_STAB_KD_M 4000.f
+#define BODY_STAB_KD_M 300.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KD_M)
 
@@ -96,7 +96,7 @@ PRINT_CONFIG_VAR(BODY_STAB_AIR_LB)
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_AIR_UB)
 
-#define BODY_STAB_ANTIWINDUP 1
+#define BODY_STAB_ANTIWINDUP 0
 
 struct BodyStab body_stab;
 struct FloatEulers euler_fus;
@@ -147,7 +147,7 @@ void body_stabilisation_init(void)
 void body_stabilisation_periodic(void)
 {
   float airspeed = stateGetAirspeed_f();
-  angle_wing2fus = encoder_amt22.H_g_filter.hatx[0];
+  angle_wing2fus = -encoder_amt22.H_g_filter.hatx[0];
   QUAT_ASSIGN(quat_wing2fus, cos(angle_wing2fus/2), 0.0, sin(angle_wing2fus/2), 0.0);
 
   float_quat_comp(&quat_fus, stateGetNedToBodyQuat_f(), &quat_wing2fus);

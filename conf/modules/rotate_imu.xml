@@ -50,7 +50,7 @@
   </header>
   <init fun="rotate_imu_init()"/>
   <periodic fun="rotate_imu_update_quat()" autorun="TRUE"/>
-  <periodic fun="rotate_imu_report()" freq="5.0" autorun="FALSE"/> <!--FALSE -->
+  <periodic fun="rotate_imu_report()" freq="5.0" autorun="TRUE"/> <!--FALSE  TRUE -->
   <makefile>
     <file name="rotate_imu.c"/>
     <test/>
