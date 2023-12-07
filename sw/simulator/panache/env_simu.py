@@ -108,7 +108,12 @@ class EnvSimu:
     
     def send_concentration(self, coords):
         try:
-            pm10, = self.panache.get_vars_safe(("PM10",), coords)
+            try:
+                pm10, = self.panache.get_vars_safe(("PM10",), coords)
+            except panacheur.NoData:
+                print("No data... Assuming concentration is 0.",file=sys.stderr)
+                # If no data, assume it is 0.
+                pm10 = [0.]
             print(f"{pm10[0]:e}")
             msg = PprzMessage_PAYLOAD_COMMAND()
             msg.command_ = [b for b in struct.pack("f", pm10[0])]
@@ -140,6 +145,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     with EnvSimu(args) as p:
-        while True:#p.request_stop:
-            time.sleep(0.2)
+        while True:
+            try:
+                time.sleep(0.2)
+            except KeyboardInterrupt:
+                p.stop()
+                exit(0)
 
