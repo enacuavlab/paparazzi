@@ -44,11 +44,10 @@ class Panacheur:
             self.spray.variables["y"][0],
             self.spray.variables["x"][0],
         ])
-        self.offsets = np.array([time_offset+time.time() - self.spray.variables["time"][0], z_offset, y_offset, x_offset])
+        
+        self.offsets = np.array([time_offset-time.time()+self.mins[0], z_offset, y_offset, x_offset])
         self.scales = np.array([time_scale, z_scale, y_scale, x_scale])
         self.wind_scale = float(wind_scale)
-
-        #print(f"mins: {self.mins}")
 
     def get_spray_interpolator(self, var):
         x = np.asarray(self.spray.variables["x"])
@@ -69,7 +68,7 @@ class Panacheur:
         return RegularGridInterpolator((t, z, y, x), self.swift.variables[var])
     
     def transform_coords(self, coord):
-        true_coord = (coord - self.offsets - self.mins) * self.scales + self.mins
+        true_coord = (coord + self.offsets) * self.scales
         return true_coord
 
     def get_true_sample(self, interp, t, z, y, x):
