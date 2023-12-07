@@ -84,7 +84,7 @@ void encoder_amt22_periodic(void)
     amt22_request(&encoder_amt22.amt22, AMT22_READ_POSITION);
   #endif
   if(!BYPASS_HG_FILTER_SIM){
-    high_gain_filter_process(&encoder_amt22.H_g_filter, encoder_amt22.amt22.angle_rad);
+    high_gain_filter_process(&encoder_amt22.H_g_filter, -encoder_amt22.amt22.angle_rad);
   }
 }
 

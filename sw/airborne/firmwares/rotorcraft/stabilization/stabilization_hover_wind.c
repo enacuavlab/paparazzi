@@ -67,7 +67,7 @@
   //  #include "coef_systune.h"
   // #include "coef_systune_struct.h"
   // #include "coef_systune_struct_armand.h"
-  #include "coef_systune_struct_dyn_mot.h"
+  #include "coef_systune_struct_dyn_mot_multi.h"
   // #include "coef_systune_struct_dyn_mot2.h"
   // #include "coef_systune_decouplage.h"
   //#include "coef_dabb_good_feed_neg_3.h"

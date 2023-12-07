@@ -26,7 +26,7 @@
 
   <init fun="encoder_amt22_init()"/>
   <periodic fun="encoder_amt22_periodic()" autorun="TRUE"/>
-  <periodic fun="encoder_amt22_report()" freq="5.0" autorun="TRUE"/> <!--FALSE  TRUE -->
+  <periodic fun="encoder_amt22_report()" freq="5.0" autorun="FALSE"/> <!--FALSE  TRUE -->
   <event fun="encoder_amt22_event()"/>
 
   <makefile target="nps">

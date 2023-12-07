@@ -7,7 +7,7 @@
     </description>
   </doc>
   <dep>
-    <depends>spi_master,imu_common,intermcu_iomcu,imu_heater,i2c</depends>
+    <depends>spi_master,imu_common,i2c</depends>
     <provides>imu,mag</provides>
   </dep>
   <header>
@@ -25,7 +25,8 @@
     <define name="USE_$(IMU_MPU60X0_SPI_DEV_UPPER)"/>
     <define name="IMU_MPU60X0_SPI_SLAVE_IDX" value="$(IMU_MPU60X0_SPI_SLAVE_IDX)"/>
     <define name="USE_$(IMU_MPU60X0_SPI_SLAVE_IDX)"/>
-    <define name="IMU_MPU_I2C_PERIODIC_FREQ" value="512"/>
+    <define name="IMU_MPU_SPI_PERIODIC_FREQ" value="512"/>
+    
 
 
      <!-- MPU60x0 Wing -->
@@ -38,6 +39,7 @@
     <configure name="IMU_MPU9250_I2C_DEV" default="i2c2" case="upper|lower"/>
     <define name="USE_$(IMU_MPU9250_I2C_DEV_UPPER)"/>
     <define name="IMU_MPU9250_I2C_DEV" value="$(IMU_MPU9250_I2C_DEV_LOWER)"/>
+    <define name="IMU_MPU_I2C_PERIODIC_FREQ" value="512"/>
     
 
     <file name="mpu60x0.c" dir="peripherals"/>
