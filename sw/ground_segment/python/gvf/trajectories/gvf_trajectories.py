@@ -201,7 +201,7 @@ class LineTrajectory(Trajectory,ABC):
             else:
                 output = np.asarray([self.gvf(v,t) for v in vectors])
             if normalize:
-                output /= np.linalg.norm(output,axis=1)
+                output /= np.linalg.norm(output,axis=0)
              
         return output
         
