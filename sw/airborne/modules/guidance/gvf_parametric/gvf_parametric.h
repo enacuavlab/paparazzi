@@ -66,7 +66,12 @@
 
 /*! Default gain kc for the coordination algorithm */
 #ifndef GVF_PARAMETRIC_COORDINATION_KC
-#define GVF_PARAMETRIC_COORDINATION_KC 0.1
+#define GVF_PARAMETRIC_COORDINATION_KC 1.2
+#endif
+
+/*! Default gain ktol for the coordination algorithm */
+#ifndef GVF_PARAMETRIC_COORDINATION_KTOL
+#define GVF_PARAMETRIC_COORDINATION_KTOL 0.5
 #endif
 
 /*! Default timeout for the neighbors' information */
@@ -86,9 +91,8 @@
 
 /*! Default state for the coordination control through speed (OFF) */
 #ifndef GVF_PARAMETRIC_COORDINATION_SPEED_CTL
-#define GVF_PARAMETRIC_COORDINATION_SPEED_CTL 0
+#define GVF_PARAMETRIC_COORDINATION_SPEED_CTL 1
 #endif
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -144,13 +148,14 @@ extern gvf_parametric_con gvf_parametric_control;
 * @brief Coordination parameters for the GVF_PARAMETRIC
 * @param coordination If we want to coordinate on a path
 * @param kc Gain for the consensus
+* @param ktol Half width of the tolerance zone (where the consensus contribution is almost 0)
 * @param timeout When we stop considering a neighbor if we have not heard from it
 * @param speed_ctl Boolean setting whether or not coordination can use throttle command
 * @param broadtime Period for broadcasting w
 */
 typedef struct {
   bool coordination;
-  float kc;
+  float kc,ktol;
   uint16_t timeout;
   uint16_t broadtime;
   bool speed_ctl;

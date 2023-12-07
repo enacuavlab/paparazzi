@@ -65,13 +65,27 @@
     
     <block key="Ctrl+a" name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
       <circle radius="nav_radius" wp="STDBY"/>
-      <exception cond="NavBlockTime() @GT 30" deroute="Downind drifting ellipse"/>
+      <exception cond="NavBlockTime() @GT 30" deroute="Spiral RDV"/>
     </block>
     
     <block name="Spiral RDV">
-    	<set value="0.01" var="gvf_parametric_control.beta"/>
-    	<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID % 10),0.,90.,0.)"/>
-    	<call fun="gvf_parametric_3d_sin(500 + 10 * (AC_ID % 10),3,90 * AC_ID, 500 + 10 * (AC_ID % 10),3,90 * ((AC_ID % 10)+1))"/>
+    	<set value="1" var="gvf_parametric_control.beta"/>
+      <set value="1." var="gvf_parametric_control.L"/>
+
+      <set var="gvf_parametric_3d_sin_par.ay" value="200+100*(AC_ID % 10)" />
+      <set var="gvf_parametric_3d_sin_par.freq_y" value="0.02" />
+      <set var="gvf_parametric_3d_sin_par.phase_y" value="(60) * (AC_ID % 10)" />
+      <set var="gvf_parametric_3d_sin_par.az" value="200+100*(AC_ID % 10)" />
+      <set var="gvf_parametric_3d_sin_par.freq_z" value="0.02" />
+      <set var="gvf_parametric_3d_sin_par.phase_z" value="(60) * (AC_ID % 10) + 90" />
+      
+    	<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),50 + 20 * (AC_ID % 10),0.,90.,0.)"/>
+    	<call fun="gvf_parametric_3d_sin(gvf_parametric_3d_sin_par.ay,
+      gvf_parametric_3d_sin_par.freq_y,
+      gvf_parametric_3d_sin_par.phase_y,
+      gvf_parametric_3d_sin_par.az,
+      gvf_parametric_3d_sin_par.freq_z,
+      gvf_parametric_3d_sin_par.phase_z)"/>
     	<!--<set var="gvf_ellipse_par.a" value="200 + 10*AC_ID"/>
     	<set var="gvf_ellipse_par.b" value="200 + 10*AC_ID"/>
     	<call fun="gvf_ellipse_wp(WP_SRC,gvf_ellipse_par.a, gvf_ellipse_par.b, gvf_ellipse_par.alpha)"/>-->
@@ -106,7 +120,6 @@
       <set value="0.21" var="gvf_parametric_3d_growing_lissajou_par.ky"/>
       <set value="0.21" var="gvf_parametric_3d_growing_lissajou_par.kz"/>
       <set value="0.01" var="gvf_parametric_coordination.kc"/>
-      <set value="1" var="gvf_parametric_control.beta"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
       <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID % 10),0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
@@ -116,17 +129,29 @@
     <block name="Downind drifting ellipse">
       <set value="1" var="gvf_parametric_control.beta"/>
       <set value="1." var="gvf_parametric_control.L"/>
-      <set value="0.06" var="gvf_parametric_drift_ellipse_par.kx"/>
-      <set value="0.06" var="gvf_parametric_drift_ellipse_par.ky"/>
-      <set value="0.06" var="gvf_parametric_drift_ellipse_par.kz"/>
-      <set value="1" var="gvf_parametric_coordination.kc"/>
-      <set value="400" var="gvf_parametric_control.w"/>
+      <set var="gvf_parametric_drift_ellipse_par.kx" value="0.06"/>
+      <set var="gvf_parametric_drift_ellipse_par.ky" value="0.06"/>
+      <set var="gvf_parametric_drift_ellipse_par.kz" value="0.06"/>
+      <set var="gvf_parametric_drift_ellipse_par.v_x" value="1"/>
+      <set var="gvf_parametric_drift_ellipse_par.a_x" value="0.2"/>
+      <set var="gvf_parametric_drift_ellipse_par.a_y" value="tan(M_PI/8)"/>
+      <set var="gvf_parametric_drift_ellipse_par.freq" value="0.005"/>
+      <set var="gvf_parametric_drift_ellipse_par.phi" value="(2*M_PI/3) * AC_ID"/>
+      <set value="1.1" var="gvf_parametric_coordination.kc"/>
+      <set value="0.7" var="gvf_parametric_coordination.ktol"/>
+      <set value="50" var="gvf_parametric_coordination.broadtime"/>
+      <set value="-400" var="gvf_parametric_control.w"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
       <!-- For Lubrizol experiment, middleline fitter with equation y = m*x+b; m = 0.853, b = 56.051 -->
       <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC)+56.051,200 * (AC_ID % 10),0.,0.,(180/M_PI)*atan2(1.,0.853))"/>
       
-      <call fun="gvf_parametric_3d_drift_ellipse(1,0.2,tan(M_PI/8),0.005,(2*M_PI/3) * AC_ID)"/>
+      <call fun="gvf_parametric_3d_drift_ellipse(
+      gvf_parametric_drift_ellipse_par.v_x,
+      gvf_parametric_drift_ellipse_par.a_x,
+      gvf_parametric_drift_ellipse_par.a_y,
+      gvf_parametric_drift_ellipse_par.freq,
+      gvf_parametric_drift_ellipse_par.phi)"/>
     </block>
     
     <block name="Mission GVF">

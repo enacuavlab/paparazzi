@@ -25,9 +25,15 @@
           <dl_setting MAX="2" MIN="0.1" STEP="0.01" VAR="gvf_parametric_control.k_psi" shortname="k_psi" param="GVF_PARAMETRIC_CONTROL_KPSI"/>
           <dl_setting MAX="1" MIN="0" STEP="1" VAR="gvf_parametric_control.step_adaptation" shortname="step_adaptation" param="GVF_PARAMETRIC_STEP_ADAPTATION"/>
         </dl_settings>
+       <!--<dl_settings NAME="Affine Transform">
+          <dl_setting MAX="1000" MIN="-1000" STEP="1" VAR="gvf_parametric_affine_tr.transalation.x()" shortname = "X translation"/>
+          <dl_setting MAX="1000" MIN="-1000" STEP="1" VAR="gvf_parametric_affine_tr.transalation.y()" shortname = "Y translation"/>
+          <dl_setting MAX="1000" MIN="-1000" STEP="1" VAR="gvf_parametric_affine_tr.transalation.z()" shortname = "Z translation"/>
+        </dl_settings>-->
         <dl_settings NAME="Coordination">
           <dl_setting MAX="1" MIN="0" STEP="1" VAR="gvf_parametric_coordination.coordination" shortname = "Coordination" param="GVF_PARAMETRIC_COORDINATION_COORDINATION"/>
-          <dl_setting MAX="100" MIN="0" STEP="0.1" VAR="gvf_parametric_coordination.kc" shortname = "Gain" param="GVF_PARAMETRIC_COORDINATION_GAIN_KC"/>
+          <dl_setting MAX="100" MIN="0" STEP="0.05" VAR="gvf_parametric_coordination.kc" shortname = "Consensus Gain" param="GVF_PARAMETRIC_COORDINATION_GAIN_KC"/>
+          <dl_setting MAX="100" MIN="0" STEP="0.05" VAR="gvf_parametric_coordination.ktol" shortname = "Consensus tolerance" param="GVF_PARAMETRIC_COORDINATION_GAIN_KTOL"/>
           <dl_setting MAX="5000" MIN="0" STEP="1" VAR="gvf_parametric_coordination.timeout" shortname = "Timeout" param="GVF_PARAMETRIC_COORDINATION_TIMEOUT"/>
           <dl_setting MAX="1000" MIN="0" STEP="1" VAR="gvf_parametric_coordination.broadtime" shortname = "Broadcasting" param="GVF_PARAMETRIC_COORDINATION_BROADTIME"/>
           <dl_setting MAX="1" MIN="0" STEP="1" VAR="gvf_parametric_coordination.speed_ctl" shortname = "Speed Ctl" param="GVF_PARAMETRIC_COORDINATION_SPEED_CTL"/>

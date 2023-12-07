@@ -36,6 +36,8 @@ struct gvf_parametric_affine_transform
   Eigen::Transform<float, 3, Eigen::TransformTraits::Isometry> t = transalation * rot;
 } gvf_parametric_affine_tr;
 
+#define SIGN(x) (((x) > 0) - ((x) < 0))
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -181,6 +183,7 @@ void gvf_parametric_init(void)
 
   gvf_parametric_coordination.coordination = GVF_PARAMETRIC_COORDINATION_COORDINATION;
   gvf_parametric_coordination.kc = GVF_PARAMETRIC_COORDINATION_KC;
+  gvf_parametric_coordination.ktol = GVF_PARAMETRIC_COORDINATION_KTOL;
   gvf_parametric_coordination.timeout = GVF_PARAMETRIC_COORDINATION_TIMEOUT;
   gvf_parametric_coordination.broadtime = GVF_PARAMETRIC_COORDINATION_BROADTIME;
   gvf_parametric_coordination.speed_ctl = GVF_PARAMETRIC_COORDINATION_SPEED_CTL;
@@ -206,6 +209,11 @@ void gvf_parametric_init(void)
 
 // Simple functions modifying tranforms (may be useful for mission mode)
 
+static void gvf_parametric_update_tr()
+{
+  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
+}
+
 void gvf_parametric_set_direction(int8_t s)
 {
   gvf_parametric_control.s = s;
@@ -224,57 +232,57 @@ void gvf_parametric_set_offset(float x, float y, float z)
 
 void gvf_parametric_set_offset_wp(uint8_t wp)
 {
-  gvf_parametric_set_offset(waypoints[wp].x, waypoints[wp].y, waypoints[wp].a);
+  gvf_parametric_set_offset(WaypointX(wp), WaypointY(wp), WaypointAlt(wp));
 }
 
 void gvf_parametric_set_offset_wpa(uint8_t wp, float alt)
 {
-  gvf_parametric_set_offset(waypoints[wp].x, waypoints[wp].y, alt);
+  gvf_parametric_set_offset(WaypointX(wp), WaypointY(wp), alt);
 }
 
 void gvf_paremetric_set_euler_rot(float rz, float ry, float rzbis)
 {
   gvf_parametric_affine_tr.rot = Eigen::AngleAxisf(rzbis * M_PI / 180, Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf(ry * M_PI / 180, Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf(rz * M_PI / 180, Eigen::Vector3f::UnitZ());
 
-  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
+  gvf_parametric_update_tr();
 }
 
 void gvf_paremetric_set_cardan_rot(float rx, float ry, float rz)
 {
   gvf_parametric_affine_tr.rot = Eigen::AngleAxisf(rz * M_PI / 180, Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf(ry * M_PI / 180, Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf(rx * M_PI / 180, Eigen::Vector3f::UnitX());
 
-  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
+  gvf_parametric_update_tr();
 }
 
 void gvf_paremetric_set_quaternion_rot(float x, float y, float z, float w)
 {
   gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>(w, x, y, z).normalized();
 
-  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
+  gvf_parametric_update_tr();
 }
 
 void gvf_parametric_set_wps_rot(uint8_t wp1, uint8_t wp2)
 {
-  Eigen::Vector3f U = Eigen::Vector3f(waypoints[wp2].x - waypoints[wp1].x,
-                                      waypoints[wp2].y - waypoints[wp1].y,
-                                      waypoints[wp2].a - waypoints[wp1].a);
+  Eigen::Vector3f U = Eigen::Vector3f(WaypointX(wp2) - WaypointX(wp1),
+                                      WaypointY(wp2) - WaypointY(wp1),
+                                      WaypointAlt(wp2) - WaypointAlt(wp1));
 
   Eigen::Vector3f Base = Eigen::Vector3f(1, 0, 0);
   gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>::FromTwoVectors(Base, U).normalized();
 
-  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
+  gvf_parametric_update_tr();
 }
 
 void gvf_parametric_set_wp_rot(uint8_t wp)
 {
-  Eigen::Vector3f U = Eigen::Vector3f(waypoints[wp].x,
-                                      waypoints[wp].y,
-                                      waypoints[wp].a);
+  Eigen::Vector3f U = Eigen::Vector3f(WaypointX(wp),
+                                      WaypointY(wp),
+                                      WaypointAlt(wp));
 
   Eigen::Vector3f Base = Eigen::Vector3f(1, 0, 0);
   gvf_parametric_affine_tr.rot = Eigen::Quaternion<float>::FromTwoVectors(Base, U).normalized();
 
-  gvf_parametric_affine_tr.t = gvf_parametric_affine_tr.transalation * gvf_parametric_affine_tr.rot;
+  gvf_parametric_update_tr();
 }
 
 void gvf_parametric_set_affine_tr(float x, float y, float z, float rx, float ry, float rz)
@@ -303,7 +311,7 @@ void gvf_parametric_set_affine_tr_wpa(uint8_t wp, float alt, float rx, float ry,
 
 void gvf_parametric_set_affine_tr_wps(uint8_t wp1, uint8_t wp2)
 {
-  gvf_parametric_set_offset(waypoints[wp1].x, waypoints[wp1].y, waypoints[wp1].a);
+  gvf_parametric_set_offset(WaypointX(wp1), WaypointY(wp1), WaypointAlt(wp1));
   gvf_parametric_set_wps_rot(wp1, wp2);
 }
 
@@ -521,6 +529,8 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   Eigen::Vector3f fd_vec(f1d, f2d, f3d);
   Eigen::Vector3f fdd_vec(f1dd, f2dd, f3dd);
 
+  gvf_parametric_update_tr();
+
   // Apply the rotation + translation
   f_vec = gvf_parametric_affine_tr.t * f_vec;
   // After derivation, only rotation remains
@@ -611,6 +621,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
 
   // Coordination if needed for multi vehicles
   float consensus_term_w = 0;
+  int neighbors_count = 0;
 
   if (gvf_parametric_coordination.coordination)
   {
@@ -635,6 +646,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
           consensus_term_w += error_w;
 
           gvf_parametric_coordination_tables.error_deltaw[i] = error_w;
+          neighbors_count++;
         }
       }
     }
@@ -649,24 +661,80 @@ std::cout << "AC ID: " << AC_ID << " || ";
 
   if (gvf_parametric_control.step_adaptation)
   {
-    w_dot = step_adaptation(ground_speed * X(3) * gvf_parametric_control.delta_T * 1e-3, og_f1d, og_f2d, og_f3d, og_f1dd, og_f2dd, og_f3dd) / (gvf_parametric_control.delta_T * 1e-3);
-    // Reverse the step adaptation formula to find the appropriate change induces by coordination
-    w_coordination_adjusted = consensus_term_w;
-    BoundAbs(w_coordination_adjusted, ABS(w_dot*gvf_parametric_coordination.kc));
+    // Custom rules to limit unwanted behavior
 
-    Eigen::Vector3f og_fd(og_f1d,og_f2d,og_f3d);
-    Eigen::Vector3f og_fdd(og_f1dd,og_f2dd,og_f3dd);
-    float abs_ds = (w_coordination_adjusted*og_fd+(w_coordination_adjusted*w_coordination_adjusted)*og_fdd/2).norm();
-    X(3) += abs_ds * ((w_coordination_adjusted > 0) - (w_coordination_adjusted < 0));
-    w_dot += w_coordination_adjusted;
+    // Average the consensus value to keep it comparable to individual contribution
+    if (neighbors_count > 0)
+    {
+      consensus_term_w /= neighbors_count;
+    }
+
+    // Switch strategy depending if control in speed is allowed or not
+    if (gvf_parametric_coordination.speed_ctl)
+    {
+      // When adding speed control, bound using the individual speed (given by X(3), the virtual field)
+      // and apply only when coordination pushes forward (prevent coordination-issued oscillation for fixed-wings)
+      w_coordination_adjusted = consensus_term_w;
+      BoundAbs(w_coordination_adjusted, ABS(X(3)*gvf_parametric_coordination.kc));
+
+      if (w_coordination_adjusted > 0)
+      {
+        X(3) += w_coordination_adjusted*SIGN(X(3));
+      }
+    }
+    else
+    {
+
+      // Avoid pathological case (div by 0)
+      if( X(3) == 0)
+      {
+        w_coordination_adjusted = 0;
+      }
+      else
+      {
+        float d = ABS(X(3) * gvf_parametric_coordination.ktol);
+
+        // First Activation function u such that u(x) ~ x at infinity and u(0) = 0, u'(0) = 0
+        // u(x) = x*(1-e^(-(xs)²))
+        // With s = sqrtf(0.5*(3-sqrtf(6)))/d
+        // This achieves the properties u(d) ~= d * 0.24 and u'''(d) = 0
+        float s = sqrtf(0.5*(3-sqrtf(6)))/d;
+
+        // Second activation function is for soft bounds: v(x) = tanh(x)
+        // The resulting activation function is a composition with appropriate rescaling: w(x) = v(u(x)/t)*t,
+        // With w(0) = 0, w'(0) = 0, w(x) ~ sgn(x) at infinity,
+        // t = (gvf_parametric_coordination.kc)  /atanh(0.9)
+        float t = (gvf_parametric_coordination.kc) * ABS(X(3));///(0.5*logf(1.9/0.1));
+
+        // The resulting behavior is:
+        // _ w(x) ~= 0 for -d < x < d
+        // _ w(x) ~= x for -kc < x < -d and d < x < kc
+        // _ w(x) ~= sgn(x)*kc for x < -kc a d kc < x 
+        w_coordination_adjusted = tanhf(t*(consensus_term_w)*(1-expf(-(consensus_term_w*consensus_term_w*s*s))))*t;
+
+        // std::cout << "(d,s,t) : ( " << d << " , " << s << " , " << t << " ) | ";
+
+        if (isnan(w_coordination_adjusted))
+        {
+          w_coordination_adjusted = SIGN(w_coordination_adjusted) *t;
+        }
+      }
+      X(3) += w_coordination_adjusted*SIGN(X(3));
+    }
+
+    
+
+    w_dot = step_adaptation(ground_speed * X(3) * gvf_parametric_control.delta_T * 1e-3, og_f1d, og_f2d, og_f3d, og_f1dd, og_f2dd, og_f3dd) / (gvf_parametric_control.delta_T * 1e-3);
+    
   }
   else
   {
+    // Original GVF Parametric coordination scheme (linear consensus)
     w_coordination_adjusted = gvf_parametric_coordination.kc * consensus_term_w;
     X(3) += w_coordination_adjusted;
     w_dot = (ground_speed * X(3)) / sqrtf(X(0) * X(0) + X(1) * X(1));
   }
-  
+  std::cout << "Raw coord: " << consensus_term_w << " | ";
   std::cout << "Coordination contrib: " << w_coordination_adjusted << " | ";
 
   float coord_speed_mod;
@@ -931,7 +999,7 @@ bool gvf_parametric_3d_ellipse_wp(uint8_t wp, float r, float zl, float zh, float
   gvf_parametric_trajectory.p_parametric[6] = wp;
   gvf_parametric_plen_wps = 1;
 
-  gvf_parametric_3d_ellipse_XYZ(waypoints[wp].x, waypoints[wp].y, r, zl, zh, alpha);
+  gvf_parametric_3d_ellipse_XYZ(WaypointX(wp), WaypointY(wp), r, zl, zh, alpha);
   return true;
 }
 
@@ -940,7 +1008,7 @@ bool gvf_parametric_3d_ellipse_wp_delta(uint8_t wp, float r, float alt_center, f
   float zl = alt_center - delta;
   float zh = alt_center + delta;
 
-  gvf_parametric_3d_ellipse_XYZ(waypoints[wp].x, waypoints[wp].y, r, zl, zh, alpha);
+  gvf_parametric_3d_ellipse_XYZ(WaypointX(wp), WaypointY(wp), r, zl, zh, alpha);
   return true;
 }
 
@@ -988,7 +1056,7 @@ bool gvf_parametric_3d_lissajous_wp_center(uint8_t wp, float zo, float cx, float
   gvf_parametric_trajectory.p_parametric[13] = wp;
   gvf_parametric_plen_wps = 1;
 
-  gvf_parametric_3d_lissajous_XYZ(waypoints[wp].x, waypoints[wp].y, zo, cx, cy, cz, wx, wy, wz, dx, dy, dz, alpha);
+  gvf_parametric_3d_lissajous_XYZ(WaypointX(wp), WaypointY(wp), zo, cx, cy, cz, wx, wy, wz, dx, dy, dz, alpha);
   return true;
 }
 
