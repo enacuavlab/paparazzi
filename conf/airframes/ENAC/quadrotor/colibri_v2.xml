@@ -77,10 +77,10 @@
 
     <module name="body_stabilisation"/>
 
-    <module name="eff_scheduling_falcon">
-      <define name="EFF_PITCH_A" value="0.45"/> <!--.45 -->
-      <define name="EFF_YAW_A" value="0.045"/> <!--.045 -->
-    </module>
+    <!-- <module name="eff_scheduling_falcon">
+      <define name="EFF_PITCH_A" value="0.45"/> 
+      <define name="EFF_YAW_A" value="0.045"/> 
+    </module> -->
 
     <module type="tawaki" name="board"/>
 
@@ -239,15 +239,15 @@
     <define name="SP_PSI_DELTA_LIMIT" value="90" unit="deg"/>
   </section>
 
-
+  <!-- REXT RINT LEXT LINT ELEVON_L ELEVON_R -->
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
-    <define name="G1_ROLL"   value="{ - 30.0,  - 15.0,      30.0,    15.0,  0.0, 0.0}"/>
-    <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,      0.0,  29.0, 29.0}"/> <!-- -->
-    <define name="G1_YAW"    value="{ -  0.0,     0.0,      0.0,    - 0.0,  4.0, -4.0}"/>
-    <define name="G1_THRUST" value="{ -  1.19, -  1.19,  -  1.19, -  1.19,  0.0, 0.0}" />
+    <define name="G1_ROLL"   value="{ - 20.0,  - 15.0,     20.0,     15.0,    0.0,  0.0}"/>
+    <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,      0.0,   10.0, 10.0}"/> <!-- -->
+    <define name="G1_YAW"    value="{    0.0,     0.0,      0.0,    - 0.0,    4.0, -4.0}"/>
+    <define name="G1_THRUST" value="{ -  1.19, -  1.19,  -  1.19, -  1.19,    0.0,  0.0}" />
 
     <!--Counter torque effect of spinning up a rotor-->
-    <define value="{0., 0., 0., 0.}" name="G2"/>
+    <define value="{0., 0., 0., 0., 0., 0.}" name="G2"/>
 
     <!--define name="G1_ROLL_FWD"   value="{ -80.0, -80.0,   80.0,  80.0, 0.0, 0.0}"/> 
     <define name="G1_PITCH_FWD"  value="{ -80.0,  80.0,   80.0, -80.0, 0.0, 0.0}"/>
