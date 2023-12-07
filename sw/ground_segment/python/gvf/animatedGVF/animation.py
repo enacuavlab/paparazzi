@@ -376,11 +376,13 @@ class Trajectory3DMap():
         
         self.ac_buttons:typing.List[Button] = [Button(self.ac_buttons_axes[i],self.get_aircraft(ac_ids[i]).name) for i in range(len(ac_ids))]
         def track_ac(e,id):
-            print(id)
             self.track_target_code.code = id
         for id,b in zip(ac_ids,self.ac_buttons):
             b.on_clicked(functools.partial(track_ac,id=id))
         
+        # Single aircraft autotracking
+        if len(ac_ids) == 1:
+            track_ac(None,ac_ids[0])
         
         ## Init lines for each aircraft
         self.drawings:typing.Dict[int,AC_drawings] = dict()
