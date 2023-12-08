@@ -11,6 +11,8 @@ from matplotlib.axes import Axes
 
 from scipy.linalg import lstsq
 from scipy.optimize import least_squares,curve_fit
+from scipy.interpolate import UnivariateSpline
+
 
 from netCDF4 import Dataset
 import sampleParser
@@ -141,8 +143,6 @@ def find_closest(xs:np.ndarray,ys:np.ndarray, line_coefs:np.ndarray,tol:float) -
     
     return distances > tol 
 
-def intensity_loss_analysis(datapoints:np.ndarray) -> float:
-    return 1
 
 def gaussian_interpolation(xs:np.ndarray,ys:np.ndarray,
                            default_values:typing.Tuple[float,float]=(0,1),
@@ -217,8 +217,18 @@ def successive_gaussians(ds:np.datetime64,ts:np.ndarray, ws:np.ndarray, lin_abs_
     
     return np.stack([sample_points,np.asarray(deviation_from_middle),np.asarray(gaussians_std)])
 
-def linear_bspline_interpolation(xs:np.ndarray,ys:np.ndarray,stds:np.ndarray, tol:float=1., show:bool=False):
-    from scipy.interpolate import UnivariateSpline
+def linear_bspline_regression(xs:np.ndarray,ys:np.ndarray,stds:np.ndarray, tol:float=1., show:bool=False) -> UnivariateSpline:
+    """Compute a linear bspline interpolation, such that the ys as approximated by a sequence of lines, functions of xs.
+
+    Args:
+        xs,ys (np.ndarray): Datapoints from the regression
+        stds (np.ndarray): Standard deviations of the datapoints, their inverses are used as weights for least squares problem
+        tol (float, optional): Tolerance for the regression objective, set to tol*len(ys). Defaults to 1..
+        show (bool, optional): Display the datapoints and the resulting linear bspline. Defaults to False.
+
+    Returns:
+        UnivariateSpline: Resulting bspline 
+    """
     
     spline = UnivariateSpline(xs,ys,w=1/stds,k=1,s=tol*len(xs))
     
@@ -230,6 +240,60 @@ def linear_bspline_interpolation(xs:np.ndarray,ys:np.ndarray,stds:np.ndarray, to
         plt.show()
     
     return spline
+
+def gaussian_rectified_middleline(pos:np.ndarray,ws:np.ndarray,
+                                  percentile_exclusion:float=1,gaussians_sample:int=1000,bspline_tol:float=1e-3) -> np.ndarray:
+    """Estimate the flat plume centerline as a sequence of segments
+
+    First perform a weighted linear regression on the positions, weighted by the concentration measurements, to provide a rought
+    estimate of the middle line.
+    Then perform successive gaussian regressions orthonal to the line, the means codifying the deviation from the line.
+    Finally, perform linear bspline regression (sequence of segments) through the means of the gaussians, yielding the resulting middleline.
+
+    Args:
+        pos (np.ndarray): 2-D array of samples locations (first dimension for X, second for Y) 
+        ws (np.ndarray): 1-D array of concentration measurements
+        percentile_exclusion (float, optional): Percent of data to reject at the extrema of the first regression, before computing gaussians. Defaults to 1 (keep [1%-99%]).
+        gaussians_sample (int, optional): Number of gaussians to estimate; number of points used to generate the final middleline. Samples are linearly spread in the non-excluded range. Defaults to 1000.
+        bspline_tol (float, optional): Tolerance for the linear bspline. Defaults to 1e-3.
+
+    Returns:
+        np.ndarray: _description_
+    """
+    xs = pos[0]
+    ys = pos[1]
+    ### Estimate the source location (highest concentration point)
+    estimated_src = simple_src_estimator(xs,ys,ws)
+    
+    ### Estimate main axis ('middle line' of the points)  
+    
+    coefs = find_middleline_coefs(xs-estimated_src[0],ys-estimated_src[1],ws)
+    
+    ### Change of referential: use the middle line as x-axis, y-axis becomes distance to line
+    
+    line_d_vector = np.asarray([1,coefs[0]])
+    line_d_vector = line_d_vector/np.linalg.norm(line_d_vector)
+    line_n_vector = np.asarray([-line_d_vector[1],line_d_vector[0]])
+    
+    to_line_ref_matrix = np.stack([line_d_vector,line_n_vector])
+    
+    ds_ts = to_line_ref_matrix @ np.stack([xs-estimated_src[0],ys-estimated_src[1] - coefs[1]])
+    
+    ds_start = np.percentile(ds_ts[0],percentile_exclusion)
+    ds_end = np.percentile(ds_ts[0],100-percentile_exclusion)
+    
+    
+    ### Fit gaussian at regular linear abscissa to study how well-aligned is the middle line
+    ds_ts_gaussian_middles = successive_gaussians(ds_ts[0],ds_ts[1],ws,5,np.linspace(ds_start,ds_end,gaussians_sample),show=False)
+    
+    bspline = linear_bspline_regression(ds_ts_gaussian_middles[0],ds_ts_gaussian_middles[1],ds_ts_gaussian_middles[2],bspline_tol,show=True)
+    rectified_dt_ts_middleline = np.stack([np.sort(ds_ts[0]),bspline(np.sort(ds_ts[0]))])
+    rectified_middleline = (to_line_ref_matrix.T @ rectified_dt_ts_middleline)
+    rectified_middleline[0] += estimated_src[0]
+    rectified_middleline[1] += estimated_src[1] + coefs[1]
+    
+    return rectified_middleline
+    
     
 
 #################### Plotting ####################
@@ -312,23 +376,23 @@ def show_data_comp(xs1:np.ndarray,ys1:np.ndarray,vals1:np.ndarray,
     line22, = ax2.plot(minmax_xs,(minmax_xs-estimated_src2[0])*coefs2[0] + estimated_src2[1]+coefs2[1],'-',color='deepskyblue')#,label='Estimated plume direction 2')
     
     
-    r1_plus = (coefs1[0] + delta_direction)/(1-coefs1[0]*delta_direction)
-    r1_minus = (coefs1[0] - delta_direction)/(1+coefs1[0]*delta_direction)
+    # r1_plus = (coefs1[0] + delta_direction)/(1-coefs1[0]*delta_direction)
+    # r1_minus = (coefs1[0] - delta_direction)/(1+coefs1[0]*delta_direction)
     
-    r2_plus = (coefs2[0] + delta_direction)/(1-coefs2[0]*delta_direction)
-    r2_minus = (coefs2[0] - delta_direction)/(1+coefs2[0]*delta_direction)
+    # r2_plus = (coefs2[0] + delta_direction)/(1-coefs2[0]*delta_direction)
+    # r2_minus = (coefs2[0] - delta_direction)/(1+coefs2[0]*delta_direction)
     
-    border11, = ax1.plot(minmax_xs,(minmax_xs-estimated_src1[0])*r1_plus + estimated_src1[1]+coefs1[1],color='g',linestyle='dashed')#,label='Border 1')
-    ax1.plot(minmax_xs,(minmax_xs-estimated_src1[0])*r1_minus + estimated_src1[1]+coefs1[1],color='g',linestyle='dashed')
+    # border11, = ax1.plot(minmax_xs,(minmax_xs-estimated_src1[0])*r1_plus + estimated_src1[1]+coefs1[1],color='g',linestyle='dashed')#,label='Border 1')
+    # ax1.plot(minmax_xs,(minmax_xs-estimated_src1[0])*r1_minus + estimated_src1[1]+coefs1[1],color='g',linestyle='dashed')
     
-    border12, = ax1.plot(minmax_xs,(minmax_xs-estimated_src2[0])*r2_plus + estimated_src2[1]+coefs2[1],color='deepskyblue',linestyle='dotted')#,label='Border 2')
-    ax1.plot(minmax_xs,(minmax_xs-estimated_src2[0])*r2_minus + estimated_src2[1]+coefs2[1],color='deepskyblue',linestyle='dotted')
+    # border12, = ax1.plot(minmax_xs,(minmax_xs-estimated_src2[0])*r2_plus + estimated_src2[1]+coefs2[1],color='deepskyblue',linestyle='dotted')#,label='Border 2')
+    # ax1.plot(minmax_xs,(minmax_xs-estimated_src2[0])*r2_minus + estimated_src2[1]+coefs2[1],color='deepskyblue',linestyle='dotted')
     
-    border21, = ax2.plot(minmax_xs,(minmax_xs-estimated_src1[0])*r1_plus + estimated_src1[1]+coefs1[1],color='g',linestyle='dotted')#,label='Border 1')
-    ax2.plot(minmax_xs,(minmax_xs-estimated_src1[0])*r1_minus + estimated_src1[1]+coefs1[1],color='g',linestyle='dotted')
+    # border21, = ax2.plot(minmax_xs,(minmax_xs-estimated_src1[0])*r1_plus + estimated_src1[1]+coefs1[1],color='g',linestyle='dotted')#,label='Border 1')
+    # ax2.plot(minmax_xs,(minmax_xs-estimated_src1[0])*r1_minus + estimated_src1[1]+coefs1[1],color='g',linestyle='dotted')
     
-    border22, = ax2.plot(minmax_xs,(minmax_xs-estimated_src2[0])*r2_plus + estimated_src2[1]+coefs2[1],color='deepskyblue',linestyle='dashed')#,label='Border 2')
-    ax2.plot(minmax_xs,(minmax_xs-estimated_src2[0])*r2_minus + estimated_src2[1]+coefs2[1],color='deepskyblue',linestyle='dashed')
+    # border22, = ax2.plot(minmax_xs,(minmax_xs-estimated_src2[0])*r2_plus + estimated_src2[1]+coefs2[1],color='deepskyblue',linestyle='dashed')#,label='Border 2')
+    # ax2.plot(minmax_xs,(minmax_xs-estimated_src2[0])*r2_minus + estimated_src2[1]+coefs2[1],color='deepskyblue',linestyle='dashed')
     
     ax1.set_xlim(xmin=minmax_xs[0],xmax=minmax_xs[1])
     ax1.set_ylim(ymin=minmax_ys[0],ymax=minmax_ys[1])
@@ -342,12 +406,12 @@ def show_data_comp(xs1:np.ndarray,ys1:np.ndarray,vals1:np.ndarray,
     ax2.set_aspect('equal')
     ax2.set_title('2 : Airborne gas mass per ground surface, log scale (g/m²)')
     
-    ax1.legend([src11,src12,(line11,line12),(border11,border12)],
-               ["Source 1","Source 2","Middleline 1,2","Borders 1,2"],
+    ax1.legend([src11,src12,(line11,line12)],#(border11,border12)],
+               ["Source 1","Source 2","Middleline 1,2"],#"Borders 1,2"],
                handler_map={tuple : HandlerTupleVertical(ndivide=None)})
     
-    ax2.legend([src21,src22,(line21,line22),(border21,border22)],
-               ["Source 1","Source 2","Middleline 1,2","Borders 1,2"],
+    ax2.legend([src21,src22,(line21,line22)],#(border21,border22)],
+               ["Source 1","Source 2","Middleline 1,2"],#"Borders 1,2"],
                handler_map={tuple : HandlerTupleVertical(ndivide=None)})
     plt.show()
     
@@ -546,11 +610,18 @@ def analysis_2d(file:str):
     
     ds_ts_list = to_line_ref_matrix @ np.stack([xs_flat-estimated_src[0],ys_flat-estimated_src[1] - coefs[1]])
     
+    exclusion_percent = 1
+    ds_start = np.percentile(ds_ts_list[0],exclusion_percent)
+    ds_end = np.percentile(ds_ts_list[0],100-exclusion_percent)
+    gaussians_count = 1000
+        
     
     ### Fit gaussian at regular linear abscissa to study how well-aligned is the middle line
-    ds_ts_gaussian_middles = successive_gaussians(ds_ts_list[0],ds_ts_list[1],ws_list,5,np.linspace(0,6000,1000),show=False)
+    ds_ts_gaussian_middles = successive_gaussians(ds_ts_list[0],ds_ts_list[1],ws_list,5,np.linspace(ds_start,ds_end,gaussians_count),show=False)
     
-    bspline = linear_bspline_interpolation(ds_ts_gaussian_middles[0],ds_ts_gaussian_middles[1],ds_ts_gaussian_middles[2],1e-3,show=True)
+    bspline_tol = 1e-3
+    
+    bspline = linear_bspline_regression(ds_ts_gaussian_middles[0],ds_ts_gaussian_middles[1],ds_ts_gaussian_middles[2],bspline_tol,show=True)
     rectified_dt_ts_middleline = np.stack([np.sort(ds_ts_list[0]),bspline(np.sort(ds_ts_list[0]))])
     rectified_middleline = (to_line_ref_matrix.T @ rectified_dt_ts_middleline)
     rectified_middleline[0] += estimated_src[0]
