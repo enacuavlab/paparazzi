@@ -125,7 +125,7 @@ static void send_payload_float(struct transport_tx *trans, struct link_device *d
                  u_integrator[0][0], u_integrator[1][0],
                  u[0][0], u[1][0], u[2][0], u[3][0],
                  rc_x, rc_y, rc_z};
-  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 35, f);
+  //pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 35, f);
 }
 #endif
 
