@@ -241,7 +241,7 @@
 
   <!-- REXT RINT LEXT LINT ELEVON_L ELEVON_R -->
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
-    <define name="G1_ROLL"   value="{ - 20.0,  - 15.0,     20.0,     15.0,    0.0,  0.0}"/>
+    <define name="G1_ROLL"   value="{ -  7.5,  - 15.0,      7.5,     15.0,    0.0,  0.0}"/>
     <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,      0.0,   10.0, 10.0}"/> <!-- -->
     <define name="G1_YAW"    value="{    0.0,     0.0,      0.0,    - 0.0,    4.0, -4.0}"/>
     <define name="G1_THRUST" value="{ -  1.19, -  1.19,  -  1.19, -  1.19,    0.0,  0.0}" />
