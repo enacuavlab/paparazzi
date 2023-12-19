@@ -106,7 +106,7 @@ def extract_3d_sample_lists(d_file:str,time:int=2) -> typing.Tuple[np.ndarray,np
     
     return samples.T[0],samples.T[1],samples.T[2],samples.T[3]
 
-#################### Data analysis ####################
+#################### 2D Data analysis ####################
 
 def simple_src_estimator(xs:np.ndarray,ys:np.ndarray,ws:np.ndarray,tol:float=0.99) -> np.ndarray:
     high_concentration_indexes = ws > np.max(ws)*tol
@@ -145,7 +145,6 @@ def find_closest(xs:np.ndarray,ys:np.ndarray, line_coefs:np.ndarray,tol:float) -
 
 
 def gaussian_interpolation(xs:np.ndarray,ys:np.ndarray,
-                           default_values:typing.Tuple[float,float]=(0,1),
                            plotting:bool=False) -> np.ndarray:
     
     max_ys = np.max(ys)
@@ -258,8 +257,9 @@ def gaussian_rectified_middleline(pos:np.ndarray,ws:np.ndarray,
         bspline_tol (float, optional): Tolerance for the linear bspline. Defaults to 1e-3.
 
     Returns:
-        np.ndarray: _description_
+        np.ndarray: 2-D array (first dimension for X, second for Y) of the points making the middleline approximated through sequence of segments
     """
+    print(np.shape(pos),pos)
     xs = pos[0]
     ys = pos[1]
     ### Estimate the source location (highest concentration point)
@@ -286,7 +286,7 @@ def gaussian_rectified_middleline(pos:np.ndarray,ws:np.ndarray,
     ### Fit gaussian at regular linear abscissa to study how well-aligned is the middle line
     ds_ts_gaussian_middles = successive_gaussians(ds_ts[0],ds_ts[1],ws,5,np.linspace(ds_start,ds_end,gaussians_sample),show=False)
     
-    bspline = linear_bspline_regression(ds_ts_gaussian_middles[0],ds_ts_gaussian_middles[1],ds_ts_gaussian_middles[2],bspline_tol,show=True)
+    bspline = linear_bspline_regression(ds_ts_gaussian_middles[0],ds_ts_gaussian_middles[1],ds_ts_gaussian_middles[2],bspline_tol,show=False)
     rectified_dt_ts_middleline = np.stack([np.sort(ds_ts[0]),bspline(np.sort(ds_ts[0]))])
     rectified_middleline = (to_line_ref_matrix.T @ rectified_dt_ts_middleline)
     rectified_middleline[0] += estimated_src[0]
@@ -294,6 +294,207 @@ def gaussian_rectified_middleline(pos:np.ndarray,ws:np.ndarray,
     
     return rectified_middleline
     
+#################### 3D Data analysis ####################
+
+
+def simple_src_estimator_3d(xs:np.ndarray,ys:np.ndarray,zs:np.ndarray,ws:np.ndarray,tol:float=0.99) -> np.ndarray:
+    high_concentration_indexes = ws > np.max(ws)*tol
+    estimated_src = np.asarray([np.average(xs[high_concentration_indexes]),np.average(ys[high_concentration_indexes]),np.average(zs[high_concentration_indexes])])
+    return estimated_src
+    
+def find_middleline_coefs_3d(xs:np.ndarray,ys:np.ndarray,zs:np.ndarray,ws:np.ndarray) -> typing.Tuple[np.ndarray,np.ndarray]:
+    """Given positions and weights, find (ry,by),(rz,bz) such that y = ry*x + by and z = rz*x + bz 
+
+    This is formulated as the following least squares problem:
+        min{sum_i{(w_i*(y_i - r*x_i - b))²}}
+
+    Args:
+        xs (np.ndarray): Points abscissa
+        ys (np.ndarray): Points ordinates
+        zs (np.ndarray): Points altitude
+        ws (np.ndarray): Points weights
+
+    Returns:
+        (np.ndarray,np.ndarray): ((ry,by),(rz,bz)) the growth coefficient and ordinate to origin of the linear regressions x--y and x--z respectively
+    """
+    affine_xs = np.stack([xs*ws,np.ones(len(xs))*ws]).T
+    weighted_ys = (ws*ys)
+    weighted_zs = (ws*zs)
+    
+    ry,_,_,_ = lstsq(affine_xs,weighted_ys)
+    rz,_,_,_ = lstsq(affine_xs,weighted_zs)
+    
+    return ry,rz
+
+def gaussian_interpolation_3d(xs:np.ndarray,ys:np.ndarray,ws:np.ndarray,
+                           plotting:bool=False) -> np.ndarray:
+    
+    max_ws = np.max(ws)
+    x_mean_estimated = np.average(xs,weights=ws)
+    y_mean_estimated = np.average(ys,weights=ws)
+    
+    def sigma_estimator(xxs:np.ndarray,yys:np.ndarray, tol:float=1)->float:
+        A = np.max(yys)
+        mu = np.average(xxs,weights=yys)
+        candidates = xxs[np.abs(yys-A*np.exp(-0.5)) < tol*np.std(yys)]
+        sigma = np.average(np.abs(candidates-mu))
+        return sigma
+    
+    e = 1e-2
+    e_step = 1e-2
+    tol = 1.
+    tol_step = 0.01
+    
+    x_sigma_estimated = np.nan
+    while not(np.isfinite(x_sigma_estimated)):
+        middle_xs_i = np.abs(xs - x_mean_estimated < e*(np.max(xs)-np.min(xs)))
+        x_sigma_estimated = sigma_estimator(xs[middle_xs_i],ws[middle_xs_i],tol)
+        tol += tol_step
+    
+    e = 1e-2
+    e_step = 1e-2
+    tol = 1.
+    tol_step = 0.01
+    
+    y_sigma_estimated = np.nan
+    while not(np.isfinite(y_sigma_estimated)):
+        middle_ys_i = np.abs(ys - y_mean_estimated < e*(np.max(ys)-np.min(ys)))
+        y_sigma_estimated = sigma_estimator(ys[middle_ys_i],ws[middle_ys_i],tol)
+        tol += tol_step
+    
+    def my_scaled_gauss(p,cx,sx,cy,sy):
+        return max_ws*np.exp(-np.square((p[0]-cx)/sx)/2)*np.exp(-np.square((p[1]-cy)/sy)/2)
+    
+    def my_scaled_gauss_jac(p,cx,sx,cy,sy):
+        g = my_scaled_gauss(p,cx,sx,cy,sy)
+        return np.asarray([
+                max_ws*(p[0]-cx)/(np.square(sx))*g,
+                max_ws/(4*sx*sx*sx)*g,
+                max_ws*(p[1]-cy)/(np.square(sy))*g,
+                max_ws/(4*sy*sy*sy)*g]).T
+    
+    try:
+        val,_ = curve_fit(my_scaled_gauss,xs,ys,
+                        p0=(x_mean_estimated,x_sigma_estimated,y_mean_estimated,y_sigma_estimated),
+                        jac=my_scaled_gauss_jac,
+                        method='trf')
+    except ValueError as e:
+        print(f"Initial (mean_x,std_x,mean_y,std_y) guesses: ({(x_mean_estimated,x_sigma_estimated,y_mean_estimated,y_sigma_estimated)})")
+        raise e
+    
+    if plotting:
+        raise NotImplementedError()
+        print(f"Center, dispersion: {val}")
+        plt.plot(xs,ys,'x k',label=f"Datapoints")
+        plt.plot(np.sort(xs),my_scaled_gauss(np.sort(xs),val[0],val[1]),'-b',label="Interpolated gaussian")
+        plt.plot([mean_estimated,mean_estimated],[0,max_ys],'--r',label=f'Weighted X barycenter (avg-gaussian_mean = {mean_estimated-val[0]:.3f})')
+        plt.plot([val[0],val[0]],[0,max_ys],'-r',label=f'Gaussian mean  (avg-gaussian_mean = {mean_estimated-val[0]:.3f})')
+        plt.plot([val[0]-val[1],val[0]+val[1]],my_scaled_gauss([val[0]-val[1],val[0]+val[1]],val[0],val[1]),'|-g',label="One standard deviation away from mean")
+        plt.legend()
+        plt.show()
+        
+    return val[0],val[1],val[2],val[3]
+
+def successive_gaussians_3d(ds:np.datetime64,ts:np.ndarray, ws:np.ndarray, lin_abs_tol:float,sample_points:np.ndarray,show:bool=False) -> np.ndarray:
+    deviation_from_middle = []
+    gaussians_std = []
+    for target in sample_points:
+        target_indices = np.abs(ds - target) < lin_abs_tol
+        target_ws = ws[target_indices]
+        target_ts = ts[target_indices]
+        
+        mean,std = gaussian_interpolation(target_ts,target_ws,plotting=False)
+        deviation_from_middle.append(mean)
+        gaussians_std.append(std)
+    
+    if show:
+        plt.scatter(sample_points,np.asarray(deviation_from_middle),label="Distance to ref")
+        plt.hlines(0,np.min(sample_points),np.max(sample_points),label="Current middle axis")
+        plt.title("Distances between middle line and estimated gaussians distributions center points")
+        plt.xlabel("Linear abscissa (re-oriented lon-lat)")
+        plt.ylabel("Orthogonal distance (re-oriented lon-lat)")
+        plt.legend()
+        plt.show()
+    
+    return np.stack([sample_points,np.asarray(deviation_from_middle),np.asarray(gaussians_std)])
+
+def linear_bspline_regression_3d(xs:np.ndarray,ys:np.ndarray,stds:np.ndarray, tol:float=1., show:bool=False) -> UnivariateSpline:
+    """Compute a linear bspline interpolation, such that the ys as approximated by a sequence of lines, functions of xs.
+
+    Args:
+        xs,ys (np.ndarray): Datapoints from the regression
+        stds (np.ndarray): Standard deviations of the datapoints, their inverses are used as weights for least squares problem
+        tol (float, optional): Tolerance for the regression objective, set to tol*len(ys). Defaults to 1..
+        show (bool, optional): Display the datapoints and the resulting linear bspline. Defaults to False.
+
+    Returns:
+        UnivariateSpline: Resulting bspline 
+    """
+    
+    spline = UnivariateSpline(xs,ys,w=1/stds,k=1,s=tol*len(xs))
+    
+    if show:
+        plt.scatter(xs,ys,marker='x',color='k',label='Datapoints')
+        plt.plot(xs,spline(xs),'-b',label='Resulting Linear spline')
+        plt.title("Regression using linear spline")
+        plt.legend()
+        plt.show()
+    
+    return spline
+
+def gaussian_rectified_middleline_3d(pos:np.ndarray,ws:np.ndarray,
+                                  percentile_exclusion:float=1,gaussians_sample:int=1000,bspline_tol:float=1e-3) -> np.ndarray:
+    """Estimate the flat plume centerline as a sequence of segments
+
+    First perform a weighted linear regression on the positions, weighted by the concentration measurements, to provide a rought
+    estimate of the middle line.
+    Then perform successive gaussian regressions orthonal to the line, the means codifying the deviation from the line.
+    Finally, perform linear bspline regression (sequence of segments) through the means of the gaussians, yielding the resulting middleline.
+
+    Args:
+        pos (np.ndarray): 2-D array of samples locations (first dimension for X, second for Y) 
+        ws (np.ndarray): 1-D array of concentration measurements
+        percentile_exclusion (float, optional): Percent of data to reject at the extrema of the first regression, before computing gaussians. Defaults to 1 (keep [1%-99%]).
+        gaussians_sample (int, optional): Number of gaussians to estimate; number of points used to generate the final middleline. Samples are linearly spread in the non-excluded range. Defaults to 1000.
+        bspline_tol (float, optional): Tolerance for the linear bspline. Defaults to 1e-3.
+
+    Returns:
+        np.ndarray: 2-D array (first dimension for X, second for Y) of the points making the middleline approximated through sequence of segments
+    """
+    print(np.shape(pos),pos)
+    xs = pos[0]
+    ys = pos[1]
+    ### Estimate the source location (highest concentration point)
+    estimated_src = simple_src_estimator(xs,ys,ws)
+    
+    ### Estimate main axis ('middle line' of the points)  
+    
+    coefs = find_middleline_coefs(xs-estimated_src[0],ys-estimated_src[1],ws)
+    
+    ### Change of referential: use the middle line as x-axis, y-axis becomes distance to line
+    
+    line_d_vector = np.asarray([1,coefs[0]])
+    line_d_vector = line_d_vector/np.linalg.norm(line_d_vector)
+    line_n_vector = np.asarray([-line_d_vector[1],line_d_vector[0]])
+    
+    to_line_ref_matrix = np.stack([line_d_vector,line_n_vector])
+    
+    ds_ts = to_line_ref_matrix @ np.stack([xs-estimated_src[0],ys-estimated_src[1] - coefs[1]])
+    
+    ds_start = np.percentile(ds_ts[0],percentile_exclusion)
+    ds_end = np.percentile(ds_ts[0],100-percentile_exclusion)
+    
+    
+    ### Fit gaussian at regular linear abscissa to study how well-aligned is the middle line
+    ds_ts_gaussian_middles = successive_gaussians(ds_ts[0],ds_ts[1],ws,5,np.linspace(ds_start,ds_end,gaussians_sample),show=False)
+    
+    bspline = linear_bspline_regression(ds_ts_gaussian_middles[0],ds_ts_gaussian_middles[1],ds_ts_gaussian_middles[2],bspline_tol,show=False)
+    rectified_dt_ts_middleline = np.stack([np.sort(ds_ts[0]),bspline(np.sort(ds_ts[0]))])
+    rectified_middleline = (to_line_ref_matrix.T @ rectified_dt_ts_middleline)
+    rectified_middleline[0] += estimated_src[0]
+    rectified_middleline[1] += estimated_src[1] + coefs[1]
+    
+    return rectified_middleline
     
 
 #################### Plotting ####################
@@ -581,23 +782,23 @@ def analysis_2d(file:str):
     xs,ys,ws = extract_2d_stripped_sample_lists(file)
     xs_flat = xs.flatten()
     ys_flat = ys.flatten()
-    ws_list = ws.flatten()
+    ws_flat = ws.flatten()
         
     # ### Plot the gas concentration repartition
     
-    # show_histogram(ws_list,100,0.1,f'Airborne gas concentration distribution (g/m², values higher than 0.1)')
+    # show_histogram(ws_flat,100,0.1,f'Airborne gas concentration distribution (g/m², values higher than 0.1)')
     
     ### Estimate the source location (highest concentration point)
-    estimated_src = simple_src_estimator(xs_flat,ys_flat,ws_list)
+    estimated_src = simple_src_estimator(xs_flat,ys_flat,ws_flat)
     print(f"Estimated source location:\n\t{estimated_src}")
     
     ### Estimate main axis ('middle line' of the points)  
     
-    coefs = find_middleline_coefs(xs_flat-estimated_src[0],ys_flat-estimated_src[1],ws_list)
+    coefs = find_middleline_coefs(xs_flat-estimated_src[0],ys_flat-estimated_src[1],ws_flat)
     print(f"Center line (m,b) coefficients (y = m*x+b):\n\t{coefs}")
     
     delta_line_coeff = np.arctan(np.pi/8)
-    # show_data(xs_flat,ys_flat,ws_list,estimated_src,coefs,delta_line_coeff)
+    # show_data(xs_flat,ys_flat,ws_flat,estimated_src,coefs,delta_line_coeff)
     print(f"Delta line coef for cone: {delta_line_coeff}")
     
     ### Change of referential: use the middle line as x-axis, y-axis becomes distance to line
@@ -617,7 +818,7 @@ def analysis_2d(file:str):
         
     
     ### Fit gaussian at regular linear abscissa to study how well-aligned is the middle line
-    ds_ts_gaussian_middles = successive_gaussians(ds_ts_list[0],ds_ts_list[1],ws_list,5,np.linspace(ds_start,ds_end,gaussians_count),show=False)
+    ds_ts_gaussian_middles = successive_gaussians(ds_ts_list[0],ds_ts_list[1],ws_flat,5,np.linspace(ds_start,ds_end,gaussians_count),show=False)
     
     bspline_tol = 1e-3
     
@@ -626,8 +827,8 @@ def analysis_2d(file:str):
     rectified_middleline = (to_line_ref_matrix.T @ rectified_dt_ts_middleline)
     rectified_middleline[0] += estimated_src[0]
     rectified_middleline[1] += estimated_src[1] + coefs[1]
-    
-    show_refit_centerline(xs_flat,ys_flat,ws_list,estimated_src,coefs,rectified_middleline)
+        
+    show_refit_centerline(xs_flat,ys_flat,ws_flat,estimated_src,coefs,rectified_middleline)
     
     
     
