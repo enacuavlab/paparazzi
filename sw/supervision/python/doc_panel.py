@@ -4,8 +4,11 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QUrl, Qt
 
 try:
+    raise NotImplementedError()
     from generated.ui_doc_viewer import Ui_DocPanel
-except ImportError:
+except Exception as e:
+    import sys
+    print(f"Could not setup Documentaion viewer because of:\n{e}",file=sys.stderr)
     class Ui_DocPanel:
         def setupUi(self, DocPanel):
             self.deactivated = True

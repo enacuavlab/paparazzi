@@ -10,6 +10,8 @@
     },
     "files.associations": {
         "Makefile.*": "makefile",
+        "numbers": "c",
+        "cmath": "c",
         "core": "cpp",
         "superlusupport": "cpp",
         "*.evaluator": "cpp",

@@ -1,0 +1,115 @@
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+
+<flight_plan alt="149.5" ground_alt="146" lat0="43.5640917" lon0="1.4829201" wp_frame="ltp" max_dist_from_home="100" name="Demo JPO falcon1" security_height="0.3" home_mode_height="3.">
+  <waypoints>
+    <waypoint name="HOME" x="0.0" y="0.0"/>
+    <waypoint name="STDBY" x="0.0" y="3.0" height="3."/>
+    <!--<waypoint name="WIND" x="2.9" y="2.2" height="1.3"/>-->
+    <waypoint name="CENTER_CIRCLE" x="0." y="0." height="3."/>
+    <waypoint name="TD" x="2.0" y="0.0"/>
+    <waypoint name="_N1" x="4.5" y="5.2"/>
+    <waypoint name="_N2" x="4.5" y="-5.2"/>
+    <waypoint name="_N3" x="-4.5" y="-5.2"/>
+    <waypoint name="_N4" x="-4.5" y="5.2"/>
+    <waypoint name="L1" x="0" y="1."/>
+    <waypoint name="L2" x="0" y="-3."/>
+  </waypoints>
+  <sectors>
+    <sector name="Net" color="red">
+      <corner name="_N1"/>
+      <corner name="_N2"/>
+      <corner name="_N3"/>
+      <corner name="_N4"/>
+    </sector>
+  </sectors>
+
+  <modules> 
+    <module name="gvf_module"/>
+    <module name="gvf_parametric"/>
+  </modules>
+
+  <blocks>
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Holding point" group="home">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Start Engine">
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png" group="home">
+      <exception cond="GetPosHeight() @GT 1.0" deroute="Standby"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0.1" vmode="throttle" until="stage_time @GT 2"/>
+      <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
+      <stay vmode="climb" climb="nav.climb_vspeed" wp="STDBY"/>
+    </block>
+    <block name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
+      <stay wp="STDBY"/>
+    </block>
+    <!--
+    <block name="Wind" strip_button="Wind" strip_icon="learn.png" group="home">
+      <stay wp="WIND"/>
+    </block>
+    -->
+    <block name="circle" post_call="nav_set_heading_towards(nav.carrot.x, nav.carrot.y)">
+      <circle radius="nav.radius" wp="CENTER_CIRCLE"/>
+    </block>
+    <block name="gvf_circle_speed" strip_icon="oval.png">
+      <set var="nav.setpoint_mode" value="NAV_SETPOINT_MODE_SPEED"/>
+      <!--<set var="guidance_h.use_ref" value="0"/>-->
+      <call fun="gvf_ellipse_wp(WP_CENTER_CIRCLE, nav.radius, nav.radius, 0.)"/>
+    </block>
+    <block name="gvf_circle_accel" strip_icon="oval.png">
+      <set var="nav.setpoint_mode" value="NAV_SETPOINT_MODE_ACCEL"/>
+      <!--<set var="guidance_h.use_ref" value="0"/>-->
+      <call fun="gvf_ellipse_wp(WP_CENTER_CIRCLE, nav.radius, nav.radius, 0.)"/>
+    </block>
+    <block name="gvf_line_speed" strip_icon="line.png">
+      <set var="nav.setpoint_mode" value="NAV_SETPOINT_MODE_SPEED"/>
+      <!--<set var="guidance_h.use_ref" value="0"/>-->
+      <call fun="gvf_segment_loop_wp1_wp2(WP_L1,WP_L2, nav.radius, nav.radius)"/>
+    </block>
+    
+    <!--
+    <block name="3D_lissajous">
+    	<set var="nav.setpoint_mode" value="NAV_SETPOINT_MODE_SPEED"/>
+    	
+    	<set var="gvf_parametric_3d_lissajous_par.cx" value="3."/>
+    	<set var="gvf_parametric_3d_lissajous_par.wx" value="3."/>
+    	<set var="gvf_parametric_3d_lissajous_par.dx" value="90."/>
+    
+    	<set var="gvf_parametric_3d_lissajous_par.cy" value="3."/>
+    	<set var="gvf_parametric_3d_lissajous_par.wy" value="1."/>
+    	<set var="gvf_parametric_3d_lissajous_par.dy" value="0."/>
+    	
+    	<set var="gvf_parametric_3d_lissajous_par.cz" value="0."/>
+    	<set var="gvf_parametric_3d_lissajous_par.wz" value="0."/>
+    	<set var="gvf_parametric_3d_lissajous_par.dz" value="0."/>
+    	
+    
+      <call fun="gvf_parametric_3D_lissajous_wp_center(WP_CENTER_CIRCLE,flight_altitude,gvf_parametric_3d_lissajous_par.cx, gvf_parametric_3d_lissajous_par.cy, gvf_parametric_3d_lissajous_par.cz, gvf_parametric_3d_lissajous_par.wx, gvf_parametric_3d_lissajous_par.wy, gvf_parametric_3d_lissajous_par.wz, gvf_parametric_3d_lissajous_par.dx, gvf_parametric_3d_lissajous_par.dy, gvf_parametric_3d_lissajous_par.dz, gvf_parametric_3d_lissajous_par.alpha)"/>
+    </block>
+    -->
+    <block name="Land Here" strip_button="Land Here" group="home">
+     <call_once fun="NavSetWaypointHere(WP_TD)"/>
+    </block>
+    <block name="Land" strip_button="Land" strip_icon="land-right.png" group="home">
+      <go wp="TD"/>
+    </block>
+    <block name="Flare">
+      <!--exception cond="NavDetectGround()" deroute="Holding point"/-->
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <!--call_once fun="NavStartDetectGround()"/-->
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="TD"/>
+    </block>
+    <block name="Kill landed">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+  </blocks>
+</flight_plan>
