@@ -105,10 +105,10 @@ static void mag_cb(uint8_t sender_id __attribute__((unused)), uint32_t stamp, st
 #include "modules/ctrl/body_stabilisation.h"
 static void send_payload_float(struct transport_tx *trans, struct link_device *dev)
 {
-  float f[16] = {-encoder_amt22.amt22.angle_rad, -encoder_amt22.H_g_filter.hatx[0], -encoder_amt22.H_g_filter.hatx[1],
+  float f[15] = {-encoder_amt22.amt22.angle_rad, -encoder_amt22.H_g_filter.hatx[0], -encoder_amt22.H_g_filter.hatx[1],
                  motor_cmd, elevator_cmd, actuators_pprz[6], actuators_pprz[7], DegOfRad(euler_fus.theta), angle_wing2fus, body_stab.discrete_state,
-                 gyro_rot_f.p, gyro_rot_f.q, gyro_rot_f.r, encoder_amt22.amt22.position, encoder_amt22.amt22.offset, rates_vect.y};
-  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 16, f);
+                 gyro_rot_f.p, gyro_rot_f.q, gyro_rot_f.r, encoder_amt22.amt22.position, rates_vect.y};
+  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 15, f);
 }
 #endif
 
