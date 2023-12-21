@@ -112,11 +112,10 @@ void actuators_sts3032_periodic(void)
 
   for (int i = 0; i < SERVOS_STS3032_NB; i++) {
     sts3032_read_pos(&sts, sts.ids[i]);
-    uint8_t servo_idx = (i+1);
     // Feedback ABI RPM messages
     struct act_feedback_t feedback;
-    feedback.idx =  SERVOS_STS3032_OFFSET + servo_idx;
-    feedback.position = (sts.pos[i] - get_servo_neutral_STS3032(servo_idx))/M_PI_2;
+    feedback.idx =  get_servo_idx_STS3032(i);
+    feedback.position = (sts.pos[i] - get_servo_neutral_STS3032(i))/M_PI_2;
     feedback.set.position = true;
 
     // Send ABI message

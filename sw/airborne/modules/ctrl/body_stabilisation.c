@@ -50,7 +50,7 @@ PRINT_CONFIG_VAR(BODY_STAB_KI_M)
 
 /** Default kd motor 3000 4000*/
 #ifndef BODY_STAB_KD_M
-#define BODY_STAB_KD_M 300.f
+#define BODY_STAB_KD_M 3000.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KD_M)
 

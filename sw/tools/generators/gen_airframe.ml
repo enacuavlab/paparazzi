@@ -213,7 +213,7 @@ let print_reverse_servo_table = fun out driver servos ->
   fprintf out "  switch (_idx) {\n";
   List.iter (fun c ->
     let name = ExtXml.attrib c "name" in
-    fprintf out "    case SERVO_%s: return SERVO_%s_NEUTRAL;\n" name name;
+    fprintf out "    case SERVO_%s_DRIVER_NO: return SERVO_%s_NEUTRAL;\n" name name;
   ) servos;
   fprintf out "    default: return 0;\n";
   fprintf out "  };\n";
