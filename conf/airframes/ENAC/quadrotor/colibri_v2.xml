@@ -166,6 +166,7 @@
     <servo name="REXT" no="1" min="0" neutral="100" max="2000"/>
     <servo name="RINT" no="2" min="0" neutral="100" max="2000"/>
   </servos>
+
   <servos driver="Pwm">
     <servo name="PROFONDEUR_SERVO" no="1" min="1000" neutral="1500" max="2000" />
     <servo name="PROFONDEUR_MOTOR" no="2" min="1000" neutral="1100" max="2000"  />
