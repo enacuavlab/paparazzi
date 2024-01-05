@@ -332,15 +332,7 @@ struct StabilizationSetpoint guidance_h_from_nav(bool in_flight)
     guidance_h_nav_enter();
   }
 
-  if (nav.horizontal_mode == NAV_HORIZONTAL_MODE_MANUAL) {
-    // FIXME add "direct" to stab_sp ? set from AP ?
-    //stabilization_cmd[COMMAND_ROLL]  = nav.cmd_roll;
-    //stabilization_cmd[COMMAND_PITCH] = nav.cmd_pitch;
-    //stabilization_cmd[COMMAND_YAW]   = nav.cmd_yaw;
-    struct StabilizationSetpoint sp;
-    STAB_SP_SET_EULERS_ZERO(sp);
-    return sp;
-  } else if (nav.horizontal_mode == NAV_HORIZONTAL_MODE_ATTITUDE) {
+  if (nav.horizontal_mode == NAV_HORIZONTAL_MODE_ATTITUDE) {
     if (nav.setpoint_mode == NAV_SETPOINT_MODE_QUAT) {
       return stab_sp_from_quat_f(&nav.quat);
     }
