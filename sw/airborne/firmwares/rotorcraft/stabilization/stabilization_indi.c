@@ -167,7 +167,15 @@ float act_pref[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_PREF;
 float act_pref[INDI_NUM_ACT] = {0.0};
 #endif
 
-float act_dyn[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_DYN;
+#ifdef STABILIZATION_INDI_ACT_DYN
+#warning STABILIZATION_INDI_ACT_DYN is deprecated, use STABILIZATION_INDI_ACT_FREQ instead.
+#warning You now have to define the continuous time corner frequency in rad/s of the actuators.
+#warning "Use -ln(1 - old_number) * PERIODIC_FREQUENCY to compute it from the old values."
+float act_dyn_discrete[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_DYN;
+#else
+float act_first_order_cutoff[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_FREQ;
+float act_dyn_discrete[INDI_NUM_ACT]; // will be computed from freq at init
+#endif
 
 #ifdef STABILIZATION_INDI_WLS_PRIORITIES
 static float Wv[INDI_OUTPUTS] = STABILIZATION_INDI_WLS_PRIORITIES;
@@ -283,7 +291,7 @@ void sum_g1_g2(void);
 static void send_eff_mat_g_indi(struct transport_tx *trans, struct link_device *dev)
 {
   float zero = 0.0;
-  pprz_msg_send_EFF_MAT_G(trans, dev, AC_ID, 
+  pprz_msg_send_EFF_MAT_G(trans, dev, AC_ID,
                                    1, &zero,
                                    1, &zero,
                                    1, &zero,
@@ -340,6 +348,15 @@ void stabilization_indi_init(void)
   // Initialize filters
   init_filters();
 
+  int8_t i;
+// If the deprecated STABILIZATION_INDI_ACT_DYN is used, convert it to the new FREQUENCY format
+#ifdef STABILIZATION_INDI_ACT_FREQ
+  // Initialize the array of pointers to the rows of g1g2
+  for (i = 0; i < INDI_NUM_ACT; i++) {
+    act_dyn_discrete[i] = 1-exp(-act_first_order_cutoff[i]/PERIODIC_FREQUENCY);
+  }
+#endif
+
 #if STABILIZATION_INDI_RPM_FEEDBACK
   AbiBindMsgACT_FEEDBACK(STABILIZATION_INDI_ACT_FEEDBACK_ID, &act_feedback_ev, act_feedback_cb);
 #endif
@@ -360,7 +377,6 @@ void stabilization_indi_init(void)
   calc_g1g2_pseudo_inv();
 #endif
 
-  int8_t i;
   // Initialize the array of pointers to the rows of g1g2
   for (i = 0; i < INDI_OUTPUTS; i++) {
     Bwls[i] = g1g2[i];
@@ -621,10 +637,6 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     actuators_pprz[i] = (int16_t) indi_u[i];
   }
 
-  // Set the stab_cmd to 42 to indicate that it is not used
-  cmd[COMMAND_ROLL] = 42;
-  cmd[COMMAND_PITCH] = 42;
-  cmd[COMMAND_YAW] = 42;
   //update thrust command such that the current is correctly estimated
   cmd[COMMAND_THRUST] = 0;
   for (i = 0; i < INDI_NUM_ACT; i++) {
@@ -752,7 +764,7 @@ void get_actuator_state(void)
     prev_actuator_state = actuator_state[i];
 
     actuator_state[i] = actuator_state[i]
-                        + act_dyn[i] * (indi_u[i] - actuator_state[i]);
+                        + act_dyn_discrete[i] * (indi_u[i] - actuator_state[i]);
 
 #ifdef STABILIZATION_INDI_ACT_RATE_LIMIT
     if ((actuator_state[i] - prev_actuator_state) > act_rate_limit[i]) {

@@ -123,13 +123,20 @@ struct FloatVect3 sp_accel = {0.0,0.0,0.0};
 float guidance_indi_specific_force_gain = GUIDANCE_INDI_SPECIFIC_FORCE_GAIN;
 static void guidance_indi_filter_thrust(void);
 
-#ifndef GUIDANCE_INDI_THRUST_DYNAMICS
-#ifndef STABILIZATION_INDI_ACT_DYN_P
-#error "You need to define GUIDANCE_INDI_THRUST_DYNAMICS to be able to use indi vertical control"
-#else // assume that the same actuators are used for thrust as for roll (e.g. quadrotor)
-#define GUIDANCE_INDI_THRUST_DYNAMICS STABILIZATION_INDI_ACT_DYN_P
+#ifdef GUIDANCE_INDI_THRUST_DYNAMICS
+#warning GUIDANCE_INDI_THRUST_DYNAMICS is deprecated, use GUIDANCE_INDI_THRUST_DYNAMICS_FREQ instead.
+#warning "The thrust dynamics are now specified in continuous time with the corner frequency of the first order model!"
+#warning "define GUIDANCE_INDI_THRUST_DYNAMICS_FREQ in rad/s"
+#warning "Use -ln(1 - old_number) * PERIODIC_FREQUENCY to compute it from the old value."
 #endif
-#endif //GUIDANCE_INDI_THRUST_DYNAMICS
+
+#ifndef GUIDANCE_INDI_THRUST_DYNAMICS_FREQ
+#ifndef STABILIZATION_INDI_ACT_FREQ_P
+#error "You need to define GUIDANCE_INDI_THRUST_DYNAMICS_FREQ to be able to use indi vertical control"
+#else // assume that the same actuators are used for thrust as for roll (e.g. quadrotor)
+#define GUIDANCE_INDI_THRUST_DYNAMICS_FREQ STABILIZATION_INDI_ACT_FREQ_P
+#endif
+#endif //GUIDANCE_INDI_THRUST_DYNAMICS_FREQ
 
 #endif //GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
 
@@ -161,6 +168,7 @@ float guidance_indi_min_pitch = GUIDANCE_INDI_MIN_PITCH;
 /** state eulers in zxy order */
 struct FloatEulers eulers_zxy;
 
+float thrust_dyn = 0.f;
 float thrust_act = 0;
 Butterworth2LowPass filt_accel_ned[3];
 Butterworth2LowPass roll_filt;
@@ -232,6 +240,7 @@ static void send_guidance_indi_hybrid(struct transport_tx *trans, struct link_de
                               &gi_speed_sp.z);
 }
 
+#if GUIDANCE_INDI_HYBRID_USE_WLS
 static void debug(struct transport_tx *trans, struct link_device *dev, char* name, float* data, int datasize)
 {
   pprz_msg_send_DEBUG_VECT(trans, dev,AC_ID,
@@ -239,10 +248,8 @@ static void debug(struct transport_tx *trans, struct link_device *dev, char* nam
                               datasize, data);
 }
 
-
 static void send_guidance_indi_debug(struct transport_tx *trans, struct link_device *dev)
 {
-#if GUIDANCE_INDI_HYBRID_USE_WLS
   static int c = 0;
   switch (c++)
   {
@@ -269,10 +276,14 @@ static void send_guidance_indi_debug(struct transport_tx *trans, struct link_dev
     c=0;
     break;
   }
-#endif
 }
+#else
+static void send_guidance_indi_debug(struct transport_tx *trans UNUSED, struct link_device *dev UNUSED)
+{
+}
+#endif // GUIDANCE_INDI_HYBRID_USE_WLS
 
-#endif
+#endif // PERIODIC_TELEMETRY
 
 /**
  * @brief Init function
@@ -281,6 +292,14 @@ void guidance_indi_init(void)
 {
   /*AbiBindMsgACCEL_SP(GUIDANCE_INDI_ACCEL_SP_ID, &accel_sp_ev, accel_sp_cb);*/
   AbiBindMsgVEL_SP(GUIDANCE_INDI_VEL_SP_ID, &vel_sp_ev, vel_sp_cb);
+
+#ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
+#ifdef GUIDANCE_INDI_THRUST_DYNAMICS
+  thrust_dyn = GUIDANCE_INDI_THRUST_DYNAMICS;
+#else
+  thrust_dyn = 1-exp(-GUIDANCE_INDI_THRUST_DYNAMICS_FREQ/PERIODIC_FREQUENCY);
+#endif
+#endif
 
   float tau = 1.0/(2.0*M_PI*filter_cutoff);
   float sample_time = 1.0/PERIODIC_FREQUENCY;
@@ -733,7 +752,7 @@ struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight UNUSED, struc
 void guidance_indi_filter_thrust(void)
 {
   // Actuator dynamics
-  thrust_act = thrust_act + GUIDANCE_INDI_THRUST_DYNAMICS * (thrust_in - thrust_act);
+  thrust_act = thrust_act + thrust_dyn * (thrust_in - thrust_act);
 
   // same filter as for the acceleration
   update_butterworth_2_low_pass(&thrust_filt, thrust_act);
