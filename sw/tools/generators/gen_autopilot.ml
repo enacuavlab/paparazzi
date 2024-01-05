@@ -251,10 +251,11 @@ let print_ap_periodic = fun modes ctrl_block main_freq name out_h ->
 
   (** Print function *)
   let print_call = fun call ->
+    let store = ExtXml.attrib_or_default call "store" "" in
     try
       let f = Xml.attrib call "fun" in
-      let cond = try String.concat "" ["if ("; (Xml.attrib call "cond"); ") { "; f; "; }\n"]
-        with _ -> String.concat "" [f; ";\n"] in
+      let cond = try String.concat "" ["if ("; (Xml.attrib call "cond"); ") { "; store; f; "; }\n"]
+        with _ -> String.concat "" [store; f; ";\n"] in
       lprintf out_h "%s" cond
     with _ -> ()
   in
@@ -293,9 +294,31 @@ let print_ap_periodic = fun modes ctrl_block main_freq name out_h ->
     List.filter (fun m -> (Xml.tag m) = "control") (Xml.children mode)
   in
 
+  (** Find store values *)
+  let stores = Hashtbl.create 10 in
+  List.iter (fun m ->
+    List.iter (fun ctrl ->
+      List.iter (fun call ->
+        try
+          let s = Xml.attrib call "store" in
+          Hashtbl.replace stores s ()
+        with _ -> ()
+      ) (Xml.children ctrl)
+    ) (get_control m)
+  ) modes;
+  List.iter (fun cb ->
+    List.iter (fun call ->
+      try
+        let s = Xml.attrib call "store" in
+        Hashtbl.replace stores s ()
+      with _ -> ()
+    ) (Xml.children cb)
+  ) ctrl_block;
+
   (** Start printing the main periodic task *)
   lprintf out_h "\nstatic inline void autopilot_core_%s_periodic_task(void) {\n\n" name;
   right ();
+  Hashtbl.iter (fun s _ -> lprintf out_h "%s;\n" s) stores;
   lprintf out_h "uint8_t mode = autopilot_core_%s_mode_select();\n" name; (* get selected mode *)
   lprintf out_h "mode = autopilot_core_%s_mode_exceptions(mode);\n" name; (* change mode according to exceptions *)
   lprintf out_h "mode = autopilot_core_%s_global_exceptions(mode);\n" name; (* change mode according to global exceptions *)
