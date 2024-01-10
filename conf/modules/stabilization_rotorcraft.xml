@@ -23,7 +23,7 @@
     <file name="stabilization_direct.h"/>
   </header>
   <init fun="stabilization_init()"/>
-  <init fun="stabilization_none_init()"/>
+  <init fun="stabilization_direct_init()"/>
   <makefile target="ap|nps" firmware="rotorcraft">
     <file name="stabilization.c" dir="$(SRC_FIRMWARE)"/>
     <file name="stabilization_direct.c" dir="$(SRC_FIRMWARE)/stabilization"/>

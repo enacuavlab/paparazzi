@@ -39,7 +39,6 @@
 #include "firmwares/rotorcraft/guidance.h"
 
 #include "firmwares/rotorcraft/stabilization.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_none.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 
 #if USE_STABILIZATION_RATE

@@ -19,11 +19,7 @@
  * Boston, MA 02111-1307, USA.
  */
 
-/** @file stabilization_none.c
- *  Dummy stabilization for rotorcrafts.
- *
- *  Doesn't actually do any stabilization,
- *  just directly passes the RC commands along.
+/** @file stabilization_oneloop.c
  */
 
 //#include "firmwares/rotorcraft/stabilization.h"
