@@ -294,31 +294,25 @@ let print_ap_periodic = fun modes ctrl_block main_freq name out_h ->
     List.filter (fun m -> (Xml.tag m) = "control") (Xml.children mode)
   in
 
-  (** Find store values *)
-  let stores = Hashtbl.create 10 in
-  List.iter (fun m ->
-    List.iter (fun ctrl ->
-      List.iter (fun call ->
+  (** Find store attributes *)
+  let rec get_stores = fun acc x ->
+    match x with
+    | [] -> acc
+    | h::xs -> begin
         try
-          let s = Xml.attrib call "store" in
-          Hashtbl.replace stores s ()
-        with _ -> ()
-      ) (Xml.children ctrl)
-    ) (get_control m)
-  ) modes;
-  List.iter (fun cb ->
-    List.iter (fun call ->
-      try
-        let s = Xml.attrib call "store" in
-        Hashtbl.replace stores s ()
-      with _ -> ()
-    ) (Xml.children cb)
-  ) ctrl_block;
+          let s = Xml.attrib h "store" in
+          get_stores (s::acc) (Xml.children h)
+        with _ ->
+          get_stores acc xs
+    end
+  in
+  let stores = get_stores [] (modes @ ctrl_block) in
+
 
   (** Start printing the main periodic task *)
   lprintf out_h "\nstatic inline void autopilot_core_%s_periodic_task(void) {\n\n" name;
   right ();
-  Hashtbl.iter (fun s _ -> lprintf out_h "%s;\n" s) stores;
+  List.iter (fun s -> lprintf out_h "%s;\n" s) stores;
   lprintf out_h "uint8_t mode = autopilot_core_%s_mode_select();\n" name; (* get selected mode *)
   lprintf out_h "mode = autopilot_core_%s_mode_exceptions(mode);\n" name; (* change mode according to exceptions *)
   lprintf out_h "mode = autopilot_core_%s_global_exceptions(mode);\n" name; (* change mode according to global exceptions *)
