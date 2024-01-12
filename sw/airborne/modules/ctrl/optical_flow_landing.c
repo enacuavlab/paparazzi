@@ -617,7 +617,7 @@ void vertical_ctrl_module_run(bool in_flight)
     if (module_active_time_sec < 2.5f) {
       int32_t nominal_throttle = of_landing_ctrl.nominal_thrust * MAX_PPRZ;
       thrust_set = nominal_throttle;
-      stabilization_cmd[COMMAND_THRUST] = thrust;
+      stabilization.cmd[COMMAND_THRUST] = thrust;
       // keep track of histories and set the covariance
       set_cov_div(thrust_set);
       cov_div = 0.0f; // however, cov div is set to 0 to prevent strange issues at module startup.
@@ -1196,7 +1196,7 @@ void guidance_v_module_enter(void)
   reset_all_vars();
 
   // adaptive estimation - assume hover condition when entering the module
-  of_landing_ctrl.nominal_thrust = (float) stabilization_cmd[COMMAND_THRUST] / MAX_PPRZ;
+  of_landing_ctrl.nominal_thrust = (float) stabilization.cmd[COMMAND_THRUST] / MAX_PPRZ;
   thrust_set = of_landing_ctrl.nominal_thrust * MAX_PPRZ;
 }
 

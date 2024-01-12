@@ -73,9 +73,9 @@ struct FloatRates stabilization_rate_sp;
 static void send_rate(struct transport_tx *trans, struct link_device *dev)
 {
   float dummy = 0;
-  float fb_p = stabilization_cmd[COMMAND_ROLL];
-  float fb_q = stabilization_cmd[COMMAND_PITCH];
-  float fb_r = stabilization_cmd[COMMAND_YAW];
+  float fb_p = stabilization.cmd[COMMAND_ROLL];
+  float fb_q = stabilization.cmd[COMMAND_PITCH];
+  float fb_r = stabilization.cmd[COMMAND_YAW];
 
   pprz_msg_send_RATE_LOOP(trans, dev, AC_ID,
                           &stabilization_rate_sp.p,
@@ -85,7 +85,7 @@ static void send_rate(struct transport_tx *trans, struct link_device *dev)
                           &fb_p,
                           &fb_q,
                           &fb_r,
-                          &stabilization_cmd[COMMAND_THRUST]);
+                          &stabilization.cmd[COMMAND_THRUST]);
 }
 #endif
 

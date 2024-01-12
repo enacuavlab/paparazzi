@@ -58,18 +58,18 @@ void ctrl_module_run(bool in_flight)
 {
   if (!in_flight) {
     // Reset integrators
-    stabilization_cmd[COMMAND_ROLL] = 0;
-    stabilization_cmd[COMMAND_PITCH] = 0;
-    stabilization_cmd[COMMAND_YAW] = 0;
-    stabilization_cmd[COMMAND_THRUST] = 0;
+    stabilization.cmd[COMMAND_ROLL] = 0;
+    stabilization.cmd[COMMAND_PITCH] = 0;
+    stabilization.cmd[COMMAND_YAW] = 0;
+    stabilization.cmd[COMMAND_THRUST] = 0;
   } else {
-    stabilization_cmd[COMMAND_ROLL]   = ctrl_module_demo.rc_x * ctrl_module_demo_pr_ff_gain -
+    stabilization.cmd[COMMAND_ROLL]   = ctrl_module_demo.rc_x * ctrl_module_demo_pr_ff_gain -
       stateGetBodyRates_i()->p * ctrl_module_demo_pr_d_gain;
-    stabilization_cmd[COMMAND_PITCH]  = ctrl_module_demo.rc_y * ctrl_module_demo_pr_ff_gain -
+    stabilization.cmd[COMMAND_PITCH]  = ctrl_module_demo.rc_y * ctrl_module_demo_pr_ff_gain -
       stateGetBodyRates_i()->q * ctrl_module_demo_pr_d_gain;
-    stabilization_cmd[COMMAND_YAW]    = ctrl_module_demo.rc_z * ctrl_module_demo_y_ff_gain -
+    stabilization.cmd[COMMAND_YAW]    = ctrl_module_demo.rc_z * ctrl_module_demo_y_ff_gain -
       stateGetBodyRates_i()->r * ctrl_module_demo_y_d_gain;
-    stabilization_cmd[COMMAND_THRUST] = ctrl_module_demo.rc_t;
+    stabilization.cmd[COMMAND_THRUST] = ctrl_module_demo.rc_t;
   }
 }
 

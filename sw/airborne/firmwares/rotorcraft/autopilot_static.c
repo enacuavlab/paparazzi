@@ -172,12 +172,12 @@ void autopilot_static_periodic(void)
       SetCommands(commands_failsafe);
       break;
     case AP_MODE_MODULE:
-#if GUIDANCE_V_MODE_MODULE_SETTING == GUIDANCE_V_MODE_MODULE
+#if defined (GUIDANCE_V_MODE_MODULE_SETTING) && (GUIDANCE_V_MODE_MODULE_SETTING == GUIDANCE_V_MODE_MODULE)
       guidance_v_module_run(autopilot_in_flight());
 #else
       // TODO
 #endif
-#if GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE
+#if defined (GUIDANCE_H_MODE_MODULE_SETTING) && (GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE)
       guidance_h_module_run(autopilot_in_flight());
 #else
       // TODO
@@ -242,7 +242,7 @@ void autopilot_static_set_mode(uint8_t new_autopilot_mode)
       case AP_MODE_RATE_DIRECT:
       case AP_MODE_RATE_Z_HOLD:
 #if USE_STABILIZATION_RATE
-        guidance_h_mode_changed(GUIDANCE_H_MODE_RATE);
+        guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
         stabilization_mode_changed(STABILIZATION_MODE_RATE, 0);
 #else
         return;
@@ -252,17 +252,17 @@ void autopilot_static_set_mode(uint8_t new_autopilot_mode)
       case AP_MODE_ATTITUDE_DIRECT:
       case AP_MODE_ATTITUDE_CLIMB:
       case AP_MODE_ATTITUDE_Z_HOLD:
-        guidance_h_mode_changed(GUIDANCE_H_MODE_ATTITUDE);
+        guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
         stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE,
             STABILIZATION_ATT_SUBMODE_HEADING);
         break;
       case AP_MODE_FORWARD:
-        guidance_h_mode_changed(GUIDANCE_H_MODE_FORWARD);
+        guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
         stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE,
             STABILIZATION_ATT_SUBMODE_FORWARD);
         break;
       case AP_MODE_CARE_FREE_DIRECT:
-        guidance_h_mode_changed(GUIDANCE_H_MODE_CARE_FREE);
+        guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
         stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE,
             STABILIZATION_ATT_SUBMODE_CARE_FREE);
         break;
@@ -284,9 +284,9 @@ void autopilot_static_set_mode(uint8_t new_autopilot_mode)
         guidance_h_mode_changed(GUIDANCE_H_MODE_MODULE_SETTING);
 #endif
         break;
-      case AP_MODE_FLIP:
-        guidance_h_mode_changed(GUIDANCE_H_MODE_FLIP);
-        break;
+//      case AP_MODE_FLIP: TODO remove
+//        guidance_h_mode_changed(GUIDANCE_H_MODE_FLIP);
+//        break;
       case AP_MODE_GUIDED:
         guidance_h_mode_changed(GUIDANCE_H_MODE_GUIDED);
         stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE,
@@ -340,9 +340,9 @@ void autopilot_static_set_mode(uint8_t new_autopilot_mode)
         guidance_v_mode_changed(GUIDANCE_V_MODE_MODULE_SETTING);
 #endif
         break;
-      case AP_MODE_FLIP:
-        guidance_v_mode_changed(GUIDANCE_V_MODE_FLIP);
-        break;
+//      case AP_MODE_FLIP: TODO remove
+//        guidance_v_mode_changed(GUIDANCE_V_MODE_FLIP);
+//        break;
       case AP_MODE_GUIDED:
         guidance_v_mode_changed(GUIDANCE_V_MODE_GUIDED);
         break;

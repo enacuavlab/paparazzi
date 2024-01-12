@@ -171,7 +171,7 @@ void guidance_indi_enter(void)
   /* set nav_heading to current heading */
   nav.heading = stateGetNedToBodyEulers_f()->psi;
 
-  thrust_in = stabilization_cmd[COMMAND_THRUST];
+  thrust_in = stabilization.cmd[COMMAND_THRUST];
   thrust_act = thrust_in;
 
 #ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
@@ -297,7 +297,7 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
 #endif
 
   //Overwrite the thrust command from guidance_v
-  stabilization_cmd[COMMAND_THRUST] = thrust_in;
+  stabilization.cmd[COMMAND_THRUST] = thrust_in;
 #endif
 
   //Bound euler angles to prevent flipping
@@ -504,25 +504,31 @@ struct StabilizationSetpoint guidance_h_run_accel(bool in_flight, struct Horizon
   return guidance_indi_run_mode(in_flight, gh, _gv, GUIDANCE_INDI_H_ACCEL, _v_mode);
 }
 
-int32_t guidance_v_run_pos(bool in_flight UNUSED, struct VerticalGuidance *gv)
+struct ThrustSetpoint guidance_v_run_pos(bool in_flight UNUSED, struct VerticalGuidance *gv)
 {
   _gv = gv;
   _v_mode = GUIDANCE_INDI_V_POS;
-  return 0; // nothing to do
+  struct ThrustSetpoint sp;
+  THRUST_SP_SET_ZERO(sp); // FIXME really ?
+  return sp; // nothing to do
 }
 
-int32_t guidance_v_run_speed(bool in_flight UNUSED, struct VerticalGuidance *gv)
+struct ThrustSetpoint guidance_v_run_speed(bool in_flight UNUSED, struct VerticalGuidance *gv)
 {
   _gv = gv;
   _v_mode = GUIDANCE_INDI_V_SPEED;
-  return 0; // nothing to do
+  struct ThrustSetpoint sp;
+  THRUST_SP_SET_ZERO(sp);
+  return sp; // nothing to do
 }
 
-int32_t guidance_v_run_accel(bool in_flight UNUSED, struct VerticalGuidance *gv)
+struct ThrustSetpoint guidance_v_run_accel(bool in_flight UNUSED, struct VerticalGuidance *gv)
 {
   _gv = gv;
   _v_mode = GUIDANCE_INDI_V_ACCEL;
-  return 0; // nothing to do
+  struct ThrustSetpoint sp;
+  THRUST_SP_SET_ZERO(sp);
+  return sp; // nothing to do
 }
 
 #endif

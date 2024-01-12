@@ -536,7 +536,7 @@ void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp
 
   /* Take the current (filtered) actuator position and add the incremental value. */
   int32_vect_sum(c->u_setpoint, c->filtered_actuator[INDI_NR_FILTERS - 1], c->du, INDI_DOF);
-  //c->u_setpoint[INDI_THRUST] = stabilization_cmd[COMMAND_THRUST];
+  //c->u_setpoint[INDI_THRUST] = stabilization.cmd[COMMAND_THRUST];
 
   /* bound the result */
   BoundAbs(c->u_setpoint[INDI_ROLL], MAX_PPRZ);

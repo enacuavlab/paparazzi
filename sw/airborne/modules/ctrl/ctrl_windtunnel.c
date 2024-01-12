@@ -72,7 +72,7 @@ static void send_windtunnel_meas(struct transport_tx *trans, struct link_device 
   float aoa = DegOfRad(windtunnel_to_body_e.theta);
   float power = electrical.vsupply * electrical.current;
   pprz_msg_send_WINDTUNNEL_MEAS(trans, dev, AC_ID, &aoa, &air_data.airspeed, &electrical.vsupply, &electrical.current,
-                                &power, COMMANDS_NB, stabilization_cmd);
+                                &power, COMMANDS_NB, stabilization.cmd);
 }
 #endif
 
@@ -127,11 +127,11 @@ void ctrl_module_run(bool in_flight __attribute__((unused)))
     last_time = get_sys_time_float();
   }
 
-  stabilization_cmd[COMMAND_ROLL] = 0;
-  stabilization_cmd[COMMAND_PITCH] = 0;
-  stabilization_cmd[COMMAND_YAW] = 0;
-  stabilization_cmd[COMMAND_THRUST] = (done) ? 0 : ctrl_windtunnel_throttle.current;
-  stabilization_cmd[COMMAND_FLAPS] = (done) ? 0 : ctrl_windtunnel_flaps.current;
+  stabilization.cmd[COMMAND_ROLL] = 0;
+  stabilization.cmd[COMMAND_PITCH] = 0;
+  stabilization.cmd[COMMAND_YAW] = 0;
+  stabilization.cmd[COMMAND_THRUST] = (done) ? 0 : ctrl_windtunnel_throttle.current;
+  stabilization.cmd[COMMAND_FLAPS] = (done) ? 0 : ctrl_windtunnel_flaps.current;
 }
 
 

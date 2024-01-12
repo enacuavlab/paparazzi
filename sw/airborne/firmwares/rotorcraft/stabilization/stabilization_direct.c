@@ -69,6 +69,6 @@ void stabilization_direct_run(bool in_flight __attribute__((unused)),
   cmd[COMMAND_YAW]    = stabilization_direct_rc_cmd.r;
 #endif
 #ifdef COMMAND_THRUST
-  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust, 0);
+  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
 #endif
 }

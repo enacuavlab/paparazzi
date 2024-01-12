@@ -332,7 +332,7 @@ void guidance_indi_enter(void) {
   float_eulers_of_quat_zxy(&eulers_zxy, stateGetNedToBodyQuat_f());
   nav.heading = eulers_zxy.psi;
 
-  thrust_in = stabilization_cmd[COMMAND_THRUST];
+  thrust_in = stabilization.cmd[COMMAND_THRUST];
   thrust_act = thrust_in;
   guidance_indi_hybrid_heading_sp = stateGetNedToBodyEulers_f()->psi;
 
@@ -538,7 +538,7 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
 #endif
 
   // Overwrite the thrust command from guidance_v
-  stabilization_cmd[COMMAND_THRUST] = thrust_in;
+  stabilization.cmd[COMMAND_THRUST] = thrust_in;
 #endif
 
   // Set the quaternion setpoint from eulers_zxy
@@ -860,25 +860,34 @@ struct StabilizationSetpoint guidance_h_run_accel(bool in_flight, struct Horizon
   return guidance_indi_run_mode(in_flight, gh, _gv, GUIDANCE_INDI_HYBRID_H_ACCEL, _v_mode);
 }
 
-int32_t guidance_v_run_pos(bool in_flight UNUSED, struct VerticalGuidance *gv)
+struct ThrustSetpoint guidance_v_run_pos(bool in_flight UNUSED, struct VerticalGuidance *gv)
 {
   _gv = gv;
   _v_mode = GUIDANCE_INDI_HYBRID_V_POS;
-  return (int32_t)stabilization_cmd[COMMAND_THRUST]; // nothing to do
+  struct ThrustSetpoint sp;
+  THRUST_SP_SET_ZERO(sp); // FIXME return correct thrust
+  return sp; // nothing to do
+  //return (int32_t)stabilization.cmd[COMMAND_THRUST]; // nothing to do
 }
 
-int32_t guidance_v_run_speed(bool in_flight UNUSED, struct VerticalGuidance *gv)
+struct ThrustSetpoint guidance_v_run_speed(bool in_flight UNUSED, struct VerticalGuidance *gv)
 {
   _gv = gv;
   _v_mode = GUIDANCE_INDI_HYBRID_V_SPEED;
-  return (int32_t)stabilization_cmd[COMMAND_THRUST]; // nothing to do
+  struct ThrustSetpoint sp;
+  THRUST_SP_SET_ZERO(sp); // FIXME return correct thrust
+  return sp; // nothing to do
+  //return (int32_t)stabilization.cmd[COMMAND_THRUST]; // nothing to do
 }
 
-int32_t guidance_v_run_accel(bool in_flight UNUSED, struct VerticalGuidance *gv)
+struct ThrustSetpoint guidance_v_run_accel(bool in_flight UNUSED, struct VerticalGuidance *gv)
 {
   _gv = gv;
   _v_mode = GUIDANCE_INDI_HYBRID_V_ACCEL;
-  return (int32_t)stabilization_cmd[COMMAND_THRUST]; // nothing to do
+  struct ThrustSetpoint sp;
+  THRUST_SP_SET_ZERO(sp); // FIXME return correct thrust
+  return sp; // nothing to do
+  //return (int32_t)stabilization.cmd[COMMAND_THRUST]; // nothing to do
 }
 
 #endif

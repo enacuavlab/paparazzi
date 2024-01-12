@@ -107,7 +107,7 @@ static void send_rate(struct transport_tx *trans, struct link_device *dev)
                           &stabilization_rate_fb_cmd.p,
                           &stabilization_rate_fb_cmd.q,
                           &stabilization_rate_fb_cmd.r,
-                          &stabilization_cmd[COMMAND_THRUST]);
+                          &stabilization.cmd[COMMAND_THRUST]);
 }
 #endif
 

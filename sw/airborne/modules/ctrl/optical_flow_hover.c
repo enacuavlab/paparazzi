@@ -633,7 +633,7 @@ void guidance_v_module_enter(void)
   reset_vertical_vars();
 
   // adaptive estimation - assume hover condition when entering the module
-  of_hover_ctrl_Z.nominal_value = (float) stabilization_cmd[COMMAND.THRUST] / MAX_PPRZ;
+  of_hover_ctrl_Z.nominal_value = (float) stabilization.cmd[COMMAND.THRUST] / MAX_PPRZ;
   des_inputs.thrust = (int32_t) of_hover_ctrl_Z.nominal_value * MAX_PPRZ;
 }
 

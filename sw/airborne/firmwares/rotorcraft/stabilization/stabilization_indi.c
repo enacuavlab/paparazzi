@@ -685,8 +685,8 @@ void WEAK stabilization_indi_set_wls_settings(float use_increment)
  */
 void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoint *att_sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
-  stab_att_sp_euler = stab_sp_to_eulers_i(sp);  // stab_att_sp_euler.psi still used in ref..
-  stab_att_sp_quat = stab_sp_to_quat_i(sp);     // quat attitude setpoint
+  stab_att_sp_euler = stab_sp_to_eulers_i(att_sp);  // stab_att_sp_euler.psi still used in ref..
+  stab_att_sp_quat = stab_sp_to_quat_i(att_sp);     // quat attitude setpoint
 
   /* attitude error in float */
   struct FloatQuat att_err;
@@ -729,7 +729,7 @@ void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoin
   /*BoundAbs(rate_sp.r, 5.0);*/
 
   /* compute the INDI command */
-  struct StabilizationSetpoint sp = stab_sp_to_rates_f(&rate_sp);
+  struct StabilizationSetpoint sp = stab_sp_from_rates_f(&rate_sp);
   stabilization_indi_rate_run(in_flight, &sp, thrust, cmd);
 }
 

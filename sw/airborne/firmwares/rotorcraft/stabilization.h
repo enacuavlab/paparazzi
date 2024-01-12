@@ -115,7 +115,7 @@ extern struct Stabilization stabilization;
 ///  *  regardless of whether rate or attitude is currently used.
 ///  *  Range -MAX_PPRZ:MAX_PPRZ
 ///  */
-/// extern int32_t stabilization_cmd[COMMANDS_NB];
+/// extern int32_t stabilization.cmd[COMMANDS_NB];
 
 /** Init function
  */
@@ -194,7 +194,9 @@ extern struct ThrustSetpoint th_sp_from_incr_vect_f(float th_increment[3]);
 #define THRUST_SP_SET_ZERO(_sp) { \
   _sp.type = THRUST_SP;       \
   _sp.format = THRUST_SP_INT; \
-  _sp.sp.thrust_i = {0,0,0};  \
+  _sp.sp.thrust_i[0] = 0;     \
+  _sp.sp.thrust_i[1] = 0;     \
+  _sp.sp.thrust_i[2] = 0;     \
 }
 
 #endif /* STABILIZATION_H */
