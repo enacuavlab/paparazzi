@@ -63,8 +63,9 @@ struct SecondOrderLowPass_int filter_yaw;
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
 
-static void send_tune_hover(struct transport_tx *trans, struct link_device *dev)
+static void send_tune_hover(struct transport_tx *trans UNUSED, struct link_device *dev UNUSED)
 {
+#if defined(COMMAND_ROLL) && defined(COMMAND_PITCH) && defined(COMMAND_YAW)
   pprz_msg_send_ROTORCRAFT_TUNE_HOVER(trans, dev, AC_ID,
                                       &radio_control.values[RADIO_ROLL],
                                       &radio_control.values[RADIO_PITCH],
@@ -76,6 +77,7 @@ static void send_tune_hover(struct transport_tx *trans, struct link_device *dev)
                                       &(stateGetNedToBodyEulers_i()->phi),
                                       &(stateGetNedToBodyEulers_i()->theta),
                                       &(stateGetNedToBodyEulers_i()->psi));
+#endif
 }
 
 #endif

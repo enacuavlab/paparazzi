@@ -247,11 +247,6 @@ static void act_feedback_cb(uint8_t sender_id, struct act_feedback_t *feedback, 
 PRINT_CONFIG_MSG("STABILIZATION_INDI_RPM_FEEDBACK")
 #endif
 
-abi_event thrust_ev;
-static void thrust_cb(uint8_t sender_id, struct FloatVect3 thrust_increment);
-struct FloatVect3 indi_thrust_increment;
-bool indi_thrust_increment_set = false;
-
 float g1g2_pseudo_inv[INDI_NUM_ACT][INDI_OUTPUTS];
 float g2[INDI_NUM_ACT] = STABILIZATION_INDI_G2; //scaled by INDI_G_SCALING
 #if INDI_OUTPUTS == 5
@@ -360,7 +355,6 @@ void stabilization_indi_init(void)
 #if STABILIZATION_INDI_RPM_FEEDBACK
   AbiBindMsgACT_FEEDBACK(STABILIZATION_INDI_ACT_FEEDBACK_ID, &act_feedback_ev, act_feedback_cb);
 #endif
-  AbiBindMsgTHRUST(THRUST_INCREMENT_ID, &thrust_ev, thrust_cb);
 
   float_vect_zero(actuator_state_filt_vectd, INDI_NUM_ACT);
   float_vect_zero(actuator_state_filt_vectdd, INDI_NUM_ACT);
@@ -546,7 +540,7 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     use_increment = 1.0f;
   }
 
-  struct FloatVect3 v_thrust;
+  struct FloatVect3 v_thrust = { 0.f, 0.f, 0.f };
   if (thrust->type == THRUST_INCR_SP) {
     v_thrust.x = th_sp_to_incr_f(thrust, 0, THRUST_AXIS_X);
     v_thrust.y = th_sp_to_incr_f(thrust, 0, THRUST_AXIS_Y);
@@ -971,15 +965,6 @@ static void act_feedback_cb(uint8_t sender_id UNUSED, struct act_feedback_t *fee
   }
 }
 #endif
-
-/**
- * ABI callback that obtains the thrust increment from guidance INDI
- */
-static void thrust_cb(uint8_t UNUSED sender_id, struct FloatVect3 thrust_increment)
-{
-  indi_thrust_increment = thrust_increment;
-  indi_thrust_increment_set = true;
-}
 
 static void bound_g_mat(void)
 {

@@ -124,6 +124,7 @@ float time_of_accel_sp_2d = 0.0;
 float time_of_accel_sp_3d = 0.0;
 
 struct FloatEulers guidance_euler_cmd;
+struct ThrustSetpoint thrust_sp;
 float thrust_in;
 
 static void guidance_indi_propagate_filters(struct FloatEulers *eulers);
@@ -155,6 +156,8 @@ static void send_indi_guidance(struct transport_tx *trans, struct link_device *d
  */
 void guidance_indi_init(void)
 {
+  FLOAT_EULERS_ZERO(guidance_euler_cmd);
+  THRUST_SP_SET_ZERO(thrust_sp);
   AbiBindMsgACCEL_SP(GUIDANCE_INDI_ACCEL_SP_ID, &accel_sp_ev, accel_sp_cb);
 
 #if PERIODIC_TELEMETRY
@@ -273,11 +276,12 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   //Calculate roll,pitch and thrust command
   MAT33_VECT3_MUL(control_increment, Ga_inv, a_diff);
 
-  struct FloatVect3 thrust_vect;
-  thrust_vect.x = 0.0;  // Fill for quadplanes
-  thrust_vect.y = 0.0;
-  thrust_vect.z = control_increment.z;
-  AbiSendMsgTHRUST(THRUST_INCREMENT_ID, thrust_vect);
+  // Compute and store thust setpoint
+  float thrust_vect[3];
+  thrust_vect[0] = 0.0f;  // Fill for quadplanes
+  thrust_vect[1] = 0.0f;
+  thrust_vect[2] = control_increment.z;
+  thrust_sp = th_sp_from_incr_vect_f(thrust_vect);
 
   guidance_euler_cmd.theta = pitch_filt.o[0] + control_increment.x;
   guidance_euler_cmd.phi = roll_filt.o[0] + control_increment.y;
@@ -304,6 +308,7 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   Bound(guidance_euler_cmd.phi, -guidance_indi_max_bank, guidance_indi_max_bank);
   Bound(guidance_euler_cmd.theta, -guidance_indi_max_bank, guidance_indi_max_bank);
 
+  printf("guidance %f %f %f | %f\n", DegOfRad(guidance_euler_cmd.phi), DegOfRad(guidance_euler_cmd.theta), DegOfRad(guidance_euler_cmd.psi), thrust_vect[2]);
   //set the quat setpoint with the calculated roll and pitch
   struct FloatQuat q_sp;
   float_quat_of_eulers_yxz(&q_sp, &guidance_euler_cmd);
@@ -508,27 +513,21 @@ struct ThrustSetpoint guidance_v_run_pos(bool in_flight UNUSED, struct VerticalG
 {
   _gv = gv;
   _v_mode = GUIDANCE_INDI_V_POS;
-  struct ThrustSetpoint sp;
-  THRUST_SP_SET_ZERO(sp); // FIXME really ?
-  return sp; // nothing to do
+  return thrust_sp;
 }
 
 struct ThrustSetpoint guidance_v_run_speed(bool in_flight UNUSED, struct VerticalGuidance *gv)
 {
   _gv = gv;
   _v_mode = GUIDANCE_INDI_V_SPEED;
-  struct ThrustSetpoint sp;
-  THRUST_SP_SET_ZERO(sp);
-  return sp; // nothing to do
+  return thrust_sp;
 }
 
 struct ThrustSetpoint guidance_v_run_accel(bool in_flight UNUSED, struct VerticalGuidance *gv)
 {
   _gv = gv;
   _v_mode = GUIDANCE_INDI_V_ACCEL;
-  struct ThrustSetpoint sp;
-  THRUST_SP_SET_ZERO(sp);
-  return sp; // nothing to do
+  return thrust_sp;
 }
 
 #endif
