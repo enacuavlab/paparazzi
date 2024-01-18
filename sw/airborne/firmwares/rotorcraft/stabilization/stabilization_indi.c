@@ -546,9 +546,10 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     v_thrust.y = th_sp_to_incr_f(thrust, 0, THRUST_AXIS_Y);
     v_thrust.z = th_sp_to_incr_f(thrust, 0, THRUST_AXIS_Z);
   } else {
-    // incremental thrust
+    // build incremental thrust
+    float th_cmd_z = (float)th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
     for (i = 0; i < INDI_NUM_ACT; i++) {
-      v_thrust.z += (th_sp_to_thrust_f(thrust, 0, THRUST_AXIS_Z) - use_increment * actuator_state_filt_vect[i]) * Bwls[3][i];
+      v_thrust.z += (th_cmd_z - use_increment * actuator_state_filt_vect[i]) * Bwls[3][i];
 #if INDI_OUTPUTS == 5
       // TODO set X thrust from RC in the thrust input setpoint
       cmd[COMMAND_THRUST_X] = radio_control.values[RADIO_CONTROL_THRUST_X];

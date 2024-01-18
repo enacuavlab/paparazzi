@@ -276,39 +276,42 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   //Calculate roll,pitch and thrust command
   MAT33_VECT3_MUL(control_increment, Ga_inv, a_diff);
 
+  guidance_euler_cmd.theta = pitch_filt.o[0] + control_increment.x;
+  guidance_euler_cmd.phi = roll_filt.o[0] + control_increment.y;
+  guidance_euler_cmd.psi = heading_sp;
+
   // Compute and store thust setpoint
   float thrust_vect[3];
   thrust_vect[0] = 0.0f;  // Fill for quadplanes
   thrust_vect[1] = 0.0f;
   thrust_vect[2] = control_increment.z;
-  thrust_sp = th_sp_from_incr_vect_f(thrust_vect);
-
-  guidance_euler_cmd.theta = pitch_filt.o[0] + control_increment.x;
-  guidance_euler_cmd.phi = roll_filt.o[0] + control_increment.y;
-  guidance_euler_cmd.psi = heading_sp;
 
 #ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
   guidance_indi_filter_thrust();
-
   //Add the increment in specific force * specific_force_to_thrust_gain to the filtered thrust
   thrust_in = thrust_filt.o[0] + control_increment.z * guidance_indi_specific_force_gain;
   Bound(thrust_in, 0, 9600);
-
 #if GUIDANCE_INDI_RC_DEBUG
   if (radio_control.values[RADIO_THROTTLE] < 300) {
     thrust_in = 0;
   }
 #endif
+  // return required thrust
+  thrust_sp = th_sp_from_thrust_i(thrust_in, THRUST_AXIS_Z);
 
-  //Overwrite the thrust command from guidance_v
-  stabilization.cmd[COMMAND_THRUST] = thrust_in;
+#else
+  // specific force not defined, return required increment
+  thrust_sp = th_sp_from_incr_vect_f(thrust_vect);
 #endif
 
   //Bound euler angles to prevent flipping
   Bound(guidance_euler_cmd.phi, -guidance_indi_max_bank, guidance_indi_max_bank);
   Bound(guidance_euler_cmd.theta, -guidance_indi_max_bank, guidance_indi_max_bank);
 
-  printf("guidance %f %f %f | %f\n", DegOfRad(guidance_euler_cmd.phi), DegOfRad(guidance_euler_cmd.theta), DegOfRad(guidance_euler_cmd.psi), thrust_vect[2]);
+  printf("guidance %f %f %f | %f %f %f | %f %f\n",
+      DegOfRad(eulers_yxz.phi), DegOfRad(eulers_yxz.theta), DegOfRad(eulers_yxz.psi),
+      DegOfRad(guidance_euler_cmd.phi), DegOfRad(guidance_euler_cmd.theta), DegOfRad(guidance_euler_cmd.psi),
+      thrust_vect[2], thrust_in);
   //set the quat setpoint with the calculated roll and pitch
   struct FloatQuat q_sp;
   float_quat_of_eulers_yxz(&q_sp, &guidance_euler_cmd);

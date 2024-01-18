@@ -178,7 +178,7 @@
     <!-- control effectiveness -->
     <define name="G1_ROLL" value="{-40 , -40, 40 , 40 }"/>
     <define name="G1_PITCH" value="{40 , -40, -40 , 40 }"/>
-    <define name="G1_YAW" value="{5, -5, 5, -5}"/>
+    <define name="G1_YAW" value="{2, -2, 2, -2}"/>
     <define name="G1_THRUST" value="{-1.5, -1.5, -1.5, -1.5}"/>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{150.0,   -150.0,  150.0,   -150.0 }"/>
@@ -254,9 +254,9 @@
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">
-    <define name="ACTUATOR_NAMES" value="nw_motor, ne_motor, se_motor, sw_motor" type="string[]"/>
+    <define name="ACTUATOR_NAMES" value="ne_motor, se_motor, sw_motor, nw_motor" type="string[]"/>
+    <define name="COMMANDS_NB" value="4"/>
     <define name="JSBSIM_MODEL" value="simple_x_quad_ccw" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
     <define name="NO_MOTOR_MIXING" value="TRUE"/>
   </section>
 

@@ -365,8 +365,7 @@ static struct ThrustSetpoint guidance_pid_v_run(bool in_flight, struct VerticalG
   /* bound the result */
   Bound(guidance_pid.cmd_thrust, 0, MAX_PPRZ);
 
-  struct ThrustSetpoint sp = th_sp_from_thrust_i(guidance_pid.cmd_thrust, THRUST_AXIS_Z);
-  return guidance_pid.cmd_thrust;
+  return th_sp_from_thrust_i(guidance_pid.cmd_thrust, THRUST_AXIS_Z);
 }
 
 struct ThrustSetpoint guidance_pid_v_run_pos(bool in_flight, struct VerticalGuidance *gv)

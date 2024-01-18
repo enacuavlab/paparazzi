@@ -372,7 +372,7 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
 
   //Don't increment if thrust is off and on the ground
   //without this the inputs will increment to the maximum before even getting in the air.
-  if (thrust < 300 && !in_flight) {
+  if (th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z) < 300 && !in_flight) {
     FLOAT_RATES_ZERO(indi.u_in);
 
     // If on the gournd, no increments, just proportional control
@@ -406,7 +406,7 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
   cmd[COMMAND_ROLL] = indi.u_in.p;
   cmd[COMMAND_PITCH] = indi.u_in.q;
   cmd[COMMAND_YAW] = indi.u_in.r;
-  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust);
+  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
 
   /* bound the result */
   BoundAbs(cmd[COMMAND_ROLL], MAX_PPRZ);
@@ -423,8 +423,8 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
  */
 void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoint *att_sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
-  stab_att_sp_euler = stab_sp_to_eulers_i(sp);  // stab_att_sp_euler.psi still used in ref..
-  stab_att_sp_quat = stab_sp_to_quat_i(sp);     // quat attitude setpoint
+  stab_att_sp_euler = stab_sp_to_eulers_i(att_sp);  // stab_att_sp_euler.psi still used in ref..
+  stab_att_sp_quat = stab_sp_to_quat_i(att_sp);     // quat attitude setpoint
 
   /* attitude error in float */
   struct FloatQuat att_err;
@@ -458,7 +458,7 @@ void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoin
   RATES_ADD(rate_sp, ff_rates);
 
   /* compute the INDI command */
-  struct StabilizationSetpoint sp = stab_sp_to_rates_f(&rate_sp);
+  struct StabilizationSetpoint sp = stab_sp_from_rates_f(&rate_sp);
   stabilization_indi_rate_run(in_flight, &sp, thrust, cmd);
 }
 
