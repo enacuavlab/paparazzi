@@ -308,10 +308,10 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   Bound(guidance_euler_cmd.phi, -guidance_indi_max_bank, guidance_indi_max_bank);
   Bound(guidance_euler_cmd.theta, -guidance_indi_max_bank, guidance_indi_max_bank);
 
-  printf("guidance %f %f %f | %f %f %f | %f %f\n",
-      DegOfRad(eulers_yxz.phi), DegOfRad(eulers_yxz.theta), DegOfRad(eulers_yxz.psi),
-      DegOfRad(guidance_euler_cmd.phi), DegOfRad(guidance_euler_cmd.theta), DegOfRad(guidance_euler_cmd.psi),
-      thrust_vect[2], thrust_in);
+  //printf("guidance %f %f %f | %f %f %f | %f %f\n",
+  //    DegOfRad(eulers_yxz.phi), DegOfRad(eulers_yxz.theta), DegOfRad(eulers_yxz.psi),
+  //    DegOfRad(guidance_euler_cmd.phi), DegOfRad(guidance_euler_cmd.theta), DegOfRad(guidance_euler_cmd.psi),
+  //    thrust_vect[2], thrust_in);
   //set the quat setpoint with the calculated roll and pitch
   struct FloatQuat q_sp;
   float_quat_of_eulers_yxz(&q_sp, &guidance_euler_cmd);

@@ -562,7 +562,7 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
   // The control objective in array format
   indi_v[0] = (angular_accel_ref.p - use_increment * angular_acceleration[0]);
   indi_v[1] = (angular_accel_ref.q - use_increment * angular_acceleration[1]);
-  indi_v[2] = (angular_accel_ref.r - use_increment * (angular_acceleration[2] + g2_times_du));
+  indi_v[2] = (angular_accel_ref.r - use_increment * angular_acceleration[2] + g2_times_du);
   indi_v[3] = v_thrust.z;
 #if INDI_OUTPUTS == 5
   indi_v[4] = v_thrust.x;
