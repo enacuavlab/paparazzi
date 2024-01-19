@@ -138,7 +138,7 @@
      <!-- 4 -->
     <mode name="HOVERWIND">
       
-      <select cond="RCMode1()" exception="HOME"/> 
+      <select cond="RCMode1() && false" exception="HOME"/> 
       <on_enter>
         <call fun="stabilization_hover_wind_init()"/>
       </on_enter>

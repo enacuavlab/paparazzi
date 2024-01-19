@@ -149,7 +149,6 @@ rigid-body in motive must be known (that's when the quaternion is initialized to
 import sys
 from os import path, getenv
 from time import time, sleep
-import datetime
 import numpy as np
 from pyquaternion import Quaternion as Quat
 from collections import deque
@@ -157,6 +156,8 @@ import argparse
 
 # import NatNet client
 from NatNetClient import NatNetClient
+import DataDescriptions
+import MoCapData
 
 # if PAPARAZZI_HOME not set, then assume the tree containing this
 # file is a reasonable substitute
@@ -182,8 +183,8 @@ parser.add_argument('-ac', action='append', nargs=2,
 parser.add_argument('-b', '--ivy_bus', dest='ivy_bus', help="Ivy bus address and port")
 parser.add_argument('-s', '--server', dest='server', default="127.0.0.1", help="NatNet server IP address")
 parser.add_argument('-m', '--multicast_addr', dest='multicast', default="239.255.42.99", help="NatNet server multicast address")
-parser.add_argument('-dp', '--data_port', dest='data_port', type=int, default=1511, help="NatNet server data socket UDP port")
-parser.add_argument('-cp', '--command_port', dest='command_port', type=int, default=1510, help="NatNet server command socket UDP port")
+#parser.add_argument('-dp', '--data_port', dest='data_port', type=int, default=1511, help="NatNet server data socket UDP port")
+#parser.add_argument('-cp', '--command_port', dest='command_port', type=int, default=1510, help="NatNet server command socket UDP port")
 parser.add_argument('-v', '--verbose', dest='verbose', action='store_true', help="display debug messages")
 parser.add_argument('-f', '--freq', dest='freq', default=10, type=int, help="transmit frequency")
 parser.add_argument('-gr', '--ground_ref', dest='ground_ref', action='store_true', help="also send the GROUND_REF message")
@@ -284,15 +285,18 @@ def compute_velocity(ac_id):
             vel[2] /= nb
     return vel
 
-def receiveRigidBodyList( rigidBodyList, stamp ):
-    for (ac_id, pos, quat, valid) in rigidBodyList:
-        if not valid:
+def receiveRigidBodyList( rigid_body_data, stamp ):
+    for rigid_body in rigid_body_data.rigid_body_list:
+        if not rigid_body.tracking_valid:
             # skip if rigid body is not valid
             continue
 
-        i = str(ac_id)
+        i = str(rigid_body.id_num)
         if i not in id_dict.keys():
             continue
+
+        pos = rigid_body.pos
+        quat = rigid_body.rot
 
         store_track(i, pos, stamp)
         if timestamp[i] is None or abs(stamp - timestamp[i]) < period:
@@ -300,10 +304,7 @@ def receiveRigidBodyList( rigidBodyList, stamp ):
                 timestamp[i] = stamp
             continue # too early for next message
         timestamp[i] = stamp
-        
-        today = datetime.datetime.today()
-        utc_time = datetime.datetime.utcnow()
-        tow = ((today.weekday()+1)*24*3600 + utc_time.hour*3600 + utc_time.minute*60 + utc_time.second+18)*1000 + utc_time.microsecond/1000
+
         vel = compute_velocity(i)
 
         # Rotate position and velocity according to the quaternions found above
@@ -326,8 +327,7 @@ def receiveRigidBodyList( rigidBodyList, stamp ):
             msg['enu_xd'] = vel[0]
             msg['enu_yd'] = vel[1]
             msg['enu_zd'] = vel[2]
-            # msg['tow'] = int(1000. * stamp) # TODO convert to GPS itow ?
-            msg['tow'] = int(tow) # Time of week in ms
+            msg['tow'] = int(1000. * stamp) # TODO convert to GPS itow ?
             # convert quaternion to psi euler angle
             dcm_0_0 = 1.0 - 2.0 * (quat[1] * quat[1] + quat[2] * quat[2])
             dcm_1_0 = 2.0 * (quat[0] * quat[1] - quat[3] * quat[2])
@@ -342,14 +342,12 @@ def receiveRigidBodyList( rigidBodyList, stamp ):
             # TODO calculate everything
             msg = PprzMessage("datalink", "EXTERNAL_POSE_SMALL")
             msg['ac_id'] = id_dict[i]
-            # msg['timestamp'] = int(1000. * stamp) # Time in ms
-            msg['timestamp'] = int(tow) # Time of week in ms
+            msg['timestamp'] = int(1000. * stamp) # Time in ms
             ivy.send(msg)
         else:
             msg = PprzMessage("datalink", "EXTERNAL_POSE")
             msg['ac_id'] = id_dict[i]
-            # msg['timestamp'] = int(1000. * stamp) # Time in ms
-            msg['timestamp'] = int(tow) # Time of week in ms
+            msg['timestamp'] = int(1000. * stamp) # Time in ms
             msg['enu_x'] = pos[0]
             msg['enu_y'] = pos[1]
             msg['enu_z'] = pos[2]
@@ -375,34 +373,75 @@ def receiveRigidBodyList( rigidBodyList, stamp ):
             ivy.send(gr)
 
 
+def print_configuration(natnet_client):
+    natnet_client.refresh_configuration()
+    print("Connection Configuration:")
+    print("  Client:          %s"% natnet_client.local_ip_address)
+    print("  Server:          %s"% natnet_client.server_ip_address)
+    print("  Command Port:    %d"% natnet_client.command_port)
+    print("  Data Port:       %d"% natnet_client.data_port)
+
+    if natnet_client.use_multicast:
+        print("  Using Multicast")
+        print("  Multicast Group: %s"% natnet_client.multicast_address)
+    else:
+        print("  Using Unicast")
+
+    #NatNet Server Info
+    application_name = natnet_client.get_application_name()
+    nat_net_requested_version = natnet_client.get_nat_net_requested_version()
+    nat_net_version_server = natnet_client.get_nat_net_version_server()
+    server_version = natnet_client.get_server_version()
+
+    print("  NatNet Server Info")
+    print("    Application Name %s" %(application_name))
+    print("    NatNetVersion  %d %d %d %d"% (nat_net_version_server[0], nat_net_version_server[1], nat_net_version_server[2], nat_net_version_server[3]))
+    print("    ServerVersion  %d %d %d %d"% (server_version[0], server_version[1], server_version[2], server_version[3]))
+    print("  NatNet Bitstream Requested")
+    print("    NatNetVersion  %d %d %d %d"% (nat_net_requested_version[0], nat_net_requested_version[1],\
+       nat_net_requested_version[2], nat_net_requested_version[3]))
+
 
 # start natnet interface
-natnet_version = (3,0,0,0)
-if args.old_natnet:
-    natnet_version = (2,9,0,0)
-natnet = NatNetClient(
-        server=args.server,
-        rigidBodyListListener=receiveRigidBodyList,
-        dataPort=args.data_port,
-        commandPort=args.command_port,
-        verbose=args.verbose,
-        version=natnet_version)
+natnet = NatNetClient()
+natnet.set_server_address(args.server)
+natnet.set_client_address('0.0.0.0')
+natnet.rigid_body_list_listener = receiveRigidBodyList
 
+if args.verbose:
+    natnet.set_print_level(1) # print all frames
+else:
+    natnet.set_print_level(0)
+if args.old_natnet:
+    natnet.set_nat_net_version(2,9)
 
 print("Starting Natnet3.x to Ivy interface at %s" % (args.server))
 try:
     # Start up the streaming client.
     # This will run perpetually, and operate on a separate thread.
-    natnet.run()
+    is_running = natnet.run()
+    if not is_running:
+        print("Natnet error: Could not start streaming client.")
+        exit(-1)
+
+    sleep(1)
+    if not natnet.connected():
+        print("Natnet error: Fail to connect to natnet")
+        exit(-1)
+
+    if args.verbose:
+        print_configuration(natnet)
+
     while True:
         sleep(1)
+
 except (KeyboardInterrupt, SystemExit):
     print("Shutting down ivy and natnet interfaces...")
-    natnet.stop()
+    natnet.shutdown()
     ivy.shutdown()
 except OSError:
     print("Natnet connection error")
-    natnet.stop()
+    natnet.shutdown()
     ivy.stop()
     exit(-1)
 
