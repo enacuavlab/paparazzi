@@ -43,7 +43,7 @@
         <define name="MS45XX_OUTPUT_TYPE" value="0"/> 
         <define name="MS45XX_SYNC_SEND" value="TRUE" /> 
         <define name="MS45XX_PRESSURE_SCALE" value="1.052"/> 
-        <define name="MS45XX_PRESSURE_OFFSET" value="8579.2" />
+        <define name="MS45XX_PRESSURE_OFFSET" value="8160.45" />
         <define name="MS45XX_LOWPASS_TAU" value="0.05"/> 
         <define name="USE_AIRSPEED_MS45XX" value="TRUE"/> 
       </module>
@@ -77,7 +77,7 @@
 
     <module name="body_stabilisation"/>
 
-    <!-- <module name="eff_scheduling_falcon">
+    <!-- <module name="eff_scheduling_colibri">
       <define name="EFF_PITCH_A" value="0.45"/> 
       <define name="EFF_YAW_A" value="0.045"/> 
     </module> -->
@@ -136,7 +136,8 @@
       <configure name="INDI_NUM_ACT" value="6"/>
     </module>
     
-    <module name="guidance" type="indi_hybrid_tailsitter"/>
+    <!-- <module name="guidance" type="indi_hybrid_tailsitter"/> -->
+    <module name="guidance" type="indi"/>
 
 
     <!--Fight arena flight-->
@@ -149,6 +150,19 @@
       <define name="INS_EKF2_GYRO_ID" value="IMU_ROT_ID" />
       <define name="INS_EKF2_MAG_ID" value="MAG_ROT_ID" />
     </module>
+
+    <!-- <module name="ins">
+      <define name="INS_INT_IMU_ID" value="IMU_ROT_ID"/>
+    </module>
+
+    <module name="ahrs" type="int_cmpl_quat">
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+      <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
+      <define name="AHRS_ICQ_IMU_ID" value="IMU_ROT_ID" />
+      <define name="AHRS_ICQ_MAG_ID" value="IMU_ROT_ID" />
+    </module> -->
+
+
       
     <!--External flight-->
     <!--module name="gps"           type="ublox">
@@ -161,10 +175,15 @@
   </firmware>
 
   <servos driver="DShot">
-    <servo name="LEXT" no="3" min="0" neutral="100" max="2000"/> 
-    <servo name="LINT" no="4" min="0" neutral="100" max="2000"/>
     <servo name="REXT" no="1" min="0" neutral="100" max="2000"/>
     <servo name="RINT" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="LEXT" no="3" min="0" neutral="100" max="2000"/> 
+    <servo name="LINT" no="4" min="0" neutral="100" max="2000"/>
+  </servos>
+
+  <servos driver="STS3032">
+    <servo name="ELEVON_L" no="1" min="2560" neutral="2048" max="1536"/>
+    <servo name="ELEVON_R" no="0" min="1536" neutral="2048" max="2560"/>
   </servos>
 
   <servos driver="Pwm">
@@ -172,10 +191,7 @@
     <servo name="PROFONDEUR_MOTOR" no="2" min="1000" neutral="1100" max="2000"  />
   </servos>
 
-  <servos driver="STS3032">
-    <servo name="ELEVON_R" no="0" min="1536" neutral="2048" max="2560"/>
-    <servo name="ELEVON_L" no="1" min="2560" neutral="2048" max="1536"/>
-  </servos>
+ 
 
   <commands>
     <axis name="PITCH" failsafe_value="0"/>
@@ -215,6 +231,8 @@
     <define name="BODY_TO_IMU_PSI"   value="-90."  unit="deg"/>
   </section>
 
+  <include href="conf/mag/toulouse_muret.xml"/>
+
   <section name="AUTOPILOT">
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1"  value="AP_MODE_FORWARD"/>
@@ -242,10 +260,16 @@
 
   <!-- REXT RINT LEXT LINT ELEVON_L ELEVON_R -->
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
-    <define name="G1_ROLL"   value="{ -  7.5,  - 15.0,      7.5,     15.0,    0.0,  0.0}"/>
-    <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,      0.0,   50.0, 50.0}"/> <!-- -->
+    <!-- <define name="G1_ROLL"   value="{ -  7.5,  - 15.0,      7.5,     15.0,    0.0,  0.0}"/>
+    <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,      0.0,   50.0, 50.0}"/> 
     <define name="G1_YAW"    value="{    0.0,     0.0,      0.0,    - 0.0,    4.0, -4.0}"/>
-    <define name="G1_THRUST" value="{ -  1.19, -  1.19,  -  1.19, -  1.19,    0.0,  0.0}" />
+    <define name="G1_THRUST" value="{ -  0.6, -   0.6,  -   0.6, -    0.6,    0.0,  0.0}" /> -->
+    
+    <define name="G1_ROLL"   value="{ -  4.2,  - 27.7,      4.2,     27.7,    0.0,  0.0}"/>
+    <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,      0.0,   50.0, 50.0}"/> <!-- -->
+    <define name="G1_YAW"    value="{    0.0,     0.0,      0.0,    - 0.0,    3.6, -3.6}"/>
+    <define name="G1_THRUST" value="{ -  4.8, -   4.8,  -   4.8, -    4.8,    0.0,  0.0}" />
+    <!-- <define name="G1_THRUST" value="{ -  0.6, 0,  -  1.19, 0,    0.0,  0.0}" /> -->
 
     <!--Counter torque effect of spinning up a rotor-->
     <define value="{0., 0., 0., 0., 0., 0.}" name="G2"/>
@@ -256,17 +280,24 @@
     <define name="G1_THRUST_FWD" value="{ - 1.5, - 1.5,  - 1.5, - 1.5, 0.0, 0.0}" /-->
 
     <!-- reference acceleration for attitude control -->
-    <define name="REF_ERR_P" value="70"/>
+    <!-- <define name="REF_ERR_P" value="70"/>
     <define name="REF_ERR_Q" value="80"/>
     <define name="REF_ERR_R" value="38"/>
     <define name="REF_RATE_P" value="22.2"/>
     <define name="REF_RATE_Q" value="20.0"/>
-    <define name="REF_RATE_R" value="8.5"/>
+    <define name="REF_RATE_R" value="8.5"/> -->
+
+    <define name="REF_ERR_P" value="100"/>
+    <define name="REF_ERR_Q" value="80"/>
+    <define name="REF_ERR_R" value="70"/>
+    <define name="REF_RATE_P" value="20.0"/>
+    <define name="REF_RATE_Q" value="18.0"/>
+    <define name="REF_RATE_R" value="11.0"/>
 
     <!--Maxium yaw rate, to avoid instability-->
     <define name="MAX_R" value="60.0" unit="deg/s"/>
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
-    <define name="FILT_CUTOFF" value="5.0"/>
+    <define name="FILT_CUTOFF" value="4.0"/>
 
     <!-- first order actuator dynamics -->
     <define name="ACT_FREQ" value="{23., 23., 23., 23., 53., 53.}"/>
@@ -304,10 +335,10 @@
 
   <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
     <define name="RC_DEBUG" value="FALSE"/>
-    <define name="POS_GAIN" value="0.8"/>
-    <define name="SPEED_GAIN" value="1.0"/>
-    <define name="POS_GAINZ" value="1.6"/>
-    <define name="SPEED_GAINZ" value="2.0"/>
+    <define name="POS_GAIN" value="0.2"/>
+    <define name="SPEED_GAIN" value="0.8"/>
+    <define name="POS_GAINZ" value="0.6"/>
+    <define name="SPEED_GAINZ" value="1.5"/>
     <define name="PITCH_LIFT_EFF" value="0.12"/>
     <define name="PITCH_EFF_SCALING" value="1.0"/>
     <define name="MAX_AIRSPEED" value="18.0"/>
@@ -334,6 +365,7 @@
     <define name="DEFAULT_CIRCLE_RADIUS" value="1.5"/>
     <define name="TRANSITION_MAX_OFFSET" value="-80.0" unit="deg"/>
     <define name="NAV_HYBRID_MAX_DECELERATION"      value="1.0"/>
+    <!-- <define name="AUTOPILOT_IN_FLIGHT_MIN_THRUST" value="3000"/> -->
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">

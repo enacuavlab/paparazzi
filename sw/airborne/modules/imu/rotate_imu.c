@@ -86,7 +86,8 @@ uint32_t gyro_last_stamp;
 struct FloatVect3 mag_rot_f;
 struct FloatVect3 rates_vect;
 float angle_filter;
-
+struct FloatRates integrated_gyro;
+struct FloatVect3 integrated_acc;
 
 float angular_accel[3] = {0., 0., 0.};
 Butterworth2LowPass meas_lowpass_filters[3];
@@ -105,10 +106,12 @@ static void mag_cb(uint8_t sender_id __attribute__((unused)), uint32_t stamp, st
 #include "modules/ctrl/body_stabilisation.h"
 static void send_payload_float(struct transport_tx *trans, struct link_device *dev)
 {
-  float f[15] = {-encoder_amt22.amt22.angle_rad, -encoder_amt22.H_g_filter.hatx[0], -encoder_amt22.H_g_filter.hatx[1],
+  float f[21] = {-encoder_amt22.amt22.angle_rad, -encoder_amt22.H_g_filter.hatx[0], -encoder_amt22.H_g_filter.hatx[1],
                  motor_cmd, elevator_cmd, actuators_pprz[6], actuators_pprz[7], DegOfRad(euler_fus.theta), angle_wing2fus, body_stab.discrete_state,
-                 gyro_rot_f.p, gyro_rot_f.q, gyro_rot_f.r, encoder_amt22.amt22.position, rates_vect.y};
-  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 15, f);
+                 gyro_rot_f.p, gyro_rot_f.q, gyro_rot_f.r, encoder_amt22.amt22.position, rates_vect.y, 
+                 integrated_gyro.p, integrated_gyro.q, integrated_gyro.r,
+                 integrated_acc.x, integrated_acc.y, integrated_acc.z};
+  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 21, f);
 }
 #endif
 
@@ -214,20 +217,20 @@ static void gyro_cb(uint8_t sender_id, uint32_t stamp __attribute__((unused)), s
       float rate = IMU_MPU_SPI_PERIODIC_FREQ;
       // Only integrate if we have gotten a previous measurement and didn't overflow the timer
       if(!isnan(rate) && gyro_last_stamp > 0 && stamp > gyro_last_stamp) {
-        struct FloatRates integrated;
+        
 
         // Trapezoidal integration
-        integrated.p = (old_gyro_rot_f.p + gyro_rot_f.p) * 0.5f;
-        integrated.q = (old_gyro_rot_f.q + gyro_rot_f.q) * 0.5f;
-        integrated.r = (old_gyro_rot_f.r + gyro_rot_f.r) * 0.5f;
+        integrated_gyro.p = (old_gyro_rot_f.p + gyro_rot_f.p) * 0.5f;
+        integrated_gyro.q = (old_gyro_rot_f.q + gyro_rot_f.q) * 0.5f;
+        integrated_gyro.r = (old_gyro_rot_f.r + gyro_rot_f.r) * 0.5f;
 
         // Divide by the time of the collected samples
-        integrated.p = integrated.p * (1.f / rate);
-        integrated.q = integrated.q * (1.f / rate);
-        integrated.r = integrated.r * (1.f / rate);
+        integrated_gyro.p = integrated_gyro.p * (1.f / rate);
+        integrated_gyro.q = integrated_gyro.q * (1.f / rate);
+        integrated_gyro.r = integrated_gyro.r * (1.f / rate);
       
       uint16_t dt = (1e6 / rate); //FIXME
-      AbiSendMsgIMU_GYRO_INT(IMU_ROT_ID, now_ts, &integrated, dt); //integrated for ekf2 
+      AbiSendMsgIMU_GYRO_INT(IMU_ROT_ID, now_ts, &integrated_gyro, dt); //integrated for ekf2 
       RATES_COPY(old_gyro_rot_f, gyro_rot_f);
       }
       gyro_last_stamp = stamp;
@@ -244,7 +247,7 @@ static void gyro_cb(uint8_t sender_id, uint32_t stamp __attribute__((unused)), s
   }
 }
 
-static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel)
+static void accel_cb(uint8_t sender_id, uint32_t stamp __attribute__((unused)), struct Int32Vect3 *accel)
 {
   if (sender_id == IMU_ROT_ID) {
     return; // don't process own data
@@ -298,20 +301,20 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
       float rate = IMU_MPU_SPI_PERIODIC_FREQ;
       // Only integrate if we have gotten a previous measurement and didn't overflow the timer
       if(!isnan(rate) && accel_last_stamp > 0 && stamp > accel_last_stamp) {
-        struct FloatVect3 integrated;
+        
 
         // Trapezoidal integration
-        integrated.x = (old_accel_rot_f.x + accel_rot_f.x) * 0.5f;
-        integrated.y = (old_accel_rot_f.y + accel_rot_f.y) * 0.5f;
-        integrated.z = (old_accel_rot_f.z + accel_rot_f.z) * 0.5f;
+        integrated_acc.x = (old_accel_rot_f.x + accel_rot_f.x) * 0.5f;
+        integrated_acc.y = (old_accel_rot_f.y + accel_rot_f.y) * 0.5f;
+        integrated_acc.z = (old_accel_rot_f.z + accel_rot_f.z) * 0.5f;
 
         // Divide by the time of the collected samples
-        integrated.x = integrated.x * (1.f / rate);
-        integrated.y = integrated.y * (1.f / rate);
-        integrated.z = integrated.z * (1.f / rate);
+        integrated_acc.x = integrated_acc.x * (1.f / rate);
+        integrated_acc.y = integrated_acc.y * (1.f / rate);
+        integrated_acc.z = integrated_acc.z * (1.f / rate);
       
       uint16_t dt = (1e6 / rate); //FIXME
-      AbiSendMsgIMU_ACCEL_INT(IMU_ROT_ID, now_ts, &integrated, dt); //integrated for ekf2 
+      AbiSendMsgIMU_ACCEL_INT(IMU_ROT_ID, now_ts, &integrated_acc, dt); //integrated for ekf2 
       VECT3_COPY(old_accel_rot_f, accel_rot_f);
       }
       accel_last_stamp = stamp;

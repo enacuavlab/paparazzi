@@ -149,7 +149,6 @@ rigid-body in motive must be known (that's when the quaternion is initialized to
 import sys
 from os import path, getenv
 from time import time, sleep
-import datetime
 import numpy as np
 from pyquaternion import Quaternion as Quat
 from collections import deque
@@ -184,8 +183,8 @@ parser.add_argument('-ac', action='append', nargs=2,
 parser.add_argument('-b', '--ivy_bus', dest='ivy_bus', help="Ivy bus address and port")
 parser.add_argument('-s', '--server', dest='server', default="127.0.0.1", help="NatNet server IP address")
 parser.add_argument('-m', '--multicast_addr', dest='multicast', default="239.255.42.99", help="NatNet server multicast address")
-parser.add_argument('-dp', '--data_port', dest='data_port', type=int, default=1511, help="NatNet server data socket UDP port")
-parser.add_argument('-cp', '--command_port', dest='command_port', type=int, default=1510, help="NatNet server command socket UDP port")
+#parser.add_argument('-dp', '--data_port', dest='data_port', type=int, default=1511, help="NatNet server data socket UDP port")
+#parser.add_argument('-cp', '--command_port', dest='command_port', type=int, default=1510, help="NatNet server command socket UDP port")
 parser.add_argument('-v', '--verbose', dest='verbose', action='store_true', help="display debug messages")
 parser.add_argument('-f', '--freq', dest='freq', default=10, type=int, help="transmit frequency")
 parser.add_argument('-gr', '--ground_ref', dest='ground_ref', action='store_true', help="also send the GROUND_REF message")
@@ -304,16 +303,16 @@ def receiveRigidBodyList( rigid_body_data, stamp ):
         pos = rigid_body.pos
         quat = rigid_body.rot
 
+        pos = rigid_body.pos
+        quat = rigid_body.rot
+
         store_track(i, pos, stamp)
         if timestamp[i] is None or abs(stamp - timestamp[i]) < period:
             if timestamp[i] is None:
                 timestamp[i] = stamp
             continue # too early for next message
         timestamp[i] = stamp
-        
-        today = datetime.datetime.today()
-        utc_time = datetime.datetime.utcnow()
-        tow = ((today.weekday()+1)*24*3600 + utc_time.hour*3600 + utc_time.minute*60 + utc_time.second+18)*1000 + utc_time.microsecond/1000
+
         vel = compute_velocity(i)
 
         # Rotate position, velocity and attitude according to the quaternions
@@ -331,8 +330,7 @@ def receiveRigidBodyList( rigid_body_data, stamp ):
             msg['enu_xd'] = vel[0]
             msg['enu_yd'] = vel[1]
             msg['enu_zd'] = vel[2]
-            # msg['tow'] = int(1000. * stamp) # TODO convert to GPS itow ?
-            msg['tow'] = int(tow) # Time of week in ms
+            msg['tow'] = int(1000. * stamp) # TODO convert to GPS itow ?
             # convert quaternion to psi euler angle
             dcm_0_0 = 1.0 - 2.0 * (quat[1] * quat[1] + quat[2] * quat[2])
             dcm_1_0 = 2.0 * (quat[0] * quat[1] - quat[3] * quat[2])
@@ -347,14 +345,12 @@ def receiveRigidBodyList( rigid_body_data, stamp ):
             # TODO calculate everything
             msg = PprzMessage("datalink", "EXTERNAL_POSE_SMALL")
             msg['ac_id'] = id_dict[i]
-            # msg['timestamp'] = int(1000. * stamp) # Time in ms
-            msg['timestamp'] = int(tow) # Time of week in ms
+            msg['timestamp'] = int(1000. * stamp) # Time in ms
             ivy.send(msg)
         else:
             msg = PprzMessage("datalink", "EXTERNAL_POSE")
             msg['ac_id'] = id_dict[i]
-            # msg['timestamp'] = int(1000. * stamp) # Time in ms
-            msg['timestamp'] = int(tow) # Time of week in ms
+            msg['timestamp'] = int(1000. * stamp) # Time in ms
             msg['enu_x'] = pos[0]
             msg['enu_y'] = pos[1]
             msg['enu_z'] = pos[2]
