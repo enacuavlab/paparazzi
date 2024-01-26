@@ -251,7 +251,13 @@ let print_ap_periodic = fun modes ctrl_block main_freq name out_h ->
 
   (** Print function *)
   let print_call = fun call ->
-    let store = ExtXml.attrib_or_default call "store" "" in
+    let store =
+      try
+        let s = Xml.attrib call "store" in
+        let s = List.hd (List.rev (Str.split (Str.regexp " ") s)) in (* extract last word *)
+        sprintf "%s = " s
+      with _ -> ""
+    in
     try
       let f = Xml.attrib call "fun" in
       let cond = try String.concat "" ["if ("; (Xml.attrib call "cond"); ") { "; store; f; "; }\n"]
@@ -299,14 +305,14 @@ let print_ap_periodic = fun modes ctrl_block main_freq name out_h ->
     match x with
     | [] -> acc
     | h::xs -> begin
-        try
-          let s = Xml.attrib h "store" in
-          get_stores (s::acc) (Xml.children h)
-        with _ ->
-          get_stores acc xs
+      try
+        let s = Xml.attrib h "store" in
+        get_stores (s::acc) xs
+      with _ ->
+        get_stores (get_stores acc (Xml.children h)) xs
     end
   in
-  let stores = get_stores [] (modes @ ctrl_block) in
+  let stores = Gen_common.singletonize (get_stores [] (modes @ ctrl_block)) in
 
 
   (** Start printing the main periodic task *)

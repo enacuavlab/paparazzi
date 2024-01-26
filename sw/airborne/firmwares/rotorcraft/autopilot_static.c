@@ -164,7 +164,7 @@ void autopilot_static_periodic(void)
 #ifndef KILL_AS_FAILSAFE
       thrust_sp = guidance_v_run(autopilot_in_flight());
       stab_sp = stabilization_get_failsafe_sp();
-      stabilization_attitude_run(autopilot_in_flight(), &stab_sp, &thrust_sp, stabilization.cmd);
+      stabilization_run(autopilot_in_flight(), &stab_sp, &thrust_sp, stabilization.cmd);
       SetRotorcraftCommands(stabilization.cmd, autopilot.in_flight, autopilot.motors_on);
       break;
 #endif
@@ -186,7 +186,7 @@ void autopilot_static_periodic(void)
     default:
       thrust_sp = guidance_v_run(autopilot_in_flight());
       stab_sp = guidance_h_run(autopilot_in_flight());
-      stabilization_attitude_run(autopilot_in_flight(), &stab_sp, &thrust_sp, stabilization.cmd);
+      stabilization_run(autopilot_in_flight(), &stab_sp, &thrust_sp, stabilization.cmd);
       // TODO maybe add RC limiter here as an option ?
       SetRotorcraftCommands(stabilization.cmd, autopilot.in_flight, autopilot.motors_on);
       break;
