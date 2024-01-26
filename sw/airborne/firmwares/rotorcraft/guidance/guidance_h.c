@@ -150,7 +150,7 @@ void guidance_h_mode_changed(uint8_t new_mode)
 }
 
 
-void guidance_h_read_rc(bool  in_flight)
+void guidance_h_read_rc(bool in_flight)
 {
 
   switch (guidance_h.mode) {
