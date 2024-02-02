@@ -11,6 +11,8 @@
   </description>
 
   <firmware name="rotorcraft">
+    <!--autopilot name="rotorcraft_autopilot"/-->
+
     <configure name="PERIODIC_FREQUENCY" value="1000"/>
     <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/>
 
@@ -28,18 +30,12 @@
 
     <module name="telemetry" type="xbee_api"/>
 
-    <module name="motor_mixing"/>
-
-    <module name="actuators" type="dshot">
-      <!--define name="DSHOT_SPEED" value="300"/-->
-    </module>
+    <module name="actuators" type="dshot"/>
 
     <module name="board" type="tawaki">
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
       <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
-      <!--configure name="BOARD_TAWAKI_ROTATED" value="TRUE"/-->
-      <!--configure name="MAG_LIS3MDL_I2C_DEV" value="i2c2"/-->
     </module>
     <module name="gps" type="ublox">
       <configure name="GPS_BAUD" value="B115200"/>
@@ -50,11 +46,7 @@
       <define name="WLS_N_U" value="4" />
       <define name="WLS_N_V" value="4" />
     </module>
-    <module name="guidance" type="indi">
-      <!--define name="GUIDANCE_INDI_SPECIFIC_FORCE_GAIN" value="-500.0"/-->
-      <define name="GUIDANCE_INDI_THRUST_DYNAMICS_FREQ" value="30.5"/>
-      <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
-    </module>
+    <module name="guidance" type="indi"/>
 
     <module name="ins" type="ekf2"/>
     <!--module name="ins"/>
@@ -100,13 +92,6 @@
     <axis name="YAW" failsafe_value="0"/>
     <axis name="THRUST" failsafe_value="0"/>
   </commands>
-
-  <section name="MIXING" prefix="MOTOR_MIXING_">
-    <define name="TYPE" value="QUAD_X"/>
-    <define name="TRIM_ROLL" value="0"/>
-    <define name="TRIM_PITCH" value="0"/>
-    <define name="TRIM_YAW" value="0"/>
-  </section>
 
   <command_laws>
     <set servo="FR" value="autopilot_get_motors_on() ? actuators_pprz[0] : -MAX_PPRZ"/>
@@ -199,29 +184,21 @@
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
   </section>
 
+  <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
+    <define name="THRUST_DYNAMICS_FREQ" value="30.5"/>
+    <define name="RC_DEBUG" value="FALSE"/>
+  </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
     <define name="REF_MIN_ZDD" value="-0.4*9.81"/>
     <define name="REF_MAX_ZDD" value=" 0.4*9.81"/>
     <define name="REF_MIN_ZD" value="-1.5"/>
     <define name="REF_MAX_ZD" value=" 1."/>
-    <define name="HOVER_KP" value="87"/>
-    <define name="HOVER_KD" value="120"/>
-    <define name="HOVER_KI" value="11"/>
     <define name="NOMINAL_HOVER_THROTTLE" value="0.30"/>
-    <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
-    <define name="ADAPT_NOISE_FACTOR" value="1."/>
-    <define name="ADAPT_INITIAL_HOVER_THROTTLE" value="0.25"/>
   </section>
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
     <define name="MAX_BANK" value="20" unit="deg"/>
-    <define name="PGAIN" value="40"/>
-    <define name="DGAIN" value="108"/>
-    <define name="IGAIN" value="20"/>
-    <define name="NGAIN" value="0"/>
-      <!-- feedforward -->
-    <define name="AGAIN" value="0"/>
     <define name="REF_MAX_SPEED" value="2.5"/>
     <define name="REF_MAX_ACCEL" value="2.5"/>
   </section>
