@@ -252,7 +252,7 @@
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
     <define name="SP_MAX_PHI" value="60." unit="deg"/>
     <define name="SP_MAX_THETA" value="60." unit="deg"/>
-    <define name="SP_MAX_R" value="90." unit="deg/s"/>
+    <define name="SP_MAX_R" value="45." unit="deg/s"/> <!-- Yaw saturation-->
     <define name="DEADBAND_R" value="250"/>
     <define name="DEADBAND_A" value="250"/>
     <define name="SP_PSI_DELTA_LIMIT" value="90" unit="deg"/>
@@ -261,7 +261,8 @@
   <!-- REXT RINT LEXT LINT ELEVON_L ELEVON_R -->
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <define name="G1_ROLL"   value="{ -  7.5,  - 15.0,      7.5,     15.0,    0.0,  0.0}"/>
-    <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,      0.0,   50.0, 50.0}"/> 
+    <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,      0.0,   15.0, 15.0}"/> 
+    <!-- <define name="G1_PITCH"  value="{    0.0,     0.0,      0.0,      0.0,   50.0, 50.0}"/>  -->
     <define name="G1_YAW"    value="{    0.0,     0.0,      0.0,    - 0.0,    4.0, -4.0}"/>
     <define name="G1_THRUST" value="{ -  0.6, -   0.6,  -   0.6, -    0.6,    0.0,  0.0}" />
 
@@ -335,10 +336,10 @@
 
   <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
     <define name="RC_DEBUG" value="FALSE"/>
-    <define name="POS_GAIN" value="0.2"/>
-    <define name="SPEED_GAIN" value="0.8"/>
-    <define name="POS_GAINZ" value="0.6"/>
-    <define name="SPEED_GAINZ" value="1.5"/>
+    <define name="POS_GAIN" value="0.8"/>
+    <define name="SPEED_GAIN" value="1.0"/>
+    <define name="POS_GAINZ" value="0.3"/>
+    <define name="SPEED_GAINZ" value="1.0"/>
     <define name="PITCH_LIFT_EFF" value="0.12"/>
     <define name="PITCH_EFF_SCALING" value="1.0"/>
     <define name="MAX_AIRSPEED" value="18.0"/>
@@ -361,11 +362,13 @@
     <define name="GUIDANCE_H_MAX_BANK" value="50" unit="deg"/>
     <define name="FWD_SIDESLIP_GAIN" value="0.20"/>
     <define name="EFF_SCHED_USE_FUNCTION" value="TRUE"/>
-    <define name="ARRIVED_AT_WAYPOINT" value="4.0"/>
+
     <define name="DEFAULT_CIRCLE_RADIUS" value="1.5"/>
     <define name="TRANSITION_MAX_OFFSET" value="-80.0" unit="deg"/>
     <define name="NAV_HYBRID_MAX_DECELERATION"      value="1.0"/>
     <!-- <define name="AUTOPILOT_IN_FLIGHT_MIN_THRUST" value="3000"/> -->
+    <define name="ARRIVED_AT_WAYPOINT" value="0.5"/>
+    <define name="CARROT" value="1." unit="s"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">
