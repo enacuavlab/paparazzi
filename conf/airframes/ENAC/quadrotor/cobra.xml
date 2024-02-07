@@ -24,6 +24,7 @@
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
       <module name="radio_control" type="ppm"/>
+      <define name="NPS_COMMANDS_NB" value="4"/>
     </target>
 
     <module name="telemetry" type="xbee_api"/>
@@ -218,4 +219,3 @@
   </section>
 
 </airframe>
-
