@@ -78,7 +78,7 @@ static bool agl_valid(uint32_t at_ts) {
 }
 
 
-static void opticflow_pmw3901_publish(int16_t delta_x, int16_t delta_y, uint32_t ts_usec) {
+static void opticflow_pmw3901_publish(int16_t delta_x, int16_t delta_y, uint8_t squal, uint32_t ts_usec) {
   /* Prepare message variables */
   // Time
   static uint32_t prev_ts_usec = 0;
@@ -124,7 +124,7 @@ static void opticflow_pmw3901_publish(int16_t delta_x, int16_t delta_y, uint32_t
       flow_y_subpix,      /* flow_y [subpixels] */
       flow_der_x_subpix,  /* flow_der_x [subpixels] */
       flow_der_y_subpix,  /* flow_der_y [subpixels] */
-      0.f,                /* quality [???] */
+      squal,                /* quality [???] */
       0.f                 /* size_divergence [1/s] */
       );
   if (agl_valid(ts_usec)) {
@@ -187,8 +187,9 @@ void opticflow_pmw3901_event(void) {
   pmw3901_event(&of_pmw.pmw);
   if (pmw3901_data_available(&of_pmw.pmw)) {
     int16_t delta_x, delta_y;
-    pmw3901_get_data(&of_pmw.pmw, &delta_x, &delta_y);
-    opticflow_pmw3901_publish(delta_x, delta_y, get_sys_time_usec());
+    uint8_t squal;
+    pmw3901_get_data(&of_pmw.pmw, &delta_x, &delta_y, &squal);
+    opticflow_pmw3901_publish(delta_x, delta_y, squal, get_sys_time_usec());
   }
 }
 

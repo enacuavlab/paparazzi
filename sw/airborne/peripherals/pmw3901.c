@@ -48,6 +48,7 @@
 #define PMW3901_REG_DELTA_X_H  0x04
 #define PMW3901_REG_DELTA_Y_L  0x05
 #define PMW3901_REG_DELTA_Y_H  0x06
+#define PMW3901_REG_SQUAL      0x07
 
 
 // Non-blocking read function
@@ -302,6 +303,16 @@ void pmw3901_event(struct pmw3901_t *pmw) {
     case PMW3901_READ_DELTAYHIGH:
       if (!readRegister_nonblocking(pmw, PMW3901_REG_DELTA_Y_H, &temp)) return;
       pmw->delta_y |= (temp << 8) & 0xFF00;
+      pmw->state++;
+          /* Falls through. */
+    case PMW3901_READ_SQUAL:
+      if (!readRegister_nonblocking(pmw, PMW3901_REG_SQUAL, &temp)) return;
+      // If the reported flow is impossibly large, we just got garbage from the SPI
+      if (pmw->delta_x > 240 || pmw->delta_y > 240 || pmw->delta_x < -240 || pmw->delta_y < -240) {
+        pmw->squal = 0;
+      } else {
+        pmw->squal |= temp;
+      }
       pmw->data_available = true;
       pmw->state = PMW3901_IDLE;
       return;
@@ -323,10 +334,11 @@ bool pmw3901_data_available(struct pmw3901_t *pmw) {
   return pmw->data_available;
 }
 
-bool pmw3901_get_data(struct pmw3901_t *pmw, int16_t *delta_x, int16_t *delta_y) {
+bool pmw3901_get_data(struct pmw3901_t *pmw, int16_t *delta_x, int16_t *delta_y, uint8_t *squal) {
   if (!pmw->data_available) return false;
   *delta_x = pmw->delta_x;
   *delta_y = pmw->delta_y;
+  *squal = pmw->squal;
   pmw->data_available = false;
   return true;
 }

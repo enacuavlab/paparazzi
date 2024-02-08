@@ -55,6 +55,7 @@ enum pmw3901_state {
   PMW3901_READ_DELTAXHIGH,
   PMW3901_READ_DELTAYLOW,
   PMW3901_READ_DELTAYHIGH,
+  PMW3901_READ_SQUAL,
 };
 
 struct pmw3901_t {
@@ -67,6 +68,7 @@ struct pmw3901_t {
   uint32_t readwrite_timeout;
   int16_t delta_x;
   int16_t delta_y;
+  uint8_t squal;
   bool data_available;
   float rad_per_px;
 };
@@ -78,7 +80,7 @@ void pmw3901_event(struct pmw3901_t *pmw);
 bool pmw3901_is_idle(struct pmw3901_t *pmw);
 void pmw3901_start_read(struct pmw3901_t *pmw);
 bool pmw3901_data_available(struct pmw3901_t *pmw);
-bool pmw3901_get_data(struct pmw3901_t *pmw, int16_t *delta_x, int16_t *delta_y);
+bool pmw3901_get_data(struct pmw3901_t *pmw, int16_t *delta_x, int16_t *delta_y, uint8_t *squal);
 
 
 

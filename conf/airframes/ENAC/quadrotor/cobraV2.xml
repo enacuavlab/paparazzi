@@ -19,7 +19,7 @@
       <module name="radio_control" type="sbus"/>
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
-      <define name="INS_EKF2_OPTITRACK" value="TRUE"/>
+      <define name="INS_EKF2_OPTITRACK" value="FALSE"/>
     </target>
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
@@ -49,7 +49,11 @@
     <module name="stabilization" type="indi"/>
     <module name="guidance" type="indi"/>
 
-    <module name="ins" type="ekf2"/>
+    <module name="ins" type="ekf2">
+      <define name="INS_EKF2_FLOW_POS_X" value="0"/>
+      <define name="INS_EKF2_FLOW_POS_Y" value="0"/>
+      <define name="INS_EKF2_FLOW_POS_Z" value="0"/>
+    </module>
     <module name="preflight_checks"/>
 
     <!--module name="filter" type="1euro_imu">
@@ -59,6 +63,10 @@
 
     <module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3"/>
+    </module>
+    <module name="opticflow" type="pmw3901">
+      <define name="OPTICFLOW_PMW3901_SENSOR_ANGLE" value="0"/>
+      <define name="SENSOR_SYNC_SEND_OPTICFLOW_PMW3901" value="TRUE"/>
     </module>
 
     <module name="flight_recorder"/>
@@ -251,4 +259,3 @@
   </section>
 
 </airframe>
-
