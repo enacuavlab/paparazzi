@@ -542,10 +542,10 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
 
   // Set the quaternion setpoint from eulers_zxy
   struct FloatQuat sp_quat;
-  printf("euler_cmd %f %f %f | %f %f %f | %f %f %f\n",
-      DegOfRad(guidance_euler_cmd.phi), DegOfRad(guidance_euler_cmd.theta), DegOfRad(guidance_euler_cmd.psi),
-      DegOfRad(ff_rates.p), DegOfRad(ff_rates.q), DegOfRad(ff_rates.r),
-      DegOfRad(omega), DegOfRad(euler_zyx->theta), DegOfRad(euler_zyx->phi));
+  //printf("euler_cmd %f %f %f | %f %f %f | %f %f %f\n",
+  //    DegOfRad(guidance_euler_cmd.phi), DegOfRad(guidance_euler_cmd.theta), DegOfRad(guidance_euler_cmd.psi),
+  //    DegOfRad(ff_rates.p), DegOfRad(ff_rates.q), DegOfRad(ff_rates.r),
+  //    DegOfRad(omega), DegOfRad(euler_zyx->theta), DegOfRad(euler_zyx->phi));
   float_quat_of_eulers_zxy(&sp_quat, &guidance_euler_cmd);
   float_quat_normalize(&sp_quat);
 
