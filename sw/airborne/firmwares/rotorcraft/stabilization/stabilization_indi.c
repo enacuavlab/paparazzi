@@ -201,7 +201,6 @@ float indi_Wu[INDI_NUM_ACT] = {[0 ... INDI_NUM_ACT - 1] = 1.0};
 float actuator_state_filt_vect[INDI_NUM_ACT];
 struct FloatRates angular_accel_ref = {0., 0., 0.};
 struct FloatRates angular_rate_ref = {0., 0., 0.};
-struct FloatRates angular_rate_ff = {0., 0., 0.};
 float angular_acceleration[3] = {0., 0., 0.};
 float actuator_state[INDI_NUM_ACT];
 float indi_u[INDI_NUM_ACT];
@@ -322,13 +321,15 @@ static void send_att_full_indi(struct transport_tx *trans, struct link_device *d
   struct FloatRates *body_rates = stateGetBodyRates_f();
   struct FloatEulers att_sp;
   EULERS_FLOAT_OF_BFP(att_sp, stab_att_sp_euler);
-  struct FloatEulers *att = stateGetNedToBodyEulers_f();
+#if GUIDANCE_INDI_HYBRID
+  struct FloatEulers att;
+  float_eulers_of_quat_zxy(&att, stateGetNedToBodyQuat_f());
+#else
+  struct FloatEulers att = *stateGetNedToBodyEulers_f();
+#endif
   pprz_msg_send_STAB_ATTITUDE(trans, dev, AC_ID,
-                                      &att->phi, &att->theta, &att->psi,      // att
-                                      //&att_sp.phi, &att_sp.theta, &att_sp.psi,      // att.ref
-                                      &angular_rate_ff.p,      // rate.ff
-                                      &angular_rate_ff.q,
-                                      &angular_rate_ff.r,
+                                      &att.phi, &att.theta, &att.psi,           // att
+                                      &att_sp.phi, &att_sp.theta, &att_sp.psi,  // att.ref
                                       &body_rates->p,           // rate
                                       &body_rates->q,
                                       &body_rates->r,
@@ -727,9 +728,6 @@ void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoin
   RATES_ADD(rate_sp, ff_rates);
 
   // Store for telemetry
-  angular_rate_ff.p = ff_rates.p;
-  angular_rate_ff.q = ff_rates.q;
-  angular_rate_ff.r = ff_rates.r;
   angular_rate_ref.p = rate_sp.p;
   angular_rate_ref.q = rate_sp.q;
   angular_rate_ref.r = rate_sp.r;

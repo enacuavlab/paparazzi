@@ -314,7 +314,9 @@ struct StabilizationSetpoint guidance_h_from_nav(bool in_flight)
   }
 
   if (nav.horizontal_mode == NAV_HORIZONTAL_MODE_NONE) {
-    return; // don't call guidance nor stabilization
+    struct StabilizationSetpoint sp;
+    STAB_SP_SET_EULERS_ZERO(sp);
+    return sp; // don't call guidance, still return attitude zero
   } else if (nav.horizontal_mode == NAV_HORIZONTAL_MODE_ATTITUDE) {
     if (nav.setpoint_mode == NAV_SETPOINT_MODE_QUAT) {
       return stab_sp_from_quat_f(&nav.quat);
