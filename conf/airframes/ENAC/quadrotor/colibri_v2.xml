@@ -87,7 +87,7 @@
     <!-- Multi imu 
       MPU9250 I2C2 
       & MPU60X0
-      FIXME probleme avec le multi imu 
+      FIXME probleme avec le multi imu, vol impossible avec rotation
     -->
     <!-- <module name="imu" type="colibri"/>
 
