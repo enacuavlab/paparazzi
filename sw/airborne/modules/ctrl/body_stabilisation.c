@@ -38,7 +38,7 @@
 
 /** Default kp motor 7000  10000 */
 #ifndef BODY_STAB_KP_M
-#define BODY_STAB_KP_M 7000.f
+#define BODY_STAB_KP_M 6000.f
 #endif
 PRINT_CONFIG_VAR(BODY_STAB_KP_M)
 
@@ -250,8 +250,9 @@ void body_stabilisation_update_airspeed_ub(float ub){
 }
 
 extern void body_stabilisation_report(void){
-  float f[8] = { motor_cmd, elevator_cmd, actuators_pprz[6], actuators_pprz[7], DegOfRad(euler_fus.theta), angle_wing2fus, body_stab.discrete_state, body_stab.state_integrator};
-  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 8, f); 
+  
+  float f[9] = { motor_cmd, elevator_cmd, actuators_pprz[6], actuators_pprz[7], DegOfRad(euler_fus.theta), DegOfRad(stateGetNedToBodyEulers_f()->theta), DegOfRad(angle_wing2fus), body_stab.discrete_state, body_stab.state_integrator};
+  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 9, f); 
 
   /*float f[16] = {stateGetNedToBodyQuat_f()->qi, stateGetNedToBodyQuat_f()->qx, stateGetNedToBodyQuat_f()->qy, stateGetNedToBodyQuat_f()->qz,
   angle_wing2fus, quat_wing2fus.qi, quat_wing2fus.qx, quat_wing2fus.qy, quat_wing2fus.qz,
