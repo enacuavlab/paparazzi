@@ -594,14 +594,14 @@ void ins_ekf2_init(void)
 void ins_reset_local_origin(void)
 {
 #if USE_GPS
-  if (GpsFixValid()) {
-    struct LlaCoor_i lla_pos = lla_int_from_gps(&gps);
-    if (ekf.setEkfGlobalOrigin(lla_pos.lat*1e-7, lla_pos.lon*1e-7, gps.hmsl*1e-3)) {
-      ltp_def_from_lla_i(&ekf2.ltp_def, &lla_pos);
-      ekf2.ltp_def.hmsl = gps.hmsl;
-      stateSetLocalOrigin_i(&ekf2.ltp_def);
-    }
-  }
+  // if (GpsFixValid()) {
+  //   struct LlaCoor_i lla_pos = lla_int_from_gps(&gps);
+  //   if (ekf.setEkfGlobalOrigin(lla_pos.lat*1e-7, lla_pos.lon*1e-7, gps.hmsl*1e-3)) {
+  //     ltp_def_from_lla_i(&ekf2.ltp_def, &lla_pos);
+  //     ekf2.ltp_def.hmsl = gps.hmsl;
+  //     stateSetLocalOrigin_i(&ekf2.ltp_def);
+  //   }
+  // }
 #endif
 }
 
@@ -889,33 +889,33 @@ static void gps_cb(uint8_t sender_id __attribute__((unused)),
                    uint32_t stamp,
                    struct GpsState *gps_s)
 {
-  gps_message gps_msg = {};
-  gps_msg.time_usec = stamp;
-  struct LlaCoor_i lla_pos = lla_int_from_gps(gps_s);
-  gps_msg.lat = lla_pos.lat;
-  gps_msg.lon = lla_pos.lon;
-  gps_msg.alt = gps_s->hmsl; // EKF2 works with HMSL
-#if INS_EKF2_GPS_COURSE_YAW
-  gps_msg.yaw = wrap_pi((float)gps_s->course / 1e7);
-  gps_msg.yaw_offset = 0;
-#else
-  gps_msg.yaw = NAN;
-  gps_msg.yaw_offset = NAN;
-#endif
-  gps_msg.fix_type = gps_s->fix;
-  gps_msg.eph = gps_s->hacc / 100.0;
-  gps_msg.epv = gps_s->vacc / 100.0;
-  gps_msg.sacc = gps_s->sacc / 100.0;
-  gps_msg.vel_m_s = gps_s->gspeed / 100.0;
-  struct NedCoor_f ned_vel = ned_vel_float_from_gps(gps_s);
-  gps_msg.vel_ned(0) = ned_vel.x;
-  gps_msg.vel_ned(1) = ned_vel.y;
-  gps_msg.vel_ned(2) = ned_vel.z;
-  gps_msg.vel_ned_valid = bit_is_set(gps_s->valid_fields, GPS_VALID_VEL_NED_BIT);
-  gps_msg.nsats = gps_s->num_sv;
-  gps_msg.pdop = gps_s->pdop;
+//   gps_message gps_msg = {};
+//   gps_msg.time_usec = stamp;
+//   struct LlaCoor_i lla_pos = lla_int_from_gps(gps_s);
+//   gps_msg.lat = lla_pos.lat;
+//   gps_msg.lon = lla_pos.lon;
+//   gps_msg.alt = gps_s->hmsl; // EKF2 works with HMSL
+// #if INS_EKF2_GPS_COURSE_YAW
+//   gps_msg.yaw = wrap_pi((float)gps_s->course / 1e7);
+//   gps_msg.yaw_offset = 0;
+// #else
+//   gps_msg.yaw = NAN;
+//   gps_msg.yaw_offset = NAN;
+// #endif
+//   gps_msg.fix_type = gps_s->fix;
+//   gps_msg.eph = gps_s->hacc / 100.0;
+//   gps_msg.epv = gps_s->vacc / 100.0;
+//   gps_msg.sacc = gps_s->sacc / 100.0;
+//   gps_msg.vel_m_s = gps_s->gspeed / 100.0;
+//   struct NedCoor_f ned_vel = ned_vel_float_from_gps(gps_s);
+//   gps_msg.vel_ned(0) = ned_vel.x;
+//   gps_msg.vel_ned(1) = ned_vel.y;
+//   gps_msg.vel_ned(2) = ned_vel.z;
+//   gps_msg.vel_ned_valid = bit_is_set(gps_s->valid_fields, GPS_VALID_VEL_NED_BIT);
+//   gps_msg.nsats = gps_s->num_sv;
+//   gps_msg.pdop = gps_s->pdop;
 
-  ekf.setGpsData(gps_msg);
+//   ekf.setGpsData(gps_msg);
 }
 
 /* Update INS based on Optical Flow information */

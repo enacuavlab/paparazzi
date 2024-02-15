@@ -29,6 +29,7 @@
     </target>
 
     <module name="telemetry" type="xbee_api"/>
+    <!-- <module name="telemetry" type="transparent_usb"/> -->
 
     <module name="actuators" type="dshot"/>
     <module name="actuators" type="pwm"/>
@@ -44,7 +45,7 @@
       <define name="USE_GPS_UBX_RTCM" value="TRUE"/>
       <define name="GPS_FIX_TIMEOUT" value="0.5"/>
     </module-->
-    <module name="gps" type="optitrack"/>
+    <!-- <module name="gps" type="optitrack"/> -->
 
     <module name="stabilization" type="indi"/>
     <module name="guidance" type="indi"/>
@@ -56,20 +57,32 @@
     </module>
     <module name="preflight_checks"/>
 
-    <!--module name="filter" type="1euro_imu">
-      <define name="AHRS_ICQ_IMU_ID" value="IMU_F1E_ID"/>
-      <define name="AHRS_ALIGNER_IMU_ID" value="IMU_F1E_ID"/>
-    </module-->
-
     <module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3"/>
     </module>
+
     <module name="opticflow" type="pmw3901">
       <define name="OPTICFLOW_PMW3901_SENSOR_ANGLE" value="0"/>
-      <define name="SENSOR_SYNC_SEND_OPTICFLOW_PMW3901" value="TRUE"/>
+      <!-- <define name="SENSOR_SYNC_SEND_OPTICFLOW_PMW3901" value="TRUE"/> -->
+    </module>
+    <module name="sonar" type="vl53l1x">
+      <configure name="SONAR_VL53L1X_I2C_DEV" value="i2c2" />
+      <define name="SONAR_VL53L1X_OFFSET" value="0"/>
+      <!-- <define name="SENSOR_SYNC_SEND_SONAR"/> -->
     </module>
 
+    <define name="SDLOG_START_DELAY" value="1"/>
+    <module type="sd_chibios" name="logger"/>
     <module name="flight_recorder"/>
+
+    <!-- needed to be able to fly the drone in NAV mode without a GPS fix -->
+    <define name="NO_GPS_NEEDED_FOR_NAV" value="TRUE"/> 
+    <define name="USE_GPS" value="FALSE"/>
+
+    <define name="INS_EKF2_FUSION_MODE" value="MASK_USE_OF"/>
+    <define name="INS_EKF2_VDIST_SENSOR_TYPE" value="VDIST_SENSOR_RANGE"/> <!-- Use range finder height -->
+    <define name="INS_EKF2_GPS_CHECK_MASK" value="0"/>
+    <define name="INS_EKF2_GPS_COURSE_YAW" value="FALSE"/>
   </firmware>
 
   <servos driver="Pwm">
