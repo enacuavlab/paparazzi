@@ -1,0 +1,43 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="stabilization_udwadia" dir="stabilization" task="control">
+  <doc>
+    <description>
+      Servo control of constraint for rotorcraft based on Udwadia control
+    </description>
+
+    <configure name="UDWADIA_OUTPUTS" default="4"/>
+    <configure name="UDWADIA_NUM_ACT" default="4"/>
+
+    <section name="RC_SETPOINT" prefix="STABILIZATION_ATTITUDE_">
+      <define name="SP_MAX_PHI"   value="45." description="max setpoint for roll angle" unit="deg"/>
+      <define name="SP_MAX_THETA" value="45." description="max setpoint for pitch angle" unit="deg"/>
+      <define name="SP_MAX_R"     value="90." description="max setpoint for yaw rate" unit="deg/s"/>
+      <define name="DEADBAND_R"   value="250" description="deadband on yaw rate input"/>
+    </section>
+
+    <section name="STABILIZATION_ATTITUDE_UDWADIA" prefix="STABILIZATION_UDWADIA_">
+
+    </section>
+  </doc>
+
+  <dep>
+    <depends>stabilization_rotorcraft,@attitude_command</depends>
+    <provides>commands</provides>
+  </dep>
+  <header>
+    <file name="stabilization_udwadia.h"/>
+  </header>
+  <init fun="stabilization_udwadia_init()"/>
+  <makefile target="ap|nps" firmware="rotorcraft">
+    <configure name="CXXSTANDARD" value="-std=c++14"/>
+    <!-- <flag name="CXXFLAGS" value="Wno-unused-but-set-variable"/>
+    <flag name="CXXFLAGS" value="Wno-unused-variable"/> -->
+
+    <file name="stabilization_udwadia.cpp" dir="$(SRC_FIRMWARE)/stabilization"/>
+
+    <!-- Include the matrix libraries from ext -->
+    <include name="$(PAPARAZZI_SRC)/sw/ext/matrix/"/>
+
+  </makefile>
+</module>
