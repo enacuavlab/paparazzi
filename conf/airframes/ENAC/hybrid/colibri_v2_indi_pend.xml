@@ -262,7 +262,7 @@
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <define name="G1" type="matrix">
       <field value="{ -  7.5,  - 15.0,      7.5,     15.0,    0.0,  0.0, 0.0}"/>
-      <field value="{    0.0,     0.0,      0.0,      0.0,   15.0, 15.0, 0.0}"/>
+      <field value="{    0.0,     0.0,      0.0,      0.0,   30.0, 30.0, 0.0}"/>
       <field value="{    0.0,     0.0,      0.0,    - 0.0,    4.0, -4.0, 0.0}"/>
       <field value="{ -  0.6, -   0.6,  -   0.6, -    0.6,    0.0,  0.0, 0.0}"/>
       <field value="{    0.0,     0.0,      0.0,    - 0.0,    0.0,  0.0, 15.0}"/> 
@@ -322,7 +322,7 @@
   </section>
 
   <section name="NAV">
-    <define name="NAV_CLIMB_VSPEED" value="0.5"/>
+    <define name="NAV_CLIMB_VSPEED" value="0.8"/>
     <define name="NAV_DESCEND_VSPEED" value="-0.5"/>
   </section>
 

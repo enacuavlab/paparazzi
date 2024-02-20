@@ -45,9 +45,9 @@ PRINT_CONFIG_VAR(ENC_AMT22_ALPHA1)
 #endif
 PRINT_CONFIG_VAR(ENC_AMT22_ALPHA2)
 
-/** Default epsilon old : 0.02 ICUAS 0.05*/
+/** Default epsilon old : 0.03 ICUAS 0.05*/
 #ifndef ENC_AMT22_EPS
-#define ENC_AMT22_EPS 0.02f
+#define ENC_AMT22_EPS 0.035f
 #endif
 PRINT_CONFIG_VAR(ENC_AMT22_EPS)
 
