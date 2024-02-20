@@ -846,7 +846,7 @@ void stabilization_indi_attitude_run(struct Int32Quat quat_sp, bool in_flight)
   // Add feed-forward rates pendulum 
   float theta_peng_cg = euler_fus.theta-STABILIZATION_INDI_THETA0_PEND;
 
-  rate_pend_sp = rate_pend_sp + 1/(STABILIZATION_INDI_L_PEND * PERIODIC_FREQUENCY)*(sqrt(sp_accel.x^2 + sp_accel.y^2)*cos(theta_peng_cg) - sp_accel.z*sin(theta_peng_cg));
+  rate_pend_sp = rate_pend_sp + 1/(STABILIZATION_INDI_L_PEND * PERIODIC_FREQUENCY)*(sqrt(sp_accel.x*sp_accel.x + sp_accel.y*sp_accel.y)*cos(theta_peng_cg) - sp_accel.z*sin(theta_peng_cg));
 
   // Add feed-forward rates to the attitude feedback part
   RATES_ADD(rate_sp, stab_att_ff_rates);
