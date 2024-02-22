@@ -96,10 +96,6 @@ void guidance_h_init(void)
 
   gh_ref_init();
 
-//#if GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE // TODO move to ap/module
-//  guidance_h_module_init();
-//#endif
-
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GUIDANCE_H_INT, send_gh);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GUIDANCE_H_REF_INT, send_href);
@@ -136,11 +132,6 @@ void guidance_h_mode_changed(uint8_t new_mode)
     case GUIDANCE_H_MODE_NAV:
       guidance_h_nav_enter();
       break;
-//#if GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE // TODO move to ap
-//    case GUIDANCE_H_MODE_MODULE:
-//      guidance_h_module_enter();
-//      break;
-//#endif
     default:
       break;
   }

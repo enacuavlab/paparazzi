@@ -110,13 +110,6 @@ struct Stabilization {
 
 extern struct Stabilization stabilization;
 
-/// /** Stabilization commands.
-///  *  Contains the resulting stabilization commands,
-///  *  regardless of whether rate or attitude is currently used.
-///  *  Range -MAX_PPRZ:MAX_PPRZ
-///  */
-/// extern int32_t stabilization.cmd[COMMANDS_NB];
-
 /** Init function
  */
 extern void stabilization_init(void);

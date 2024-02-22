@@ -55,8 +55,6 @@ struct min_max_ctrl_t ctrl_windtunnel_throttle = {.min = CTRL_WINDTUNNEL_THR_MIN
 struct min_max_ctrl_t ctrl_windtunnel_flaps = {.min = CTRL_WINDTUNNEL_FLAP_MIN, .max = CTRL_WINDTUNNEL_FLAP_MAX, .step = CTRL_WINDTUNNEL_FLAP_STEP};
 static float last_time = 0;
 
-void ctrl_module_init(void);
-void ctrl_module_run(bool in_flight);
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
@@ -76,7 +74,7 @@ static void send_windtunnel_meas(struct transport_tx *trans, struct link_device 
 }
 #endif
 
-void ctrl_module_init(void)
+void ctrl_windtunnel_init(void)
 {
   ctrl_windtunnel.rc_throttle = 0;
   ctrl_windtunnel.rc_roll = 0;
@@ -93,7 +91,7 @@ void ctrl_module_init(void)
 #endif
 }
 
-void ctrl_module_run(bool in_flight __attribute__((unused)))
+static void ctrl_module_run(bool in_flight __attribute__((unused)))
 {
   bool done = false;
   // Increase step in steptime
@@ -137,18 +135,16 @@ void ctrl_module_run(bool in_flight __attribute__((unused)))
 
 ////////////////////////////////////////////////////////////////////
 // Call our controller
-// Implement own Horizontal loops
-void guidance_h_module_init(void)
+// Implement own loops
+void guidance_module_enter(void)
 {
-  ctrl_module_init();
+  ctrl_windtunnel.rc_throttle = 0;
+  ctrl_windtunnel.rc_roll = 0;
+  ctrl_windtunnel.rc_pitch = 0;
+  ctrl_windtunnel.rc_yaw = 0;
 }
 
-void guidance_h_module_enter(void)
-{
-  ctrl_module_init();
-}
-
-void guidance_h_module_read_rc(void)
+void guidance_module_read_rc(void)
 {
   // -MAX_PPRZ to MAX_PPRZ
   ctrl_windtunnel.rc_throttle = radio_control.values[RADIO_THROTTLE];
@@ -157,24 +153,9 @@ void guidance_h_module_read_rc(void)
   ctrl_windtunnel.rc_yaw = radio_control.values[RADIO_YAW];
 }
 
-void guidance_h_module_run(bool in_flight)
+void guidance_module_run(bool in_flight)
 {
   // Call full inner-/outerloop / horizontal-/vertical controller:
   ctrl_module_run(in_flight);
 }
 
-void guidance_v_module_init(void)
-{
-  // initialization of your custom vertical controller goes here
-}
-
-// Implement own Vertical loops
-void guidance_v_module_enter(void)
-{
-  // your code that should be executed when entering this vertical mode goes here
-}
-
-void guidance_v_module_run(UNUSED bool in_flight)
-{
-  // your vertical controller goes here
-}

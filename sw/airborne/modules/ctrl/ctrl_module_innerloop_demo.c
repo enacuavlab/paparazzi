@@ -27,6 +27,7 @@
 #include "modules/ctrl/ctrl_module_innerloop_demo.h"
 #include "state.h"
 #include "modules/radio_control/radio_control.h"
+#include "generated/radio.h"
 #include "firmwares/rotorcraft/stabilization.h"
 
 struct ctrl_module_demo_struct {
@@ -42,9 +43,6 @@ float ctrl_module_demo_pr_d_gain = 0.1f;
 float ctrl_module_demo_y_ff_gain = 0.4f;   // Yaw
 float ctrl_module_demo_y_d_gain = 0.05f;
 
-void ctrl_module_init(void);
-void ctrl_module_run(bool in_flight);
-
 void ctrl_module_init(void)
 {
   ctrl_module_demo.rc_x = 0;
@@ -54,7 +52,7 @@ void ctrl_module_init(void)
 }
 
 // simple rate control without reference model nor attitude
-void ctrl_module_run(bool in_flight)
+static void ctrl_module_run(bool in_flight)
 {
   if (!in_flight) {
     // Reset integrators
@@ -76,18 +74,12 @@ void ctrl_module_run(bool in_flight)
 
 ////////////////////////////////////////////////////////////////////
 // Call our controller
-// Implement own Horizontal loops
-void guidance_h_module_init(void)
+void guidance_module_enter(void)
 {
   ctrl_module_init();
 }
 
-void guidance_h_module_enter(void)
-{
-  ctrl_module_init();
-}
-
-void guidance_h_module_read_rc(void)
+void guidance_module_read_rc(void)
 {
   // -MAX_PPRZ to MAX_PPRZ
   ctrl_module_demo.rc_t = radio_control.values[RADIO_THROTTLE];
@@ -96,24 +88,9 @@ void guidance_h_module_read_rc(void)
   ctrl_module_demo.rc_z = radio_control.values[RADIO_YAW];
 }
 
-void guidance_h_module_run(bool in_flight)
+void guidance_module_run(bool in_flight)
 {
   // Call full inner-/outerloop / horizontal-/vertical controller:
   ctrl_module_run(in_flight);
 }
 
-void guidance_v_module_init(void)
-{
-  // initialization of your custom vertical controller goes here
-}
-
-// Implement own Vertical loops
-void guidance_v_module_enter(void)
-{
-  // your code that should be executed when entering this vertical mode goes here
-}
-
-void guidance_v_module_run(UNUSED bool in_flight)
-{
-  // your vertical controller goes here
-}

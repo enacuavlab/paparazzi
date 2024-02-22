@@ -17,6 +17,9 @@
 #define COMMAND_YAW 2
 #define COMMAND_THRUST 3
 
+// extra commands
+#define COMMAND_FLAPS 4
+
 #define SetCommandsFromRC(_commands_array, _rc_array) { }
 #define AllActuatorsInit() { }
 #define AllActuatorsCommit() { }

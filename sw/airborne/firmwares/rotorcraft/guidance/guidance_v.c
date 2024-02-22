@@ -92,10 +92,6 @@ void guidance_v_init(void)
 
   gv_adapt_init();
 
-//#if GUIDANCE_V_MODE_MODULE_SETTING == GUIDANCE_V_MODE_MODULE // TODO move to ap/module
-//  guidance_v_module_init();
-//#endif
-
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_TUNE_VERT, send_tune_vert);
 #endif
@@ -145,12 +141,6 @@ void guidance_v_mode_changed(uint8_t new_mode)
       guidance_v_run_enter();
       GuidanceVSetRef(stateGetPositionNed_i()->z, stateGetSpeedNed_i()->z, 0);
       break;
-
-//#if GUIDANCE_V_MODE_MODULE_SETTING == GUIDANCE_V_MODE_MODULE // TODO move to ap
-//    case GUIDANCE_V_MODE_MODULE:
-//      guidance_v_module_enter();
-//      break;
-//#endif
 
     default:
       break;

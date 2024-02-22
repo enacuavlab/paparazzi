@@ -230,6 +230,9 @@ void stabilization_run(bool in_flight, struct StabilizationSetpoint *sp, struct 
     default:
       break;
   }
+
+  // store last attitude command
+  stabilization.sp = *sp;
 }
 
 struct StabilizationSetpoint stabilization_get_failsafe_sp(void)
