@@ -242,7 +242,9 @@ static void send_rotorcraft_cmd(struct transport_tx *trans UNUSED, struct link_d
 void autopilot_firmware_init(void)
 {
   autopilot_in_flight_counter = 0;
+#ifdef MODE_AUTO2
   autopilot_mode_auto2 = MODE_AUTO2;
+#endif
 
   // register messages
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROTORCRAFT_STATUS, send_status);

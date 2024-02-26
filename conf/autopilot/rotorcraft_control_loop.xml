@@ -62,7 +62,7 @@
       <exception cond="RCLost()" deroute="FAILSAFE"/>
     </mode>
 
-    <mode name="CTRL_MODULE" shortname="MODULE">
+    <mode name="MODULE">
       <select cond="RCMode1()"/>
       <on_enter>
         <call fun="guidance_module_enter()"/>
@@ -71,8 +71,8 @@
         <call fun="nav_periodic_task()"/>
       </control>
       <control>
-        <call name="guidance_module_read_rc()"/>
-        <call name="guidance_module_run(autopilot_in_flight())"/>
+        <call fun="guidance_module_read_rc()"/>
+        <call fun="guidance_module_run(autopilot_in_flight())"/>
         <call_block name="set_commands"/>
       </control>
       <exception cond="RCLost()" deroute="FAILSAFE"/>

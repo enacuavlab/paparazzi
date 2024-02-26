@@ -615,7 +615,7 @@ void guidance_module_enter(void)
 }
 
 // Run the controller
-void guidance_v_module_run(bool in_flight)
+void guidance_module_run(bool in_flight)
 {
   if (electrical.bat_low) {
     autopilot_set_mode(AP_MODE_NAV);
