@@ -80,6 +80,7 @@
 
     <mode name="NAV">
       <select cond="RCMode2()" exception="HOME"/>
+      <select cond="$DEFAULT_MODE"/>
       <on_enter>
         <call fun="guidance_h_mode_changed(GUIDANCE_H_MODE_NAV)"/>
         <call fun="guidance_v_mode_changed(GUIDANCE_V_MODE_NAV)"/>
@@ -130,7 +131,6 @@
 
     <!-- Kill throttle mode -->
     <mode name="KILL">
-      <select cond="$DEFAULT_MODE"/>
       <select cond="kill_switch_is_on()"/>
       <on_enter>
         <call fun="guidance_h_mode_changed(GUIDANCE_H_MODE_NONE)"/>
