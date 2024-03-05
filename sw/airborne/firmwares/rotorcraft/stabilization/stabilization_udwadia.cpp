@@ -122,6 +122,7 @@ void stabilization_udwadia_enter(void)
 void stabilization_udwadia_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t *cmd)
 {
   
+  struct FloatRates *body_rates = stateGetBodyRates_f();
 }
 
 
