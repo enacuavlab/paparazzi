@@ -32,13 +32,23 @@ extern "C" {
 #endif
 
 #include "firmwares/rotorcraft/stabilization.h"
-#include "math/pprz_algebra_int.h"
 #ifdef STABILIZATION_ATTITUDE_TYPE_H
 #include STABILIZATION_ATTITUDE_TYPE_H
 #endif
 
+/** Stabilization init function
+ *
+ * needs to be implemented by the selected controller
+ */
 extern void stabilization_attitude_init(void);
-extern void stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn);
+
+/** Retrun attitude setpoint from RC as euler angles
+ * @param[in]  in_flight         true if in flight
+ * @param[in]  in_carefree       true if in carefree mode
+ * @param[in]  coordinated_turn  true if in horizontal mode forward
+ * @return stabilization setpoint
+ */
+extern struct StabilizationSetpoint stabilization_attitude_read_rc(bool in_flight, bool carefree, bool coordinated_turn);
 extern void stabilization_attitude_enter(void);
 extern void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd);
 

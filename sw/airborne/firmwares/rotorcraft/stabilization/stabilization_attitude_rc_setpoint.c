@@ -61,24 +61,16 @@ static int32_t get_rc_roll(void)
 {
   const int32_t max_rc_phi = (int32_t) ANGLE_BFP_OF_REAL(STABILIZATION_ATTITUDE_SP_MAX_PHI);
   int32_t roll = radio_control.values[RADIO_ROLL];
-#if STABILIZATION_ATTITUDE_DEADBAND_A
   DeadBand(roll, STABILIZATION_ATTITUDE_DEADBAND_A);
   return roll * max_rc_phi / (MAX_PPRZ - STABILIZATION_ATTITUDE_DEADBAND_A);
-#else
-  return roll * max_rc_phi / MAX_PPRZ;
-#endif
 }
 
 static int32_t get_rc_pitch(void)
 {
   const int32_t max_rc_theta = (int32_t) ANGLE_BFP_OF_REAL(STABILIZATION_ATTITUDE_SP_MAX_THETA);
   int32_t pitch = radio_control.values[RADIO_PITCH];
-#if STABILIZATION_ATTITUDE_DEADBAND_E
   DeadBand(pitch, STABILIZATION_ATTITUDE_DEADBAND_E);
   return pitch * max_rc_theta / (MAX_PPRZ - STABILIZATION_ATTITUDE_DEADBAND_E);
-#else
-  return pitch * max_rc_theta / MAX_PPRZ;
-#endif
 }
 
 static int32_t get_rc_yaw(void)
@@ -92,23 +84,15 @@ static int32_t get_rc_yaw(void)
 static float get_rc_roll_f(void)
 {
   int32_t roll = radio_control.values[RADIO_ROLL];
-#if STABILIZATION_ATTITUDE_DEADBAND_A
   DeadBand(roll, STABILIZATION_ATTITUDE_DEADBAND_A);
   return roll * STABILIZATION_ATTITUDE_SP_MAX_PHI / (MAX_PPRZ - STABILIZATION_ATTITUDE_DEADBAND_A);
-#else
-  return roll * STABILIZATION_ATTITUDE_SP_MAX_PHI / MAX_PPRZ;
-#endif
 }
 
 static float get_rc_pitch_f(void)
 {
   int32_t pitch = radio_control.values[RADIO_PITCH];
-#if STABILIZATION_ATTITUDE_DEADBAND_E
   DeadBand(pitch, STABILIZATION_ATTITUDE_DEADBAND_E);
   return pitch * STABILIZATION_ATTITUDE_SP_MAX_THETA / (MAX_PPRZ - STABILIZATION_ATTITUDE_DEADBAND_E);
-#else
-  return pitch * STABILIZATION_ATTITUDE_SP_MAX_THETA / MAX_PPRZ;
-#endif
 }
 
 static inline float get_rc_yaw_f(void)
