@@ -102,11 +102,6 @@ void guidance_module_enter(void)
   guidance_h_mode_changed(GUIDANCE_H_MODE_HOVER);
 }
 
-void guidance_module_read_rc(void)
-{
-  guidance_h_read_rc(autopilot_in_flight());
-}
-
 void guidance_module_run(bool in_flight)
 {
   struct ThrustSetpoint th = vertical_ctrl_module_run(in_flight);

@@ -38,7 +38,6 @@ extern void optical_flow_hover_init(void);
 
 extern void guidance_module_enter(void);
 extern void guidance_module_run(bool in_flight);
-extern void guidance_module_read_rc(void);
 
 #endif /* OPTICAL_FLOW_LANDING_H_ */
 

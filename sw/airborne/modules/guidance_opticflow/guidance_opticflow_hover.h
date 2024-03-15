@@ -51,7 +51,6 @@ extern struct opticflow_stab_t opticflow_stab;
 extern void guidance_opticflow_hover_init(void);
 
 // Implement own module loops
-extern void guidance_module_read_rc(void);
 extern void guidance_module_enter(void);
 extern void guidance_module_run(bool in_flight);
 

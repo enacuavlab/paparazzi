@@ -63,7 +63,6 @@ extern float speed_pot;
 
 // Implement own Horizontal loops
 extern void guidance_module_enter(void);
-extern void guidance_module_read_rc(void);
 extern void guidance_module_run(bool in_flight);
 
 // Update the stabilization commands based on a vision result

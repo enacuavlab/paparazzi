@@ -144,17 +144,13 @@ void guidance_module_enter(void)
   ctrl_windtunnel.rc_yaw = 0;
 }
 
-void guidance_module_read_rc(void)
+void guidance_module_run(bool in_flight)
 {
   // -MAX_PPRZ to MAX_PPRZ
   ctrl_windtunnel.rc_throttle = radio_control.values[RADIO_THROTTLE];
   ctrl_windtunnel.rc_roll = radio_control.values[RADIO_ROLL];
   ctrl_windtunnel.rc_pitch = radio_control.values[RADIO_PITCH];
   ctrl_windtunnel.rc_yaw = radio_control.values[RADIO_YAW];
-}
-
-void guidance_module_run(bool in_flight)
-{
   // Call full inner-/outerloop / horizontal-/vertical controller:
   ctrl_module_run(in_flight);
 }

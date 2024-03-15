@@ -1175,10 +1175,6 @@ void guidance_module_enter(void)
   thrust_set = of_landing_ctrl.nominal_thrust * MAX_PPRZ;
 }
 
-void guidance_module_read_rc(void)
-{
-}
-
 void guidance_module_run(bool in_flight)
 {
   vertical_ctrl_module_run(in_flight);

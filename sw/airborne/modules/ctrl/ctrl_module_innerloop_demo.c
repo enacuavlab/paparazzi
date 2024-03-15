@@ -79,17 +79,13 @@ void guidance_module_enter(void)
   ctrl_module_init();
 }
 
-void guidance_module_read_rc(void)
+void guidance_module_run(bool in_flight)
 {
   // -MAX_PPRZ to MAX_PPRZ
   ctrl_module_demo.rc_t = radio_control.values[RADIO_THROTTLE];
   ctrl_module_demo.rc_x = radio_control.values[RADIO_ROLL];
   ctrl_module_demo.rc_y = radio_control.values[RADIO_PITCH];
   ctrl_module_demo.rc_z = radio_control.values[RADIO_YAW];
-}
-
-void guidance_module_run(bool in_flight)
-{
   // Call full inner-/outerloop / horizontal-/vertical controller:
   ctrl_module_run(in_flight);
 }

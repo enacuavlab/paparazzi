@@ -396,9 +396,6 @@ void autopilot_static_on_rc_frame(void)
       SetCommandsFromRC(commands, radio_control.values);
     }
 #endif
-
-    guidance_v_read_rc();
-    guidance_h_read_rc(autopilot_in_flight());
   }
 
 }

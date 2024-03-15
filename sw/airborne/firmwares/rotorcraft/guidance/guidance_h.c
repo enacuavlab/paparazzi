@@ -52,7 +52,14 @@ struct StabilizationSetpoint guidance_h_cmd;
 
 static void guidance_h_update_reference(void);
 static inline void transition_run(bool to_forward);
-static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool in_flight);
+
+#ifndef GUIDANCE_H_RC_ID
+#define GUIDANCE_H_RC_ID ABI_BROADCAST
+#endif
+PRINT_CONFIG_VAR(GUIDANCE_H_RC_ID)
+static abi_event rc_ev;
+static void rc_cb(uint8_t sender_id UNUSED, struct RadioControl *rc);
+static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool in_flight, struct RadioControl *rc);
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
@@ -95,6 +102,9 @@ void guidance_h_init(void)
   transition_theta_offset = 0;
 
   gh_ref_init();
+
+  // bind ABI messages
+  AbiBindMsgRADIO_CONTROL(GUIDANCE_H_RC_ID, &rc_ev, rc_cb);
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GUIDANCE_H_INT, send_gh);
@@ -141,22 +151,21 @@ void guidance_h_mode_changed(uint8_t new_mode)
 }
 
 
-void guidance_h_read_rc(bool in_flight)
+static void rc_cb(uint8_t sender_id UNUSED, struct RadioControl *rc)
 {
-
   switch (guidance_h.mode) {
 
     case GUIDANCE_H_MODE_HOVER:
-      stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, in_flight, FALSE, FALSE, &radio_control);
+      stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, autopilot_in_flight(), FALSE, FALSE, &radio_control);
 #if GUIDANCE_H_USE_SPEED_REF
-      read_rc_setpoint_speed_i(&guidance_h.sp.speed, in_flight);
+      read_rc_setpoint_speed_i(&guidance_h.sp.speed, in_flight, rc);
       /* enable x,y velocity setpoints */
       guidance_h.sp.h_mask = GUIDANCE_H_SP_SPEED;
 #endif
       break;
     case GUIDANCE_H_MODE_NAV:
       if (radio_control.status == RC_OK) {
-        stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, in_flight, FALSE, FALSE, &radio_control);
+        stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, autopilot_in_flight(), FALSE, FALSE, &radio_control);
       } else {
         FLOAT_EULERS_ZERO(guidance_h.rc_sp);
       }

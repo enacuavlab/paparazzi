@@ -40,7 +40,6 @@ extern void ctrl_module_init(void);
 
 // Implement own loops
 extern void guidance_module_enter(void);
-extern void guidance_module_read_rc(void);
 extern void guidance_module_run(bool in_flight);
 
 #endif /* CTRL_MODULE_INNERLOOP_DEMO_H_ */

@@ -33,7 +33,6 @@
  *
  * a) Implement own loops
  * - void guidance_module_enter(void);
- * - void guidance_module_read_rc(void);
  * - void guidance_module_run(bool in_flight);
  *
  *

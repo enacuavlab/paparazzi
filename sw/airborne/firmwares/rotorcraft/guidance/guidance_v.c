@@ -66,6 +66,13 @@ static bool desired_zd_updated;
 
 static int guidance_v_guided_mode;
 
+#ifndef GUIDANCE_V_RC_ID
+#define GUIDANCE_V_RC_ID ABI_BROADCAST
+#endif
+PRINT_CONFIG_VAR(GUIDANCE_V_RC_ID)
+static abi_event rc_ev;
+static void rc_cb(uint8_t sender_id UNUSED, struct RadioControl *rc);
+
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
@@ -92,20 +99,21 @@ void guidance_v_init(void)
 
   gv_adapt_init();
 
+  // bind ABI messages
+  AbiBindMsgRADIO_CONTROL(GUIDANCE_V_RC_ID, &rc_ev, rc_cb);
+
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_TUNE_VERT, send_tune_vert);
 #endif
 }
 
-
-void guidance_v_read_rc(void)
+static void rc_cb(uint8_t sender_id UNUSED, struct RadioControl *rc)
 {
-
   /* used in RC_DIRECT directly and as saturation in CLIMB and HOVER */
-  guidance_v.rc_delta_t = (int32_t)radio_control.values[RADIO_THROTTLE];
+  guidance_v.rc_delta_t = (int32_t)rc->values[RADIO_THROTTLE];
 
   /* used in RC_CLIMB */
-  guidance_v.rc_zd_sp = (MAX_PPRZ / 2) - (int32_t)radio_control.values[RADIO_THROTTLE];
+  guidance_v.rc_zd_sp = (MAX_PPRZ / 2) - (int32_t)rc->values[RADIO_THROTTLE];
   DeadBand(guidance_v.rc_zd_sp, GUIDANCE_V_CLIMB_RC_DEADBAND);
 
   static const int32_t climb_scale = ABS(SPEED_BFP_OF_REAL(GUIDANCE_V_MAX_RC_CLIMB_SPEED) /

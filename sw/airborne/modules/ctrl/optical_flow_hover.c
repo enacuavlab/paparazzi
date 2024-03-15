@@ -402,8 +402,6 @@ static void reset_vertical_vars(void)
   prev_vision_timeZ = vision_time;
 }
 
-// Read H RC
-void guidance_module_read_rc(void) {}
 
 /**
  * Run the horizontal optical flow hover module

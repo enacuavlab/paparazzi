@@ -127,16 +127,6 @@ void guidance_module_enter(void)
 }
 
 /**
- * Read the RC commands
- */
-void guidance_module_read_rc(void)
-{
-  // TODO: change the desired vx/vy
-
-  guidance_v_read_rc();
-}
-
-/**
  * Main guidance loop
  * @param[in] in_flight Whether we are in flight or not
  */

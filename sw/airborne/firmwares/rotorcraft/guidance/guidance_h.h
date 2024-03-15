@@ -111,7 +111,6 @@ extern int32_t transition_percentage;
 
 extern void guidance_h_init(void);
 extern void guidance_h_mode_changed(uint8_t new_mode);
-extern void guidance_h_read_rc(bool in_flight);
 extern void guidance_h_run_enter(void);
 extern struct StabilizationSetpoint guidance_h_run(bool in_flight);
 extern struct StabilizationSetpoint guidance_h_run_pos(bool in_flight, struct HorizontalGuidance *gh);

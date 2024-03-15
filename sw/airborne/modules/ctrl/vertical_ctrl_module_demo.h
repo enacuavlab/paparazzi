@@ -50,7 +50,6 @@ extern void vertical_ctrl_module_init(void);
 
 // Implement own Vertical loops
 extern void guidance_module_enter(void);
-extern void guidance_module_read_rc(void);
 extern void guidance_module_run(bool in_flight);
 
 #endif /* VERTICAL_CTRL_MODULE_DEMO_H_ */

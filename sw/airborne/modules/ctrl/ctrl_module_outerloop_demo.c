@@ -68,15 +68,10 @@ void guidance_module_enter(void)
   guidance_v_mode_changed(GUIDANCE_V_MODE_HOVER);
 }
 
-void guidance_module_read_rc(void)
-{
-  guidance_v_read_rc();
-  stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot.in_flight, false, false, &radio_control);
-}
-
-
 void guidance_module_run(bool in_flight)
 {
+  stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot.in_flight, false, false, &radio_control);
+
   // YOUR NEW HORIZONTAL OUTERLOOP CONTROLLER GOES HERE
   // ctrl.cmd = CallMyNewHorizontalOuterloopControl(ctrl);
   float roll = 0.0;

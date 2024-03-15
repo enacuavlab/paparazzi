@@ -108,7 +108,6 @@ extern void optical_flow_landing_init(void);
 // Implement own loop:
 extern void guidance_module_enter(void);
 extern void guidance_module_run(bool in_flight);
-extern void guidance_module_read_rc(void);
 
 // SSL functions:
 void save_texton_distribution(void);
