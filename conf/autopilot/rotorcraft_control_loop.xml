@@ -30,10 +30,14 @@
     <control_block name="read_rc">
       <call fun="guidance_v_read_rc()"/>
       <call fun="guidance_h_read_rc(autopilot_in_flight())"/>
-      <call fun="stabilization_read_rc(autopilot_in_flight())"/>
     </control_block>
 
-    <control_block name="run_control">
+    <control_block name="run_attitude_control">
+      <call fun="guidance_v_run(autopilot_in_flight())" store="struct ThrustSetpoint thrust_sp"/>
+      <call fun="stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &thrust_sp, stabilization.cmd)"/>
+    </control_block>
+
+    <control_block name="run_guidance_control">
       <call fun="guidance_v_run(autopilot_in_flight())" store="struct ThrustSetpoint thrust_sp"/>
       <call fun="guidance_h_run(autopilot_in_flight())" store="struct StabilizationSetpoint stab_sp"/>
       <call fun="stabilization_run(autopilot_in_flight(), &stab_sp, &thrust_sp, stabilization.cmd)"/>
@@ -56,7 +60,7 @@
       </control>
       <control>
         <call_block name="read_rc"/>
-        <call_block name="run_control"/>
+        <call_block name="run_attitude_control"/>
         <call_block name="set_commands"/>
       </control>
       <exception cond="RCLost()" deroute="FAILSAFE"/>
@@ -90,7 +94,7 @@
         <call fun="nav_periodic_task()"/>
       </control>
       <control>
-        <call_block name="run_control"/>
+        <call_block name="run_guidance_control"/>
         <call_block name="set_commands"/>
       </control>
       <exception cond="GpsIsLost() && autopilot_in_flight()" deroute="FAILSAFE"/>
@@ -106,7 +110,7 @@
         <call fun="nav_home()"/>
       </control>
       <control>
-        <call_block name="run_control"/>
+        <call_block name="run_guidance_control"/>
         <call_block name="set_commands"/>
       </control>
       <exception cond="GpsIsLost()" deroute="FAILSAFE"/>

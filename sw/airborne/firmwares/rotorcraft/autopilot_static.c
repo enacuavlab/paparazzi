@@ -173,7 +173,11 @@ void autopilot_static_periodic(void)
       break;
     default:
       thrust_sp = guidance_v_run(autopilot_in_flight());
-      stab_sp = guidance_h_run(autopilot_in_flight());
+      if (guidance_h.mode != GUIDANCE_H_MODE_NONE) {
+        stab_sp = guidance_h_run(autopilot_in_flight());
+      } else {
+        stab_sp = stabilization.rc_sp;
+      }
       stabilization_run(autopilot_in_flight(), &stab_sp, &thrust_sp, stabilization.cmd);
       // TODO maybe add RC limiter here as an option ?
       SetRotorcraftCommands(stabilization.cmd, autopilot.in_flight, autopilot.motors_on);
