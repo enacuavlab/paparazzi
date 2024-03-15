@@ -257,7 +257,7 @@ void stabilization_attitude_read_rc_setpoint_eulers_f(struct FloatEulers *sp, bo
     Bound(dt, 0, 0.5);
 
     /* do not advance yaw setpoint if within a small deadband around stick center or if throttle is zero */
-    if (YAW_DEADBAND_EXCEEDED() && !THROTTLE_STICK_DOWN()) {
+    if (YAW_DEADBAND_EXCEEDED(rc) && !THROTTLE_STICK_DOWN()) {
       sp->psi += get_rc_yaw_f(rc) * dt;
       FLOAT_ANGLE_NORMALIZE(sp->psi);
     }
