@@ -98,14 +98,14 @@ struct ThrustSetpoint {
 /** Stabilization structure
  */
 struct Stabilization {
-  uint8_t mode;                     ///< current mode
-  uint8_t att_submode;              ///< current attitude sub-mode
-  struct FloatEulers rc_sp;         ///< RC input
-  struct StabilizationSetpoint sp;  ///< current attitude setpoint (store for messages)
-  int32_t cmd[COMMANDS_NB];         ///< output command vector, range from [-MAX_PPRZ:MAX_PPRZ] (store for messages)
+  uint8_t mode;                       ///< current mode
+  uint8_t att_submode;                ///< current attitude sub-mode
+  struct StabilizationSetpoint rc_sp; ///< RC input
+  struct StabilizationSetpoint sp;    ///< current attitude setpoint (store for messages)
+  int32_t cmd[COMMANDS_NB];           ///< output command vector, range from [-MAX_PPRZ:MAX_PPRZ] (store for messages)
 
-  int32_t transition_theta_offset;  ///< pitch offset for hybrids
-  float transition_ratio;           ///< transition percentage for hybrids (0.: hover; 1.: forward)
+  int32_t transition_theta_offset;    ///< pitch offset for hybrids
+  float transition_ratio;             ///< transition percentage for hybrids (0.: hover; 1.: forward)
 };
 
 extern struct Stabilization stabilization;

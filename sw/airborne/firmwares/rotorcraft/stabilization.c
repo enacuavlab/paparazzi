@@ -30,6 +30,7 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_rate.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "modules/radio_control/radio_control.h"
+#include "modules/core/abi.h"
 #include "state.h"
 
 #if (STABILIZATION_FILTER_COMMANDS_ROLL_PITCH || STABILIZATION_FILTER_COMMANDS_YAW)
@@ -60,6 +61,13 @@ struct SecondOrderLowPass_int filter_pitch;
 struct SecondOrderLowPass_int filter_yaw;
 #endif
 
+#ifndef STABILIZATION_RC_ID
+#define STABILIZATION_RC_ID ABI_BROADCAST
+#endif
+PRINT_CONFIG_VAR(STABILIZATION_RC_ID)
+static abi_event rc_ev;
+static void rc_cb(uint8_t sender_id UNUSED, struct RadioControl *rc);
+
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
 
@@ -86,7 +94,7 @@ void stabilization_init(void)
 {
   stabilization.mode = STABILIZATION_MODE_NONE;
   stabilization.att_submode = STABILIZATION_ATT_SUBMODE_HEADING;
-  FLOAT_EULERS_ZERO(stabilization.rc_sp);
+  STAB_SP_SET_EULERS_ZERO(stabilization.rc_sp);
   for (uint8_t i = 0; i < COMMANDS_NB; i++) {
     stabilization.cmd[i] = 0;
   }
@@ -108,6 +116,17 @@ void stabilization_init(void)
 #endif
 }
 
+static void stabilization_rate_reset_rc(void)
+{
+  struct FloatRates zero = { 0., 0., 0. };
+  stabilization.rc_sp = stab_sp_from_rates_f(&zero);
+}
+
+static void stabilization_attitude_reset_rc(void)
+{
+  stabilization.rc_sp = stab_sp_from_quat_f(stateGetNedToBodyQuat_f());
+}
+
 void stabilization_mode_changed(uint8_t new_mode, uint8_t submode)
 {
   if (new_mode == stabilization.mode && submode == stabilization.att_submode) {
@@ -123,10 +142,12 @@ void stabilization_mode_changed(uint8_t new_mode, uint8_t submode)
       break;
 #if USE_STABILIZATION_RATE
     case STABILIZATION_MODE_RATE:
+      stabilization_rate_reset_rc();
       stabilization_rate_enter();
       break;
 #endif
     case STABILIZATION_MODE_ATTITUDE:
+      stabilization_attitude_reset_rc();
       if (submode == STABILIZATION_ATT_SUBMODE_CARE_FREE) {
         stabilization_attitude_reset_care_free_heading();
       }
@@ -140,33 +161,66 @@ void stabilization_mode_changed(uint8_t new_mode, uint8_t submode)
   stabilization.mode = new_mode;
 }
 
-void stabilization_read_rc(bool in_flight)
+struct StabilizationSetpoint WEAK stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn, struct RadioControl *rc)
+{
+  struct FloatQuat q_sp = stab_sp_to_quat_f(stabilization.rc_sp);
+#if USE_EARTH_BOUND_RC_SETPOINT
+  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&q_sp, in_flight, in_carefree, coordinated_turn, rc);
+#else
+  stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn, rc);
+#endif
+  return stab_sp_from_quat_f(&q_sp);
+}
+
+#if SWITCH_STICKS_FOR_RATE_CONTROL
+// Read rc with roll and yaw sitcks switched if the default orientation is vertical but airplane sticks are desired
+#define RC_RATE_P RADIO_YAW
+#define RC_RATE_Q RADIO_PITCH
+#define RC_RATE_R RADIO_ROLL
+#else
+// Normal orientation
+#define RC_RATE_P RADIO_ROLL
+#define RC_RATE_Q RADIO_PITCH
+#define RC_RATE_R RADIO_YAW
+#endif
+
+struct StabilizationSetpoint WEAK stabilization_rate_read_rc(struct RadioControl *rc)
+{
+  struct FloatRates rate_sp;
+  FLOAT_RATES_ZERO(rate_sp);
+  if (ROLL_RATE_DEADBAND_EXCEEDED(rc)) {
+    rate_sp.p = rc->values[RC_RATE_P] * STABILIZATION_RATE_SP_MAX_P / MAX_PPRZ;
+  }
+  if (PITCH_RATE_DEADBAND_EXCEEDED(rc)) {
+    rate_sp.q = rc->values[RC_RATE_Q] * STABILIZATION_RATE_SP_MAX_Q / MAX_PPRZ;
+  }
+  if (YAW_RATE_DEADBAND_EXCEEDED(rc) && !THROTTLE_STICK_DOWN()) {
+    rate_sp.r = rc->values[RC_RATE_R] * STABILIZATION_RATE_SP_MAX_R / MAX_PPRZ;
+  }
+  return stab_sp_from_rates_f(&rate_sp);
+}
+
+static void rc_cb(uint8_t sender_id UNUSED, struct RadioControl *rc) {
 {
   switch (stabilization.mode) {
 
     case STABILIZATION_MODE_DIRECT:
       stabilization_direct_read_rc();
       break;
-#if USE_STABILIZATION_RATE
     case STABILIZATION_MODE_RATE:
-#if SWITCH_STICKS_FOR_RATE_CONTROL
-      stabilization_rate_read_rc_switched_sticks();
-#else
-      stabilization_rate_read_rc();
-#endif
+      stabilization.rc_sp = stabilization_rate_read_rc(rc);
       break;
-#endif
     case STABILIZATION_MODE_ATTITUDE:
       {
         switch (stabilization.att_submode) {
           case STABILIZATION_ATT_SUBMODE_HEADING:
-            stabilization_attitude_read_rc(in_flight, FALSE, FALSE);
+            stabilization.rc_sp = stabilization_attitude_read_rc(in_flight, FALSE, FALSE, rc);
             break;
           case STABILIZATION_ATT_SUBMODE_CARE_FREE:
-            stabilization_attitude_read_rc(in_flight, TRUE, FALSE);
+            stabilization.rc_sp = stabilization_attitude_read_rc(in_flight, TRUE, FALSE, rc);
             break;
           case STABILIZATION_ATT_SUBMODE_FORWARD:
-            stabilization_attitude_read_rc(in_flight, FALSE, TRUE);
+            stabilization.rc_sp = stabilization_attitude_read_rc(in_flight, FALSE, TRUE, rc);
             break;
           default:
             break;

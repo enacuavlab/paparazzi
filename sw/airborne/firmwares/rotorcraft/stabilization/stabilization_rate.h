@@ -31,9 +31,29 @@
 #include "firmwares/rotorcraft/stabilization.h"
 #include "math/pprz_algebra_float.h"
 
+#ifndef STABILIZATION_RATE_DEADBAND_P
+#define STABILIZATION_RATE_DEADBAND_P 0
+#endif
+#ifndef STABILIZATION_RATE_DEADBAND_Q
+#define STABILIZATION_RATE_DEADBAND_Q 0
+#endif
+#ifndef STABILIZATION_RATE_DEADBAND_R
+#define STABILIZATION_RATE_DEADBAND_R 200
+#endif
+
+#define ROLL_RATE_DEADBAND_EXCEEDED(_rc)                       \
+  (_rc->values[RADIO_ROLL] >  STABILIZATION_RATE_DEADBAND_P || \
+   _rc->values[RADIO_ROLL] < -STABILIZATION_RATE_DEADBAND_P)
+
+#define PITCH_RATE_DEADBAND_EXCEEDED(_rc)                       \
+  (_rc->values[RADIO_PITCH] >  STABILIZATION_RATE_DEADBAND_Q || \
+   _rc->values[RADIO_PITCH] < -STABILIZATION_RATE_DEADBAND_Q)
+
+#define YAW_RATE_DEADBAND_EXCEEDED(_rc)                       \
+  (_rc->values[RADIO_YAW] >  STABILIZATION_RATE_DEADBAND_R || \
+   _rc->values[RADIO_YAW] < -STABILIZATION_RATE_DEADBAND_R)
+
 extern void stabilization_rate_init(void);
-extern void stabilization_rate_read_rc(void);
-extern void stabilization_rate_read_rc_switched_sticks(void);
 extern void stabilization_rate_run(bool in_flight, struct StabilizationSetpoint *rate_sp, struct ThrustSetpoint *thrust, int32_t *cmd);
 extern void stabilization_rate_enter(void);
 

@@ -34,7 +34,6 @@
 
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_heli_indi.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
 #include "filters/low_pass_filter.h"
 
@@ -157,12 +156,6 @@ void indi_apply_measurement_notch_filters(int32_t _out[], int32_t _in[]);
 void indi_apply_actuator_butterworth_filters(int32_t _out[], int32_t _in[]);
 void indi_apply_measurement_butterworth_filters(int32_t _out[], int32_t _in[]);
 
-#if PERIODIC_TELEMETRY
-#include "modules/datalink/telemetry.h"
-
-/* Telemetry messages here, at the moment there are none */
-
-#endif // PERIODIC_TELEMETRY
 
 static inline void indi_apply_actuator_models(int32_t _out[], int32_t _in[])
 {
@@ -425,10 +418,6 @@ void stabilization_attitude_init(void)
   c->apply_measurement_filters[1] = &indi_apply_measurement_butterworth_filters;
   c->apply_actuator_filters[0] = &indi_apply_actuator_notch_filters;
   c->apply_actuator_filters[1] = &indi_apply_actuator_butterworth_filters;
-
-#if PERIODIC_TELEMETRY
-  //register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_<<MSG>>, function);
-#endif
 }
 
 void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
@@ -568,18 +557,5 @@ void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp
 
 void stabilization_attitude_enter(void)
 {
-  /* reset psi setpoint to current psi angle */
-  stab_att_sp_euler.psi = stabilization_attitude_get_heading_i();
-  int32_quat_of_eulers(&stab_att_sp_quat, &stab_att_sp_euler);
 }
 
-void stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
-{
-  struct FloatQuat q_sp;
-#if USE_EARTH_BOUND_RC_SETPOINT
-  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#else
-  stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#endif
-  QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
-}

@@ -358,14 +358,11 @@ void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q)
 void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat *q_sp, bool in_flight, bool in_carefree,
     bool coordinated_turn)
 {
-
+  struct FloatEulers euler;
+  float_eulers_of_quat(&euler, q_sp);
   // FIXME: remove me, do in quaternion directly
   // is currently still needed, since the yaw setpoint integration is done in eulers
-#if defined STABILIZATION_ATTITUDE_TYPE_INT
-  stabilization_attitude_read_rc_setpoint_eulers(&stab_att_sp_euler, in_flight, in_carefree, coordinated_turn);
-#else
-  stabilization_attitude_read_rc_setpoint_eulers_f(&stab_att_sp_euler, in_flight, in_carefree, coordinated_turn);
-#endif
+  stabilization_attitude_read_rc_setpoint_eulers_f(&euler, in_flight, in_carefree, coordinated_turn);
 
   struct FloatQuat q_rp_cmd;
   stabilization_attitude_read_rc_roll_pitch_quat_f(&q_rp_cmd);
@@ -390,11 +387,7 @@ void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat *q_sp, bool
   if (in_flight) {
     /* get current heading setpoint */
     struct FloatQuat q_yaw_sp;
-#if defined STABILIZATION_ATTITUDE_TYPE_INT
-    float_quat_of_axis_angle(&q_yaw_sp, &zaxis, ANGLE_FLOAT_OF_BFP(stab_att_sp_euler.psi));
-#else
-    float_quat_of_axis_angle(&q_yaw_sp, &zaxis, stab_att_sp_euler.psi);
-#endif
+    float_quat_of_axis_angle(&q_yaw_sp, &zaxis, euler.psi);
 
     /* rotation between current yaw and yaw setpoint */
     struct FloatQuat q_yaw_diff;
@@ -411,13 +404,11 @@ void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat *q_sp, bool
 void stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(struct FloatQuat *q_sp, bool in_flight,
     bool in_carefree, bool coordinated_turn)
 {
+  struct FloatEulers euler;
+  float_eulers_of_quat(&euler, q_sp);
   // FIXME: remove me, do in quaternion directly
   // is currently still needed, since the yaw setpoint integration is done in eulers
-#if defined STABILIZATION_ATTITUDE_TYPE_INT
-  stabilization_attitude_read_rc_setpoint_eulers(&stab_att_sp_euler, in_flight, in_carefree, coordinated_turn);
-#else
-  stabilization_attitude_read_rc_setpoint_eulers_f(&stab_att_sp_euler, in_flight, in_carefree, coordinated_turn);
-#endif
+  stabilization_attitude_read_rc_setpoint_eulers_f(&euler, in_flight, in_carefree, coordinated_turn);
 
   const struct FloatVect3 zaxis = {0., 0., 1.};
 
@@ -427,13 +418,7 @@ void stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(struct FloatQuat
   if (in_flight) {
     /* get current heading setpoint */
     struct FloatQuat q_yaw_sp;
-
-#if defined STABILIZATION_ATTITUDE_TYPE_INT
-    float_quat_of_axis_angle(&q_yaw_sp, &zaxis, ANGLE_FLOAT_OF_BFP(stab_att_sp_euler.psi));
-#else
-    float_quat_of_axis_angle(&q_yaw_sp, &zaxis, stab_att_sp_euler.psi);
-#endif
-
+    float_quat_of_axis_angle(&q_yaw_sp, &zaxis, euler.psi);
     float_quat_comp(q_sp, &q_yaw_sp, &q_rp_cmd);
   } else {
     struct FloatQuat q_yaw;
