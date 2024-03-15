@@ -32,9 +32,7 @@ extern "C" {
 #endif
 
 #include "firmwares/rotorcraft/stabilization.h"
-//#ifdef STABILIZATION_ATTITUDE_TYPE_H TODO check that we can get rid of this
-//#include STABILIZATION_ATTITUDE_TYPE_H
-//#endif
+#include "modules/radio_control/radio_control.h"
 
 /** Stabilization init function
  *
@@ -49,9 +47,10 @@ extern void stabilization_attitude_init(void);
  * @param[in]  in_flight         true if in flight
  * @param[in]  in_carefree       true if in carefree mode
  * @param[in]  coordinated_turn  true if in horizontal mode forward
+ * @param[in]  rc                pointer to radio control structure
  * @return stabilization setpoint
  */
-extern struct StabilizationSetpoint stabilization_attitude_read_rc(bool in_flight, bool carefree, bool coordinated_turn);
+extern struct StabilizationSetpoint stabilization_attitude_read_rc(bool in_flight, bool carefree, bool coordinated_turn, struct RadioControl *rc);
 
 /** Attitude control enter function
  */

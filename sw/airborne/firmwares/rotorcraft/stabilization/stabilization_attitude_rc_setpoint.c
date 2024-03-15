@@ -50,54 +50,54 @@
 #define COORDINATED_TURN_AIRSPEED 12.0
 #endif
 
-#define YAW_DEADBAND_EXCEEDED()                                         \
-  (radio_control.values[RADIO_YAW] >  STABILIZATION_ATTITUDE_DEADBAND_R || \
-   radio_control.values[RADIO_YAW] < -STABILIZATION_ATTITUDE_DEADBAND_R)
+#define YAW_DEADBAND_EXCEEDED(_rc)                               \
+  (rc->values[RADIO_YAW] >  STABILIZATION_ATTITUDE_DEADBAND_R || \
+   rc->values[RADIO_YAW] < -STABILIZATION_ATTITUDE_DEADBAND_R)
 
 float care_free_heading = 0;
 int32_t transition_theta_offset = 0;
 
-static int32_t get_rc_roll(void)
+static int32_t get_rc_roll(struct RadioControl *rc)
 {
   const int32_t max_rc_phi = (int32_t) ANGLE_BFP_OF_REAL(STABILIZATION_ATTITUDE_SP_MAX_PHI);
-  int32_t roll = radio_control.values[RADIO_ROLL];
+  int32_t roll = rc->values[RADIO_ROLL];
   DeadBand(roll, STABILIZATION_ATTITUDE_DEADBAND_A);
   return roll * max_rc_phi / (MAX_PPRZ - STABILIZATION_ATTITUDE_DEADBAND_A);
 }
 
-static int32_t get_rc_pitch(void)
+static int32_t get_rc_pitch(struct RadioControl *rc)
 {
   const int32_t max_rc_theta = (int32_t) ANGLE_BFP_OF_REAL(STABILIZATION_ATTITUDE_SP_MAX_THETA);
-  int32_t pitch = radio_control.values[RADIO_PITCH];
+  int32_t pitch = rc->values[RADIO_PITCH];
   DeadBand(pitch, STABILIZATION_ATTITUDE_DEADBAND_E);
   return pitch * max_rc_theta / (MAX_PPRZ - STABILIZATION_ATTITUDE_DEADBAND_E);
 }
 
-static int32_t get_rc_yaw(void)
+static int32_t get_rc_yaw(struct RadioControl *rc)
 {
   const int32_t max_rc_r = (int32_t) ANGLE_BFP_OF_REAL(STABILIZATION_ATTITUDE_SP_MAX_R);
-  int32_t yaw = radio_control.values[RADIO_YAW];
+  int32_t yaw = rc->values[RADIO_YAW];
   DeadBand(yaw, STABILIZATION_ATTITUDE_DEADBAND_R);
   return yaw * max_rc_r / (MAX_PPRZ - STABILIZATION_ATTITUDE_DEADBAND_R);
 }
 
-static float get_rc_roll_f(void)
+static float get_rc_roll_f(struct RadioControl *rc)
 {
-  int32_t roll = radio_control.values[RADIO_ROLL];
+  int32_t roll = rc->values[RADIO_ROLL];
   DeadBand(roll, STABILIZATION_ATTITUDE_DEADBAND_A);
   return roll * STABILIZATION_ATTITUDE_SP_MAX_PHI / (MAX_PPRZ - STABILIZATION_ATTITUDE_DEADBAND_A);
 }
 
-static float get_rc_pitch_f(void)
+static float get_rc_pitch_f(struct RadioControl *rc)
 {
-  int32_t pitch = radio_control.values[RADIO_PITCH];
+  int32_t pitch = rc->values[RADIO_PITCH];
   DeadBand(pitch, STABILIZATION_ATTITUDE_DEADBAND_E);
   return pitch * STABILIZATION_ATTITUDE_SP_MAX_THETA / (MAX_PPRZ - STABILIZATION_ATTITUDE_DEADBAND_E);
 }
 
-static inline float get_rc_yaw_f(void)
+static inline float get_rc_yaw_f(struct RadioControl *rc)
 {
-  int32_t yaw = radio_control.values[RADIO_YAW];
+  int32_t yaw = rc->values[RADIO_YAW];
   DeadBand(yaw, STABILIZATION_ATTITUDE_DEADBAND_R);
   return yaw * STABILIZATION_ATTITUDE_SP_MAX_R / (MAX_PPRZ - STABILIZATION_ATTITUDE_DEADBAND_R);
 }
@@ -149,19 +149,20 @@ float stabilization_attitude_get_heading_f(void)
 
 
 /** Read attitude setpoint from RC as euler angles
- * @param[in]  coordinated_turn  true if in horizontal mode forward
- * @param[in]  in_carefree       true if in carefree mode
- * @param[in]  in_flight         true if in flight
  * @param[out] sp                attitude setpoint as euler angles
+ * @param[in]  in_flight         true if in flight
+ * @param[in]  in_carefree       true if in carefree mode
+ * @param[in]  coordinated_turn  true if in horizontal mode forward
+ * @param[in]  rc                pointer to radio control structure
  */
 void stabilization_attitude_read_rc_setpoint_eulers(struct Int32Eulers *sp, bool in_flight, bool in_carefree,
-    bool coordinated_turn)
+    bool coordinated_turn, struct RadioControl *rc)
 {
   /* last time this function was called, used to calculate yaw setpoint update */
   static float last_ts = 0.f;
 
-  sp->phi = get_rc_roll();
-  sp->theta = get_rc_pitch();
+  sp->phi = get_rc_roll(rc);
+  sp->theta = get_rc_pitch(rc);
 
   if (in_flight) {
     /* calculate dt for yaw integration */
@@ -170,8 +171,8 @@ void stabilization_attitude_read_rc_setpoint_eulers(struct Int32Eulers *sp, bool
     Bound(dt, 0, 0.5);
 
     /* do not advance yaw setpoint if within a small deadband around stick center or if throttle is zero */
-    if (YAW_DEADBAND_EXCEEDED() && !THROTTLE_STICK_DOWN()) {
-      sp->psi += get_rc_yaw() * dt;
+    if (YAW_DEADBAND_EXCEEDED(rc) && !THROTTLE_STICK_DOWN()) {
+      sp->psi += get_rc_yaw(rc) * dt;
       INT32_ANGLE_NORMALIZE(sp->psi);
     }
     if (coordinated_turn) {
@@ -233,14 +234,21 @@ void stabilization_attitude_read_rc_setpoint_eulers(struct Int32Eulers *sp, bool
 }
 
 
+/** Read attitude setpoint from RC as float euler angles
+ * @param[out] sp                attitude setpoint as euler angles
+ * @param[in]  in_flight         true if in flight
+ * @param[in]  in_carefree       true if in carefree mode
+ * @param[in]  coordinated_turn  true if in horizontal mode forward
+ * @param[in]  rc                pointer to radio control structure
+ */
 void stabilization_attitude_read_rc_setpoint_eulers_f(struct FloatEulers *sp, bool in_flight, bool in_carefree,
-    bool coordinated_turn)
+    bool coordinated_turn, struct RadioControl *rc)
 {
   /* last time this function was called, used to calculate yaw setpoint update */
   static float last_ts = 0.f;
 
-  sp->phi = get_rc_roll_f();
-  sp->theta = get_rc_pitch_f();
+  sp->phi = get_rc_roll_f(rc);
+  sp->theta = get_rc_pitch_f(rc);
 
   if (in_flight) {
     /* calculate dt for yaw integration */
@@ -250,7 +258,7 @@ void stabilization_attitude_read_rc_setpoint_eulers_f(struct FloatEulers *sp, bo
 
     /* do not advance yaw setpoint if within a small deadband around stick center or if throttle is zero */
     if (YAW_DEADBAND_EXCEEDED() && !THROTTLE_STICK_DOWN()) {
-      sp->psi += get_rc_yaw_f() * dt;
+      sp->psi += get_rc_yaw_f(rc) * dt;
       FLOAT_ANGLE_NORMALIZE(sp->psi);
     }
     if (coordinated_turn) {
@@ -312,12 +320,12 @@ void stabilization_attitude_read_rc_setpoint_eulers_f(struct FloatEulers *sp, bo
  * Interprets the stick positions as axes.
  * @param[out] q quaternion representing the RC roll/pitch input
  */
-void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q)
+void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q, struct RadioControl *rc)
 {
   /* orientation vector describing simultaneous rotation of roll/pitch */
   struct FloatVect3 ov;
-  ov.x = get_rc_roll_f();
-  ov.y = get_rc_pitch_f();
+  ov.x = get_rc_roll_f(rc);
+  ov.y = get_rc_pitch_f(rc);
   ov.z = 0.0;
 
   /* quaternion from that orientation vector */
@@ -328,16 +336,16 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q)
  * Both angles are are interpreted relative to to the horizontal plane (earth bound).
  * @param[out] q quaternion representing the RC roll/pitch input
  */
-void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q)
+void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q, struct RadioControl *rc)
 {
   /* only non-zero entries for roll quaternion */
-  float roll2 = get_rc_roll_f() / 2.0f;
+  float roll2 = get_rc_roll_f(rc) / 2.0f;
   float qx_roll = sinf(roll2);
   float qi_roll = cosf(roll2);
 
   //An offset is added if in forward mode
   /* only non-zero entries for pitch quaternion */
-  float pitch2 = (ANGLE_FLOAT_OF_BFP(transition_theta_offset) + get_rc_pitch_f()) / 2.0f;
+  float pitch2 = (ANGLE_FLOAT_OF_BFP(transition_theta_offset) + get_rc_pitch_f(rc)) / 2.0f;
   float qy_pitch = sinf(pitch2);
   float qi_pitch = cosf(pitch2);
 
@@ -350,22 +358,23 @@ void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q)
 
 /** Read attitude setpoint from RC as quaternion
  * Interprets the stick positions as axes.
- * @param[in]  coordinated_turn  true if in horizontal mode forward
- * @param[in]  in_carefree       true if in carefree mode
- * @param[in]  in_flight         true if in flight
  * @param[out] q_sp              attitude setpoint as quaternion
+ * @param[in]  in_flight         true if in flight
+ * @param[in]  in_carefree       true if in carefree mode
+ * @param[in]  coordinated_turn  true if in horizontal mode forward
+ * @param[in]  rc                pointer to radio control structure
  */
 void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat *q_sp, bool in_flight, bool in_carefree,
-    bool coordinated_turn)
+    bool coordinated_turn, struct RadioControl *rc)
 {
   struct FloatEulers euler;
   float_eulers_of_quat(&euler, q_sp);
   // FIXME: remove me, do in quaternion directly
   // is currently still needed, since the yaw setpoint integration is done in eulers
-  stabilization_attitude_read_rc_setpoint_eulers_f(&euler, in_flight, in_carefree, coordinated_turn);
+  stabilization_attitude_read_rc_setpoint_eulers_f(&euler, in_flight, in_carefree, coordinated_turn, rc);
 
   struct FloatQuat q_rp_cmd;
-  stabilization_attitude_read_rc_roll_pitch_quat_f(&q_rp_cmd);
+  stabilization_attitude_read_rc_roll_pitch_quat_f(&q_rp_cmd, rc);
 
   /* get current heading */
   const struct FloatVect3 zaxis = {0., 0., 1.};
@@ -400,20 +409,26 @@ void stabilization_attitude_read_rc_setpoint_quat_f(struct FloatQuat *q_sp, bool
   }
 }
 
-//Function that reads the rc setpoint in an earth bound frame
+/** Read attitude setpoint from RC as quaternion in earth bound frame
+ * @param[out] q_sp              attitude setpoint as quaternion
+ * @param[in]  in_flight         true if in flight
+ * @param[in]  in_carefree       true if in carefree mode
+ * @param[in]  coordinated_turn  true if in horizontal mode forward
+ * @param[in]  rc                pointer to radio control structure
+ */
 void stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(struct FloatQuat *q_sp, bool in_flight,
-    bool in_carefree, bool coordinated_turn)
+    bool in_carefree, bool coordinated_turn, struct RadioControl *rc)
 {
   struct FloatEulers euler;
   float_eulers_of_quat(&euler, q_sp);
   // FIXME: remove me, do in quaternion directly
   // is currently still needed, since the yaw setpoint integration is done in eulers
-  stabilization_attitude_read_rc_setpoint_eulers_f(&euler, in_flight, in_carefree, coordinated_turn);
+  stabilization_attitude_read_rc_setpoint_eulers_f(&euler, in_flight, in_carefree, coordinated_turn, rc);
 
   const struct FloatVect3 zaxis = {0., 0., 1.};
 
   struct FloatQuat q_rp_cmd;
-  stabilization_attitude_read_rc_roll_pitch_earth_quat_f(&q_rp_cmd);
+  stabilization_attitude_read_rc_roll_pitch_earth_quat_f(&q_rp_cmd, rc);
 
   if (in_flight) {
     /* get current heading setpoint */
@@ -432,3 +447,4 @@ void stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(struct FloatQuat
     QUAT_COPY(*q_sp, q_rp_sp);
   }
 }
+

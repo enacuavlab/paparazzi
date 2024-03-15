@@ -31,6 +31,7 @@
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
+#include "modules/radio_control/radio_control.h"
 #include "autopilot.h"
 
 // Own Variables
@@ -61,7 +62,7 @@ void guidance_module_enter(void)
   ctrl.cmd.psi = stateGetNedToBodyEulers_i()->psi;
 
   // Convert RC to setpoint
-  stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot.in_flight, false, false);
+  stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot.in_flight, false, false, &radio_control);
 
   // vertical mode in hover
   guidance_v_mode_changed(GUIDANCE_V_MODE_HOVER);
@@ -70,7 +71,7 @@ void guidance_module_enter(void)
 void guidance_module_read_rc(void)
 {
   guidance_v_read_rc();
-  stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot.in_flight, false, false);
+  stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot.in_flight, false, false, &radio_control);
 }
 
 

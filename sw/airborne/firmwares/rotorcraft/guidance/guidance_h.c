@@ -147,7 +147,7 @@ void guidance_h_read_rc(bool in_flight)
   switch (guidance_h.mode) {
 
     case GUIDANCE_H_MODE_HOVER:
-      stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, in_flight, FALSE, FALSE);
+      stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, in_flight, FALSE, FALSE, &radio_control);
 #if GUIDANCE_H_USE_SPEED_REF
       read_rc_setpoint_speed_i(&guidance_h.sp.speed, in_flight);
       /* enable x,y velocity setpoints */
@@ -156,7 +156,7 @@ void guidance_h_read_rc(bool in_flight)
       break;
     case GUIDANCE_H_MODE_NAV:
       if (radio_control.status == RC_OK) {
-        stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, in_flight, FALSE, FALSE);
+        stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, in_flight, FALSE, FALSE, &radio_control);
       } else {
         FLOAT_EULERS_ZERO(guidance_h.rc_sp);
       }

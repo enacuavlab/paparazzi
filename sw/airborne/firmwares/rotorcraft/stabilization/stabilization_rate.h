@@ -29,6 +29,7 @@
 #define STABILIZATION_RATE
 
 #include "firmwares/rotorcraft/stabilization.h"
+#include "modules/radio_control/radio_control.h"
 #include "math/pprz_algebra_float.h"
 
 #ifndef STABILIZATION_RATE_DEADBAND_P
@@ -56,6 +57,7 @@
 extern void stabilization_rate_init(void);
 extern void stabilization_rate_run(bool in_flight, struct StabilizationSetpoint *rate_sp, struct ThrustSetpoint *thrust, int32_t *cmd);
 extern void stabilization_rate_enter(void);
+extern struct StabilizationSetpoint stabilization_rate_read_rc(struct RadioControl *rc);
 
 extern struct FloatRates stabilization_rate_gain;
 extern struct FloatRates stabilization_rate_igain;
