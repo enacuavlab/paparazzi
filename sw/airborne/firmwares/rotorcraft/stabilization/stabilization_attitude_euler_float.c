@@ -27,8 +27,8 @@
 
 #include "generated/airframe.h"
 
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_euler_float.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_euler_float.h"
 
 #include "std.h"
 #include "paparazzi.h"
@@ -42,8 +42,8 @@
 struct FloatAttitudeGains stabilization_gains;
 struct FloatEulers stabilization_att_sum_err;
 
-struct FloatEulers stab_att_sp_euler;
-struct AttRefEulerFloat att_ref_euler_f;
+static struct FloatEulers stab_att_sp_euler;
+static struct AttRefEulerFloat att_ref_euler_f;
 
 float stabilization_att_fb_cmd[COMMANDS_NB];
 float stabilization_att_ff_cmd[COMMANDS_NB];
@@ -95,7 +95,7 @@ static void send_att_ref(struct transport_tx *trans, struct link_device *dev)
 }
 #endif
 
-void stabilization_attitude_init(void)
+void stabilization_attitude_euler_float_init(void)
 {
 
   attitude_ref_euler_float_init(&att_ref_euler_f);
@@ -128,18 +128,10 @@ void stabilization_attitude_init(void)
 #endif
 }
 
-void stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
-{
-  stabilization_attitude_read_rc_setpoint_eulers_f(&stab_att_sp_euler, in_flight, in_carefree, coordinated_turn);
-}
-
 void stabilization_attitude_enter(void)
 {
-
-  /* reset psi setpoint to current psi angle */
-  stab_att_sp_euler.psi = stabilization_attitude_get_heading_f();
-
-  attitude_ref_euler_float_enter(&att_ref_euler_f, stab_att_sp_euler.psi);
+  /* reset psi ref to current psi angle */
+  attitude_ref_euler_float_enter(&att_ref_euler_f, stabilization_attitude_get_heading_f());
 
   FLOAT_EULERS_ZERO(stabilization_att_sum_err);
 }

@@ -35,11 +35,9 @@
 #define STABILIZATION_INDI_SIMPLE_H
 
 #include "firmwares/rotorcraft/stabilization.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_quat_int.h"
 #include "filters/low_pass_filter.h"
-
-extern struct Int32Quat   stab_att_sp_quat;  ///< with #INT32_QUAT_FRAC
-extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
 
 struct Indi_gains {
   struct FloatRates att;
@@ -86,7 +84,6 @@ extern void stabilization_indi_init(void);
 extern void stabilization_indi_enter(void);
 extern void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *rate_sp, struct ThrustSetpoint *thrust, int32_t *cmd);
 extern void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoint *att_sp, struct ThrustSetpoint *thrust, int32_t *cmd);
-extern void stabilization_indi_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn);
 extern void stabilization_indi_simple_reset_r_filter_cutoff(float new_cutoff);
 
 #endif /* STABILIZATION_INDI_SIMPLE_H */

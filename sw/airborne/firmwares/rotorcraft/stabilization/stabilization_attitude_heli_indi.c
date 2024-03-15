@@ -33,7 +33,6 @@
 #include "autopilot.h"
 
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_heli_indi.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
 #include "filters/low_pass_filter.h"
 
@@ -123,9 +122,9 @@
 #define INVG_33 -50000 // Not used at the moment
 #define INT32_INVG_FRAC 16
 
-struct Int32Quat   stab_att_sp_quat;
-struct Int32Eulers stab_att_sp_euler;
-struct Int32Quat sp_offset; // non-zero neutral attitude
+static struct Int32Quat   stab_att_sp_quat;
+static struct Int32Eulers stab_att_sp_euler;
+static struct Int32Quat sp_offset; // non-zero neutral attitude
 
 struct HeliIndiGains heli_indi_gains = {
   STABILIZATION_ATTITUDE_HELI_INDI_ROLL_P,
@@ -135,7 +134,7 @@ struct HeliIndiGains heli_indi_gains = {
 };
 
 /* Main controller struct */
-struct IndiController_int heli_indi_ctl;
+static struct IndiController_int heli_indi_ctl;
 
 /* Filter functions */
 struct delayed_first_order_lowpass_filter_t actuator_model[INDI_DOF];
@@ -328,11 +327,11 @@ void stabilization_attitude_heli_indi_set_steadystate_pitchroll()
 }
 
 /**
- * @brief stabilization_attitude_init
+ * @brief stabilization_attitude_heli_indi_init
  *
  * Initialize the heli indi attitude controller.
  */
-void stabilization_attitude_init(void)
+void stabilization_attitude_heli_indi_init(void)
 {
   /* Initialization code INDI */
   struct IndiController_int *c = &heli_indi_ctl;

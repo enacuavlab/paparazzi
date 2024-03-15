@@ -31,8 +31,6 @@
  */
 
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
 
 #include "math/pprz_algebra_float.h"
@@ -232,8 +230,8 @@ float act_obs[INDI_NUM_ACT];
 int32_t num_thrusters;
 int32_t num_thrusters_x;
 
-struct Int32Eulers stab_att_sp_euler;
-struct Int32Quat   stab_att_sp_quat;
+static struct Int32Eulers stab_att_sp_euler;
+static struct Int32Quat   stab_att_sp_quat;
 
 // Register actuator feedback if we rely on RPM information
 #if STABILIZATION_INDI_RPM_FEEDBACK
@@ -738,19 +736,6 @@ void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoin
   /* compute the INDI command */
   struct StabilizationSetpoint sp = stab_sp_from_rates_f(&rate_sp);
   stabilization_indi_rate_run(in_flight, &sp, thrust, cmd);
-}
-
-// This function reads rc commands
-void stabilization_indi_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
-{
-  struct FloatQuat q_sp;
-#if USE_EARTH_BOUND_RC_SETPOINT
-  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#else
-  stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#endif
-
-  QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
 }
 
 /**

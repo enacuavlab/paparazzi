@@ -36,10 +36,6 @@
 
 #define TRAJ_MAX_BANK (int32_t)ANGLE_BFP_OF_REAL(GUIDANCE_H_MAX_BANK)
 
-void stabilization_attitude_init(void)
-{
-}
-
 void stabilization_attitude_enter(void)
 {
 }

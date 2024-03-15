@@ -25,15 +25,7 @@
 #ifndef STABILIZATION_ONELOOP
 #define STABILIZATION_ONELOOP
 
-#include "math/pprz_algebra_int.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 
-extern struct FloatEulers stab_att_sp_euler;
-extern struct Int32Quat   stab_att_sp_quat;
-extern struct FloatRates  stab_att_ff_rates;
-
-
-extern struct Int32Rates stabilization_oneloop_rc_cmd;
-
-
 #endif /* STABILIZATION_ONELOOP */
+

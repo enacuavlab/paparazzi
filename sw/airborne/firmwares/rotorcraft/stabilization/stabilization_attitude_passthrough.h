@@ -22,6 +22,7 @@
 #ifndef STABILIZATION_ATTITUDE_PASSTHROUGH_H
 #define STABILIZATION_ATTITUDE_PASSTHROUGH_H
 
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_common_int.h"
 
 #endif /* STABILIZATION_ATTITUDE_PASSTHROUGH_H */

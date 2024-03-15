@@ -22,25 +22,10 @@
 /** @file stabilization_oneloop.c
  */
 
-//#include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_oneloop.h"
 #include "firmwares/rotorcraft/oneloop/oneloop_andi.h"
-
-#include "modules/radio_control/radio_control.h"
-#include "generated/airframe.h"
 #include "generated/modules.h"
 
-
-struct FloatEulers stab_att_sp_euler;
-struct Int32Quat   stab_att_sp_quat;
-struct FloatRates  stab_att_ff_rates;
-
-
-
-void stabilization_attitude_init(void)
-{
-  // oneloop init is already done through module init
-}
 
 void stabilization_attitude_enter(void)
 {
@@ -58,8 +43,3 @@ void stabilization_attitude_run(bool in_flight, UNUSED struct StabilizationSetpo
   }
 }
 
-
-void stabilization_attitude_read_rc(UNUSED bool in_flight, UNUSED bool in_carefree, UNUSED bool coordinated_turn)
-{
-
-}

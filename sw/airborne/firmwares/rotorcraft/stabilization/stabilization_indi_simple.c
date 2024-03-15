@@ -31,7 +31,6 @@
  */
 
 #include "firmwares/rotorcraft/stabilization/stabilization_indi_simple.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
 
@@ -463,22 +462,6 @@ void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoin
 }
 
 /**
- * This function reads rc commands
- *
- * @param in_flight boolean that states if the UAV is in flight or not
- */
-void stabilization_indi_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
-{
-  struct FloatQuat q_sp;
-#if USE_EARTH_BOUND_RC_SETPOINT
-  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#else
-  stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#endif
-  QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
-}
-
-/**
  * This is a Least Mean Squares adaptive filter
  * It estimates the actuator effectiveness online, by comparing the expected
  * angular acceleration based on the inputs with the measured angular
@@ -527,3 +510,4 @@ static inline void lms_estimation(void)
     indi.g2   = est->g2 * INDI_EST_SCALE;
   }
 }
+

@@ -29,13 +29,8 @@
  * Dynamic Inversion for Attitude Control of Micro Aerial Vehicles
  */
 
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_indi.h"
 
-
-void stabilization_attitude_init(void)
-{
-  // indi init is already done through module init
-}
 
 void stabilization_attitude_enter(void)
 {
@@ -47,7 +42,3 @@ void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp
   stabilization_indi_attitude_run(in_flight, sp, thrust, cmd);
 }
 
-void stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
-{
-  stabilization_indi_read_rc(in_flight, in_carefree, coordinated_turn);
-}

@@ -32,9 +32,9 @@ extern "C" {
 #endif
 
 #include "firmwares/rotorcraft/stabilization.h"
-#ifdef STABILIZATION_ATTITUDE_TYPE_H
-#include STABILIZATION_ATTITUDE_TYPE_H
-#endif
+//#ifdef STABILIZATION_ATTITUDE_TYPE_H TODO check that we can get rid of this
+//#include STABILIZATION_ATTITUDE_TYPE_H
+//#endif
 
 /** Stabilization init function
  *
@@ -43,13 +43,27 @@ extern "C" {
 extern void stabilization_attitude_init(void);
 
 /** Retrun attitude setpoint from RC as euler angles
+ *
+ * weak function that can be re-implemeted if needed
+ *
  * @param[in]  in_flight         true if in flight
  * @param[in]  in_carefree       true if in carefree mode
  * @param[in]  coordinated_turn  true if in horizontal mode forward
  * @return stabilization setpoint
  */
 extern struct StabilizationSetpoint stabilization_attitude_read_rc(bool in_flight, bool carefree, bool coordinated_turn);
+
+/** Attitude control enter function
+ */
 extern void stabilization_attitude_enter(void);
+
+/** Attitude control run function
+ *
+ * @param[in] in_flight         true if in flight
+ * @param[in] sp                pointer to the stabilization setpoint structure
+ * @param[in] thrust            pointer to the thrust setoint structure
+ * @param[out] cmd              pointer to the output command vector
+ */
 extern void stabilization_attitude_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd);
 
 #ifdef __cplusplus

@@ -54,9 +54,8 @@ void stabilization_direct_enter(void)
   INT_RATES_ZERO(stabilization_direct_rc_cmd);
 }
 
-void stabilization_direct_run(bool in_flight __attribute__((unused)),
-    struct StabilizationSetpoint *sp __attribute__((unused)),
-    struct ThrustSetpoint *thrust, int32_t *cmd)
+void stabilization_direct_run(bool in_flight UNUSED, struct StabilizationSetpoint *sp UNUSED,
+    struct ThrustSetpoint *thrust UNUSED, int32_t *cmd UNUSED)
 {
   /* just directly pass rc commands through */
 #ifdef COMMAND_ROLL

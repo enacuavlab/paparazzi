@@ -25,14 +25,12 @@
  * Rotorcraft attitude stabilization in euler int version.
  */
 
+#include "std.h"
 #include "generated/airframe.h"
 
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
-
-#include "std.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_euler_int.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_euler_int.h"
 #include "paparazzi.h"
-#include "math/pprz_algebra_int.h"
 #include "state.h"
 
 /** explicitly define to zero to disable attitude reference generation */
@@ -71,13 +69,13 @@ struct Int32Eulers stabilization_att_sum_err;
 int32_t stabilization_att_fb_cmd[COMMANDS_NB];
 int32_t stabilization_att_ff_cmd[COMMANDS_NB];
 
-struct Int32Eulers stab_att_sp_euler;
-struct AttRefEulerInt att_ref_euler_i;
+static struct Int32Eulers stab_att_sp_euler;
+static struct AttRefEulerInt att_ref_euler_i;
 
 static inline void reset_psi_ref_from_body(void)
 {
   //sp has been set from body using stabilization_attitude_get_yaw_i, use that value
-  att_ref_euler_i.euler.psi = stab_att_sp_euler.psi << (REF_ANGLE_FRAC - INT32_ANGLE_FRAC);
+  att_ref_euler_i.euler.psi = stateGetNedToBodyEulers_i()->psi << (REF_ANGLE_FRAC - INT32_ANGLE_FRAC);
   att_ref_euler_i.rate.r = 0;
   att_ref_euler_i.accel.r = 0;
 }
@@ -127,7 +125,7 @@ static void send_att_ref(struct transport_tx *trans, struct link_device *dev)
 }
 #endif
 
-void stabilization_attitude_init(void)
+void stabilization_attitude_euler_int_init(void)
 {
 
   INT_EULERS_ZERO(stab_att_sp_euler);
@@ -168,14 +166,8 @@ void stabilization_attitude_init(void)
 #endif
 }
 
-void stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
-{
-  stabilization_attitude_read_rc_setpoint_eulers(&stab_att_sp_euler, in_flight, in_carefree, coordinated_turn);
-}
-
 void stabilization_attitude_enter(void)
 {
-  stab_att_sp_euler.psi = stateGetNedToBodyEulers_i()->psi;
   reset_psi_ref_from_body();
   INT_EULERS_ZERO(stabilization_att_sum_err);
 }

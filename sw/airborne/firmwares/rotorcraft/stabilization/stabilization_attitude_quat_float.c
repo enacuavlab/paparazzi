@@ -25,8 +25,7 @@
 
 #include "generated/airframe.h"
 
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_float.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
 
 #include "std.h"
@@ -37,15 +36,15 @@
 
 struct FloatAttitudeGains stabilization_gains[STABILIZATION_ATTITUDE_GAIN_NB];
 
-struct FloatEulers stab_att_sp_euler;
-struct FloatQuat   stab_att_sp_quat;
+static struct FloatEulers stab_att_sp_euler;
+static struct FloatQuat   stab_att_sp_quat;
 
 struct AttRefQuatFloat att_ref_quat_f;
 
 struct FloatQuat stabilization_att_sum_err_quat;
 
-struct FloatRates last_body_rate;
-struct FloatRates body_rate_d;
+static struct FloatRates last_body_rate;
+static struct FloatRates body_rate_d;
 
 float stabilization_att_fb_cmd[COMMANDS_NB];
 float stabilization_att_ff_cmd[COMMANDS_NB];
@@ -159,7 +158,7 @@ static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *d
 }
 #endif
 
-void stabilization_attitude_init(void)
+void stabilization_attitude_quat_float_init(void)
 {
   /* setpoints */
   FLOAT_EULERS_ZERO(stab_att_sp_euler);
@@ -205,12 +204,7 @@ void stabilization_attitude_gain_schedule(uint8_t idx)
 
 void stabilization_attitude_enter(void)
 {
-
-  /* reset psi setpoint to current psi angle */
-  stab_att_sp_euler.psi = stabilization_attitude_get_heading_f();
-
   struct FloatQuat *state_quat = stateGetNedToBodyQuat_f();
-
   attitude_ref_quat_float_enter(&att_ref_quat_f, state_quat);
 
   float_quat_identity(&stabilization_att_sum_err_quat);
@@ -357,12 +351,3 @@ void stabilization_attitude_run(bool enable_integrator, struct StabilizationSetp
 #endif
 }
 
-void stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
-{
-#if USE_EARTH_BOUND_RC_SETPOINT
-  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&stab_att_sp_quat, in_flight, in_carefree, coordinated_turn);
-#else
-  stabilization_attitude_read_rc_setpoint_quat_f(&stab_att_sp_quat, in_flight, in_carefree, coordinated_turn);
-#endif
-  //float_quat_wrap_shortest(&stab_att_sp_quat);
-}

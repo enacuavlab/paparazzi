@@ -25,8 +25,7 @@
 
 #include "generated/airframe.h"
 
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_int.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
 
 #include "std.h"
@@ -72,8 +71,8 @@ struct Int32Quat stabilization_att_sum_err_quat;
 int32_t stabilization_att_fb_cmd[COMMANDS_NB];
 int32_t stabilization_att_ff_cmd[COMMANDS_NB];
 
-struct Int32Quat   stab_att_sp_quat;
-struct Int32Eulers stab_att_sp_euler;
+static struct Int32Quat   stab_att_sp_quat;
+static struct Int32Eulers stab_att_sp_euler;
 
 struct AttRefQuatInt att_ref_quat_i;
 
@@ -145,11 +144,9 @@ static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *d
 }
 #endif
 
-void stabilization_attitude_init(void)
+void stabilization_attitude_quat_int_init(void)
 {
-
   attitude_ref_quat_int_init(&att_ref_quat_i);
-
   int32_quat_identity(&stabilization_att_sum_err_quat);
 
 #if PERIODIC_TELEMETRY
@@ -161,16 +158,10 @@ void stabilization_attitude_init(void)
 
 void stabilization_attitude_enter(void)
 {
-
-  /* reset psi setpoint to current psi angle */
-  stab_att_sp_euler.psi = stabilization_attitude_get_heading_i();
-
   struct Int32Quat *state_quat = stateGetNedToBodyQuat_i();
-
   attitude_ref_quat_int_enter(&att_ref_quat_i, state_quat);
 
   int32_quat_identity(&stabilization_att_sum_err_quat);
-
 }
 
 #define OFFSET_AND_ROUND(_a, _b) (((_a)+(1<<((_b)-1)))>>(_b))
@@ -274,13 +265,3 @@ void stabilization_attitude_run(bool enable_integrator, struct StabilizationSetp
   BoundAbs(cmd[COMMAND_THRUST], MAX_PPRZ);
 }
 
-void stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
-{
-  struct FloatQuat q_sp;
-#if USE_EARTH_BOUND_RC_SETPOINT
-  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#else
-  stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#endif
-  QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
-}
