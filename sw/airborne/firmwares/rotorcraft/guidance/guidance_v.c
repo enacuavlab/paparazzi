@@ -32,6 +32,7 @@
 #include "modules/radio_control/radio_control.h"
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/navigation.h"
+#include "modules/core/abi.h"
 
 #include "state.h"
 

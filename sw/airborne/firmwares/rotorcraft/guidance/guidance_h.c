@@ -32,6 +32,7 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/navigation.h"
 #include "modules/radio_control/radio_control.h"
+#include "modules/core/abi.h"
 
 /* for guidance_v.thrust_coeff */
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
@@ -158,7 +159,7 @@ static void rc_cb(uint8_t sender_id UNUSED, struct RadioControl *rc)
     case GUIDANCE_H_MODE_HOVER:
       stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, autopilot_in_flight(), FALSE, FALSE, &radio_control);
 #if GUIDANCE_H_USE_SPEED_REF
-      read_rc_setpoint_speed_i(&guidance_h.sp.speed, in_flight, rc);
+      read_rc_setpoint_speed_i(&guidance_h.sp.speed, autopilot_in_flight(), rc);
       /* enable x,y velocity setpoints */
       guidance_h.sp.h_mask = GUIDANCE_H_SP_SPEED;
 #endif
@@ -388,12 +389,12 @@ static inline void transition_run(bool to_forward)
 }
 
 /// read speed setpoint from RC
-static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool in_flight)
+static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool in_flight, struct RadioControl *rc)
 {
   if (in_flight) {
     // negative pitch is forward
-    int64_t rc_x = -radio_control.values[RADIO_PITCH];
-    int64_t rc_y = radio_control.values[RADIO_ROLL];
+    int64_t rc_x = -rc->values[RADIO_PITCH];
+    int64_t rc_y = rc->values[RADIO_ROLL];
     DeadBand(rc_x, MAX_PPRZ / 20);
     DeadBand(rc_y, MAX_PPRZ / 20);
 
