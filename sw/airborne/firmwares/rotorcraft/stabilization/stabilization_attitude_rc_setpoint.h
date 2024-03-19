@@ -38,7 +38,13 @@ struct AttitudeRCInput {
   struct FloatEulers  rc_eulers;    ///< RC input in eulers (needed even for quat for yaw integration)
   float care_free_heading;          ///< care_free heading
   int32_t transition_theta_offset;  ///< pitch offset for hybrids, add when in forward mode
+  float last_ts;                    ///< last timestamp (in seconds)
 };
+
+/** Init rc input
+ * @param[out] rc_sp pointer to rc input structure
+ */
+extern void stabilization_attitude_rc_setpoint_init(struct AttitudeRCInput *rc_sp);
 
 /** Read attitude setpoint from RC as quaternion
  * Interprets the stick positions as axes.
@@ -87,6 +93,11 @@ extern struct Int32Eulers stabilization_attitude_read_rc_setpoint_eulers(struct 
  */
 extern struct FloatEulers stabilization_attitude_read_rc_setpoint_eulers_f(struct AttitudeRCInput *rc_sp, bool in_flight,
     bool in_carefree, bool coordinated_turn, struct RadioControl *rc);
+
+/** Reset rc input to current state
+ * @param[in/out] rc_sp   pointer to rc input structure
+ */
+extern void stabilization_attitude_reset_rc_setpoint(struct AttitudeRCInput *rc_sp);
 
 /** Reset care free heading to current heading
  * @param[in/out] rc_sp   pointer to rc input structure

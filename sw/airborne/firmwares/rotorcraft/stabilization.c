@@ -31,6 +31,7 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "modules/radio_control/radio_control.h"
 #include "modules/core/abi.h"
+#include "autopilot.h"
 #include "state.h"
 
 #if (STABILIZATION_FILTER_COMMANDS_ROLL_PITCH || STABILIZATION_FILTER_COMMANDS_YAW)
@@ -94,6 +95,7 @@ void stabilization_init(void)
 {
   stabilization.mode = STABILIZATION_MODE_NONE;
   stabilization.att_submode = STABILIZATION_ATT_SUBMODE_HEADING;
+  stabilization_attitude_rc_setpoint_init(&stabilization.rc_in);
   STAB_SP_SET_EULERS_ZERO(stabilization.rc_sp);
   for (uint8_t i = 0; i < COMMANDS_NB; i++) {
     stabilization.cmd[i] = 0;
@@ -129,6 +131,7 @@ static void stabilization_rate_reset_rc(void)
 
 static void stabilization_attitude_reset_rc(void)
 {
+  stabilization_attitude_reset_rc_setpoint(&stabilization.rc_in);
   stabilization.rc_sp = stab_sp_from_quat_f(stateGetNedToBodyQuat_f());
 }
 
@@ -154,7 +157,7 @@ void stabilization_mode_changed(uint8_t new_mode, uint8_t submode)
     case STABILIZATION_MODE_ATTITUDE:
       stabilization_attitude_reset_rc();
       if (submode == STABILIZATION_ATT_SUBMODE_CARE_FREE) {
-        stabilization_attitude_reset_care_free_heading();
+        stabilization_attitude_reset_care_free_heading(&stabilization.rc_in);
       }
       stabilization_attitude_enter();
       break;
@@ -168,13 +171,14 @@ void stabilization_mode_changed(uint8_t new_mode, uint8_t submode)
 
 struct StabilizationSetpoint WEAK stabilization_attitude_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn, struct RadioControl *rc)
 {
-  struct FloatQuat q_sp = stab_sp_to_quat_f(&stabilization.rc_sp);
 #if USE_EARTH_BOUND_RC_SETPOINT
-  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&q_sp, in_flight, in_carefree, coordinated_turn, rc);
+  stabilization_attitude_read_rc_setpoint_earth_bound(&stabilization.rc_in,
+      in_flight, in_carefree, coordinated_turn, rc);
 #else
-  stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn, rc);
+  stabilization_attitude_read_rc_setpoint(&stabilization.rc_in,
+      in_flight, in_carefree, coordinated_turn, rc);
 #endif
-  return stab_sp_from_quat_f(&q_sp);
+  return stab_sp_from_quat_f(&stabilization.rc_in.rc_quat);
 }
 
 #if USE_STABILIZATION_RATE

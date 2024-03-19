@@ -101,6 +101,15 @@ static inline float get_rc_yaw_f(struct RadioControl *rc)
   return yaw * STABILIZATION_ATTITUDE_SP_MAX_R / (MAX_PPRZ - STABILIZATION_ATTITUDE_DEADBAND_R);
 }
 
+void stabilization_attitude_rc_setpoint_init(struct AttitudeRCInput *rc_sp)
+{
+  float_quat_identity(&rc_sp->rc_quat);
+  FLOAT_EULERS_ZERO(rc_sp->rc_eulers);
+  rc_sp->care_free_heading = 0.f;
+  rc_sp->transition_theta_offset = 0;
+  rc_sp->last_ts = 0.f;
+}
+
 /** Read attitude setpoint from RC as quaternion
  * Interprets the stick positions as axes.
  * @param[out] rc_sp             pointer to rc input structure
@@ -175,7 +184,7 @@ void stabilization_attitude_read_rc_setpoint_earth_bound_f(struct AttitudeRCInpu
     /* get current heading setpoint */
     struct FloatQuat q_yaw_sp;
     float_quat_of_axis_angle(&q_yaw_sp, &zaxis, rc_sp->rc_eulers.psi);
-    float_quat_comp(rc_sp->rc_quat, &q_yaw_sp, &q_rp_cmd);
+    float_quat_comp(&rc_sp->rc_quat, &q_yaw_sp, &q_rp_cmd);
   } else {
     struct FloatQuat q_yaw;
     float_quat_of_axis_angle(&q_yaw, &zaxis, stateGetNedToBodyEulers_f()->psi);
@@ -187,6 +196,13 @@ void stabilization_attitude_read_rc_setpoint_earth_bound_f(struct AttitudeRCInpu
 
     QUAT_COPY(rc_sp->rc_quat, q_rp_sp);
   }
+}
+
+/// reset to current state
+void stabilization_attitude_reset_rc_setpoint(struct AttitudeRCInput *rc_sp)
+{
+  rc_sp->rc_eulers = *stateGetNedToBodyEulers_f();
+  rc_sp->rc_quat = *stateGetNedToBodyQuat_f();
 }
 
 /// reset the heading for care-free mode to current heading
@@ -230,44 +246,46 @@ float stabilization_attitude_get_heading_f(void)
 
 
 /** Read attitude setpoint from RC as euler angles
- * @param[out] sp                attitude setpoint as euler angles
+ * Only the euler format is updated and returned
+ * @param[out] rc_sp             pointer to rc input structure
  * @param[in]  in_flight         true if in flight
  * @param[in]  in_carefree       true if in carefree mode
  * @param[in]  coordinated_turn  true if in horizontal mode forward
  * @param[in]  rc                pointer to radio control structure
+ * @return attitude setpoint in eulers (int)
  */
-void stabilization_attitude_read_rc_setpoint_eulers(struct Int32Eulers *sp, bool in_flight, bool in_carefree,
-    bool coordinated_turn, struct RadioControl *rc)
+struct Int32Eulers stabilization_attitude_read_rc_setpoint_eulers(struct AttitudeRCInput *rc_sp, bool in_flight,
+    bool in_carefree, bool coordinated_turn, struct RadioControl *rc)
 {
-  /* last time this function was called, used to calculate yaw setpoint update */
-  static float last_ts = 0.f;
+  struct Int32Eulers sp_i;
+  EULERS_BFP_OF_REAL(sp_i, rc_sp->rc_eulers);
 
-  sp->phi = get_rc_roll(rc);
-  sp->theta = get_rc_pitch(rc);
+  sp_i.phi = get_rc_roll(rc);
+  sp_i.theta = get_rc_pitch(rc);
 
   if (in_flight) {
     /* calculate dt for yaw integration */
-    float dt = get_sys_time_float() - last_ts;
+    float dt = get_sys_time_float() - rc_sp->last_ts;
     /* make sure nothing drastically weird happens, bound dt to 0.5sec */
     Bound(dt, 0, 0.5);
 
     /* do not advance yaw setpoint if within a small deadband around stick center or if throttle is zero */
     if (YAW_DEADBAND_EXCEEDED(rc) && !THROTTLE_STICK_DOWN()) {
-      sp->psi += get_rc_yaw(rc) * dt;
-      INT32_ANGLE_NORMALIZE(sp->psi);
+      sp_i.psi += get_rc_yaw(rc) * dt;
+      INT32_ANGLE_NORMALIZE(sp_i.psi);
     }
     if (coordinated_turn) {
       //Coordinated turn
       //feedforward estimate angular rotation omega = g*tan(phi)/v
       int32_t omega;
       const int32_t max_phi = ANGLE_BFP_OF_REAL(RadOfDeg(60.0));
-      if (abs(sp->phi) < max_phi) {
-        omega = ANGLE_BFP_OF_REAL(9.81 / COORDINATED_TURN_AIRSPEED * tanf(ANGLE_FLOAT_OF_BFP(sp->phi)));
+      if (abs(sp_i.phi) < max_phi) {
+        omega = ANGLE_BFP_OF_REAL(9.81 / COORDINATED_TURN_AIRSPEED * tanf(ANGLE_FLOAT_OF_BFP(sp_i.phi)));
       } else { //max 60 degrees roll
-        omega = ANGLE_BFP_OF_REAL(9.81 / COORDINATED_TURN_AIRSPEED * 1.72305 * ((sp->phi > 0) - (sp->phi < 0)));
+        omega = ANGLE_BFP_OF_REAL(9.81 / COORDINATED_TURN_AIRSPEED * 1.72305 * ((sp_i.phi > 0) - (sp_i.phi < 0)));
       }
 
-      sp->psi += omega * dt;
+      sp_i.psi += omega * dt;
     }
 #ifdef STABILIZATION_ATTITUDE_SP_PSI_DELTA_LIMIT
     // Make sure the yaw setpoint does not differ too much from the real yaw
@@ -276,14 +294,14 @@ void stabilization_attitude_read_rc_setpoint_eulers(struct Int32Eulers *sp, bool
 
     int32_t heading = stabilization_attitude_get_heading_i();
 
-    int32_t delta_psi = sp->psi - heading;
+    int32_t delta_psi = sp_i.psi - heading;
     INT32_ANGLE_NORMALIZE(delta_psi);
     if (delta_psi > delta_limit) {
-      sp->psi = heading + delta_limit;
+      sp_i.psi = heading + delta_limit;
     } else if (delta_psi < -delta_limit) {
-      sp->psi = heading - delta_limit;
+      sp_i.psi = heading - delta_limit;
     }
-    INT32_ANGLE_NORMALIZE(sp->psi);
+    INT32_ANGLE_NORMALIZE(sp_i.psi);
 #endif
     //Care Free mode
     if (in_carefree) {
@@ -293,47 +311,48 @@ void stabilization_attitude_read_rc_setpoint_eulers(struct Int32Eulers *sp, bool
       int32_t temp_theta;
       int32_t care_free_delta_psi_i;
 
-      care_free_delta_psi_i = sp->psi - ANGLE_BFP_OF_REAL(rc_sp->care_free_heading);
+      care_free_delta_psi_i = sp_i.psi - ANGLE_BFP_OF_REAL(rc_sp->care_free_heading);
 
       INT32_ANGLE_NORMALIZE(care_free_delta_psi_i);
 
       PPRZ_ITRIG_SIN(sin_psi, care_free_delta_psi_i);
       PPRZ_ITRIG_COS(cos_psi, care_free_delta_psi_i);
 
-      temp_theta = INT_MULT_RSHIFT(cos_psi, sp->theta, INT32_ANGLE_FRAC) - INT_MULT_RSHIFT(sin_psi, sp->phi,
+      temp_theta = INT_MULT_RSHIFT(cos_psi, sp_i.theta, INT32_ANGLE_FRAC) - INT_MULT_RSHIFT(sin_psi, sp_i.phi,
                    INT32_ANGLE_FRAC);
-      sp->phi = INT_MULT_RSHIFT(cos_psi, sp->phi, INT32_ANGLE_FRAC) - INT_MULT_RSHIFT(sin_psi, sp->theta, INT32_ANGLE_FRAC);
+      sp_i.phi = INT_MULT_RSHIFT(cos_psi, sp_i.phi, INT32_ANGLE_FRAC) - INT_MULT_RSHIFT(sin_psi, sp_i.theta, INT32_ANGLE_FRAC);
 
-      sp->theta = temp_theta;
+      sp_i.theta = temp_theta;
     }
   } else { /* if not flying, use current yaw as setpoint */
-    sp->psi = stateGetNedToBodyEulers_i()->psi;
+    sp_i.psi = stateGetNedToBodyEulers_i()->psi;
   }
 
   /* update timestamp for dt calculation */
-  last_ts = get_sys_time_float();
+  rc_sp->last_ts = get_sys_time_float();
+  EULERS_FLOAT_OF_BFP(rc_sp->rc_eulers, sp_i);
+  return sp_i;
 }
 
 
 /** Read attitude setpoint from RC as float euler angles
- * @param[out] sp                attitude setpoint as euler angles
+ * Only the euler format is updated and returned
+ * @param[out] rc_sp             pointer to rc input structure
  * @param[in]  in_flight         true if in flight
  * @param[in]  in_carefree       true if in carefree mode
  * @param[in]  coordinated_turn  true if in horizontal mode forward
  * @param[in]  rc                pointer to radio control structure
+ * @return attitude setpoint in eulers (float)
  */
-void stabilization_attitude_read_rc_setpoint_eulers_f(struct AttitudeRCInput *rc_sp, bool in_flight, bool in_carefree,
-    bool coordinated_turn, struct RadioControl *rc)
+struct FloatEulers stabilization_attitude_read_rc_setpoint_eulers_f(struct AttitudeRCInput *rc_sp, bool in_flight,
+    bool in_carefree, bool coordinated_turn, struct RadioControl *rc)
 {
-  /* last time this function was called, used to calculate yaw setpoint update */
-  static float last_ts = 0.f;
-
   rc_sp->rc_eulers.phi = get_rc_roll_f(rc);
   rc_sp->rc_eulers.theta = get_rc_pitch_f(rc);
 
   if (in_flight) {
     /* calculate dt for yaw integration */
-    float dt = get_sys_time_float() - last_ts;
+    float dt = get_sys_time_float() - rc_sp->last_ts;
     /* make sure nothing drastically weird happens, bound dt to 0.5sec */
     Bound(dt, 0, 0.5);
 
@@ -393,7 +412,8 @@ void stabilization_attitude_read_rc_setpoint_eulers_f(struct AttitudeRCInput *rc
   }
 
   /* update timestamp for dt calculation */
-  last_ts = get_sys_time_float();
+  rc_sp->last_ts = get_sys_time_float();
+  return rc_sp->rc_eulers;
 }
 
 

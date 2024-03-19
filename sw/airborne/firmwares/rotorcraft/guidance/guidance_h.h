@@ -35,6 +35,7 @@ extern "C" {
 
 #include "firmwares/rotorcraft/guidance/guidance_h_ref.h"
 #include "firmwares/rotorcraft/stabilization.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "generated/airframe.h"
 #include "std.h"
 
@@ -102,7 +103,7 @@ struct HorizontalGuidance {
   struct HorizontalGuidanceSetpoint sp;   ///< setpoints
   struct HorizontalGuidanceReference ref; ///< reference calculated from setpoints
 
-  struct FloatEulers rc_sp;               ///< remote control setpoint
+  struct AttitudeRCInput rc_sp;           ///< remote control setpoint
 };
 
 extern struct HorizontalGuidance guidance_h;

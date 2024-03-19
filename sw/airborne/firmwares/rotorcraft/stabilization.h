@@ -31,6 +31,7 @@
 #include "generated/airframe.h"
 #include "math/pprz_algebra_int.h"
 #include "math/pprz_algebra_float.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 
 /** Stabilization modes
  */
@@ -101,7 +102,7 @@ struct ThrustSetpoint {
 struct Stabilization {
   uint8_t mode;                       ///< current mode
   uint8_t att_submode;                ///< current attitude sub-mode
-  struct AttitudeRCInput  rc_in;      ///< RC input
+  struct AttitudeRCInput rc_in;       ///< RC input
   struct StabilizationSetpoint rc_sp; ///< Keep it ? FIXME
   struct StabilizationSetpoint sp;    ///< current attitude setpoint (store for messages)
   int32_t cmd[COMMANDS_NB];           ///< output command vector, range from [-MAX_PPRZ:MAX_PPRZ] (store for messages)
@@ -119,10 +120,6 @@ extern void stabilization_init(void);
 /** Check mode change
  */
 extern void stabilization_mode_changed(uint8_t new_mode, uint8_t submode);
-
-/** Read RC setpoint if needed
- */
-extern void stabilization_read_rc(bool in_flight);
 
 /** Call default stabilization control
  * @param[in] in_flight true if rotorcraft is flying

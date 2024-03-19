@@ -29,7 +29,6 @@
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "firmwares/rotorcraft/guidance/guidance_module.h"
 #include "firmwares/rotorcraft/stabilization.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/navigation.h"
 #include "modules/radio_control/radio_control.h"
 #include "modules/core/abi.h"
@@ -44,15 +43,12 @@ PRINT_CONFIG_VAR(GUIDANCE_H_USE_SPEED_REF)
 
 struct HorizontalGuidance guidance_h;
 
-int32_t transition_percentage;
-
 /** horizontal guidance command.
  * In north/east with #INT32_ANGLE_FRAC
  */
 struct StabilizationSetpoint guidance_h_cmd;
 
 static void guidance_h_update_reference(void);
-static inline void transition_run(bool to_forward);
 
 #ifndef GUIDANCE_H_RC_ID
 #define GUIDANCE_H_RC_ID ABI_BROADCAST
@@ -94,13 +90,11 @@ void guidance_h_init(void)
   guidance_h.use_ref = GUIDANCE_H_USE_REF;
 
   INT_VECT2_ZERO(guidance_h.sp.pos);
-  FLOAT_EULERS_ZERO(guidance_h.rc_sp);
+  stabilization_attitude_rc_setpoint_init(&guidance_h.rc_sp);
   guidance_h.sp.heading = 0.0;
   guidance_h.sp.heading_rate = 0.0;
   guidance_h.sp.h_mask = GUIDANCE_H_SP_POS;
   guidance_h.sp.yaw_mask = GUIDANCE_H_SP_YAW;
-  transition_percentage = 0;
-  transition_theta_offset = 0;
 
   gh_ref_init();
 
@@ -168,7 +162,7 @@ static void rc_cb(uint8_t sender_id UNUSED, struct RadioControl *rc)
       if (radio_control.status == RC_OK) {
         stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, autopilot_in_flight(), FALSE, FALSE, &radio_control);
       } else {
-        FLOAT_EULERS_ZERO(guidance_h.rc_sp);
+        FLOAT_EULERS_ZERO(guidance_h.rc_sp.rc_eulers);
       }
       break;
     default:
@@ -186,7 +180,7 @@ struct StabilizationSetpoint guidance_h_run(bool in_flight)
 
     case GUIDANCE_H_MODE_HOVER:
       /* set psi command from RC */
-      guidance_h.sp.heading = guidance_h.rc_sp.psi;
+      guidance_h.sp.heading = guidance_h.rc_sp.rc_eulers.psi;
       /* fall trough to GUIDED to update ref, run traj and set final attitude setpoint */
 
       /* Falls through. */
@@ -290,7 +284,7 @@ void guidance_h_hover_enter(void)
   reset_guidance_reference_from_current_position();
 
   /* set guidance to current heading and position */
-  guidance_h.rc_sp.psi = stateGetNedToBodyEulers_f()->psi;
+  guidance_h.rc_sp.rc_eulers.psi = stateGetNedToBodyEulers_f()->psi;
   guidance_h_set_heading(stateGetNedToBodyEulers_f()->psi);
 
   /* call specific implementation */
@@ -369,23 +363,6 @@ struct StabilizationSetpoint guidance_h_from_nav(bool in_flight)
     /* return final attitude setpoint */
     return guidance_h_cmd;
   }
-}
-
-static inline void transition_run(bool to_forward)
-{
-  if (to_forward) {
-    //Add 0.00625%
-    transition_percentage += 1 << (INT32_PERCENTAGE_FRAC - 4);
-  } else {
-    //Subtract 0.00625%
-    transition_percentage -= 1 << (INT32_PERCENTAGE_FRAC - 4);
-  }
-
-#ifdef TRANSITION_MAX_OFFSET
-  const int32_t max_offset = ANGLE_BFP_OF_REAL(TRANSITION_MAX_OFFSET);
-  transition_theta_offset = INT_MULT_RSHIFT((transition_percentage << (INT32_ANGLE_FRAC - INT32_PERCENTAGE_FRAC)) / 100,
-                            max_offset, INT32_ANGLE_FRAC);
-#endif
 }
 
 /// read speed setpoint from RC
