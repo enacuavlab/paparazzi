@@ -95,12 +95,14 @@ struct ThrustSetpoint {
   } sp;
 };
 
+
 /** Stabilization structure
  */
 struct Stabilization {
   uint8_t mode;                       ///< current mode
   uint8_t att_submode;                ///< current attitude sub-mode
-  struct StabilizationSetpoint rc_sp; ///< RC input
+  struct AttitudeRCInput  rc_in;      ///< RC input
+  struct StabilizationSetpoint rc_sp; ///< Keep it ? FIXME
   struct StabilizationSetpoint sp;    ///< current attitude setpoint (store for messages)
   int32_t cmd[COMMANDS_NB];           ///< output command vector, range from [-MAX_PPRZ:MAX_PPRZ] (store for messages)
 
