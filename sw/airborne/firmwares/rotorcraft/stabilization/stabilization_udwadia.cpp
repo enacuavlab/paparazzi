@@ -38,17 +38,40 @@
 #include "modules/core/abi.h"
 #include <stdio.h>
 
+#include <Eigen/Dense> // https://eigen.tuxfamily.org/dox/GettingStarted.html
 
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 // variables needed for control
 
 
+#ifndef STABILIZATION_UDWADIA_IX
+#define STABILIZATION_UDWADIA_IX 0.04
+#endif
 
-struct Int32Eulers stab_att_sp_euler;
-struct Int32Quat   stab_att_sp_quat;
-struct FloatRates  stab_att_ff_rates;
+#ifndef STABILIZATION_UDWADIA_IY
+#define STABILIZATION_UDWADIA_IY 0.04
+#endif
+
+#ifndef STABILIZATION_UDWADIA_IZ
+#define STABILIZATION_UDWADIA_IZ 0.08
+#endif
+
+#ifndef STABILIZATION_UDWADIA_D1
+#define STABILIZATION_UDWADIA_D1 6.3
+#endif
+
+#ifndef STABILIZATION_UDWADIA_D2
+#define STABILIZATION_UDWADIA_D2 20
+#endif
 
 // Register actuator feedback if we rely on RPM information
 #if STABILIZATION_INDI_RPM_FEEDBACK
@@ -64,27 +87,35 @@ PRINT_CONFIG_MSG("STABILIZATION_INDI_RPM_FEEDBACK")
 
 
 
+Eigen::Vector3f Fc;
+Eigen::Vector4f yaw_quat;
 
-struct FloatVect3 body_accel_f;
+
+Eigen::Matrix4f J;
+J << 1, 0, 0, 0,
+     0, STABILIZATION_UDWADIA_IX, 0, 0,
+     0, 0, STABILIZATION_UDWADIA_IY, 0,
+     0, 0, 0, STABILIZATION_UDWADIA_IZ;
 
 
+void qtoe(Eigen::Matrix4f &h, Eigen::Vector4f q);
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
 
-static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *dev)
-{
-  struct Int32Quat *quat = stateGetNedToBodyQuat_i();
-  pprz_msg_send_AHRS_REF_QUAT(trans, dev, AC_ID,
-                              &stab_att_sp_quat.qi,
-                              &stab_att_sp_quat.qx,
-                              &stab_att_sp_quat.qy,
-                              &stab_att_sp_quat.qz,
-                              &(quat->qi),
-                              &(quat->qx),
-                              &(quat->qy),
-                              &(quat->qz));
-}
+// static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *dev)
+// {
+//   struct Int32Quat *quat = stateGetNedToBodyQuat_i();
+//   pprz_msg_send_AHRS_REF_QUAT(trans, dev, AC_ID,
+//                               &stab_att_sp_quat.qi,
+//                               &stab_att_sp_quat.qx,
+//                               &stab_att_sp_quat.qy,
+//                               &stab_att_sp_quat.qz,
+//                               &(quat->qi),
+//                               &(quat->qx),
+//                               &(quat->qy),
+//                               &(quat->qz));
+// }
 
 
 #endif
@@ -97,8 +128,10 @@ void stabilization_udwadia_init(void)
  
 
 #if PERIODIC_TELEMETRY
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_REF_QUAT, send_ahrs_ref_quat);
+  // register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_REF_QUAT, send_ahrs_ref_quat);
 #endif
+
+
 }
 
 /**
@@ -106,9 +139,7 @@ void stabilization_udwadia_init(void)
  */
 void stabilization_udwadia_enter(void)
 {
-  /* reset psi setpoint to current psi angle */
-  stab_att_sp_euler.psi = stabilization_attitude_get_heading_i();
-
+ 
 }
 
 
@@ -119,10 +150,50 @@ void stabilization_udwadia_enter(void)
  *
  * Function that calculates the commands
  */
-void stabilization_udwadia_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t *cmd)
+void stabilization_udwadia_run(bool in_flight)
 {
   
   struct FloatRates *body_rates = stateGetBodyRates_f();
+  Eigen::Vector3f body_rates_vect;    
+  body_rates_vect << body_rates.p, body_rates.q, body_rates.r;
+
+  struct FloatQuat *att_quat = stateGetNedToBodyQuat_f();
+  Eigen::Vector4f att_quat_vect;
+  att_quat_vect << att_quat.qi, att_quat.qx, att_quat.qy, att_quat.qz;
+  Eigen::Matrix<float, 1, 4> att_quat_vect_T = att_quat_vect.transpose();
+
+  Eigen::Matrix4f e_att, e_att_T, e_dot_att, e_dot_att_T;
+  Eigen::Matrix<float, 3, 4> h_att;
+
+  qtoe(&e_att, att_quat_vect);
+  e_att_T = e_att.transpose();
+  h_att = e_att.bottomRows(3);
+  Eigen::Matrix<float, 4, 3> h_att_T = h_att.transpose();
+  Eigen::Vector4f q_dot = h_att_T * body_rates_vect;
+  Eigen::Matrix<float, 1, 4> q_dot_T = q_dot.transpose();
+  qtoe(&e_dot_att, q_dot);
+  e_dot_att_T = e_dot_att.transpose();
+
+  Eigen::Matrix4f M = e_att_T * J * e_att;
+  
+  Eigen::Vector4f Q = -2 * e_dot_att_T * J * e_dot_att * q_dot;
+
+  Eigen::Matrix<float, 5, 4> A;
+  Eigen::Matrix<float, 5, 1> b;
+  A << att_quat_vect_T,
+       2*(-Fc(2)*att_quat_vect(1)-Fc(1)*att_quat_vect(0)), 2*(-Fc(2)*att_quat_vect(0)+Fc(1)*att_quat_vect(1)), 2*(Fc(2)*att_quat_vect(3)+Fc(1)*att_quat_vect(2)), 2*(-Fc(2)*att_quat_vect(2)-Fc(1)*att_quat_vect(3)),
+       2*(-Fc(2)*att_quat_vect(2)+Fc(0)*att_quat_vect(0)), 2*(-Fc(2)*att_quat_vect(3)-Fc(0)*att_quat_vect(1)), 2*(-Fc(2)*att_quat_vect(0)-Fc(0)*att_quat_vect(2)), 2*(-Fc(2)*att_quat_vect(1)+Fc(0)*att_quat_vect(3)),
+       2*(Fc(1)*att_quat_vect(2)+Fc(0)*att_quat_vect(1)), 2*(Fc(1)*att_quat_vect(3)+Fc(0)*att_quat_vect(0)), 2*(Fc(1)*att_quat_vect(0)-Fc(0)*att_quat_vect(3)), 2*(Fc(1)*att_quat_vect(1)-Fc(0)*att_quat_vect(2)),
+       yaw_quat(3), 0, 0, -yaw_quat(0);
+
+  b << -STABILIZATION_UDWADIA_D1*att_quat_vect_T*q_dot-STABILIZATION_UDWADIA_D2*(att_quat_vect_T*att_quat_vect-1)-q_dot_T*q_dot;
+       4*Fc(2)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1))+2*Fc(1)*(pow(q_dot(0),2)-pow(q_dot(2),2)-pow(q_dot(3),2)+pow(q_dot(4),2)) - STABILIZATION_UDWADIA_D1 *(2*Fc(2)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))-2*Fc(1)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_D2*(2*Fc(2)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1)) - Fc(1)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
+       -4*Fc(2)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))+2*Fc(0)*(pow(q_dot(0),2)-pow(q_dot(1),2)-pow(q_dot(2),2)+pow(q_dot(3),2)) - STABILIZATION_UDWADIA_D1 *(-2*Fc(2)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))+2*Fc(0)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_D2*(-2*Fc(2)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) + Fc(0)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
+       -4*Fc(1)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))-4*Fc(0)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1)) - STABILIZATION_UDWADIA_D1 *(2*Fc(1)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))-2*Fc(0)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))) - STABILIZATION_UDWADIA_D2*(2*Fc(1)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) - 2*Fc(0)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1))),
+       -STABILIZATION_UDWADIA_D1 *(q_dot(0)*yaw_quat(3)-q_dot(3)*yaw_quat(0)) - STABILIZATION_UDWADIA_D2*(att_quat_vect(0)*yaw_quat(3)-att_quat_vect(3)*yaw_quat(0));
+
+  F = 
+
 }
 
 
@@ -131,13 +202,16 @@ void stabilization_udwadia_run(bool in_flight, struct StabilizationSetpoint *sp,
 void stabilization_udwadia_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
 {
   struct FloatQuat q_sp;
-#if USE_EARTH_BOUND_RC_SETPOINT
-  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#else
+  struct FloatEulers eul_sp;
+  struct FloatVect3 force_vect = {0,0,-1};
+  struct FloatVect3 tmp_vect;
   stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#endif
+  stabilization_attitude_read_rc_setpoint_eulers_f(&eul_sp, in_flight, in_carefree, coordinated_turn);
 
-  QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
+  float_quat_vmult(&tmp_vect, &q_sp, &force_vect);
+  Fc << tmp_vect.x, tmp_vect.y, tmp_vect.z;
+
+  yaw_quat << cos(eul_sp.psi/2), 0, 0, sin(eul_sp.psi/2);
 }
 
 /**
@@ -152,3 +226,12 @@ void get_actuator_state(void)
   float_vect_copy(actuator_state, act_obs, INDI_NUM_ACT);
 
 }
+
+
+void qtoe(Eigen::Matrix4f &h, Eigen::Vector4f q){
+  h <<  2*q(0),  2*q(1),  2*q(2),  2*q(3),
+       -2*q(1),  2*q(0),  2*q(3), -2*q(2),
+       -2*q(2), -2*q(3),  2*q(0),  2*q(1),
+       -2*q(3),  2*q(2), -2*q(1),  2*q(0);
+}
+

@@ -60,7 +60,7 @@ extern struct Indi_gains indi_gains;
 
 extern void stabilization_udwadia_init(void);
 extern void stabilization_udwadia_enter(void);
-extern void stabilization_attitude_udwadia_run(bool in_flight, struct StabilizationSetpoint *sp, int32_t *cmd)
+extern void stabilization_attitude_udwadia_run(bool in_flight)
 extern void stabilization_udwadia_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn);
 
 
