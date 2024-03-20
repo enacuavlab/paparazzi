@@ -73,6 +73,18 @@ extern "C" {
 #define STABILIZATION_UDWADIA_D2 20
 #endif
 
+#ifndef STABILIZATION_UDWADIA_L
+#define STABILIZATION_UDWADIA_L 0.2
+#endif
+
+#ifndef STABILIZATION_UDWADIA_C
+#define STABILIZATION_UDWADIA_C 0.05
+#endif
+
+#ifndef STABILIZATION_UDWADIA_MASS
+#define STABILIZATION_UDWADIA_MASS 1
+#endif
+
 // Register actuator feedback if we rely on RPM information
 #if STABILIZATION_INDI_RPM_FEEDBACK
 #ifndef STABILIZATION_INDI_ACT_FEEDBACK_ID
@@ -97,6 +109,15 @@ J << 1, 0, 0, 0,
      0, 0, STABILIZATION_UDWADIA_IY, 0,
      0, 0, 0, STABILIZATION_UDWADIA_IZ;
 
+Eigen::Matrix4f B;
+B <<  1, 1, 1, 1,
+      -STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,
+       STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,
+       STABILIZATION_UDWADIA_C,  STABILIZATION_UDWADIA_C, -STABILIZATION_UDWADIA_C, -STABILIZATION_UDWADIA_C;
+
+Eigen::Matrix4f B_pinv;
+
+Eigen::Matrix4f B_pinv;
 
 void qtoe(Eigen::Matrix4f &h, Eigen::Vector4f q);
 
@@ -126,7 +147,7 @@ void qtoe(Eigen::Matrix4f &h, Eigen::Vector4f q);
 void stabilization_udwadia_init(void)
 {
  
-
+B_pinv = B.pseudoInverse();
 #if PERIODIC_TELEMETRY
   // register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_REF_QUAT, send_ahrs_ref_quat);
 #endif
@@ -175,6 +196,7 @@ void stabilization_udwadia_run(bool in_flight)
   e_dot_att_T = e_dot_att.transpose();
 
   Eigen::Matrix4f M = e_att_T * J * e_att;
+  Eigen::Matrix4f M_inv = M.inverse();
   
   Eigen::Vector4f Q = -2 * e_dot_att_T * J * e_dot_att * q_dot;
 
@@ -192,7 +214,24 @@ void stabilization_udwadia_run(bool in_flight)
        -4*Fc(1)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))-4*Fc(0)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1)) - STABILIZATION_UDWADIA_D1 *(2*Fc(1)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))-2*Fc(0)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))) - STABILIZATION_UDWADIA_D2*(2*Fc(1)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) - 2*Fc(0)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1))),
        -STABILIZATION_UDWADIA_D1 *(q_dot(0)*yaw_quat(3)-q_dot(3)*yaw_quat(0)) - STABILIZATION_UDWADIA_D2*(att_quat_vect(0)*yaw_quat(3)-att_quat_vect(3)*yaw_quat(0));
 
-  F = 
+  Eigen::Matrix<float, 5, 4> temp = A*M_inv;
+  Eigen::Vector4f p1 = temp.pseudoInverse() * (b+temp*Q);
+
+  Eigen::Matrix3f var;
+  var << -abs(Fc(0)), -abs(Fc(2)), -abs(Fc(3)),
+          e_att.bottomRightCorner(3,3);
+  F = (B_pinv*var*p1)*MAX_PPRZ/5;
+
+
+   // Bound the inputs to the actuators
+  for (i = 0; i < 4; i++) {
+    if (autopilot_get_motors_on()) {
+      Bound(F(i), 0, MAX_PPRZ);
+    } else {
+      F(i) = -MAX_PPRZ;
+    }
+    actuators_pprz[i] = F(i);
+  }
 
 }
 
@@ -203,7 +242,8 @@ void stabilization_udwadia_read_rc(bool in_flight, bool in_carefree, bool coordi
 {
   struct FloatQuat q_sp;
   struct FloatEulers eul_sp;
-  struct FloatVect3 force_vect = {0,0,-1};
+  float throttle = FLOAT_OF_BFP(guidance_v.rc_delta_t, INT32_ACCEL_FRAC);
+  struct FloatVect3 force_vect = {0,0,-5*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ};
   struct FloatVect3 tmp_vect;
   stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
   stabilization_attitude_read_rc_setpoint_eulers_f(&eul_sp, in_flight, in_carefree, coordinated_turn);

@@ -37,7 +37,7 @@
     <file name="stabilization_udwadia.cpp" dir="$(SRC_FIRMWARE)/stabilization"/>
 
     <!-- Include the matrix libraries from ext -->
-    <include name="$(PAPARAZZI_SRC)/sw/ext/matrix/"/>
+    <!-- <include name="$(PAPARAZZI_SRC)/sw/ext/matrix/"/> -->
 
   </makefile>
 </module>

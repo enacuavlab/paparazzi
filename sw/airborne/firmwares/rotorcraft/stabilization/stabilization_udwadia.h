@@ -28,41 +28,9 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_quat_int.h"
 
 
-
-extern struct Int32Quat   stab_att_sp_quat;  ///< with #INT32_QUAT_FRAC
-extern struct Int32Eulers stab_att_sp_euler; ///< with #INT32_ANGLE_FRAC
-extern float g1g2[INDI_OUTPUTS][INDI_NUM_ACT];
-extern float actuator_state_filt_vect[INDI_NUM_ACT];
-extern bool act_is_servo[INDI_NUM_ACT];
-
-extern bool indi_use_adaptive;
-
-extern float du_min_stab_indi[INDI_NUM_ACT];
-extern float du_max_stab_indi[INDI_NUM_ACT];
-extern float du_pref_stab_indi[INDI_NUM_ACT];
-extern float *Bwls[INDI_OUTPUTS];
-
-extern float thrust_bx_eff;
-extern float thrust_bx_act_dyn;
-extern float actuator_thrust_bx_pprz;
-extern float thrust_bx_state_filt;
-
-extern float act_pref[INDI_NUM_ACT];
-
-extern float indi_Wu[INDI_NUM_ACT];
-
-struct Indi_gains {
-  struct FloatRates att;
-  struct FloatRates rate;
-};
-
-extern struct Indi_gains indi_gains;
-
 extern void stabilization_udwadia_init(void);
 extern void stabilization_udwadia_enter(void);
-extern void stabilization_attitude_udwadia_run(bool in_flight)
+extern void stabilization_udwadia_run(bool in_flight);
 extern void stabilization_udwadia_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn);
-
-
 #endif /* STABILIZATION_INDI */
 
