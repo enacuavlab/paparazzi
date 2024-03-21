@@ -22,8 +22,8 @@
   </doc>
 
   <dep>
-    <depends>stabilization_rotorcraft,@attitude_command</depends>
-    <provides>commands</provides>
+    <depends></depends>
+    <provides>commands, stabilization</provides>
   </dep>
   <header>
     <file name="stabilization_udwadia.h"/>
