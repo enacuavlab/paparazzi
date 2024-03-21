@@ -29,7 +29,7 @@
    telemetry="telemetry/CobraV2_tlm.xml"
    flight_plan="flight_plans/colibri_voliere.xml"
    settings=""
-   settings_modules="modules/electrical.xml modules/gps.xml modules/guidance_pid_rotorcraft.xml modules/guidance_rotorcraft.xml modules/imu_common.xml modules/ins_ekf2.xml modules/logger_sd_chibios.xml modules/nav_rotorcraft.xml modules/switch_servo.xml"
+   settings_modules="modules/electrical.xml modules/gps.xml modules/imu_common.xml modules/ins_ekf2.xml modules/logger_sd_chibios.xml modules/switch_servo.xml"
    gui_color="red"
   />
 </conf>
