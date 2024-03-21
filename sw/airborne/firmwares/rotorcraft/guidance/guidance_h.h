@@ -35,7 +35,6 @@ extern "C" {
 
 #include "firmwares/rotorcraft/guidance/guidance_h_ref.h"
 #include "firmwares/rotorcraft/stabilization.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "generated/airframe.h"
 #include "std.h"
 
@@ -95,6 +94,12 @@ struct HorizontalGuidanceReference {
   struct Int32Vect2 accel;   ///< with #INT32_ACCEL_FRAC
 };
 
+struct HorizontalGuidanceRCInput {
+  struct Int32Vect2 vect;
+  float heading;
+  float last_ts;
+};
+
 struct HorizontalGuidance {
   uint8_t mode;
   /* configuration options */
@@ -102,8 +107,7 @@ struct HorizontalGuidance {
 
   struct HorizontalGuidanceSetpoint sp;   ///< setpoints
   struct HorizontalGuidanceReference ref; ///< reference calculated from setpoints
-
-  struct AttitudeRCInput rc_sp;           ///< remote control setpoint
+  struct HorizontalGuidanceRCInput rc_sp; ///< remote control setpoint
 };
 
 extern struct HorizontalGuidance guidance_h;

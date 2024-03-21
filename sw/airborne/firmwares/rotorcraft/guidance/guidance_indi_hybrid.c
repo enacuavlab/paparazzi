@@ -372,9 +372,10 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   /* Calculate the transition percentage so that the ctrl_effecitveness scheduling works */
   transition_percentage = BFP_OF_REAL((eulers_zxy.theta/RadOfDeg(-75.0f))*100,INT32_PERCENTAGE_FRAC);
   Bound(transition_percentage,0,BFP_OF_REAL(100.0f,INT32_PERCENTAGE_FRAC));
-  const int32_t max_offset = ANGLE_BFP_OF_REAL(TRANSITION_MAX_OFFSET);
-  transition_theta_offset = INT_MULT_RSHIFT((transition_percentage <<
-        (INT32_ANGLE_FRAC - INT32_PERCENTAGE_FRAC)) / 100, max_offset, INT32_ANGLE_FRAC);
+  // FIXME remove this ?
+  //const int32_t max_offset = ANGLE_BFP_OF_REAL(TRANSITION_MAX_OFFSET);
+  //stabilization.rc_sp.transition_theta_offset = INT_MULT_RSHIFT((transition_percentage <<
+  //      (INT32_ANGLE_FRAC - INT32_PERCENTAGE_FRAC)) / 100, max_offset, INT32_ANGLE_FRAC);
 
   // filter accel to get rid of noise and filter attitude to synchronize with accel
   guidance_indi_propagate_filters();

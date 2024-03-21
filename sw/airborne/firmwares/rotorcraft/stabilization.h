@@ -106,8 +106,6 @@ struct Stabilization {
   struct StabilizationSetpoint rc_sp; ///< Keep it ? FIXME
   struct StabilizationSetpoint sp;    ///< current attitude setpoint (store for messages)
   int32_t cmd[COMMANDS_NB];           ///< output command vector, range from [-MAX_PPRZ:MAX_PPRZ] (store for messages)
-
-  int32_t transition_theta_offset;    ///< pitch offset for hybrids
   float transition_ratio;             ///< transition percentage for hybrids (0.: hover; 1.: forward)
 };
 

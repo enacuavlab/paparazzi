@@ -205,7 +205,7 @@ struct StabilizationSetpoint WEAK stabilization_rate_read_rc(struct RadioControl
   if (PITCH_RATE_DEADBAND_EXCEEDED(rc)) {
     rate_sp.q = rc->values[RC_RATE_Q] * STABILIZATION_RATE_SP_MAX_Q / MAX_PPRZ;
   }
-  if (YAW_RATE_DEADBAND_EXCEEDED(rc) && !THROTTLE_STICK_DOWN()) {
+  if (YAW_RATE_DEADBAND_EXCEEDED(rc) && !THROTTLE_STICK_DOWN_FROM_RC(rc)) {
     rate_sp.r = rc->values[RC_RATE_R] * STABILIZATION_RATE_SP_MAX_R / MAX_PPRZ;
   }
   return stab_sp_from_rates_f(&rate_sp);
@@ -267,7 +267,7 @@ static inline void transition_run(bool to_forward)
   }
   Bound(stabilization.transition_ratio, 0.f, 1.f);
 #ifdef TRANSITION_MAX_OFFSET
-  stabilization.transition_theta_offset = ANGLE_BFP_OF_REAL(stabilization.transition_ratio * TRANSITION_MAX_OFFSET);
+  stabilization.rc_sp.transition_theta_offset = ANGLE_BFP_OF_REAL(stabilization.transition_ratio * TRANSITION_MAX_OFFSET);
 #endif
 }
 

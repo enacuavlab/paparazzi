@@ -54,8 +54,6 @@
   (rc->values[RADIO_YAW] >  STABILIZATION_ATTITUDE_DEADBAND_R || \
    rc->values[RADIO_YAW] < -STABILIZATION_ATTITUDE_DEADBAND_R)
 
-int32_t transition_theta_offset = 0;
-
 static int32_t get_rc_roll(struct RadioControl *rc)
 {
   const int32_t max_rc_phi = (int32_t) ANGLE_BFP_OF_REAL(STABILIZATION_ATTITUDE_SP_MAX_PHI);
@@ -178,7 +176,7 @@ void stabilization_attitude_read_rc_setpoint_earth_bound_f(struct AttitudeRCInpu
   const struct FloatVect3 zaxis = {0., 0., 1.};
 
   struct FloatQuat q_rp_cmd;
-  stabilization_attitude_read_rc_roll_pitch_earth_quat_f(&q_rp_cmd, rc);
+  stabilization_attitude_read_rc_roll_pitch_earth_quat_f(&q_rp_cmd, rc_sp->transition_theta_offset, rc);
 
   if (in_flight) {
     /* get current heading setpoint */
@@ -270,7 +268,7 @@ struct Int32Eulers stabilization_attitude_read_rc_setpoint_eulers(struct Attitud
     Bound(dt, 0, 0.5);
 
     /* do not advance yaw setpoint if within a small deadband around stick center or if throttle is zero */
-    if (YAW_DEADBAND_EXCEEDED(rc) && !THROTTLE_STICK_DOWN()) {
+    if (YAW_DEADBAND_EXCEEDED(rc) && !THROTTLE_STICK_DOWN_FROM_RC(rc)) {
       sp_i.psi += get_rc_yaw(rc) * dt;
       INT32_ANGLE_NORMALIZE(sp_i.psi);
     }
@@ -357,7 +355,7 @@ struct FloatEulers stabilization_attitude_read_rc_setpoint_eulers_f(struct Attit
     Bound(dt, 0, 0.5);
 
     /* do not advance yaw setpoint if within a small deadband around stick center or if throttle is zero */
-    if (YAW_DEADBAND_EXCEEDED(rc) && !THROTTLE_STICK_DOWN()) {
+    if (YAW_DEADBAND_EXCEEDED(rc) && !THROTTLE_STICK_DOWN_FROM_RC(rc)) {
       rc_sp->rc_eulers.psi += get_rc_yaw_f(rc) * dt;
       FLOAT_ANGLE_NORMALIZE(rc_sp->rc_eulers.psi);
     }
@@ -437,9 +435,10 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q, struc
 /** Read roll/pitch command from RC as quaternion.
  * Both angles are are interpreted relative to to the horizontal plane (earth bound).
  * @param[out] q quaternion representing the RC roll/pitch input
+ * @param[in] theta_offset pitch offset for forward flight
  * @param[in] rc pointer to radio control structure
  */
-void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q, struct RadioControl *rc)
+void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q, int32_t theta_offset, struct RadioControl *rc)
 {
   /* only non-zero entries for roll quaternion */
   float roll2 = get_rc_roll_f(rc) / 2.0f;
@@ -448,7 +447,7 @@ void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q,
 
   //An offset is added if in forward mode
   /* only non-zero entries for pitch quaternion */
-  float pitch2 = (ANGLE_FLOAT_OF_BFP(transition_theta_offset) + get_rc_pitch_f(rc)) / 2.0f;
+  float pitch2 = (ANGLE_FLOAT_OF_BFP(theta_offset) + get_rc_pitch_f(rc)) / 2.0f;
   float qy_pitch = sinf(pitch2);
   float qi_pitch = cosf(pitch2);
 

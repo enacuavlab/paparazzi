@@ -112,9 +112,10 @@ extern void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q
 
 /** Read RC roll and pitch only, in earth bounded frame
  * @param[out] q quaternion representing the RC roll/pitch input
+ * @param[in] theta_offset pitch offset for forward flight
  * @param[in] rc pointer to radio control structure
  */
-extern void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q, struct RadioControl *rc);
+extern void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q, int32_t theta_offset, struct RadioControl *rc);
 
 /** Get attitude heading as int (avoiding jumps)
  */

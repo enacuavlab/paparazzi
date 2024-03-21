@@ -30,6 +30,7 @@
 #include "firmwares/rotorcraft/guidance/guidance_module.h"
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/navigation.h"
+#include "firmwares/rotorcraft/autopilot_rc_helpers.h"
 #include "modules/radio_control/radio_control.h"
 #include "modules/core/abi.h"
 
@@ -56,7 +57,6 @@ static void guidance_h_update_reference(void);
 PRINT_CONFIG_VAR(GUIDANCE_H_RC_ID)
 static abi_event rc_ev;
 static void rc_cb(uint8_t sender_id UNUSED, struct RadioControl *rc);
-static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool in_flight, struct RadioControl *rc);
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
@@ -90,11 +90,13 @@ void guidance_h_init(void)
   guidance_h.use_ref = GUIDANCE_H_USE_REF;
 
   INT_VECT2_ZERO(guidance_h.sp.pos);
-  stabilization_attitude_rc_setpoint_init(&guidance_h.rc_sp);
-  guidance_h.sp.heading = 0.0;
-  guidance_h.sp.heading_rate = 0.0;
+  guidance_h.sp.heading = 0.f;
+  guidance_h.sp.heading_rate = 0.f;
   guidance_h.sp.h_mask = GUIDANCE_H_SP_POS;
   guidance_h.sp.yaw_mask = GUIDANCE_H_SP_YAW;
+  INT_VECT2_ZERO(guidance_h.rc_sp.vect);
+  guidance_h.rc_sp.heading = 0.f;
+  guidance_h.rc_sp.last_ts = 0.f;
 
   gh_ref_init();
 
@@ -145,24 +147,92 @@ void guidance_h_mode_changed(uint8_t new_mode)
 
 }
 
+// If not defined, use attitude max yaw setpoint (or 60 deg/s) by default
+#ifndef GUIDANCE_H_SP_MAX_R
+#ifdef STABILIZATION_ATTITUDE_SP_MAX_R
+#define GUIDANCE_H_SP_MAX_R STABILIZATION_ATTITUDE_SP_MAX_R
+#else
+#define GUIDANCE_H_SP_MAX_R 60.f
+#endif
+#endif
+
+#ifndef GUIDANCE_H_DEADBAND_R
+#define GUIDANCE_H_DEADBAND_R 200
+#endif
+
+#define YAW_DEADBAND_EXCEEDED(_rc)                               \
+  (rc->values[RADIO_YAW] >  GUIDANCE_H_DEADBAND_R || \
+   rc->values[RADIO_YAW] < -GUIDANCE_H_DEADBAND_R)
+
+static void read_rc_setpoint_heading(struct HorizontalGuidanceRCInput *rc_sp, bool in_flight, struct RadioControl *rc)
+{
+  if (in_flight) {
+    /* calculate dt for yaw integration */
+    float dt = get_sys_time_float() - rc_sp->last_ts;
+    /* make sure nothing drastically weird happens, bound dt to 0.5sec */
+    Bound(dt, 0, 0.5);
+
+    /* do not advance yaw setpoint if within a small deadband around stick center or if throttle is zero */
+    if (YAW_DEADBAND_EXCEEDED(rc) && !THROTTLE_STICK_DOWN_FROM_RC(rc)) {
+      float heading_rate = (float) rc->values[RADIO_YAW] * GUIDANCE_H_SP_MAX_R / MAX_PPRZ;
+      rc_sp->heading += heading_rate * dt;
+      FLOAT_ANGLE_NORMALIZE(rc_sp->heading);
+    }
+  } else { /* if not flying, use current yaw as setpoint */
+    rc_sp->heading = stateGetNedToBodyEulers_f()->psi;
+  }
+  /* update timestamp for dt calculation */
+  rc_sp->last_ts = get_sys_time_float();
+}
+
+/// read speed setpoint from RC
+static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool in_flight, struct RadioControl *rc)
+{
+  if (in_flight) {
+    // negative pitch is forward
+    int64_t rc_x = -rc->values[RADIO_PITCH];
+    int64_t rc_y = rc->values[RADIO_ROLL];
+    DeadBand(rc_x, MAX_PPRZ / 20);
+    DeadBand(rc_y, MAX_PPRZ / 20);
+
+    // convert input from MAX_PPRZ range to SPEED_BFP
+    int32_t max_speed = SPEED_BFP_OF_REAL(GUIDANCE_H_REF_MAX_SPEED);
+    /// @todo calc proper scale while making sure a division by zero can't occur
+    //int32_t rc_norm = sqrtf(rc_x * rc_x + rc_y * rc_y);
+    //int32_t max_pprz = rc_norm * MAX_PPRZ / Max(abs(rc_x), abs(rc_y);
+    rc_x = rc_x * max_speed / MAX_PPRZ;
+    rc_y = rc_y * max_speed / MAX_PPRZ;
+
+    /* Rotate from body to NED frame by negative psi angle */
+    int32_t psi = -stateGetNedToBodyEulers_i()->psi;
+    int32_t s_psi, c_psi;
+    PPRZ_ITRIG_SIN(s_psi, psi);
+    PPRZ_ITRIG_COS(c_psi, psi);
+    speed_sp->x = (int32_t)(((int64_t)c_psi * rc_x + (int64_t)s_psi * rc_y) >> INT32_TRIG_FRAC);
+    speed_sp->y = (int32_t)((-(int64_t)s_psi * rc_x + (int64_t)c_psi * rc_y) >> INT32_TRIG_FRAC);
+  } else {
+    speed_sp->x = 0;
+    speed_sp->y = 0;
+  }
+}
 
 static void rc_cb(uint8_t sender_id UNUSED, struct RadioControl *rc)
 {
   switch (guidance_h.mode) {
 
     case GUIDANCE_H_MODE_HOVER:
-      stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, autopilot_in_flight(), FALSE, FALSE, &radio_control);
+      read_rc_setpoint_heading(&guidance_h.rc_sp, autopilot_in_flight(), rc);
+      read_rc_setpoint_speed_i(&guidance_h.rc_sp.vect, autopilot_in_flight(), rc);
 #if GUIDANCE_H_USE_SPEED_REF
-      read_rc_setpoint_speed_i(&guidance_h.sp.speed, autopilot_in_flight(), rc);
       /* enable x,y velocity setpoints */
+      guidance_h.sp.speed = guidance_h.rc_sp.vect;
       guidance_h.sp.h_mask = GUIDANCE_H_SP_SPEED;
 #endif
       break;
     case GUIDANCE_H_MODE_NAV:
+      INT_VECT2_ZERO(guidance_h.rc_sp.vect);
       if (radio_control.status == RC_OK) {
-        stabilization_attitude_read_rc_setpoint_eulers_f(&guidance_h.rc_sp, autopilot_in_flight(), FALSE, FALSE, &radio_control);
-      } else {
-        FLOAT_EULERS_ZERO(guidance_h.rc_sp.rc_eulers);
+        read_rc_setpoint_heading(&guidance_h.rc_sp, autopilot_in_flight(), rc);
       }
       break;
     default:
@@ -180,7 +250,7 @@ struct StabilizationSetpoint guidance_h_run(bool in_flight)
 
     case GUIDANCE_H_MODE_HOVER:
       /* set psi command from RC */
-      guidance_h.sp.heading = guidance_h.rc_sp.rc_eulers.psi;
+      guidance_h.sp.heading = guidance_h.rc_sp.heading;
       /* fall trough to GUIDED to update ref, run traj and set final attitude setpoint */
 
       /* Falls through. */
@@ -284,7 +354,7 @@ void guidance_h_hover_enter(void)
   reset_guidance_reference_from_current_position();
 
   /* set guidance to current heading and position */
-  guidance_h.rc_sp.rc_eulers.psi = stateGetNedToBodyEulers_f()->psi;
+  guidance_h.rc_sp.heading = stateGetNedToBodyEulers_f()->psi;
   guidance_h_set_heading(stateGetNedToBodyEulers_f()->psi);
 
   /* call specific implementation */
@@ -362,37 +432,6 @@ struct StabilizationSetpoint guidance_h_from_nav(bool in_flight)
     }
     /* return final attitude setpoint */
     return guidance_h_cmd;
-  }
-}
-
-/// read speed setpoint from RC
-static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool in_flight, struct RadioControl *rc)
-{
-  if (in_flight) {
-    // negative pitch is forward
-    int64_t rc_x = -rc->values[RADIO_PITCH];
-    int64_t rc_y = rc->values[RADIO_ROLL];
-    DeadBand(rc_x, MAX_PPRZ / 20);
-    DeadBand(rc_y, MAX_PPRZ / 20);
-
-    // convert input from MAX_PPRZ range to SPEED_BFP
-    int32_t max_speed = SPEED_BFP_OF_REAL(GUIDANCE_H_REF_MAX_SPEED);
-    /// @todo calc proper scale while making sure a division by zero can't occur
-    //int32_t rc_norm = sqrtf(rc_x * rc_x + rc_y * rc_y);
-    //int32_t max_pprz = rc_norm * MAX_PPRZ / Max(abs(rc_x), abs(rc_y);
-    rc_x = rc_x * max_speed / MAX_PPRZ;
-    rc_y = rc_y * max_speed / MAX_PPRZ;
-
-    /* Rotate from body to NED frame by negative psi angle */
-    int32_t psi = -stateGetNedToBodyEulers_i()->psi;
-    int32_t s_psi, c_psi;
-    PPRZ_ITRIG_SIN(s_psi, psi);
-    PPRZ_ITRIG_COS(c_psi, psi);
-    speed_sp->x = (int32_t)(((int64_t)c_psi * rc_x + (int64_t)s_psi * rc_y) >> INT32_TRIG_FRAC);
-    speed_sp->y = (int32_t)((-(int64_t)s_psi * rc_x + (int64_t)c_psi * rc_y) >> INT32_TRIG_FRAC);
-  } else {
-    speed_sp->x = 0;
-    speed_sp->y = 0;
   }
 }
 
