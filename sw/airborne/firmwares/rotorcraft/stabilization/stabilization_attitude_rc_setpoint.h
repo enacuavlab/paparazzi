@@ -34,11 +34,11 @@
 /** Attitude (and Rate) Remote Control input
  */
 struct AttitudeRCInput {
-  struct FloatQuat    rc_quat;      ///< RC input in quaternion
-  struct FloatEulers  rc_eulers;    ///< RC input in eulers (needed even for quat for yaw integration)
-  float care_free_heading;          ///< care_free heading
-  int32_t transition_theta_offset;  ///< pitch offset for hybrids, add when in forward mode
-  float last_ts;                    ///< last timestamp (in seconds)
+  struct FloatQuat    rc_quat;    ///< RC input in quaternion
+  struct FloatEulers  rc_eulers;  ///< RC input in eulers (needed even for quat for yaw integration)
+  float care_free_heading;        ///< care_free heading
+  float transition_theta_offset;  ///< pitch offset for hybrids, add when in forward mode
+  float last_ts;                  //< last timestamp (in seconds)
 };
 
 /** Init rc input
@@ -115,7 +115,7 @@ extern void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q
  * @param[in] theta_offset pitch offset for forward flight
  * @param[in] rc pointer to radio control structure
  */
-extern void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q, int32_t theta_offset, struct RadioControl *rc);
+extern void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q, float theta_offset, struct RadioControl *rc);
 
 /** Get attitude heading as int (avoiding jumps)
  */

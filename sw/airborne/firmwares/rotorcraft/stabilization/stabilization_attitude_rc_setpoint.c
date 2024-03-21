@@ -104,7 +104,7 @@ void stabilization_attitude_rc_setpoint_init(struct AttitudeRCInput *rc_sp)
   float_quat_identity(&rc_sp->rc_quat);
   FLOAT_EULERS_ZERO(rc_sp->rc_eulers);
   rc_sp->care_free_heading = 0.f;
-  rc_sp->transition_theta_offset = 0;
+  rc_sp->transition_theta_offset = 0.f;
   rc_sp->last_ts = 0.f;
 }
 
@@ -438,7 +438,7 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat *q, struc
  * @param[in] theta_offset pitch offset for forward flight
  * @param[in] rc pointer to radio control structure
  */
-void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q, int32_t theta_offset, struct RadioControl *rc)
+void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q, float theta_offset, struct RadioControl *rc)
 {
   /* only non-zero entries for roll quaternion */
   float roll2 = get_rc_roll_f(rc) / 2.0f;
@@ -447,7 +447,7 @@ void stabilization_attitude_read_rc_roll_pitch_earth_quat_f(struct FloatQuat *q,
 
   //An offset is added if in forward mode
   /* only non-zero entries for pitch quaternion */
-  float pitch2 = (ANGLE_FLOAT_OF_BFP(theta_offset) + get_rc_pitch_f(rc)) / 2.0f;
+  float pitch2 = (theta_offset + get_rc_pitch_f(rc)) / 2.0f;
   float qy_pitch = sinf(pitch2);
   float qi_pitch = cosf(pitch2);
 

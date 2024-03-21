@@ -38,7 +38,7 @@
 
 struct ctrl_module_demo_struct {
 // RC Inputs
-  struct Int32Eulers rc_sp;
+  struct AttitudeRCInput rc_sp;
 
 // Output command
   struct Int32Eulers cmd;
@@ -54,6 +54,7 @@ float comode_time = 0;
 // Call our controller
 void ctrl_module_init(void)
 {
+  stabilization_attitude_rc_setpoint_init(&ctrl.rc_sp);
 }
 
 void guidance_module_enter(void)
@@ -62,7 +63,7 @@ void guidance_module_enter(void)
   ctrl.cmd.psi = stateGetNedToBodyEulers_i()->psi;
 
   // Convert RC to setpoint
-  stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot.in_flight, false, false, &radio_control);
+  stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot_in_flight(), false, false, &radio_control);
 
   // vertical mode in hover
   guidance_v_mode_changed(GUIDANCE_V_MODE_HOVER);
@@ -70,7 +71,7 @@ void guidance_module_enter(void)
 
 void guidance_module_run(bool in_flight)
 {
-  stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot.in_flight, false, false, &radio_control);
+  stabilization_attitude_read_rc_setpoint_eulers(&ctrl.rc_sp, autopilot_in_flight(), false, false, &radio_control);
 
   // YOUR NEW HORIZONTAL OUTERLOOP CONTROLLER GOES HERE
   // ctrl.cmd = CallMyNewHorizontalOuterloopControl(ctrl);

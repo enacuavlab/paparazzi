@@ -267,7 +267,7 @@ static inline void transition_run(bool to_forward)
   }
   Bound(stabilization.transition_ratio, 0.f, 1.f);
 #ifdef TRANSITION_MAX_OFFSET
-  stabilization.rc_sp.transition_theta_offset = ANGLE_BFP_OF_REAL(stabilization.transition_ratio * TRANSITION_MAX_OFFSET);
+  stabilization.rc_sp.transition_theta_offset = stabilization.transition_ratio * TRANSITION_MAX_OFFSET;
 #endif
 }
 

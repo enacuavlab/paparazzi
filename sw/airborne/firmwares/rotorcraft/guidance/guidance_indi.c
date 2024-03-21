@@ -33,18 +33,14 @@
  */
 #include "generated/airframe.h"
 #include "firmwares/rotorcraft/guidance/guidance_indi.h"
-#include "modules/ins/ins_int.h"
 #include "modules/radio_control/radio_control.h"
-#include "state.h"
-#include "modules/imu/imu.h"
+#include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/autopilot_rc_helpers.h"
 #include "mcu_periph/sys_time.h"
+#include "state.h"
 #include "autopilot.h"
-#include "stabilization/stabilization_attitude_ref_quat_int.h"
-#include "firmwares/rotorcraft/stabilization.h"
 #include "filters/low_pass_filter.h"
 #include "modules/core/abi.h"
 
@@ -376,8 +372,7 @@ void guidance_indi_filter_thrust(void)
   // Actuator dynamics
   thrust_act = thrust_act + thrust_dyn * (thrust_in - thrust_act);
 
-  // same filter as for the acceleration
-  update_butterworth_2_low_pass(&thrust_filt, thrust_act);
+  // same filter as for the acceleorth_2_low_pass(&thrust_filt, thrust_act);
 }
 #endif
 
