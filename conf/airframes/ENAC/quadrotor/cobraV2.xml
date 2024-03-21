@@ -183,7 +183,7 @@
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
   </section>
 
-  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
+  <!-- <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
     <define name="REF_MIN_ZDD" value="-0.4*9.81"/>
     <define name="REF_MAX_ZDD" value=" 0.4*9.81"/>
     <define name="REF_MIN_ZD" value="-2."/>
@@ -203,7 +203,7 @@
     <define name="DGAIN" value="108"/>
     <define name="IGAIN" value="20"/>
     <define name="NGAIN" value="0"/>
-    <!-- feedforward -->
+
     <define name="AGAIN" value="0"/>
     <define name="REF_MAX_SPEED" value="0.5"/>
     <define name="REF_MAX_ACCEL" value="2."/>
@@ -214,7 +214,7 @@
     <define name="THRUST_DYNAMICS_FREQ" value="25.64"/>
     <define name="RC_DEBUG" value="FALSE"/>
     <define name="SPEED_GAINZ" value="2.5"/>
-  </section>
+  </section> -->
 
   <section name="NAV">
     <define name="ARRIVED_AT_WAYPOINT" value="0.25"/>
