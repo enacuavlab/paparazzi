@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="guidance_indi" dir="guidance" task="control">
+<module name="guidance_udwadia" dir="guidance" task="control">
   <doc>
     <description>
       Guidance controller for rotorcraft using INDI
@@ -16,11 +16,11 @@
     </dl_settings>
   </settings>
   <dep>
-    <depends>@navigation,guidance_rotorcraft</depends>
+    <!-- <depends>@navigation, guidance_rotorcraft</depends>  -->
     <provides>guidance,attitude_command</provides>
   </dep>
   <header>
-    <file name="guidance_indi.h"/>
+    <file name="guidance_udwadia.h"/>
   </header>
   <init fun="guidance_indi_init()"/>
   <init fun="guidance_indi_enter()"/>

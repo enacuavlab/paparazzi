@@ -51,7 +51,8 @@
 
     <!-- <module name="stabilization" type="indi"/> -->
     <module name="stabilization" type="udwadia"/>
-    <!-- <module name="guidance" type="indi"/> -->
+    <module name="guidance" type="udwadia"/>
+    <module name="nav" type="rotorcraft"/>
 
     <module name="ins" type="ekf2"/>
     <!-- <module name="preflight_checks"/> -->

@@ -31,6 +31,7 @@
 #include "modules/radio_control/radio_control.h"
 #include "state.h"
 #include "modules/imu/imu.h"
+#include "firmwares/rotorcraft/navigation.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
