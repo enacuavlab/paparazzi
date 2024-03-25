@@ -26,8 +26,8 @@
  * A guidance mode
  */
 
-#ifndef GUIDANCE_INDI_H
-#define GUIDANCE_INDI_H
+#ifndef GUIDANCE_UDWADIA_H
+#define GUIDANCE_UDWADIA_H
 
 #include "std.h"
 #include "math/pprz_algebra_int.h"
