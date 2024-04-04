@@ -153,6 +153,10 @@ Cargo.lock
 /sw/simulator/gaia
 /sw/simulator/simhitl
 
+# /sw/simulator/panache
+/sw/simulator/panache/data_nc/*
+/sw/simulator/panache/data_samples/*
+
 # /sw/supervision/
 /sw/supervision/gtk_process.ml
 /sw/supervision/paparazzicenter
@@ -202,6 +206,4 @@ tests/results/*
 # K-develop
 *.kate-swp
 
-# /sw/simulator/panache
-/sw/simulator/panache/data_nc/*
-/sw/simulator/panache/data_samples/*
+

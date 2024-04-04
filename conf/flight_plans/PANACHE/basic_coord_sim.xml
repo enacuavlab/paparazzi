@@ -17,7 +17,7 @@
     <waypoint alt="185.0" name="TD" x="28.8" y="57.0"/>
     <waypoint name="_BASELEG" x="168.8" y="-13.8"/>
     <waypoint name="CLIMB" x="-160" y="-10"/>
-    <waypoint name="SRC" x="-400" y="150" height="30"/>
+    <waypoint name="SRC" lat="49.4367794" lon="1.0616604" height="30"/>
   </waypoints>
   
   <variables>
@@ -128,7 +128,7 @@
       <set value="0.015" var="gvf_parametric_coordination.kc"/>
       <call_once fun="gvf_parametric_set_direction(-1)"/>
       <!--<call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 20 * (AC_ID-6),0.,0.,50.)"/>-->
-      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID % 10),0.,0.,atan2(stateGetHorizontalWindspeed_f()->x,stateGetHorizontalWindspeed_f()->y))"/>
+      <call_once fun="gvf_parametric_set_affine_tr(WaypointX(WP_SRC),WaypointY(WP_SRC),200 + 120 * (AC_ID % 10),0.,0.,0.)"/>
       <call fun="gvf_parametric_3d_drift_ellipse(5,2,4,0.05,90 * (AC_ID % 10))"/>
     </block>
     

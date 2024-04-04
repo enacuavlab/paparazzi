@@ -657,7 +657,7 @@ void gvf_parametric_control_3d(float kx, float ky, float kz, float f1, float f2,
   float w_dot;
   float w_coordination_adjusted;
 
-std::cout << "AC ID: " << AC_ID << " || ";
+  std::cout << "AC ID: " << AC_ID << " || ";
 
   if (gvf_parametric_control.step_adaptation)
   {

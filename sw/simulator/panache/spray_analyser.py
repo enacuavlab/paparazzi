@@ -798,7 +798,7 @@ def analysis_2d(file:str):
     print(f"Center line (m,b) coefficients (y = m*x+b):\n\t{coefs}")
     
     delta_line_coeff = np.arctan(np.pi/8)
-    # show_data(xs_flat,ys_flat,ws_flat,estimated_src,coefs,delta_line_coeff)
+    show_data(xs_flat,ys_flat,ws_flat,estimated_src,coefs,delta_line_coeff)
     print(f"Delta line coef for cone: {delta_line_coeff}")
     
     ### Change of referential: use the middle line as x-axis, y-axis becomes distance to line
@@ -876,7 +876,7 @@ def compare_2d(file_1:str,file_2:str):
 
 def main():
     parser = argparse.ArgumentParser("Spray Analyser",
-                                     description="Try to find good parameters for the exploring the gass cone provided")
+                                     description="Try to find good parameters for the exploring the gas cone provided")
     
     parser.add_argument("file_in",help="Input .nc file")
     parser.add_argument("-3d",dest='d3',help="If this flag is set, show a 3D scatter plot then close. The value given is the tolerance\
