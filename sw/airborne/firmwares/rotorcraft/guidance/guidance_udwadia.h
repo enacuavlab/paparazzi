@@ -29,38 +29,30 @@
 #ifndef GUIDANCE_UDWADIA_H
 #define GUIDANCE_UDWADIA_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "std.h"
 #include "math/pprz_algebra_int.h"
 #include "math/pprz_algebra_float.h"
 #include "firmwares/rotorcraft/guidance.h"
 #include "firmwares/rotorcraft/stabilization.h"
 
-extern void guidance_indi_init(void);
-extern void guidance_indi_enter(void);
+extern void guidance_udwadia_init(void);
+extern void guidance_udwadia_enter(void);
 
-enum GuidanceIndi_HMode {
-  GUIDANCE_INDI_H_POS,
-  GUIDANCE_INDI_H_SPEED,
-  GUIDANCE_INDI_H_ACCEL
-};
 
-enum GuidanceIndi_VMode {
-  GUIDANCE_INDI_V_POS,
-  GUIDANCE_INDI_V_SPEED,
-  GUIDANCE_INDI_V_ACCEL
-};
 
-extern struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accep_sp, float heading_sp);
-extern struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndi_HMode h_mode, enum GuidanceIndi_VMode v_mode);
+extern struct StabilizationSetpoint guidance_udwadia_run(struct FloatVect3 *accep_sp, float heading_sp);
+// extern struct StabilizationSetpoint guidance_udwadia_run_mode(bool in_flight, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndi_HMode h_mode, enum GuidanceIndi_VMode v_mode);
 
-extern float guidance_indi_specific_force_gain;
-
-// settings for guidance INDI
-extern float guidance_indi_pos_gain;
-extern float guidance_indi_speed_gain;
-extern float guidance_indi_max_bank;
 
 
 extern struct FloatVect3 sp_accel;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GUIDANCE_INDI_H */

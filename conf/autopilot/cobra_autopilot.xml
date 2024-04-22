@@ -31,9 +31,9 @@
 
     <!-- <control_block name="set_commands">
       <call fun="SetRotorcraftCommands(stabilization_cmd, autopilot_in_flight(), autopilot_get_motors_on())"/>
-    </control_block>
+    </control_block> -->
 
-    <control_block name="attitude_loop">
+    <!-- control_block name="attitude_loop">
       <call fun="stabilization_attitude_read_rc(autopilot_in_flight(), FALSE, FALSE)"/>
       <call fun="stabilization_udwadia_run(autopilot_in_flight())"/>
     </control_block>
@@ -64,11 +64,22 @@
       <control freq="NAVIGATION_FREQUENCY">
         <call fun="nav_periodic_task()"/>
       </control>
-      <control>
-        <!-- <call fun="guidance_v_read_rc()"/> -->
+      <control freq="50">
+        <call fun="guidance_v_read_rc()"/>
         <call fun="stabilization_udwadia_read_rc(autopilot_in_flight(), FALSE, FALSE)"/>
         <call fun="stabilization_udwadia_run(autopilot_in_flight())"/>
         <!-- <call_block name="set_commands"/> -->
+      </control>
+      <exception cond="RCLost()" deroute="FAILSAFE"/>
+    </mode>
+
+    <mode name="ATTITUDE_Z_HOLD" shortname="A_ZH">
+      <select cond="RCMode1()"/>
+      <on_enter>
+      </on_enter>
+      <control freq="NAVIGATION_FREQUENCY">
+      </control>
+      <control>
       </control>
       <exception cond="RCLost()" deroute="FAILSAFE"/>
     </mode>
@@ -80,6 +91,37 @@
       <control>
       </control>
       <exception cond="GpsIsLost() && autopilot_in_flight()" deroute="FAILSAFE"/>
+    </mode>
+
+    <mode name="GUIDED">
+      <select cond="RCMode2() && DLModeGuided()" exception="HOME"/>
+      <on_enter>
+    
+      </on_enter>
+      <control freq="NAVIGATION_FREQUENCY">
+      </control>
+      <control>
+      </control>
+      <exception cond="GpsIsLost() && autopilot_in_flight()" deroute="FAILSAFE"/>
+    </mode>
+
+    <mode name="HOME">
+      <on_enter>
+      </on_enter>
+      <control freq="NAVIGATION_FREQUENCY">
+      </control>
+      <control>
+      </control>
+      <exception cond="GpsIsLost()" deroute="FAILSAFE"/>
+    </mode>
+
+    <!-- Safe landing -->
+    <mode name="FAILSAFE" shortname="FAIL">
+      <on_enter>
+      </on_enter>
+      <control>
+      </control>
+      <exception cond="!GpsIsLost()" deroute="$LAST_MODE"/>
     </mode>
 
     <!-- Kill throttle mode -->

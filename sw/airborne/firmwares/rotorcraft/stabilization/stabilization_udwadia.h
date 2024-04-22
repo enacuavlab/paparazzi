@@ -23,14 +23,24 @@
 #ifndef STABILIZATION_UDWADIA
 #define STABILIZATION_UDWADIA
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_common_int.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_quat_int.h"
 
+extern struct FloatEulers stab_att_sp_euler;
 
 extern void stabilization_udwadia_init(void);
 extern void stabilization_udwadia_enter(void);
 extern void stabilization_udwadia_run(bool in_flight);
 extern void stabilization_udwadia_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn);
-#endif /* STABILIZATION_INDI */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* STABILIZATION_UDWADIA */
 
