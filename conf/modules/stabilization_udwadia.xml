@@ -33,11 +33,19 @@
     <configure name="CXXSTANDARD" value="-std=c++14"/>
     <!-- <flag name="CXXFLAGS" value="Wno-unused-but-set-variable"/>
     <flag name="CXXFLAGS" value="Wno-unused-variable"/> -->
+    <include name="$(PAPARAZZI_SRC)/sw/ext/eigen"/>
+    <define name="EIGEN_NO_MALLOC"/>
+    <define name="EIGEN_NO_AUTOMATIC_RESIZING"/>
+    <define name="EIGEN_NO_DEBUG" />
+    <flag name="LDFLAGS" value="lstdc++" />
 
     <file name="stabilization_udwadia.cpp" dir="$(SRC_FIRMWARE)/stabilization"/>
+    <file name="stabilization_attitude_rc_setpoint.c" dir="$(SRC_FIRMWARE)/stabilization"/>
 
     <!-- Include the matrix libraries from ext -->
     <!-- <include name="$(PAPARAZZI_SRC)/sw/ext/matrix/"/> -->
+    <define name="STABILIZATION_ATTITUDE_TYPE_H" value="stabilization/stabilization_udwadia.h" type="string"/>
+    <define name="NO_RESET_UPDATE_SETPOINT_HEADING" />
 
   </makefile>
 </module>

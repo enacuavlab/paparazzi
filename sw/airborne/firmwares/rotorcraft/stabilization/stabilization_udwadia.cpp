@@ -25,6 +25,10 @@
  *
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "firmwares/rotorcraft/stabilization/stabilization_udwadia.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
@@ -38,19 +42,17 @@
 #include "modules/core/abi.h"
 #include <stdio.h>
 
-#include <Eigen/Dense> // https://eigen.tuxfamily.org/dox/GettingStarted.html
-
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #ifdef __cplusplus
 }
 #endif
 
+#include <Eigen/Dense> // https://eigen.tuxfamily.org/dox/GettingStarted.html
 // variables needed for control
+
+int32_t stabilization_cmd[COMMANDS_NB];
+
+struct FloatEulers stab_att_sp_euler;
 
 
 #ifndef STABILIZATION_UDWADIA_IX
@@ -102,24 +104,11 @@ PRINT_CONFIG_MSG("STABILIZATION_INDI_RPM_FEEDBACK")
 Eigen::Vector3f Fc;
 Eigen::Vector4f yaw_quat;
 
+Eigen::Matrix4f J, B, B_pinv;
 
-Eigen::Matrix4f J;
-J << 1, 0, 0, 0,
-     0, STABILIZATION_UDWADIA_IX, 0, 0,
-     0, 0, STABILIZATION_UDWADIA_IY, 0,
-     0, 0, 0, STABILIZATION_UDWADIA_IZ;
 
-Eigen::Matrix4f B;
-B <<  1, 1, 1, 1,
-      -STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,
-       STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,
-       STABILIZATION_UDWADIA_C,  STABILIZATION_UDWADIA_C, -STABILIZATION_UDWADIA_C, -STABILIZATION_UDWADIA_C;
 
-Eigen::Matrix4f B_pinv;
-
-Eigen::Matrix4f B_pinv;
-
-void qtoe(Eigen::Matrix4f &h, Eigen::Vector4f q);
+void qtoe(Eigen::Matrix4f *h, Eigen::Vector4f q);
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
@@ -146,11 +135,22 @@ void qtoe(Eigen::Matrix4f &h, Eigen::Vector4f q);
  */
 void stabilization_udwadia_init(void)
 {
+
+  J << 1, 0, 0, 0,
+       0, STABILIZATION_UDWADIA_IX, 0, 0,
+       0, 0, STABILIZATION_UDWADIA_IY, 0,
+       0, 0, 0, STABILIZATION_UDWADIA_IZ;
+
+  B <<  1, 1, 1, 1,
+      -STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,
+       STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,
+       STABILIZATION_UDWADIA_C,  STABILIZATION_UDWADIA_C, -STABILIZATION_UDWADIA_C, -STABILIZATION_UDWADIA_C;
  
-B_pinv = B.pseudoInverse();
-#if PERIODIC_TELEMETRY
-  // register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_REF_QUAT, send_ahrs_ref_quat);
-#endif
+  // B_pinv = B.completeOrthogonalDecomposition().pseudoInverse();
+  B_pinv = (B.transpose()*B).ldlt().solve (B.transpose());
+  #if PERIODIC_TELEMETRY
+    // register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_REF_QUAT, send_ahrs_ref_quat);
+  #endif
 
 
 }
@@ -171,16 +171,16 @@ void stabilization_udwadia_enter(void)
  *
  * Function that calculates the commands
  */
-void stabilization_udwadia_run(bool in_flight)
+void stabilization_udwadia_run(bool __attribute__((unused)) in_flight)
 {
   
   struct FloatRates *body_rates = stateGetBodyRates_f();
   Eigen::Vector3f body_rates_vect;    
-  body_rates_vect << body_rates.p, body_rates.q, body_rates.r;
+  body_rates_vect << body_rates->p, body_rates->q, body_rates->r;
 
   struct FloatQuat *att_quat = stateGetNedToBodyQuat_f();
   Eigen::Vector4f att_quat_vect;
-  att_quat_vect << att_quat.qi, att_quat.qx, att_quat.qy, att_quat.qz;
+  att_quat_vect << att_quat->qi, att_quat->qx, att_quat->qy, att_quat->qz;
   Eigen::Matrix<float, 1, 4> att_quat_vect_T = att_quat_vect.transpose();
 
   Eigen::Matrix4f e_att, e_att_T, e_dot_att, e_dot_att_T;
@@ -208,29 +208,32 @@ void stabilization_udwadia_run(bool in_flight)
        2*(Fc(1)*att_quat_vect(2)+Fc(0)*att_quat_vect(1)), 2*(Fc(1)*att_quat_vect(3)+Fc(0)*att_quat_vect(0)), 2*(Fc(1)*att_quat_vect(0)-Fc(0)*att_quat_vect(3)), 2*(Fc(1)*att_quat_vect(1)-Fc(0)*att_quat_vect(2)),
        yaw_quat(3), 0, 0, -yaw_quat(0);
 
-  b << -STABILIZATION_UDWADIA_D1*att_quat_vect_T*q_dot-STABILIZATION_UDWADIA_D2*(att_quat_vect_T*att_quat_vect-1)-q_dot_T*q_dot;
-       4*Fc(2)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1))+2*Fc(1)*(pow(q_dot(0),2)-pow(q_dot(2),2)-pow(q_dot(3),2)+pow(q_dot(4),2)) - STABILIZATION_UDWADIA_D1 *(2*Fc(2)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))-2*Fc(1)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_D2*(2*Fc(2)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1)) - Fc(1)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
+  b << -STABILIZATION_UDWADIA_D1*att_quat_vect_T*q_dot-STABILIZATION_UDWADIA_D2*(att_quat_vect_T*att_quat_vect-1)-q_dot_T*q_dot,
+       4*Fc(2)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1))+2*Fc(1)*(pow(q_dot(0),2)-pow(q_dot(2),2)-pow(q_dot(3),2)+pow(q_dot(3),2)) - STABILIZATION_UDWADIA_D1 *(2*Fc(2)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))-2*Fc(1)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_D2*(2*Fc(2)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1)) - Fc(1)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
        -4*Fc(2)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))+2*Fc(0)*(pow(q_dot(0),2)-pow(q_dot(1),2)-pow(q_dot(2),2)+pow(q_dot(3),2)) - STABILIZATION_UDWADIA_D1 *(-2*Fc(2)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))+2*Fc(0)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_D2*(-2*Fc(2)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) + Fc(0)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
        -4*Fc(1)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))-4*Fc(0)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1)) - STABILIZATION_UDWADIA_D1 *(2*Fc(1)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))-2*Fc(0)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))) - STABILIZATION_UDWADIA_D2*(2*Fc(1)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) - 2*Fc(0)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1))),
        -STABILIZATION_UDWADIA_D1 *(q_dot(0)*yaw_quat(3)-q_dot(3)*yaw_quat(0)) - STABILIZATION_UDWADIA_D2*(att_quat_vect(0)*yaw_quat(3)-att_quat_vect(3)*yaw_quat(0));
 
   Eigen::Matrix<float, 5, 4> temp = A*M_inv;
-  Eigen::Vector4f p1 = temp.pseudoInverse() * (b+temp*Q);
+  Eigen::Matrix<float, 4, 5> temp_pinv = (temp.transpose()*temp).ldlt().solve (temp.transpose()); // https://www.mrtrix.org/developer-documentation/least__squares_8h_source.html#l00039
+  // Eigen::Matrix<float, 4, 5> temp_pinv = temp.completeOrthogonalDecomposition().pseudoInverse();
+  Eigen::Vector4f p1 = temp_pinv * (b+temp*Q);
 
-  Eigen::Matrix3f var;
-  var << -abs(Fc(0)), -abs(Fc(2)), -abs(Fc(3)),
-          e_att.bottomRightCorner(3,3);
-  F = (B_pinv*var*p1)*MAX_PPRZ/5;
+  Eigen::Vector4f var;
+  var << -sqrtf(Fc(0)*Fc(0) + Fc(1)*Fc(1) + Fc(2)*Fc(2)),
+          e_att.bottomRightCorner(3,4)*p1;
+  Eigen::Vector4f F = (B_pinv*var);
 
 
    // Bound the inputs to the actuators
-  for (i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++) {
     if (autopilot_get_motors_on()) {
+      F(i) = -F(i)*MAX_PPRZ/5;
       Bound(F(i), 0, MAX_PPRZ);
     } else {
       F(i) = -MAX_PPRZ;
     }
-    actuators_pprz[i] = F(i);
+    actuators_pprz[i] = (int16_t) F(i);
   }
 
 }
@@ -242,7 +245,7 @@ void stabilization_udwadia_read_rc(bool in_flight, bool in_carefree, bool coordi
 {
   struct FloatQuat q_sp;
   struct FloatEulers eul_sp;
-  float throttle = FLOAT_OF_BFP(guidance_v.rc_delta_t, INT32_ACCEL_FRAC);
+  float throttle = (float) guidance_v.rc_delta_t;
   struct FloatVect3 force_vect = {0,0,-5*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ};
   struct FloatVect3 tmp_vect;
   stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
@@ -260,16 +263,16 @@ void stabilization_udwadia_read_rc(bool in_flight, bool in_carefree, bool coordi
  * If this is not available it will use a first order filter to approximate the actuator state.
  * It is also possible to model rate limits (unit: PPRZ/loop cycle)
  */
-void get_actuator_state(void)
-{
+// void get_actuator_state(void)
+// {
 
-  float_vect_copy(actuator_state, act_obs, INDI_NUM_ACT);
+//   float_vect_copy(actuator_state, act_obs, INDI_NUM_ACT);
 
-}
+// }
 
 
-void qtoe(Eigen::Matrix4f &h, Eigen::Vector4f q){
-  h <<  2*q(0),  2*q(1),  2*q(2),  2*q(3),
+void qtoe(Eigen::Matrix4f *h, Eigen::Vector4f q){
+  *h <<  2*q(0),  2*q(1),  2*q(2),  2*q(3),
        -2*q(1),  2*q(0),  2*q(3), -2*q(2),
        -2*q(2), -2*q(3),  2*q(0),  2*q(1),
        -2*q(3),  2*q(2), -2*q(1),  2*q(0);
