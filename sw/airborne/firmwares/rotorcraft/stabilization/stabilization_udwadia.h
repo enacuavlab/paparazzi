@@ -31,7 +31,7 @@ extern "C" {
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_common_int.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_quat_int.h"
 
-extern struct FloatEulers stab_att_sp_euler;
+//extern struct FloatEulers stab_att_sp_euler;
 
 extern void stabilization_udwadia_init(void);
 extern void stabilization_udwadia_enter(void);
