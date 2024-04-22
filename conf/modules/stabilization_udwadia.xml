@@ -44,7 +44,7 @@
 
     <!-- Include the matrix libraries from ext -->
     <!-- <include name="$(PAPARAZZI_SRC)/sw/ext/matrix/"/> -->
-    <define name="STABILIZATION_ATTITUDE_TYPE_H" value="stabilization/stabilization_udwadia.h" type="string"/>
+    <!--define name="STABILIZATION_ATTITUDE_TYPE_H" value="stabilization/stabilization_udwadia.h" type="string"/-->
     <define name="NO_RESET_UPDATE_SETPOINT_HEADING" />
 
   </makefile>

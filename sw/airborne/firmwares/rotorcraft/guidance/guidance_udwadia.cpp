@@ -104,20 +104,20 @@ void guidance_udwadia_enter(void)
 
 
 
-struct StabilizationSetpoint guidance_h_run_pos(bool __attribute__((unused)) in_flight, struct HorizontalGuidance __attribute__((unused)) *gh)
-{
-  // return guidance_udwadia_run_mode(in_flight, gh, _gv, GUIDANCE_INDI_H_POS, _v_mode);
-}
-
-struct StabilizationSetpoint guidance_h_run_speed(bool __attribute__((unused)) in_flight, struct HorizontalGuidance __attribute__((unused)) *gh)
-{
-  // return guidance_udwadia_run_mode(in_flight, gh, _gv, GUIDANCE_INDI_H_SPEED, _v_mode);
-}
-
-struct StabilizationSetpoint guidance_h_run_accel(bool __attribute__((unused)) in_flight, struct HorizontalGuidance __attribute__((unused)) *gh)
-{
-  // return guidance_udwadia_run_mode(in_flight, gh, _gv, GUIDANCE_INDI_H_ACCEL, _v_mode);
-}
+// struct StabilizationSetpoint guidance_h_run_pos(bool __attribute__((unused)) in_flight, struct HorizontalGuidance __attribute__((unused)) *gh)
+// {
+//   // return guidance_udwadia_run_mode(in_flight, gh, _gv, GUIDANCE_INDI_H_POS, _v_mode);
+// }
+// 
+// struct StabilizationSetpoint guidance_h_run_speed(bool __attribute__((unused)) in_flight, struct HorizontalGuidance __attribute__((unused)) *gh)
+// {
+//   // return guidance_udwadia_run_mode(in_flight, gh, _gv, GUIDANCE_INDI_H_SPEED, _v_mode);
+// }
+// 
+// struct StabilizationSetpoint guidance_h_run_accel(bool __attribute__((unused)) in_flight, struct HorizontalGuidance __attribute__((unused)) *gh)
+// {
+//   // return guidance_udwadia_run_mode(in_flight, gh, _gv, GUIDANCE_INDI_H_ACCEL, _v_mode);
+// }
 
 // int32_t guidance_v_run_pos(bool in_flight UNUSED, struct VerticalGuidance *gv)
 // {

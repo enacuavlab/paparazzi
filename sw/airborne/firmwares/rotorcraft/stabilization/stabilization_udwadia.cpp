@@ -50,9 +50,9 @@ extern "C" {
 #include <Eigen/Dense> // https://eigen.tuxfamily.org/dox/GettingStarted.html
 // variables needed for control
 
-int32_t stabilization_cmd[COMMANDS_NB];
+//int32_t stabilization_cmd[COMMANDS_NB];
 
-struct FloatEulers stab_att_sp_euler;
+//struct FloatEulers stab_att_sp_euler;
 
 
 #ifndef STABILIZATION_UDWADIA_IX
