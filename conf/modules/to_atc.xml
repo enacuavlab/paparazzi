@@ -1,0 +1,26 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="to_atc">
+  <doc>
+    <description></description>
+  </doc>
+  <settings>
+    <dl_settings>
+      <dl_settings NAME="TO_ATC">
+        <dl_setting var="tacode[0]" unit="int" min="0" step="1" max="9" shortname="tacode" module="modules/to_atc/to_atc"/>
+        <dl_setting var="tacode[1]" unit="int" min="0" step="1" max="9" shortname="" module="modules/to_atc/to_atc"/>
+	<dl_setting var="tacode[2]" unit="int" min="0" step="1" max="9" shortname="" module="modules/to_atc/to_atc"/>
+	<dl_setting var="tacode[3]" unit="int" min="0" step="1" max="9" shortname="" module="modules/to_atc/to_atc"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+  <header>
+    <file name="to_atc.h"/>
+  </header>
+  <init fun="to_atc_init()"/>
+  <periodic fun="to_atc_periodic()" freq="1.0"/>
+  <makefile>
+    <file name="to_atc.c"/>
+  </makefile>
+</module>
+

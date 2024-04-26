@@ -1,0 +1,178 @@
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+
+<flight_plan alt="452" ground_alt="152" lat0="43.5821153" lon0="1.4329402" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
+  <header>
+#include "autopilot.h"
+</header>
+  <waypoints>
+    <waypoint name="HOME" x="-67.0" y="-92.2"/>
+    <waypoint name="CLIMB" x="-113.8" y="-87.3"/>
+    <waypoint name="STDBY" x="-89.5" y="-97.9"/>
+    <waypoint name="0.1" x="-97.2" y="-73.3"/>
+    <waypoint name="1.2" x="-355.6" y="-1.4"/>
+    <waypoint name="2.3" x="524.2" y="1531.4"/>
+    <waypoint name="3.4" x="433.6" y="2068.7"/>
+    <waypoint name="4.5" x="-1108.0" y="2610.9"/>
+    <waypoint name="5.6" x="-2014.7" y="3387.7"/>
+    <waypoint name="6.7" x="-2284.7" y="3758.8"/>
+    <waypoint name="7.8" x="-2448.9" y="4384.6"/>
+    <waypoint name="8.9" x="-3446.4" y="4105.6"/>
+    <waypoint name="9.10" x="-4330.8" y="4709.8" alt="302"/>
+    <waypoint name="__Point_de_degagement_2" x="405.444" y="1348.32"/>
+    <waypoint name="__Point_de_degagement_4" x="-2216.93" y="2935.68"/>
+    <waypoint alt="152.0" name="TD" x="-4502.2" y="4647.0"/>
+    <waypoint name="__Point_de_degagement_5" x="-2325.97" y="4290.91"/>
+    <waypoint name="_4.1" x="-1648.75" y="2641.18"/>
+    <waypoint name="__Point_de_degagement_3" x="-685.733" y="2202.16"/>
+    <waypoint name="_3_2" x="-418.688" y="1991.17"/>
+    <waypoint name="_3" x="423" y="1700.8"/>
+    <waypoint name="_2.2" x="544.401" y="1116.58"/>
+    <waypoint name="__Point_de_degagement_1" x="268.108" y="192.417"/>
+  </waypoints>
+  <blocks>
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 10)"/>
+      <call_once fun="NavSetGroundReferenceHere()"/>
+    </block>
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Start Engine">
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
+      <exception cond="stateGetPositionEnu_f() @DEREF z @GT 2.0" deroute="Standby"/>
+      <call_once fun="NavSetWaypointHere(WP_CLIMB)"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="CLIMB"/>
+    </block>
+    <block name="Standby" strip_button="Standby" strip_icon="home.png">
+      <stay wp="STDBY"/>
+    </block>
+    <block name="route1">
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go from="STDBY" hmode="route" wp="0.1"/>
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go from="0.1" hmode="route" wp="1.2"/>
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go from="1.2" hmode="route" wp="2.3"/>
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go from="2.3" hmode="route" wp="3.4"/>
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go from="3.4" hmode="route" wp="4.5"/>
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go from="4.5" hmode="route" wp="5.6"/>
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go from="5.6" hmode="route" wp="6.7"/>
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go from="6.7" hmode="route" wp="7.8"/>
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go from="7.8" hmode="route" wp="8.9"/>
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go from="8.9" hmode="route" wp="9.10"/>
+    </block>
+    <block name="go_p1">
+      <call_once fun="guidance_h_SetMaxSpeed(15)"/>
+      <go wp="0.1"/>
+      <deroute block="go_p2.1"/>
+    </block>
+    <block name="go_p2.1">
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go wp="1.2"/>
+      <deroute block="go_p2.3"/>
+    </block>
+    <block name="go_p2.3">
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go wp="2.3"/>
+      <deroute block="go_p3"/>
+    </block>
+    <block name="go_p3">
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go wp="3.4"/>
+      <deroute block="go_p4"/>
+    </block>
+    <block name="go_p4">
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go wp="4.5"/>
+      <deroute block="go_p4.1"/>
+    </block>
+    <block name="go_p4.1">
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go wp="5.6"/>
+      <deroute block="go_p5"/>
+    </block>
+    <block name="go_p5">
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go wp="6.7"/>
+      <deroute block="go_p6"/>
+    </block>
+    <block name="go_p6">
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go wp="7.8"/>
+      <deroute block="go_p7"/>
+    </block>
+    <block name="go_p7">
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go wp="8.9"/>
+      <deroute block="go_p8"/>
+    </block>
+    <block name="go_p8">
+      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
+      <go wp="9.10"/>
+      <deroute block="landed"/>
+    </block>
+    <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
+      <call_once fun="NavSetWaypointHere(WP_TD)"/>
+    </block>
+    <block name="Reconfiguration_Dynamique">
+      <exception cond="sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_1)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_1))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_1)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_1))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_2)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_2))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_2)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_2))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_1)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_1))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_1)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_1))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_3)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_3))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_3)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_3))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_1)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_1))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_1)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_1))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_4)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_4))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_4)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_4))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_1)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_1))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_1)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_1))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_5)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_5))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_5)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_5)))))" deroute="go_deroute_Point_de_degagement_1"/>
+      <exception cond="sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_2)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_2))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_2)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_2))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_1)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_1))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_1)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_1))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_2)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_2))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_2)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_2))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_3)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_3))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_3)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_3))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_2)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_2))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_2)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_2))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_4)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_4))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_4)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_4))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_2)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_2))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_2)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_2))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_5)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_5))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_5)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_5)))))" deroute="go_deroute_Point_de_degagement_2"/>
+      <exception cond="sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_3)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_3))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_3)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_3))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_1)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_1))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_1)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_1))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_3)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_3))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_3)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_3))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_2)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_2))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_2)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_2))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_3)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_3))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_3)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_3))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_4)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_4))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_4)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_4))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_3)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_3))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_3)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_3))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_5)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_5))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_5)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_5)))))" deroute="go_deroute_Point_de_degagement_3"/>
+      <exception cond="sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_4)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_4))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_4)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_4))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_1)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_1))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_1)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_1))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_4)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_4))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_4)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_4))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_2)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_2))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_2)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_2))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_4)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_4))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_4)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_4))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_3)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_3))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_3)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_3))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_4)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_4))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_4)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_4))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_5)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_5))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_5)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_5)))))" deroute="go_deroute_Point_de_degagement_4"/>
+      <exception cond="sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_5)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_5))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_5)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_5))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_1)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_1))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_1)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_1))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_5)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_5))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_5)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_5))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_2)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_2))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_2)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_2))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_5)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_5))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_5)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_5))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_3)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_3))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_3)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_3))))) @AND sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_5)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_5))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_5)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_5))))) @LT sqrt(((GetPosX()-(WaypointX(WP___Point_de_degagement_4)))*(GetPosX()-(WaypointX(WP___Point_de_degagement_4))))+((GetPosY()-(WaypointY(WP___Point_de_degagement_4)))*(GetPosY()-(WaypointY(WP___Point_de_degagement_4)))))" deroute="go_deroute_Point_de_degagement_5"/>
+    </block>
+    <block name="land">
+      <go wp="TD"/>
+      <deroute block="flare"/>
+    </block>
+    <block name="go_deroute_Point_de_degagement_1">
+      <call_once fun="guidance_h_SetMaxSpeed(20)"/>
+      <go wp="__Point_de_degagement_1"/>
+      <stay alt="352" wp="__Point_de_degagement_1"/>
+    </block>
+    <block name="go_deroute_Point_de_degagement_2">
+      <call_once fun="guidance_h_SetMaxSpeed(20)"/>
+      <go wp="__Point_de_degagement_2"/>
+      <stay alt="352" wp="__Point_de_degagement_2"/>
+    </block>
+    <block name="go_deroute_Point_de_degagement_3">
+      <call_once fun="guidance_h_SetMaxSpeed(20)"/>
+      <go wp="__Point_de_degagement_3"/>
+      <stay alt="352" wp="__Point_de_degagement_3"/>
+    </block>
+    <block name="go_deroute_Point_de_degagement_4">
+      <call_once fun="guidance_h_SetMaxSpeed(20)"/>
+      <go wp="__Point_de_degagement_4"/>
+      <stay alt="352" wp="__Point_de_degagement_4"/>
+    </block>
+    <block name="go_deroute_Point_de_degagement_5">
+      <call_once fun="guidance_h_SetMaxSpeed(20)"/>
+      <go wp="__Point_de_degagement_5"/>
+      <stay alt="352" wp="__Point_de_degagement_5"/>
+    </block>
+    <block name="flare">
+      <exception cond="NavDetectGround()" deroute="Holding point"/>
+      <exception cond="!nav_is_in_flight()" deroute="landed"/>
+      <call_once fun="NavStartDetectGround()"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="TD"/>
+    </block>
+    <block name="landed">
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+  </blocks>
+</flight_plan>

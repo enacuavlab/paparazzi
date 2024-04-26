@@ -1,0 +1,73 @@
+<control_panel name="paparazzi control panel">
+  <section name="programs"/>
+  <section name="sessions">
+    <session name="EUREKA">
+      <program name="PprzGCS">
+        <arg flag="--"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Server">
+        <arg flag="-n"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Data Link">
+        <arg flag="-udp"/>
+        <arg flag="-udp_broadcast"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="EVTOLE"/>
+        <arg flag=""/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="EVTOLS"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="MEDUAV"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="SURUAV"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Ivy2SVS">
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+        <arg flag="-ac" constant="1"/>
+        <arg flag="2"/>
+        <arg flag="3"/>
+        <arg flag="4"/>
+      </program>
+    </session>
+    <session name="EUREKA_local">
+      <program name="PprzGCS"/>
+      <program name="Server">
+        <arg flag="-n"/>
+      </program>
+      <program name="Data Link">
+        <arg flag="-udp"/>
+        <arg flag="-udp_broadcast"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="EVTOLE"/>
+        <arg flag="--nodisplay"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="EVTOLS"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="MEDUAV"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="SURUAV"/>
+      </program>
+      <program name="Ivy2SVS">
+        <arg flag="-ac" constant="1"/>
+        <arg flag="2"/>
+        <arg flag="3"/>
+        <arg flag="4"/>
+      </program>
+    </session>
+  </section>
+</control_panel>
