@@ -57,6 +57,7 @@
     </exceptions>
 
     <mode name="ATTITUDE_DIRECT" shortname="ATT">
+      <select cond="$DEFAULT_MODE"/>
       <select cond="RCMode0()"/>
       <on_enter>
         <call fun="stabilization_udwadia_init()"/>
@@ -126,7 +127,6 @@
 
     <!-- Kill throttle mode -->
     <mode name="KILL">
-      <select cond="$DEFAULT_MODE"/>
       <select cond="kill_switch_is_on()"/>
       <on_enter>
         <call fun="autopilot_set_in_flight(false)"/>
