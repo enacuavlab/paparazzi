@@ -481,36 +481,36 @@ static void send_ahrs_quat(struct transport_tx *trans, struct link_device *dev)
 }
 
 
-static void send_external_pose_down(struct transport_tx *trans, struct link_device *dev)
-{
-  if(sample_ev.time_us == 0){
-    return;
-  }
-  float sample_temp_ev[11];
-  sample_temp_ev[0]  = (float) sample_ev.time_us;
-  sample_temp_ev[1]  = sample_ev.pos(0) ;
-  sample_temp_ev[2]  = sample_ev.pos(1) ;
-  sample_temp_ev[3]  = sample_ev.pos(2) ; 
-  sample_temp_ev[4]  = sample_ev.vel(0) ;
-  sample_temp_ev[5]  = sample_ev.vel(1) ;              
-  sample_temp_ev[6]  = sample_ev.vel(2) ; 
-  sample_temp_ev[7]  = sample_ev.quat(0);
-  sample_temp_ev[8]  = sample_ev.quat(1);
-  sample_temp_ev[9]  = sample_ev.quat(2); 
-  sample_temp_ev[10] = sample_ev.quat(3);
-  pprz_msg_send_EXTERNAL_POSE_DOWN(trans, dev, AC_ID,
-                        &sample_temp_ev[0],
-                        &sample_temp_ev[1], 
-                        &sample_temp_ev[2], 
-                        &sample_temp_ev[3],
-                        &sample_temp_ev[4], 
-                        &sample_temp_ev[5], 
-                        &sample_temp_ev[6], 
-                        &sample_temp_ev[7], 
-                        &sample_temp_ev[8], 
-                        &sample_temp_ev[9], 
-                        &sample_temp_ev[10] );
-} 
+// static void send_external_pose_down(struct transport_tx *trans, struct link_device *dev)
+// {
+//   if(sample_ev.time_us == 0){
+//     return;
+//   }
+//   float sample_temp_ev[11];
+//   sample_temp_ev[0]  = (float) sample_ev.time_us;
+//   sample_temp_ev[1]  = sample_ev.pos(0) ;
+//   sample_temp_ev[2]  = sample_ev.pos(1) ;
+//   sample_temp_ev[3]  = sample_ev.pos(2) ; 
+//   sample_temp_ev[4]  = sample_ev.vel(0) ;
+//   sample_temp_ev[5]  = sample_ev.vel(1) ;              
+//   sample_temp_ev[6]  = sample_ev.vel(2) ; 
+//   sample_temp_ev[7]  = sample_ev.quat(0);
+//   sample_temp_ev[8]  = sample_ev.quat(1);
+//   sample_temp_ev[9]  = sample_ev.quat(2); 
+//   sample_temp_ev[10] = sample_ev.quat(3);
+//   pprz_msg_send_EXTERNAL_POSE_DOWN(trans, dev, AC_ID,
+//                         &sample_temp_ev[0],
+//                         &sample_temp_ev[1], 
+//                         &sample_temp_ev[2], 
+//                         &sample_temp_ev[3],
+//                         &sample_temp_ev[4], 
+//                         &sample_temp_ev[5], 
+//                         &sample_temp_ev[6], 
+//                         &sample_temp_ev[7], 
+//                         &sample_temp_ev[8], 
+//                         &sample_temp_ev[9], 
+//                         &sample_temp_ev[10] );
+// } 
 #endif
 
 /* Initialize the EKF */
@@ -610,7 +610,7 @@ void ins_ekf2_init(void)
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_WIND_INFO_RET, send_wind_info_ret);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_BIAS, send_ahrs_bias);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_QUAT_INT, send_ahrs_quat);
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_EXTERNAL_POSE_DOWN, send_external_pose_down);
+  // register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_EXTERNAL_POSE_DOWN, send_external_pose_down);
 #endif
 
   /*

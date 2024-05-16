@@ -57,11 +57,14 @@
     <module name="guidance" type="udwadia"/>
     <module name="nav" type="rotorcraft"/>
 
-    <module name="ins" type="ekf2"/>
+    <module name="ins" type="ekf2">
+      <define name="INS_EKF2_OPTITRACK" value="TRUE"/>    
+    </module>
     <module name="sys_mon"/>
     <module name="shell">
       <configure name="SHELL_PORT" value="usb_serial_debug" />
     </module>
+
     <!-- <module name="preflight_checks"/> -->
 
     <!--module name="filter" type="1euro_imu">
@@ -74,6 +77,7 @@
     </module> -->
 
     <module name="flight_recorder"/>
+    <define name="SDLOG_START_DELAY" value="1"/>
   </firmware>
 
   <servos driver="Pwm">
