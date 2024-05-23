@@ -200,7 +200,7 @@
   </section>
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-    <define name="MAX_BANK" value="20" unit="deg"/>
+    <define name="MAX_BANK" value="30" unit="deg"/>
     <define name="USE_SPEED_REF" value="TRUE"/>
     <define name="PGAIN" value="50"/>
     <define name="DGAIN" value="100"/>
@@ -215,6 +215,11 @@
     <define name="COMPANY"  value="AVA"    type="string"/> 
     <define name="MODEL"    value="UAVA"   type="string"/>  
   </section>
+
+  <section name="MISC">
+    <define name="NAV_CARROT_DIST" value="100"/>
+  </section>
+
 
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES"  value="se_motor, sw_motor, nw_motor, ne_motor" type="string[]"/>
