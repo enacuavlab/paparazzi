@@ -210,8 +210,8 @@
   
   <section name="TO_ATC" prefix="TO_ATC_">
     <define name="FLIGHT"   value="422"    type="string"/> <!-- 0 to 500-->
-    <define name="CALLSIGN" value="eVTOL-S"  type="string"/> 
-    <define name="TACODE"   value="2612"   type="string"/> <!-- digits 1 to 7 -->
+    <define name="CALLSIGN" value="EVTOL-S"  type="string"/> 
+    <define name="TACODE"   value="2616"   type="string"/> <!-- digits 1 to 7 -->
     <define name="COMPANY"  value="AVA"    type="string"/> 
     <define name="MODEL"    value="UAVA"   type="string"/>  
   </section>
