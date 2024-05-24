@@ -19,7 +19,7 @@
     <module name="imu" type="bebop"/>
     <module name="gps" type="ublox"/>
     <module name="stabilization" type="indi">
-      <define name="INDI_RPM_FEEDBACK" value="TRUE"/>
+      <define name="STABILIZATION_INDI_RPM_FEEDBACK" value="TRUE"/>
     </module>
     <module name="ahrs" type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="TRUE"/>
@@ -29,10 +29,9 @@
 
     <module name="geo_mag"/>
     <module name="air_data"/>
-    <module name="send_imu_mag_current"/>
     <module name="gps" type="ubx_ucenter"/>
     <module name="logger_file">
-      <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
+      <define name="LOGGER_FILE_PATH" value="/data/ftp/internal_000"/>
     </module>
   </firmware>
 
@@ -116,7 +115,7 @@
     <define name="ESTIMATION_FILT_CUTOFF" value="3.2f"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN" value="{0.08f, 0.08f, 0.08f, 0.08f}"/>
+    <define name="ACT_FREQ" value="{42.7, 42.7, 42.7, 42.7}"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
@@ -153,7 +152,6 @@
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="nw_motor, ne_motor, se_motor, sw_motor" type="string[]"/>
     <define name="JSBSIM_MODEL" value="simple_x_quad_ccw" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
   </section>
 
   <section name="AUTOPILOT">

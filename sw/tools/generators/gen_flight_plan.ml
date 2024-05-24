@@ -101,7 +101,6 @@ let security_height = ref 0.
 let fp_wgs84 = ref { posn_lat = 0.; posn_long = 0.}
 
 let check_altitude_srtm = fun a x wgs84 ->
-  Srtm.add_path (Env.paparazzi_home ^ "/data/srtm");
   try
     let srtm_alt = float (Srtm.of_wgs84 wgs84) in
     if a < srtm_alt then begin (* Not fully correct, Flightplan "alt" is not alt as we know it *)
@@ -243,14 +242,11 @@ let pprz_throttle = fun s ->
 let output_vmode = fun out stage_xml wp last_wp ->
   let pitch = try Xml.attrib stage_xml "pitch" with _ -> "0.0" in
   let t = ExtXml.attrib_or_default stage_xml "nav_type" "Nav" in
-  if String.lowercase_ascii (Xml.tag stage_xml) <> "manual"
+  if pitch = "auto"
   then begin
-    if pitch = "auto"
-    then begin
-      lprintf out "%sVerticalAutoPitchMode(%s);\n" t (pprz_throttle (parsed_attrib stage_xml "throttle"))
-    end else begin
-      lprintf out "%sVerticalAutoThrottleMode(RadOfDeg(%s));\n" t (parse pitch);
-    end
+    lprintf out "%sVerticalAutoPitchMode(%s);\n" t (pprz_throttle (parsed_attrib stage_xml "throttle"))
+  end else begin
+    lprintf out "%sVerticalAutoThrottleMode(RadOfDeg(%s));\n" t (parse pitch);
   end;
 
   let vmode = try ExtXml.attrib stage_xml "vmode" with _ -> "alt" in
@@ -336,7 +332,7 @@ let rec index_stage = fun x ->
         incr stage; (* To count the loop stage *)
         Xml.Element (Xml.tag x, Xml.attribs x@["no", soi n], l)
       | "return" | "goto"  | "deroute" | "exit_block" | "follow" | "call" | "call_once" | "home"
-      | "heading" | "attitude" | "manual" | "go" | "stay" | "xyz" | "set" | "circle" ->
+      | "heading" | "attitude" | "go" | "stay" | "xyz" | "set" | "circle" | "guided" ->
         incr stage;
         Xml.Element (Xml.tag x, Xml.attribs x@["no", soi !stage], Xml.children x)
       | "survey_rectangle" | "eight" | "oval"->
@@ -456,16 +452,6 @@ let rec print_stage = fun out index_of_waypoints x ->
         stage_until out x;
         fp_post_call out x;
         lprintf out "break;\n"
-      | "manual" ->
-        stage out;
-        fp_pre_call out x;
-        let t = ExtXml.attrib_or_default x "nav_type" "Nav" in
-        let p = try ", " ^ (Xml.attrib x "nav_params") with _ -> "" in
-        lprintf out "%sSetManual(%s, %s, %s%s);\n" t (parsed_attrib x "roll") (parsed_attrib x "pitch") (parsed_attrib x "yaw") p;
-        ignore (output_vmode out x "" "");
-        stage_until out x;
-        fp_post_call out x;
-        lprintf out "break;\n"
       | "go" ->
         stage out;
         fp_pre_call out x;
@@ -549,6 +535,17 @@ let rec print_stage = fun out index_of_waypoints x ->
         let t = ExtXml.attrib_or_default x "nav_type" "Nav" in
         let p = try ", " ^ (Xml.attrib x "nav_params") with _ -> "" in
         lprintf out "%sCircleWaypoint(%s, %s%s);\n" t wp r p;
+        stage_until out x;
+        fp_post_call out x;
+        lprintf out "break;\n"
+      | "guided" ->
+        stage out;
+        fp_pre_call out x;
+        let cmds = ExtXml.attrib x "commands" in
+        let flags = ExtXml.attrib_or_default x "flags" "0" in
+        let t = ExtXml.attrib_or_default x "nav_type" "Nav" in
+        let p = try ", " ^ (Xml.attrib x "nav_params") with _ -> "" in
+        lprintf out "%sGuided(%s, %s%s);\n" t flags cmds p;
         stage_until out x;
         fp_post_call out x;
         lprintf out "break;\n"
@@ -944,7 +941,7 @@ let print_flight_plan_h = fun xml ref0 xml_file out_file ->
   (* include general headers *)
   fprintf out "#include \"std.h\"\n";
   fprintf out "#include \"generated/modules.h\"\n";
-  fprintf out "#include \"subsystems/abi.h\"\n";
+  fprintf out "#include \"modules/core/abi.h\"\n";
   fprintf out "#include \"autopilot.h\"\n\n";
   (* print variables and ABI bindings declaration *)
 
@@ -1055,7 +1052,7 @@ let print_flight_plan_h = fun xml ref0 xml_file out_file ->
       else if geofence_max_alt < (float_of_string alt) then
         fprintf stderr "\nWarning: Geofence max altitude below default waypoint alt (%.0f < %.0f)\n" geofence_max_alt (float_of_string alt);
       Xml2h.define_out out "GEOFENCE_MAX_ALTITUDE" (sof geofence_max_alt);
-      fprintf stderr "\nWarning: Geofence max altitude set to %.0f\n" geofence_max_alt;
+      fprintf stderr "\nNOTICE: Geofence max altitude set to %.0f\n" geofence_max_alt;
     with
       _ -> ()
   end;
@@ -1076,7 +1073,7 @@ let print_flight_plan_h = fun xml ref0 xml_file out_file ->
       else if (geofence_max_height +. !ground_alt) < (float_of_string alt) then
         fprintf stderr "\nWarning: Geofence max AGL below default waypoint AGL (%.0f < %.0f)\n" (geofence_max_height +. !ground_alt) (float_of_string alt);
       Xml2h.define_out out "GEOFENCE_MAX_HEIGHT" (sof geofence_max_height);
-      fprintf stderr "\nWarning: Geofence max AGL set to %.0f\n" geofence_max_height;
+      fprintf stderr "\nNOTICE: Geofence max AGL set to %.0f\n" geofence_max_height;
     with
       _ -> ()
   end;
@@ -1089,6 +1086,7 @@ let print_flight_plan_h = fun xml ref0 xml_file out_file ->
     List.map (fun w -> incr i; (name_of w, !i)) waypoints in
 
   (* print sectors *)
+  lprintf out "\n#ifndef FBW\n\n"; (* workaround to hide sector functions on FBW side *)
   let sectors_element = try ExtXml.child xml "sectors" with Not_found -> Xml.Element ("", [], []) in
   let sectors = List.filter (fun x -> String.lowercase_ascii (Xml.tag x) = "sector") (Xml.children sectors_element) in
   List.iter (fun x -> match ExtXml.attrib_opt x "type" with
@@ -1106,6 +1104,7 @@ let print_flight_plan_h = fun xml ref0 xml_file out_file ->
     with
         _ -> ()
   end;
+  lprintf out "\n#endif\n"; (* workaround to hide sector functions on FBW side *)
 
   (* start "C" part *)
   lprintf out "\n#ifdef NAV_C\n\n";

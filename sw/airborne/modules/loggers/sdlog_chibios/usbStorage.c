@@ -36,11 +36,17 @@
 #include "mcu_periph/sdio.h"
 #include "led.h"
 
+/* Default disable USB on boot enable */
+#ifndef SDLOG_USB_VBUS_BOOT
+#define SDLOG_USB_VBUS_BOOT  false
+#endif
+
 static void thdUsbStorage(void *arg);
 static thread_t *usbStorageThreadPtr = NULL;
 /* USB mass storage driver */
 static bool isRunning = false;
-
+float usb_storage_status = 0;
+static BSEMAPHORE_DECL(bs_start_msd, true);
 
 /* Turns on a LED when there is I/O activity on the USB port */
 static void usbActivity(bool active __attribute__((unused)))
@@ -66,7 +72,7 @@ static USBMassStorageConfig msdConfig = {
 };
 
 
-static THD_WORKING_AREA(waThdUsbStorage, 1024);
+static THD_WORKING_AREA(waThdUsbStorage, 4096);
 void usbStorageStartPolling(void)
 {
   usbStorageThreadPtr = chThdCreateStatic(waThdUsbStorage, sizeof(waThdUsbStorage),
@@ -91,8 +97,6 @@ void usbStorageStop(void)
 }
 
 
-
-
 static void thdUsbStorage(void *arg)
 {
   (void) arg;
@@ -100,19 +104,33 @@ static void thdUsbStorage(void *arg)
   chRegSetThreadName("UsbStorage:polling");
   event_listener_t connected;
 
-  palEnablePadEvent(SDLOG_USB_VBUS_PORT, SDLOG_USB_VBUS_PIN, PAL_EVENT_MODE_BOTH_EDGES);
-  // wait transition to HIGH with rebound management
-  do {
-    palWaitPadTimeout(SDLOG_USB_VBUS_PORT, SDLOG_USB_VBUS_PIN, TIME_INFINITE);
-    chThdSleepMilliseconds(10);
-  } while (palReadPad(SDLOG_USB_VBUS_PORT, SDLOG_USB_VBUS_PIN) == PAL_LOW);
+#if SDLOG_USB_VBUS_BOOT
+  // Enable usb power with boot
+  if(palReadPad(SDLOG_USB_VBUS_PORT, SDLOG_USB_VBUS_PIN) == PAL_LOW)
+#endif
+
+  {
+#if HAL_USE_SERIAL_USB
+    // serial usb is used, so the usb vbus detection can't be used
+    chBSemWait(&bs_start_msd);
+#else
+    palEnablePadEvent(SDLOG_USB_VBUS_PORT, SDLOG_USB_VBUS_PIN, PAL_EVENT_MODE_BOTH_EDGES);
+    // wait transition to HIGH with rebound management
+    do {
+      palWaitPadTimeout(SDLOG_USB_VBUS_PORT, SDLOG_USB_VBUS_PIN, TIME_INFINITE);
+      chThdSleepMilliseconds(10);
+    } while (palReadPad(SDLOG_USB_VBUS_PORT, SDLOG_USB_VBUS_PIN) == PAL_LOW);
+  
+#endif
+  }
 
   isRunning = true;
+  usb_storage_status = 1;
   chRegSetThreadName("UsbStorage:connected");
 
   /* Stop the logs*/
   // it's not a powerloss, wa have time to flush the ram buffer
-  sdlog_chibios_finish(false);
+  sdlog_chibios_finish(true);
 
 
   /* connect sdcard sdc interface sdio */
@@ -139,7 +157,7 @@ static void thdUsbStorage(void *arg)
 
   chThdSleepMilliseconds(500);
 
-  mcu_reset();
+  mcu_reboot(MCU_REBOOT_FAST);
 }
 
 bool usbStorageIsItRunning(void)
@@ -147,3 +165,13 @@ bool usbStorageIsItRunning(void)
   return isRunning;
 }
 
+/*
+ *  Enable USB storage only if USB is plugged.
+ */
+void usbStorage_enable_usb_storage(float e) {
+  if(e > 0.5 && palReadPad(SDLOG_USB_VBUS_PORT, SDLOG_USB_VBUS_PIN) == PAL_HIGH) {
+    chBSemSignal(&bs_start_msd);
+  } else {
+    usb_storage_status = 0;
+  }
+}

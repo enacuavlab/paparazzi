@@ -27,7 +27,7 @@
 #include "filters/1e_filter.h"
 #include "math/pprz_algebra_int.h"
 #include "math/pprz_algebra_float.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 #include "generated/airframe.h"
 
 /** Enable by default */
@@ -134,9 +134,9 @@ static void gyro_cb(uint8_t sender_id, uint32_t stamp, struct Int32Rates *gyro)
     // send filtered data
     struct Int32Rates gyro_i;
     RATES_BFP_OF_REAL(gyro_i, gyro_f);
-    AbiSendMsgIMU_GYRO_INT32(IMU_F1E_ID, stamp, &gyro_i);
+    AbiSendMsgIMU_GYRO(IMU_F1E_ID, stamp, &gyro_i);
   } else {
-    AbiSendMsgIMU_GYRO_INT32(IMU_F1E_ID, stamp, gyro);
+    AbiSendMsgIMU_GYRO(IMU_F1E_ID, stamp, gyro);
   }
 }
 
@@ -163,9 +163,9 @@ static void accel_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *accel
     // send filtered data
     struct Int32Vect3 accel_i;
     ACCELS_BFP_OF_REAL(accel_i, accel_f);
-    AbiSendMsgIMU_ACCEL_INT32(IMU_F1E_ID, stamp, &accel_i);
+    AbiSendMsgIMU_ACCEL(IMU_F1E_ID, stamp, &accel_i);
   } else {
-    AbiSendMsgIMU_ACCEL_INT32(IMU_F1E_ID, stamp, accel);
+    AbiSendMsgIMU_ACCEL(IMU_F1E_ID, stamp, accel);
   }
 }
 
@@ -176,7 +176,7 @@ static void mag_cb(uint8_t sender_id __attribute__((unused)),
     return; // don't process own data
   }
 
-  AbiSendMsgIMU_MAG_INT32(IMU_F1E_ID, stamp, mag);
+  AbiSendMsgIMU_MAG(IMU_F1E_ID, stamp, mag);
 }
 
 /**
@@ -205,9 +205,9 @@ void filter_1euro_imu_init(void)
         filter_1e_imu.accel_dcutoff);
   }
 
-  AbiBindMsgIMU_GYRO_INT32(IMU_F1E_BIND_ID, &gyro_ev, gyro_cb);
-  AbiBindMsgIMU_ACCEL_INT32(IMU_F1E_BIND_ID, &accel_ev, accel_cb);
-  AbiBindMsgIMU_MAG_INT32(IMU_F1E_BIND_ID, &mag_ev, mag_cb);
+  AbiBindMsgIMU_GYRO(IMU_F1E_BIND_ID, &gyro_ev, gyro_cb);
+  AbiBindMsgIMU_ACCEL(IMU_F1E_BIND_ID, &accel_ev, accel_cb);
+  AbiBindMsgIMU_MAG(IMU_F1E_BIND_ID, &mag_ev, mag_cb);
 }
 
 /**
@@ -270,4 +270,3 @@ void filter_1euro_imu_update_accel_dcutoff(float dcutoff)
     accel_1e[i].dcutoff = dcutoff;
   }
 }
-

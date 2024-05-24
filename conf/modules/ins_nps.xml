@@ -8,35 +8,35 @@
   </doc>
   <dep>
     <depends>@imu,@gps</depends>
-    <provides>ins</provides>
+    <provides>ins,ahrs</provides>
   </dep>
-  <autoload name="gps_nps"/>
   <header>
-    <file name="ins_gps_passthrough.h" dir="subsystems/ins"/>
+    <file name="ins_gps_passthrough.h"/>
   </header>
   <init fun="ins_gps_passthrough_init()"/>
-  <makefile target="nps|hitl">
-    <file name="imu.c" dir="subsystems"/>
-    <file name="imu_nps.c" dir="subsystems/imu"/>
+  <makefile target="sim|nps">
+    <file name="imu.c" dir="modules/imu"/>
+    <file name="imu_nps.c" dir="modules/imu"/>
     <define name="USE_IMU"/>
-    <define name="IMU_TYPE_H" value="subsystems/imu/imu_nps.h" type="string"/>
 
     <!-- use attitude from nps sim -->
     <define name="NPS_BYPASS_AHRS" value="TRUE"/>
     <test>
+      <define name="PERIODIC_FREQUENCY" value="500"/>
       <include name="../simulator/nps"/>
+      <include name="../../conf/simulator/nps"/>
       <shell cmd="pkg-config glib-2.0 --cflags"/>
     </test>
   </makefile>
 
-  <makefile target="nps|hitl" firmware="rotorcraft">
-    <define name="INS_TYPE_H" value="subsystems/ins/ins_gps_passthrough.h" type="string"/>
-    <file name="ins.c" dir="subsystems"/>
-    <file name="ins_gps_passthrough.c" dir="subsystems/ins"/>
+  <makefile target="nps" firmware="rotorcraft">
+    <define name="INS_TYPE_H" value="modules/ins/ins_gps_passthrough.h" type="string"/>
+    <file name="ins.c"/>
+    <file name="ins_gps_passthrough.c"/>
   </makefile>
-  <makefile target="nps|hitl" firmware="fixedwing">
-    <define name="INS_TYPE_H" value="subsystems/ins/ins_gps_passthrough.h" type="string"/>
-    <file name="ins.c" dir="subsystems"/>
-    <file name="ins_gps_passthrough_utm.c" dir="subsystems/ins"/>
+  <makefile target="sim|nps" firmware="fixedwing">
+    <define name="INS_TYPE_H" value="modules/ins/ins_gps_passthrough.h" type="string"/>
+    <file name="ins.c"/>
+    <file name="ins_gps_passthrough_utm.c"/>
   </makefile>
 </module>

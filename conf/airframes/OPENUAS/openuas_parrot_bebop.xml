@@ -65,9 +65,9 @@
       <module name="stabilization" type="rate_indi"/>
       <!--<module name="stabilization" type="indi_simple"/>--><!-- not used ATM -->
       <module name="stabilization" type="indi">
-        <define name="INDI_RPM_FEEDBACK" value="TRUE"/>
+        <define name="STABILIZATION_INDI_RPM_FEEDBACK" value="TRUE"/>
         <define name="GUIDANCE_INDI_SPECIFIC_FORCE_GAIN" value="-500.0"/>
-        <define name="GUIDANCE_INDI_THRUST_DYNAMICS" value="0.1"/>
+        <define name="GUIDANCE_INDI_THRUST_DYNAMICS_FREQ" value="53.9"/>
         <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
       </module>
     </target>
@@ -160,7 +160,6 @@
 
     <module name="geo_mag"/>
 
-    <module name="send_imu_mag_current"/> <!-- enable if airframe has added electronic or other devices, recalibrate and stuffcalibration in this airframefile-->
 
     <module name="nav" type="survey_rectangle_rotorcraft">
       <define name="RECTANGLE_SURVEY_DEFAULT_SWEEP" value="10"/><!-- in deg -->
@@ -170,7 +169,7 @@
     </module>
 
     <!--<module name="logger_file">
-      <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
+      <define name="LOGGER_FILE_PATH" value="/data/ftp/internal_000"/>
     </module>-->
 
     <!-- can be used in flightplan during takeoff/landing or lowflyby with default sonar -->
@@ -485,11 +484,11 @@ second order filter parameters -->
     <define name="FILT_CUTOFF_RDOT" value="4.0"/> -->
 
     <!-- first order actuator dynamics -->
- <!--   <define name="ACT_DYN_P" value="0.06"/>
-    <define name="ACT_DYN_Q" value="0.06"/>
-    <define name="ACT_DYN_R" value="0.06"/>-->
+ <!--   <define name="ACT_FREQ_P" value="31.7"/>
+    <define name="ACT_FREQ_Q" value="31.7"/>
+    <define name="ACT_FREQ_R" value="31.7"/>-->
 
-    <define name="ACT_DYN" value="{0.1, 0.1, 0.1, 0.1}"/>
+    <define name="ACT_FREQ" value="{53.9, 53.9, 53.9, 53.9}"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="TRUE"/>
@@ -578,7 +577,6 @@ second order filter parameters -->
     <define name="ACTUATOR_NAMES" value="nw_motor, ne_motor, se_motor, sw_motor" type="string[]"/>
     <define name="JSBSIM_MODEL" value="bebop" type="string"/>
     <define name="WEIGHT" value="0.4"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
     <define name="NO_MOTOR_MIXING" value="TRUE"/>
   </section>
 

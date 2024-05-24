@@ -29,9 +29,8 @@
 #define AUTOPILOT_UTILS_H
 
 #include "std.h"
-#include "subsystems/commands.h"
+#include "modules/core/commands.h"
 
-extern bool ap_ahrs_is_aligned(void);
 extern uint8_t ap_mode_of_3way_switch(void);
 
 extern void set_rotorcraft_commands(pprz_t *cmd_out, int32_t *cmd_in, bool in_flight, bool motors_on);

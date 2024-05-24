@@ -32,13 +32,12 @@
 
 #include "mcu_periph/uart.h"
 #include "pprzlink/messages.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #include "state.h"
 
 
 void atmega_i2c_cam_ctrl_init(void)
 {
-  dc_init();
 }
 
 void atmega_i2c_cam_ctrl_periodic(void)

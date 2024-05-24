@@ -199,8 +199,9 @@ let use_tele_message = fun ?udp_peername ?raw_data_size payload ->
   let buf = Protocol.string_of_payload payload in
   Debug.call 'l' (fun f ->  fprintf f "pprz receiving: %s\n" (Debug.xprint buf));
   try
-    let (msg_id, ac_id, values) = Tm_Pprz.values_of_payload payload in
-    let msg = Tm_Pprz.message_of_id msg_id in
+    let (header, values) = Tm_Pprz.values_of_payload payload in
+    let ac_id = header.PprzLink.sender_id in
+    let msg = Tm_Pprz.message_of_id header.PprzLink.message_id in
     send_message_over_ivy (string_of_int ac_id) msg.PprzLink.name values;
     update_status ?udp_peername ac_id raw_data_size (msg.PprzLink.name = "PONG")
   with
@@ -218,6 +219,7 @@ module XB = struct (** XBee module *)
   let at_init_period = 2000 (* ms *)
 
   let my_addr = ref 0x100
+  let init_done = ref false
 
   let switch_to_api = fun device ->
     let o = Unix.out_channel_of_descr device.fd in
@@ -230,14 +232,15 @@ module XB = struct (** XBee module *)
     end;
     fprintf o "%s%!" Xbee_transport.at_api_enable;
     fprintf o "%s%!" Xbee_transport.at_exit;
+    init_done := true;
     Debug.trace 'x' "end init xbee"
 
   let init = fun device ->
     Debug.trace 'x' "init xbee";
     let o = Unix.out_channel_of_descr device.fd in
-    ignore (Glib.Timeout.add at_init_period (fun () ->
+    ignore (Glib.Timeout.add ~ms:at_init_period ~callback:(fun () ->
       fprintf o "%s%!" Xbee_transport.at_command_sequence;
-      ignore (Glib.Timeout.add at_init_period (fun () -> switch_to_api device; false));
+      ignore (Glib.Timeout.add ~ms:at_init_period ~callback:(fun () -> switch_to_api device; false));
       false))
 
   (* Array of sent packets for retry: (packet, nb of retries) *)
@@ -269,8 +272,8 @@ module XB = struct (** XBee module *)
           if nb_prev_retries < !nb_retries then begin
             packets.(frame_id) <- (packet, nb_prev_retries+1);
             let o = Unix.out_channel_of_descr device.fd in
-            ignore (GMain.Timeout.add (10 + Random.int retry_delay)
-                      (fun _ ->
+            ignore (GMain.Timeout.add ~ms:(10 + Random.int retry_delay)
+                      ~callback:(fun _ ->
                         fprintf o "%s%!" packet;
                         Debug.call 'y' (fun f -> fprintf f "Resending (%d) %s\n" (nb_prev_retries+1) (Debug.xprint packet));
                         false));
@@ -288,22 +291,26 @@ module XB = struct (** XBee module *)
 
 
   let send = fun ?ac_id device rf_data ->
-    let ac_id = match ac_id with None -> 0xffff | Some a -> a in
-    let rf_data = Protocol.bytes_of_payload rf_data in
-    let frame_id = gen_frame_id () in
-    let frame_data =
-      if !Xbee_transport.mode868 then
-        Xbee_transport.api_tx64 ~frame_id (Int64.of_int ac_id) rf_data
-      else
-        Xbee_transport.api_tx16 ~frame_id ac_id rf_data in
-    let packet = Xbee_transport.Transport.packet (Protocol.payload_of_string frame_data) in
+    if !init_done then begin
+      let ac_id = match ac_id with None -> 0xffff | Some a -> a in
+      let rf_data = Protocol.bytes_of_payload rf_data in
+      let frame_id = gen_frame_id () in
+      let frame_data =
+        if !Xbee_transport.mode868 then
+          Xbee_transport.api_tx64 ~frame_id (Int64.of_int ac_id) rf_data
+        else
+          Xbee_transport.api_tx16 ~frame_id ac_id rf_data in
+      let packet = Xbee_transport.Transport.packet (Protocol.payload_of_string frame_data) in
 
-    (* Store the packet for further retry *)
-    packets.(frame_id) <- (packet, 1);
+      (* Store the packet for further retry *)
+      packets.(frame_id) <- (packet, 1);
 
-    let o = Unix.out_channel_of_descr device.fd in
-    fprintf o "%s%!" packet;
-    Debug.call 'y' (fun f -> fprintf f "link sending (%d): (%s) %s\n" frame_id (Debug.xprint (Bytes.to_string rf_data)) (Debug.xprint packet));
+      let o = Unix.out_channel_of_descr device.fd in
+      fprintf o "%s%!" packet;
+      Debug.call 'y' (fun f -> fprintf f "link sending (%d): (%s) %s\n" frame_id (Debug.xprint (Bytes.to_string rf_data)) (Debug.xprint packet))
+    end
+    else
+      Debug.call 'y' (fun f -> fprintf f "xbee init not done")
 end (** XBee module *)
 
 
@@ -394,7 +401,7 @@ let message_uplink = fun device ->
     Debug.call 'f' (fun f -> fprintf f "forward %s\n" name);
     let ac_id = PprzLink.int_assoc "ac_id" vs in
     let msg_id, _ = Dl_Pprz.message_of_name name in
-    let s = Dl_Pprz.payload_of_values msg_id my_id vs in
+    let s = Dl_Pprz.payload_of_values msg_id my_id ac_id vs in
     send ac_id device s High in
   let set_forwarder = fun name ->
     ignore (Dl_Pprz.message_bind name (forwarder name)) in
@@ -402,7 +409,7 @@ let message_uplink = fun device ->
   let broadcaster = fun name _sender vs ->
     Debug.call 'f' (fun f -> fprintf f "broadcast %s\n" name);
     let msg_id, _ = Dl_Pprz.message_of_name name in
-    let payload = Dl_Pprz.payload_of_values msg_id my_id vs in
+    let payload = Dl_Pprz.payload_of_values msg_id my_id PprzLink.broadcast_id vs in
     broadcast device payload Low in
   let set_broadcaster = fun name ->
     ignore (Dl_Pprz.message_bind name (broadcaster name)) in
@@ -420,7 +427,7 @@ let send_ping_msg = fun device ->
   Hashtbl.iter
     (fun ac_id status ->
       let msg_id, _ = Dl_Pprz.message_of_name "PING" in
-      let s = Dl_Pprz.payload_of_values msg_id my_id [] in
+      let s = Dl_Pprz.payload_of_values msg_id my_id ac_id [] in
       send ac_id device s High;
       status.last_ping <- Unix.gettimeofday ()
     )
@@ -515,8 +522,8 @@ let () =
       end;
       true (* Returns true to be called again *)
     in
-    ignore (Glib.Io.add_watch [`HUP] hangup (GMain.Io.channel_of_descr fd));
-    ignore (Glib.Io.add_watch [`IN] read_fd (GMain.Io.channel_of_descr fd));
+    ignore (Glib.Io.add_watch ~cond:[`HUP] ~callback:hangup (GMain.Io.channel_of_descr fd));
+    ignore (Glib.Io.add_watch ~cond:[`IN] ~callback:read_fd (GMain.Io.channel_of_descr fd));
 
     if !uplink then begin
       message_uplink device
@@ -524,12 +531,14 @@ let () =
 
     (** Init and Periodic tasks *)
     begin
-      ignore (Glib.Timeout.add !status_msg_period (fun () -> send_status_msg (); true));
-      ignore (Glib.Timeout.add (!status_msg_period / 3) (fun () -> update_ms_since_last_msg (); true));
-      let start_ping = fun () ->
-        ignore (Glib.Timeout.add !ping_msg_period (fun () -> send_ping_msg device; true));
-        false in
-      ignore (Glib.Timeout.add status_ping_diff start_ping);
+      ignore (Glib.Timeout.add ~ms:!status_msg_period ~callback:(fun () -> send_status_msg (); true));
+      ignore (Glib.Timeout.add ~ms:(!status_msg_period / 3) ~callback:(fun () -> update_ms_since_last_msg (); true));
+      if !uplink then begin
+        let start_ping = fun () ->
+          ignore (Glib.Timeout.add ~ms:!ping_msg_period ~callback:(fun () -> send_ping_msg device; true));
+          false in
+        ignore (Glib.Timeout.add ~ms:status_ping_diff ~callback:start_ping);
+      end;
       match transport with
         | XBee ->
             XB.init device

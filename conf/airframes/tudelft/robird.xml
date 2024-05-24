@@ -10,7 +10,7 @@ Flapping wing frame equiped with
   </description>
 
   <firmware name="rotorcraft">
-    <target name="ap" board="px4fmu_2.4" />
+   <target name="ap" board="px4fmu_2.4">
     <define name="BAT_CHECKER_DELAY" value="80" />
     <define name="ADC_CHANNEL_VSUPPLY" value="ADC_1"/>
     <!-- amount of time it take for the bat to check -->
@@ -18,6 +18,7 @@ Flapping wing frame equiped with
     <define name="CATASTROPHIC_BATTERY_KILL_DELAY" value="80" />
     <!-- in seconds-->
     <module name="telemetry" type="xbee_api"/>
+    <module name="telemetry" type="intermcu"/>
     <module name="imu" type="px4fmu_v2.4"/>
     <module name="gps" type="ublox" >
       <configure name="GPS_BAUD" value="B57600"/>
@@ -48,7 +49,6 @@ Flapping wing frame equiped with
     <module name="px4_flash"/>
     <module name="geo_mag" />
     <module name="air_data" />
-    <module name="send_imu_mag_current" />
     <module name="mag" type="hmc58xx">
       <configure name="MAG_HMC58XX_I2C_DEV" value="i2c1"/>
       <define name="MODULE_HMC58XX_UPDATE_AHRS" value="TRUE"/>
@@ -59,9 +59,8 @@ Flapping wing frame equiped with
       <define name="HMC58XX_CHAN_Y_SIGN" value="+"/>
       <define name="HMC58XX_CHAN_Z_SIGN" value="+"/>
     </module>
-  </firmware>
-  <firmware name="rotorcraft">
-    <target name="fbw" board="px4io_2.4" />
+   </target>
+   <target name="fbw" board="px4io_2.4" >
     <define name="FBW_MODE_AUTO_ONLY" value="false"/>
     <module name="radio_control" type="sbus">
       <configure name="SBUS_PORT" value="UART3"/>
@@ -82,6 +81,12 @@ Flapping wing frame equiped with
       <configure name="INTERMCU_PORT" value="UART2" />
       <configure name="INTERMCU_BAUD" value="B1500000" />
     </module>
+    <module name="telemetry" type="transparent">
+      <configure name="MODEM_PORT" value="$(INTERMCU_PORT)"/>
+      <configure name="MODEM_BAUD" value="$(INTERMCU_BAUD)"/>
+      <define name="TELEMETRY_DISABLE_RX"/>
+    </module>
+   </target>
   </firmware>
 
   <section name="MISC">
@@ -192,9 +197,9 @@ Flapping wing frame equiped with
     <define name="FILT_CUTOFF" value="3.2"/>
     <define name="FILT_CUTOFF_RDOT" value="3.2"/>
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN_P" value="0.04" />
-    <define name="ACT_DYN_Q" value="0.04" />
-    <define name="ACT_DYN_R" value="0.04" />
+    <define name="ACT_FREQ_P" value="20.9"/>
+    <define name="ACT_FREQ_Q" value="20.9"/>
+    <define name="ACT_FREQ_R" value="20.9"/>
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE" />
     <define name="ADAPTIVE_MU" value="0.0001" />

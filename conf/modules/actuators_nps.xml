@@ -10,8 +10,8 @@
     <depends>actuators</depends>
     <provides>actuators</provides>
   </dep>
-  <makefile target="nps">
-    <file_arch name="actuators_pwm_arch.c" dir="subsystems/actuators"/>
+  <makefile target="sim|nps">
+    <file_arch name="actuators_pwm_arch.c"/>
   </makefile>
 </module>
 

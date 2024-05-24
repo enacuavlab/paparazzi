@@ -13,4 +13,6 @@ TBD
     communication
     modules
     abi
+    logging
+    debug
 

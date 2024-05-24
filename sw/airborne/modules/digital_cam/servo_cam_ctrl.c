@@ -33,11 +33,11 @@
 
 // Include Servo and airframe servo channels
 #include "std.h"
-#include "inter_mcu.h"
+#include "modules/core/commands.h"
 #include "generated/airframe.h"
 
-#define DC_PUSH(X)    imcu_set_command(X, -MAX_PPRZ);
-#define DC_RELEASE(X) imcu_set_command(X,  MAX_PPRZ);
+#define DC_PUSH(X)    command_set(X, -MAX_PPRZ);
+#define DC_RELEASE(X) command_set(X,  MAX_PPRZ);
 
 /** how long to push shutter in seconds */
 #ifndef DC_SHUTTER_DELAY
@@ -55,9 +55,6 @@ static uint8_t dc_timer;
 
 void servo_cam_ctrl_init(void)
 {
-  // Call common DC init
-  dc_init();
-
   // Do Servo specific DC init
   dc_timer = 0;
 }

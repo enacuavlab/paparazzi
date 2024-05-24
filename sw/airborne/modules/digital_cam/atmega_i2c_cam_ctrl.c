@@ -35,7 +35,7 @@
 
 #include "mcu_periph/uart.h"
 #include "pprzlink/messages.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 
 // In I2C mode we can not inline this function:
 void dc_send_command(uint8_t cmd)
@@ -62,7 +62,6 @@ uint8_t atmega_i2c_cam_ctrl_just_sent_command = 0;
 void atmega_i2c_cam_ctrl_init(void)
 {
   atmega_i2c_cam_ctrl_trans.status = I2CTransDone;
-  dc_init();
 }
 
 void atmega_i2c_cam_ctrl_periodic(void)

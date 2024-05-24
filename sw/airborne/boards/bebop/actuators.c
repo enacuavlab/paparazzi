@@ -25,24 +25,24 @@
  * Actuator driver for the bebop and bebop 2
  */
 
-#include "subsystems/actuators.h"
-#include "subsystems/electrical.h"
+#include "modules/actuators/actuators.h"
+#include "modules/energy/electrical.h"
 #include "actuators.h"
 #include "led_hw.h"
 #include "autopilot.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 #include "firmwares/rotorcraft/stabilization.h"
 
 static void send_bebop_actuators(struct transport_tx *trans, struct link_device *dev)
 {
   pprz_msg_send_BEBOP_ACTUATORS(trans, dev, AC_ID,
-                                &stabilization_cmd[COMMAND_THRUST],
-                                &stabilization_cmd[COMMAND_ROLL],
-                                &stabilization_cmd[COMMAND_PITCH],
-                                &stabilization_cmd[COMMAND_YAW],
+                                &stabilization.cmd[COMMAND_THRUST],
+                                &stabilization.cmd[COMMAND_ROLL],
+                                &stabilization.cmd[COMMAND_PITCH],
+                                &stabilization.cmd[COMMAND_YAW],
                                 &actuators_bebop.rpm_ref[0],
                                 &actuators_bebop.rpm_ref[1],
                                 &actuators_bebop.rpm_ref[2],
@@ -87,7 +87,7 @@ void actuators_bebop_commit(void)
   // When detected a suicide
   actuators_bebop.i2c_trans.buf[10] = actuators_bebop.i2c_trans.buf[10] & 0x7;
   if (actuators_bebop.i2c_trans.buf[11] == 2 && actuators_bebop.i2c_trans.buf[10] != 1) {
-    autopilot_set_motors_on(FALSE);
+    autopilot_set_motors_on(false);
   }
 
   // Start the motors
@@ -137,8 +137,15 @@ void actuators_bebop_commit(void)
 
     actuators_bebop.led = led_hw_values & 0x3;
   }
+  
   // Send ABI message
-  AbiSendMsgRPM(RPM_SENSOR_ID, actuators_bebop.rpm_obs, 4);
+  struct act_feedback_t feedback[4];
+  for (int i=0;i<4;i++) {
+    feedback[i].idx = get_servo_idx(i);
+    feedback[i].rpm = actuators_bebop.rpm_obs[i];
+    feedback[i].set.rpm = true;
+  }
+  AbiSendMsgACT_FEEDBACK(ACT_FEEDBACK_BOARD_ID, feedback, 4);
 }
 
 static uint8_t actuators_bebop_checksum(uint8_t *bytes, uint8_t size)

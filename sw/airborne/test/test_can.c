@@ -27,15 +27,15 @@
 #include "mcu.h"
 #include "mcu_periph/sys_time.h"
 #include "led.h"
-#define DATALINK_C
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #include "modules/datalink/pprz_dl.h"
 #include "mcu_periph/can.h"
 
 static inline void main_init(void);
 static inline void main_periodic_task(void);
 static inline void main_event_task(void);
-void main_on_can_msg(uint32_t id, uint8_t *data, int len);
+void main_on_can_msg(uint32_t id, uint8_t *data, uint8_t len);
+
 
 uint8_t tx_data[8];
 uint8_t rx_data[8];
@@ -70,6 +70,7 @@ static inline void main_init(void)
 {
   mcu_init();
   sys_time_register_timer((0.5 / PERIODIC_FREQUENCY), NULL);
+  datalink_init();
   downlink_init();
   pprz_dl_init();
   ppz_can_init((can_rx_callback_t)main_on_can_msg);
@@ -124,7 +125,7 @@ static inline void main_event_task(void)
 
 }
 
-void main_on_can_msg(uint32_t id __attribute__((unused)), uint8_t *data, int len __attribute__((unused)))
+void main_on_can_msg(uint32_t id UNUSED, uint8_t *data, uint8_t len UNUSED)
 {
   for (int i = 0; i < 8; i++) {
     rx_data[i] = data[i];

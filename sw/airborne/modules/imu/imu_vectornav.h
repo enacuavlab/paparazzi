@@ -23,14 +23,14 @@
 /**
  * @file modules/imu/imu_vectornav.h
  *
- * Vectornav VN-200 IMU subsystems, to be used with other AHRS/INS algorithms.
+ * Vectornav VN-200 IMU module, to be used with other AHRS/INS algorithms.
  */
 
 #ifndef IMU_VECTORNAV_H
 #define IMU_VECTORNAV_H
 
 // Subsystem
-#include "subsystems/imu.h"
+#include "modules/imu/imu.h"
 
 // Peripheral
 #include "peripherals/vn200_serial.h"
@@ -51,30 +51,5 @@ void imu_vectornav_init(void);
 void imu_vectornav_event(void);
 void imu_vectornav_periodic(void);
 void imu_vectornav_propagate(void);
-
-/* no scaling (the WEAK attribute has no effect */
-#ifndef IMU_GYRO_P_SENS_NUM
-#define IMU_GYRO_P_SENS_NUM 1
-#endif
-
-#ifndef IMU_GYRO_P_SENS_DEN
-#define IMU_GYRO_P_SENS_DEN 1
-#endif
-
-#ifndef IMU_GYRO_Q_SENS_NUM
-#define IMU_GYRO_Q_SENS_NUM 1
-#endif
-
-#ifndef IMU_GYRO_Q_SENS_DEN
-#define IMU_GYRO_Q_SENS_DEN 1
-#endif
-
-#ifndef IMU_GYRO_R_SENS_NUM
-#define IMU_GYRO_R_SENS_NUM 1
-#endif
-
-#ifndef IMU_GYRO_R_SENS_DEN
-#define IMU_GYRO_R_SENS_DEN 1
-#endif
 
 #endif /* IMU_VECTORNAV_H */

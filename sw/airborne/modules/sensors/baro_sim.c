@@ -25,9 +25,10 @@
  * Simulate barometer pressure measurement using gps.hmsl
  */
 
+#include "modules/sensors/baro_sim.h"
 #include "math/pprz_isa.h"
-#include "subsystems/gps.h"
-#include "subsystems/abi.h"
+#include "modules/gps/gps.h"
+#include "modules/core/abi.h"
 
 PRINT_CONFIG_VAR(BARO_SIM_SENDER_ID)
 

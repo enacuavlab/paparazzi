@@ -29,25 +29,10 @@
 #include "autopilot.h"
 #include "firmwares/rotorcraft/autopilot_rc_helpers.h"
 #include "state.h"
-#include "subsystems/radio_control.h"
+#include "modules/radio_control/radio_control.h"
 
 /** Display descent speed in failsafe mode if needed */
 PRINT_CONFIG_VAR(FAILSAFE_DESCENT_SPEED)
-
-
-// Utility functions
-#ifndef AUTOPILOT_DISABLE_AHRS_KILL
-bool ap_ahrs_is_aligned(void)
-{
-  return stateIsAttitudeValid();
-}
-#else
-PRINT_CONFIG_MSG("Using AUTOPILOT_DISABLE_AHRS_KILL")
-bool ap_ahrs_is_aligned(void)
-{
-  return true;
-}
-#endif
 
 #define THRESHOLD_1_PPRZ (MIN_PPRZ / 2)
 #define THRESHOLD_2_PPRZ (MAX_PPRZ / 2)

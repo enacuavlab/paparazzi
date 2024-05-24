@@ -26,7 +26,7 @@
 #include "modules/ctrl/object_tracking.h"
 
 #include "firmwares/rotorcraft/navigation.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 #include "generated/airframe.h"
 #include "generated/modules.h"
 
@@ -56,7 +56,7 @@
 #endif
 
 #if OBJECT_TRACKING_DEBUG
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #include "pprzlink/messages.h"
 #include "mcu_periph/uart.h"
 #endif
@@ -71,7 +71,7 @@ static float timeout;
 
 abi_event object_ev;
 
-static const float nav_dt = 1.f / NAV_FREQ;
+static const float nav_dt = 1.f / NAVIGATION_FREQUENCY;
 
 // callback on follow target message
 static void get_object(uint8_t sender_id __attribute__((unused)),
@@ -108,10 +108,10 @@ void object_tracking_run(void)
     if (!bit_is_set(object_frame, 0)) {
       target_heading += stateGetNedToBodyEulers_f()->psi; // relative frame
     }
-    float diff = target_heading - ANGLE_FLOAT_OF_BFP(nav_heading);
+    float diff = target_heading - nav.heading;
     FLOAT_ANGLE_NORMALIZE(diff);
     BoundAbs(diff, object_tracking_rate * nav_dt)
-    nav_heading += ANGLE_BFP_OF_REAL(diff);
+    nav.heading += diff;
 #if OBJECT_TRACKING_DEBUG
     float msg[] = {
       target_heading,
@@ -122,8 +122,8 @@ void object_tracking_run(void)
     DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 4, msg);
 #endif
   } else {
-    nav_heading += ANGLE_BFP_OF_REAL(object_tracking_search_rate * nav_dt);
+    nav.heading += object_tracking_search_rate * nav_dt;
   }
-  INT32_COURSE_NORMALIZE(nav_heading);
+  NormCourseRad(nav.heading);
 }
 

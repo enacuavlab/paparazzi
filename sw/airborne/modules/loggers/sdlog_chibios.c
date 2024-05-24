@@ -39,7 +39,7 @@
 #if HAL_USE_RTC
 #include <hal_rtc.h>
 #include <time.h>
-#include "subsystems/gps.h"
+#include "modules/gps/gps.h"
 #endif
 
 // Delay before starting SD log
@@ -69,7 +69,7 @@ static const char PPRZ_LOG_DIR[] = "PPRZ";
 /*
  * Start log thread
  */
-static THD_WORKING_AREA(wa_thd_startlog, 2048);
+static IN_DMA_SECTION(THD_WORKING_AREA(wa_thd_startlog, 4096));
 static __attribute__((noreturn)) void thd_startlog(void *arg);
 
 /*
@@ -106,8 +106,26 @@ static enum {
 static char chibios_sdlog_filenames[68];
 static char NO_FILE_NAME[] = "none";
 
+#if PREFLIGHT_CHECKS
+/* Preflight checks */
+#include "modules/checks/preflight_checks.h"
+static struct preflight_check_t sdlog_pfc;
+
+static void sdlog_preflight(struct preflight_result_t *result) {
+  if(chibios_sdlog_status != SDLOG_RUNNING) {
+#ifdef SDLOG_PREFLIGHT_ERROR
+    preflight_error(result, "SDLogger is not running [%d:%d]", chibios_sdlog_status, sdLogGetStorageStatus());
+#else
+    preflight_warning(result, "SDLogger is not running [%d:%d]", chibios_sdlog_status, sdLogGetStorageStatus());
+#endif
+  } else {
+    preflight_success(result, "SDLogger running");
+  }
+}
+#endif // PREFLIGHT_CHECKS
+
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 static void send_sdlog_status(struct transport_tx *trans, struct link_device *dev)
 {
   uint8_t status = (uint8_t) chibios_sdlog_status;
@@ -184,6 +202,10 @@ void sdlog_chibios_init(void)
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_LOGGER_STATUS, send_sdlog_status);
 #endif
 
+#if PREFLIGHT_CHECKS
+  preflight_check_register(&sdlog_pfc, sdlog_preflight);
+#endif
+
   // Start polling on USB
   usbStorageStartPolling();
 
@@ -196,10 +218,6 @@ void sdlog_chibios_init(void)
 void sdlog_chibios_finish(const bool flush)
 {
   if (pprzLogFile != -1) {
-    // disable all required periph to save energy and maximize chance to flush files
-    // to mass storage and avoid infamous dirty bit on filesystem
-    mcu_periph_energy_save();
-
     // if a FF_FS_REENTRANT is true, we can umount fs without closing
     // file, fatfs lock will assure that umount is done after a write,
     // and umount will close all open files cleanly. Thats the fatest
@@ -214,9 +232,9 @@ void sdlog_chibios_finish(const bool flush)
 #endif
 
     sdLogFinish();
-    pprzLogFile = 0;
+    pprzLogFile = -1;
 #if FLIGHTRECORDER_SDLOG
-    flightRecorderLogFile = 0;
+    flightRecorderLogFile = -1;
 #endif
   }
   chibios_sdlog_status = SDLOG_STOPPED;
@@ -246,16 +264,16 @@ static void thd_startlog(void *arg)
   } else {
     removeEmptyLogs(PPRZ_LOG_DIR, PPRZ_LOG_NAME, 50);
     if (sdLogOpenLog(&pprzLogFile, PPRZ_LOG_DIR,
-		     PPRZ_LOG_NAME, SDLOG_AUTO_FLUSH_PERIOD, LOG_APPEND_TAG_AT_CLOSE_DISABLED,
-		     SDLOG_CONTIGUOUS_STORAGE_MEM, LOG_PREALLOCATION_DISABLED, tmpFilename, sizeof(tmpFilename)) != SDLOG_OK) {
+                     PPRZ_LOG_NAME, SDLOG_AUTO_FLUSH_PERIOD, LOG_APPEND_TAG_AT_CLOSE_DISABLED,
+                     SDLOG_CONTIGUOUS_STORAGE_MEM, LOG_PREALLOCATION_DISABLED, tmpFilename, sizeof(tmpFilename)) != SDLOG_OK) {
       sdOk = false;
     }
     chsnprintf(chibios_sdlog_filenames, sizeof(chibios_sdlog_filenames), "%s", tmpFilename);
 #if FLIGHTRECORDER_SDLOG
     removeEmptyLogs(FR_LOG_DIR, FLIGHTRECORDER_LOG_NAME, 50);
     if (sdLogOpenLog(&flightRecorderLogFile, FR_LOG_DIR, FLIGHTRECORDER_LOG_NAME,
-		     SDLOG_AUTO_FLUSH_PERIOD, LOG_APPEND_TAG_AT_CLOSE_DISABLED,
-		      SDLOG_CONTIGUOUS_STORAGE_MEM, LOG_PREALLOCATION_DISABLED, tmpFilename, sizeof(tmpFilename)) != SDLOG_OK) {
+                     SDLOG_AUTO_FLUSH_PERIOD, LOG_APPEND_TAG_AT_CLOSE_DISABLED,
+                     SDLOG_CONTIGUOUS_STORAGE_MEM, LOG_PREALLOCATION_DISABLED, tmpFilename, sizeof(tmpFilename)) != SDLOG_OK) {
       sdOk = false;
     }
     chsnprintf(chibios_sdlog_filenames, sizeof(chibios_sdlog_filenames), "%s,%s", chibios_sdlog_filenames, tmpFilename);
@@ -291,7 +309,7 @@ static void thd_startlog(void *arg)
     static uint32_t timestamp = 0;
     // FIXME this could be done somewhere else, like in sys_time
     // we sync gps time to rtc every 5 seconds
-    if (chVTGetSystemTime() - timestamp > 5000) {
+    if (chVTGetSystemTime() - timestamp > TIME_S2I(5)) {
       timestamp = chVTGetSystemTime();
       if (gps.tow != 0) {
         // Unix timestamp of the GPS epoch 1980-01-06 00:00:00 UTC
@@ -321,20 +339,44 @@ static void thd_bat_survey(void *arg)
   register_adc_watchdog(&SDLOG_BAT_ADC, SDLOG_BAT_CHAN, V_ALERT, &powerOutageIsr);
 
   chEvtWaitOne(EVENT_MASK(1));
+  // Only try to energy save is it is really a problem and not powered through USB
+  if (palReadPad(SDLOG_USB_VBUS_PORT, SDLOG_USB_VBUS_PIN) == PAL_LOW) {
+    // disable all required periph to save energy and maximize chance to flush files
+    // to mass storage and avoid infamous dirty bit on filesystem
+    mcu_energy_save();
+  }
+
   // in case of powerloss, we should go fast and avoid to flush ram buffer
   sdlog_chibios_finish(false);
+
+  // Only put to deep sleep in case there is no power on the USB
+  if (palReadPad(SDLOG_USB_VBUS_PORT, SDLOG_USB_VBUS_PIN) == PAL_LOW) {
+    mcu_reboot(MCU_REBOOT_POWEROFF);
+  }
   chThdExit(0);
-  mcu_deep_sleep();
-  chThdSleep(TIME_INFINITE);
   while (true); // never goes here, only to avoid compiler  warning: 'noreturn' function does return
 }
 
 
 /*
   powerOutageIsr is called within a lock zone from an isr, so no lock/unlock is needed
- */
-static void  powerOutageIsr(void)
+*/
+static void powerOutageIsr(void)
 {
   chEvtBroadcastI(&powerOutageSource);
+}
+
+void logger_log_msg_up(uint8_t* buf) {
+  uint8_t ac_id = pprzlink_get_DL_INFO_MSG_UP_ac_id(buf);
+  if(ac_id != AC_ID && ac_id != 0xFF) {
+    return;
+  }
+  uint8_t fd = pprzlink_get_DL_INFO_MSG_UP_fd(buf);
+  if(pprzLogFile != -1 && (fd == DEST_INFO_MSG_ALL || fd == DEST_INFO_MSG_PPRZLOG)) {
+    uint8_t len = pprzlink_get_INFO_MSG_UP_msg_length(buf);
+    uint8_t* msg = (uint8_t*) pprzlink_get_DL_INFO_MSG_UP_msg(buf);
+    sdLogWriteRaw(pprzLogFile, msg, len);
+    sdLogWriteByte(pprzLogFile, '\n');
+  }
 }
 

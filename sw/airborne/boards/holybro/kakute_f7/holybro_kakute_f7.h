@@ -85,6 +85,30 @@
 #define DefaultMilliAmpereOfAdc(adc) ((40000.f*3.3f/4096.f)*adc)
 
 /*
+ * PWM TIM defines
+ * enable TIM 1, 3, 4, 5, 8 by default
+ */
+#ifndef USE_PWM_TIM1
+#define USE_PWM_TIM1 1
+#endif
+
+#ifndef USE_PWM_TIM3
+#define USE_PWM_TIM3 1
+#endif
+
+#ifndef USE_PWM_TIM4
+#define USE_PWM_TIM4 1
+#endif
+
+#ifndef USE_PWM_TIM5
+#define USE_PWM_TIM5 1
+#endif
+
+#ifndef USE_PWM_TIM8
+#define USE_PWM_TIM8 1
+#endif
+
+/*
  * PWM defines
  */
 
@@ -98,9 +122,7 @@
 #define PWM_SERVO_1_AF AF_S1
 #define PWM_SERVO_1_DRIVER CONCAT_BOARD_PARAM(PWMD, S1_TIM)
 #define PWM_SERVO_1_CHANNEL (S1_TIM_CH-1)
-#define PWM_SERVO_1_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_1_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_1_CONF CONCAT_BOARD_PARAM(pwmcfg, S1_TIM)
 #endif
 
 #ifndef USE_PWM2
@@ -113,9 +135,7 @@
 #define PWM_SERVO_2_AF AF_S2
 #define PWM_SERVO_2_DRIVER CONCAT_BOARD_PARAM(PWMD, S2_TIM)
 #define PWM_SERVO_2_CHANNEL (S2_TIM_CH-1)
-#define PWM_SERVO_2_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_2_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_2_CONF CONCAT_BOARD_PARAM(pwmcfg, S2_TIM)
 #endif
 
 #ifndef USE_PWM3
@@ -128,9 +148,7 @@
 #define PWM_SERVO_3_AF AF_S3
 #define PWM_SERVO_3_DRIVER CONCAT_BOARD_PARAM(PWMD, S3_TIM)
 #define PWM_SERVO_3_CHANNEL (S3_TIM_CH-1)
-#define PWM_SERVO_3_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_3_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_3_CONF CONCAT_BOARD_PARAM(pwmcfg, S3_TIM)
 #endif
 
 #ifndef USE_PWM4
@@ -143,9 +161,7 @@
 #define PWM_SERVO_4_AF AF_S4
 #define PWM_SERVO_4_DRIVER CONCAT_BOARD_PARAM(PWMD, S4_TIM)
 #define PWM_SERVO_4_CHANNEL (S4_TIM_CH-1)
-#define PWM_SERVO_4_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_4_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_4_CONF CONCAT_BOARD_PARAM(pwmcfg, S4_TIM)
 #endif
 
 #ifndef USE_PWM5
@@ -158,9 +174,7 @@
 #define PWM_SERVO_5_AF AF_S5
 #define PWM_SERVO_5_DRIVER CONCAT_BOARD_PARAM(PWMD, S5_TIM)
 #define PWM_SERVO_5_CHANNEL (S5_TIM_CH-1)
-#define PWM_SERVO_5_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_5_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_5_CONF CONCAT_BOARD_PARAM(pwmcfg, S5_TIM)
 #endif
 
 #ifndef USE_PWM6
@@ -173,72 +187,12 @@
 #define PWM_SERVO_6_AF AF_S6
 #define PWM_SERVO_6_DRIVER CONCAT_BOARD_PARAM(PWMD, S6_TIM)
 #define PWM_SERVO_6_CHANNEL (S6_TIM_CH-1)
-#define PWM_SERVO_6_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_6_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_6_CONF CONCAT_BOARD_PARAM(pwmcfg, S6_TIM)
 #endif
 
 // servo index starting at 1 + regular servos
 // so NB = 1+6
 #define ACTUATORS_PWM_NB 7
-
-
-#ifdef STM32_PWM_USE_TIM1
-#define PWM_CONF_TIM1 STM32_PWM_USE_TIM1
-#else
-#define PWM_CONF_TIM1 1
-#endif
-#define PWM_CONF1_DEF { \
-  PWM_FREQUENCY, \
-  PWM_FREQUENCY/TIM1_SERVO_HZ, \
-  NULL, \
-  { \
-    { PWM_SERVO_2_ACTIVE, NULL }, \
-    { PWM_SERVO_3_ACTIVE, NULL }, \
-    { PWM_SERVO_1_ACTIVE, NULL }, \
-    { PWM_OUTPUT_DISABLED, NULL }, \
-  }, \
-  0, \
-  0 \
-}
-
-#ifdef STM32_PWM_USE_TIM3
-#define PWM_CONF_TIM3 STM32_PWM_USE_TIM3
-#else
-#define PWM_CONF_TIM3 1
-#endif
-#define PWM_CONF3_DEF { \
-  PWM_FREQUENCY, \
-  PWM_FREQUENCY/TIM3_SERVO_HZ, \
-  NULL, \
-  { \
-    { PWM_OUTPUT_DISABLED, NULL }, \
-    { PWM_OUTPUT_DISABLED, NULL }, \
-    { PWM_SERVO_4_ACTIVE, NULL }, \
-    { PWM_SERVO_5_ACTIVE, NULL }, \
-  }, \
-  0, \
-  0 \
-}
-
-#ifdef STM32_PWM_USE_TIM5
-#define PWM_CONF_TIM5 STM32_PWM_USE_TIM5
-#else
-#define PWM_CONF_TIM5 1
-#endif
-#define PWM_CONF5_DEF { \
-  PWM_FREQUENCY, \
-  PWM_FREQUENCY/TIM5_SERVO_HZ, \
-  NULL, \
-  { \
-    { PWM_OUTPUT_DISABLED, NULL }, \
-    { PWM_OUTPUT_DISABLED, NULL }, \
-    { PWM_OUTPUT_DISABLED, NULL }, \
-    { PWM_SERVO_6_ACTIVE, NULL }, \
-  }, \
-  0, \
-  0 \
-}
 
 /**
  * DSHOT
@@ -457,7 +411,7 @@
  * Actuators for fixedwing
  */
  /* Default actuators driver */
-#define DEFAULT_ACTUATORS "subsystems/actuators/actuators_pwm.h"
+#define DEFAULT_ACTUATORS "modules/actuators/actuators_pwm.h"
 #define ActuatorDefaultSet(_x,_y) ActuatorPwmSet(_x,_y)
 #define ActuatorsDefaultInit() ActuatorsPwmInit()
 #define ActuatorsDefaultCommit() ActuatorsPwmCommit()

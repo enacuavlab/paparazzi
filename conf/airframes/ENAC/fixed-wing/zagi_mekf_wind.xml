@@ -83,7 +83,6 @@
 
     <module name="airspeed" type="ms45xx_i2c">
       <define name="MS45XX_I2C_DEV" value="i2c1"/>
-      <!--define name="USE_AIRSPEED_MS45XX" value="TRUE"/-->
     </module>
 
   </firmware>
@@ -242,7 +241,6 @@
   <section name="SIMULATOR" prefix="NPS_">
     <define name="JSBSIM_LAUNCHSPEED" value="15"/>
     <define name="JSBSIM_MODEL" value="easystar" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
   </section>
 
 

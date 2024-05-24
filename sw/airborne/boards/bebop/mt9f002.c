@@ -831,8 +831,8 @@ void mt9f002_set_exposure(struct mt9f002_t *mt)
     // Both are good
     else {
       // Calculate error to decide which is better
-      int32_t upper_error = abs((mt->line_length * upper_coarse_integration + upper_fine_integration) - integration);
-      int32_t lower_error = abs((mt->line_length * lower_coarse_integration + lower_fine_integration) - integration);
+      int32_t upper_error = abs((mt->line_length * upper_coarse_integration + upper_fine_integration) - (int32_t)integration);
+      int32_t lower_error = abs((mt->line_length * lower_coarse_integration + lower_fine_integration) - (int32_t)integration);
 
       if (upper_error < lower_error) {
         coarse_integration = upper_coarse_integration;
@@ -900,6 +900,12 @@ static uint16_t mt9f002_calc_gain(float gain)
   return (analog_gain2 & 0x7F) | ((analog_gain3 & 0x7) << 7) | ((colamp_gain & 0x3) << 10) | ((digital_gain & 0xF) << 12);
 }
 
+// settings to update resolution, color and exposure
+float mt9f002_send_resolution;
+float mt9f002_send_color;
+float mt9f002_send_exposure;
+
+
 /**
  * Sets the GreenR, Blue, Red and GreenB gains
  */
@@ -938,8 +944,8 @@ static void mt9f002_calc_resolution(struct mt9f002_t *mt)
   rect.height = Clip(Align(crop.height, 4), 1, CFG_MT9F002_PIXEL_ARRAY_HEIGHT);
 
   /* Clamp the width and height to avoid dividing by zero. */
-  width = Clip(Align(mt->output_width, 2), Max(rect.width / 8, CFG_MT9F002_WINDOW_WIDTH_MIN), rect.width);
-  height = Clip(Align(mt->output_height, 2), Max((rect.height / 8), CFG_MT9F002_WINDOW_HEIGHT_MIN), rect.height);
+  width = Clip(Align(mt->output_width, 2), Max((int32_t)rect.width / 8, CFG_MT9F002_WINDOW_WIDTH_MIN), (int32_t)rect.width);
+  height = Clip(Align(mt->output_height, 2), Max((int32_t)rect.height / 8, CFG_MT9F002_WINDOW_HEIGHT_MIN), (int32_t)rect.height);
 
   /* Calculate binning / skipping, we enforce that binning in X and Y are the same */
   div_res = Min(rect.width / width, rect.height / height);
@@ -968,14 +974,14 @@ static void mt9f002_calc_resolution(struct mt9f002_t *mt)
   rect.left = crop.left + ((int32_t)crop.width - (int32_t)rect.width) / 2;
   rect.top = crop.top + ((int32_t)crop.height - (int32_t)rect.height) / 2;
 
-  rect.left = Min(rect.left, CFG_MT9F002_PIXEL_ARRAY_WIDTH - rect.width);
-  rect.top = Min(rect.top, CFG_MT9F002_PIXEL_ARRAY_HEIGHT - rect.height);
+  rect.left = Min(rect.left, CFG_MT9F002_PIXEL_ARRAY_WIDTH - (int32_t)rect.width);
+  rect.top = Min(rect.top, CFG_MT9F002_PIXEL_ARRAY_HEIGHT - (int32_t)rect.height);
   rect.left = Clip(Align(rect.left, 2), CFG_MT9F002_X_ADDR_MIN, CFG_MT9F002_X_ADDR_MAX);
   rect.top = Clip(Align(rect.top, 2), CFG_MT9F002_Y_ADDR_MIN, CFG_MT9F002_Y_ADDR_MAX);
 
   /* Align left offset to 8 */
   xMultiple = 8 * ((x_odd_inc + 1) / 2);
-  rect.left = Align(rect.left, xMultiple);
+  rect.left = Align(rect.left, (int32_t)xMultiple);
 
   /* Align top offset to 2 */
   rect.top = Align(rect.top, 4);

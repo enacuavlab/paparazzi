@@ -33,7 +33,6 @@ let soi = string_of_int
 
 let home = Env.paparazzi_home
 let (//) = Filename.concat
-let default_path_srtm = home // "data" // "srtm"
 let default_path_maps = home // "data" // "maps"
 let layout_path = home // "conf" // "gcs"
 let var_maps_path = home // "var" // "maps"
@@ -57,7 +56,7 @@ let display_map = fun (geomap:G.widget) xml_map ->
     let opacity = try Some (int_of_string (Xml.attrib xml_map "opacity")) with _ -> None in
     let current_projection = geomap#projection in
     if map_projection <> current_projection then
-      GToolbox.message_box "Warning" (sprintf "You are loading a map in %s projection while the display use %s" map_projection current_projection);
+      GToolbox.message_box ~title:"Warning" (sprintf "You are loading a map in %s projection while the display use %s" map_projection current_projection);
 
     let pix_ref = fun p ->
       truncate (ExtXml.float_attrib p "x"), truncate (ExtXml.float_attrib p "y") in
@@ -85,9 +84,9 @@ let display_map = fun (geomap:G.widget) xml_map ->
       | _ -> failwith (sprintf "display_map: two ref points required")
   with
       Xml.File_not_found f ->
-        GToolbox.message_box "Error" (sprintf "File does not exist: %s" f)
+        GToolbox.message_box ~title:"Error" (sprintf "File does not exist: %s" f)
     | ExtXml.Error s ->
-      GToolbox.message_box "Error" (sprintf "Error in XML file: %s" s)
+      GToolbox.message_box ~title:"Error" (sprintf "Error in XML file: %s" s)
 
 
 
@@ -104,7 +103,7 @@ let save_map = fun geomap ?(projection=geomap#projection) pixbuf nw se ->
       None -> ()
     | Some xml_file  ->
       let jpg = Filename.chop_extension xml_file ^ ".png" in
-      GdkPixbuf.save jpg "png" pixbuf;
+      GdkPixbuf.save ~filename:jpg ~typ:"png" pixbuf;
       let point = fun (x,y) wgs84 ->
         Xml.Element ("point", ["x",soi x;"y",soi y;"geo", Latlong.string_of wgs84], []) in
       let width = GdkPixbuf.get_width pixbuf
@@ -123,14 +122,14 @@ let save_map = fun geomap ?(projection=geomap#projection) pixbuf nw se ->
 (****** Creates a calibrated map from the bitmap (selected region) ***********)
 let map_from_region = fun (geomap:G.widget) () ->
   match geomap#region with
-      None -> GToolbox.message_box "Error" "Select a region (shift-left drag)"
+      None -> GToolbox.message_box ~title:"Error" "Select a region (shift-left drag)"
     | Some ((xw1,yw1), (xw2,yw2)) ->
       let xw1, xw2 = min xw1 xw2, max xw1 xw2
       and yw1, yw2 = min yw1 yw2, max yw1 yw2 in
-      let (xc1, yc1) = geomap#canvas#w2c xw1 yw1
-      and (xc2, yc2) = geomap#canvas#w2c xw2 yw2 in
+      let (xc1, yc1) = geomap#canvas#w2c ~wx:xw1 ~wy:yw1
+      and (xc2, yc2) = geomap#canvas#w2c ~wx:xw2 ~wy:yw2 in
       let width = xc2-xc1 and height = yc2-yc1 in
-      let dest = GdkPixbuf.create width height () in
+      let dest = GdkPixbuf.create ~width ~height () in
       let (x0, y0) = geomap#canvas#get_scroll_offsets in
       let src_x = xc1 - x0 and src_y = yc1 - y0 in
       GdkPixbuf.get_from_drawable ~dest ~width ~height ~src_x ~src_y
@@ -194,7 +193,7 @@ module GM = struct
   (** Creates a calibrated map from the map tiles (selected region) *)
   let map_from_tiles = fun (geomap:G.widget) () ->
     match geomap#region with
-        None -> GToolbox.message_box "Error" "Select a region (shift-left drag)"
+        None -> GToolbox.message_box ~title:"Error" "Select a region (shift-left drag)"
       | Some ((xw1,yw1), (xw2,yw2)) ->
         let geo1 = geomap#of_world (xw1,yw1)
         and geo2 = geomap#of_world (xw2,yw2) in
@@ -241,8 +240,8 @@ let fill_ortho = fun (geomap:G.widget) ->
   (** First estimate the coverage of the window *)
   let width_c, height_c = Gdk.Drawable.get_size geomap#canvas#misc#window
   and (xc0, yc0) = geomap#canvas#get_scroll_offsets in
-  let (xw0, yw0) = geomap#window_to_world (float xc0) (float (yc0+height_c))
-  and (xw1, yw1) = geomap#window_to_world (float (xc0+width_c)) (float yc0) in
+  let (xw0, yw0) = geomap#window_to_world ~winx:(float xc0) ~winy:(float (yc0+height_c))
+  and (xw1, yw1) = geomap#window_to_world ~winx:(float (xc0+width_c)) ~winy:(float yc0) in
   let sw = geomap#of_world (xw0, yw0)
   and ne = geomap#of_world (xw1, yw1) in
   let lbt2e_sw = lambertIIe_of sw
@@ -274,7 +273,7 @@ let button_press = fun (geomap:G.widget) ev ->
     (** Display a map tile from map provider (Google, OSC, ..) or IGN *)
     let xc = GdkEvent.Button.x ev
     and yc = GdkEvent.Button.y ev in
-    let (xw,yw) = geomap#window_to_world xc yc in
+    let (xw,yw) = geomap#window_to_world ~winx:xc ~winy:yc in
 
     let wgs84 = geomap#of_world (xw,yw) in
     let display_ign = fun () ->
@@ -297,7 +296,7 @@ let button_press = fun (geomap:G.widget) ev ->
   end else if GdkEvent.Button.button ev = 1 && Gdk.Convert.test_modifier `CONTROL state then (* create new wp on Ctrl-click *)
       let xc = GdkEvent.Button.x ev in
       let yc = GdkEvent.Button.y ev in
-      let xyw = geomap#canvas#window_to_world xc yc in
+      let xyw = geomap#canvas#window_to_world ~winx:xc ~winy:yc in
       let geo = geomap#of_world xyw in
       ignore (EditFP.create_wp geomap geo);
       true
@@ -397,14 +396,14 @@ let create_geomap = fun switch_fullscreen editor_frame ->
   let menu_fact = new GMenu.factory geomap#file_menu in
   let accel_group = menu_fact#accel_group in
 
-  ignore (geomap#canvas#event#connect#button_press (button_press geomap));
-  ignore (geomap#canvas#event#connect#motion_notify (motion_notify geomap));
-  ignore (geomap#canvas#event#connect#any (any_event geomap));
+  ignore (geomap#canvas#event#connect#button_press ~callback:(button_press geomap));
+  ignore (geomap#canvas#event#connect#motion_notify ~callback:(motion_notify geomap));
+  ignore (geomap#canvas#event#connect#any ~callback:(any_event geomap));
 
   ignore (menu_fact#add_check_item "Auto hide FP" ~callback:(fun hide -> Live.auto_hide_fp hide) ~active:!hide_fp);
   ignore (menu_fact#add_item "Redraw" ~key:GdkKeysyms._L ~callback:(fun _ -> geomap#canvas#misc#draw None));
   let fullscreen = menu_fact#add_image_item ~stock:(`STOCK "gtk-fullscreen") ~callback:switch_fullscreen () in
-  fullscreen#add_accelerator accel_group GdkKeysyms._F11;
+  fullscreen#add_accelerator ~group:accel_group GdkKeysyms._F11;
   ignore (menu_fact#add_item "Quit" ~key:GdkKeysyms._Q ~callback:quit);
 
   (* Maps handling *)
@@ -447,7 +446,7 @@ let create_geomap = fun switch_fullscreen editor_frame ->
   let callback = fun _ -> GM.fill_tiles geomap in
   ignore (map_menu_fact#add_item "Maps Fill" ~key:GdkKeysyms._G ~callback);
   let b = GButton.button ~packing:geomap#toolbar#add () in
-  ignore (b#connect#clicked callback);
+  ignore (b#connect#clicked ~callback);
   let pixbuf = GdkPixbuf.from_file (Env.gcs_icons_path // "googleearth.png") in
   ignore (GMisc.image ~pixbuf ~packing:b#add ());
   let tooltips = GData.tooltips () in
@@ -628,7 +627,6 @@ let () =
     Ivy.start !ivy_bus
   end;
 
-  Srtm.add_path default_path_srtm;
   Gm.cache_path := var_maps_path;
   IGN.cache_path := var_maps_path;
 
@@ -670,13 +668,7 @@ let () =
           (window:>GWindow.window_skel),switch_fullscreen
 
       | Some xid ->
-        let window =
-          IFDEF GDK_NATIVE_WINDOW THEN
-            Gdk.Window.native_of_xid xid
-          ELSE
-            xid
-          END
-        in
+        let window = Gdk.Window.native_of_xid xid in
         (GWindow.plug ~window ~width ~height ():>GWindow.window_skel), fun _ -> () in
 
   (* Editor frame *)
@@ -824,7 +816,7 @@ let () =
     if Sys.file_exists !file_to_edit then
       EditFP.load_xml_file geomap editor_frame accel_group !file_to_edit
     else
-      GToolbox.message_box "Error" (sprintf "Error: '%s' file does not exist\n%!" !file_to_edit);
+      GToolbox.message_box ~title:"Error" (sprintf "Error: '%s' file does not exist\n%!" !file_to_edit);
 
   if !edit then
     EditFP.set_window_title geomap;

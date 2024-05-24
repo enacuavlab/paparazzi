@@ -195,6 +195,9 @@ struct spi_periph {
 #define SPI_SLAVE3 3
 #define SPI_SLAVE4 4
 #define SPI_SLAVE5 5
+#define SPI_SLAVE6 6
+#define SPI_SLAVE7 7
+#define SPI_SLAVE8 8
 
 /// @todo SPI error struct
 //extern uint8_t spi_nb_ovrn;
@@ -258,6 +261,18 @@ extern void spi4_init(void);
 extern void spi4_arch_init(void);
 
 #endif // USE_SPI4
+
+#if USE_SPI6
+
+extern struct spi_periph spi6;
+extern void spi6_init(void);
+
+/** Architecture dependent SPI6 initialization.
+ * Must be implemented by underlying architecture
+ */
+extern void spi6_arch_init(void);
+
+#endif // USE_SPI6
 
 /** Initialize a spi peripheral.
  * @param p spi peripheral to be configured

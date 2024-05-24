@@ -81,7 +81,7 @@
 #define SEND_WIND_ESTIMATOR TRUE
 #endif
 
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 
 static void send_wind_estimator(struct transport_tx *trans, struct link_device *dev)
 {
@@ -97,7 +97,7 @@ static void send_wind_estimator(struct transport_tx *trans, struct link_device *
 }
 
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 #endif
 
 #ifndef LOG_WIND_ESTIMATOR
@@ -285,7 +285,7 @@ static inline void wind_estimator_step(void)
 #endif
 }
 
-#include "subsystems/imu.h"
+#include "modules/imu/imu.h"
 /*----------------wind_estimator_periodic-------------*/
 /*  Put Data from State in struct use by the Thread   */
 /*----------------------------------------------------*/
@@ -314,11 +314,10 @@ void wind_estimator_periodic(void)
 //    float_rmat_vmult(&accel_body, ned_to_body, &accel_ned);
 
     ///// IMU test
-    struct FloatVect3 accel_body = {
-      .x = ACCEL_FLOAT_OF_BFP(imu.accel.x),
-      .y = ACCEL_FLOAT_OF_BFP(imu.accel.y),
-      .z = ACCEL_FLOAT_OF_BFP(imu.accel.z)
-    };
+    struct Int32Vect3 *accel_body_i = stateGetAccelBody_i();
+    struct FloatVect3 accel_body;
+    ACCELS_FLOAT_OF_BFP(accel_body, *accel_body_i);
+
     struct FloatVect3 tmp = accel_body;
     //struct Int32RMat *body_to_imu_rmat = orientationGetRMat_i(&body_to_imu);
     //int32_rmat_transp_vmult(&accel_body, body_to_imu_rmat, accel);

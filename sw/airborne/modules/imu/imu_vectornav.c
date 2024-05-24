@@ -23,7 +23,7 @@
 /**
  * @file modules/imu/imu_vectornav.c
  *
- * Vectornav VN-200 IMU subsystems, to be used with other AHRS/INS algorithms.
+ * Vectornav VN-200 IMU module, to be used with other AHRS/INS algorithms.
  */
 
 #include "modules/imu/imu_vectornav.h"
@@ -32,19 +32,15 @@
 #include "mcu_periph/sys_time.h"
 
 // Abi
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 
 // Generated
 #include "generated/airframe.h"
 
 struct ImuVectornav imu_vn;
 
-/* no scaling */
-void imu_scale_gyro(struct Imu *_imu __attribute__((unused))) {}
-void imu_scale_accel(struct Imu *_imu __attribute__((unused))) {}
-
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 
 
 static void send_vn_info(struct transport_tx *trans, struct link_device *dev)
@@ -151,12 +147,7 @@ void imu_vectornav_propagate(void)
   uint64_t tmp = imu_vn.vn_data.nanostamp / 1000;
   uint32_t now_ts = (uint32_t) tmp;
 
-  // Rates and accel
-  RATES_BFP_OF_REAL(imu.gyro, imu_vn.vn_data.gyro);
-  ACCELS_BFP_OF_REAL(imu.accel, imu_vn.vn_data.accel);
-
   // Send accel and gyro data separate for other AHRS algorithms
-  AbiSendMsgIMU_GYRO_INT32(IMU_VECTORNAV_ID, now_ts, &imu.gyro);
-  AbiSendMsgIMU_ACCEL_INT32(IMU_VECTORNAV_ID, now_ts, &imu.accel);
+  AbiSendMsgIMU_GYRO_RAW(IMU_VECTORNAV_ID, now_ts, &imu_vn.vn_data.gyro, 1, imu_vn.vn_freq, NAN);
+  AbiSendMsgIMU_ACCEL_RAW(IMU_VECTORNAV_ID, now_ts, &imu_vn.vn_data.accel, 1, imu_vn.vn_freq, NAN);
 }
-

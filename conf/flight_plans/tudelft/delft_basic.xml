@@ -3,9 +3,9 @@
 <flight_plan alt="4" ground_alt="0" lat0="51 59 27.6" lon0="4 22 42.0" max_dist_from_home="1000" name="Delft Basic" security_height="2">
   <header>
     #include "autopilot.h"
-    #include "subsystems/datalink/datalink.h"
-    #include "subsystems/electrical.h"
-    #include "subsystems/radio_control.h"
+    #include "modules/datalink/datalink.h"
+    #include "modules/energy/electrical.h"
+    #include "modules/radio_control/radio_control.h"
   </header>
   <waypoints>
     <waypoint name="HOME" x="0.0" y="0.0"/>
@@ -69,7 +69,7 @@
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
       <exception cond="GetPosHeight() @GT 2.0" deroute="Standby"/>
       <call_once fun="NavSetWaypointHere(WP_CLIMB)"/>
-      <stay climb="nav_climb_vspeed" vmode="climb" wp="CLIMB"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="CLIMB"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
       <stay wp="STDBY"/>
@@ -102,7 +102,7 @@
       <deroute block="Standby"/>
     </block>
     <block name="circle CAM" pre_call="nav_set_heading_towards_waypoint(WP_CAM)">
-      <circle radius="nav_radius" wp="CAM"/>
+      <circle radius="nav.radius" wp="CAM"/>
     </block>
     <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
       <call_once fun="NavSetWaypointHere(WP_TD)"/>
@@ -114,7 +114,7 @@
       <exception cond="NavDetectGround()" deroute="Holding point"/>
       <exception cond="!nav_is_in_flight()" deroute="landed"/>
       <call_once fun="NavStartDetectGround()"/>
-      <stay climb="nav_descend_vspeed" vmode="climb" wp="TD"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="TD"/>
     </block>
     <block name="landed">
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>

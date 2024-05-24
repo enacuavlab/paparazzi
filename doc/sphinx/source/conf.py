@@ -16,8 +16,13 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
+import os
+import sys
+
+parser_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../sw/tools/modules_doc'))
+print(parser_path)
+sys.path.insert(0, parser_path)
+
 # sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration ------------------------------------------------
@@ -35,6 +40,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
+    'modules_parser',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -58,12 +64,19 @@ project = u'PaparazziUAV'
 copyright = u'2018, Paparazzi UAV Team'
 author = u'Paparazzi UAV Team'
 
+import subprocess
+import re
+
+pprz_version = subprocess.run(["../../../paparazzi_version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+pprz_version = pprz_version.stdout
+version = re.split('_|-', pprz_version)[0]
+print("Paparazzi version is {}.".format(version))
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = u'5.13'
+#version = u'5.13'
 # The full version, including alpha/beta/rc tags.
 release = u'_devel'
 
@@ -159,6 +172,10 @@ html_theme = 'sphinx_rtd_theme'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_css_files = [
+    'custom.css',
+]
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

@@ -33,13 +33,14 @@
 
 // include mavlink headers, but ignore some warnings
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
 #pragma GCC diagnostic ignored "-Wswitch-default"
 #include "mavlink/paparazzi/mavlink.h"
 #pragma GCC diagnostic pop
 
 // for waypoints, include correct header until we have unified API
 #if defined(FIXEDWING_FIRMWARE)
-#include "subsystems/navigation/common_nav.h"
+#include "modules/nav/common_nav.h"
 #elif defined(ROTORCRAFT_FIRMWARE)
 #include "firmwares/rotorcraft/navigation.h"
 #else
@@ -109,7 +110,7 @@ void mavlink_mission_periodic(void)
 void mavlink_send_mission_ack(void)
 {
   mavlink_msg_mission_ack_send(MAVLINK_COMM_0,  mission_mgr.rem_sysid, mission_mgr.rem_compid,
-                               MAV_MISSION_ACCEPTED);
+                               MAV_MISSION_ACCEPTED, MAV_MISSION_TYPE_MISSION);
   MAVLinkSendMessage();
   MAVLINK_DEBUG("Sent MISSION_ACK message\n");
 }

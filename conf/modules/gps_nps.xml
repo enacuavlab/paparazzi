@@ -13,15 +13,17 @@
     <provides>gps</provides>
   </dep>
   <header>
-    <file name="gps.h" dir="subsystems"/>
+    <file name="gps.h"/>
   </header>
   <init fun="gps_nps_init()"/>
   <periodic fun="gps_nps_periodic_check()" freq="1." autorun="TRUE"/>
-  <makefile target="nps|hitl">
-    <file name="gps_sim_nps.c" dir="subsystems/gps"/>
-    <define name="GPS_TYPE_H" value="subsystems/gps/gps_sim_nps.h" type="string"/>
+  <makefile target="sim|nps">
+    <file name="gps_sim_nps.c"/>
+    <define name="GPS_TYPE_H" value="modules/gps/gps_sim_nps.h" type="string"/>
     <test>
+      <define name="PERIODIC_FREQUENCY" value="500"/>
       <include name="../simulator/nps"/>
+      <include name="../../conf/simulator/nps"/>
       <shell cmd="pkg-config glib-2.0 --cflags"/>
     </test>
   </makefile>

@@ -31,18 +31,23 @@
  */
 
 #include "firmwares/rotorcraft/stabilization/stabilization_indi_simple.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
 
 #include "state.h"
 #include "generated/airframe.h"
 #include "paparazzi.h"
-#include "subsystems/radio_control.h"
+#include "modules/radio_control/radio_control.h"
 #include "filters/low_pass_filter.h"
 
-#if !defined(STABILIZATION_INDI_ACT_DYN_P) && !defined(STABILIZATION_INDI_ACT_DYN_Q) && !defined(STABILIZATION_INDI_ACT_DYN_R)
-#error You have to define the first order time constant of the actuator dynamics!
+#if defined(STABILIZATION_INDI_ACT_DYN_P) && !defined(STABILIZATION_INDI_ACT_DYN_Q) && !defined(STABILIZATION_INDI_ACT_DYN_R)
+#warning STABILIZATION_INDI_ACT_DYN is deprecated, use STABILIZATION_INDI_ACT_FREQ instead.
+#warning You now have to define the continuous time corner frequency in rad/s of the actuators.
+#warning "Use -ln(1 - old_number) * PERIODIC_FREQUENCY to compute it from the old values."
+#else
+#if !defined(STABILIZATION_INDI_ACT_FREQ_P) && !defined(STABILIZATION_INDI_ACT_FREQ_Q) && !defined(STABILIZATION_INDI_ACT_FREQ_R)
+#warning You have to define the corner frequency of the first order actuator dynamics model in rad/s!
+#endif
 #endif
 
 // these parameters are used in the filtering of the angular acceleration
@@ -140,26 +145,43 @@ struct IndiVariables indi = {
 };
 
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 
 static void send_att_indi(struct transport_tx *trans, struct link_device *dev)
+{
+  float zero = 0.0;
+  pprz_msg_send_STAB_ATTITUDE(trans, dev, AC_ID,
+                                      &zero, &zero, &zero,         // att
+                                      &zero, &zero, &zero,         // att.ref
+                                      &indi.rate[0].o[0],          // rate
+                                      &indi.rate[1].o[0],
+                                      &indi.rate[2].o[0],
+                                      &zero, &zero, &zero,         // rate.ref
+                                      &indi.rate_d[0],             // ang.acc = rate.diff
+                                      &indi.rate_d[1],
+                                      &indi.rate_d[2],
+                                      &indi.angular_accel_ref.p,   // ang.acc.ref
+                                      &indi.angular_accel_ref.q,
+                                      &indi.angular_accel_ref.r,
+                                      1, &zero,                    // inputs
+                                      1, &zero);                   // outputs
+}
+static void send_eff_mat_g_indi_simple(struct transport_tx *trans, struct link_device *dev)
 {
   //The estimated G values are scaled, so scale them back before sending
   struct FloatRates g1_disp;
   RATES_SMUL(g1_disp, indi.est.g1, INDI_EST_SCALE);
   float g2_disp = indi.est.g2 * INDI_EST_SCALE;
-
-  pprz_msg_send_STAB_ATTITUDE_INDI(trans, dev, AC_ID,
-                                   &indi.rate_d[0],
-                                   &indi.rate_d[1],
-                                   &indi.rate_d[2],
-                                   &indi.angular_accel_ref.p,
-                                   &indi.angular_accel_ref.q,
-                                   &indi.angular_accel_ref.r,
-                                   &g1_disp.p,
-                                   &g1_disp.q,
-                                   &g1_disp.r,
-                                   &g2_disp);
+  float zero = 0.0;
+  pprz_msg_send_EFF_MAT_G(trans, dev, AC_ID,
+                                    1, &zero,
+                                    1, &zero,
+                                    1, &zero,
+                                    1, &g1_disp.p,
+                                    1, &g1_disp.q,
+                                    1, &g1_disp.r,
+                                    1, &g2_disp,
+                                    1, &zero);
 }
 
 static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *dev)
@@ -182,8 +204,19 @@ void stabilization_indi_init(void)
   // Initialize filters
   indi_init_filters();
 
+#ifdef STABILIZATION_INDI_ACT_FREQ_P
+  indi.act_dyn.p = 1-exp(-STABILIZATION_INDI_ACT_FREQ_P/PERIODIC_FREQUENCY);
+  indi.act_dyn.q = 1-exp(-STABILIZATION_INDI_ACT_FREQ_Q/PERIODIC_FREQUENCY);
+  indi.act_dyn.r = 1-exp(-STABILIZATION_INDI_ACT_FREQ_R/PERIODIC_FREQUENCY);
+#else
+  indi.act_dyn.p = STABILIZATION_INDI_ACT_DYN_P;
+  indi.act_dyn.q = STABILIZATION_INDI_ACT_DYN_Q;
+  indi.act_dyn.r = STABILIZATION_INDI_ACT_DYN_R;
+#endif
+
 #if PERIODIC_TELEMETRY
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_STAB_ATTITUDE_INDI, send_att_indi);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_STAB_ATTITUDE, send_att_indi);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_EFF_MAT_G, send_eff_mat_g_indi_simple);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_REF_QUAT, send_ahrs_ref_quat);
 #endif
 }
@@ -233,52 +266,6 @@ void stabilization_indi_enter(void)
   indi_init_filters();
 }
 
-void stabilization_indi_set_failsafe_setpoint(void)
-{
-  /* set failsafe to zero roll/pitch and current heading */
-  int32_t heading2 = stabilization_attitude_get_heading_i() / 2;
-  PPRZ_ITRIG_COS(stab_att_sp_quat.qi, heading2);
-  stab_att_sp_quat.qx = 0;
-  stab_att_sp_quat.qy = 0;
-  PPRZ_ITRIG_SIN(stab_att_sp_quat.qz, heading2);
-}
-
-/**
- * @brief Set attitude quaternion setpoint from rpy
- *
- * @param rpy roll pitch yaw input
- */
-void stabilization_indi_set_rpy_setpoint_i(struct Int32Eulers *rpy)
-{
-  // stab_att_sp_euler.psi still used in ref..
-  stab_att_sp_euler = *rpy;
-
-  int32_quat_of_eulers(&stab_att_sp_quat, &stab_att_sp_euler);
-}
-
-/**
- * @brief Set attitude setpoint from command in earth axes
- *
- * @param cmd The command in earth axes (North East)
- * @param heading The desired heading
- */
-void stabilization_indi_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
-{
-  // stab_att_sp_euler.psi still used in ref..
-  stab_att_sp_euler.psi = heading;
-
-  // compute sp_euler phi/theta for debugging/telemetry
-  /* Rotate horizontal commands to body frame by psi */
-  int32_t psi = stateGetNedToBodyEulers_i()->psi;
-  int32_t s_psi, c_psi;
-  PPRZ_ITRIG_SIN(s_psi, psi);
-  PPRZ_ITRIG_COS(c_psi, psi);
-  stab_att_sp_euler.phi = (-s_psi * cmd->x + c_psi * cmd->y) >> INT32_TRIG_FRAC;
-  stab_att_sp_euler.theta = -(c_psi * cmd->x + s_psi * cmd->y) >> INT32_TRIG_FRAC;
-
-  quat_from_earth_cmd_i(&stab_att_sp_quat, cmd, heading);
-}
-
 /**
  * @brief Update butterworth filter for p, q and r of a FloatRates struct
  *
@@ -323,16 +310,19 @@ static inline void finite_difference(float output[3], float new[3], float old[3]
 /**
  * @brief Does the INDI calculations
  *
- * @param indi_commands[] Array of commands that the function will write to
- * @param att_err quaternion attitude error
+ * @param in_flight true aircraft is flying
+ * @param sp rate setpoint
+ * @param thrust thrust setpoint
+ * @param cmd output command array
  */
-void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight __attribute__((unused)))
+void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
+
   //Propagate input filters
   //first order actuator dynamics
-  indi.u_act_dyn.p = indi.u_act_dyn.p + STABILIZATION_INDI_ACT_DYN_P * (indi.u_in.p - indi.u_act_dyn.p);
-  indi.u_act_dyn.q = indi.u_act_dyn.q + STABILIZATION_INDI_ACT_DYN_Q * (indi.u_in.q - indi.u_act_dyn.q);
-  indi.u_act_dyn.r = indi.u_act_dyn.r + STABILIZATION_INDI_ACT_DYN_R * (indi.u_in.r - indi.u_act_dyn.r);
+  indi.u_act_dyn.p = indi.u_act_dyn.p + indi.act_dyn.p * (indi.u_in.p - indi.u_act_dyn.p);
+  indi.u_act_dyn.q = indi.u_act_dyn.q + indi.act_dyn.q * (indi.u_in.q - indi.u_act_dyn.q);
+  indi.u_act_dyn.r = indi.u_act_dyn.r + indi.act_dyn.r * (indi.u_in.r - indi.u_act_dyn.r);
 
   // Propagate the filter on the gyroscopes and actuators
   struct FloatRates *body_rates = stateGetBodyRates_f();
@@ -363,6 +353,7 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight __att
 #endif
 
   //This lets you impose a maximum yaw rate.
+  struct FloatRates rate_sp = stab_sp_to_rates_f(sp);
   BoundAbs(rate_sp.r, indi.attitude_max_yaw_rate);
 
   // Compute reference angular acceleration:
@@ -380,7 +371,7 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight __att
 
   //Don't increment if thrust is off and on the ground
   //without this the inputs will increment to the maximum before even getting in the air.
-  if (stabilization_cmd[COMMAND_THRUST] < 300 && !in_flight) {
+  if (th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z) < 300 && !in_flight) {
     FLOAT_RATES_ZERO(indi.u_in);
 
     // If on the gournd, no increments, just proportional control
@@ -411,14 +402,16 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight __att
 #endif
 
   /*  INDI feedback */
-  stabilization_cmd[COMMAND_ROLL] = indi.u_in.p;
-  stabilization_cmd[COMMAND_PITCH] = indi.u_in.q;
-  stabilization_cmd[COMMAND_YAW] = indi.u_in.r;
+  cmd[COMMAND_ROLL] = indi.u_in.p;
+  cmd[COMMAND_PITCH] = indi.u_in.q;
+  cmd[COMMAND_YAW] = indi.u_in.r;
+  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
 
   /* bound the result */
-  BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_PITCH], MAX_PPRZ);
-  BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_ROLL], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_PITCH], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_YAW], MAX_PPRZ);
+  BoundAbs(cmd[COMMAND_THRUST], MAX_PPRZ);
 }
 
 /**
@@ -427,18 +420,19 @@ void stabilization_indi_rate_run(struct FloatRates rate_sp, bool in_flight __att
  * @param in_flight not used
  * @param rate_control rate control enabled, otherwise attitude control
  */
-void stabilization_indi_attitude_run(struct Int32Quat quat_sp, bool in_flight __attribute__((unused)))
+void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoint *att_sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
-  /* attitude error                          */
+  stab_att_sp_euler = stab_sp_to_eulers_i(att_sp);  // stab_att_sp_euler.psi still used in ref..
+  stab_att_sp_quat = stab_sp_to_quat_i(att_sp);     // quat attitude setpoint
+
+  /* attitude error in float */
   struct FloatQuat att_err;
   struct FloatQuat *att_quat = stateGetNedToBodyQuat_f();
-  struct FloatQuat quat_sp_f;
+  struct FloatQuat quat_sp = stab_sp_to_quat_f(att_sp);
 
-  QUAT_FLOAT_OF_BFP(quat_sp_f, quat_sp);
-  float_quat_inv_comp_norm_shortest(&att_err, att_quat, &quat_sp_f);
+  float_quat_inv_comp_norm_shortest(&att_err, att_quat, &quat_sp);
 
   struct FloatVect3 att_fb;
-
 #if TILT_TWIST_CTRL
   struct FloatQuat tilt;
   struct FloatQuat twist;
@@ -458,24 +452,13 @@ void stabilization_indi_attitude_run(struct Int32Quat quat_sp, bool in_flight __
   rate_sp.q = indi.gains.att.q * att_fb.y / indi.gains.rate.q;
   rate_sp.r = indi.gains.att.r * att_fb.z / indi.gains.rate.r;
 
-  /* compute the INDI command */
-  stabilization_indi_rate_run(rate_sp, in_flight);
-}
+  // Add feed-forward rates to the attitude feedback part
+  struct FloatRates ff_rates = stab_sp_to_rates_f(att_sp);
+  RATES_ADD(rate_sp, ff_rates);
 
-/**
- * This function reads rc commands
- *
- * @param in_flight boolean that states if the UAV is in flight or not
- */
-void stabilization_indi_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
-{
-  struct FloatQuat q_sp;
-#if USE_EARTH_BOUND_RC_SETPOINT
-  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#else
-  stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-#endif
-  QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
+  /* compute the INDI command */
+  struct StabilizationSetpoint sp = stab_sp_from_rates_f(&rate_sp);
+  stabilization_indi_rate_run(in_flight, &sp, thrust, cmd);
 }
 
 /**
@@ -527,3 +510,4 @@ static inline void lms_estimation(void)
     indi.g2   = est->g2 * INDI_EST_SCALE;
   }
 }
+

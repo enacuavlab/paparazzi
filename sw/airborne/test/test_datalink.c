@@ -24,13 +24,11 @@
  *
  * Periodically sends ALIVE (10Hz) and ping/pong (every 5s) telemetry messages.
  */
-#define DATALINK_C
-
 #include BOARD_CONFIG
 #include "mcu.h"
 #include "mcu_periph/sys_time.h"
-#include "subsystems/datalink/downlink.h"
-#include "subsystems/datalink/datalink.h"
+#include "modules/datalink/downlink.h"
+#include "modules/datalink/datalink.h"
 #include "modules/datalink/pprz_dl.h"
 
 static inline void main_init(void);
@@ -55,6 +53,7 @@ static inline void main_init(void)
 {
   mcu_init();
   sys_time_register_timer((1. / PERIODIC_FREQUENCY), NULL);
+  datalink_init();
   downlink_init();
   pprz_dl_init();
 }

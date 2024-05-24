@@ -141,6 +141,9 @@ static inline float pythag(float a, float b)
 }
 
 
+static int imin(int num1, int num2) {
+    return (num1 > num2 ) ? num2 : num1;
+}
 /** SVD decomposition
  *
  * --------------------------------------------------------------------- *
@@ -164,7 +167,7 @@ static inline float pythag(float a, float b)
 int pprz_svd_float(float **a, float *w, float **v, int m, int n)
 {
   /* Householder reduction to bidiagonal form. */
-  int flag, i, its, j, jj, k, l, NM;
+  int flag, i, its, j, jj, k, l = 0, NM = 0;
   float C, F, H, S, X, Y, Z, tmp;
   float G = 0.0;
   float Scale = 0.0;
@@ -295,7 +298,7 @@ int pprz_svd_float(float **a, float *w, float **v, int m, int n)
   }
 
   /* Accumulation of left-hand transformations. */
-  for (i = n - 1; i >= 0; --i) {
+  for (i = imin(m,n) - 1; i >= 0; --i) {
     l = i + 1;
     G = w[i];
     if (i < (n - 1)) {

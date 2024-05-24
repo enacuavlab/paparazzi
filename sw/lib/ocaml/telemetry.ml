@@ -30,7 +30,7 @@ module Message = struct
   type t = {
     name: string;
     period: msg_period;
-    phase: int option;
+    phase: float option;
     xml: Xml.xml }
 
   let from_xml = function
@@ -44,7 +44,7 @@ module Message = struct
           | Some _, Some _ -> failwith "Telemetry.Message.from_xml: either specify 'period' or 'freq' attribute, not both"
           | None, None -> failwith "Telemetry.Message.from_xml: specify 'period' or 'freq' attribute"
         end;
-        phase = ExtXml.attrib_opt_int xml "phase";
+        phase = ExtXml.attrib_opt_float xml "phase";
         xml
       }
     | _ -> failwith "Telemetry.Message.from_xml: unreachable"
@@ -102,7 +102,7 @@ let from_xml = function
   | _ -> failwith "Telemetry.from_xml: unreachable"
 
 let from_file = fun filename ->
-  let t = from_xml (Xml.parse_file filename) in
+  let t = from_xml (ExtXml.parse_file filename) in
   { t with filename }
 
 

@@ -142,7 +142,9 @@ let convert_file = fun ?(output_dir=None) file ->
     if log_msg.Pprzlog_transport.source > 1 then
       fprintf stderr "Invalid source (%d), skipping message\n" log_msg.Pprzlog_transport.source
     else
-    let (msg_id, ac_id, vs) = values_of_payload log_msg log_msg.Pprzlog_transport.pprz_data in
+    let (header, vs) = values_of_payload log_msg log_msg.Pprzlog_transport.pprz_data in
+    let msg_id = header.PprzLink.message_id in
+    let ac_id = header.PprzLink.sender_id in
 
     if log_msg.Pprzlog_transport.source = 0 && !single_ac_id < 0 then
       single_ac_id := ac_id;
@@ -163,6 +165,11 @@ let convert_file = fun ?(output_dir=None) file ->
                      let itow = PprzLink.int_assoc "itow" vs / 1000
                      and week = PprzLink.int_assoc "week" vs in
                      let unix_time = Latlong.unix_time_of_tow ~week itow in
+                     start_unix_time := Some (unix_time -. timestamp)
+        | "GPS_INT" when !start_unix_time = None
+              && ( PprzLink.int_assoc "fix" vs >= 3) ->
+                     let itow = PprzLink.int_assoc "tow" vs / 1000 in
+                     let unix_time = Latlong.unix_time_of_tow itow in
                      start_unix_time := Some (unix_time -. timestamp)
         | "ALIVE" when !md5 = "" ->
             md5 := PprzLink.hex_of_int_array (PprzLink.assoc "md5sum" vs)

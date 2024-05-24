@@ -11,11 +11,10 @@
   <dep>
     <depends>uart,datalink_common</depends>
     <provides>datalink,telemetry</provides>
+    <suggests>telemetry_nps_secure</suggests>
   </dep>
-  <autoload name="telemetry" type="nps_secure"/>
-  <autoload name="telemetry" type="sim"/>
 
-  <makefile target="!fbw|sim|nps|hitl">
+  <makefile target="!sim|nps">
     <configure name="MODEM_PORT" case="upper|lower"/>
     <define name="USE_$(MODEM_PORT_UPPER)"/>
     <define name="$(MODEM_PORT_UPPER)_BAUD" value="$(MODEM_BAUD)"/>

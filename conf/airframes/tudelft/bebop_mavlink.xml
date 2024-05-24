@@ -35,14 +35,14 @@
 
     <module name="geo_mag"/>
     <module name="air_data"/>
-    <module name="send_imu_mag_current"/>
     <!--module name="logger_file">
-      <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
+      <define name="LOGGER_FILE_PATH" value="/data/ftp/internal_000"/>
     </module-->
     <module name="bebop_cam"/>
 
     <module name="cv_blob_locator">
       <define name="BLOB_LOCATOR_CAMERA" value="bottom_camera"/>
+      <define name="DETECT_WINDOW_CAMERA" value="bottom_camera"/>
     </module>
 
     <!--<module name="video_rtp_stream">
@@ -182,9 +182,9 @@
     <define name="FILT_CUTOFF" value="8.0"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN_P" value="0.1"/>
-    <define name="ACT_DYN_Q" value="0.1"/>
-    <define name="ACT_DYN_R" value="0.1"/>
+    <define name="ACT_FREQ_P" value="53.9"/>
+    <define name="ACT_FREQ_Q" value="53.9"/>
+    <define name="ACT_FREQ_R" value="53.9"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
@@ -218,7 +218,6 @@
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="nw_motor, ne_motor, se_motor, sw_motor" type="string[]"/>
     <define name="JSBSIM_MODEL" value="simple_x_quad_ccw" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
   </section>
 
   <section name="AUTOPILOT">

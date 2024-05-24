@@ -189,7 +189,6 @@
       <define name="SENSOR_SYNC_SEND"/>
     </module>
 
-    <module name="send_imu_mag_current"/> <!-- disable after one time callibration -->
     <!-- QNH -->
     <module name="air_data">
       <define name="CALC_AIRSPEED" value="TRUE" />
@@ -290,11 +289,11 @@
     <define name="ROTORSTARTER_OFF" value="MIN_PPRZ" />
    <!-- <define name="AGR_CLIMB_PITCH" value="35" unit="deg" />-->
 
-    <define name="AirbrakesOff()" value="(ap_state->commands[COMMAND_BRAKE]=0)" />
-    <define name="AirbrakesOn()" value="(ap_state->commands[COMMAND_BRAKE]=SERVO_BRAKE_FULL)" />
-    <!--<define name="Fly()" value="(ap_state->commands[COMMAND_FORCECRASH]=0)" />-->
-    <!--<define name="ForceCrash()" value="(ap_state->commands[COMMAND_FORCECRASH]=9600)" />-->
-    <define name="ThrottleHigh()" value="(ap_state->commands[COMMAND_THROTTLE]>9600/2)" />
+    <define name="AirbrakesOff()" value="(commands[COMMAND_BRAKE]=0)" />
+    <define name="AirbrakesOn()" value="(commands[COMMAND_BRAKE]=SERVO_BRAKE_FULL)" />
+    <!--<define name="Fly()" value="(commands[COMMAND_FORCECRASH]=0)" />-->
+    <!--<define name="ForceCrash()" value="(commands[COMMAND_FORCECRASH]=9600)" />-->
+    <define name="ThrottleHigh()" value="(commands[COMMAND_THROTTLE]>9600/2)" />
   </section>
 
   <servos>
@@ -620,7 +619,6 @@
     <define name="JSBSIM_MODEL" value="Malolo1" type="string"/>
     <define name="COMMANDS_NB" value="4"/>
     <define name="ACTUATOR_NAMES" value="throttle-cmd-norm, aileron-cmd-norm, elevator-cmd-norm, rudder-cmd-norm" type="string[]"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
     <define name="JS_AXIS_MODE" value="4"/>
     <define name="BYPASS_AHRS" value="TRUE"/>
     <define name="BYPASS_INS" value="TRUE"/>

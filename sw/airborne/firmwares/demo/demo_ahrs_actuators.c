@@ -31,10 +31,10 @@
 #define ABI_C
 #define MODULES_C
 
-#include "subsystems/datalink/telemetry.h"
-#include "subsystems/datalink/datalink.h"
-#include "subsystems/datalink/downlink.h"
-#include "subsystems/abi.h"
+#include "modules/datalink/telemetry.h"
+#include "modules/datalink/datalink.h"
+#include "modules/datalink/downlink.h"
+#include "modules/core/abi.h"
 
 #include "generated/airframe.h"
 #include "generated/settings.h"
@@ -46,12 +46,12 @@
 #include "led.h"
 
 #include "state.h"
-#include "subsystems/imu.h"
-#include "subsystems/ahrs.h"
+#include "modules/imu/imu.h"
+#include "modules/ahrs/ahrs.h"
 
-#include "subsystems/commands.h"
-#include "subsystems/actuators.h"
-#include "subsystems/settings.h"
+#include "modules/core/commands.h"
+#include "modules/actuators/actuators.h"
+#include "modules/core/settings.h"
 
 #include "pprz_version.h"
 
@@ -107,9 +107,6 @@ static inline void main_init(void)
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ALIVE, send_alive);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_COMMANDS, send_commands);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ACTUATORS, send_actuators);
-
-  // send body_to_imu from here for now
-  AbiSendMsgBODY_TO_IMU_QUAT(1, orientationGetQuat_f(&imu.body_to_imu));
 }
 
 static inline void main_periodic_task(void)
@@ -127,7 +124,7 @@ static inline void main_periodic_task(void)
     modules_periodic_task();
   }
   RunOnceEvery(10, { LED_PERIODIC();});
-  RunOnceEvery(PERIODIC_FREQUENCY, { datalink_time++; });
+  RunOnceEvery(PERIODIC_FREQUENCY, { datalink_periodic(); });
   periodic_telemetry_send_Main(DefaultPeriodic, &(DefaultChannel).trans_tx, &(DefaultDevice).device);
 
   modules_periodic_task();

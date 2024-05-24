@@ -228,7 +228,8 @@
 #else
 #define STM32_I2C_USE_I2C4                  FALSE
 #endif
-#define STM32_I2C_BUSY_TIMEOUT              50
+#define STM32_I2C_ISR_LIMIT                 6
+#define STM32_I2C_BUSY_TIMEOUT              0
 #define STM32_I2C_I2C1_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 0)
 #define STM32_I2C_I2C1_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 7)
 #define STM32_I2C_I2C2_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 2)
@@ -352,6 +353,7 @@
 #define STM32_SDC_SDMMC_WRITE_TIMEOUT       250
 #define STM32_SDC_SDMMC_READ_TIMEOUT        25
 #define STM32_SDC_SDMMC_CLOCK_DELAY         10
+#define STM32_SDC_SDMMC_PWRSAV              FALSE
 #define STM32_SDC_SDMMC1_DMA_STREAM         STM32_DMA_STREAM_ID(2, 6)
 #define STM32_SDC_SDMMC2_DMA_STREAM         STM32_DMA_STREAM_ID(2, 0)
 #define STM32_SDC_SDMMC1_DMA_PRIORITY       3
@@ -362,45 +364,64 @@
 /*
  * SERIAL driver system settings.
  */
+#ifndef STM32_SERIAL_USE_USART1
 #if USE_UART1
 #define STM32_SERIAL_USE_USART1             TRUE
 #else
 #define STM32_SERIAL_USE_USART1             FALSE
 #endif
+#endif
+
+#ifndef STM32_SERIAL_USE_USART2
 #if USE_UART2
 #define STM32_SERIAL_USE_USART2             TRUE
 #else
 #define STM32_SERIAL_USE_USART2             FALSE
 #endif
+#endif
+
+#ifndef STM32_SERIAL_USE_USART3
 #if USE_UART3
 #define STM32_SERIAL_USE_USART3             TRUE
 #else
 #define STM32_SERIAL_USE_USART3             FALSE
 #endif
+#endif
+
+#ifndef STM32_SERIAL_USE_UART4
 #if USE_UART4
 #define STM32_SERIAL_USE_UART4              TRUE
 #else
 #define STM32_SERIAL_USE_UART4              FALSE
 #endif
-#if USE_UART5
-#define STM32_SERIAL_USE_UART5              TRUE
-#else
-#define STM32_SERIAL_USE_UART5              FALSE
 #endif
+
+#ifndef STM32_SERIAL_USE_UART5
+#define STM32_SERIAL_USE_UART5              TRUE // enabled by default for dshot telemetry
+#endif
+
+#ifndef STM32_SERIAL_USE_USART6
 #if USE_UART6
 #define STM32_SERIAL_USE_USART6             TRUE
 #else
 #define STM32_SERIAL_USE_USART6             FALSE
 #endif
+#endif
+
+#ifndef STM32_SERIAL_USE_UART7
 #if USE_UART7
 #define STM32_SERIAL_USE_UART7              TRUE
 #else
 #define STM32_SERIAL_USE_UART7              FALSE
 #endif
+#endif
+
+#ifndef STM32_SERIAL_USE_UART8
 #if USE_UART8
 #define STM32_SERIAL_USE_UART8              TRUE
 #else
 #define STM32_SERIAL_USE_UART8              FALSE
+#endif
 #endif
 
 /*

@@ -15,13 +15,12 @@
     <depends>udp,datalink_common</depends>
     <provides>datalink,telemetry</provides>
   </dep>
-  <autoload name="telemetry" type="sim"/>
   <header>
     <file name="pprz_dl.h"/>
   </header>
   <init fun="pprz_dl_init()"/>
   <event fun="pprz_dl_event()"/>
-  <makefile target="!fbw|sim">
+  <makefile target="!sim">
     <configure name="MODEM_DEV" default="UDP0" case="upper|lower"/>
     <configure name="MODEM_PORT_OUT" default="4242"/>
     <configure name="MODEM_PORT_IN" default="4243"/>
@@ -37,6 +36,11 @@
     <define name="DATALINK" value="PPRZ"/>
     <file name="pprz_dl.c"/>
     <file name="pprz_transport.c" dir="pprzlink/src"/>
+    <test>
+      <define name="DOWNLINK_DEVICE" value="udp0"/>
+      <define name="USE_UDP"/>
+      <define name="USE_UDP0"/>
+    </test>
   </makefile>
 </module>
 

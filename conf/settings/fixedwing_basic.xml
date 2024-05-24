@@ -20,7 +20,11 @@
     <dl_settings NAME="mode">
       <dl_setting MAX="2" MIN="0" STEP="1" VAR="autopilot.mode" module="autopilot" values="MANUAL|AUTO1|AUTO2|HOME|NOGPS|FAILSAFE"/>
       <dl_setting MAX="1" MIN="0" STEP="1" VAR="autopilot.launch"/>
-      <dl_setting MAX="1" MIN="0" STEP="1" VAR="autopilot.kill_throttle"/>
+      <dl_setting MAX="1" MIN="0" STEP="1" VAR="autopilot.kill_throttle"  module="autopilot" values="Resurrect|Kill" handler="KillThrottle"/>
+    </dl_settings>
+
+    <dl_settings NAME="mcu">
+      <dl_setting var="mcu_reboot" shortname="reboot" min="0" step="1" max="3" values="NORMAL|POWEROFF|FAST|BOOTLOADER" handler="reboot" module="mcu" type="fun"/>
     </dl_settings>
 
   </dl_settings>

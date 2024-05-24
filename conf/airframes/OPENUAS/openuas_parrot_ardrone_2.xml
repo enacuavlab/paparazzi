@@ -145,7 +145,7 @@
     <module name="stabilization" type="indi_simple"/>
     <!-- for later if simple works
     <module name="stabilization" type="indi">
-      <define name="INDI_RPM_FEEDBACK" value="TRUE"/>
+      <define name="STABILIZATION_INDI_RPM_FEEDBACK" value="TRUE"/>
     </module>-->
     <!--<module name="guidance" type="indi"/>--><!-- for later if classic works-->
 
@@ -158,7 +158,6 @@
 
     <module name="geo_mag"/>
 
-    <module name="send_imu_mag_current"/> <!-- enable if airframe has added electronic or other devices, recalibrate and stuffcalibration in this airframefile-->
 
     <module name="nav" type="survey_rectangle_rotorcraft">
       <define name="RECTANGLE_SURVEY_DEFAULT_SWEEP" value="10"/>
@@ -168,7 +167,7 @@
     </module>
 
     <module name="logger_file">
-      <define name="FILE_LOGGER_PATH" value="/data/video"/>
+      <define name="LOGGER_FILE_PATH" value="/data/video"/>
     </module>
 
     <module name="video_thread"/>
@@ -437,9 +436,9 @@ The most crucial part for the magnetometer calibration:
     <define name="FILT_CUTOFF" value="3.2"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN_P" value="0.06"/>
-    <define name="ACT_DYN_Q" value="0.06"/>
-    <define name="ACT_DYN_R" value="0.06"/>
+    <define name="ACT_FREQ_P" value="31.7"/>
+    <define name="ACT_FREQ_Q" value="31.7"/>
+    <define name="ACT_FREQ_R" value="31.7"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/> <!-- make true if all works -->
@@ -525,7 +524,6 @@ The most crucial part for the magnetometer calibration:
     <define name="JSBSIM_MODEL" value="simple_ardrone2" type="string"/>
     <define name="JSBSIM_INIT" value="reset00" type="string"/>
     <define name="WEIGHT" value="0.4"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_ardrone2.h" type="string"/>
   </section>
 
 </airframe>

@@ -4,7 +4,7 @@
   <doc>
     <description>
       Telemetry module for NPS simulation
-      Common parts of comms, not to be used as a stadalone module. Instead, this module
+      Common parts of comms, not to be used as a standalone module. Instead, this module
       is autoloaded where appropriate.
     </description>
     <configure name="MODEM_DEV" value="UDPx" description="UDP port used for communication"/>
@@ -17,7 +17,7 @@
     <depends>udp,datalink_common</depends>
     <provides>datalink,telemetry</provides>
   </dep>
-  <makefile target="nps|hitl">
+  <makefile target="nps">
     <configure name="MODEM_DEV" default="UDP0" case="upper|lower"/>
     <configure name="MODEM_PORT_OUT" default="4242"/>
     <configure name="MODEM_PORT_IN" default="4243"/>

@@ -29,12 +29,12 @@
 #include "modules/stereocam/stereocam.h"
 
 #include "mcu_periph/uart.h"
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 #include "pprzlink/messages.h"
 #include "pprzlink/intermcu_msg.h"
 
 #include "mcu_periph/sys_time.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 
 #include "stereocam_follow_me/follow_me.h"
 
@@ -64,7 +64,7 @@
 
 // general stereocam definitions
 #if !defined(STEREO_BODY_TO_STEREO_PHI) || !defined(STEREO_BODY_TO_STEREO_THETA) || !defined(STEREO_BODY_TO_STEREO_PSI)
-#warning "STEREO_BODY_TO_STEREO_XXX not defined. Using default Euler rotation angles (0,0,0)"
+#pragma message "STEREO_BODY_TO_STEREO_XXX not defined. Using default Euler rotation angles (0,0,0)"
 #endif
 
 #ifndef STEREO_BODY_TO_STEREO_PHI

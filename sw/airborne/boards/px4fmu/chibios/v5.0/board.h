@@ -46,6 +46,41 @@
  */
 #define STM32F767xx
 
+/* allow to define ADC_CHANNEL_VSUPPLY in the airframe file*/
+#ifndef ADC_CHANNEL_VSUPPLY
+#define ADC_CHANNEL_VSUPPLY ADC_1
+#endif
+
+/* allow to define ADC_CHANNEL_CURRENT in the airframe file*/
+#if !defined(ADC_CHANNEL_CURRENT) && !ADC_CURRENT_DISABLE
+#define ADC_CHANNEL_CURRENT ADC_2
+#endif
+
+/* Default powerbrick values */
+#define DefaultVoltageOfAdc(adc) ((3.3f/4096.0f) * 10.3208191126f * adc)
+#define MilliAmpereOfAdc(adc) ((3.3f/4096.0f) * 24000.0f * adc)
+
+/* Battery monitoring for file closing */
+#define SDLOG_BAT_ADC ADCD1
+#define SDLOG_BAT_CHAN AD1_1_CHANNEL
+#define SDLOG_USB_LED 3
+
+/*
+ * PWM TIM defines
+ * enable TIM 1, 4 and 12 by default
+ */
+#ifndef USE_PWM_TIM1
+#define USE_PWM_TIM1 1
+#endif
+
+#ifndef USE_PWM_TIM4
+#define USE_PWM_TIM4 1
+#endif
+
+#ifndef USE_PWM_TIM12
+#define USE_PWM_TIM12 1
+#endif
+
 /*
  * IO pins assignments.
  */
@@ -56,7 +91,7 @@
 #define	PA04_ADC5                      4U
 #define	PA05_FMU_CAP1                  5U
 #define	PA06_SPI1_MISO                 6U
-#define	PA07_HEATER                    7U
+#define	PA07_IMU_HEATER                7U
 #define	PA08_CAN3_RX                   8U
 #define	PA09_USB_VBUS                  9U
 #define	PA10_SERVO2                    10U
@@ -190,7 +225,7 @@
 #define	PI02_SPI2_MISO                 2U
 #define	PI03_SPI2_MOSI                 3U
 #define	PI04_SPI_SLAVE8                4U
-#define	PI05_RC_INPUT                  5U
+#define	PI05_PWM_INPUT1                5U
 #define	PI06_SPI_SLAVE9                6U
 #define	PI07_SPI_SLAVE10               7U
 #define	PI08_SPI_SLAVE11               8U
@@ -246,7 +281,7 @@
 #define	LINE_ADC5                      PAL_LINE(GPIOA, 4U)
 #define	LINE_FMU_CAP1                  PAL_LINE(GPIOA, 5U)
 #define	LINE_SPI1_MISO                 PAL_LINE(GPIOA, 6U)
-#define	LINE_HEATER                    PAL_LINE(GPIOA, 7U)
+#define	LINE_IMU_HEATER                PAL_LINE(GPIOA, 7U)
 #define	LINE_CAN3_RX                   PAL_LINE(GPIOA, 8U)
 #define	LINE_USB_VBUS                  PAL_LINE(GPIOA, 9U)
 #define	LINE_SERVO2                    PAL_LINE(GPIOA, 10U)
@@ -379,7 +414,7 @@
 #define	LINE_SPI2_MISO                 PAL_LINE(GPIOI, 2U)
 #define	LINE_SPI2_MOSI                 PAL_LINE(GPIOI, 3U)
 #define	LINE_SPI_SLAVE8                PAL_LINE(GPIOI, 4U)
-#define	LINE_RC_INPUT                  PAL_LINE(GPIOI, 5U)
+#define	LINE_PWM_INPUT1                PAL_LINE(GPIOI, 5U)
 #define	LINE_SPI_SLAVE9                PAL_LINE(GPIOI, 6U)
 #define	LINE_SPI_SLAVE10               PAL_LINE(GPIOI, 7U)
 #define	LINE_SPI_SLAVE11               PAL_LINE(GPIOI, 8U)
@@ -417,7 +452,7 @@
 					 PIN_MODE_ANALOG(PA04_ADC5) | \
 					 PIN_MODE_INPUT(PA05_FMU_CAP1) | \
 					 PIN_MODE_ALTERNATE(PA06_SPI1_MISO) | \
-					 PIN_MODE_INPUT(PA07_HEATER) | \
+					 PIN_MODE_OUTPUT(PA07_IMU_HEATER) | \
 					 PIN_MODE_ALTERNATE(PA08_CAN3_RX) | \
 					 PIN_MODE_INPUT(PA09_USB_VBUS) | \
 					 PIN_MODE_ALTERNATE(PA10_SERVO2) | \
@@ -434,7 +469,7 @@
 					 PIN_OTYPE_PUSHPULL(PA04_ADC5) | \
 					 PIN_OTYPE_OPENDRAIN(PA05_FMU_CAP1) | \
 					 PIN_OTYPE_PUSHPULL(PA06_SPI1_MISO) | \
-					 PIN_OTYPE_OPENDRAIN(PA07_HEATER) | \
+					 PIN_OTYPE_PUSHPULL(PA07_IMU_HEATER) | \
 					 PIN_OTYPE_PUSHPULL(PA08_CAN3_RX) | \
 					 PIN_OTYPE_OPENDRAIN(PA09_USB_VBUS) | \
 					 PIN_OTYPE_PUSHPULL(PA10_SERVO2) | \
@@ -451,7 +486,7 @@
 					 PIN_OSPEED_SPEED_VERYLOW(PA04_ADC5) | \
 					 PIN_OSPEED_SPEED_VERYLOW(PA05_FMU_CAP1) | \
 					 PIN_OSPEED_SPEED_HIGH(PA06_SPI1_MISO) | \
-					 PIN_OSPEED_SPEED_VERYLOW(PA07_HEATER) | \
+					 PIN_OSPEED_SPEED_HIGH(PA07_IMU_HEATER) | \
 					 PIN_OSPEED_SPEED_HIGH(PA08_CAN3_RX) | \
 					 PIN_OSPEED_SPEED_VERYLOW(PA09_USB_VBUS) | \
 					 PIN_OSPEED_SPEED_HIGH(PA10_SERVO2) | \
@@ -468,7 +503,7 @@
 					 PIN_PUPDR_FLOATING(PA04_ADC5) | \
 					 PIN_PUPDR_PULLDOWN(PA05_FMU_CAP1) | \
 					 PIN_PUPDR_FLOATING(PA06_SPI1_MISO) | \
-					 PIN_PUPDR_PULLDOWN(PA07_HEATER) | \
+					 PIN_PUPDR_FLOATING(PA07_IMU_HEATER) | \
 					 PIN_PUPDR_FLOATING(PA08_CAN3_RX) | \
 					 PIN_PUPDR_PULLDOWN(PA09_USB_VBUS) | \
 					 PIN_PUPDR_FLOATING(PA10_SERVO2) | \
@@ -485,7 +520,7 @@
 					 PIN_ODR_LEVEL_LOW(PA04_ADC5) | \
 					 PIN_ODR_LEVEL_HIGH(PA05_FMU_CAP1) | \
 					 PIN_ODR_LEVEL_HIGH(PA06_SPI1_MISO) | \
-					 PIN_ODR_LEVEL_HIGH(PA07_HEATER) | \
+					 PIN_ODR_LEVEL_LOW(PA07_IMU_HEATER) | \
 					 PIN_ODR_LEVEL_HIGH(PA08_CAN3_RX) | \
 					 PIN_ODR_LEVEL_LOW(PA09_USB_VBUS) | \
 					 PIN_ODR_LEVEL_LOW(PA10_SERVO2) | \
@@ -502,7 +537,7 @@
 					 PIN_AFIO_AF(PA04_ADC5, 0) | \
 					 PIN_AFIO_AF(PA05_FMU_CAP1, 0) | \
 					 PIN_AFIO_AF(PA06_SPI1_MISO, 5) | \
-					 PIN_AFIO_AF(PA07_HEATER, 0))
+					 PIN_AFIO_AF(PA07_IMU_HEATER, 0))
 
 #define VAL_GPIOA_AFRH			(PIN_AFIO_AF(PA08_CAN3_RX, 11) | \
 					 PIN_AFIO_AF(PA09_USB_VBUS, 0) | \
@@ -1239,7 +1274,7 @@
 					 PIN_MODE_ALTERNATE(PI02_SPI2_MISO) | \
 					 PIN_MODE_ALTERNATE(PI03_SPI2_MOSI) | \
 					 PIN_MODE_OUTPUT(PI04_SPI_SLAVE8) | \
-					 PIN_MODE_ALTERNATE(PI05_RC_INPUT) | \
+					 PIN_MODE_ALTERNATE(PI05_PWM_INPUT1) | \
 					 PIN_MODE_OUTPUT(PI06_SPI_SLAVE9) | \
 					 PIN_MODE_OUTPUT(PI07_SPI_SLAVE10) | \
 					 PIN_MODE_OUTPUT(PI08_SPI_SLAVE11) | \
@@ -1256,7 +1291,7 @@
 					 PIN_OTYPE_PUSHPULL(PI02_SPI2_MISO) | \
 					 PIN_OTYPE_PUSHPULL(PI03_SPI2_MOSI) | \
 					 PIN_OTYPE_PUSHPULL(PI04_SPI_SLAVE8) | \
-					 PIN_OTYPE_PUSHPULL(PI05_RC_INPUT) | \
+					 PIN_OTYPE_PUSHPULL(PI05_PWM_INPUT1) | \
 					 PIN_OTYPE_PUSHPULL(PI06_SPI_SLAVE9) | \
 					 PIN_OTYPE_PUSHPULL(PI07_SPI_SLAVE10) | \
 					 PIN_OTYPE_PUSHPULL(PI08_SPI_SLAVE11) | \
@@ -1273,7 +1308,7 @@
 					 PIN_OSPEED_SPEED_HIGH(PI02_SPI2_MISO) | \
 					 PIN_OSPEED_SPEED_HIGH(PI03_SPI2_MOSI) | \
 					 PIN_OSPEED_SPEED_HIGH(PI04_SPI_SLAVE8) | \
-					 PIN_OSPEED_SPEED_HIGH(PI05_RC_INPUT) | \
+					 PIN_OSPEED_SPEED_HIGH(PI05_PWM_INPUT1) | \
 					 PIN_OSPEED_SPEED_HIGH(PI06_SPI_SLAVE9) | \
 					 PIN_OSPEED_SPEED_HIGH(PI07_SPI_SLAVE10) | \
 					 PIN_OSPEED_SPEED_HIGH(PI08_SPI_SLAVE11) | \
@@ -1290,7 +1325,7 @@
 					 PIN_PUPDR_FLOATING(PI02_SPI2_MISO) | \
 					 PIN_PUPDR_FLOATING(PI03_SPI2_MOSI) | \
 					 PIN_PUPDR_FLOATING(PI04_SPI_SLAVE8) | \
-					 PIN_PUPDR_FLOATING(PI05_RC_INPUT) | \
+					 PIN_PUPDR_FLOATING(PI05_PWM_INPUT1) | \
 					 PIN_PUPDR_FLOATING(PI06_SPI_SLAVE9) | \
 					 PIN_PUPDR_FLOATING(PI07_SPI_SLAVE10) | \
 					 PIN_PUPDR_FLOATING(PI08_SPI_SLAVE11) | \
@@ -1307,7 +1342,7 @@
 					 PIN_ODR_LEVEL_HIGH(PI02_SPI2_MISO) | \
 					 PIN_ODR_LEVEL_HIGH(PI03_SPI2_MOSI) | \
 					 PIN_ODR_LEVEL_HIGH(PI04_SPI_SLAVE8) | \
-					 PIN_ODR_LEVEL_HIGH(PI05_RC_INPUT) | \
+					 PIN_ODR_LEVEL_HIGH(PI05_PWM_INPUT1) | \
 					 PIN_ODR_LEVEL_HIGH(PI06_SPI_SLAVE9) | \
 					 PIN_ODR_LEVEL_HIGH(PI07_SPI_SLAVE10) | \
 					 PIN_ODR_LEVEL_HIGH(PI08_SPI_SLAVE11) | \
@@ -1324,7 +1359,7 @@
 					 PIN_AFIO_AF(PI02_SPI2_MISO, 5) | \
 					 PIN_AFIO_AF(PI03_SPI2_MOSI, 5) | \
 					 PIN_AFIO_AF(PI04_SPI_SLAVE8, 0) | \
-					 PIN_AFIO_AF(PI05_RC_INPUT, 3) | \
+					 PIN_AFIO_AF(PI05_PWM_INPUT1, 3) | \
 					 PIN_AFIO_AF(PI06_SPI_SLAVE9, 0) | \
 					 PIN_AFIO_AF(PI07_SPI_SLAVE10, 0))
 
@@ -1671,11 +1706,137 @@
 #define AF_LINE_SPI2_MISO                5U
 #define AF_PI03_SPI2_MOSI                5U
 #define AF_LINE_SPI2_MOSI                5U
-#define AF_PI05_RC_INPUT                 3U
-#define AF_LINE_RC_INPUT                 3U
+#define AF_PI05_PWM_INPUT1               3U
+#define AF_LINE_PWM_INPUT1               3U
 #define AF_PI09_CAN1_RX                  9U
 #define AF_LINE_CAN1_RX                  9U
 
+
+#define ADC1_ADC	 1
+#define ADC1_ADC_FN	 IN
+#define ADC1_ADC_IN	 0
+#define ADC2_ADC	 1
+#define ADC2_ADC_FN	 IN
+#define ADC2_ADC_IN	 1
+#define ADC3_ADC	 1
+#define ADC3_ADC_FN	 IN
+#define ADC3_ADC_IN	 2
+#define ADC4_ADC	 1
+#define ADC4_ADC_FN	 IN
+#define ADC4_ADC_IN	 3
+#define ADC5_ADC	 1
+#define ADC5_ADC_FN	 IN
+#define ADC5_ADC_IN	 4
+#define SERVO2_TIM	 1
+#define SERVO2_TIM_FN	 CH
+#define SERVO2_TIM_CH	 3
+#define SERVO2_TIM_AF	 1
+#define RSSI_IN_ADC	 1
+#define RSSI_IN_ADC_FN	 IN
+#define RSSI_IN_ADC_IN	 8
+#define SCALED_V5_ADC	 1
+#define SCALED_V5_ADC_FN	 IN
+#define SCALED_V5_ADC_IN	 10
+#define SCALED_3V3_SENSORS_ADC	 1
+#define SCALED_3V3_SENSORS_ADC_FN	 IN
+#define SCALED_3V3_SENSORS_ADC_IN	 11
+#define HW_VER_SENSE_ADC	 1
+#define HW_VER_SENSE_ADC_FN	 IN
+#define HW_VER_SENSE_ADC_IN	 12
+#define HW_REV_SENSE_ADC	 1
+#define HW_REV_SENSE_ADC_FN	 IN
+#define HW_REV_SENSE_ADC_IN	 13
+#define ADC6_ADC	 1
+#define ADC6_ADC_FN	 IN
+#define ADC6_ADC_IN	 14
+#define SERVO5_TIM	 4
+#define SERVO5_TIM_FN	 CH
+#define SERVO5_TIM_CH	 2
+#define SERVO5_TIM_AF	 2
+#define SERVO6_TIM	 4
+#define SERVO6_TIM_FN	 CH
+#define SERVO6_TIM_CH	 3
+#define SERVO6_TIM_AF	 2
+#define SERVO4_TIM	 1
+#define SERVO4_TIM_FN	 CH
+#define SERVO4_TIM_CH	 1
+#define SERVO4_TIM_AF	 1
+#define SERVO3_TIM	 1
+#define SERVO3_TIM_FN	 CH
+#define SERVO3_TIM_CH	 2
+#define SERVO3_TIM_AF	 1
+#define SERVO1_TIM	 1
+#define SERVO1_TIM_FN	 CH
+#define SERVO1_TIM_CH	 4
+#define SERVO1_TIM_AF	 1
+#define SERVO7_TIM	 12
+#define SERVO7_TIM_FN	 CH
+#define SERVO7_TIM_CH	 1
+#define SERVO7_TIM_AF	 9
+#define SERVO8_TIM	 12
+#define SERVO8_TIM_FN	 CH
+#define SERVO8_TIM_CH	 2
+#define SERVO8_TIM_AF	 9
+#define PWM_INPUT1_TIM	 8
+#define PWM_INPUT1_TIM_FN	 CH
+#define PWM_INPUT1_TIM_CH	 1
+#define PWM_INPUT1_TIM_AF	 3
+
+#define BOARD_GROUP_DECLFOREACH(line, group) \
+  static const ioline_t group ## _ARRAY[] = {group}; \
+  for (ioline_t i=0, line =  group ## _ARRAY[i]; (i < group ## _SIZE) && (line = group ## _ARRAY[i]); i++)
+
+#define BOARD_GROUP_FOREACH(line, group) \
+  for (ioline_t i=0, line =  group ## _ARRAY[i]; (i < group ## _SIZE) && (line = group ## _ARRAY[i]); i++)
+
+
+#define BOARD_GROUP_DECLFOR(array, index, group)  \
+  static const ioline_t group ## _ARRAY[] = {group};    \
+  for (ioline_t index=0, *array =  (ioline_t *) group ## _ARRAY; index < group ## _SIZE; index++)
+
+#define BOARD_GROUP_FOR(array, index, group)  \
+  for (ioline_t index=0, *array =  (ioline_t *) group ## _ARRAY; index < group ## _SIZE; index++)
+
+#define ENERGY_SAVE_INPUTS \
+	LINE_SERVO2, \
+	LINE_LED1, \
+	LINE_LED2, \
+	LINE_LED3, \
+	LINE_SERVO5, \
+	LINE_SERVO6, \
+	LINE_SERVO4, \
+	LINE_SERVO3, \
+	LINE_LED4, \
+	LINE_SERVO1, \
+	LINE_SPI_SLAVE0, \
+	LINE_SPI_SLAVE1, \
+	LINE_SPI_SLAVE2, \
+	LINE_SPI_SLAVE3, \
+	LINE_SPI_SLAVE4, \
+	LINE_SPI_SLAVE5, \
+	LINE_SPI_SLAVE6, \
+	LINE_SPI_SLAVE7, \
+	LINE_SERVO7, \
+	LINE_SERVO8, \
+	LINE_LED5, \
+	LINE_LED6, \
+	LINE_LED7, \
+	LINE_SPI_SLAVE8, \
+	LINE_SPI_SLAVE9, \
+	LINE_SPI_SLAVE10, \
+	LINE_SPI_SLAVE11, \
+	LINE_SPI_SLAVE12, \
+	LINE_SPI_SLAVE13
+#define ENERGY_SAVE_INPUTS_SIZE 	 29
+
+#define ENERGY_SAVE_LOWS \
+	LINE_V3V3_SENSORS_EN, \
+	LINE_V3V3_SPEKTRUM_EN, \
+	LINE_V5V_HIPOWER_EN, \
+	LINE_V5V_PERIPH_EN, \
+	LINE_V5V_RC_EN, \
+	LINE_V5V_WIFI_EN
+#define ENERGY_SAVE_LOWS_SIZE 	 6
 
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus

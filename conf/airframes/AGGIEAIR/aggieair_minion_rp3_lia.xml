@@ -27,15 +27,6 @@ AggieAir RP3 Minion
       <module name="radio_control" type="spektrum"/>
     </target>
 
-    <target name="hitl" board="pc">
-      <module name="fdm" type="jsbsim"/>
-      <module name="radio_control" type="spektrum"/>
-      <configure name="INS_DEV" value="/dev/ttyUSB1"/>
-      <configure name="INS_BAUD" value="B921600"/>
-      <configure name="AP_DEV" value="/dev/ttyUSB2"/>
-      <configure name="AP_BAUD" value="B921600"/>
-    </target>
-
     <module name="control"/>
     <module name="navigation"/>
 
@@ -279,7 +270,6 @@ AggieAir RP3 Minion
   <section name="SIMULATOR" prefix="NPS_">
     <define name="JSBSIM_LAUNCHSPEED" value="25"/>
     <define name="JSBSIM_MODEL" value="AGGIEAIR/minion" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
     <define name="JS_AXIS_THROTTLE" value="0"/>
     <define name="JS_AXIS_THROTTLE_REVERSED" value="1"/>
 

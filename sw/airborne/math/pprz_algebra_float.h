@@ -145,7 +145,7 @@ static inline float float_vect2_norm(struct FloatVect2 *v)
 static inline void float_vect2_normalize(struct FloatVect2 *v)
 {
   const float n = float_vect2_norm(v);
-  if (n > 0) {
+  if (n > 1e-4f) {
     v->x /= n;
     v->y /= n;
   }
@@ -177,7 +177,7 @@ static inline float float_vect3_norm(struct FloatVect3 *v)
 static inline void float_vect3_normalize(struct FloatVect3 *v)
 {
   const float n = float_vect3_norm(v);
-  if (n > 0) {
+  if (n > 1e-4f) {
     v->x /= n;
     v->y /= n;
     v->z /= n;
@@ -728,6 +728,25 @@ static inline void float_mat_mul(float **o, float **a, float **b, int m, int n, 
   }
 }
 
+/** o = a * b'
+ *
+ * a: [m x n]
+ * b: [l x n]
+ * o: [m x l]
+ */
+static inline void float_mat_mul_transpose(float **o, float **a, float **b, int m, int n, int l)
+{
+  int i, j, k;
+  for (i = 0; i < m; i++) {
+    for (j = 0; j < l; j++) {
+      o[i][j] = 0.;
+      for (k = 0; k < n; k++) {
+        o[i][j] += a[i][k] * b[j][k];
+      }
+    }
+  }
+}
+
 /** o = a * b
  *
  * a: [m x n]
@@ -862,12 +881,42 @@ static inline void float_mat_diagonal_scal(float **o, float v, int n)
   }
 }
 
+
+/** Divide a matrix by a scalar */
+static inline void float_mat_div_scalar(float **o, float **a, float scalar, int m, int n)
+{
+   int i, j;
+   for (i = 0; i < m; i++) {
+     for (j = 0; j < n; j++) {
+         o[i][j] = a[i][j] / scalar;
+     }
+   }
+}
+
+/** Multiply a matrix by a scalar */
+static inline void float_mat_mul_scalar(float **o, float **a, float scalar, int m, int n)
+{
+   int i, j;
+   for (i = 0; i < m; i++) {
+     for (j = 0; j < n; j++) {
+         o[i][j] = a[i][j] * scalar;
+     }
+   }
+}
+
+
+
 extern bool float_mat_inv_2d(float inv_out[4], float mat_in[4]);
 extern void float_mat2_mult(struct FloatVect2 *vect_out, float mat[4], struct FloatVect2 vect_in);
-extern bool float_mat_inv_4d(float invOut[16], float mat_in[16]);
+extern bool float_mat_inv_3d(float inv_out[3][3], float mat_in[3][3]);
+extern void float_mat3_mult(struct FloatVect3 *vect_out, float mat[3][3], struct FloatVect3 vect_in);
+extern bool float_mat_inv_4d(float invOut[4][4], float mat_in[4][4]);
 
-extern void vect_bound_in_2d(struct FloatVect3 *vect3, float bound);
-extern void vect_scale(struct FloatVect3 *vect3, float norm_des);
+extern void float_vect3_bound_in_2d(struct FloatVect3 *vect3, float bound);
+extern void float_vect3_bound_in_3d(struct FloatVect3 *vect3, float bound);
+extern void float_vect3_scale_in_2d(struct FloatVect3 *vect3, float norm_des);
+extern void float_vect2_bound_in_2d(struct FloatVect2 *vect2, float bound);
+extern void float_vect2_scale_in_2d(struct FloatVect2 *vect2, float norm_des);
 
 #ifdef __cplusplus
 } /* extern "C" */

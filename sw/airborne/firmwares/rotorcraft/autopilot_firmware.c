@@ -32,12 +32,12 @@
 
 #include <stdint.h>
 //#include "mcu_periph/sys_time.h"
-#include "subsystems/electrical.h"
-#include "subsystems/datalink/telemetry.h"
-#include "subsystems/radio_control.h"
+#include "modules/energy/electrical.h"
+#include "modules/datalink/telemetry.h"
+#include "modules/radio_control/radio_control.h"
 
 #if USE_GPS
-#include "subsystems/gps.h"
+#include "modules/gps/gps.h"
 #else
 #if NO_GPS_NEEDED_FOR_NAV
 #define GpsIsLost() FALSE
@@ -77,9 +77,38 @@ static uint32_t autopilot_in_flight_counter;
 #define THRESHOLD_GROUND_DETECT 25.0
 #endif
 
+/** Default ground-detection estimation based on accelerometer shock */
+bool WEAK autopilot_ground_detection(void) {
+  struct NedCoor_f *accel = stateGetAccelNed_f();
+  if (accel->z < -THRESHOLD_GROUND_DETECT ||
+      accel->z > THRESHOLD_GROUND_DETECT) {
+    return true;
+  }
+  return false;
+}
+
+
+/** Default end-of-in-flight detection estimation based on thrust and speed */
+bool WEAK autopilot_in_flight_end_detection(bool motors_on UNUSED) {
+  if (autopilot_in_flight_counter > 0) {
+    /* probably in_flight if thrust, speed and accel above IN_FLIGHT_MIN thresholds */
+    if ((stabilization.cmd[COMMAND_THRUST] <= AUTOPILOT_IN_FLIGHT_MIN_THRUST) &&
+        (fabsf(stateGetSpeedNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_SPEED) &&
+        (fabsf(stateGetAccelNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_ACCEL)) {
+      autopilot_in_flight_counter--;
+      if (autopilot_in_flight_counter == 0) {
+        return true;
+      }
+    } else { /* thrust, speed or accel not above min threshold, reset counter */
+      autopilot_in_flight_counter = AUTOPILOT_IN_FLIGHT_TIME;
+    }
+  }
+  return false;
+}
+
 
 #if USE_MOTOR_MIXING
-#include "subsystems/actuators/motor_mixing.h"
+#include "modules/actuators/motor_mixing.h"
 #endif
 
 static void send_status(struct transport_tx *trans, struct link_device *dev)
@@ -102,46 +131,64 @@ static void send_status(struct transport_tx *trans, struct link_device *dev)
                                   &imu_nb_err, &_motor_nb_err,
                                   &radio_control.status, &radio_control.frame_rate,
                                   &fix, &autopilot.mode, &in_flight, &motors_on,
-                                  &autopilot.arming_status, &guidance_h.mode, &guidance_v_mode,
-                                  &time_sec, &electrical.vsupply);
+                                  &autopilot.arming_status, &guidance_h.mode, &guidance_v.mode,
+                                  &time_sec, &electrical.vsupply, &electrical.vboard);
 }
 
 static void send_energy(struct transport_tx *trans, struct link_device *dev)
 {
   uint8_t throttle = 100 * autopilot.throttle / MAX_PPRZ;
   float power = electrical.vsupply * electrical.current;
+  float avg_power = 0;
+  if(electrical.avg_cnt != 0) {
+    avg_power = (float)electrical.avg_power / electrical.avg_cnt;
+  }
+  
   pprz_msg_send_ENERGY(trans, dev, AC_ID,
-                       &throttle, &electrical.vsupply, &electrical.current, &power, &electrical.charge, &electrical.energy);
+                       &throttle, &electrical.vsupply, &electrical.current, &power, &avg_power, &electrical.charge, &electrical.energy);
 }
 
 static void send_fp(struct transport_tx *trans, struct link_device *dev)
 {
-  int32_t carrot_up = -guidance_v_z_sp;
+  int32_t carrot_up = -guidance_v.z_sp;
   int32_t carrot_heading = ANGLE_BFP_OF_REAL(guidance_h.sp.heading);
   int32_t thrust = (int32_t)autopilot.throttle;
+  struct EnuCoor_i *pos = stateGetPositionEnu_i();
 #if GUIDANCE_INDI_HYBRID
   struct FloatEulers eulers_zxy;
   float_eulers_of_quat_zxy(&eulers_zxy, stateGetNedToBodyQuat_f());
-  int32_t state_psi = ANGLE_BFP_OF_REAL(eulers_zxy.psi);
+  struct Int32Eulers att;
+  EULERS_BFP_OF_REAL(att, eulers_zxy);
 #else
-  int32_t state_psi = stateGetNedToBodyEulers_i()->psi;
+  struct Int32Eulers att = *stateGetNedToBodyEulers_i();
 #endif
   pprz_msg_send_ROTORCRAFT_FP(trans, dev, AC_ID,
-                              &(stateGetPositionEnu_i()->x),
-                              &(stateGetPositionEnu_i()->y),
-                              &(stateGetPositionEnu_i()->z),
+                              &pos->x,
+                              &pos->y,
+                              &pos->z,
                               &(stateGetSpeedEnu_i()->x),
                               &(stateGetSpeedEnu_i()->y),
                               &(stateGetSpeedEnu_i()->z),
-                              &(stateGetNedToBodyEulers_i()->phi),
-                              &(stateGetNedToBodyEulers_i()->theta),
-                              &state_psi,
+                              &att.phi,
+                              &att.theta,
+                              &att.psi,
                               &guidance_h.sp.pos.y,
                               &guidance_h.sp.pos.x,
                               &carrot_up,
                               &carrot_heading,
                               &thrust,
                               &autopilot.flight_time);
+}
+
+static void send_body_rates_accel(struct transport_tx *trans, struct link_device *dev)
+{
+  pprz_msg_send_BODY_RATES_ACCEL(trans, dev, AC_ID,
+                                  &(stateGetBodyRates_f()->p),
+                                  &(stateGetBodyRates_f()->q),
+                                  &(stateGetBodyRates_f()->r),
+                                  &(stateGetAccelBody_i()->x),
+                                  &(stateGetAccelBody_i()->y),
+                                  &(stateGetAccelBody_i()->z));
 }
 
 static void send_fp_min(struct transport_tx *trans, struct link_device *dev)
@@ -178,20 +225,26 @@ static void send_rotorcraft_rc(struct transport_tx *trans, struct link_device *d
 }
 #endif
 
+#if defined(COMMAND_ROLL) && defined(COMMAND_PITCH) && defined(COMMAND_YAW)
 static void send_rotorcraft_cmd(struct transport_tx *trans, struct link_device *dev)
 {
   pprz_msg_send_ROTORCRAFT_CMD(trans, dev, AC_ID,
-                               &stabilization_cmd[COMMAND_ROLL],
-                               &stabilization_cmd[COMMAND_PITCH],
-                               &stabilization_cmd[COMMAND_YAW],
-                               &stabilization_cmd[COMMAND_THRUST]);
+                               &stabilization.cmd[COMMAND_ROLL],
+                               &stabilization.cmd[COMMAND_PITCH],
+                               &stabilization.cmd[COMMAND_YAW],
+                               &stabilization.cmd[COMMAND_THRUST]);
 }
+#else
+static void send_rotorcraft_cmd(struct transport_tx *trans UNUSED, struct link_device *dev UNUSED) {}
+#endif
 
 
 void autopilot_firmware_init(void)
 {
   autopilot_in_flight_counter = 0;
+#ifdef MODE_AUTO2
   autopilot_mode_auto2 = MODE_AUTO2;
+#endif
 
   // register messages
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROTORCRAFT_STATUS, send_status);
@@ -199,6 +252,7 @@ void autopilot_firmware_init(void)
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROTORCRAFT_FP, send_fp);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROTORCRAFT_FP_MIN, send_fp_min);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROTORCRAFT_CMD, send_rotorcraft_cmd);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_BODY_RATES_ACCEL, send_body_rates_accel);
 #ifdef RADIO_CONTROL
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROTORCRAFT_RADIO_CONTROL, send_rotorcraft_rc);
 #endif
@@ -215,9 +269,7 @@ void autopilot_event(void)
       || autopilot.mode == AP_MODE_FAILSAFE
 #endif
      ) {
-    struct NedCoor_f *accel = stateGetAccelNed_f();
-    if (accel->z < -THRESHOLD_GROUND_DETECT ||
-        accel->z > THRESHOLD_GROUND_DETECT) {
+    if (autopilot_ground_detection()) {
       autopilot.ground_detected = true;
       autopilot.detect_ground_once = false;
     }
@@ -236,18 +288,9 @@ void autopilot_reset_in_flight_counter(void)
 void autopilot_check_in_flight(bool motors_on)
 {
   if (autopilot.in_flight) {
-    if (autopilot_in_flight_counter > 0) {
-      /* probably in_flight if thrust, speed and accel above IN_FLIGHT_MIN thresholds */
-      if ((stabilization_cmd[COMMAND_THRUST] <= AUTOPILOT_IN_FLIGHT_MIN_THRUST) &&
-          (fabsf(stateGetSpeedNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_SPEED) &&
-          (fabsf(stateGetAccelNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_ACCEL)) {
-        autopilot_in_flight_counter--;
-        if (autopilot_in_flight_counter == 0) {
-          autopilot.in_flight = false;
-        }
-      } else { /* thrust, speed or accel not above min threshold, reset counter */
-        autopilot_in_flight_counter = AUTOPILOT_IN_FLIGHT_TIME;
-      }
+    if (autopilot_in_flight_end_detection(motors_on)) {
+      autopilot.in_flight = false;
+      autopilot_in_flight_counter = 0;
     }
   } else { /* currently not in flight */
     if (autopilot_in_flight_counter < AUTOPILOT_IN_FLIGHT_TIME &&
@@ -255,7 +298,7 @@ void autopilot_check_in_flight(bool motors_on)
       /* if thrust above min threshold, assume in_flight.
        * Don't check for velocity and acceleration above threshold here...
        */
-      if (stabilization_cmd[COMMAND_THRUST] > AUTOPILOT_IN_FLIGHT_MIN_THRUST) {
+      if (stabilization.cmd[COMMAND_THRUST] > AUTOPILOT_IN_FLIGHT_MIN_THRUST) {
         autopilot_in_flight_counter++;
         if (autopilot_in_flight_counter == AUTOPILOT_IN_FLIGHT_TIME) {
           autopilot.in_flight = true;

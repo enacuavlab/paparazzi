@@ -140,13 +140,20 @@ void image_to_grayscale(struct image_t *input, struct image_t *output)
   output->pprz_ts = input->pprz_ts;
 
   // Copy the pixels
-  for (int y = 0; y < output->h; y++) {
-    for (int x = 0; x < output->w; x++) {
-      if (output->type == IMAGE_YUV422) {
+  int height = output->h;
+  int width = output->w;
+  if (output->type == IMAGE_YUV422) {
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
         *dest++ = 127;  // U / V
+        *dest++ = *source;    // Y
+        source += 2;
       }
-      *dest++ = *source;    // Y
-      source += 2;
+    }
+  } else {
+    for (int y = 0; y < height * width; y++) {
+        *dest++ = *source++;    // Y
+        source++;
     }
   }
 }
@@ -394,9 +401,10 @@ void image_add_border(struct image_t *input, struct image_t *output, uint8_t bor
 
 /**
  * This function takes previous padded pyramid level and outputs next level of pyramid without padding.
- * For calculating new pixel value 5x5 filter matrix suggested by Bouguet is used:
- * [1/16 1/8 3/4 1/8 1/16]' x [1/16 1/8 3/4 1/8 1/16]
- * To avoid decimal numbers, all coefficients are multiplied by 10000.
+ * For calculating new pixel value 3x3 Gaussian filter matrix is used:
+ * [1/4 1/2 1/4]' x [1/4 1/2 1/4]
+ * Blur and downsample is performed with two 1D convolutions (horizontal then vertical)
+ * instead of a single 2D convolution, to increase performance
  *
  * @param[in]  *input  - input image (grayscale only)
  * @param[out] *output - the output image
@@ -415,27 +423,30 @@ void pyramid_next_level(struct image_t *input, struct image_t *output, uint8_t b
   uint16_t w = input->w;
   int32_t sum = 0;
 
+  // Horizontal convolution
   for (uint16_t i = 0; i != output->h; i++) {
-
     for (uint16_t j = 0; j != output->w; j++) {
       row = border_size + 2 * i; // First skip border, then every second pixel
       col = border_size + 2 * j;
 
-      sum =    39 * (input_buf[(row - 2) * w + (col - 2)] + input_buf[(row - 2) * w + (col + 2)] +
-                     input_buf[(row + 2) * w + (col - 2)] + input_buf[(row + 2) * w + (col + 2)]);
-      sum +=  156 * (input_buf[(row - 2) * w + (col - 1)] + input_buf[(row - 2) * w + (col + 1)] +
-                     input_buf[(row - 1) * w + (col + 2)] + input_buf[(row + 1) * w + (col - 2)]
-                     + input_buf[(row + 1) * w + (col + 2)] + input_buf[(row + 2) * w + (col - 1)] + input_buf[(row + 2) * w + (col + 1)] +
-                     input_buf[(row - 1) * w + (col - 2)]);
-      sum +=  234 * (input_buf[(row - 2) * w + (col)] + input_buf[(row) * w    + (col - 2)] +
-                     input_buf[(row) * w    + (col + 2)] + input_buf[(row + 2) * w + (col)]);
-      sum +=  625 * (input_buf[(row - 1) * w + (col - 1)] + input_buf[(row - 1) * w + (col + 1)] +
-                     input_buf[(row + 1) * w + (col - 1)] + input_buf[(row + 1) * w + (col + 1)]);
-      sum +=  938 * (input_buf[(row - 1) * w + (col)] + input_buf[(row) * w    + (col - 1)] +
-                     input_buf[(row) * w    + (col + 1)] + input_buf[(row + 1) * w + (col)]);
-      sum += 1406 * input_buf[(row) * w    + (col)];
+      sum = (input_buf[row * w + col]) >> 1;
+      sum += (input_buf[row * w + col + 1] + input_buf[row * w + col - 1]) >> 2;
 
-      output_buf[i * output->w + j] = sum / 10000;
+      output_buf[i * output->w + j] = sum;
+    }
+  }
+  // Vertical convolution
+  w = output->w;
+  for (uint16_t i = 0; i != output->h - border_size; i++) {
+    for (uint16_t j = 0; j != output->w - border_size; j++) {
+      // Wrong to add border_size again, but offset of a few px acceptable inaccuracy
+      row = border_size + i;
+      col = border_size + j;
+
+      sum = (output_buf[row * w + col]) >> 1;
+      sum += (output_buf[(row + 1) * w + col] + output_buf[(row - 1) * w + col]) >> 2;
+
+      output_buf[i * output->w + j] = sum;
     }
   }
 }
@@ -987,4 +998,185 @@ void image_draw_line_color(struct image_t *img, struct point_t *from, struct poi
       starty += incy;
     }
   }
+}
+
+
+/**
+ * Kernel multiplication for a 3 x 3 kernel.
+ * Pixels outside the edges are taken to be 0.
+ * @param[in] source The source values
+ * @param[in] kernel The kernel values
+ * @param total The kernel total, set to 1 if the result should not be normalised
+ * @param setting Variable is used to indicate which pixels the multiplication uses at a specific edges.
+ * @param YUV A bool that adds an extra pixel offset if the YUV format is used.
+ */
+uint8_t ker_mul_3x3(uint8_t const *source, int_fast8_t const *kernel, uint8_t total, uint8_t setting, int width, int YUV) {
+    int value;
+    int offset = 1 + YUV;
+
+    switch (setting) {
+        default: {  // No edge
+            value = *(source - offset - width) * kernel[0] + *(source - width) * kernel[1] + *(source + offset - width) * kernel[2] +
+                    *(source - offset) * kernel[3]         + *source * kernel[4]           + *(source + offset) * kernel[5] +
+                    *(source - offset + width) * kernel[6] + *(source + width) * kernel[7] + *(source + offset + width) * kernel[8];
+            break; }
+        case 1: { // Upper Edge
+            value = *(source - offset) * kernel[3]         + *source * kernel[4]           + *(source + offset) * kernel[5] +
+                    *(source - offset + width) * kernel[6] + *(source + width) * kernel[7] + *(source + offset + width) * kernel[8];
+            break; }
+        case 2: { // Lower Edge
+            value = *(source - offset - width) * kernel[0] + *(source - width) * kernel[1] + *(source + offset - width) * kernel[2] +
+                    *(source - offset) * kernel[3]         + *source * kernel[4]           + *(source + offset) * kernel[5];
+            break; }
+        case 3: { // Left Edge
+            value = *(source - width) * kernel[1] + *(source + offset - width) * kernel[2] +
+                    *source * kernel[4]           + *(source + offset) * kernel[5] +
+                    *(source + width) * kernel[7] + *(source + offset + width) * kernel[8];
+            break; }
+        case 4: { // Right Edge
+            value = *(source - offset - width) * kernel[0] + *(source - width) * kernel[1] +
+                    *(source - offset) * kernel[3]         + *source * kernel[4] +
+                    *(source - offset + width) * kernel[6] + *(source + width) * kernel[7];
+            break; }
+        case 5: {// Top Left Corner
+            value = *source * kernel[4]           + *(source + offset) * kernel[5] +
+                    *(source + width) * kernel[7] + *(source + offset + width) * kernel[8];
+            break; }
+        case 6: {// Top Right Corner
+            value = *(source - offset) * kernel[3]         + *source * kernel[4] +
+                    *(source - offset + width) * kernel[6] + *(source + width) * kernel[7];
+            break; }
+        case 7: {// Bottom Left Corner
+            value = *(source - width) * kernel[1] + *(source + offset - width) * kernel[2] +
+                    *source * kernel[4]           + *(source + offset) * kernel[5];
+            break; }
+        case 8: {// Bottom Right Corner
+            value = *(source - offset - width) * kernel[0] + *(source - width) * kernel[1] +
+                    *(source - offset) * kernel[3]         + *source * kernel[4];
+            break; }
+    }
+
+    return (uint8_t) ((int) abs(value) / total);
+}
+
+/**
+ * Image convolution for a 3x3 kernel
+ * @param[in] input Input image
+ * @param[in,out] output Output image
+ * @param[in] kernel The kernel values
+*/
+void image_convolution_3x3(struct image_t *input, struct image_t *output, int_fast8_t const *kernel, uint8_t kernel_total) {
+    // Copy buffer pointers
+    uint8_t *source = input->buf;
+    uint8_t *dest = output->buf;
+
+    // Copy the creation timestamp (stays the same)
+    output->ts = input->ts;
+    output->eulers = input->eulers;
+    output->pprz_ts = input->pprz_ts;
+
+    int height = output->h;
+    int width = output->w;
+
+    if (output->type == IMAGE_YUV422) {
+        // Skip The first U/V value
+        *dest++ = 127;
+        source++;
+
+        // Top Left Corner
+        *dest++ = ker_mul_3x3(source, kernel, kernel_total, 5, 2 * width, 1);
+        source += 2;
+        *dest++ = 127;
+
+        // Upper Edge
+        for (int x = 1; x < width - 1; x++) {
+            *dest++ = ker_mul_3x3(source, kernel, kernel_total, 1, 2 * width, 1);
+            source += 2;
+            *dest++ = 127;
+        }
+
+        // Top Right Corner
+        *dest++ = ker_mul_3x3(source, kernel, kernel_total, 6, 2 * width, 1);
+        source += 2;
+        *dest++ = 127;
+
+        for (int y = 1; y < height - 1; y++) {
+            // Left Edge
+            *dest++ = ker_mul_3x3(source, kernel, kernel_total, 3, 2 * width, 1);
+            source += 2;
+            *dest++ = 127;
+
+            // Middle
+            for (int x = 1; x < width - 1; x++) {
+                *dest++ = ker_mul_3x3(source, kernel, kernel_total, 0, 2 * width, 1);
+                source += 2;
+                *dest++ = 127;
+            }
+
+            // Right Edge
+            *dest++ = ker_mul_3x3(source, kernel, kernel_total, 4, 2 * width, 1);
+            source += 2;
+            *dest++ = 127;
+        }
+
+        // Bottom Left Corner
+        *dest++ = ker_mul_3x3(source, kernel, kernel_total, 7, 2 * width, 1);
+        source += 2;
+        *dest++ = 127;
+
+        // Bottom Edge
+        for (int x = 1; x < width - 1; x++) {
+            *dest++ = ker_mul_3x3(source, kernel, kernel_total, 2, 2 * width, 1);
+            source += 2;
+            *dest++ = 127;
+        }
+
+        // Bottom Right Corner
+        *dest = ker_mul_3x3(source, kernel, kernel_total, 8, 2 * width, 1);
+    } else {
+        if (output->type == IMAGE_GRAYSCALE) {
+            // Top Left Corner
+            *dest++ = ker_mul_3x3(source, kernel, kernel_total, 5, width, 0);
+            source++;
+
+            // Upper Edge
+            for (int x = 1; x < width - 1; x++) {
+                *dest++ = ker_mul_3x3(source, kernel, kernel_total, 1, width, 0);
+                source++;
+            }
+
+            // Top Right Corner
+            *dest++ = ker_mul_3x3(source, kernel, kernel_total, 6, width, 0);
+            source++;
+
+            for (int y = 1; y < height - 1; y++) {
+                // Left Edge
+                *dest++ = ker_mul_3x3(source, kernel, kernel_total, 3, width, 0);
+                source++;
+
+                // Middle
+                for (int x = 1; x < width - 1; x++) {
+                    *dest++ = ker_mul_3x3(source, kernel, kernel_total, 0, width, 0);
+                    source++;
+                }
+
+                // Right Edge
+                *dest++ = ker_mul_3x3(source, kernel, kernel_total, 4, width, 0);
+                source++;
+            }
+
+            // Bottom Left Corner
+            *dest++ = ker_mul_3x3(source, kernel, kernel_total, 7, width, 0);
+            source++;
+
+            // Bottom Edge
+            for (int x = 1; x < width - 1; x++) {
+                *dest++ = ker_mul_3x3(source, kernel, kernel_total, 2, width, 0);
+                source++;
+            }
+
+            // Bottom Right Corner
+            *dest = ker_mul_3x3(source, kernel, kernel_total, 8, width, 0);
+        }
+    }
 }

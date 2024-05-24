@@ -61,6 +61,12 @@ let parse_configure = fun xml ->
   { cname = find_name xml; cvalue = get "value"; case = get "case";
     default = get "default"; cdescription = get "description" }
 
+type field = {
+    finame: string option;
+    fivalue: string option;
+    fitype: string option
+  }
+
 type define = {
     dname: string;
     dvalue: string option;
@@ -68,8 +74,14 @@ type define = {
     dunit: string option;
     dtype: string option;
     ddescription: string option;
-    cond: string option
+    cond: string option;
+    fields: field list
   }
+
+let parse_field = fun xml ->
+  { finame = ExtXml.attrib_opt xml "name";
+    fivalue = ExtXml.attrib_opt xml "value";
+    fitype = ExtXml.attrib_opt xml "type" }
 
 let parse_define = fun xml ->
   let get = fun x -> ExtXml.attrib_opt xml x in
@@ -77,7 +89,8 @@ let parse_define = fun xml ->
     integer = begin match get "integer" with
       | None -> None | Some i -> Some (int_of_string i) end;
     dunit = get "unit"; dtype = get "type";
-    ddescription = get "description"; cond = get "cond" }
+    ddescription = get "description"; cond = get "cond";
+    fields = List.map parse_field (Xml.children xml)  }
 
 type incl = { element: string; condition: string option }
 
@@ -201,7 +214,14 @@ let make_event = fun f cond ->
   }
 
 
-type datalink = { message: string; func: string }
+type datalink = { message: string; func: string; dl_class: string option; cond: string option }
+
+let make_datalink = fun f m cl cond ->
+  { message = m;
+    func = f;
+    dl_class = cl;
+    cond = cond
+  }
 
 let fprint_datalink = fun ch d ->
   Printf.fprintf ch "(msg_id == DL_%s) { %s; }\n" d.message d.func
@@ -210,6 +230,8 @@ type dependencies = {
     requires: GC.bool_expr list;
     conflicts: string list;
     provides: string list;
+    recommends: GC.bool_expr list;
+    suggests: string list;
   }
 
 (* comma separated values *)
@@ -219,7 +241,7 @@ let parse_func_list = fun l -> List.map (fun x -> "@"^x) (Str.split (Str.regexp 
 (* pipe separated values *)
 let parse_module_options = Str.split (Str.regexp "[ \t]*|[ \t]*")
 
-let empty_dep = { requires = []; conflicts = []; provides = [] }
+let empty_dep = { requires = []; conflicts = []; provides = []; recommends = []; suggests = [] }
 
 let rec parse_dependencies dep = function
   | Xml.Element ("dep", _, children) ->
@@ -230,12 +252,11 @@ let rec parse_dependencies dep = function
     { dep with conflicts = parse_comma_list conflicts }
   | Xml.Element ("provides", _, [Xml.PCData provides]) ->
     { dep with provides = parse_func_list provides }
+  | Xml.Element ("recommends", _, [Xml.PCData recommends]) ->
+    { dep with recommends = List.map (fun x -> GC.bool_expr_of_string (Some x)) (parse_comma_list recommends) }
+  | Xml.Element ("suggests", _, [Xml.PCData suggests]) ->
+    { dep with suggests = parse_comma_list suggests }
   | _ -> failwith "Module.parse_dependencies: unreachable"
-
-type autoload = {
-    aname: string;
-    atype: string option
-  }
 
 type config = { name: string;
                 mtype: string option;
@@ -262,7 +283,6 @@ type t = {
   path: string;
   doc: Xml.xml;
   dependencies: dependencies option;
-  autoloads: autoload list;
   settings: Settings.t list;
   headers: file list;
   inits: init list;
@@ -276,7 +296,7 @@ type t = {
 let empty =
   { xml_filename = ""; name = ""; dir = None;
     task = None; path = ""; doc = Xml.Element ("doc", [], []);
-    dependencies = None; autoloads = []; settings = [];
+    dependencies = None; settings = [];
     headers = []; inits = []; periodics = []; events = []; datalinks = [];
     makefiles = []; xml = Xml.Element ("module", [], []) }
 
@@ -292,10 +312,6 @@ let rec parse_xml m = function
     { m with settings = Settings.from_xml xml :: m.settings }
   | Xml.Element ("dep", _, _) as xml ->
     { m with dependencies = Some (parse_dependencies empty_dep xml) }
-  | Xml.Element ("autoload", _, []) as xml ->
-    let aname = find_name xml
-    and atype = ExtXml.attrib_opt xml "type" in
-    { m with autoloads = { aname; atype } :: m.autoloads }
   | Xml.Element ("header", [], files) ->
     { m with headers =
                List.fold_left (fun acc f -> parse_file f :: acc) m.headers files
@@ -312,8 +328,10 @@ let rec parse_xml m = function
     { m with events = make_event f c :: m.events }
   | Xml.Element ("datalink", _, []) as xml ->
     let message = Xml.attrib xml "message"
-    and func = Xml.attrib xml "fun" in
-    { m with datalinks = { message; func } :: m.datalinks }
+    and func = Xml.attrib xml "fun"
+    and dl_class = ExtXml.attrib_opt xml "class"
+    and c = ExtXml.attrib_opt xml "cond" in
+    { m with datalinks = make_datalink func  message dl_class c :: m.datalinks }
   | Xml.Element ("makefile", _, _) as xml ->
     { m with makefiles = parse_makefile empty_makefile xml :: m.makefiles }
   | _ -> failwith "Module.parse_xml: unreachable"
@@ -327,12 +345,12 @@ let from_xml = fun xml ->
     makefiles = List.rev m.makefiles
   }
 
-let from_file = fun filename -> from_xml (Xml.parse_file filename)
+let from_file = fun filename -> from_xml (ExtXml.parse_file filename)
 
 (** search and parse a module xml file and return a Module.t *)
 (* FIXME search folder path: <PPRZ_PATH>/*/<module_name[_type]>.xml *)
 exception Module_not_found of string
-let from_module_name = fun name mtype ->
+let from_module_name = fun mtype name ->
   (* concat module type if needed *)
   let name = match mtype with Some t -> name ^ "_" ^ t | None -> name in
   (* determine if name already have an extension *)

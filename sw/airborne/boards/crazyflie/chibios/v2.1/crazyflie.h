@@ -23,40 +23,40 @@
 #ifndef USE_LED_1
 #define USE_LED_1 1
 #endif
-#define LED_1_GPIO LED_RED_R_PORT
-#define LED_1_GPIO_PIN LED_RED_R
+#define LED_1_GPIO PAL_PORT(LINE_LED_RED_R)
+#define LED_1_GPIO_PIN PAL_PAD(LINE_LED_RED_R)
 #define LED_1_GPIO_ON gpio_clear
 #define LED_1_GPIO_OFF gpio_set
 
 #ifndef USE_LED_2
 #define USE_LED_2 1
 #endif
-#define LED_2_GPIO LED_RED_L_PORT
-#define LED_2_GPIO_PIN LED_RED_L
+#define LED_2_GPIO PAL_PORT(LINE_LED_RED_L)
+#define LED_2_GPIO_PIN PAL_PAD(LINE_LED_RED_L)
 #define LED_2_GPIO_ON gpio_clear
 #define LED_2_GPIO_OFF gpio_set
 
 #ifndef USE_LED_3
 #define USE_LED_3 1
 #endif
-#define LED_3_GPIO LED_GREEN_R_PORT
-#define LED_3_GPIO_PIN LED_GREEN_R
+#define LED_3_GPIO PAL_PORT(LINE_LED_GREEN_R)
+#define LED_3_GPIO_PIN PAL_PAD(LINE_LED_GREEN_R)
 #define LED_3_GPIO_ON gpio_clear
 #define LED_3_GPIO_OFF gpio_set
 
 #ifndef USE_LED_4
 #define USE_LED_4 1
 #endif
-#define LED_4_GPIO LED_GREEN_L_PORT
-#define LED_4_GPIO_PIN LED_GREEN_L
+#define LED_4_GPIO PAL_PORT(LINE_LED_GREEN_L)
+#define LED_4_GPIO_PIN PAL_PAD(LINE_LED_GREEN_L)
 #define LED_4_GPIO_ON gpio_clear
 #define LED_4_GPIO_OFF gpio_set
 
 #ifndef USE_LED_5
 #define USE_LED_5 1
 #endif
-#define LED_5_GPIO LED_BLUE_L_PORT
-#define LED_5_GPIO_PIN LED_BLUE_L
+#define LED_5_GPIO PAL_PORT(LINE_LED_BLUE_L)
+#define LED_5_GPIO_PIN PAL_PAD(LINE_LED_BLUE_L)
 #define LED_5_GPIO_ON gpio_set
 #define LED_5_GPIO_OFF gpio_clear
 
@@ -65,6 +65,18 @@
  */
 // TODO for AUX
 // No VBAT monitoring ?
+
+/*
+ * PWM TIM defines
+ * enable TIM2 and TIM4 by default
+ */
+#ifndef USE_PWM_TIM2
+#define USE_PWM_TIM2 1
+#endif
+
+#ifndef USE_PWM_TIM4
+#define USE_PWM_TIM4 1
+#endif
 
 /*
  * PWM defines
@@ -77,14 +89,12 @@
 #endif
 #if USE_PWM1
 #define PWM_SERVO_1 1
-#define PWM_SERVO_1_GPIO MOTOR1_PORT
-#define PWM_SERVO_1_PIN MOTOR1
+#define PWM_SERVO_1_GPIO PAL_PORT(LINE_MOTOR1)
+#define PWM_SERVO_1_PIN PAL_PAD(LINE_MOTOR1)
 #define PWM_SERVO_1_AF AF_MOTOR1
 #define PWM_SERVO_1_DRIVER PWMD2
 #define PWM_SERVO_1_CHANNEL 1
-#define PWM_SERVO_1_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_1_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_1_CONF pwmcfg2
 #endif
 
 #ifndef USE_PWM2
@@ -92,14 +102,12 @@
 #endif
 #if USE_PWM2
 #define PWM_SERVO_2 2
-#define PWM_SERVO_2_GPIO MOTOR2_PORT
-#define PWM_SERVO_2_PIN MOTOR2
+#define PWM_SERVO_2_GPIO PAL_PORT(LINE_MOTOR2)
+#define PWM_SERVO_2_PIN PAL_PAD(LINE_MOTOR2)
 #define PWM_SERVO_2_AF AF_MOTOR2
 #define PWM_SERVO_2_DRIVER PWMD2
 #define PWM_SERVO_2_CHANNEL 3
-#define PWM_SERVO_2_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_2_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_2_CONF pwmcfg2
 #endif
 
 #ifndef USE_PWM3
@@ -107,14 +115,12 @@
 #endif
 #if USE_PWM3
 #define PWM_SERVO_3 3
-#define PWM_SERVO_3_GPIO MOTOR3_PORT
-#define PWM_SERVO_3_PIN MOTOR3
+#define PWM_SERVO_3_GPIO PAL_PORT(LINE_MOTOR3)
+#define PWM_SERVO_3_PIN PAL_PAD(LINE_MOTOR3)
 #define PWM_SERVO_3_AF AF_MOTOR3
 #define PWM_SERVO_3_DRIVER PWMD2
 #define PWM_SERVO_3_CHANNEL 0
-#define PWM_SERVO_3_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_3_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_3_CONF pwmcfg2
 #endif
 
 #ifndef USE_PWM4
@@ -122,14 +128,12 @@
 #endif
 #if USE_PWM4
 #define PWM_SERVO_4 4
-#define PWM_SERVO_4_GPIO MOTOR4_PORT
-#define PWM_SERVO_4_PIN MOTOR4
+#define PWM_SERVO_4_GPIO PAL_PORT(LINE_MOTOR4)
+#define PWM_SERVO_4_PIN PAL_PAD(LINE_MOTOR4)
 #define PWM_SERVO_4_AF AF_MOTOR4
 #define PWM_SERVO_4_DRIVER PWMD4
 #define PWM_SERVO_4_CHANNEL 3
-#define PWM_SERVO_4_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_4_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_4_CONF pwmcfg4
 #endif
 
 // servo index starting at 1 + regular servos + aux servos
@@ -144,54 +148,17 @@
 // than 128 kHz
 // It is also needed to redefined PWM_CMD_TO_US to get the proper converstion
 // from command to clock pulses number
-
 #define PWM_CMD_TO_US(_t) (_t)
-
-#ifdef STM32_PWM_USE_TIM2
-#define PWM_CONF_TIM2 STM32_PWM_USE_TIM2
-#else
-#define PWM_CONF_TIM2 1
-#endif
-#define PWM_CONF2_DEF { \
-  84000000, \
-  256, \
-  NULL, \
-  { \
-    { PWM_SERVO_3_ACTIVE, NULL }, \
-    { PWM_SERVO_1_ACTIVE, NULL }, \
-    { PWM_OUTPUT_DISABLED, NULL }, \
-    { PWM_SERVO_2_ACTIVE, NULL }, \
-  }, \
-  0, \
-  0 \
-}
-
-#ifdef STM32_PWM_USE_TIM4
-#define PWM_CONF_TIM4 STM32_PWM_USE_TIM4
-#else
-#define PWM_CONF_TIM4 1
-#endif
-#define PWM_CONF4_DEF { \
-  84000000, \
-  256, \
-  NULL, \
-  { \
-    { PWM_OUTPUT_DISABLED, NULL }, \
-    { PWM_OUTPUT_DISABLED, NULL }, \
-    { PWM_OUTPUT_DISABLED, NULL }, \
-    { PWM_SERVO_4_ACTIVE, NULL }, \
-  }, \
-  0, \
-  0 \
-}
+#define PWM_FREQUENCY 84000000
+#define SERVO_HZ (PWM_FREQUENCY / 256) // 328125
 
 /**
  * UART2 E_TX2
  */
-#define UART2_GPIO_PORT_TX E_TX2_PORT
-#define UART2_GPIO_TX E_TX2
-#define UART2_GPIO_PORT_RX E_RX2_PORT
-#define UART2_GPIO_RX E_RX2
+#define UART2_GPIO_PORT_TX PAL_PORT(LINE_E_TX2)
+#define UART2_GPIO_TX PAL_PAD(LINE_E_TX2)
+#define UART2_GPIO_PORT_RX PAL_PORT(LINE_E_RX2)
+#define UART2_GPIO_RX PAL_PAD(LINE_E_RX2)
 #define UART2_GPIO_AF AF_E_RX2
 #ifndef UART2_HW_FLOW_CONTROL
 #define UART2_HW_FLOW_CONTROL FALSE
@@ -200,21 +167,21 @@
 /**
  * UART3 E_TX1
  */
-#define UART3_GPIO_PORT_TX E_TX1_PORT
-#define UART3_GPIO_TX E_TX1
-#define UART3_GPIO_PORT_RX E_RX1_PORT
-#define UART3_GPIO_RX E_RX1
+#define UART3_GPIO_PORT_TX PAL_PORT(LINE_E_TX1)
+#define UART3_GPIO_TX PAL_PAD(LINE_E_TX1)
+#define UART3_GPIO_PORT_RX PAL_PORT(LINE_E_RX1)
+#define UART3_GPIO_RX PAL_PAD(LINE_E_RX1)
 #define UART3_GPIO_AF AF_E_RX1
 
 /**
  * UART6 NRF
  */
-#define UART6_GPIO_PORT_TX NRF_TX_PORT
-#define UART6_GPIO_TX NRF_TX
-#define UART6_GPIO_PORT_RX NRF_RX_PORT
-#define UART6_GPIO_RX NRF_RX
+#define UART6_GPIO_PORT_TX PAL_PORT(LINE_NRF_TX)
+#define UART6_GPIO_TX PAL_PAD(LINE_NRF_TX)
+#define UART6_GPIO_PORT_RX PAL_PORT(LINE_NRF_RX)
+#define UART6_GPIO_RX PAL_PAD(LINE_NRF_RX)
 #define UART6_GPIO_AF AF_NRF_RX
-#define UART6_GPIO_PORT_CTS NRF_FLOW_CTRL_PORT
+#define UART6_GPIO_PORT_CTS PAL_PORT(LINE_NRF_FLOW_CTRL)
 #define UART6_GPIO_CTS NRF_FLOW_CTRL
 
 /**
@@ -318,23 +285,23 @@
 
 // External SPI
 #define SPI1_GPIO_AF AF_E_SCK
-#define SPI1_GPIO_PORT_MISO E_MISO_PORT
-#define SPI1_GPIO_MISO E_MISO
-#define SPI1_GPIO_PORT_MOSI E_MOSI_PORT
-#define SPI1_GPIO_MOSI E_MOSI
-#define SPI1_GPIO_PORT_SCK E_SCK_PORT
-#define SPI1_GPIO_SCK E_SCK
+#define SPI1_GPIO_PORT_MISO PAL_PORT(LINE_E_MISO)
+#define SPI1_GPIO_MISO PAL_PAD(LINE_E_MISO)
+#define SPI1_GPIO_PORT_MOSI PAL_PORT(LINE_E_MOSI)
+#define SPI1_GPIO_MOSI PAL_PAD(LINE_E_MOSI)
+#define SPI1_GPIO_PORT_SCK PAL_PORT(LINE_E_SCK)
+#define SPI1_GPIO_SCK PAL_PAD(LINE_E_SCK)
 
-#define SPI_SELECT_SLAVE0_PORT E_CS0_PORT
-#define SPI_SELECT_SLAVE0_PIN E_CS0
-#define SPI_SELECT_SLAVE1_PORT E_CS1_PORT
-#define SPI_SELECT_SLAVE1_PIN E_CS1
-#define SPI_SELECT_SLAVE2_PORT E_CS2_PORT
-#define SPI_SELECT_SLAVE2_PIN E_CS2
-#define SPI_SELECT_SLAVE3_PORT E_CS3_PORT
-#define SPI_SELECT_SLAVE3_PIN E_CS3
+#define SPI_SELECT_SLAVE0_PORT PAL_PORT(LINE_E_CS0)
+#define SPI_SELECT_SLAVE0_PIN PAL_PAD(LINE_E_CS0)
+#define SPI_SELECT_SLAVE1_PORT PAL_PORT(LINE_E_CS1)
+#define SPI_SELECT_SLAVE1_PIN PAL_PAD(LINE_E_CS1)
+#define SPI_SELECT_SLAVE2_PORT PAL_PORT(LINE_E_CS2)
+#define SPI_SELECT_SLAVE2_PIN PAL_PAD(LINE_E_CS2)
+#define SPI_SELECT_SLAVE3_PORT PAL_PORT(LINE_E_CS3)
+#define SPI_SELECT_SLAVE3_PIN PAL_PAD(LINE_E_CS3)
 
-/**
+/**)
  * Baro
  *
  * Apparently needed for backwards compatibility
@@ -348,7 +315,7 @@
  * Actuators for fixedwing
  */
  /* Default actuators driver */
-#define DEFAULT_ACTUATORS "subsystems/actuators/actuators_pwm.h"
+#define DEFAULT_ACTUATORS "modules/actuators/actuators_pwm.h"
 #define ActuatorDefaultSet(_x,_y) ActuatorPwmSet(_x,_y)
 #define ActuatorsDefaultInit() ActuatorsPwmInit()
 #define ActuatorsDefaultCommit() ActuatorsPwmCommit()

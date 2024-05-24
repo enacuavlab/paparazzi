@@ -25,10 +25,8 @@
     <depends>spi_master,imu_common</depends>
     <provides>imu,mag</provides>
   </dep>
-  <autoload name="imu_nps"/>
-  <autoload name="imu_sim"/>
   <header>
-    <file name="imu_mpu9250_spi.h" dir="subsystems/imu"/>
+    <file name="imu_mpu9250_spi.h"/>
   </header>
 
   <init fun="imu_mpu9250_init()"/>
@@ -44,18 +42,17 @@
     <define name="IMU_MPU9250_SPI_SLAVE_IDX" value="$(IMU_MPU9250_SPI_SLAVE_IDX)"/>
     <define name="USE_$(IMU_MPU9250_SPI_SLAVE_IDX)"/>
 
-    <define name="IMU_TYPE_H" value="imu/imu_mpu9250_spi.h" type="string"/>
-
     <file name="mpu9250.c" dir="peripherals"/>
     <file name="mpu9250_spi.c" dir="peripherals"/>
-    <file name="imu_mpu9250_spi.c" dir="subsystems/imu"/>
+    <file name="imu_mpu9250_spi.c"/>
     <test>
-      <define name="IMU_TYPE_H" value="imu/imu_mpu9250_spi.h" type="string"/>
       <define name="SPI_MASTER"/>
       <define name="IMU_MPU9250_SPI_DEV" value="spi1"/>
       <define name="USE_SPI1"/>
       <define name="IMU_MPU9250_SPI_SLAVE_IDX" value="0"/>
       <define name="USE_SPI_SLAVE0"/>
+      <define name="PERIODIC_FREQUENCY" value="512"/>
+      <define name="IMU_MPU9250_PERIODIC_FREQ" value="512"/>
     </test>
   </makefile>
 </module>

@@ -14,11 +14,11 @@ Your safe aircraft operation is *your* responsibility
 //Set Generic options
     #include "autopilot.h"
 //Enable AHRS Health test functions
-    #include "subsystems/ahrs/ahrs_aligner.h"
+    #include "modules/ahrs/ahrs_aligner.h"
 //Enable advanced electrical power functions
-    #include "subsystems/electrical.h"
+    #include "modules/energy/electrical.h"
 //Enable datalink tests
-    #include "subsystems/datalink/datalink.h"
+    #include "modules/datalink/datalink.h"
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
   </header>
 
@@ -81,7 +81,7 @@ Your safe aircraft operation is *your* responsibility
        If the aircraft is later moved to a takeoff spot and the heading is changed it will try to rotate to the original heading as it is taking off which can make some motors spin too fast and cause a flip or other unwanted manovering.
 Altough Switching the mode to auto2/NAV from any other mode will reset nav_heading to the current heading this is not enough therefore just befor takeo we set the nav heading to the current heading-->
 
-    <!--  old way  <set var="nav_heading" value="stateGetNedToBodyEulers_i()->psi">--> <!-- make sure the current heading is set just befor takeoff as far as possible, MAGNETO anyone?-->
+    <!--  old way  <set var="nav.heading" value="stateGetNedToBodyEulers_f()->psi">--> <!-- make sure the current heading is set just befor takeoff as far as possible, MAGNETO anyone?-->
       <call_once fun="nav_set_heading_current()"/> <!-- make sure the current heading is set just befor takeoff as far as possible -->
       <call_once fun="NavResurrect()"/>
       <set value="0" var="autopilot.kill_throttle"/>

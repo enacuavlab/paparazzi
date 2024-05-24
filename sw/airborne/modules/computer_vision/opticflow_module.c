@@ -30,7 +30,8 @@
 #include <stdio.h>
 #include <pthread.h>
 #include "state.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
+#include "modules/pose_history/pose_history.h"
 
 #include "lib/v4l/v4l2.h"
 #include "lib/encoding/jpeg.h"
@@ -38,6 +39,9 @@
 #include "errno.h"
 
 #include "cv.h"
+#include "generated/airframe.h"
+
+uint16_t fps_OF;
 
 /* ABI messages sender ID */
 #ifndef OPTICFLOW_AGL_ID
@@ -69,10 +73,11 @@ static bool opticflow_got_result[ACTIVE_CAMERAS];       ///< When we have an opt
 static pthread_mutex_t opticflow_mutex;                  ///< Mutex lock fo thread safety
 
 /* Static functions */
-struct image_t *opticflow_module_calc(struct image_t *img, uint8_t camera_id);     ///< The main optical flow calculation thread
+struct image_t *opticflow_module_calc(struct image_t *img,
+                                      uint8_t camera_id);     ///< The main optical flow calculation thread
 
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 /**
  * Send optical flow telemetry information
  * @param[in] *trans The transport structure to send the information over
@@ -148,7 +153,7 @@ void opticflow_module_run(void)
                                     opticflow_result[idx_camera].noise_measurement,
                                     opticflow_result[idx_camera].noise_measurement,
                                     -1.0f //opticflow_result.noise_measurement // negative value disables filter updates with OF-based vertical velocity.
-        );
+                                   );
       }
       opticflow_got_result[idx_camera] = false;
     }
@@ -173,8 +178,9 @@ struct image_t *opticflow_module_calc(struct image_t *img, uint8_t camera_id)
   img->eulers = pose.eulers;
 
   // Do the optical flow calculation
-  static struct opticflow_result_t temp_result[ACTIVE_CAMERAS]; // static so that the number of corners is kept between frames
-  if(opticflow_calc_frame(&opticflow[camera_id], img, &temp_result[camera_id])){
+  static struct opticflow_result_t
+    temp_result[ACTIVE_CAMERAS]; // static so that the number of corners is kept between frames
+  if (opticflow_calc_frame(&opticflow[camera_id], img, &temp_result[camera_id])) {
     // Copy the result if finished
     pthread_mutex_lock(&opticflow_mutex);
     opticflow_result[camera_id] = temp_result[camera_id];

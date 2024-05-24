@@ -37,17 +37,24 @@
 #ifdef CTRL_TYPE_H
 #include CTRL_TYPE_H
 #endif
-#include "subsystems/navigation/nav_survey_rectangle.h"
-#include "subsystems/navigation/common_flight_plan.h"
-#include "subsystems/navigation/common_nav.h"
+#include "modules/nav/nav_survey_rectangle.h"
+#include "modules/nav/common_flight_plan.h"
+#include "modules/nav/common_nav.h"
 #include "autopilot.h"
+#include "pprzlink/pprzlink_device.h"
+#include "pprzlink/pprzlink_transport.h"
+
+/** Default fixedwing navigation frequency */
+#ifndef NAVIGATION_FREQUENCY
+#define NAVIGATION_FREQUENCY 20
+#endif
 
 #define NAV_GRAVITY 9.806
 #define Square(_x) ((_x)*(_x))
 #define DistanceSquare(p1_x, p1_y, p2_x, p2_y) (Square(p1_x-p2_x)+Square(p1_y-p2_y))
 
-#define PowerVoltage() (ap_electrical.vsupply)
-#define RcRoll(travel) (imcu_get_radio(RADIO_ROLL) * (float)travel /(float)MAX_PPRZ)
+#define PowerVoltage() (electrical.vsupply)
+#define RcRoll(travel) (radio_control_get(RADIO_ROLL) * (float)travel /(float)MAX_PPRZ)
 
 
 enum oval_status { OR12, OC2, OR21, OC1 };
@@ -74,8 +81,6 @@ extern bool nav_in_segment;
 extern float nav_circle_x, nav_circle_y, nav_circle_radius; /* m */
 extern float nav_segment_x_1, nav_segment_y_1, nav_segment_x_2, nav_segment_y_2; /* m */
 
-extern uint8_t last_wp __attribute__((unused));
-
 extern int nav_mode;
 #define NAV_MODE_ROLL 1
 #define NAV_MODE_COURSE 2
@@ -91,6 +96,11 @@ extern void fly_to_xy(float x, float y);
 #define NavGotoWaypoint(_wp) { \
     horizontal_mode = HORIZONTAL_MODE_WAYPOINT; \
     fly_to_xy(waypoints[_wp].x, waypoints[_wp].y); \
+  }
+
+#define NavGotoPoint(_point) { \
+    horizontal_mode = HORIZONTAL_MODE_WAYPOINT; \
+    fly_to_xy(_point.x, _point.y); \
   }
 
 
@@ -119,6 +129,8 @@ extern void nav_periodic_task(void);
 extern void nav_home(void);
 extern void nav_init(void);
 extern void nav_without_gps(void);
+extern void nav_parse_BLOCK(struct link_device *dev, struct transport_tx *trans, uint8_t *buf);
+extern void nav_parse_MOVE_WP(struct link_device *dev, struct transport_tx *trans, uint8_t *buf);
 
 extern float nav_circle_trigo_qdr; /** Angle from center to mobile */
 extern void nav_circle_XY(float x, float y, float radius);
@@ -127,23 +139,17 @@ extern float baseleg_out_qdr;
 extern void nav_compute_baseleg(uint8_t wp_af, uint8_t wp_td, uint8_t wp_baseleg, float radius);
 extern void nav_compute_final_from_glide(uint8_t wp_af, uint8_t wp_td, float glide);
 
-#define RCLost() bit_is_set(imcu_get_status(), STATUS_RADIO_REALLY_LOST)
+#define RCLost() RadioControlIsLost()
 
 extern void nav_follow(uint8_t _ac_id, float _distance, float _height);
 #define NavFollow(_ac_id, _distance, _height) nav_follow(_ac_id, _distance, _height)
 
 extern void nav_glide(uint8_t start_wp, uint8_t wp);
+extern void nav_glide_alt(float start_alt, float final_alt);
 #define NavGlide(_start_wp, _wp) nav_glide(_start_wp, _wp)
 
 #define NavCircleWaypoint(wp, radius) \
   nav_circle_XY(waypoints[wp].x, waypoints[wp].y, radius)
-
-/** Normalize a degree angle between 0 and 359 */
-#define NormCourse(x) { \
-    uint8_t dont_loop_forever = 0;  \
-    while (x < 0 && ++dont_loop_forever) x += 360; \
-    while (x >= 360 && ++dont_loop_forever) x -= 360; \
-  }
 
 #define NavCircleCountNoRewind() (nav_circle_radians_no_rewind / (2*M_PI))
 #define NavCircleCount() (fabs(nav_circle_radians) / (2*M_PI))
@@ -210,8 +216,6 @@ bool nav_approaching_xy(float x, float y, float from_x, float from_y, float appr
     if(autopilot_get_mode() != AP_MODE_AUTO1)  \
     {h_ctl_roll_setpoint = _roll;} \
   }
-
-#define NavSetManual(_roll, _pitch, _yaw) _Pragma("GCC error \"Manual mode in flight plan for fixedwing is not available\"")
 
 
 #define nav_IncreaseShift(x) { if (x==0) nav_shift = 0; else nav_shift += x; }

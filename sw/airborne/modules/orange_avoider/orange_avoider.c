@@ -21,7 +21,7 @@
 #include "firmwares/rotorcraft/navigation.h"
 #include "generated/airframe.h"
 #include "state.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 #include <time.h>
 #include <stdio.h>
 
@@ -185,8 +185,7 @@ uint8_t increase_nav_heading(float incrementDegrees)
   FLOAT_ANGLE_NORMALIZE(new_heading);
 
   // set heading, declared in firmwares/rotorcraft/navigation.h
-  // for performance reasons the navigation variables are stored and processed in Binary Fixed-Point format
-  nav_heading = ANGLE_BFP_OF_REAL(new_heading);
+  nav.heading = new_heading;
 
   VERBOSE_PRINT("Increasing heading to %f\n", DegOfRad(new_heading));
   return false;

@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="imu_mpu9250" dir="sensors" task="sensors">
+<module name="imu_mpu9250" dir="imu" task="sensors">
   <doc>
     <description>
       Test module for the mpu9250 with I2C
@@ -13,8 +13,6 @@
     <depends>i2c,imu_common</depends>
     <provides>imu,mag</provides>
   </dep>
-  <autoload name="imu_nps"/>
-  <autoload name="imu_sim"/>
   <header>
     <file name="imu_mpu9250.h"/>
   </header>

@@ -70,7 +70,6 @@ struct pprz_autopilot {
   bool in_flight;           ///< in flight status
   bool launch;              ///< request launch
   bool use_rc;              ///< enable/disable RC input
-  bool power_switch;        ///< enable/disable power from power switch (if any)
   bool ground_detected;     ///< automatic detection of landing
   bool detect_ground_once;  ///< enable automatic detection of ground (one shot)
 };
@@ -96,6 +95,10 @@ extern void autopilot_event(void);
  */
 extern void autopilot_on_rc_frame(void);
 
+/** Autopilot periodic failsafe checks
+ */
+extern void autopilot_failsafe_checks(void);
+
 /** Set new autopilot mode
  *
  * @param[in] new_autopilot_mode new mode to set
@@ -119,12 +122,29 @@ extern uint8_t autopilot_get_mode(void);
 extern void autopilot_reset_flight_time(void);
 #define autopilot_ResetFlightTimeAndLaunch(_) autopilot_reset_flight_time()
 
+/**
+ * @brief Force start/stop the motors
+ * WARNING This will skip he preflight checks
+ *
+ * @param motors_on Wheter the motors should be forced on/off
+ */
+extern void autopilot_force_motors_on(bool motors_on);
+
 /** Start or stop motors
  *  May have no effect if motors has auto-start based on throttle setpoint
+ *  or when the preflight checks are failing.
  *
  * @param[in] motors_on true to start motors, false to stop
+ * @return true The preflight checks are successful and motors are started/stopped
+ * @return false The preflight checks are failed
  */
-extern void autopilot_set_motors_on(bool motors_on);
+extern bool autopilot_set_motors_on(bool motors_on);
+
+/**
+ * Start or stop the motors during arming
+ * May not happen when preflight checks are failing
+*/
+extern bool autopilot_arming_motors_on(bool motors_on);
 
 /** Get motor status
  *
@@ -168,15 +188,6 @@ extern bool autopilot_in_flight(void);
  *  actual implementation is firmware dependent
  */
 extern void autopilot_reset_in_flight_counter(void);
-
-/** Set power switch state
- *  This will actually enable the switch if POWER_SWITCH_GPIO is defined
- *  Also provide macro for dl_setting backward compatibility
- *
- * @param[in] power_switch true to enable, false to disable
- */
-extern void autopilot_set_power_switch(bool power_switch);
-#define autopilot_SetPowerSwitch(_ps) autopilot_set_power_switch(_ps)
 
 /** Store marked settings in flash
  *  Try to make sure that we don't write to flash while flying

@@ -31,9 +31,9 @@
 #include "mcu_periph/spi.h"
 #include "mcu_periph/uart.h"
 #ifndef BARO_NO_DOWNLINK
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #endif
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 #include "firmwares/fixedwing/nav.h"
 #include "state.h"
 
@@ -216,7 +216,11 @@ static void calibration(void)
   ut1 = (c5 << 3) + 20224;
 
 #ifndef BARO_NO_DOWNLINK
-  DOWNLINK_SEND_BARO_WORDS(DefaultChannel, DefaultDevice, &words[0], &words[1], &words[2], &words[3]);
+  float debug[4];
+  for (int i=0; i<4; i++){
+    debug[i] = words[i];
+  }
+  DOWNLINK_SEND_DEBUG_VECT(DefaultChannel, DefaultDevice, "baro_calib", 4, debug);
 #endif
 }
 

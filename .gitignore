@@ -49,6 +49,9 @@ paparazzi.sublime-workspace
 *.files
 *.includes
 
+# VSCode IDE
+.vscode/ipch/
+
 # Vagrant VM files
 /.vagrant
 
@@ -129,7 +132,6 @@ Cargo.lock
 /sw/lib/ocaml/expr_parser.mli
 /sw/lib/ocaml/gtk_papget_led_editor.ml
 /sw/lib/ocaml/expr_lexer.ml
-/sw/lib/ocaml/META.pprz
 
 # /sw/logalizer/
 /sw/logalizer/logplotter
@@ -145,6 +147,10 @@ Cargo.lock
 /sw/logalizer/ahrs2fg
 /sw/logalizer/disp3d
 /sw/logalizer/sdlogger_download
+
+# /sw/misc
+/sw/misc/link/pprzlink_router
+/sw/misc/link/pprzlink_router_cc
 
 # /sw/simulator/
 /sw/simulator/gaia
@@ -168,6 +174,7 @@ Cargo.lock
 /sw/ground_segment/misc/video_synchronizer
 /sw/ground_segment/misc/ivy2serial
 /sw/ground_segment/misc/sbs2ivy
+/sw/ground_segment/misc/ublox2ivy
 
 # /sw/airborne/arch/lpc21/test/bootloader
 /sw/airborne/arch/lpc21/test/bootloader/bl.dmp

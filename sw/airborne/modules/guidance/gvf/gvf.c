@@ -23,18 +23,20 @@
 #include <math.h>
 #include "std.h"
 
-#include "modules/guidance/gvf/gvf.h"
-#include "modules/guidance/gvf/trajectories/gvf_ellipse.h"
-#include "modules/guidance/gvf/trajectories/gvf_line.h"
-#include "modules/guidance/gvf/trajectories/gvf_sin.h"
-
-#include "firmwares/fixedwing/nav.h"
-#include "subsystems/navigation/common_nav.h"
-#include "firmwares/fixedwing/stabilization/stabilization_attitude.h"
+#include "gvf.h"
+#include "gvf_low_level_control.h"
+#include "trajectories/gvf_ellipse.h"
+#include "trajectories/gvf_line.h"
+#include "trajectories/gvf_sin.h"
 #include "autopilot.h"
+#include "../gvf_common.h"
+
 
 // Control
 gvf_con gvf_control;
+
+// State
+gvf_st gvf_state;
 
 // Trajectory
 gvf_tra gvf_trajectory;
@@ -43,67 +45,42 @@ gvf_seg gvf_segment;
 // Time variables to check if GVF is active
 uint32_t gvf_t0 = 0;
 
+// Param array lenght
+int gvf_plen = 1;
+int gvf_plen_wps = 0;
+
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 static void send_gvf(struct transport_tx *trans, struct link_device *dev)
 {
-  // Do not know whether is a good idea to do this check here or to include
-  // this plen in gvf_trajectory
-  int plen;
-
-  switch (gvf_trajectory.type) {
-    case LINE:
-      plen = 3;
-      break;
-    case ELLIPSE:
-      plen = 5;
-      break;
-    case SIN:
-      plen = 6;
-      break;
-    default:
-      plen = 1;
-      break;
-  }
-
   uint8_t traj_type = (uint8_t)gvf_trajectory.type;
 
   uint32_t now = get_sys_time_msec();
   uint32_t delta_T = now - gvf_t0;
 
-  if (delta_T < 200)
+  if (delta_T < 200) {
     pprz_msg_send_GVF(trans, dev, AC_ID, &gvf_control.error, &traj_type,
-                      &gvf_control.s, &gvf_control.ke, plen, gvf_trajectory.p);
-}
+                      &gvf_control.s, &gvf_control.ke, gvf_plen, gvf_trajectory.p);
 
-static void send_circle(struct transport_tx *trans, struct link_device *dev)
-{
-  uint32_t now = get_sys_time_msec();
-  uint32_t delta_T = now - gvf_t0;
-
-  if (delta_T < 200)
+#if GVF_OCAML_GCS
     if (gvf_trajectory.type == ELLIPSE &&
-        (gvf_trajectory.p[2] == gvf_trajectory.p[3])) {
+        ((int)gvf_trajectory.p[2] == (int)gvf_trajectory.p[3])) {
       pprz_msg_send_CIRCLE(trans, dev, AC_ID,
                            &gvf_trajectory.p[0], &gvf_trajectory.p[1],
                            &gvf_trajectory.p[2]);
     }
-}
 
-static void send_segment(struct transport_tx *trans, struct link_device *dev)
-{
-  uint32_t now = get_sys_time_msec();
-  uint32_t delta_T = now - gvf_t0;
-
-  if (delta_T < 200)
     if (gvf_trajectory.type == LINE && gvf_segment.seg == 1) {
       pprz_msg_send_SEGMENT(trans, dev, AC_ID,
                             &gvf_segment.x1, &gvf_segment.y1,
                             &gvf_segment.x2, &gvf_segment.y2);
     }
+#endif // GVF_OCAML_GCS
+
+  }
 }
 
-#endif
+#endif // PERIODIC_TELEMETRY
 
 static int out_of_segment_area(float x1, float y1, float x2, float y2, float d1, float d2)
 {
@@ -145,8 +122,6 @@ void gvf_init(void)
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF, send_gvf);
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CIRCLE, send_circle);
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_SEGMENT, send_segment);
 #endif
 }
 
@@ -156,11 +131,11 @@ void gvf_control_2D(float ke, float kn, float e,
 {
   gvf_t0 = get_sys_time_msec();
 
-  struct FloatEulers *att = stateGetNedToBodyEulers_f();
-  float ground_speed = stateGetHorizontalSpeedNorm_f();
-  float course = stateGetHorizontalSpeedDir_f();
-  float px_dot = ground_speed * sinf(course);
-  float py_dot = ground_speed * cosf(course);
+  gvf_low_level_getState();
+  float course = gvf_state.course;
+  float px_dot = gvf_state.px_dot;
+  float py_dot = gvf_state.py_dot;
+
   int s = gvf_control.s;
 
   // gradient Phi
@@ -181,10 +156,6 @@ void gvf_control_2D(float ke, float kn, float e,
   float pdx_dot = tx - ke * e * nx;
   float pdy_dot = ty - ke * e * ny;
 
-  float norm_pd_dot = sqrtf(pdx_dot * pdx_dot + pdy_dot * pdy_dot);
-  float md_x = pdx_dot / norm_pd_dot;
-  float md_y = pdy_dot / norm_pd_dot;
-
   float Apd_dot_dot_x = -ke * (nx * px_dot + ny * py_dot) * nx;
   float Apd_dot_dot_y = -ke * (nx * px_dot + ny * py_dot) * ny;
 
@@ -196,11 +167,50 @@ void gvf_control_2D(float ke, float kn, float e,
   float pd_dot_dot_x = Apd_dot_dot_x + Bpd_dot_dot_x;
   float pd_dot_dot_y = Apd_dot_dot_y + Bpd_dot_dot_y;
 
+  float norm_pd_dot = sqrtf(pdx_dot * pdx_dot + pdy_dot * pdy_dot);
+  float md_x = pdx_dot / norm_pd_dot;
+  float md_y = pdy_dot / norm_pd_dot;
+
   float md_dot_const = -(md_x * pd_dot_dot_y - md_y * pd_dot_dot_x)
                        / norm_pd_dot;
 
   float md_dot_x =  md_y * md_dot_const;
   float md_dot_y = -md_x * md_dot_const;
+
+
+  #ifdef ROTORCRAFT_FIRMWARE
+
+  // Set nav for command
+
+  // Use parameter kn as the speed command
+  nav.speed.x = md_x * kn;
+  nav.speed.y = md_y * kn;
+
+
+  // Acceleration induced by the field with speed set to kn (!WIP!)
+#warning "Using GVF for rotorcraft is still experimental, proceed with caution"
+  float n_norm = sqrtf(nx*nx+ny*ny);
+  float hess_px_dot = px_dot * H11 + py_dot * H12;
+  float hess_py_dot = px_dot * H21 + py_dot * H22;
+
+  float hess_pdx_dot = pdx_dot * H11 + pdy_dot * H12;
+  float hess_pdy_dot = pdx_dot * H21 + pdy_dot * H22;
+
+  float curvature_correction = tx * hess_px_dot + ty * hess_py_dot / (n_norm * n_norm);
+  float accel_correction_x = kn * hess_py_dot / n_norm;
+  float accel_correction_y = - kn * hess_px_dot / n_norm;
+  float accel_cmd_x = accel_correction_x + px_dot * curvature_correction;
+  float accel_cmd_y = accel_correction_y + py_dot * curvature_correction;
+
+  float speed_cmd_x = kn*tx / n_norm - ke * e * nx / (n_norm);
+  float speed_cmd_y = kn*ty / n_norm - ke * e * ny / (n_norm);
+
+  // TODO don't change nav struct directly
+  nav.accel.x = accel_cmd_x + (speed_cmd_x - px_dot);
+  nav.accel.y = accel_cmd_y + (speed_cmd_y - py_dot);
+  nav.heading = atan2f(md_x,md_y);
+
+  #else
 
   float omega_d = -(md_dot_x * md_y - md_dot_y * md_x);
 
@@ -209,14 +219,15 @@ void gvf_control_2D(float ke, float kn, float e,
 
   float omega = omega_d + kn * (mr_x * md_y - mr_y * md_x);
 
-  // Coordinated turn
-  if (autopilot_get_mode() == AP_MODE_AUTO2) {
-    h_ctl_roll_setpoint =
-      -atanf(omega * ground_speed / GVF_GRAVITY / cosf(att->theta));
-    BoundAbs(h_ctl_roll_setpoint, h_ctl_roll_max_setpoint);
+  gvf_control.omega = omega;
 
-    lateral_mode = LATERAL_MODE_ROLL;
-  }
+  // From gvf_common.h TODO: derivative of curvature and ori_err
+  gvf_c_omega.omega  = omega;
+  gvf_c_info.kappa   = (nx*(H12*ny - nx*H22) + ny*(H21*nx - H11*ny))/powf(nx*nx + ny*ny,1.5);
+  gvf_c_info.ori_err = 1 - (md_x*cosf(course) + md_y*sinf(course));
+  gvf_low_level_control_2D(omega);
+
+  #endif
 }
 
 void gvf_set_direction(int8_t s)
@@ -236,6 +247,8 @@ static void gvf_line(float a, float b, float heading)
   gvf_trajectory.p[0] = a;
   gvf_trajectory.p[1] = b;
   gvf_trajectory.p[2] = heading;
+  gvf_plen = 3 + gvf_plen_wps;
+  gvf_plen_wps = 0;
 
   gvf_line_info(&e, &grad_line, &Hess_line);
   gvf_control.ke = gvf_line_par.ke;
@@ -243,7 +256,8 @@ static void gvf_line(float a, float b, float heading)
 
   gvf_control.error = e;
 
-  horizontal_mode = HORIZONTAL_MODE_WAYPOINT;
+  gvf_setNavMode(GVF_MODE_WAYPOINT);
+
   gvf_segment.seg = 0;
 }
 
@@ -256,12 +270,19 @@ bool gvf_line_XY_heading(float a, float b, float heading)
 
 bool gvf_line_XY1_XY2(float x1, float y1, float x2, float y2)
 {
+  if (gvf_plen_wps != 2) {
+    gvf_trajectory.p[3] = x2;
+    gvf_trajectory.p[4] = y2;
+    gvf_trajectory.p[5] = 0;
+    gvf_plen_wps = 3;
+  }
+
   float zx = x2 - x1;
   float zy = y2 - y1;
 
   gvf_line_XY_heading(x1, y1, atan2f(zx, zy));
 
-  horizontal_mode = HORIZONTAL_MODE_ROUTE;
+  gvf_setNavMode(GVF_MODE_ROUTE);
   gvf_segment.seg = 1;
   gvf_segment.x1 = x1;
   gvf_segment.y1 = y1;
@@ -273,10 +294,14 @@ bool gvf_line_XY1_XY2(float x1, float y1, float x2, float y2)
 
 bool gvf_line_wp1_wp2(uint8_t wp1, uint8_t wp2)
 {
-  float x1 = waypoints[wp1].x;
-  float y1 = waypoints[wp1].y;
-  float x2 = waypoints[wp2].x;
-  float y2 = waypoints[wp2].y;
+  gvf_trajectory.p[3] = wp1;
+  gvf_trajectory.p[4] = wp2;
+  gvf_plen_wps = 2;
+
+  float x1 = WaypointX(wp1);
+  float y1 = WaypointY(wp1);
+  float x2 = WaypointX(wp2);
+  float y2 = WaypointY(wp2);
 
   return gvf_line_XY1_XY2(x1, y1, x2, y2);
 }
@@ -285,7 +310,7 @@ bool gvf_segment_loop_XY1_XY2(float x1, float y1, float x2, float y2, float d1, 
 {
   int s = out_of_segment_area(x1, y1, x2, y2, d1, d2);
   if (s != 0) {
-    gvf_control.s = s;
+    gvf_set_direction(s);
   }
 
   float zx = x2 - x1;
@@ -294,7 +319,8 @@ bool gvf_segment_loop_XY1_XY2(float x1, float y1, float x2, float y2, float d1, 
 
   gvf_line(x1, y1, alpha);
 
-  horizontal_mode = HORIZONTAL_MODE_ROUTE;
+  gvf_setNavMode(GVF_MODE_ROUTE);
+
   gvf_segment.seg = 1;
   gvf_segment.x1 = x1;
   gvf_segment.y1 = y1;
@@ -306,10 +332,16 @@ bool gvf_segment_loop_XY1_XY2(float x1, float y1, float x2, float y2, float d1, 
 
 bool gvf_segment_loop_wp1_wp2(uint8_t wp1, uint8_t wp2, float d1, float d2)
 {
-  float x1 = waypoints[wp1].x;
-  float y1 = waypoints[wp1].y;
-  float x2 = waypoints[wp2].x;
-  float y2 = waypoints[wp2].y;
+  gvf_trajectory.p[3] = wp1;
+  gvf_trajectory.p[4] = wp2;
+  gvf_trajectory.p[5] = d1;
+  gvf_trajectory.p[6] = d2;
+  gvf_plen_wps = 4;
+
+  float x1 = WaypointX(wp1);
+  float y1 = WaypointY(wp1);
+  float x2 = WaypointX(wp2);
+  float y2 = WaypointY(wp2);
 
   return gvf_segment_loop_XY1_XY2(x1, y1, x2, y2, d1, d2);
 }
@@ -338,20 +370,27 @@ bool gvf_segment_XY1_XY2(float x1, float y1, float x2, float y2)
 
 bool gvf_segment_wp1_wp2(uint8_t wp1, uint8_t wp2)
 {
-  float x1 = waypoints[wp1].x;
-  float y1 = waypoints[wp1].y;
-  float x2 = waypoints[wp2].x;
-  float y2 = waypoints[wp2].y;
+  gvf_trajectory.p[3] = wp1;
+  gvf_trajectory.p[4] = wp2;
+  gvf_plen_wps = 2;
+
+  float x1 = WaypointX(wp1);
+  float y1 = WaypointY(wp1);
+  float x2 = WaypointX(wp2);
+  float y2 = WaypointY(wp2);
 
   return gvf_segment_XY1_XY2(x1, y1, x2, y2);
 }
 
 bool gvf_line_wp_heading(uint8_t wp, float heading)
 {
-  heading = heading * M_PI / 180;
+  gvf_trajectory.p[3] = wp;
+  gvf_plen_wps = 1;
 
-  float a = waypoints[wp].x;
-  float b = waypoints[wp].y;
+  heading = RadOfDeg(heading);
+
+  float a = WaypointX(wp);
+  float b = WaypointY(wp);
 
   return gvf_line_XY_heading(a, b, heading);
 }
@@ -370,6 +409,8 @@ bool gvf_ellipse_XY(float x, float y, float a, float b, float alpha)
   gvf_trajectory.p[2] = a;
   gvf_trajectory.p[3] = b;
   gvf_trajectory.p[4] = alpha;
+  gvf_plen = 5 + gvf_plen_wps;
+  gvf_plen_wps = 0;
 
   // SAFE MODE
   if (a < 1 || b < 1) {
@@ -377,10 +418,11 @@ bool gvf_ellipse_XY(float x, float y, float a, float b, float alpha)
     gvf_trajectory.p[3] = 60;
   }
 
-  if (gvf_trajectory.p[2] == gvf_trajectory.p[3]) {
-    horizontal_mode = HORIZONTAL_MODE_CIRCLE;
+  if ((int)gvf_trajectory.p[2] == (int)gvf_trajectory.p[3]) {
+    gvf_setNavMode(GVF_MODE_CIRCLE);
+
   } else {
-    horizontal_mode = HORIZONTAL_MODE_WAYPOINT;
+    gvf_setNavMode(GVF_MODE_WAYPOINT);
   }
 
   gvf_ellipse_info(&e, &grad_ellipse, &Hess_ellipse);
@@ -396,7 +438,10 @@ bool gvf_ellipse_XY(float x, float y, float a, float b, float alpha)
 
 bool gvf_ellipse_wp(uint8_t wp, float a, float b, float alpha)
 {
-  gvf_ellipse_XY(waypoints[wp].x,  waypoints[wp].y, a, b, alpha);
+  gvf_trajectory.p[5] = wp;
+  gvf_plen_wps = 1;
+
+  gvf_ellipse_XY(WaypointX(wp),  WaypointY(wp), a, b, alpha);
   return true;
 }
 
@@ -415,6 +460,8 @@ bool gvf_sin_XY_alpha(float a, float b, float alpha, float w, float off, float A
   gvf_trajectory.p[3] = w;
   gvf_trajectory.p[4] = off;
   gvf_trajectory.p[5] = A;
+  gvf_plen = 6 + gvf_plen_wps;
+  gvf_plen_wps = 0;
 
   gvf_sin_info(&e, &grad_line, &Hess_line);
   gvf_control.ke = gvf_sin_par.ke;
@@ -429,10 +476,14 @@ bool gvf_sin_wp1_wp2(uint8_t wp1, uint8_t wp2, float w, float off, float A)
 {
   w = 2 * M_PI * w;
 
-  float x1 = waypoints[wp1].x;
-  float y1 = waypoints[wp1].y;
-  float x2 = waypoints[wp2].x;
-  float y2 = waypoints[wp2].y;
+  gvf_trajectory.p[6] = wp1;
+  gvf_trajectory.p[7] = wp2;
+  gvf_plen_wps = 2;
+
+  float x1 = WaypointX(wp1);
+  float y1 = WaypointY(wp1);
+  float x2 = WaypointX(wp2);
+  float y2 = WaypointY(wp2);
 
   float zx = x1 - x2;
   float zy = y1 - y2;
@@ -447,10 +498,13 @@ bool gvf_sin_wp1_wp2(uint8_t wp1, uint8_t wp2, float w, float off, float A)
 bool gvf_sin_wp_alpha(uint8_t wp, float alpha, float w, float off, float A)
 {
   w = 2 * M_PI * w;
-  alpha = alpha * M_PI / 180;
+  alpha = RadOfDeg(alpha);
 
-  float x = waypoints[wp].x;
-  float y = waypoints[wp].y;
+  gvf_trajectory.p[6] = wp;
+  gvf_plen_wps = 1;
+
+  float x = WaypointX(wp);
+  float y = WaypointY(wp);
 
   gvf_sin_XY_alpha(x, y, alpha, w, off, A);
 

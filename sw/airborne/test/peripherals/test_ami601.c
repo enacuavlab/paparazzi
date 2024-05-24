@@ -25,8 +25,7 @@
 #include "mcu.h"
 #include "mcu_periph/sys_time.h"
 #include "led.h"
-#define DATALINK_C
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 
 #include "mcu_periph/i2c.h"
 #include "peripherals/ami601.h"
@@ -59,6 +58,7 @@ static inline void main_init(void)
 
   LED_ON(4);
   ami601_init();
+  datalink_init();
   downlink_init();
 }
 

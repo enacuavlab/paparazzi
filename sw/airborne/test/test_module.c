@@ -27,7 +27,6 @@
 
 #include BOARD_CONFIG
 
-#define DATALINK_C
 #define MODULES_C
 #define ABI_C
 
@@ -35,9 +34,9 @@
 #include "mcu_periph/sys_time.h"
 #include "led.h"
 
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #include "generated/modules.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 
 static inline void main_init(void);
 static inline void main_periodic_task(void);
@@ -71,6 +70,7 @@ static inline void main_init(void)
 {
   mcu_init();
   sys_time_register_timer((1. / PERIODIC_FREQUENCY), NULL);
+  datalink_init();
   downlink_init();
 
   modules_init();

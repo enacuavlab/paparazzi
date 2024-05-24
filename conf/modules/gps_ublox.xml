@@ -5,50 +5,82 @@
     <description>
       U-blox GPS (UART)
       Driver for u-blox GPS modules parsing the binary UBX protocol.
+      
+      The reset variable allows us to manually restart the u-blox GPS. There are three modes:
+        - Hotstart  (GPS_UBX_BOOTRESET = 1)
+        - Warmstart (GPS_UBX_BOOTRESET = 2)
+        - Coldstart (GPS_UBX_BOOTRESET = 3) 
     </description>
     <configure name="UBX_GPS_PORT" value="UARTx" description="UART where the GPS is connected to (UART1, UART2, etc"/>
     <configure name="UBX_GPS_BAUD" value="B38400" description="UART baud rate"/>
+    <configure name="GPS_UBX_BOOTRESET" value="0" description="Force a hot, warm or cold reset when the system boot up"/>
   </doc>
+
+  <settings>
+    <dl_settings>
+      <dl_settings name="gps_ublox">
+        <dl_setting MIN="1" MAX="3" STEP="1" values="Hotstart|Warmstart|Coldstart" module="gps/gps_ubx" VAR="gps_ubx_reset" shortname="reset"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+
   <dep>
     <depends>uart,gps</depends>
     <provides>gps</provides>
   </dep>
-  <autoload name="gps_nps"/>
-  <autoload name="gps_sim"/>
   <header>
-    <file name="gps.h" dir="subsystems"/>
+    <file name="gps.h"/>
   </header>
   <init fun="gps_ubx_init()"/>
   <periodic fun="gps_ubx_periodic_check()" freq="1." autorun="TRUE"/>
   <event fun="gps_ubx_event()"/>
+  <datalink message="HITL_UBX" fun="gps_ubx_parse_HITL_UBX(buf)"/> 
   <makefile target="ap|fbw">
+    <file name="gps_ubx.c"/>
+
+    <!-- GPS Ublox 1 -->
     <configure name="UBX_GPS_PORT" default="$(GPS_PORT)" case="upper|lower"/>
     <configure name="UBX_GPS_BAUD" default="$(GPS_BAUD)"/>
-
-    <file name="gps_ubx.c" dir="subsystems/gps"/>
-
     <define name="USE_$(UBX_GPS_PORT_UPPER)"/>
-    <define name="UBX_GPS_LINK" value="$(UBX_GPS_PORT_LOWER)"/>
+    <define name="UBX_GPS_PORT" value="$(UBX_GPS_PORT_LOWER)"/>
     <define name="$(UBX_GPS_PORT_UPPER)_BAUD" value="$(UBX_GPS_BAUD)"/>
+
+    <!-- GPS Ublox 2 -->
+    <configure name="UBX2_GPS_PORT" default="$(GPS2_PORT)" case="upper|lower"/>
+    <configure name="UBX2_GPS_BAUD" default="$(GPS2_BAUD)"/>
+    <define name="USE_$(UBX2_GPS_PORT_UPPER)" cond="ifneq ($(UBX2_GPS_PORT)$(SECONDARY_GPS),)"/>
+    <define name="UBX2_GPS_PORT" value="$(UBX2_GPS_PORT_LOWER)" cond="ifneq ($(UBX2_GPS_PORT)$(SECONDARY_GPS),)"/>
+    <define name="$(UBX2_GPS_PORT_UPPER)_BAUD" value="$(UBX2_GPS_BAUD)" cond="ifneq ($(UBX2_GPS_BAUD)$(SECONDARY_GPS),)"/>
+    <define name="GPS_UBX_NB" value="2" cond="ifneq ($(UBX2_GPS_PORT)$(SECONDARY_GPS),)"/>
+
     <raw>
       ifdef SECONDARY_GPS
-      ifneq (,$(findstring $(SECONDARY_GPS), ublox))
-      # this is the secondary GPS
-      $(TARGET).CFLAGS += -DGPS_SECONDARY_TYPE_H=\"subsystems/gps/gps_ubx.h\"
-      $(TARGET).CFLAGS += -DSECONDARY_GPS=GPS_UBX
+        ifneq (,$(findstring ublox2, $(SECONDARY_GPS)))
+          # this is the secondary GPS
+          $(TARGET).CFLAGS += -DGPS_SECONDARY_TYPE_H=\"modules/gps/gps_ubx.h\"
+          $(TARGET).CFLAGS += -DSECONDARY_GPS=GPS_UBX2
+        else ifneq (,$(findstring ublox, $(SECONDARY_GPS)))
+          # this is the secondary GPS
+          $(TARGET).CFLAGS += -DGPS_SECONDARY_TYPE_H=\"modules/gps/gps_ubx.h\"
+          $(TARGET).CFLAGS += -DSECONDARY_GPS=GPS_UBX
+        endif
+
+        ifneq (,$(findstring ublox2, $(PRIMARY_GPS)))
+          $(TARGET).CFLAGS += -DGPS_TYPE_H=\"modules/gps/gps_ubx.h\"
+          $(TARGET).CFLAGS += -DPRIMARY_GPS=GPS_UBX2
+        else ifneq (,$(findstring ublox, $(PRIMARY_GPS)))
+          $(TARGET).CFLAGS += -DGPS_TYPE_H=\"modules/gps/gps_ubx.h\"
+          $(TARGET).CFLAGS += -DPRIMARY_GPS=GPS_UBX
+        endif
       else
-      $(TARGET).CFLAGS += -DGPS_TYPE_H=\"subsystems/gps/gps_ubx.h\"
-      $(TARGET).CFLAGS += -DPRIMARY_GPS=GPS_UBX
-      endif
-      else
-      # plain old single GPS usage
-      $(TARGET).CFLAGS += -DGPS_TYPE_H=\"subsystems/gps/gps_ubx.h\"
+        # plain old single GPS usage
+        $(TARGET).CFLAGS += -DGPS_TYPE_H=\"modules/gps/gps_ubx.h\"
       endif
     </raw>
     <test>
       <define name="PRIMARY_GPS" value="GPS_UBX"/>
       <define name="USE_UART2"/>
-      <define name="UBX_GPS_LINK" value="uart2"/>
+      <define name="UBX_GPS_PORT" value="uart2"/>
     </test>
   </makefile>
 </module>

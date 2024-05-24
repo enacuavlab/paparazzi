@@ -158,6 +158,13 @@
  * PWM defines
  */
 
+/*
+ * enable TIM1 by default
+ */
+#ifndef USE_PWM_TIM1
+#define USE_PWM_TIM1 1
+#endif
+
 // SRVa connectors, activated in PWM mode by default
 
 #ifndef USE_PWM1
@@ -170,9 +177,7 @@
 #define PWM_SERVO_1_AF AF_SRVA1
 #define PWM_SERVO_1_DRIVER CONCAT_BOARD_PARAM(PWMD, SRVA1_TIM)
 #define PWM_SERVO_1_CHANNEL (SRVA1_TIM_CH-1)
-#define PWM_SERVO_1_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_1_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_1_CONF CONCAT_BOARD_PARAM(pwmcfg, SRVA1_TIM)
 #endif
 
 #ifndef USE_PWM2
@@ -185,9 +190,7 @@
 #define PWM_SERVO_2_AF AF_SRVA2
 #define PWM_SERVO_2_DRIVER CONCAT_BOARD_PARAM(PWMD, SRVA2_TIM)
 #define PWM_SERVO_2_CHANNEL (SRVA2_TIM_CH-1)
-#define PWM_SERVO_2_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_2_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_2_CONF CONCAT_BOARD_PARAM(pwmcfg, SRVA2_TIM)
 #endif
 
 #ifndef USE_PWM3
@@ -200,9 +203,7 @@
 #define PWM_SERVO_3_AF AF_SRVA3
 #define PWM_SERVO_3_DRIVER CONCAT_BOARD_PARAM(PWMD, SRVA3_TIM)
 #define PWM_SERVO_3_CHANNEL (SRVA3_TIM_CH-1)
-#define PWM_SERVO_3_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_3_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_3_CONF CONCAT_BOARD_PARAM(pwmcfg, SRVA3_TIM)
 #endif
 
 #ifndef USE_PWM4
@@ -215,9 +216,7 @@
 #define PWM_SERVO_4_AF AF_SRVA4
 #define PWM_SERVO_4_DRIVER CONCAT_BOARD_PARAM(PWMD, SRVA4_TIM)
 #define PWM_SERVO_4_CHANNEL (SRVA4_TIM_CH-1)
-#define PWM_SERVO_4_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_4_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_4_CONF CONCAT_BOARD_PARAM(pwmcfg, SRVA4_TIM)
 #endif
 
 // SRVb connector, PWM mode disabled by default (DShot is enabled by default)
@@ -232,9 +231,7 @@
 #define PWM_SERVO_5_AF AF_SRVB1
 #define PWM_SERVO_5_DRIVER CONCAT_BOARD_PARAM(PWMD, SRVB1_TIM)
 #define PWM_SERVO_5_CHANNEL (SRVB1_TIM_CH-1)
-#define PWM_SERVO_5_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_5_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_5_CONF CONCAT_BOARD_PARAM(pwmcfg, SRVB1_TIM)
 #endif
 
 #ifndef USE_PWM6
@@ -247,9 +244,7 @@
 #define PWM_SERVO_6_AF AF_SRVB2
 #define PWM_SERVO_6_DRIVER CONCAT_BOARD_PARAM(PWMD, SRVB2_TIM)
 #define PWM_SERVO_6_CHANNEL (SRVB2_TIM_CH-1)
-#define PWM_SERVO_6_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_6_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_6_CONF CONCAT_BOARD_PARAM(pwmcfg, SRVB2_TIM)
 #endif
 
 #ifndef USE_PWM7
@@ -262,9 +257,7 @@
 #define PWM_SERVO_7_AF AF_SRVB3
 #define PWM_SERVO_7_DRIVER CONCAT_BOARD_PARAM(PWMD, SRVB3_TIM)
 #define PWM_SERVO_7_CHANNEL (SRVB3_TIM_CH-1)
-#define PWM_SERVO_7_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_7_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_7_CONF CONCAT_BOARD_PARAM(pwmcfg, SRVB3_TIM)
 #endif
 
 #ifndef USE_PWM8
@@ -277,9 +270,7 @@
 #define PWM_SERVO_8_AF AF_SRVB4
 #define PWM_SERVO_8_DRIVER CONCAT_BOARD_PARAM(PWMD, SRVB4_TIM)
 #define PWM_SERVO_8_CHANNEL (SRVB4_TIM_CH-1)
-#define PWM_SERVO_8_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_8_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_8_CONF CONCAT_BOARD_PARAM(pwmcfg, SRVB4_TIM)
 #endif
 
 #ifndef USE_PWM9
@@ -292,9 +283,7 @@
 #define PWM_SERVO_9_AF GPIO_AF2
 #define PWM_SERVO_9_DRIVER CONCAT_BOARD_PARAM(PWMD, AUX_A1_TIM)
 #define PWM_SERVO_9_CHANNEL (AUX_A1_TIM_CH-1)
-#define PWM_SERVO_9_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_9_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_9_CONF CONCAT_BOARD_PARAM(pwmcfg, AUX_A1_TIM)
 #endif
 
 #ifndef USE_PWM10
@@ -307,9 +296,7 @@
 #define PWM_SERVO_10_AF GPIO_AF2
 #define PWM_SERVO_10_DRIVER CONCAT_BOARD_PARAM(PWMD, AUX_A2_TIM)
 #define PWM_SERVO_10_CHANNEL (AUX_A2_TIM_CH-1)
-#define PWM_SERVO_10_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_10_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_10_CONF CONCAT_BOARD_PARAM(pwmcfg, AUX_A2_TIM)
 #endif
 
 #ifndef USE_PWM11
@@ -322,9 +309,7 @@
 #define PWM_SERVO_11_AF GPIO_AF2
 #define PWM_SERVO_11_DRIVER CONCAT_BOARD_PARAM(PWMD, AUX_A3_TIM)
 #define PWM_SERVO_11_CHANNEL (AUX_A3_TIM_CH-1)
-#define PWM_SERVO_11_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_11_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_11_CONF CONCAT_BOARD_PARAM(pwmcfg, AUX_A3_TIM)
 #endif
 
 #ifndef USE_PWM12
@@ -337,9 +322,7 @@
 #define PWM_SERVO_12_AF GPIO_AF2
 #define PWM_SERVO_12_DRIVER CONCAT_BOARD_PARAM(PWMD, AUX_A4_TIM)
 #define PWM_SERVO_12_CHANNEL (AUX_A4_TIM_CH-1)
-#define PWM_SERVO_12_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_12_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_12_CONF CONCAT_BOARD_PARAM(pwmcfg, AUX_A4_TIM)
 #endif
 
 #ifndef USE_PWM13
@@ -352,9 +335,7 @@
 #define PWM_SERVO_13_AF GPIO_AF2
 #define PWM_SERVO_13_DRIVER CONCAT_BOARD_PARAM(PWMD, AUX_B1_TIM)
 #define PWM_SERVO_13_CHANNEL (AUX_B1_TIM_CH-1)
-#define PWM_SERVO_13_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_13_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_13_CONF CONCAT_BOARD_PARAM(pwmcfg, AUX_B1_TIM)
 #endif
 
 #ifndef USE_PWM14
@@ -367,9 +348,7 @@
 #define PWM_SERVO_14_AF GPIO_AF2
 #define PWM_SERVO_14_DRIVER CONCAT_BOARD_PARAM(PWMD, AUX_B2_TIM)
 #define PWM_SERVO_14_CHANNEL (AUX_B2_TIM_CH-1)
-#define PWM_SERVO_14_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_14_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_14_CONF CONCAT_BOARD_PARAM(pwmcfg, AUX_B2_TIM)
 #endif
 
 #ifndef USE_PWM15
@@ -382,9 +361,7 @@
 #define PWM_SERVO_15_AF GPIO_AF2
 #define PWM_SERVO_15_DRIVER CONCAT_BOARD_PARAM(PWMD, AUX_B3_TIM)
 #define PWM_SERVO_15_CHANNEL (AUX_B3_TIM_CH-1)
-#define PWM_SERVO_15_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_15_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_15_CONF CONCAT_BOARD_PARAM(pwmcfg, AUX_B3_TIM)
 #endif
 
 #ifndef USE_PWM16
@@ -397,9 +374,7 @@
 #define PWM_SERVO_16_AF GPIO_AF2
 #define PWM_SERVO_16_DRIVER CONCAT_BOARD_PARAM(PWMD, AUX_B4_TIM)
 #define PWM_SERVO_16_CHANNEL (AUX_B4_TIM_CH-1)
-#define PWM_SERVO_16_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_16_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_16_CONF CONCAT_BOARD_PARAM(pwmcfg, AUX_B4_TIM)
 #endif
 
 // servo index starting at 1 + regular servos + aux servos
@@ -407,88 +382,24 @@
 #define ACTUATORS_PWM_NB 17
 
 
-#ifdef STM32_PWM_USE_TIM1
-#define PWM_CONF_TIM1 STM32_PWM_USE_TIM1
-#else
-#define PWM_CONF_TIM1 1
-#endif
-#define PWM_CONF1_DEF { \
-  PWM_FREQUENCY, \
-  PWM_FREQUENCY/TIM1_SERVO_HZ, \
-  NULL, \
-  { \
-    { PWM_SERVO_1_ACTIVE, NULL }, \
-    { PWM_SERVO_2_ACTIVE, NULL }, \
-    { PWM_SERVO_3_ACTIVE, NULL }, \
-    { PWM_SERVO_4_ACTIVE, NULL }, \
-  }, \
-  0, \
-  0 \
-}
-
-#ifdef STM32_PWM_USE_TIM3
-#define PWM_CONF_TIM3 STM32_PWM_USE_TIM3
-#else
-#define PWM_CONF_TIM3 1
-#endif
-#define PWM_CONF3_DEF { \
-  PWM_FREQUENCY, \
-  PWM_FREQUENCY/TIM3_SERVO_HZ, \
-  NULL, \
-  { \
-    { PWM_SERVO_12_ACTIVE, NULL }, \
-    { PWM_SERVO_14_ACTIVE, NULL }, \
-    { PWM_SERVO_15_ACTIVE, NULL }, \
-    { PWM_SERVO_16_ACTIVE, NULL }, \
-  }, \
-  0, \
-  0 \
-}
-
-#ifdef STM32_PWM_USE_TIM4
-#define PWM_CONF_TIM4 STM32_PWM_USE_TIM4
-#else
-#define PWM_CONF_TIM4 1
-#endif
-#define PWM_CONF4_DEF { \
-  PWM_FREQUENCY, \
-  PWM_FREQUENCY/TIM4_SERVO_HZ, \
-  NULL, \
-  { \
-    { PWM_SERVO_5_ACTIVE, NULL }, \
-    { PWM_SERVO_6_ACTIVE, NULL }, \
-    { PWM_SERVO_7_ACTIVE, NULL }, \
-    { PWM_SERVO_8_ACTIVE, NULL }, \
-  }, \
-  0, \
-  0 \
-}
-
-#ifdef STM32_PWM_USE_TIM5
-#define PWM_CONF_TIM5 STM32_PWM_USE_TIM5
-#else
-#define PWM_CONF_TIM5 1
-#endif
-#define PWM_CONF5_DEF { \
-  PWM_FREQUENCY, \
-  PWM_FREQUENCY/TIM5_SERVO_HZ, \
-  NULL, \
-  { \
-    { PWM_SERVO_9_ACTIVE, NULL }, \
-    { PWM_SERVO_10_ACTIVE, NULL }, \
-    { PWM_SERVO_11_ACTIVE, NULL }, \
-    { PWM_SERVO_13_ACTIVE, NULL }, \
-  }, \
-  0, \
-  0 \
-}
-
 /**
  * DSHOT
  */
-#ifndef DSHOT_TELEMETRY_DEV
-#define DSHOT_TELEMETRY_DEV NULL
+#ifdef DSHOT_TIM4_TELEMETRY_NUM
+#define DSHOT_TIM4_TELEMETRY_DEV CONCAT_BOARD_PARAM(&SD, DSHOT_TIM4_TELEMETRY_NUM)
+#else
+#define DSHOT_TIM4_TELEMETRY_DEV NULL
 #endif
+
+#ifdef DSHOT_TIM1_TELEMETRY_NUM
+#define DSHOT_TIM1_TELEMETRY_DEV CONCAT_BOARD_PARAM(&SD, DSHOT_TIM1_TELEMETRY_NUM)
+#else
+#define DSHOT_TIM1_TELEMETRY_DEV NULL
+#endif
+
+// macros for possible dshot telemetry
+#define DSHOT_TLM_RX 5
+#define DSHOT_TLM_AUX_RX 4
 
 #ifndef USE_DSHOT_TIM4
 #define USE_DSHOT_TIM4 1 // use SRVb for DShot by default
@@ -530,7 +441,7 @@
   .dma_stream = STM32_PWM4_UP_DMA_STREAM,   \
   .dma_channel = STM32_PWM4_UP_DMA_CHANNEL, \
   .pwmp = &PWMD4,                           \
-  .tlm_sd = DSHOT_TELEMETRY_DEV,            \
+  .tlm_sd = DSHOT_TIM4_TELEMETRY_DEV,       \
   .dma_buf = &dshot4DmaBuffer,              \
   .dcache_memory_in_use = false             \
 }
@@ -572,7 +483,7 @@
   .dma_stream = STM32_PWM1_UP_DMA_STREAM,   \
   .dma_channel = STM32_PWM1_UP_DMA_CHANNEL, \
   .pwmp = &PWMD1,                           \
-  .tlm_sd = DSHOT_TELEMETRY_DEV,            \
+  .tlm_sd = DSHOT_TIM1_TELEMETRY_DEV,       \
   .dma_buf = &dshot1DmaBuffer,              \
   .dcache_memory_in_use = false             \
 }
@@ -617,6 +528,14 @@
 #define UART4_GPIO_PORT_RX  PAL_PORT(LINE_AUX_A2)
 #define UART4_GPIO_RX       PAL_PAD(LINE_AUX_A2)
 #define UART4_GPIO_AF       AUX_A1_UART_AF
+
+/**
+ * UART5 on SRVB (DSHOT telemetry)
+ */
+
+#define UART5_GPIO_PORT_RX  PAL_PORT(LINE_DSHOT_RX)
+#define UART5_GPIO_RX       PAL_PAD(LINE_DSHOT_RX)
+#define UART5_GPIO_AF       AF_DSHOT_RX
 
 /**
  * SBUS / Spektrum port
@@ -831,7 +750,7 @@
  * Actuators for fixedwing
  */
  /* Default actuators driver */
-#define DEFAULT_ACTUATORS "subsystems/actuators/actuators_pwm.h"
+#define DEFAULT_ACTUATORS "modules/actuators/actuators_pwm.h"
 #define ActuatorDefaultSet(_x,_y) ActuatorPwmSet(_x,_y)
 #define ActuatorsDefaultInit() ActuatorsPwmInit()
 #define ActuatorsDefaultCommit() ActuatorsPwmCommit()

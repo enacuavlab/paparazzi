@@ -160,9 +160,9 @@
     <define name="FILT_CUTOFF" value="3.2"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN_P" value="0.06"/>
-    <define name="ACT_DYN_Q" value="0.06"/>
-    <define name="ACT_DYN_R" value="0.06"/>
+    <define name="ACT_FREQ_P" value="31.7"/>
+    <define name="ACT_FREQ_Q" value="31.7"/>
+    <define name="ACT_FREQ_R" value="31.7"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
@@ -193,7 +193,6 @@
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="nw_motor, ne_motor, se_motor, sw_motor" type="string[]"/>
     <define name="JSBSIM_MODEL" value="simple_x_quad_ccw" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
 
     <define name="GAZEBO_AC_NAME" value="simple_x_quad" type="string"/>    
     <define name="ACTUATOR_THRUSTS" value="1.55, 1.55, 1.55, 1.55" type="float[]"/>

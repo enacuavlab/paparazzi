@@ -24,27 +24,24 @@
  * Test the manual control via RC including command_laws.
  */
 
-
-#define DATALINK_C
-
 #include "generated/airframe.h"
 #include "generated/settings.h"
 
-#include "subsystems/datalink/datalink.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/datalink.h"
+#include "modules/datalink/downlink.h"
 #include "modules/datalink/pprz_dl.h"
 
 #include "mcu.h"
 #include "mcu_periph/sys_time.h"
 #include "led.h"
 
-#include "subsystems/commands.h"
-#include "subsystems/actuators.h"
+#include "modules/core/commands.h"
+#include "modules/actuators/actuators.h"
 #if USE_MOTOR_MIXING
-#include "subsystems/actuators/motor_mixing.h"
+#include "modules/actuators/motor_mixing.h"
 #endif
 
-#include "subsystems/radio_control.h"
+#include "modules/radio_control/radio_control.h"
 
 static inline void main_init(void);
 static inline void main_periodic(void);
@@ -76,6 +73,7 @@ int main(void)
 static inline void main_init(void)
 {
   mcu_init();
+  datalink_init();
   downlink_init();
   pprz_dl_init();
 

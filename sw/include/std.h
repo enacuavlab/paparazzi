@@ -30,6 +30,10 @@
 #include <stdbool.h>
 #include <math.h>
 
+#ifdef SITL
+#include <stdio.h> // for debuging in simulation
+#endif
+
 /* some convenience macros to print debug/config messages at compile time */
 #include "message_pragmas.h"
 
@@ -81,10 +85,35 @@ typedef uint8_t unit_t;
 #define SetBit(a, n) a |= (1 << n)
 #define ClearBit(a, n) a &= ~(1 << n)
 
+/** Normalize a rad angle between -PI and PI */
 #define NormRadAngle(x) { \
     while (x > M_PI) x -= 2 * M_PI; \
     while (x < -M_PI) x += 2 * M_PI; \
   }
+/** Normalize a degree angle between 0 and 359 */
+#define NormCourse(x) { \
+    while (x < 0) x += 360; \
+    while (x >= 360) x -= 360; \
+  }
+/** Normalize a rad angle between 0 and 2*PI */
+#define NormCourseRad(x) { \
+    while (x < 0) x += 2*M_PI; \
+    while (x >= 2*M_PI) x -= 2*M_PI; \
+  }
+
+/** Normalize a degree angle between 0 and 359 */
+// FIXME should we use a protected version ? of NormXxx ?
+/*
+#define NormCourse(x) { \
+    uint8_t dont_loop_forever = 0;  \
+    while (x < 0 && ++dont_loop_forever) x += 360; \
+    while (x >= 360 && ++dont_loop_forever) x -= 360; \
+  }
+*/
+
+#define CloseDegAngles(_c1, _c2) ({ float _diff = _c1 - _c2; NormCourse(_diff); 350 < _diff || _diff < 10; })
+#define CloseRadAngles(_c1, _c2) ({ float _diff = _c1 - _c2; NormRadAngle(_diff); fabsf(_diff) < 0.0177; })
+
 #define DegOfRad(x) ((x) * (180. / M_PI))
 #define DeciDegOfRad(x) ((x) * (1800./ M_PI))
 #define RadOfDeg(x) ((x) * (M_PI/180.))
@@ -93,8 +122,12 @@ typedef uint8_t unit_t;
 #define MOfCm(_x) (((float)(_x))/100.)
 #define MOfMm(_x) (((float)(_x))/1000.)
 
+#define And(x, y) ((x) && (y))
+#define Or(x, y) ((x) || (y))
 #define Min(x,y) (x < y ? x : y)
 #define Max(x,y) (x > y ? x : y)
+#define LessThan(_x, _y) ((_x) < (_y))
+#define MoreThan(_x, _y) ((_x) > (_y))
 
 #ifndef ABS
 #define ABS(val) ((val) < 0 ? -(val) : (val))
@@ -102,8 +135,9 @@ typedef uint8_t unit_t;
 
 #define BoundUpper(_x, _max) { if (_x > (_max)) _x = (_max);}
 
+// Note: the bound function will bound NaN to min as any comparison that contains NaN is false.
+#define Bound(_x, _min, _max) { if (!(_x > (_min))) _x = (_min); else if (!(_x < (_max))) _x = (_max); }
 
-#define Bound(_x, _min, _max) { if (_x > (_max)) _x = (_max); else if (_x < (_min)) _x = (_min); }
 #define BoundInverted(_x, _min, _max) {           \
     if ((_x < (_min)) && (_x > (_max))) {         \
       if (abs(_x - (_min)) < abs(_x - (_max)))    \

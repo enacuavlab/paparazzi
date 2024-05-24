@@ -25,13 +25,15 @@
  */
 
 #include <iostream>
-#include <Eigen/Dense>
+#include <Eigen/Dense> // https://eigen.tuxfamily.org/dox/GettingStarted.html
 
 #include "gvf_parametric.h"
 #include "gvf_parametric_low_level_control.h"
 #include "./trajectories/gvf_parametric_3d_ellipse.h"
 #include "./trajectories/gvf_parametric_3d_lissajous.h"
 #include "./trajectories/gvf_parametric_2d_trefoil.h"
+#include "./trajectories/gvf_parametric_2d_bezier_splines.h"
+#include "../gvf_common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,38 +43,26 @@ extern "C" {
 
 // Control
 uint32_t gvf_parametric_t0 = 0; // We need it for calculting the time lapse delta_T
+uint32_t gvf_parametric_splines_ctr = 0; // We need it for Bézier curves splines Telemetry
 gvf_parametric_con gvf_parametric_control;
 
 // Trajectory
 gvf_parametric_tra gvf_parametric_trajectory;
 
+// Parameters array lenght
+int gvf_parametric_plen = 1;
+int gvf_parametric_plen_wps = 0;
+
+// Error signals array lenght
+int gvf_parametric_elen = 3;
+
+// Bézier
+bezier_t gvf_bezier_2D[GVF_PARAMETRIC_2D_BEZIER_N_SEG];
+
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 static void send_gvf_parametric(struct transport_tx *trans, struct link_device *dev)
 {
-  // Do not know whether is a good idea to do this check here or to include
-  // this plen in gvf_trajectory
-  int plen;
-  int elen;
-
-  switch (gvf_parametric_trajectory.type) {
-    case TREFOIL_2D:
-      plen = 7;
-      elen = 2;
-      break;
-    case ELLIPSE_3D:
-      plen = 6;
-      elen = 3;
-      break;
-    case LISSAJOUS_3D:
-      plen = 13;
-      elen = 3;
-      break;
-    default:
-      plen = 1;
-      elen = 3;
-  }
-
   uint8_t traj_type = (uint8_t)gvf_parametric_trajectory.type;
 
   uint32_t now = get_sys_time_msec();
@@ -81,11 +71,13 @@ static void send_gvf_parametric(struct transport_tx *trans, struct link_device *
   float wb = gvf_parametric_control.w * gvf_parametric_control.beta;
 
   if (delta_T < 200) {
-    pprz_msg_send_GVF_PARAMETRIC(trans, dev, AC_ID, &traj_type, &gvf_parametric_control.s, &wb, plen,
-                                 gvf_parametric_trajectory.p_parametric, elen, gvf_parametric_trajectory.phi_errors);
+    gvf_parametric_splines_ctr = (gvf_parametric_splines_ctr + 1) % 3;
+    pprz_msg_send_GVF_PARAMETRIC(trans, dev, AC_ID, &traj_type, &gvf_parametric_control.s, &wb, gvf_parametric_plen,
+                                 gvf_parametric_trajectory.p_parametric, gvf_parametric_elen, gvf_parametric_trajectory.phi_errors);
   }
 }
 
+#if GVF_OCAML_GCS
 static void send_circle_parametric(struct transport_tx *trans, struct link_device *dev)
 {
   uint32_t now = get_sys_time_msec();
@@ -97,6 +89,7 @@ static void send_circle_parametric(struct transport_tx *trans, struct link_devic
                            &gvf_parametric_trajectory.p_parametric[1], &gvf_parametric_trajectory.p_parametric[2]);
     }
 }
+#endif // GVF_OCAML_GCS
 
 #endif // PERIODIC TELEMETRY
 
@@ -117,8 +110,10 @@ void gvf_parametric_init(void)
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GVF_PARAMETRIC, send_gvf_parametric);
+#if GVF_OCAML_GCS
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CIRCLE, send_circle_parametric);
-#endif
+#endif // GVF_OCAML_GCS
+#endif // PERIODIC_TELEMETRY
 
 }
 
@@ -139,6 +134,12 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
     return;
   }
 
+  // Carrot position
+#ifdef FIXEDWING_FIRMWARE
+  desired_x = f1;
+  desired_y = f2;
+#endif
+
   float L = gvf_parametric_control.L;
   float beta = gvf_parametric_control.beta * gvf_parametric_control.s;
 
@@ -155,6 +156,7 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
 
   gvf_parametric_trajectory.phi_errors[0] = phi1; // Error signals for the telemetry
   gvf_parametric_trajectory.phi_errors[1] = phi2;
+  gvf_parametric_elen = 2;
 
   // Chi
   X(0) = L * beta * f1d - kx * phi1;
@@ -209,6 +211,11 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
   float heading_rate = -1 / (Xt * G * X) * Xt * Gp * (I - Xh * Xht) * J * xi_dot - (gvf_parametric_control.k_psi * aux /
                        sqrtf(Xt * G * X));
 
+  // From gvf_common.h TODO: implement d/dt of kppa and ori_err
+  gvf_c_omega.omega   = heading_rate;
+  gvf_c_info.kappa    = (f1d * f2dd - f1dd * f2d) / powf(f1d * f1d + f2d * f2d, 1.5);
+  gvf_c_info.ori_err  = 1 - (Xh(0) * cosf(course) + Xh(1) * sinf(course));
+
   // Virtual coordinate update, even if the vehicle is not in autonomous mode, the parameter w will get "closer" to
   // the vehicle. So it is not only okei but advisable to update it.
   gvf_parametric_control.w += w_dot * gvf_parametric_control.delta_T * 1e-3;
@@ -216,6 +223,7 @@ void gvf_parametric_control_2D(float kx, float ky, float f1, float f2, float f1d
   gvf_parametric_low_level_control_2D(heading_rate);
 }
 
+#ifdef FIXEDWING_FIRMWARE
 void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2, float f3, float f1d, float f2d,
                                float f3d, float f1dd, float f2dd, float f3dd)
 {
@@ -227,6 +235,10 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
     gvf_parametric_control.w = 0; // Reset w since we assume the algorithm starts
     return;
   }
+
+  // Carrot position
+  desired_x = f1;
+  desired_y = f2;
 
   float L = gvf_parametric_control.L;
   float beta = gvf_parametric_control.beta * gvf_parametric_control.s;
@@ -247,6 +259,8 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
   gvf_parametric_trajectory.phi_errors[0] = phi1 / L; // Error signals in meters for the telemetry
   gvf_parametric_trajectory.phi_errors[1] = phi2 / L;
   gvf_parametric_trajectory.phi_errors[2] = phi3 / L;
+  gvf_parametric_elen = 3;
+
 
   // Chi
   X(0) = -f1d * L * L * beta - kx * phi1;
@@ -316,6 +330,7 @@ void gvf_parametric_control_3D(float kx, float ky, float kz, float f1, float f2,
 
   gvf_parametric_low_level_control_3D(heading_rate, climbing_rate);
 }
+#endif // FIXED_WING FIRMWARE
 
 /** 2D TRAJECTORIES **/
 // 2D TREFOIL KNOT
@@ -330,6 +345,8 @@ bool gvf_parametric_2D_trefoil_XY(float xo, float yo, float w1, float w2, float 
   gvf_parametric_trajectory.p_parametric[4] = ratio;
   gvf_parametric_trajectory.p_parametric[5] = r;
   gvf_parametric_trajectory.p_parametric[6] = alpha;
+  gvf_parametric_plen = 7 + gvf_parametric_plen_wps;
+  gvf_parametric_plen_wps = 0;
 
   float f1, f2, f1d, f2d, f1dd, f2dd;
 
@@ -342,13 +359,76 @@ bool gvf_parametric_2D_trefoil_XY(float xo, float yo, float w1, float w2, float 
 
 bool gvf_parametric_2D_trefoil_wp(uint8_t wp, float w1, float w2, float ratio, float r, float alpha)
 {
-  gvf_parametric_2D_trefoil_XY(waypoints[wp].x, waypoints[wp].y, w1, w2, ratio, r, alpha);
+  gvf_parametric_trajectory.p_parametric[7] = wp;
+  gvf_parametric_plen_wps = 1;
+  gvf_parametric_2D_trefoil_XY(WaypointX(wp), WaypointY(wp), w1, w2, ratio, r, alpha);
+  return true;
+}
+
+// 2D CUBIC BEZIER CURVE
+bool gvf_parametric_2D_bezier_XY(void)
+{
+  gvf_parametric_trajectory.type = BEZIER_2D;
+  float fx, fy, fxd, fyd, fxdd, fydd;
+  gvf_parametric_2d_bezier_splines_info(gvf_bezier_2D, &fx, &fy, &fxd, &fyd, &fxdd, &fydd);
+  gvf_parametric_control_2D(gvf_parametric_2d_bezier_par.kx, gvf_parametric_2d_bezier_par.ky, fx, fy, fxd, fyd, fxdd,
+                            fydd);
+  return true;
+}
+
+/* @param first_wp is the first waypoint of the Bézier Spline
+ * there should be 3*GVF_PARAMETRIC_2D_BEZIER_N_SEG+1 points
+ */
+bool gvf_parametric_2D_bezier_wp(uint8_t first_wp)
+{
+  float x[3 * GVF_PARAMETRIC_2D_BEZIER_N_SEG + 1];
+  float y[3 * GVF_PARAMETRIC_2D_BEZIER_N_SEG + 1];
+  int k;
+  for (k = 0; k < 3 * GVF_PARAMETRIC_2D_BEZIER_N_SEG + 1; k++) {
+    x[k] = WaypointX(first_wp + k);
+    y[k] = WaypointY(first_wp + k);
+  }
+  create_bezier_spline(gvf_bezier_2D, x, y);
+
+  /* Send data piecewise. Some radio modules do not allow for a big data frame.*/
+
+  // Send x points -> Indicate x with sign (+) in the first parameter
+  if (gvf_parametric_splines_ctr == 0) {
+    gvf_parametric_trajectory.p_parametric[0] = -GVF_PARAMETRIC_2D_BEZIER_N_SEG; // send x (negative value)
+    for (k = 0; k < 3 * GVF_PARAMETRIC_2D_BEZIER_N_SEG + 1; k++) {
+      gvf_parametric_trajectory.p_parametric[k + 1] = x[k];
+    }
+  }
+  // Send y points -> Indicate y with sign (-) in the first parameter
+  else if (gvf_parametric_splines_ctr == 1) {
+    gvf_parametric_trajectory.p_parametric[0] = GVF_PARAMETRIC_2D_BEZIER_N_SEG; // send y (positive value)
+    for (k = 0; k < 3 * GVF_PARAMETRIC_2D_BEZIER_N_SEG + 1; k++) {
+      gvf_parametric_trajectory.p_parametric[k + 1] = y[k];
+    }
+  }
+  // send kx, ky, beta and anything else needed..
+  else {
+    gvf_parametric_trajectory.p_parametric[0] = 0.0;
+    gvf_parametric_trajectory.p_parametric[1] = gvf_parametric_2d_bezier_par.kx;
+    gvf_parametric_trajectory.p_parametric[2] = gvf_parametric_2d_bezier_par.ky;
+    gvf_parametric_trajectory.p_parametric[3] = gvf_parametric_control.beta;
+  }
+  gvf_parametric_plen = 16;
+  gvf_parametric_plen_wps = 1;
+
+  // restart the spline
+  if (gvf_parametric_control.w >= (float)GVF_PARAMETRIC_2D_BEZIER_N_SEG) {
+    gvf_parametric_control.w = 0;
+  } else if (gvf_parametric_control.w < 0) {
+    gvf_parametric_control.w = 0;
+  }
+  gvf_parametric_2D_bezier_XY();
   return true;
 }
 
 /** 3D TRAJECTORIES **/
 // 3D ELLIPSE
-
+#ifdef FIXEDWING_FIRMWARE
 bool gvf_parametric_3D_ellipse_XYZ(float xo, float yo, float r, float zl, float zh, float alpha)
 {
   horizontal_mode = HORIZONTAL_MODE_CIRCLE; //  Circle for the 2D GCS
@@ -372,6 +452,8 @@ bool gvf_parametric_3D_ellipse_XYZ(float xo, float yo, float r, float zl, float 
   gvf_parametric_trajectory.p_parametric[3] = zl;
   gvf_parametric_trajectory.p_parametric[4] = zh;
   gvf_parametric_trajectory.p_parametric[5] = alpha;
+  gvf_parametric_plen = 6 + gvf_parametric_plen_wps;
+  gvf_parametric_plen_wps = 0;
 
   float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
 
@@ -384,6 +466,9 @@ bool gvf_parametric_3D_ellipse_XYZ(float xo, float yo, float r, float zl, float 
 
 bool gvf_parametric_3D_ellipse_wp(uint8_t wp, float r, float zl, float zh, float alpha)
 {
+  gvf_parametric_trajectory.p_parametric[6] = wp;
+  gvf_parametric_plen_wps = 1;
+
   gvf_parametric_3D_ellipse_XYZ(waypoints[wp].x, waypoints[wp].y, r, zl, zh, alpha);
   return true;
 }
@@ -422,6 +507,8 @@ bool gvf_parametric_3D_lissajous_XYZ(float xo, float yo, float zo, float cx, flo
   gvf_parametric_trajectory.p_parametric[10] = dy;
   gvf_parametric_trajectory.p_parametric[11] = dz;
   gvf_parametric_trajectory.p_parametric[12] = alpha;
+  gvf_parametric_plen = 13 + gvf_parametric_plen_wps;
+  gvf_parametric_plen_wps = 0;
 
   float f1, f2, f3, f1d, f2d, f3d, f1dd, f2dd, f3dd;
 
@@ -435,6 +522,10 @@ bool gvf_parametric_3D_lissajous_XYZ(float xo, float yo, float zo, float cx, flo
 bool gvf_parametric_3D_lissajous_wp_center(uint8_t wp, float zo, float cx, float cy, float cz, float wx, float wy,
     float wz, float dx, float dy, float dz, float alpha)
 {
+  gvf_parametric_trajectory.p_parametric[13] = wp;
+  gvf_parametric_plen_wps = 1;
+
   gvf_parametric_3D_lissajous_XYZ(waypoints[wp].x, waypoints[wp].y, zo, cx, cy, cz, wx, wy, wz, dx, dy, dz, alpha);
   return true;
 }
+#endif // FIXEDWING_FIRMWARE

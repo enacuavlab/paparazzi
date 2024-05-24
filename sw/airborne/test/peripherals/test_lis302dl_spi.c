@@ -28,8 +28,7 @@
 #include BOARD_CONFIG
 #include "mcu.h"
 #include "mcu_periph/sys_time.h"
-#define DATALINK_C
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #include "led.h"
 
 #include "peripherals/lis302dl_spi.h"
@@ -100,8 +99,9 @@ static inline void main_event_task(void)
     lis302.data_available = false;
 
     RunOnceEvery(10, {
+      float temp = NAN;
       DOWNLINK_SEND_IMU_ACCEL_RAW(DefaultChannel, DefaultDevice,
-      &accel.x, &accel.y, &accel.z);
+      &accel.x, &accel.y, &accel.z, &temp);
 #if USE_LED_6
       LED_TOGGLE(6);
 #endif

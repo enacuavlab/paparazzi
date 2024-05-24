@@ -19,7 +19,7 @@
  */
 
 #include "mav_exercise.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 #include "firmwares/rotorcraft/navigation.h"
 #include "state.h"
 #include "autopilot_static.h"
@@ -140,7 +140,7 @@ uint8_t increase_nav_heading(float incrementDegrees) {
   FLOAT_ANGLE_NORMALIZE(new_heading);
 
   // set heading
-  nav_heading = ANGLE_BFP_OF_REAL(new_heading);
+  nav.heading = new_heading;
 
   return false;
 }

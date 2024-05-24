@@ -551,7 +551,21 @@ let rec select_gps_values = function
 	  l := (t, wgs84, a) :: !l
       done;
       List.rev !l
-
+  | (m, values)::_ when m.PprzLink.name = "MINIMAL_COM" ->
+      let lats = List.assoc "lat" values
+      and lons = List.assoc "lon" values
+      and alts = List.assoc "hmsl" values in
+      let l = ref [] in
+      for i = 0 to Array.length lats - 1 do
+	let a = snd alts.(i) in
+	if a > 0. then
+	  let t = fst lats.(i)
+	  and lat = snd lats.(i)
+	  and lon = snd lons.(i) in
+	  let wgs84 = make_geo_deg lat lon in
+	  l := (t, wgs84, a) :: !l
+      done;
+      List.rev !l
 
   | _ :: rest ->
 	select_gps_values rest
@@ -781,11 +795,11 @@ let open_log = fun ?factor plot menubar curves_fact () ->
 
 let screenshot = fun frame ->
   let width, height = Gdk.Drawable.get_size frame#misc#window in
-  let dest = GdkPixbuf.create width height () in
+  let dest = GdkPixbuf.create ~width ~height () in
   GdkPixbuf.get_from_drawable ~dest ~width ~height frame#misc#window;
   save_dialog
     "png"
-    (fun name -> GdkPixbuf.save name "png" dest)
+    (fun name -> GdkPixbuf.save ~filename:name ~typ:"png" dest)
 
 
 
@@ -845,7 +859,7 @@ let rec plot_window = fun ?export init ->
 
   (* Auto Scale *)
   let auto_scale = GButton.check_button ~label:"Auto Scale" ~active:true ~packing:h#pack () in
-  ignore (auto_scale#connect#toggled (fun () -> plot#set_auto_scale auto_scale#active));
+  ignore (auto_scale#connect#toggled ~callback:(fun () -> plot#set_auto_scale auto_scale#active));
   let bounds = [
     ("Tmin", plot#min_x, plot#set_min_x);
     ("Tmax", plot#max_x, plot#set_max_x);
@@ -864,7 +878,7 @@ let rec plot_window = fun ?export init ->
     let b = not auto_scale#active in
     List.iter (fun entry -> entry#misc#set_sensitive b) entries in
 
-  ignore (auto_scale#connect#toggled active_min_maxs);
+  ignore (auto_scale#connect#toggled ~callback:active_min_maxs);
   active_min_maxs ();
 
   (* Constants *)

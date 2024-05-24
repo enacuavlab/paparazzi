@@ -705,9 +705,10 @@
 
 
 /*
- * AHB_CLK
+ * Concat macro
  */
-#define AHB_CLK STM32_HCLK
+#define _CONCAT_BOARD_PARAM(_s1, _s2) _s1 ## _s2
+#define CONCAT_BOARD_PARAM(_s1, _s2) _CONCAT_BOARD_PARAM(_s1, _s2)
 
 /*
  * Onboard LEDs
@@ -768,6 +769,18 @@
 #define DefaultVoltageOfAdc(adc) (0.006185*adc)
 
 /*
+ * PWM TIM defines
+ * enable TIM2 and TIM3 by default
+ */
+#ifndef USE_PWM_TIM2
+#define USE_PWM_TIM2 1
+#endif
+
+#ifndef USE_PWM_TIM3
+#define USE_PWM_TIM3 1
+#endif
+
+/*
  * PWM defines TODO
  */
 #ifndef USE_PWM0
@@ -780,9 +793,7 @@
 #define PWM_SERVO_0_AF GPIO_AF2
 #define PWM_SERVO_0_DRIVER PWMD3
 #define PWM_SERVO_0_CHANNEL 2
-#define PWM_SERVO_0_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_0_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_0_CONF pwmcfg3
 #endif
 
 #ifndef USE_PWM1
@@ -795,9 +806,7 @@
 #define PWM_SERVO_1_AF GPIO_AF1
 #define PWM_SERVO_1_DRIVER PWMD2
 #define PWM_SERVO_1_CHANNEL 2
-#define PWM_SERVO_1_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_1_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_1_CONF pwmcfg2
 #endif
 
 #ifndef USE_PWM2
@@ -810,9 +819,7 @@
 #define PWM_SERVO_2_AF GPIO_AF2
 #define PWM_SERVO_2_DRIVER PWMD3
 #define PWM_SERVO_2_CHANNEL 1
-#define PWM_SERVO_2_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_2_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_2_CONF pwmcfg3
 #endif
 
 #ifndef USE_PWM3
@@ -825,9 +832,7 @@
 #define PWM_SERVO_3_AF GPIO_AF2
 #define PWM_SERVO_3_DRIVER PWMD3
 #define PWM_SERVO_3_CHANNEL 0
-#define PWM_SERVO_3_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_3_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_3_CONF pwmcfg3
 #endif
 
 #ifndef USE_PWM4
@@ -840,9 +845,7 @@
 #define PWM_SERVO_4_AF GPIO_AF1
 #define PWM_SERVO_4_DRIVER PWMD2
 #define PWM_SERVO_4_CHANNEL 1
-#define PWM_SERVO_4_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_4_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_4_CONF pwmcfg2
 #endif
 
 #ifndef USE_PWM5
@@ -855,9 +858,7 @@
 #define PWM_SERVO_5_AF GPIO_AF1
 #define PWM_SERVO_5_DRIVER PWMD2
 #define PWM_SERVO_5_CHANNEL 0
-#define PWM_SERVO_5_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_5_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_5_CONF pwmcfg2
 #endif
 
 #if USE_PWM6
@@ -867,49 +868,8 @@
 #define PWM_SERVO_6_AF GPIO_AF2
 #define PWM_SERVO_6_DRIVER PWMD3
 #define PWM_SERVO_6_CHANNEL 3
-#define PWM_SERVO_6_ACTIVE PWM_OUTPUT_ACTIVE_HIGH
-#else
-#define PWM_SERVO_6_ACTIVE PWM_OUTPUT_DISABLED
+#define PWM_SERVO_6_CONF pwmcfg3
 #endif
-
-
-#ifdef STM32_PWM_USE_TIM2
-#define PWM_CONF_TIM2 STM32_PWM_USE_TIM2
-#else
-#define PWM_CONF_TIM2 1
-#endif
-#define PWM_CONF2_DEF { \
-  PWM_FREQUENCY, \
-  PWM_FREQUENCY/TIM2_SERVO_HZ, \
-  NULL, \
-  { \
-    { PWM_SERVO_5_ACTIVE, NULL }, \
-    { PWM_SERVO_4_ACTIVE, NULL }, \
-    { PWM_SERVO_1_ACTIVE, NULL }, \
-    { PWM_OUTPUT_DISABLED, NULL }, \
-  }, \
-  0, \
-  0 \
-}
-
-#ifdef STM32_PWM_USE_TIM3
-#define PWM_CONF_TIM3 STM32_PWM_USE_TIM3
-#else
-#define PWM_CONF_TIM3 1
-#endif
-#define PWM_CONF3_DEF { \
-  PWM_FREQUENCY, \
-  PWM_FREQUENCY/TIM3_SERVO_HZ, \
-  NULL, \
-  { \
-    { PWM_SERVO_3_ACTIVE, NULL }, \
-    { PWM_SERVO_2_ACTIVE, NULL }, \
-    { PWM_SERVO_0_ACTIVE, NULL }, \
-    { PWM_SERVO_6_ACTIVE, NULL }, \
-  }, \
-  0, \
-  0 \
-}
 
 /**
  * PPM radio defines TODO
@@ -1020,7 +980,7 @@
  * Actuators for fixedwing
  */
  /* Default actuators driver */
-#define DEFAULT_ACTUATORS "subsystems/actuators/actuators_pwm.h"
+#define DEFAULT_ACTUATORS "modules/actuators/actuators_pwm.h"
 #define ActuatorDefaultSet(_x,_y) ActuatorPwmSet(_x,_y)
 #define ActuatorsDefaultInit() ActuatorsPwmInit()
 #define ActuatorsDefaultCommit() ActuatorsPwmCommit()

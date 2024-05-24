@@ -106,9 +106,11 @@ ABI_MESSAGES_H=$(STATICINCLUDE)/abi_messages.h
 MAVLINK_DIR=$(STATICINCLUDE)/mavlink/
 MAVLINK_PROTOCOL_H=$(MAVLINK_DIR)protocol.h
 
-GEN_HEADERS = $(UBX_PROTOCOL_H) $(MTK_PROTOCOL_H) $(XSENS_PROTOCOL_H) $(ABI_MESSAGES_H) $(MAVLINK_PROTOCOL_H)
+GEN_HEADERS = $(UBX_PROTOCOL_H) $(MTK_PROTOCOL_H) $(XSENS_PROTOCOL_H) $(ABI_MESSAGES_H)
 
-all: ground_segment ext subdirs_extra
+core: ground_segment ext subdirs_extra
+
+all: ground_segment ext subdirs_extra $(MAVLINK_PROTOCOL_H)
 
 _print_building:
 	@echo "------------------------------------------------------------"
@@ -155,10 +157,10 @@ cockpit: libpprz
 cockpit.opt: libpprz
 	$(MAKE) -C $(COCKPIT) opt
 
-tmtc: libpprz cockpit
+tmtc: libpprz
 	$(MAKE) -C $(TMTC)
 
-tmtc.opt: libpprz cockpit.opt
+tmtc.opt: libpprz
 	$(MAKE) -C $(TMTC) opt
 
 generators: libpprz
@@ -308,13 +310,23 @@ test_coverity: all
 test_aggieair: all
 	CONF_XML=conf/airframes/AGGIEAIR/aggieair_conf.xml prove tests/aircrafts/
 	
-# test Open UAS conf
-test_openuas: all
+# test MAVLab users conf
+test_mavlab: all
 	CONF_XML=conf/userconf/OPENUAS/openuas_conf.xml prove tests/aircrafts/
+	CONF_XML=conf/airframes/CDW/cdw_conf.xml prove tests/aircrafts/
+	CONF_XML=conf/airframes/BR/conf.xml prove tests/aircrafts/
 	
 # test TU Delft conf
 test_tudelft: all
 	CONF_XML=conf/userconf/tudelft/conf.xml prove tests/aircrafts/
+	CONF_XML=conf/userconf/tudelft/delfly_conf.xml prove tests/aircrafts/
+	CONF_XML=conf/userconf/tudelft/course_conf.xml prove tests/aircrafts/
+	CONF_XML=conf/userconf/tudelft/guido_conf.xml prove tests/aircrafts/
+
+# test GVF conf
+test_gvf: all
+	CONF_XML=conf/userconf/GVF/gvf_conf.xml prove tests/aircrafts/
+
 
 # compiles all aircrafts in conf_tests.xml
 test_examples: all
@@ -333,14 +345,8 @@ test_all_confs: all opencv_bebop
 test_math:
 	make -C tests/math
 
-# super simple simulator test, needs X
-# always uses conf/conf.xml, so that needs to contain the appropriate aircrafts
-# (only Microjet right now)
-test_sim: all
-	prove tests/sim
-
 .PHONY: all print_build_version _print_building _save_build_version init dox ground_segment ground_segment.opt \
 subdirs $(SUBDIRS) conf ext libpprz libpprzlink.update libpprzlink.install cockpit cockpit.opt tmtc tmtc.opt generators\
 static sim_static opencv_bebop\
 clean cleanspaces ab_clean dist_clean distclean dist_clean_irreversible \
-test test_examples test_math test_sim test_all_confs
+test test_examples test_math test_all_confs

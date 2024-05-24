@@ -24,12 +24,16 @@
  */
 
 #include "modules/spektrum_soft_bind/spektrum_soft_bind_fbw.h"
-#include "subsystems/intermcu/intermcu_fbw.h"
+#include "modules/intermcu/intermcu_fbw.h"
 #include "mcu.h"
-#include "subsystems/radio_control.h"
+#include "modules/radio_control/radio_control.h"
 #include "mcu_periph/sys_time_arch.h"
 
 #include "mcu_periph/gpio.h"
+
+#ifdef RADIO_CONTROL_BIND_IMPL_FUNC
+#include "modules/radio_control/spektrum.h"
+#endif
 
 void spektrum_soft_bind_init(void)
 {

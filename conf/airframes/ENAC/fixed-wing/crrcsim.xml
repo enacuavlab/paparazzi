@@ -1,12 +1,10 @@
 <!DOCTYPE airframe SYSTEM "../../airframe.dtd">
 
-<!-- Funjet Multiplex (http://www.multiplex-rc.de/)
-     UBX GPS
-     Airspeed sensor
-     Digital camera
--->
-
 <airframe name="CRRCSIM demo">
+
+  <description>
+    Demo for the CRRCSIM simulator with NPS
+  </description>
 
   <firmware name="fixedwing">
     <define name="AGR_CLIMB"/>
@@ -228,7 +226,6 @@
     <define name="CRRCSIM_COMMAND_THROTTLE" value="0"/>
     <define name="CRRCSIM_ROLL_NEUTRAL" value="0." unit="deg"/>
     <define name="CRRCSIM_PITCH_NEUTRAL" value="12." unit="deg"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
   </section>
 
 </airframe>

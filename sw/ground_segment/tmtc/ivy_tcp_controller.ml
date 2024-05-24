@@ -39,9 +39,9 @@ let () =
 
         let use_tele_message = fun payload ->
           Debug.trace 'x' (Debug.xprint (Protocol.string_of_payload payload));
-          let (msg_id, ac_id, values) = Tm_Pprz.values_of_payload payload in
-          let msg = Tm_Pprz.message_of_id msg_id in
-          Tm_Pprz.message_send (string_of_int ac_id) msg.PprzLink.name values in
+          let (header, values) = Tm_Pprz.values_of_payload payload in
+          let msg = Tm_Pprz.message_of_id header.PprzLink.message_id in
+          Tm_Pprz.message_send (string_of_int header.PprzLink.sender_id) msg.PprzLink.name values in
 
         ignore (PprzTransport.parse use_tele_message (Bytes.to_string b))
       with
@@ -51,21 +51,22 @@ let () =
     true in
 
   let ginput = GMain.Io.channel_of_descr (Unix.descr_of_in_channel i) in
-  ignore (Glib.Io.add_watch [`IN] get_message ginput);
+  ignore (Glib.Io.add_watch ~cond:[`IN] ~callback:get_message ginput);
 
   (* Forward datalink messages *)
   let get_ivy_message = fun _ args ->
     try
       let (msg_id, vs) = Dl_Pprz.values_of_string args.(0) in
       let ac_id = PprzLink.int_assoc "ac_id" vs in
-      let payload = Dl_Pprz.payload_of_values msg_id ac_id vs in
+      (* receiver_id unknow, using 0 instead... *)
+      let payload = Dl_Pprz.payload_of_values msg_id ac_id 0 vs in
       let buf = Pprz_transport.Transport.packet payload in
       fprintf o "%s%!" buf
     with exc -> prerr_endline (Printexc.to_string exc) in
   let _b = Ivy.bind get_ivy_message "^ground_dl (.*)" in
 
   let hangup = fun _ -> prerr_endline "hangup"; exit 1 in
-  ignore (Glib.Io.add_watch [`HUP] hangup ginput);
+  ignore (Glib.Io.add_watch ~cond:[`HUP] ~callback:hangup ginput);
 
   (* Main Loop *)
   GMain.main ()

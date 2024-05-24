@@ -240,6 +240,8 @@ let log_and_parse = fun ac_name (a:Aircraft_server.aircraft) msg values ->
         a.agl     <- a.alt -. (try float (Srtm.of_wgs84 a.pos) with _ -> a.ground_alt)
     | "AIRSPEED" ->
       a.airspeed <- fvalue "airspeed"
+    | "AIR_DATA" ->
+      a.airspeed <- fvalue "airspeed"
     | "DESIRED" ->
       (* Trying to be compatible with old logs ... *)
       begin match a.nav_ref with
@@ -485,6 +487,26 @@ let log_and_parse = fun ac_name (a:Aircraft_server.aircraft) msg values ->
         a.ap_mode <- check_index (ivalue "ap_mode") (modes_of_aircraft a) "AP_MODE";
         a.cur_block <- ivalue "nav_block";
       end
+    | "MINIMAL_COM" ->
+      let lat = fvalue "lat"
+      and lon = fvalue "lon" in
+      let geo = make_geo_deg lat lon in
+      a.pos <- geo;
+      a.alt <- fvalue "hmsl";
+      a.gspeed  <- fvalue "gspeed";
+      a.course  <- norm_course (fvalue "course");
+      if !heading_from_course || a.vehicle_type == FixedWing then
+        a.heading <- a.course;
+      a.climb   <- fvalue "climb";
+      a.agl <- a.alt -. (try float (Srtm.of_wgs84 a.pos) with _ -> a.ground_alt);
+      a.bat <- fvalue "vsupply";
+      a.throttle <- fvalue "throttle";
+      a.ap_mode <- check_index (ivalue "ap_mode") (modes_of_aircraft a) "AP_MODE";
+      a.cur_block <- ivalue "nav_block";
+      a.gps_mode <- check_index (ivalue "gps_mode") gps_modes "GPS_MODE";
+      a.flight_time <- ivalue "flight_time";
+      if a.gspeed > 3. && a.ap_mode = _AUTO2 then
+        Wind.update ac_name a.gspeed a.course
     | "FORMATION_SLOT_TM" ->
       Dl_Pprz.message_send "ground_dl" "FORMATION_SLOT" values
     | "FORMATION_STATUS_TM" ->

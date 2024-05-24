@@ -57,12 +57,12 @@
 #include "firmwares/rotorcraft/stabilization.h"
 #endif
 #ifdef FIXEDWING_FIRMWARE
-#include "subsystems/commands.h"
+#include "modules/core/commands.h"
 #endif
 #endif
 
 #if LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS
-#include "subsystems/actuators.h"
+#include "modules/actuators/actuators.h"
 #endif
 
 /** Write the log header line according to the enabled parts */
@@ -118,7 +118,7 @@ void logger_control_effectiveness_periodic(void)
 #if LOGGER_CONTROL_EFFECTIVENESS_COMMANDS
   for (unsigned int i = 0; i < COMMANDS_NB; i++) {
 #ifdef ROTORCRAFT_FIRMWARE
-    sdLogWriteLog(pprzLogFile, ",%ld", stabilization_cmd[i]);
+    sdLogWriteLog(pprzLogFile, ",%ld", stabilization.cmd[i]);
 #endif
 #ifdef FIXEDWING_FIRMWARE
     sdLogWriteLog(pprzLogFile, ",%d", commands[i]);

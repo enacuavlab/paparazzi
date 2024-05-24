@@ -19,21 +19,15 @@
     <module name="radio_control" type="datalink"/>
     <module name="motor_mixing"/>
     <module name="actuators" type="bebop"/>
-    <module name="imu" type="bebop">
-      <define name="BEBOP_LOWPASS_FILTER" value="MPU60X0_DLPF_42HZ"/>
-      <define name="BEBOP_SMPLRT_DIV" value="0"/>
-      <define name="BEBOP_GYRO_RANGE" value="MPU60X0_GYRO_RANGE_2000"/>
-      <define name="BEBOP_ACCEL_RANGE" value="MPU60X0_ACCEL_RANGE_16G"/>
-    </module>
+    <module name="imu" type="bebop"/>
     <module name="gps" type="ublox"/>
     <module name="stabilization" type="indi_simple"/>
     <module name="ins" type="ekf2"/>
     
     <module name="air_data"/>
-    <module name="send_imu_mag_current"/>
     <module name="gps" type="ubx_ucenter"/>
     <module name="logger_file">
-      <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
+      <define name="LOGGER_FILE_PATH" value="/data/ftp/internal_000"/>
     </module>
   </firmware>
   
@@ -81,13 +75,6 @@
     <define name="MAG_X_SENS" value="7.21201776785" integer="16"/>
     <define name="MAG_Y_SENS" value="7.20541442846" integer="16"/>
     <define name="MAG_Z_SENS" value="7.55306977197" integer="16"/>
-
-    <define name="ACCEL_X_NEUTRAL" value="-1"/>
-    <define name="ACCEL_Y_NEUTRAL" value="-16"/>
-    <define name="ACCEL_Z_NEUTRAL" value="-102"/>
-    <define name="ACCEL_X_SENS" value="4.90615997669" integer="16"/>
-    <define name="ACCEL_Y_SENS" value="4.8601827035" integer="16"/>
-    <define name="ACCEL_Z_SENS" value="4.85967415403" integer="16"/>
   </section>
 
   <section name="INS" prefix="INS_">
@@ -141,9 +128,9 @@
     <define name="FILT_CUTOFF" value="3.2"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN_P" value="0.06"/>
-    <define name="ACT_DYN_Q" value="0.06"/>
-    <define name="ACT_DYN_R" value="0.06"/>
+    <define name="ACT_FREQ_P" value="31.7"/>
+    <define name="ACT_FREQ_Q" value="31.7"/>
+    <define name="ACT_FREQ_R" value="31.7"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
@@ -177,7 +164,6 @@
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="nw_motor, ne_motor, se_motor, sw_motor" type="string[]"/>
     <define name="JSBSIM_MODEL" value="simple_x_quad" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
   </section>
   <include href="conf/simulator/gazebo/airframes/bebop.xml"/>
 

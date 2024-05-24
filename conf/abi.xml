@@ -22,17 +22,17 @@
       <field name="temp" type="float" unit="deg Celcius"/>
     </message>
 
-    <message name="IMU_GYRO_INT32" id="4">
+    <message name="IMU_GYRO" id="4">
       <field name="stamp" type="uint32_t" unit="us"/>
       <field name="gyro" type="struct Int32Rates *"/>
     </message>
 
-    <message name="IMU_ACCEL_INT32" id="5">
+    <message name="IMU_ACCEL" id="5">
       <field name="stamp" type="uint32_t" unit="us"/>
       <field name="accel" type="struct Int32Vect3 *"/>
     </message>
 
-    <message name="IMU_MAG_INT32" id="6">
+    <message name="IMU_MAG" id="6">
       <field name="stamp" type="uint32_t" unit="us"/>
       <field name="mag" type="struct Int32Vect3 *"/>
     </message>
@@ -42,10 +42,6 @@
       <field name="gyro" type="struct Int32Rates *"/>
       <field name="accel" type="struct Int32Vect3 *"/>
       <field name="mag" type="struct Int32Vect3 *"/>
-    </message>
-
-    <message name="BODY_TO_IMU_QUAT" id="8">
-      <field name="q_b2i_f" type="struct FloatQuat *"/>
     </message>
 
     <message name="GEO_MAG" id="9">
@@ -87,13 +83,13 @@
       <field name="eas" type="float" unit="m/s"/>
     </message>
 
-    <message name="RPM" id="15">
-      <field name="rpm" type="uint16_t *" unit="rpm"/>
+    <message name="ACT_FEEDBACK" id="15">
+      <field name="feedback" type="struct act_feedback_t *"/>
       <field name="num_act" type="uint8_t"/>
     </message>
 
     <message name="THRUST" id="16">
-      <field name="thrust_increment" type="float" unit="m/s^2"/>
+      <field name="thrust_increment_vect" type="struct FloatVect3" unit="m/s^2"/>
     </message>
 
     <message name="OBSTACLE_DETECTION" id="17">
@@ -111,7 +107,7 @@
       <field name="noise_y" type="float"/>
       <field name="noise_z" type="float"/>
     </message>
-    
+
     <message name="UWB_COMMUNICATION" id="19">
       <field name="id" type="uint8_t"/>
       <field name="range" type="float" unit="m"/>
@@ -194,7 +190,7 @@
     </message>
 
     <message name="JOYSTICK" id="28">
-      <!-- 
+      <!--
            This message can be used to send command inputs from a joystick or equivalent
            either for the control of the airframe or the control of the payload
       -->
@@ -202,6 +198,63 @@
       <field name="pitch"     type="int16_t">Pitch input in pprz_t [-9600;9600]</field>
       <field name="yaw"       type="int16_t">Yaw input in pprz_t [-9600;9600]</field>
       <field name="throttle"  type="int16_t">Throttle input in pprz_t [0;9600] or [-9600;9600] (for vertical speed control for instance)</field>
+    </message>
+
+    <message name="PAYLOAD_DATA" id="29">
+      <field name="stamp" type="uint32_t" unit="us">Timestamp in micro-seconds</field>
+      <field name="data_type" type="int32_t">A data type id that can be used to identify the data format</field>
+      <field name="size" type="uint32_t">Data size or number of element, this may depend on the sender and the type of data</field>
+      <field name="data" type="uint8_t *">Pointer to an array of bytes, or any structure depending on the sender and the type of data</field>
+    </message>
+
+    <message name="RADIO_CONTROL" id="30">
+      <field name="rc" type="struct RadioControl *">Pointer to a radio control structure</field>
+    </message>
+
+    <message name="IMU_GYRO_RAW" id="31">
+      <field name="stamp" type="uint32_t" unit="us">Registered timestamp of the measurement</field>
+      <field name="gyro" type="struct Int32Rates *">Raw gyro samples measured</field>
+      <field name="samples" type="uint8_t">Amount of samples</field>
+      <field name="rate" type="float" unit="Hz">Sampling rate in Hz of the samples</field>
+      <field name="temp" type="float" unit="deg Celcius">Temperature of the sensor</field>
+    </message>
+
+    <message name="IMU_ACCEL_RAW" id="32">
+      <field name="stamp" type="uint32_t" unit="us">Registered timestamp of the measurement</field>
+      <field name="accel" type="struct Int32Vect3 *">Raw accelration samples measured</field>
+      <field name="samples" type="uint8_t">Amount of samples</field>
+      <field name="rate" type="float" unit="Hz">Sampling rate in Hz of the samples</field>
+      <field name="temp" type="float" unit="deg Celcius">Temperature of the sensor</field>
+    </message>
+
+    <message name="IMU_MAG_RAW" id="33">
+      <field name="stamp" type="uint32_t" unit="us"/>
+      <field name="mag" type="struct Int32Vect3 *"/>
+    </message>
+
+    <message name="IMU_GYRO_INT" id="34">
+      <field name="stamp" type="uint32_t" unit="us"/>
+      <field name="delta_gyro" type="struct FloatRates *"/>
+      <field name="dt" type="uint16_t" unit="us"/>
+    </message>
+
+    <message name="IMU_ACCEL_INT" id="35">
+      <field name="stamp" type="uint32_t" unit="us"/>
+      <field name="delta_accel" type="struct FloatVect3 *"/>
+      <field name="dt" type="uint16_t" unit="us"/>
+    </message>
+
+    <message name="VEL_SP" id="36">
+      <field name="vel_sp" type="struct FloatVect3 *" unit="m/s"/>
+    </message>
+
+    <message name="LIDAR_DATA" id="37">
+      <field name="stamp" type="uint32_t" unit="us"/>
+      <field name="numRows" type="uint32_t">number of rows of the matrix</field>
+      <field name="numCols" type="uint32_t">number of columns of the matrix</field>
+      <field name="size" type="uint16_t">size of a matrix element</field>
+      <field name="subtype" type="uint8_t">subtype of data, driver dependent (e.g. distance, reflectance, ...)</field>
+      <field name="data" type="uint8_t*">pointer to the data of the matrix</field>
     </message>
 
   </msg_class>

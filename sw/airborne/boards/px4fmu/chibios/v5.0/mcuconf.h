@@ -236,7 +236,8 @@
 #else
 #define STM32_I2C_USE_I2C4                  FALSE
 #endif
-#define STM32_I2C_BUSY_TIMEOUT              50
+#define STM32_I2C_ISR_LIMIT                 6
+#define STM32_I2C_BUSY_TIMEOUT              0
 #define STM32_I2C_I2C1_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 0)
 #define STM32_I2C_I2C1_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 7)
 #define STM32_I2C_I2C2_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 2)
@@ -497,8 +498,8 @@
   sdlog message buffer and queue configuration
  */
 #define SDLOG_QUEUE_BUCKETS  1024
-#define SDLOG_MAX_MESSAGE_LEN 252
+#define SDLOG_MAX_MESSAGE_LEN 300
 #define SDLOG_NUM_FILES 2
-#define SDLOG_ALL_BUFFERS_SIZE (SDLOG_NUM_FILES*4096*2)
+#define SDLOG_ALL_BUFFERS_SIZE (SDLOG_NUM_FILES*16*1024)
 
 #endif /* MCUCONF_H */

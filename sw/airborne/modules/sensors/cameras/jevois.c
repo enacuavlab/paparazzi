@@ -27,9 +27,9 @@
 
 #include "std.h"
 #include "mcu_periph/uart.h"
-#include "subsystems/abi.h"
+#include "modules/core/abi.h"
 #include "math/pprz_algebra_float.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -128,7 +128,7 @@ void jevois_init(void)
 // this might be needed as jevois ID can start with a letter
 // this will extract the first substring with a number
 // and return the result of atoi function
-static int jevois_extract_nb(char *in) {
+int jevois_extract_nb(char *in) {
   unsigned int i, j = 0;
   bool first = false;
   char out[JEVOIS_MAX_LEN];

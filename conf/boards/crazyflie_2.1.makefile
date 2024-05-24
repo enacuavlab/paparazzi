@@ -14,11 +14,12 @@ BOARD_DIR=$(BOARD)/chibios/v$(BOARD_VERSION)
 BOARD_CFG=\"boards/$(BOARD_DIR)/$(BOARD).h\"
 
 ARCH=chibios
+RTOS=chibios
 
 ## FPU on F4
 USE_FPU=softfp
 
-$(TARGET).CFLAGS += -DSTM32F4 -DPPRZLINK_ENABLE_FD -DUSE_HARD_FAULT_RECOVERY
+$(TARGET).CFLAGS += -DPPRZLINK_ENABLE_FD
 
 ##############################################################################
 # Architecture or project specific options

@@ -1,3 +1,158 @@
+Paparazzi v6.4.0_stable
+=======================
+
+This version is a small addition to the v6.3 before switching to a v7 series that will integrate more in-depth changes.
+
+
+* [flightplans] tudelft flightplans by @dewagter in https://github.com/paparazzi/paparazzi/pull/3220
+* Fix all compile warnings confs (on 20.04) by @dewagter in https://github.com/paparazzi/paparazzi/pull/3227
+* [generator] add support for matrix and struct in airframe by @gautierhattenberger in https://github.com/paparazzi/paparazzi/pull/3228
+* [doc] Update pprzcenter and GCS presentation. by @Fabien-B in https://github.com/paparazzi/paparazzi/pull/3229
+* [nps] fix inconsistent sensor scaling in simulation by @gautierhattenberger in https://github.com/paparazzi/paparazzi/pull/3230
+* [nav] remove nav_manual mode by @gautierhattenberger in https://github.com/paparazzi/paparazzi/pull/3234
+* [fix] guidance sp was not correct in speed mode by @gautierhattenberger in https://github.com/paparazzi/paparazzi/pull/3236
+* [conf] update Enac rotorcraft so that they work in simulation as well by @gautierhattenberger in https://github.com/paparazzi/paparazzi/pull/3235
+* Rot wing updates by @Dennis-Wijngaarden in https://github.com/paparazzi/paparazzi/pull/3238
+* [airframes] Updated calibrations of rotating wing drones by @Dennis-Wijngaarden in https://github.com/paparazzi/paparazzi/pull/3247
+* Add vl53l5cx driver. Based on St ULD. by @Fabien-B in https://github.com/paparazzi/paparazzi/pull/3240
+* Fix natnet2ivy rotation order by @tblaha in https://github.com/paparazzi/paparazzi/pull/3231
+* fix omega discontinuous by @EwoudSmeur in https://github.com/paparazzi/paparazzi/pull/3250
+* Use altitude waypoints for EKF2 by @EwoudSmeur in https://github.com/paparazzi/paparazzi/pull/3242
+* [board] fix crazyfly board files by @gautierhattenberger in https://github.com/paparazzi/paparazzi/pull/3255
+* Slight Changes to INS EXT POSE and INS EKF2 by @tmldeponti in https://github.com/paparazzi/paparazzi/pull/3233
+* Restructure INDI to limit estimated disturbances by @EwoudSmeur in https://github.com/paparazzi/paparazzi/pull/3256
+* TUD course update 2024 by @dewagter in https://github.com/paparazzi/paparazzi/pull/3258
+* Better ADC sensor integration by @tmldeponti in https://github.com/paparazzi/paparazzi/pull/3251
+* [modules] EKF2 fixed initialization warning by @tmldeponti in https://github.com/paparazzi/paparazzi/pull/3262
+* Bidirectionnal DShot for H7 by @Fabien-B in https://github.com/paparazzi/paparazzi/pull/3253
+* [tools] Rot-wing visualizer opdate: show both CAN bus messages. by @dewagter in https://github.com/paparazzi/paparazzi/pull/3263
+* [rot_wing nps] add more aerodynamic drag in rotwing simulation by @Dennis-Wijngaarden in https://github.com/paparazzi/paparazzi/pull/3259
+* Use Commands instead of actuator_pprz  by @tmldeponti in https://github.com/paparazzi/paparazzi/pull/3265
+* [guidance_indi_hybrid] Added secondary airspeed filtering in guidance by @Dennis-Wijngaarden in https://github.com/paparazzi/paparazzi/pull/3260
+* [rot_wing_v3d] Updated magneto calibration by @Dennis-Wijngaarden in https://github.com/paparazzi/paparazzi/pull/3266
+* Update cv_opencvdemo.xml by @dewagter in https://github.com/paparazzi/paparazzi/pull/3272
+
+
+**Full Changelog**: https://github.com/paparazzi/paparazzi/compare/v6.3.0_stable...v6.4.0_stable
+
+Paparazzi v6.3.0_stable
+=======================
+
+Stable version release v6.3.
+The main changes are the improvement of the modules dependency mananagement,
+an in-depth rewrite of the navigation/guidance layer for rotorcraft allowing
+a better integration of hybrid airframes, the support for STM32H7 and some new
+drivers, the rework of hardware in the loop (HITL) simulation
+and the replacement of legacy ocaml sim by a NPS-based version.
+
+- documentation (#2981) (#2980) (#2979) (#2978) (#2973) (#2972)
+- python plotter (#2997)
+- new navigation for rotorcraft (#2964) (#3004)(#3006) (#3108)
+- new boards with STM32H7 (#3001) (#3017) (#3199)
+- improve modules dependency algorithm (#3005) (#3009)
+- new navigation and sensors modules (#3010) (#3021) (#3039) (#3067) (#3074) (#3088) (#3077)
+- PyBullet backend for NPS (#3024)
+- Mavlink update to v2
+- Improvements to INDI stabilization and guidance
+
+And also many other improvements and corrections...
+
+
+Paparazzi v6.2.0_stable
+=======================
+
+Stable version release v6.2.
+The biggest change is the reorganization of the airborne code for AP and FBW.
+FBW is now merged with AP in normal operation (so single thread) and the
+main_ap code is common for all firmwares.
+
+General
+-------
+- Improve documentation for sphinx
+- fix Ivy for mutex (#2835)
+- support for rover with steering wheel (#2845)
+- use new PprzGCS as default
+- use Python PPRZ center as default
+- cleaning outdated confs (#2881)
+- update docker, mavlink, libopencm3, hacl-c, bmp_swd scripts
+- display object from natnet tool (#2958)
+
+Airborne
+--------
+- merge AP/FBW in normal operation (#2828)
+- improve EKF2 support (#2833) (#2835) (#2850) (#2829)
+- small bug fixes
+- support for H7 with ChibiOS (#2859)
+- usb serial for ChibiOS (#2878)
+- multi IMU support (#2890)
+- add new modules: tag_tracking (#2931), QMC5883L mag driver
+- fix PVT message support for UBlox (#2939)
+
+
+Paparazzi v6.1.0_stable
+=====================
+
+Stable version release v6.1. This version is an intermediate step towards
+deaper changes planned for the series 6.
+
+Since the previous RC (6.0.0_testing), new additions are
+
+- collection of small fixes: (#2809) (#2812) (#2811)
+- adaptive navigation patterns (#2813)
+- fix Gazebo coordinate transform (#2808)
+- documentation (#2815) (#2816)
+- improve system identification tools (#2810)
+
+
+Paparazzi v6.0.0_testing
+========================
+
+First release candidate for v6.1_stable
+
+Many deep changes have already been done, including:
+- a complete dependency system for the modules
+- a reorganization of the airborne code
+- move all subsystems code to modules
+- the drop of lpc21 arch
+
+General
+-------
+- drop support of LPC21 boards and old stuff (#2695) (#2696) (#2697)
+- airborne code reorganization (#2721) (#2793) (#2795)
+- move all code in subsystems folder to modules folder (#2797)
+- remove static sectors support (#2701)
+- conf cleaning (#2712) (#2773)
+- Use correct address for google tiles. (#2727)
+- Pprzlink update
+- Pyhton scripts converted to Python3 (as much as possible)
+- indicate voltage/cell if number of cells is specified (#2732)
+- Fix flight plans (#2740)
+- Fix replay (#2754) (#2767)
+- Better link status (#2777)
+- Add new PPRZ GCS (from external repo https://github.com/paparazzi/PprzGCS) (#2780)
+- Server json stream for external plotter like PlotJuggler (#2792)
+
+Airborne
+--------
+- Add UAVCAN actuators for chibios (#2511) (#2698) (#2699)
+- Small bug fix (#2702) (#2704) (#2790) (#2802) (#2805)
+- Add GPS loss bypass with datalink timeout (#2709)
+- Feature accurate cpu load (#2716) (#2739)
+- Filter rates indi, hybrid guidance (#2718) (#2723) (#2724) (#2731)
+- Add a follow me module (#2509)
+- Fix airspeed ets to work with air_data module (#2733)
+- support for RM3100 magneto over I2C (#2742)
+- support Holybro Kakute F7 (#2746)
+- Add PPM input to Pixhawk 4 (px4fmuv5) (#2751)
+- correct ADC buffer offset for ChibiOS (#2761)
+- improve ins invariant (#2768) (#2770) (#2763) (#2803)
+- EKF2 Optical Flow Interface  (#2779)
+- ADD tilt twist control (twist around z) (#2782)
+- wind estimation from quadrotor motion (#2800)
+- update and harmonized navigation frequency (#2796)
+- Fix chibiOS log for F7: update chibios fatfs lfn2 dmastack (#2806)
+
+
 Paparazzi v5.18.0_stable
 ========================
 

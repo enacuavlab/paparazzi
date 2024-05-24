@@ -30,11 +30,12 @@
 
 // include mavlink headers, but ignore some warnings
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
 #pragma GCC diagnostic ignored "-Wswitch-default"
 #include "mavlink/paparazzi/mavlink.h"
 #pragma GCC diagnostic pop
 
-#include "subsystems/navigation/common_flight_plan.h"
+#include "modules/nav/common_flight_plan.h"
 #include "generated/flight_plan.h"
 
 static void mavlink_send_block_count(void)

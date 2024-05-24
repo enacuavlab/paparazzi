@@ -28,7 +28,7 @@
 #include "std.h"
 //#include "stdio.h"
 
-#include "inter_mcu.h"
+#include "modules/core/commands.h"
 
 #include "mcu_periph/sys_time.h"
 #include "mcu_periph/gpio.h"
@@ -37,18 +37,18 @@
 #include "generated/flight_plan.h"
 #include "generated/airframe.h"
 #include "autopilot.h"
-#include "subsystems/electrical.h"
+#include "modules/energy/electrical.h"
 #include "state.h"
 
 // for GetPosAlt, include correct header until we have unified API
 #if defined(FIXEDWING_FIRMWARE)
-//#include "subsystems/navigation/nav.h"
-#include "subsystems/navigation/common_nav.h"
+//#include "modules/nav/nav.h"
+#include "modules/nav/common_nav.h"
 #elif defined(ROTORCRAFT_FIRMWARE)
 #include "firmwares/rotorcraft/navigation.h"
 #endif
 #if DOWNLINK
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 #endif
 
 // Peripherials
@@ -182,32 +182,21 @@ void mag_compass(void)
 {
 
   struct FloatEulers *att = stateGetNedToBodyEulers_f();
-  struct Int32Vect3 mag;
-  struct Int32Vect3 mag_neutrals;
-  int32_t x = 0, y = 0, z = 0;
   float cos_roll; float sin_roll; float cos_pitch; float sin_pitch; float mag_x; float mag_y;
   static float mag_declination = 0;
   static bool declination_calculated = false;
 
-  VECT3_COPY(mag, imu.mag_unscaled);
-  VECT3_COPY(mag_neutrals, imu.mag_neutral);
-#if (defined(IMU_MAG_X_SENS) && defined(IMU_MAG_Y_SENS) && defined(IMU_MAG_Z_SENS)) &&  !defined(USE_MAGNETOMETER)
-  x = ((mag.x - mag_neutrals.x) * IMU_MAG_X_SIGN * IMU_MAG_X_SENS_NUM) / IMU_MAG_X_SENS_DEN;
-  y = ((mag.y - mag_neutrals.y) * IMU_MAG_Y_SIGN * IMU_MAG_Y_SENS_NUM) / IMU_MAG_Y_SENS_DEN;
-  z = ((mag.z - mag_neutrals.z) * IMU_MAG_Z_SIGN * IMU_MAG_Z_SENS_NUM) / IMU_MAG_Z_SENS_DEN;
-#else
-  x = (mag.x - mag_neutrals.x) * IMU_MAG_X_SIGN;
-  y = (mag.y - mag_neutrals.y) * IMU_MAG_Y_SIGN;
-  z = (mag.z - mag_neutrals.z) * IMU_MAG_Z_SIGN;
-#endif
+  struct imu_mag_t *mag = imu_get_mag(ABI_BROADCAST, false);
+  if(mag == NULL)
+    return;
 
   cos_roll = cosf(att->phi);
   sin_roll = sinf(att->phi);
   cos_pitch = cosf(att->theta);
   sin_pitch = sinf(att->theta);
   // Pitch&Roll Compensation:
-  mag_x = x * cos_pitch + y * sin_roll * sin_pitch + z * cos_roll * sin_pitch;
-  mag_y = y * cos_roll - z * sin_roll;
+  mag_x = mag->scaled.x * cos_pitch + mag->scaled.y * sin_roll * sin_pitch + mag->scaled.z * cos_roll * sin_pitch;
+  mag_y = mag->scaled.y * cos_roll - mag->scaled.z * sin_roll;
 
   // Magnetic Heading N = 0, E = 90, S = +-180, W = -90
   mag_heading_rad = atan2(-mag_y, mag_x);
@@ -251,9 +240,9 @@ void mag_compass(void)
 
 static void send_mag_heading(struct transport_tx *trans, struct link_device *dev)
 {
-
+  uint8_t abi_id = ABI_BROADCAST;
 #if DOWNLINK
-  pprz_msg_send_IMU_MAG(trans, dev, AC_ID, &mag_course_deg, &gps_course_deg, &home_dir_deg);
+  pprz_msg_send_IMU_MAG(trans, dev, AC_ID, &abi_id, &mag_course_deg, &gps_course_deg, &home_dir_deg);
 #endif
 
   return;
@@ -776,9 +765,9 @@ void draw_osd(void)
 
     case (50):
 #if defined(FIXEDWING_FIRMWARE)
-      osd_sprintf(osd_string, "THR%.0f", (((float)ap_state->commands[COMMAND_THROTTLE] / (float)MAX_PPRZ) * 100.));
+      osd_sprintf(osd_string, "THR%.0f", (((float)command_get(COMMAND_THROTTLE) / (float)MAX_PPRZ) * 100.));
 #else
-      osd_sprintf(osd_string, "THR%.0fTHR", (((float)stabilization_cmd[COMMAND_THRUST] / (float)MAX_PPRZ) * 100.));
+      osd_sprintf(osd_string, "THR%.0fTHR", (((float)stabilization.cmd[COMMAND_THRUST] / (float)MAX_PPRZ) * 100.));
 #endif
       osd_put_s(osd_string, L_JUST, 6, 3, 1);
       step = 60;

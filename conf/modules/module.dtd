@@ -1,14 +1,15 @@
 <!-- Paparazzi Modules DTD -->
 
-<!ELEMENT module (doc,settings_file*,settings*,dep?,autoload*,header?,init*,periodic*,event*,datalink*,makefile*)>
+<!ELEMENT module (doc,settings_file*,settings*,dep?,header?,init*,periodic*,event*,datalink*,makefile*)>
 <!ELEMENT doc (description,(define|configure|section)*)>
 <!ELEMENT settings_file (file*)>
 <!ELEMENT settings (dl_settings?)>
-<!ELEMENT dep (depends?,conflicts?,provides?)>
+<!ELEMENT dep (depends?,conflicts?,provides?,recommends?,suggests?)>
 <!ELEMENT depends (#PCDATA)>
 <!ELEMENT conflicts (#PCDATA)>
 <!ELEMENT provides (#PCDATA)>
-<!ELEMENT autoload EMPTY>
+<!ELEMENT recommends (#PCDATA)>
+<!ELEMENT suggests (#PCDATA)>
 <!ELEMENT header (file*)>
 <!ELEMENT init EMPTY>
 <!ELEMENT periodic EMPTY>
@@ -37,10 +38,6 @@ name CDATA #REQUIRED
 dir CDATA #IMPLIED
 task CDATA #IMPLIED>
 
-<!ATTLIST autoload
-name CDATA #REQUIRED
-type CDATA #IMPLIED>
-
 <!ATTLIST header>
 
 <!ATTLIST init
@@ -63,7 +60,9 @@ cond CDATA #IMPLIED>
 
 <!ATTLIST datalink
 message CDATA #REQUIRED
-fun CDATA #REQUIRED>
+fun CDATA #REQUIRED
+class CDATA #IMPLIED
+cond CDATA #IMPLIED>
 
 <!ATTLIST makefile
 target CDATA #IMPLIED
@@ -134,6 +133,7 @@ step CDATA #IMPLIED
 widget CDATA #IMPLIED
 shortname CDATA #IMPLIED
 module CDATA #IMPLIED
+header CDATA #IMPLIED
 handler CDATA #IMPLIED
 param CDATA #IMPLIED
 unit CDATA #IMPLIED

@@ -25,8 +25,8 @@
 
 #include "modules/sensors/rpm_sensor.h"
 #include "mcu_periph/pwm_input.h"
-#include "subsystems/electrical.h"
-#include "subsystems/abi.h"
+#include "modules/energy/electrical.h"
+#include "modules/core/abi.h"
 #include "filters/low_pass_filter.h"
 
 static struct FirstOrderLowPass rpm_lp;
@@ -36,9 +36,13 @@ uint16_t rpm;
 #define RPM_FILTER_TAU RPM_SENSOR_PERIODIC_PERIOD
 #endif
 
+#ifndef RPM_SENSOR_ACTUATOR_IDX
+#error "You need to define an actuator for which the RPM is read, please define RPM_SENSOR_ACTUATOR_IDX"
+#endif
+
 
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 
 static void rpm_sensor_send_motor(struct transport_tx *trans, struct link_device *dev)
 {
@@ -60,8 +64,11 @@ void rpm_sensor_init(void)
 /* RPM periodic */
 void rpm_sensor_periodic(void)
 {
-  rpm = update_first_order_low_pass(&rpm_lp, rpm_sensor_get_rpm());
-  AbiSendMsgRPM(RPM_SENSOR_ID, &rpm, 1);
+  struct act_feedback_t feedback = {0};
+  feedback.idx = RPM_SENSOR_ACTUATOR_IDX;
+  feedback.rpm = update_first_order_low_pass(&rpm_lp, rpm_sensor_get_rpm());
+  feedback.set.rpm = true;
+  AbiSendMsgACT_FEEDBACK(ACT_FEEDBACK_RPM_SENSOR_ID, &feedback, 1);
 }
 
 /* Get the RPM sensor */

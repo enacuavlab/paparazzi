@@ -64,7 +64,6 @@
     <module name="ahrs" type="int_cmpl_quat"/>
     <module name="ins"/>
 
-    <module name="send_imu_mag_current"/>
 
     <!-- When sd logger is used, then radio should be DelTang (PPM) and telemetry should
       be transparent (cable/WiFi) -->
@@ -123,6 +122,7 @@
     <define name="H_Y" value="0.00278894"/>
     <define name="H_Z" value="0.92060036"/>
     <define name="USE_GPS_HEADING" value="0"/>
+    <define name="FLOATING_HEADING" value="1"/><!-- accept floating heading -->
 
     <!-- For vibrating airfames -->
     <define name="GRAVITY_HEURISTIC_FACTOR" value="0"/>
@@ -236,7 +236,6 @@
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="ne_motor, se_motor, sw_motor, nw_motor" type="string[]"/>
     <define name="JSBSIM_MODEL" value="simple_x_quad_ccw" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
   </section>
 
   <!--Motor mixing not used, presence necessary for a succesful build...-->

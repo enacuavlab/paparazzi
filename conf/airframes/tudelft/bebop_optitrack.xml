@@ -18,7 +18,9 @@
     <module name="imu" type="bebop"/>
     <module name="gps" type="datalink"/>
     <module name="stabilization" type="indi">
-      <define name="INDI_RPM_FEEDBACK" value="TRUE"/>
+      <define name="WLS_N_U" value="4"/>
+      <define name="WLS_N_V" value="4"/>
+      <define name="STABILIZATION_INDI_RPM_FEEDBACK" value="TRUE"/>
     </module>
     <module name="ahrs" type="int_cmpl_quat">
       <!-- Use the optitrack heading instead of magnetometer -->
@@ -27,11 +29,16 @@
     </module>
     <module name="ins" type="extended"/>
     <module name="logger_file">
-      <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000"/>
+      <define name="LOGGER_FILE_PATH" value="/data/ftp/internal_000"/>
     </module>
   </firmware>
 
   <commands>
+    <axis name="TOP_LEFT"     failsafe_value="0"/>
+    <axis name="TOP_RIGHT"    failsafe_value="0"/>
+    <axis name="BOTTOM_RIGHT" failsafe_value="0"/>
+    <axis name="BOTTOM_LEFT"  failsafe_value="0"/>
+
     <axis name="PITCH" failsafe_value="0"/>
     <axis name="ROLL" failsafe_value="0"/>
     <axis name="YAW" failsafe_value="0"/>
@@ -118,7 +125,7 @@
     <define name="FILT_CUTOFF" value="5.0"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN" value="{0.1, 0.1, 0.1, 0.1}"/>
+    <define name="ACT_FREQ" value="{53.9, 53.9, 53.9, 53.9}"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
@@ -158,7 +165,6 @@
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="nw_motor, ne_motor, se_motor, sw_motor" type="string[]"/>
     <define name="JSBSIM_MODEL" value="simple_x_quad_ccw" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
   </section>
   <include href="conf/simulator/gazebo/airframes/bebop.xml"/>
 

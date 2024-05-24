@@ -165,7 +165,7 @@
 
       <!-- Used for writing e.g highspeed accelometer and gyro values for needed tuning can be disabled when all is done -->
       <module name="logger_file">
-        <define name="FILE_LOGGER_PATH" value="/data/ftp/internal_000/Disco/logger"/>
+        <define name="LOGGER_FILE_PATH" value="/data/ftp/internal_000/Disco/logger"/>
       </module>
 
       <!-- For easier on desk testing transparent_usb, else transparent -->
@@ -255,7 +255,7 @@
     (differential) pressure sensor module publishing the BARO_DIFF ABI message.
     Make sure to disable other modules which otherwise directly set the
     airspeed in the state interface. E.g. when using the airspeed_ms45xx.xml module,
-    define USE_AIRSPEED or USE_AIRSPEED_MS45XX to FALSE only when Airdata is set to TRUE
+    define USE_AIRSPEED to FALSE only when Airdata is set to TRUE
     Sometimes one just wants to measure, and not yet use the airspeed in
     a final navigational solution then also set it to FALSE
     -->
@@ -319,7 +319,6 @@
     <module name="navigation"/>
     <!--<module name="imu_quality_assessment"/>--><!-- disable after initial tuning-->
     <module name="auto1_commands"/> <!-- FIXME not working in JSBSim target with RC controller steering in Simulator-->
-    <!-- <module name="send_imu_mag_current"/>--> <!-- Can be Disabled after one time callibration, quite the same for all Discos -->
 
     <!-- Also used if QNH needed -->
     <module name="air_data">
@@ -437,11 +436,11 @@
     <define name="SERVO_BRAKE_FULL" value="-MAX_PPRZ" />
     <define name="SERVO_HATCH_OPEN" value="0" />
     <define name="SERVO_HATCH_CLOSED" value="-9600" />
-    <define name="AirbrakesOff()" value="(ap_state->commands[COMMAND_BRAKE]=0)" />
-    <define name="AirbrakesOn()" value="(ap_state->commands[COMMAND_BRAKE]=SERVO_BRAKE_FULL)" />
-    <!--<define name="Fly()" value="(ap_state->commands[COMMAND_FORCECRASH]=0)" />-->
-    <!--<define name="ForceCrash()" value="(ap_state->commands[COMMAND_FORCECRASH]=9600)" />-->
-    <define name="ThrottleHigh()" value="(ap_state->commands[COMMAND_THROTTLE]>9600/2)" />
+    <define name="AirbrakesOff()" value="(commands[COMMAND_BRAKE]=0)" />
+    <define name="AirbrakesOn()" value="(commands[COMMAND_BRAKE]=SERVO_BRAKE_FULL)" />
+    <!--<define name="Fly()" value="(commands[COMMAND_FORCECRASH]=0)" />-->
+    <!--<define name="ForceCrash()" value="(commands[COMMAND_FORCECRASH]=9600)" />-->
+    <define name="ThrottleHigh()" value="(commands[COMMAND_THROTTLE]>9600/2)" />
   </section>
 <!-- ********************** SERVO MIXER **************************** -->
   <section name="MIXER">
@@ -928,8 +927,6 @@ The most crucial part for the magnetometer calibration:
     <!--<define name="JSBSIM_MODEL" value="OPENUAS/simple_fixedwing" type="string"/>-->
     <define name="COMMANDS_NB" value="4"/>
     <define name="ACTUATOR_NAMES" value="throttle-cmd-norm, aileron-cmd-norm, elevator-cmd-norm, rudder-cmd-norm" type="string[]"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
-    <!-- <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>-->
     <define name="JS_AXIS_MODE" value="4"/>
     <define name="BYPASS_AHRS" value="TRUE"/>
     <define name="BYPASS_INS" value="TRUE"/>

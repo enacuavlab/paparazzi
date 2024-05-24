@@ -69,7 +69,6 @@
     </module>
 
     <!--Modules -->
-    <module name="send_imu_mag_current"/>
     <module name="air_data">
       <define name="AIR_DATA_CALC_AMSL_BARO" value="TRUE"/>
     </module>
@@ -249,9 +248,9 @@
     <define name="FILT_ZETA_R" value="0.55"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_DYN_P" value="0.03"/>
-    <define name="ACT_DYN_Q" value="0.03"/>
-    <define name="ACT_DYN_R" value="0.03"/>
+    <define name="ACT_FREQ_P" value="15.6"/>
+    <define name="ACT_FREQ_Q" value="15.6"/>
+    <define name="ACT_FREQ_R" value="15.6"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
@@ -288,7 +287,6 @@
     <define name="ACTUATOR_TORQUES" value="0.155, 0.155, 0.155, 0.155" type="float[]"/>
     
     <define name="JSBSIM_MODEL" value="simple_quad" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
     <define name="BYPASS_AHRS" value="1"/>
   </section>
 

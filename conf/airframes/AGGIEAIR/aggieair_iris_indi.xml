@@ -14,7 +14,7 @@
     <!-- Main autopilot MCU -->
     <target name="ap" board="px4fmu_2.4">
       <configure name="PERIODIC_FREQUENCY" value="200"/>
-      <configure name="TELEMETRY_FREQUENCY" value="60"/>
+      <configure name="TELEMETRY_FREQUENCY" value="50"/>
 
       <comment>
         amount of time it take for the bat to check
@@ -27,6 +27,7 @@
         <configure name="MODEM_PORT" value="UART2"/>
         <configure name="MODEM_BAUD" value="B57600"/>
       </module>
+      <module name="telemetry" type="intermcu"/>
 
       <module name="imu" type="px4fmu_v2.4"/>
       <module name="gps" type="ublox"/>
@@ -158,6 +159,11 @@
       <module name="intermcu" type="uart">
         <configure name="INTERMCU_PORT" value="UART2" />
         <configure name="INTERMCU_BAUD" value="B1500000" />
+      </module>
+      <module name="telemetry" type="transparent">
+        <configure name="MODEM_PORT" value="$(INTERMCU_PORT)"/>
+        <configure name="MODEM_BAUD" value="$(INTERMCU_BAUD)"/>
+        <define name="TELEMETRY_DISABLE_RX"/>
       </module>
     </target>
 
@@ -362,7 +368,6 @@
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="nw_motor, ne_motor, se_motor, sw_motor" type="string[]" />
     <define name="JSBSIM_MODEL" value="simple_x_quad_ccw" type="string" />
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string" />
   </section>
 
   <section name="AUTOPILOT">

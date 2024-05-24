@@ -35,9 +35,6 @@
 #include "mcu_periph/sdio.h"
 #include <ctype.h>
 
-#define likely(x)      __builtin_expect(!!(x), 1)
-#define unlikely(x)    __builtin_expect(!!(x), 0)
-
 #ifndef MIN
 #define MIN(x , y)  (((x) < (y)) ? (x) : (y))
 #endif
@@ -56,11 +53,7 @@
 #endif
 
 #if FFCONF_DEF < 8000
-#if _FS_SHARE != 0 && _FS_SHARE < SDLOG_NUM_FILES
-#error  if _FS_SHARE is not zero, it should be equal of superior to SDLOG_NUM_FILES
-#endif
-
-
+#error  upgrade FATFS to 0.14 at least
 #else // FFCONF_DEF > 8000
 #if FF_FS_LOCK != 0 && FF_FS_LOCK < SDLOG_NUM_FILES
 #error  if FF_FS_LOCK is not zero, it should be equal of superior to SDLOG_NUM_FILES
@@ -115,7 +108,41 @@
 
   stm32f7 : regular sram  : 256ko, dma only possible if data cache are explicitely flushed, fast
             dtcm sram     : 64ko, dma, slow (no cache)
+ 
+   stm32h7 :    
+    ram0nc  (wx) : org = 0x24000000, len = 128k : non cached for DMA stuff
+    ram0    (wx) : org = 0x24000000, len = 384k : standard
+    ram1    (wx) : org = 0x30000000, len = 256k   
+    ram2    (wx) : org = 0x30000000, len = 288k : ram1+ram3  
+    ram3    (wx) : org = 0x30040000, len = 32k    
+    ram4    (wx) : org = 0x38000000, len = 64k    
+    ram5    (wx) : org = 0x20000000, len = 128k : DTCM : fast ram  
+    ram6    (wx) : org = 0x00000000, len = 64k    
+    ram7    (wx) : org = 0x38800000, len = 4k 
  */
+
+
+
+#ifdef STM32H7XX
+#define IN_SDMMC_DMA_SECTION(x) IN_SDMMC_SECTION(x)
+#define IN_SDMMC_DMA_SECTION_CLEAR(x) IN_SDMMC_SECTION_CLEAR(x)
+#define IN_SDMMC_DMA_SECTION_NOINIT(x) IN_SDMMC_SECTION_NOINIT(x)
+#else
+#define IN_SDMMC_DMA_SECTION(x) IN_DMA_SECTION(x)
+#define IN_SDMMC_DMA_SECTION_CLEAR(x) IN_DMA_SECTION_CLEAR(x)
+#define IN_SDMMC_DMA_SECTION_NOINIT(x) IN_DMA_SECTION_NOINIT(x)
+#endif
+/*
+  s*printf functions are supposed to be thread safe, but the ones provided by
+  newlib function are not.  One has to use _s*printf_r family that take a
+  struct _reent as first parameter.
+ */
+
+// #pragma GCC diagnostic push
+// #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+// static struct _reent reent =  _REENT_INIT(reent);
+// #pragma GCC diagnostic pop
+
 
 
 
@@ -146,7 +173,7 @@ struct FilePoolUnit {
   uint8_t writeByteSeek;
 };
 
-static  struct FilePoolUnit IN_DMA_SECTION(fileDes[SDLOG_NUM_FILES]) = {
+static  struct FilePoolUnit IN_SDMMC_DMA_SECTION(fileDes[SDLOG_NUM_FILES]) = {
   [0 ... SDLOG_NUM_FILES - 1] = {
     .fil = {{0}}, .inUse = false, .tagAtClose = false,
     .writeByteCache = NULL, .writeByteSeek = 0
@@ -174,7 +201,7 @@ struct  _SdLogBuffer {
 #endif //  SDLOG_NEED_QUEUE
 
 /* File system object */
-static IN_DMA_SECTION(FATFS fatfs);
+static IN_SDMMC_DMA_SECTION(FATFS fatfs);
 
 #ifdef SDLOG_NEED_QUEUE
 static size_t logMessageLen(const LogMessage *lm);
@@ -188,11 +215,7 @@ static void cleanQueue(const bool allQueue);
 static SdioError sdLogExpandLogFile(const FileDes fileObject, const size_t sizeInMo,
 				    const bool preallocate);
 
-#if (CH_KERNEL_MAJOR > 2)
 static void thdSdLog(void *arg) ;
-#else
-static msg_t thdSdLog(void *arg) ;
-#endif
 
 #endif //  SDLOG_NEED_QUEUE
 
@@ -304,6 +327,7 @@ SdioError sdLogOpenLog(FileDes *fd, const char *directoryName, const char *prefi
   sde = getFileName(prefix, directoryName, fileName, nameLength, +1);
   if (sde != SDLOG_OK) {
     // sd card is not inserted, so logging task can be deleted
+    fileDes[ldf].inUse = false;
     return storageStatus = SDLOG_FATFS_ERROR;
   }
 
@@ -669,11 +693,11 @@ SdioError sdLogWriteByte(const FileDes fd, const uint8_t value)
   if fatfs use stack for working buffers, stack size should be reserved accordingly
  */
 #define WA_LOG_BASE_SIZE 1024
-#if _USE_LFN == 2
-#if _FS_EXFAT
-static THD_WORKING_AREA(waThdSdLog, WA_LOG_BASE_SIZE+((_MAX_LFN+1)*2)+(19*32));
+#if FF_USE_LFN == 2
+#if FF_FS_EXFAT
+static IN_SDMMC_DMA_SECTION_NOINIT(THD_WORKING_AREA(waThdSdLog, WA_LOG_BASE_SIZE+((FF_MAX_LFN+1)*2)+(19*32)));
 #else
-static THD_WORKING_AREA(waThdSdLog, WA_LOG_BASE_SIZE+((_MAX_LFN+1)*2));
+static IN_SDMMC_DMA_SECTION_NOINIT(THD_WORKING_AREA(waThdSdLog, WA_LOG_BASE_SIZE+((FF_MAX_LFN+1)*2)));
 #endif
 #else
 static THD_WORKING_AREA(waThdSdLog, WA_LOG_BASE_SIZE);
@@ -924,11 +948,7 @@ static void removeFromQueue(const size_t nbMsgToRFemove)
 }
 
 
-#if (CH_KERNEL_MAJOR > 2)
 static void thdSdLog(void *arg)
-#else
-static msg_t thdSdLog(void *arg)
-#endif
 {
   (void) arg;
   struct PerfBuffer {
@@ -938,7 +958,7 @@ static msg_t thdSdLog(void *arg)
   } ;
 
   UINT bw;
-  static IN_DMA_SECTION_CLEAR(struct PerfBuffer perfBuffers[SDLOG_NUM_FILES]);
+  static IN_SDMMC_DMA_SECTION_CLEAR(struct PerfBuffer perfBuffers[SDLOG_NUM_FILES]);
   storageStatus = SDLOG_OK;
   chRegSetThreadName("thdSdLog");
   while (true) {
@@ -1022,9 +1042,6 @@ static msg_t thdSdLog(void *arg)
       chThdExit(storageStatus = SDLOG_INTERNAL_ERROR);
     }
   }
-#if (CH_KERNEL_MAJOR == 2)
-  return SDLOG_OK;
-#endif
 }
 
 static size_t logMessageLen(const LogMessage *lm)

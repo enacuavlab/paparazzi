@@ -30,6 +30,11 @@
 
 #define GVF_GRAVITY 9.806
 
+/*! Default GCS trajectory painter */
+#ifndef GVF_OCAML_GCS
+#define GVF_OCAML_GCS true
+#endif
+
 #include "std.h"
 
 /** @typedef gvf_con
@@ -43,10 +48,19 @@ typedef struct {
   float ke;
   float kn;
   float error;
+  float omega;
   int8_t s;
 } gvf_con;
 
 extern gvf_con gvf_control;
+
+typedef struct {
+  float course;
+  float px_dot;
+  float py_dot;
+} gvf_st;
+
+extern gvf_st gvf_state;
 
 enum trajectories {
   LINE = 0,

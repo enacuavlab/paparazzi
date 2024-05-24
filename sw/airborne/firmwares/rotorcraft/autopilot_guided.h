@@ -88,6 +88,10 @@ extern bool autopilot_guided_move_ned(float vx, float vy, float vz, float headin
  */
 extern void autopilot_guided_update(uint8_t flags, float x, float y, float z, float yaw);
 
+/** Parse GUIDED_SETPOINT_NED messages from datalink
+ */
+extern void autopilot_guided_parse_GUIDED(uint8_t *buf);
+
 /** Bitmask for setting the flags attribute in autopilot_guided_update function
  *  See function description for more details
  */
@@ -98,6 +102,14 @@ extern void autopilot_guided_update(uint8_t flags, float x, float y, float z, fl
 #define GUIDED_FLAG_XY_VEL      (1<<5)
 #define GUIDED_FLAG_Z_VEL       (1<<6)
 #define GUIDED_FLAG_YAW_RATE    (1<<7)
+
+/** Macro for the flight plan insctructions
+ */
+#define NavGuided(_flags, _x, _y, _z, _yaw) {         \
+  nav.horizontal_mode = NAV_HORIZONTAL_MODE_GUIDED;           \
+  nav.vertical_mode = NAV_VERTICAL_MODE_GUIDED;               \
+  autopilot_guided_update(_flags, _x, _y, _z, _yaw);  \
+}
 
 #endif /* AUTOPILOT_GUIDED_H */
 

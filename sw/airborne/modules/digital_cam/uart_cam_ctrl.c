@@ -32,7 +32,7 @@
 #include "modules/digital_cam/dc.h"
 
 // Telemetry
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 
 #include BOARD_CONFIG
 
@@ -115,8 +115,6 @@ static void send_thumbnails(struct transport_tx *trans, struct link_device *dev)
 
 void digital_cam_uart_init(void)
 {
-  // Call common DC init
-  dc_init();
   digital_cam_uart_thumbnails = 0;
   for (int t = 0; t < THUMB_COUNT; t++) {
     for (int i = 0; i < THUMB_MSG_SIZE; i++) {

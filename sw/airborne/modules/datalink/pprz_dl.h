@@ -29,11 +29,11 @@
 #include "pprzlink/pprz_transport.h"
 
 #include "mcu_periph/uart.h"
-#if USE_USB_SERIAL
+#if USE_USB_SERIAL || USE_USB_SERIAL_DEBUG
 #include "mcu_periph/usb_serial.h"
 #endif
 #if USE_FRSKY_X_SERIAL
-#include "subsystems/datalink/frsky_x.h"
+#include "modules/datalink/frsky_x.h"
 #endif
 #if USE_UDP
 #include "mcu_periph/udp.h"

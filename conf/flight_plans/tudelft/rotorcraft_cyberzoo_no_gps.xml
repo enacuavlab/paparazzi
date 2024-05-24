@@ -1,6 +1,6 @@
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 
-<flight_plan alt="1.5" ground_alt="0" lat0="51.990634" lon0="4.376789" max_dist_from_home="20" name="Rotorcraft Cyberzoo (Delft) no GPS" security_height="0.3">
+<flight_plan alt="3.5" ground_alt="2" lat0="51.990634" lon0="4.376789" max_dist_from_home="20" name="Rotorcraft Cyberzoo (Delft) no GPS" security_height="0.3">
   <header>
 #include "autopilot.h"
 </header>
@@ -39,7 +39,7 @@
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
       <exception cond="GetPosHeight() @GT 1.0" deroute="Standby"/>
       <call_once fun="NavSetWaypointHere(WP_CLIMB)"/>
-      <stay climb="nav_climb_vspeed" vmode="climb" wp="CLIMB"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="CLIMB"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
       <stay wp="STDBY"/>
@@ -83,7 +83,7 @@
       <exception cond="NavDetectGround()" deroute="Holding point"/>
       <exception cond="!nav_is_in_flight()" deroute="landed"/>
       <call_once fun="NavStartDetectGround()"/>
-      <stay climb="nav_descend_vspeed" vmode="climb" wp="TD"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="TD"/>
     </block>
     <block name="landed">
       <call_once fun="NavKillThrottle()"/>

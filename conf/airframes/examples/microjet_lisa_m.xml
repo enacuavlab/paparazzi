@@ -45,6 +45,7 @@
     
     <module name="sys_mon"/>
     <module name="baro_sim"/>
+    <module name="imu_nps"/>
     <module name="air_data">
       <define name="AIR_DATA_CALC_AMSL_BARO" value="TRUE"/>
     </module>
@@ -189,7 +190,6 @@
   <section name="SIMULATOR" prefix="NPS_">
     <define name="JSBSIM_MODEL" value="easystar" type="string"/>
     <define name="JSBSIM_LAUNCHSPEED" value="20"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
     <define name="JS_AXIS_MODE" value="4"/>
   </section>
 

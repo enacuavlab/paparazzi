@@ -27,12 +27,12 @@
 #include "modules/esc32/esc32.h"
 #include "mcu_periph/uart.h"
 #include "mcu_periph/sys_time.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/downlink.h"
 #include <stdio.h>
 #include <string.h>
 
 #if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 #endif
 
 struct esc32 esc32;
@@ -222,6 +222,10 @@ static void parse_esc32(struct esc32_private *esc, uint8_t c) {
 }
 
 static void esc32_msg_send(struct transport_tx *trans, struct link_device *dev) {
+  float temp = 0;
+  float temp_dev = 0;
+  uint8_t id0 = 0;
+
   pprz_msg_send_ESC(trans, dev, AC_ID,
       &esc32.params.amps,
       &esc32.params.volts_bat,
@@ -229,7 +233,10 @@ static void esc32_msg_send(struct transport_tx *trans, struct link_device *dev) 
       &esc32.params.rpm,
       &esc32.params.volts_motor,
       &esc32.energy,
-      0); // only one motor handled for now
+      &temp,
+      &temp_dev,
+      &id0,
+      &id0); // only one motor handled for now
 }
 
 void esc32_init(void) {

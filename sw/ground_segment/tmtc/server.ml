@@ -27,7 +27,9 @@ let gps_mode_3D = 3
 let no_md5_check = ref false
 let replay_old_log = ref false
 let log_name_arg = ref ""
-
+let udp_json_stream_addr = ref "127.0.0.1"
+let udp_json_stream_port = ref 9870
+let udp_json_stream_disable = ref false
 
 open Printf
 open Latlong
@@ -49,7 +51,6 @@ let dl_id = "ground_dl" (* Hack, should be [my_id] *)
 let (//) = Filename.concat
 let logs_path = Env.paparazzi_home // "var" // "logs"
 let conf_xml = ExtXml.parse_file (Env.paparazzi_home // "conf" // "conf.xml")
-let srtm_path = Env.paparazzi_home // "data" // "srtm"
 
 let get_indexed_value = fun ?(text="UNK") t i ->
   if i >= 0 then t.(i) else text
@@ -89,7 +90,15 @@ let expand_aicraft x =
         [Xml.Element ("generated_settings", [], Xml.children xml)]
       with _ -> []
     in
-    if List.length ac.Aircraft.xml > 0 then Xml.Element (Xml.tag x, Xml.attribs x, ac.Aircraft.xml @ settings_xml)
+    
+    (* expand procedures in flight plan and replace in aircraft conf *)
+    let fp_file = Env.paparazzi_home // "conf" // ExtXml.attrib x "flight_plan" in
+    let fp_xml = ExtXml.parse_file fp_file in
+    let dir = Filename.dirname fp_file in
+    let fp_xml = Fp_proc.process_includes dir fp_xml in
+    let ac_xml = List.map (fun e -> match Xml.tag e with "flight_plan" -> fp_xml | _ -> e) ac.Aircraft.xml in
+
+    if List.length ac.Aircraft.xml > 0 then Xml.Element (Xml.tag x, Xml.attribs x, ac_xml @ settings_xml)
     else failwith "Nothing to parse"
   with
     | Failure msg -> handle_error_message "Fail with" msg
@@ -139,22 +148,22 @@ let logger = fun () ->
   close_out f;
   open_out (logs_path // data_name)
 
-
-
-
-
+let time_of_timestamp = function
+  | Some x -> x
+  | None -> U.gettimeofday() -. start_time
 
 let log = fun ?timestamp logging ac_name msg_name values ->
   match logging with
       Some log ->
         let s = string_of_values values in
-        let t =
-          match timestamp with
-              Some x -> x
-            | None   -> U.gettimeofday () -. start_time in
+        let t = time_of_timestamp timestamp in
         fprintf log "%.3f %s %s %s\n" t ac_name msg_name s; flush log
     | None -> ()
 
+
+(* Socket configuration for streaming *)
+let udp_fd = Unix.socket Unix.PF_INET Unix.SOCK_DGRAM 0
+let udp_sockaddr = Unix.ADDR_INET (Unix.inet_addr_of_string !udp_json_stream_addr, !udp_json_stream_port)
 
 (** Callback for a message from a registered A/C *)
 let ac_msg = fun messages_xml logging ac_name ac ->
@@ -165,6 +174,19 @@ let ac_msg = fun messages_xml logging ac_name ac ->
       let (msg_id, values) = Tele_Pprz.values_of_string m in
       let msg = Tele_Pprz.message_of_id msg_id in
       log ?timestamp logging ac_name msg.PprzLink.name values;
+      if not !udp_json_stream_disable then begin
+        let json_name =
+          try
+            let a = Hashtbl.find aircrafts ac_name in
+            sprintf "%s (%s)" a.name ac_name
+          with _ -> ac_name
+        in
+        let t = time_of_timestamp timestamp in
+        let json_msg = sprintf "{ \"%s\": %s, \"timestamp\": %f }" json_name (Tele_Pprz.json_of_message msg values) t in
+        let len = String.length json_msg in
+        let n = Unix.sendto udp_fd (Bytes.of_string json_msg) 0 len [] udp_sockaddr in
+        assert(n = len)
+      end;
       Parse_messages_v1.log_and_parse ac_name ac msg values
     with
         Telemetry_error (ac_name, msg) ->
@@ -423,7 +445,7 @@ let send_aircraft_msg = fun ac ->
                              "lat", deg7_of_rad a.pos.posn_lat;
                              "lon", deg7_of_rad a.pos.posn_long;
                              "course", PprzLink.Int (truncate (10. *. (Geometry_2d.rad2deg a.course)));
-                             "alt", cm_of_m_32 a.alt;
+                             "alt", cm_of_m_32 (a.alt -. a.d_hmsl); (* alt over ellipsoid *)
                              "speed", cm_of_m a.gspeed;
                              "climb", cm_of_m a.climb;
                              "itow", PprzLink.Int64 a.itow] in
@@ -586,14 +608,14 @@ let new_aircraft = fun get_alive_md5sum real_id ->
     done in
 
   ignore (ac.ap_modes <- try
-    let ac = Aircraft.parse_aircraft "" airframe_xml in
+    let ac = Aircraft.parse_aircraft ~parse_af:true ~parse_ap:true "" conf in
     match ac.Aircraft.autopilots with
     | None -> None
     | Some [(_, ap)] -> Some (modes_from_autopilot ap.Autopilot.xml)
     | _ -> None (* more than one *)
   with _ -> None);
 
-  ignore (Glib.Timeout.add 1000 (fun _ -> update (); true));
+  ignore (Glib.Timeout.add ~ms:1000 ~callback:(fun _ -> update (); true));
 
   let messages_xml = ExtXml.parse_file (Env.paparazzi_home // root_dir // "var" // "messages.xml") in
   ac, messages_xml
@@ -621,7 +643,7 @@ let wind_clear = fun _sender vs ->
   Wind.clear (PprzLink.string_assoc "ac_id" vs)
 
 let periodic = fun period cb ->
-  Glib.Timeout.add period (fun () -> cb (); true)
+  Glib.Timeout.add ~ms:period ~callback:(fun () -> cb (); true)
 
 
 let register_periodic = fun ac x ->
@@ -816,6 +838,27 @@ let move_wp = fun logging _sender vs ->
   Dl_Pprz.message_send dl_id "MOVE_WP" vs;
   log logging ac_id "MOVE_WP" vs
 
+(** Got a INFO_MSG_GROUND, and send an INFO_MSG_UP *)
+let info_msg_ground = fun logging _sender vs ->
+  let dest = PprzLink.string_assoc "dest" vs in
+
+  let name, fd = match (Str.split (Str.regexp ":") dest) with
+    | [name; fd] -> (name, int_of_string fd)
+    | [name] -> (name, 0)
+    | _ -> failwith "invalid dest"
+  in
+
+  try
+    let ac_id = int_of_string name in
+    let msg = PprzLink.string_assoc "msg" vs in
+    let vs = [  "ac_id", PprzLink.Int ac_id;
+                "fd", PprzLink.Int fd;
+                "msg", PprzLink.String msg] in
+    Dl_Pprz.message_send dl_id "INFO_MSG_UP" vs;
+    log logging name "INFO_MSG_UP" vs
+  with _ -> ()
+
+
 (** Got a DL_EMERGENCY_CMD, and send an EMERGENCY_CMD *)
 let emergency_cmd = fun logging _sender vs ->
   let ac_id = PprzLink.string_assoc "ac_id" vs in
@@ -904,6 +947,7 @@ let ground_to_uplink = fun logging ->
   bind_log_and_send "GET_DL_SETTING" get_setting;
   bind_log_and_send "JUMP_TO_BLOCK" jump_block;
   bind_log_and_send "RAW_DATALINK" raw_datalink;
+  bind_log_and_send "INFO_MSG_GROUND" info_msg_ground;
   bind_log_and_send "LINK_REPORT" link_report
 
 
@@ -925,6 +969,9 @@ let () =
       "-timestamp", Arg.Set timestamp, "Bind on timestampped messages";
       "-no_md5_check", Arg.Set no_md5_check, "Disable safety matching of live and current configurations";
       "-log_name", Arg.Set_string log_name_arg, "Name for output log (Time stamp will be";
+      "-udp_json_stream_addr", Arg.Set_string udp_json_stream_addr, "Address of the server to stream udp JSON telemetry messages (default is localhost)";
+      "-udp_json_stream_port", Arg.Set_int udp_json_stream_port, "Port of the server to stream udp JSON telemetry messages (default is 9870)";
+      "-udp_json_stream_disable", Arg.Set udp_json_stream_disable, "Disable udp JSON stream";
       "-replay_old_log", Arg.Set replay_old_log, "Enable aircraft registering on PPRZ_MODE messages"] in
 
   Arg.parse
@@ -932,7 +979,6 @@ let () =
     (fun x -> Printf.fprintf stderr "%s: Warning: Don't do anything with '%s' argument\n" Sys.argv.(0) x)
     "Usage: ";
 
-  Srtm.add_path srtm_path;
   Ivy.init "Paparazzi server" "READY" (fun _ _ -> ());
   Ivy.start !ivy_bus;
 
@@ -955,7 +1001,7 @@ let () =
   ground_to_uplink logging;
 
   (* call periodic_handle_intruders every second *)
-  ignore (Glib.Timeout.add 1000 (fun () -> periodic_handle_intruders (); true));
+  ignore (Glib.Timeout.add ~ms:1000 ~callback:(fun () -> periodic_handle_intruders (); true));
 
   (* Waits for client configurations requests on the Ivy bus *)
   ivy_server !http;
