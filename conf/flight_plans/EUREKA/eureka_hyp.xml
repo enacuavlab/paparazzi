@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+<flight_plan alt="252" ground_alt="152" lat0="43.5946009" lon0="1.4037585" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
+  <header>
+    #include "autopilot.h"
+  </header>
+  <waypoints>
+    <waypoint name="HOME" x="-13.2" y="-50.3"/>
+    <waypoint name="CLIMB" x="0.2" y="-73.6"/>
+    <waypoint name="STDBY" x="0.6" y="-52.1"/>
+    <waypoint name="TD" x="-5630.35" y="639.818" alt="152"/>
+    <waypoint name="H1" lat="43.5946009" lon="1.4037585"/>
+    <waypoint name="H2" lat="43.5873120" lon="1.3991880"/>
+    <waypoint name="H3" lat="43.5842190" lon="1.4074921"/>
+    <waypoint name="H4" lat="43.5921455" lon="1.4133286"/>
+    <waypoint name="He1" lat="43.5936690" lon="1.4092020"/>
+    <waypoint name="He2" lat="43.6149249" lon="1.4226774"/>
+    
+  </waypoints>
+  
+  <sectors>
+    <sector name="HYP_survey" color="purple">
+      <corner name="H1"/>
+      <corner name="H2"/>
+      <corner name="H3"/>
+      <corner name="H4"/>
+    </sector>
+  </sectors>
+  <modules>
+    <module name="nav" type="survey_poly_rotorcraft" />
+  </modules>
+  <blocks>
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 1)"/>
+      <call_once fun="NavSetGroundReferenceHere()"/>
+    </block>
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
+      <exception cond="stateGetPositionEnu_f() @DEREF z @GT 2.0" deroute="Standby"/>
+      <call_once fun="NavSetWaypointHere(WP_CLIMB)"/>
+      <call_once fun="NavResurrect()"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="CLIMB"/>
+    </block>
+    <block name="Standby" strip_button="Standby" strip_icon="home.png">
+      <stay wp="STDBY"/>
+    </block>
+    <block name="survey H">
+      <go wp="H1"/>
+      <call_once fun="nav_survey_poly_setup_towards(WP_H1, 4, 200, WP_H2)"/>
+      <deroute block="Run survey H"/>
+    </block>
+    <block name="Run survey H">
+      <exception cond="PolySurveySweepBackNum > 0" deroute="land here"/>
+      <call fun="nav_survey_poly_run()"/>
+    </block>
+    <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
+      <call_once fun="NavSetWaypointHere(WP_TD)"/>
+    </block>
+    <block name="land">
+      <go wp="TD"/>
+      <deroute block="flare"/>
+    </block>
+    <block name="flare">
+      <exception cond="NavDetectGround()" deroute="Holding point"/>
+      <exception cond="!nav_is_in_flight()" deroute="landed"/>
+      <call_once fun="NavStartDetectGround()"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="TD"/>
+    </block>
+    <block name="landed">
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+  </blocks>
+</flight_plan>

@@ -2,12 +2,12 @@
   <aircraft
    name="EVTOLE"
    ac_id="1"
-   airframe="airframes/EUREKA/EVTOL-E.xml"
+   airframe="airframes/EUREKA/falcon_v2.xml"
    radio="radios/dummy.xml"
    telemetry="telemetry/default_rotorcraft.xml"
-   flight_plan="flight_plans/EUREKA/bourget_2023_evtol_east.xml"
+   flight_plan="flight_plans/EUREKA/eureka_all.xml"
    settings="settings/nps.xml settings/rotorcraft_basic.xml"
-   settings_modules="modules/ahrs_int_cmpl_quat.xml modules/electrical.xml [modules/gps.xml] modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_pid_rotorcraft.xml modules/guidance_rotorcraft.xml modules/imu_common.xml modules/nav_rotorcraft.xml modules/stabilization_int_quat.xml modules/to_atc.xml"
+   settings_modules="modules/air_data.xml modules/airspeed_sdp3x.xml modules/electrical.xml [modules/gps.xml] modules/gps_ublox.xml modules/guidance_indi_hybrid.xml modules/guidance_rotorcraft.xml modules/imu_common.xml modules/ins_ekf2.xml modules/logger_sd_chibios.xml modules/nav_hybrid.xml modules/nav_rotorcraft.xml modules/nav_survey_poly_rotorcraft.xml modules/stabilization_indi.xml modules/to_atc.xml"
    gui_color="blue"
   />
   <aircraft
@@ -16,7 +16,7 @@
    airframe="airframes/EUREKA/EVTOL-S.xml"
    radio="radios/dummy.xml"
    telemetry="telemetry/default_rotorcraft.xml"
-   flight_plan="flight_plans/EUREKA/bourget_2023_evtol_south.xml"
+   flight_plan="flight_plans/EUREKA/eureka_evtolS.xml"
    settings="settings/nps.xml settings/rotorcraft_basic.xml"
    settings_modules="modules/ahrs_int_cmpl_quat.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_pid_rotorcraft.xml modules/guidance_rotorcraft.xml modules/imu_common.xml modules/nav_rotorcraft.xml modules/stabilization_int_quat.xml modules/to_atc.xml"
    gui_color="#f250087ccc70"
@@ -27,7 +27,7 @@
    airframe="airframes/EUREKA/MEDUAV.xml"
    radio="radios/dummy.xml"
    telemetry="telemetry/default_rotorcraft.xml"
-   flight_plan="flight_plans/EUREKA/bourget_2023_evtol_meduav.xml"
+   flight_plan="flight_plans/EUREKA/eureka_meduav.xml"
    settings="settings/nps.xml settings/rotorcraft_basic.xml settings/control/rotorcraft_speed.xml"
    settings_modules="modules/ahrs_int_cmpl_quat.xml modules/electrical.xml [modules/gps.xml] modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_pid_rotorcraft.xml modules/guidance_rotorcraft.xml modules/imu_common.xml modules/nav_rotorcraft.xml modules/stabilization_int_quat.xml modules/to_atc.xml"
    gui_color="#ffff50700000"
@@ -38,9 +38,20 @@
    airframe="airframes/EUREKA/SURUAV.xml"
    radio="radios/dummy.xml"
    telemetry="telemetry/default_rotorcraft.xml"
-   flight_plan="flight_plans/EUREKA/bourget_2023_suruav.xml"
+   flight_plan="flight_plans/EUREKA/eureka_n.xml"
    settings="settings/nps.xml settings/rotorcraft_basic.xml"
-   settings_modules="modules/ahrs_int_cmpl_quat.xml modules/electrical.xml [modules/gps.xml] modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_pid_rotorcraft.xml modules/guidance_rotorcraft.xml modules/imu_common.xml modules/nav_rotorcraft.xml modules/stabilization_int_quat.xml modules/to_atc.xml"
+   settings_modules="modules/ahrs_int_cmpl_quat.xml modules/electrical.xml [modules/gps.xml] modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_pid_rotorcraft.xml modules/guidance_rotorcraft.xml modules/imu_common.xml modules/nav_rotorcraft.xml modules/nav_survey_poly_rotorcraft.xml modules/stabilization_int_quat.xml modules/to_atc.xml"
    gui_color="#0000ffff168e"
+  />
+  <aircraft
+   name="HYPUAV"
+   ac_id="5"
+   airframe="airframes/EUREKA/MEDUAV.xml"
+   radio="radios/dummy.xml"
+   telemetry="telemetry/default_rotorcraft.xml"
+   flight_plan="flight_plans/EUREKA/eureka_hyp.xml"
+   settings="settings/nps.xml settings/rotorcraft_basic.xml settings/control/rotorcraft_speed.xml"
+   settings_modules="modules/ahrs_int_cmpl_quat.xml modules/electrical.xml [modules/gps.xml] modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_pid_rotorcraft.xml modules/guidance_rotorcraft.xml modules/imu_common.xml modules/nav_rotorcraft.xml modules/nav_survey_poly_rotorcraft.xml modules/stabilization_int_quat.xml modules/to_atc.xml"
+   gui_color="#ea000000ff00"
   />
 </conf>
