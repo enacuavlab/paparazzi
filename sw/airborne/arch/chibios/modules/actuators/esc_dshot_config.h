@@ -18,6 +18,6 @@
  * Possible values are: 150, 300, 600
  */
 #ifndef DSHOT_SPEED
-#define DSHOT_SPEED 300U
+#define DSHOT_SPEED 600U
 #endif
 

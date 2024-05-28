@@ -151,7 +151,7 @@ void stabilization_udwadia_init(void)
   B_pinv = (B.transpose()*B).ldlt().solve (B.transpose());
 
   // tau = 1/(2*pi*Fc)
-  float tau = 1.0 / (2.0 * M_PI * 20.0);
+  float tau = 1.0 / (2.0 * M_PI * 3.0);
   float sample_time = 1.0 / PERIODIC_FREQUENCY;
   // Filtering of the gyroscope
   int8_t i;
@@ -260,7 +260,7 @@ void stabilization_udwadia_run(bool __attribute__((unused)) in_flight)
    // Bound the inputs to the actuators
   for (int i = 0; i < 4; i++) {
     if (autopilot_get_motors_on()) {
-      F_bound(i) = sqrtf(F(i)/kf)*MAX_PPRZ/30000; 
+      F_bound(i) = sqrtf(F(i)/kf)*MAX_PPRZ/60000; 
       Bound(F_bound(i), 0, MAX_PPRZ);
     } else {
       F_bound(i) = -MAX_PPRZ;
@@ -278,7 +278,14 @@ void stabilization_udwadia_read_rc(bool in_flight, bool in_carefree, bool coordi
   struct FloatQuat q_sp;
   struct FloatEulers eul_sp;
   float throttle = (float) guidance_v.rc_delta_t;
-  struct FloatVect3 force_vect = {0,0,5*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ}; //-20*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ
+  struct FloatVect3 force_vect;
+  if(throttle<100){
+    force_vect = {0,0,1};
+  }
+  else{
+    force_vect = {0,0,1000*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ}; //-20*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ
+  }
+  
   struct FloatVect3 tmp_vect;
   stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
   stabilization_attitude_read_rc_setpoint_eulers_f(&eul_sp, in_flight, in_carefree, coordinated_turn);

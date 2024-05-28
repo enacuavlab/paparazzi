@@ -96,7 +96,7 @@ class BuildWidget(Ui_Build, QWidget):
         if self.print_config_checkbox.isChecked():
             cmd.append("PRINT_CONFIG=1")
         shortname = "Build {}".format(self.ac.name)
-        self.refresh_ac.emit(self.ac)
+        # self.refresh_ac.emit(self.ac)
         self.conf.save(False)
         self.target_combo.setCurrentText(target)
         self.enable_buttons(False)
