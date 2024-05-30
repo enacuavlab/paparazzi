@@ -2,13 +2,14 @@
   <section name="programs"/>
   <section name="sessions">
     <session name="EUREKA">
-      <program name="PprzGCS">
-        <arg flag="--"/>
+      <program name="PprzGCS Appimage">
         <arg flag="-b" constant="10.34.127.255:6060"/>
       </program>
       <program name="Server">
         <arg flag="-n"/>
         <arg flag="-b" constant="10.34.127.255:6060"/>
+        <arg flag="-http"/>
+        <arg flag="-hostname" constant="10.34.1.40"/>
       </program>
       <program name="Data Link">
         <arg flag="-udp"/>
@@ -44,38 +45,9 @@
         <arg flag="4"/>
         <arg flag="5"/>
       </program>
-    </session>
-    <session name="EUREKA_local">
-      <program name="PprzGCS"/>
-      <program name="Server">
-        <arg flag="-n"/>
-      </program>
-      <program name="Data Link">
-        <arg flag="-udp"/>
-        <arg flag="-udp_broadcast"/>
-      </program>
-      <program name="Simulator">
-        <arg flag="-a" constant="EVTOLE"/>
-        <arg flag="--nodisplay"/>
-      </program>
-      <program name="Simulator">
-        <arg flag="-a" constant="EVTOLS"/>
-      </program>
-      <program name="Simulator">
-        <arg flag="-a" constant="MEDUAV"/>
-      </program>
-      <program name="Simulator">
-        <arg flag="-a" constant="SURUAV"/>
-      </program>
-      <program name="Simulator">
-        <arg flag="-a" constant="HYPUAV"/>
-      </program>
-      <program name="Ivy2SVS">
-        <arg flag="-ac" constant="1"/>
-        <arg flag="2"/>
-        <arg flag="3"/>
-        <arg flag="4"/>
-        <arg flag="5"/>
+      <program name="Http Server">
+        <arg flag="-m" constant="http.server"/>
+        <arg flag="8889"/>
       </program>
     </session>
     <session name="EUREKA_EVTOL">
@@ -138,6 +110,39 @@
       </program>
       <program name="Ivy2SVS">
         <arg flag="-b" constant="10.34.127.255:6060"/>
+        <arg flag="-ac" constant="1"/>
+        <arg flag="2"/>
+        <arg flag="3"/>
+        <arg flag="4"/>
+        <arg flag="5"/>
+      </program>
+    </session>
+    <session name="EUREKA_local">
+      <program name="PprzGCS"/>
+      <program name="Server">
+        <arg flag="-n"/>
+      </program>
+      <program name="Data Link">
+        <arg flag="-udp"/>
+        <arg flag="-udp_broadcast"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="EVTOLE"/>
+        <arg flag="--nodisplay"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="EVTOLS"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="MEDUAV"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="SURUAV"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="HYPUAV"/>
+      </program>
+      <program name="Ivy2SVS">
         <arg flag="-ac" constant="1"/>
         <arg flag="2"/>
         <arg flag="3"/>
