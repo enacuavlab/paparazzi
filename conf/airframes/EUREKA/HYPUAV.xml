@@ -209,9 +209,9 @@
   </section>
   
   <section name="TO_ATC" prefix="TO_ATC_">
-    <define name="FLIGHT"   value="424"    type="string"/> <!-- 0 to 500-->
-    <define name="CALLSIGN" value="SUR-UAV"  type="string"/> 
-    <define name="TACODE"   value="2614"   type="string"/> <!-- digits 1 to 7 -->
+    <define name="FLIGHT"   value="425"    type="string"/> <!-- 0 to 500-->
+    <define name="CALLSIGN" value="HYP-UAV"  type="string"/> 
+    <define name="TACODE"   value="2612"   type="string"/> <!-- digits 1 to 7 -->
     <define name="COMPANY"  value="AVA"    type="string"/> 
     <define name="MODEL"    value="UAVA"   type="string"/>  
   </section>

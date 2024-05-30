@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="252" ground_alt="152" lat0="43.7062421" lon0="1.2662778" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
+<flight_plan alt="272" ground_alt="152" lat0="43.7062421" lon0="1.2662778" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
   <header>
     #include "autopilot.h"
   </header>
@@ -13,8 +13,6 @@
     <waypoint name="N2" lat="43.7127876" lon="1.2822852"/>
     <waypoint name="N3" lat="43.6954761" lon="1.2974773"/>
     <waypoint name="N4" lat="43.6876563" lon="1.2812123"/>
-    <waypoint name="He1" lat="43.5936690" lon="1.4092020"/>
-    <waypoint name="He2" lat="43.6149249" lon="1.4226774"/>
     
   </waypoints>
   

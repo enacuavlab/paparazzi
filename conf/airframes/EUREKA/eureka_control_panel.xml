@@ -32,12 +32,17 @@
         <arg flag="-a" constant="SURUAV"/>
         <arg flag="-b" constant="10.34.127.255:6060"/>
       </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="HYPUAV"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
       <program name="Ivy2SVS">
         <arg flag="-b" constant="10.34.127.255:6060"/>
         <arg flag="-ac" constant="1"/>
         <arg flag="2"/>
         <arg flag="3"/>
         <arg flag="4"/>
+        <arg flag="5"/>
       </program>
     </session>
     <session name="EUREKA_local">
@@ -62,11 +67,15 @@
       <program name="Simulator">
         <arg flag="-a" constant="SURUAV"/>
       </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="HYPUAV"/>
+      </program>
       <program name="Ivy2SVS">
         <arg flag="-ac" constant="1"/>
         <arg flag="2"/>
         <arg flag="3"/>
         <arg flag="4"/>
+        <arg flag="5"/>
       </program>
     </session>
   </section>

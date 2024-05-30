@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="452" ground_alt="152" lat0="43.6118793" lon0="1.4551929" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
+<flight_plan alt="272" ground_alt="152" lat0="43.6118793" lon0="1.4551929" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
   <header>
 #include "autopilot.h"
 </header>
@@ -41,7 +41,7 @@
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
-      <exception cond="stateGetPositionEnu_f() @DEREF z @GT 2.0" deroute="route1"/>
+      <exception cond="stateGetPositionEnu_f() @DEREF z @GT 2.0" deroute="Standby"/>
       <call_once fun="NavSetWaypointHere(WP_CLIMB)"/>
       <call_once fun="NavResurrect()"/>
       <stay climb="nav.climb_vspeed" vmode="climb" wp="CLIMB"/>
