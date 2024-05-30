@@ -150,5 +150,10 @@
         <arg flag="5"/>
       </program>
     </session>
+    <session name="GCS only">
+      <program name="PprzGCS Appimage">
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+    </session>
   </section>
 </control_panel>
