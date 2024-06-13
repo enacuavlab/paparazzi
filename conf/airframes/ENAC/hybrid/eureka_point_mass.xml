@@ -1,0 +1,233 @@
+<!DOCTYPE airframe SYSTEM "../../airframe.dtd">
+
+<airframe name="EUREKA">
+
+  <description>
+    Point mass simulation for Hybrid in Eureka project
+  </description>
+
+  <firmware name="rotorcraft">
+    <configure name="PERIODIC_FREQUENCY" value="500"/>
+
+    <target name="nps" board="pc">
+      <module name="fdm" type="jsbsim"/> <!-- TODO make a dummy fdm -->
+      <module name="radio_control" type="datalink"/>
+    </target>
+
+    <module name="telemetry" type="xbee_api"/>
+    <module name="actuators" type="pwm"/>
+
+    <!--module name="air_data">
+      <define name="USE_AIRSPEED_AIR_DATA" value="TRUE"/>
+    </module-->
+
+    <module name="guidance" type="point_mass"/>
+    <module name="guidance" type="rotorcraft"/>
+    <module name="nav" type="hybrid"/>
+  </firmware>
+
+  <servos driver="Pwm">
+    <servo name="UR" no="3" min="0" neutral="100" max="2000"/>
+    <servo name="BR" no="4" min="0" neutral="100" max="2000"/>
+    <servo name="BL" no="1" min="0" neutral="100" max="2000"/>
+    <servo name="UL" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="ELEVON_RIGHT" no="5" min="1270" neutral="1570" max="1870"/> <!--positive up-->
+    <servo name="ELEVON_LEFT"  no="6" min="1170" neutral="1470" max="1770"/> <!--positive down-->
+  </servos>
+
+  <commands>
+    <axis name="PITCH" failsafe_value="0"/>
+    <axis name="ROLL" failsafe_value="0"/>
+    <axis name="YAW" failsafe_value="0"/>
+    <axis name="THRUST" failsafe_value="0"/>
+  </commands>
+
+  <command_laws>
+    <set servo="UR" value="autopilot.motors_on ? actuators_pprz[0] : -MAX_PPRZ"/>
+    <set servo="BR" value="autopilot.motors_on ? actuators_pprz[1] : -MAX_PPRZ"/>
+    <set servo="BL" value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
+    <set servo="UL" value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
+    <set servo="ELEVON_RIGHT" value="autopilot.motors_on ? actuators_pprz[4] : 0"/>
+    <set servo="ELEVON_LEFT" value="autopilot.motors_on ? actuators_pprz[5] : 0"/>
+  </command_laws>
+
+  <section name="IMU" prefix="IMU_">
+    <!-- IMU calibration, make sure to calibrate the IMU properly before flight, see the wiki for more info-->
+    <define name= "MAG_X_CURRENT_COEF" value="319.383625919"/>
+    <define name= "MAG_Y_CURRENT_COEF" value="-32.4484676944"/>
+    <define name= "MAG_Z_CURRENT_COEF" value="-1421.95651899"/>
+
+    <define name="MAG_X_NEUTRAL" value="-33"/>
+    <define name="MAG_Y_NEUTRAL" value="1485"/>
+    <define name="MAG_Z_NEUTRAL" value="1184"/>
+    <define name="MAG_X_SENS" value="0.6709952296917457" integer="16"/>
+    <define name="MAG_Y_SENS" value="0.6497329786931962" integer="16"/>
+    <define name="MAG_Z_SENS" value="0.6842444448328998" integer="16"/>
+
+    <define name="ACCEL_X_SIGN" value="1"/>
+    <define name="ACCEL_Y_SIGN" value="1"/>
+    <define name="ACCEL_Z_SIGN" value="-1"/>
+
+    <define name="GYRO_P_SIGN" value="1"/>
+    <define name="GYRO_Q_SIGN" value="1"/>
+    <define name="GYRO_R_SIGN" value="-1"/>
+
+    <define name="ACCEL_X_NEUTRAL" value="-20"/>
+    <define name="ACCEL_Y_NEUTRAL" value="-106"/>
+    <define name="ACCEL_Z_NEUTRAL" value="-28"/>
+    <define name="ACCEL_X_SENS" value="4.907307048714179" integer="16"/>
+    <define name="ACCEL_Y_SENS" value="4.561138191178077" integer="16"/>
+    <define name="ACCEL_Z_SENS" value="4.895601825888152" integer="16"/>
+
+    <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
+    <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
+    <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
+  </section>
+
+  <section name="AUTOPILOT">
+    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
+    <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/>
+    <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
+  </section>
+
+  <section name="BAT">
+    <define name="MilliAmpereOfAdc(_adc)" value="_adc*1."/>
+    <define name="CATASTROPHIC_BAT_LEVEL" value="12.4" unit="V"/>
+    <define name="CRITIC_BAT_LEVEL" value="13.8" unit="V"/>
+    <define name="LOW_BAT_LEVEL" value="14.5" unit="V"/>
+    <define name="MAX_BAT_LEVEL" value="17.0" unit="V"/>
+    <define name="BAT_NB_CELLS" value="4"/>
+  </section>
+
+  <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
+    <!-- setpoints -->
+    <define name="SP_MAX_PHI" value="45." unit="deg"/>
+    <define name="SP_MAX_THETA" value="45." unit="deg"/>
+    <define name="SP_MAX_R" value="90." unit="deg/s"/>
+    <define name="DEADBAND_R" value="250"/>
+    <define name="DEADBAND_A" value="250"/>
+    <define name="SP_PSI_DELTA_LIMIT" value="90" unit="deg"/>
+  </section>
+
+  <section name="EFF_SCHEDULING" prefix="FWD_">
+    <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
+    <define name="G1" type="matrix">
+      <field value="{  -9.0,  -9.0,    9.0,   9.0,   0.0,   0.0}"/>
+      <field value="{ -20.0,  20.0,   20.0, -20.0,  15.0, -15.0}"/> <!-- 12 , -12 -->
+      <field value="{  -3.0,   3.0,   -3.0,   3.0, -10.0, -10.0}"/> <!-- -20  -20 -->
+      <field value="{  -0.6,  -0.6,   -0.6,  -0.6,   0.0,   0.0}"/>
+    </define>
+  </section>
+
+  <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
+    <!--  UR BR BL UL-->
+    <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
+    <define name="G1" type="matrix">
+      <field value="{  -9.0,  -9.0,    9.0,   9.0,   0.0,   0.0}"/>
+      <field value="{ -19.5,  19.5,   19.5, -19.5,   0.0,   0.0}"/>
+      <field value="{  -3.0,   3.0,   -3.0,   3.0,   0.0,   0.0}"/>
+      <field value="{ -0.85,  -0.85,  -0.85, -0.85,  0.0,   0.0}"/>
+    </define>
+
+    <!--Counter torque effect of spinning up a rotor-->
+    <define name="G2" value="{0, 0, 0, 0, 0, 0}"/>
+
+    <!-- reference acceleration for attitude control -->
+    <define name="REF_ERR_P" value="100"/>
+    <define name="REF_ERR_Q" value="80"/>
+    <define name="REF_ERR_R" value="70"/>
+    <define name="REF_RATE_P" value="20."/>
+    <define name="REF_RATE_Q" value="18.0"/>
+    <define name="REF_RATE_R" value="11.0"/> 
+
+    <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
+    <define name="FILT_CUTOFF" value="5.0"/>
+
+    <!-- first order actuator dynamics -->
+    <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 12.66, 25.6, 25.6}"/>
+    <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 170, 170}"/>
+    <define name="ACT_IS_SERVO" value="{0, 0, 0, 0, 1, 1}"/>
+
+    <!-- Adaptive Learning Rate -->
+    <define name="USE_ADAPTIVE" value="FALSE"/>
+    <define name="ADAPTIVE_MU" value="0.0001"/>
+  </section>
+
+  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
+    <define name="MAX_BANK" value="60" unit="deg"/>
+  </section>
+
+  <section name="GUIDANCE_INDI">
+    <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
+    <define name="GUIDANCE_INDI_POS_GAIN" value="0.2"/>
+    <define name="GUIDANCE_INDI_SPEED_GAIN" value="0.8"/>
+    <define name="GUIDANCE_INDI_POS_GAINZ" value="0.6"/>
+    <define name="GUIDANCE_INDI_SPEED_GAINZ" value="1.5"/>
+    <define name="GUIDANCE_INDI_PITCH_LIFT_EFF" value="0.12"/>
+    <define name="GUIDANCE_INDI_PITCH_EFF_SCALING" value="0.6"/>
+    <define name="GUIDANCE_H_REF_MAX_SPEED" value="16.0"/> <!--not used-->
+    <define name="GUIDANCE_INDI_MIN_THROTTLE" value="2000"/>
+    <define name="GUIDANCE_INDI_MIN_THROTTLE_FWD" value="1000"/>
+    <define name="GUIDANCE_INDI_MIN_PITCH" value="-80."/>
+    <define name="GUIDANCE_INDI_MAX_PITCH" value="25."/>
+    <define name="GUIDANCE_INDI_MAX_AIRSPEED" value="16.0"/>
+    <define name="GUIDANCE_HEADING_IS_FREE" value="FALSE"/> <!--heading can not be set by navigation -->
+    <define name="GUIDANCE_INDI_HEADING_BANK_GAIN" value="18.0"/>
+    <define name="GUIDANCE_INDI_PITCH_OFFSET_GAIN" value="0.06"/>
+    <define name="GUIDANCE_INDI_FILTER_CUTOFF" value="1.5"/>
+    <define name="GUIDANCE_INDI_LINE_GAIN" value="0.7"/>
+    <define name="FWD_SIDESLIP_GAIN" value="0.20"/>
+    <!--Flap effectiveness on lift-->
+    <define name="FE_LIFT_A_PITCH" value="0.00018"/>
+    <define name="FE_LIFT_B_PITCH" value="0.00072"/>
+    <define name="FE_LIFT_A_AS" value="0.0008"/>
+    <define name="FE_LIFT_B_AS" value="0.00009"/>
+  </section>
+
+  <section name="NAV">
+    <define name="NAV_CLIMB_VSPEED" value="1.5"/>
+    <define name="NAV_DESCEND_VSPEED" value="-1.5"/>
+    <define name="NAV_TAKEOFF_HEIGHT" value="10."/>
+    <define name="NAV_LANDING_AF_HEIGHT" value="20."/>
+    <define name="NAV_LANDING_FLARE_HEIGHT" value="10."/>
+    <define name="NAV_LANDING_DESCEND_SPEED" value="-1.0"/>
+    <define name="SURVEY_HYBRID_MAX_SWEEP_BACK" value="1"/>
+    <define name="MISSION_ALT_PROXIMITY" value="4."/>
+    <define name="NAV_HYBRID_LINE_GAIN" value="0.8"/>
+  </section>
+
+  <section name="AHRS" prefix="AHRS_">
+    <define name="GRAVITY_HEURISTIC_FACTOR" value="0"/>
+  </section>
+
+  <include href="conf/mag/toulouse_muret.xml"/>
+
+  <section name="MISC">
+    <!--The Quadshot uses (when TRUE) a slightly different axis system for the setpoint, to make both hovering and flying forward intuitive-->
+    <define name="USE_EARTH_BOUND_RC_SETPOINT" value="TRUE"/>
+    <define name="TRANSITION_MAX_OFFSET" value="-80.0" unit="deg"/>
+    <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
+    <define name="COORDINATED_TURN_AIRSPEED" value="18.0"/>
+
+    <define name="BARO_PERIODIC_FREQUENCY" value="50"/>
+    <define name="USE_AIRSPEED" value="TRUE"/>
+
+    <define name="ARRIVED_AT_WAYPOINT" value="5.0"/> <!-- For outdoor -->
+    <define name="DEFAULT_CIRCLE_RADIUS" value="60"/> <!-- For outdoor -->
+    <define name="CARROT" value="3.0"/>
+  </section>
+
+  <section name="SIMULATOR" prefix="NPS_">
+    <define name="ACTUATOR_NAMES" value="UR,BR,BL,UL,ele_right,ele_left" type="string[]"/>
+    <define name="JSBSIM_MODEL" value="falcon" type="string"/>
+    <define name="NO_MOTOR_MIXING" value="TRUE"/>
+  </section>
+  
+  <section name="GCS">
+    <define name="ALT_SHIFT_PLUS_PLUS" value="3"/>
+    <define name="ALT_SHIFT_PLUS" value="1"/>
+    <define name="ALT_SHIFT_MINUS" value="-1"/>
+  </section>
+
+</airframe>

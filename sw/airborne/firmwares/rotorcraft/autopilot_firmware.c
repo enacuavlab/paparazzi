@@ -31,7 +31,7 @@
 #include "generated/modules.h"
 
 #include <stdint.h>
-//#include "mcu_periph/sys_time.h"
+#include "mcu_periph/sys_time.h"
 #include "modules/energy/electrical.h"
 #include "modules/datalink/telemetry.h"
 #include "modules/radio_control/radio_control.h"
