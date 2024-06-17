@@ -2,6 +2,10 @@
   <section name="programs"/>
   <section name="sessions">
     <session name="EUREKA">
+      <program name="Simulator">
+        <arg flag="-a" constant="LAXUAV"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
       <program name="PprzGCS Appimage">
         <arg flag="-b" constant="10.34.127.255:6060"/>
       </program>
@@ -118,6 +122,9 @@
       </program>
     </session>
     <session name="EUREKA_local">
+      <program name="Simulator">
+        <arg flag="-a" constant="LAXUAV"/>
+      </program>
       <program name="PprzGCS"/>
       <program name="Server">
         <arg flag="-n"/>

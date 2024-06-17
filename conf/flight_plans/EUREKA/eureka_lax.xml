@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="212" ground_alt="152" lat0="43.6086362" lon0="1.4009029" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
+<flight_plan alt="272" ground_alt="152" lat0="43.5710358" lon0="1.3459139" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
   <header>
-#include "autopilot.h"
-</header>
+    #include "autopilot.h"
+  </header>
   <waypoints>
-    <waypoint name="HOME" lat="43.6096" lon="1.40024"/>
-    <waypoint name="CLIMB" lat="43.6095" lon="1.40024"/>
-    <waypoint name="STDBY" lat="43.6095" lon="1.40024"/>
-    <waypoint name="M1" lat="43.6094228" lon="1.4002526"/>
-    <waypoint name="M_TD" lat="43.5593457" lon="1.4533883"/>
-    <waypoint alt="190.0" name="TD" lat="43.5592689" lon="1.4537690"/>
+    <waypoint name="HOME" lat="43.5710358" lon="1.3459139"/>
+    <waypoint name="CLIMB" lat="43.5708899" lon="1.3460790"/>
+    <waypoint name="STDBY" lat="43.5709036" lon="1.3459479"/>
+    <waypoint name="TD" lat="43.6086079" lon="1.4415692" alt="152"/>
+    <waypoint name="L1" lat="43.5707" lon="1.34633"/>
+    <waypoint name="L2" lat="43.6086079" lon="1.4415692"/>
   </waypoints>
   <blocks>
     <block name="Wait GPS">
@@ -18,7 +18,7 @@
       <while cond="!GpsFixValid()"/>
     </block>
     <block name="Geo init">
-      <while cond="LessThan(NavBlockTime(), 10)"/>
+      <while cond="LessThan(NavBlockTime(), 1)"/>
       <call_once fun="NavSetGroundReferenceHere()"/>
     </block>
     <block name="Holding point">
@@ -34,11 +34,8 @@
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
       <stay wp="STDBY"/>
     </block>
-    <block name="MED">
-      <call_once fun="guidance_h_SetMaxSpeed(23)"/>
-      <go wp="M1"/>
-      <go from="M1" hmode="route" wp="M_TD"/>
-      <deroute block="land here"/>
+    <block name="route">
+    	<go wp="L2"/>
     </block>
     <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
       <call_once fun="NavSetWaypointHere(WP_TD)"/>
@@ -47,11 +44,6 @@
       <go wp="TD"/>
       <deroute block="flare"/>
     </block>
-    <!--block name="go_deroute_Point_de_degagement_1">
-      <call_once fun="guidance_h_SetMaxSpeed(20)"/>
-      <go wp="__Point_de_degagement_1"/>
-      <stay alt="352" wp="__Point_de_degagement_1"/>
-    </block-->
     <block name="flare">
       <exception cond="NavDetectGround()" deroute="Holding point"/>
       <exception cond="!nav_is_in_flight()" deroute="landed"/>
