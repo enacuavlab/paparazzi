@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="272" ground_alt="152" lat0="43.6118793" lon0="1.4551929" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
+<flight_plan alt="272" ground_alt="150" lat0="43.6118793" lon0="1.4551929" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
   <header>
 #include "autopilot.h"
 </header>
@@ -23,9 +23,9 @@
     <waypoint name="P13" x="-4137.1" y="592.0"/>
     <waypoint name="P14" x="-4312.3" y="1111.0"/>
     <waypoint name="P15" x="-5325.0" y="854.1"/>
-    <waypoint name="P16" x="-5724.33" y="755.598" alt="302"/>
+    <waypoint name="P16" x="-5724.33" y="755.598"/>
     <waypoint name="TD" x="-5723.53" y="746.915" alt="152"/>
-    
+    <waypoint name="Parking" x="-5731.12" y="928.399" alt="152"/>
   </waypoints>
   <blocks>
     <block name="Wait GPS">
@@ -52,7 +52,7 @@
     <block name="route1">
       <call_once fun="guidance_h_SetMaxSpeed(23)"/>
       <go from="STDBY" hmode="route" wp="P1"/>
-      <path wpts="P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13,P14,P15,P16"/>
+      <path wpts="P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13,P14,P15"/>
       <deroute block="land"/>
     </block>
     <block name="goto END">
@@ -63,7 +63,12 @@
       <call_once fun="NavSetWaypointHere(WP_TD)"/>
     </block>
     <block name="land">
-      <go wp="TD"/>
+      <call_once fun="guidance_h_SetMaxSpeed(12)"/>
+      <go wp="TD" height="2"/>
+      <stay wp="TD" height="2" until="stateGetPositionEnu_f() @DEREF z @LT 2"/>
+    </block>
+    <block name="park">
+      <go wp="Parking"/>
       <deroute block="flare"/>
     </block>
     <block name="flare">
