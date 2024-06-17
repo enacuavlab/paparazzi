@@ -218,6 +218,7 @@
   
   <section name="MISC">
     <define name="NAV_CARROT_DIST" value="100"/>
+    <define name="NAV_DESCEND_VSPEED" value="-5"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">
