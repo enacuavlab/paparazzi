@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="272" ground_alt="152" lat0="43.5710358" lon0="1.3459139" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
+<flight_plan alt="272" ground_alt="152" lat0="43.5736" lon0="1.37435" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
   <header>
     #include "autopilot.h"
   </header>
   <waypoints>
-    <waypoint name="HOME" lat="43.5710358" lon="1.3459139"/>
-    <waypoint name="CLIMB" lat="43.5708899" lon="1.3460790"/>
-    <waypoint name="STDBY" lat="43.5709036" lon="1.3459479"/>
+    <waypoint name="HOME" lat="43.5736" lon="1.37435"/>
+    <waypoint name="CLIMB" lat="43.5735" lon="1.37513"/>
+    <waypoint name="STDBY" lat="43.5738" lon="1.37502"/>
     <waypoint name="TD" lat="43.6086079" lon="1.4415692" alt="152"/>
-    <waypoint name="L1" lat="43.5707" lon="1.34633"/>
+    <waypoint name="L1" lat="43.5737" lon="1.37543"/>
     <waypoint name="L2" lat="43.6086079" lon="1.4415692"/>
   </waypoints>
   <blocks>

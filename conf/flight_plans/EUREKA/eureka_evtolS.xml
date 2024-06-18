@@ -68,8 +68,8 @@
       <stay wp="TD" height="2"/>
     </block>
     <block name="park">
-      <go wp="Parking"/>
-      <deroute block="flare"/>
+      <go wp="Parking" height="2"/>
+      <stay wp="Parking" height="2"/>
     </block>
     <block name="flare">
       <exception cond="NavDetectGround()" deroute="Holding point"/>

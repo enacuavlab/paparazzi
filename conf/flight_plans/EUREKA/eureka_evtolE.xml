@@ -1,31 +1,31 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="272" ground_alt="150" lat0="43.6118793" lon0="1.4551929" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
+<flight_plan alt="272" ground_alt="148" lat0="43.6118793" lon0="1.4551929" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
   <header>
 #include "autopilot.h"
 </header>
   <waypoints>
-    <waypoint name="HOME" x="-13.2" y="-50.3"/>
-    <waypoint name="CLIMB" x="0.2" y="-73.6"/>
-    <waypoint name="STDBY" x="0.6" y="-52.1"/>
-    <waypoint name="P1" x="-24.3" y="-68.5"/>
-    <waypoint name="P2" x="-204.2" y="-149.7"/>
-    <waypoint name="P3" x="-434.0" y="-248.4"/>
-    <waypoint name="P4" x="-709.5" y="-393.3"/>
-    <waypoint name="P5" x="-1119.2" y="-604.8"/>
-    <waypoint name="P6" x="-1739.7" y="-881.051"/>
-    <waypoint name="P7" x="-2269.07" y="-918.965"/>
-    <waypoint name="P8" x="-2711.63" y="-747.185"/>
-    <waypoint name="P9" x="-3052.09" y="-588.057"/>
-    <waypoint name="P10" x="-3368.92" y="-366.581"/>
-    <waypoint name="P11" x="-3801.17" y="46.07"/>
-    <waypoint name="P12" x="-4009.4" y="389.3"/>
-    <waypoint name="P13" x="-4137.1" y="592.0"/>
-    <waypoint name="P14" x="-4312.3" y="1111.0"/>
-    <waypoint name="P15" x="-5325.0" y="854.1"/>
-    <waypoint name="P16" x="-5532.48" y="511.956"/>
-    <waypoint name="TD" x="-5541.41" y="514.681" alt="152"/>
-    <waypoint name="Parking" x="-5419.48" y="780.634" alt="152"/>
+    <waypoint name="HOME" lat="43.6114243" lon="1.4550410"/>
+    <waypoint name="CLIMB" lat="43.6112169" lon="1.4552123"/>
+    <waypoint name="STDBY" lat="43.6114105" lon="1.4552123"/>
+    <waypoint name="P1" lat="43.6112587" lon="1.4549077"/>
+    <waypoint name="P2" lat="43.6104977" lon="1.4526979"/>
+    <waypoint name="P3" lat="43.6095707" lon="1.4498740"/>
+    <waypoint name="P4" lat="43.6082201" lon="1.4464949"/>
+    <waypoint name="P5" lat="43.6062474" lon="1.4414691"/>
+    <waypoint name="P6" lat="43.6036559" lon="1.4338477"/>
+    <waypoint name="P7" lat="43.6032246" lon="1.4272999"/>
+    <waypoint name="P8" lat="43.6046952" lon="1.4217779"/>
+    <waypoint name="P9" lat="43.6060691" lon="1.4175234"/>
+    <waypoint name="P10" lat="43.6080081" lon="1.4135466"/>
+    <waypoint name="P11" lat="43.6116478" lon="1.4080944"/>
+    <waypoint name="P12" lat="43.6147011" lon="1.4054333"/>
+    <waypoint name="P13" lat="43.6165035" lon="1.4038031"/>
+    <waypoint name="P14" lat="43.6211445" lon="1.4015089"/>
+    <waypoint name="P15" lat="43.6186561" lon="1.3890239"/>
+    <waypoint name="P16" lat="43.6164" lon="1.3868"/>
+    <waypoint name="TD" alt="152" lat="43.6155633" lon="1.3864246"/>
+    <waypoint name="Parking" alt="152" lat="43.6179783" lon="1.3878711"/>
   </waypoints>
   <blocks>
     <block name="Wait GPS">
@@ -52,7 +52,7 @@
     <block name="route1">
       <call_once fun="guidance_h_SetMaxSpeed(23)"/>
       <go from="STDBY" hmode="route" wp="P1"/>
-      <path wpts="P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13,P14,P15"/>
+      <path wpts="P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13,P14,P15,P16"/>
       <deroute block="land"/>
     </block>
     <block name="goto END">
@@ -68,8 +68,9 @@
       <stay wp="TD" height="2"/>
     </block>
     <block name="park">
-      <go wp="Parking"/>
-      <deroute block="flare"/>
+      <call_once fun="guidance_h_SetMaxSpeed(4)"/>
+      <go wp="Parking" height="2"/>
+      <stay wp="Parking" height="2"/>
     </block>
     <block name="flare">
       <exception cond="NavDetectGround()" deroute="Holding point"/>

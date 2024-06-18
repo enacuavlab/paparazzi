@@ -207,6 +207,51 @@
         <arg flag="8889"/>
       </program>
     </session>
+    <session name="Scenario_2">
+      <program name="PprzGCS Appimage">
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Server">
+        <arg flag="-n"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+        <arg flag="-http"/>
+        <arg flag="-hostname" constant="10.34.1.40"/>
+      </program>
+      <program name="Data Link">
+        <arg flag="-udp"/>
+        <arg flag="-udp_broadcast"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="EVTOLE"/>
+        <arg flag=""/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="EVTOLS"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="SURUAV"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Simulator">
+        <arg flag="-a" constant="HYPUAV"/>
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+      </program>
+      <program name="Ivy2SVS">
+        <arg flag="-b" constant="10.34.127.255:6060"/>
+        <arg flag="-ac" constant="1"/>
+        <arg flag="2"/>
+        <arg flag="3"/>
+        <arg flag="4"/>
+        <arg flag="5"/>
+      </program>
+      <program name="Http Server">
+        <arg flag="-m" constant="http.server"/>
+        <arg flag="8889"/>
+      </program>
+    </session>
     <session name="Scenario_3">
       <program name="PprzGCS Appimage">
         <arg flag="-b" constant="10.34.127.255:6060"/>
@@ -252,7 +297,7 @@
         <arg flag="8889"/>
       </program>
     </session>
-    <session name="Scenario_2">
+    <session name="Scenario_5">
       <program name="PprzGCS Appimage">
         <arg flag="-b" constant="10.34.127.255:6060"/>
       </program>
@@ -340,51 +385,7 @@
         <arg flag="3"/>
         <arg flag="4"/>
         <arg flag="5"/>
-      </program>
-      <program name="Http Server">
-        <arg flag="-m" constant="http.server"/>
-        <arg flag="8889"/>
-      </program>
-    </session>
-    <session name="Scenario_5">
-      <program name="PprzGCS Appimage">
-        <arg flag="-b" constant="10.34.127.255:6060"/>
-      </program>
-      <program name="Server">
-        <arg flag="-n"/>
-        <arg flag="-b" constant="10.34.127.255:6060"/>
-        <arg flag="-http"/>
-        <arg flag="-hostname" constant="10.34.1.40"/>
-      </program>
-      <program name="Data Link">
-        <arg flag="-udp"/>
-        <arg flag="-udp_broadcast"/>
-        <arg flag="-b" constant="10.34.127.255:6060"/>
-      </program>
-      <program name="Simulator">
-        <arg flag="-a" constant="EVTOLE"/>
-        <arg flag=""/>
-        <arg flag="-b" constant="10.34.127.255:6060"/>
-      </program>
-      <program name="Simulator">
-        <arg flag="-a" constant="EVTOLS"/>
-        <arg flag="-b" constant="10.34.127.255:6060"/>
-      </program>
-      <program name="Simulator">
-        <arg flag="-a" constant="SURUAV"/>
-        <arg flag="-b" constant="10.34.127.255:6060"/>
-      </program>
-      <program name="Simulator">
-        <arg flag="-a" constant="HYPUAV"/>
-        <arg flag="-b" constant="10.34.127.255:6060"/>
-      </program>
-      <program name="Ivy2SVS">
-        <arg flag="-b" constant="10.34.127.255:6060"/>
-        <arg flag="-ac" constant="1"/>
-        <arg flag="2"/>
-        <arg flag="3"/>
-        <arg flag="4"/>
-        <arg flag="5"/>
+        <arg flag="6"/>
       </program>
       <program name="Http Server">
         <arg flag="-m" constant="http.server"/>
