@@ -25,7 +25,7 @@
     <waypoint name="P15" lat="43.6180629" lon="1.3930599"/>
     <waypoint name="P16" alt="302" lat="43.6156491" lon="1.3863749"/>
     <waypoint name="TD" alt="152" lat="43.6154701" lon="1.3865050"/>
-    <waypoint name="Parking" x="-5731.12" y="928.399" alt="152"/>
+    <waypoint name="Parking" x="-3482.11" y="4076.55" alt="152"/>
   </waypoints>
   <blocks>
     <block name="Wait GPS">
@@ -65,7 +65,7 @@
     <block name="land">
       <call_once fun="guidance_h_SetMaxSpeed(12)"/>
       <go wp="TD" height="2"/>
-      <stay wp="TD" height="2" until="stateGetPositionEnu_f() @DEREF z @LT 2"/>
+      <stay wp="TD" height="2"/>
     </block>
     <block name="park">
       <go wp="Parking"/>
