@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="272" ground_alt="152" lat0="43.5946009" lon0="1.4037585" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
+<flight_plan alt="212" ground_alt="152" lat0="43.5946009" lon0="1.4037585" max_dist_from_home="30000" name="Rotorcraft Basic (Enac)" security_height="2">
   <header>
     #include "autopilot.h"
   </header>

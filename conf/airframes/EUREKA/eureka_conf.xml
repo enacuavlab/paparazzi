@@ -19,7 +19,7 @@
    flight_plan="flight_plans/EUREKA/eureka_evtolS.xml"
    settings="settings/nps.xml settings/rotorcraft_basic.xml settings/control/rotorcraft_speed.xml"
    settings_modules="modules/ahrs_int_cmpl_quat.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/gps_ubx_ucenter.xml modules/guidance_pid_rotorcraft.xml modules/guidance_rotorcraft.xml modules/imu_common.xml modules/nav_rotorcraft.xml modules/stabilization_int_quat.xml modules/to_atc.xml"
-   gui_color="#f250087ccc70"
+   gui_color="#df008000fd00"
   />
   <aircraft
    name="MEDUAV"
