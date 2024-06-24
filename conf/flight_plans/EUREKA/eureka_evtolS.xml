@@ -68,6 +68,7 @@
       <stay wp="TD" height="2"/>
     </block>
     <block name="park">
+      <call_once fun="guidance_h_SetMaxSpeed(4)"/>
       <go wp="Parking" height="2"/>
       <stay wp="Parking" height="2"/>
     </block>
