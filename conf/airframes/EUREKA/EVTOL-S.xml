@@ -243,4 +243,10 @@
     <define name="MILLIAMP_AT_FULL_THROTTLE" value="30000"/>
   </section>
 
+  <section name="GCS">
+    <define name="ALT_SHIFT_PLUS_PLUS" value="30"/>
+    <define name="ALT_SHIFT_PLUS" value="10"/>
+    <define name="ALT_SHIFT_MINUS" value="-10"/>
+  </section>
+
 </airframe>
