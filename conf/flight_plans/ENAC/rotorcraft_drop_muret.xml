@@ -1,0 +1,170 @@
+<?xml version="1.0"?>
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+<flight_plan alt="200" ground_alt="185" lat0="43.46223" lon0="1.27289" max_dist_from_home="400" name="Rotorcraft Drop Muret" security_height="10" wp_frame="ltp">
+  <header>
+    #ifndef SwitchServoOn
+    #define SwitchServoOn(_x) {}
+    #endif
+    #ifndef SwitchServoOff
+    #define SwitchServoOff(_x) {}
+    #endif
+    #define DropOpen SwitchServoOff
+    #define DropClose SwitchServoOn
+
+    #ifdef NAV_C
+    #ifndef TAG_TRACKING_COORD_TO_M
+    #define TAG_TRACKING_COORD_TO_M (1.f / 1000.f)
+    #endif
+
+    static void fp_tag_cb(uint8_t sender_id UNUSED,
+        uint8_t type, char * id UNUSED,
+        uint8_t nb UNUSED, int16_t * coord, uint16_t * dim UNUSED,
+        struct FloatQuat quat UNUSED, char * extra UNUSED)
+    {
+      if (type == JEVOIS_MSG_D3) {
+        tag_distance = coord[2] * TAG_TRACKING_COORD_TO_M;
+        tag_valid = true;
+      }
+    }
+    #endif
+  </header>
+  <waypoints>
+    <waypoint name="HOME" x="-8.1" y="9.8"/>
+    <waypoint name="STDBY" x="40.209" y="42.714"/>
+    <waypoint name="LANDPAD" x="32.0" y="33.0"/>
+    <waypoint name="TAG" x="28.432" y="2.551"/>
+    <waypoint name="DROP" x="48.432" y="65.551"/>
+    <waypoint name="_FLY1" x="-120.135" y="264.94"/>
+    <waypoint name="_FLY2" x="299.403" y="176.814"/>
+    <waypoint name="_FLY3" x="236.684" y="-88.655"/>
+    <waypoint name="_FLY4" x="-210.99" y="29.788"/>
+    <waypoint name="_KILL1" x="-130.009" y="292.981"/>
+    <waypoint name="_KILL2" x="324.67" y="196.132"/>
+    <waypoint name="_KILL3" x="256.662" y="-119.374"/>
+    <waypoint name="_KILL4" x="-251.128" y="10.603"/>
+    <waypoint name="_HERE" x="14.432" y="12.551"/>
+  </waypoints>
+  <sectors>
+    <sector color="red" name="KillZone">
+      <corner name="_KILL1"/>
+      <corner name="_KILL2"/>
+      <corner name="_KILL3"/>
+      <corner name="_KILL4"/>
+    </sector>
+    <sector color="green" name="FlyZone">
+      <corner name="_FLY1"/>
+      <corner name="_FLY2"/>
+      <corner name="_FLY3"/>
+      <corner name="_FLY4"/>
+    </sector>
+  </sectors>
+  <variables>
+    <variable init="4." var="fp_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="100." var="fp_max_height" max="120." min="10." step="1."/>
+    <variable init="15" var="fp_datalink_lost" max="60" min="1" step="1"/>
+    <variable init="10." var="goto_height" min="0.5" max="15." step="0.1"/>
+    <variable init="4.5" var="search_height" min="0.5" max="15." step="0.1"/>
+    <variable init="1.5" var="drop_height" min="0.5" max="15." step="0.1"/>
+    <variable init="42." var="tag_distance"/>
+    <variable init="false" type="bool" var="tag_valid"/>
+    <abi_binding name="JEVOIS_MSG" handler="fp_tag_cb"/>
+  </variables>
+  <modules>
+    <module name="nav" type="takeoff_and_landing"/>
+    <module name="tag_tracking">
+      <define name="TAG_TRACKING_WP" value="WP_LANDPAD"/>
+      <define name="TAG_TRACKING_SIM_WP" value="WP_TAG"/>
+    </module>
+  </modules>
+  <exceptions>
+    <exception cond="(datalink_time @GT fp_datalink_lost @AND
+      (nav_block @GEQ IndexOfBlock('Takeoff')) @AND
+      (nav_block @LT IndexOfBlock('Kill landed')) @AND
+      (autopilot_in_flight() == true))" deroute="Standby"/> <!-- deroute="EmergencyLanding" -->
+    <exception cond="((!InsideFlyZone(GetPosX(), GetPosY()) @OR GetPosHeight() @GT fp_max_height) @AND
+      (nav_block @GEQ IndexOfBlock('Takeoff')) @AND
+      (nav_block @LT IndexOfBlock('Kill landed')) @AND
+      (autopilot_in_flight() == true))" deroute="Standby"/>
+  </exceptions>
+  <blocks>
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 3)"/>
+    </block>
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Start Engine">
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
+      <exception cond="GetPosHeight() @GT 10." deroute="Standby"/>
+      <call_once fun="ins_reset_vertical_pos()"/>
+      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+      <call_once fun="DropClose()"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0." until="stage_time @GT 2" vmode="throttle"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="LANDPAD"/>
+    </block>
+    <block group="takeoff" name="Takeoff auto" strip_button="Takeoff (Here)">
+      <call fun="nav_takeoff_from_here()"/>
+      <deroute block="Standby"/>
+    </block>
+    <block name="Standby" strip_button="Standby" strip_icon="home.png">
+      <call_once fun="guidance_h_SetMaxSpeed(fp_speed)"/>
+      <call_once fun="jevois_stream(false)"/>
+      <stay wp="STDBY"/>
+    </block>
+    <block name="Goto Drop" strip_button="Goto Drop">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="jevois_stream(false)"/>
+      <set var="tag_tracking_get(TAG_TRACKING_ANY)-> motion_type" value="TAG_TRACKING_FIXED_POS"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
+      <go wp="DROP" from="_HERE" hmode="route" height="goto_height"/>
+      <call_once fun="NavSetWaypointHere(WP_TAG)"/>
+      <call_once fun="jevois_stream(true)"/>
+      <stay wp="DROP" until="(tag_tracking_get(TAG_TRACKING_ANY) @DEREF status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="search_height"/>
+      <deroute block="Drop Package"/>
+    </block>
+    <block name="Drop Package">
+      <stay wp="TAG" until="(stage_time @GT 2 @AND tag_tracking_get(TAG_TRACKING_ANY) @DEREF status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 5)" height="search_height"/>
+      <stay wp="TAG" climb="-0.5" vmode="climb" until="((tag_distance @LT drop_height) @AND tag_valid) @OR (GetPosHeight() @LT drop_height/2.)" post_call="tag_valid = false"/>
+      <call_once fun="DropOpen()"/>
+      <stay wp="TAG" until="stage_time @GT 3" height="goto_height"/>
+      <deroute block="Standby"/>
+    </block>
+    <block group="land" name="Land Tag Tracking" strip_button="Land tracking">
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <go wp="LANDPAD"/>
+      <call_once fun="jevois_stream(true)"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
+    </block>
+    <block group="land" name="Land auto" strip_button="Land auto">
+      <call fun="nav_land_at_wp(WP_LANDPAD, WP_LANDPAD, 0.)"/>
+      <deroute block="Kill landed"/>
+    </block>
+    <block group="land" name="Land here" strip_button="Land here" strip_icon="land-right.png">
+      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+    </block>
+    <block group="land" name="Land" strip_button="Land on pad">
+      <go wp="LANDPAD"/>
+    </block>
+    <block name="Flare">
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
+    </block>
+    <block name="Kill landed">
+      <call_once fun="NavKillThrottle()"/>
+      <call_once fun="jevois_stream(false)"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="EmergencyLanding">
+      <stay throttle="0." vmode="throttle" wp="HOME"/>
+    </block>
+  </blocks>
+</flight_plan>
