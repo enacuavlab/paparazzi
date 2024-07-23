@@ -70,6 +70,7 @@
     <module name="agl_dist"/-->
 
     <module name="digital_cam" type="pprzlink"/>
+    <module name="power_switch"/>
 
     <module name="extra_dl">
       <configure name="EXTRA_DL_PORT" value="uart4"/>
@@ -204,19 +205,10 @@
     <define name="REF_MIN_ZD" value="-1.5"/>
     <define name="REF_MAX_ZD" value=" 1."/>
     <define name="NOMINAL_HOVER_THROTTLE" value="0.30"/>
-    <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
-    <define name="ADAPT_NOISE_FACTOR" value="1."/>
-    <define name="ADAPT_INITIAL_HOVER_THROTTLE" value="0.25"/>
   </section>
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
     <define name="MAX_BANK" value="20" unit="deg"/>
-    <define name="PGAIN" value="40"/>
-    <define name="DGAIN" value="108"/>
-    <define name="IGAIN" value="20"/>
-    <define name="NGAIN" value="0"/>
-      <!-- feedforward -->
-    <define name="AGAIN" value="0"/>
     <define name="REF_MAX_SPEED" value="2.5"/>
     <define name="REF_MAX_ACCEL" value="2.5"/>
   </section>
@@ -260,6 +252,10 @@
         <field name="tag_id" value="0"/>
       </field>
     </define>
+  </section>
+
+  <section name="MISC">
+    <define name="POWER_SWITCH_GPIO" value="GPIOA,GPIO6"/>
   </section>
 
   <section name="GCS">
