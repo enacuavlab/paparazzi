@@ -22,12 +22,13 @@
       </module-->
       <module name="ahrs" type="float_dcm"/>
       <module name="ins" type="alt_float"/>
-      <define name="DC_SHOT_EXTRA_DL" value="TRUE"/>
     </target>
     <target name="sim" board="pc">
       <module name="radio_control" type="ppm"/>
       <module name="ahrs" type="float_dcm"/>
       <module name="ins" type="alt_float"/>
+      <module name="uart"/>
+      <define name="UART6_DEV" value="/tmp/ttya"/>
     </target>
 
     <!-- Communication -->

@@ -33,17 +33,6 @@ static inline bool delay_test_gf(bool test, int delay) {
 }
 
 #if DIGITAL_CAM
-#ifndef SITL
-static inline void set_expo(float e) {
-  uint8_t tab[2];
-  tab[0] = 'e';
-  tab[1] = (uint8_t)(e * 10.f);
-  DOWNLINK_SEND_PAYLOAD_COMMAND(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, 0, 2, tab);
-}
-#else
-#include "stdio.h"
-#define set_expo(_e) { printf("setting expo %f",_e); fflush(stdout); }
-#endif
 #define LINE_START_FUNCTION dc_Survey(20);
 #define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
 #endif
@@ -88,7 +77,6 @@ static inline void set_expo(float e) {
     </sector>
   </sectors>
   <variables>
-    <variable init="2." max="20." min="0.1" step="0.1" var="exposure"/>
     <variable init="30." max="60." min="10." step="1." var="map_alt"/>
   </variables>
   <modules>
@@ -134,6 +122,7 @@ static inline void set_expo(float e) {
       <circle radius="nav_radius" until="NavQdrCloseToAxis(WP_STDBY,WP_ZBC) @AND fabsf(GetPosAlt() - WaypointAlt(WP_ZBC)) @LT 10." wp="STDBY"/>
     </block>
     <block group="map" name="ZamboniSurvey" strip_button="Zamboni">
+      <call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/>
       <call_once fun="nav_survey_zamboni_setup(WP_ZBC, WP_ZBDIR, 140, 13, 13, GetAltRef()+map_alt)"/>
       <call fun="nav_survey_zamboni_run()"/>
       <!--deroute block="Standby"/-->
@@ -165,7 +154,7 @@ static inline void set_expo(float e) {
       <attitude roll="0" throttle="0" vmode="throttle"/>
     </block>
     <block name="SetExpo">
-      <call_once fun="set_expo(exposure)"/>
+      <call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/>
       <return/>
     </block>
   </blocks>
