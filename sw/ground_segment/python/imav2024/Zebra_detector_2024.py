@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import cv2
 from DetectZebra import ZebraDetector
 import numpy as np
