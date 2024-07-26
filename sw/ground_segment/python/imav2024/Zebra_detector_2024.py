@@ -42,13 +42,18 @@ def process_result(img, out, res, label, geo=None, color=(0, 255, 0)):
     cv2.putText(out, label, (center[0]+60, center[1]), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0))
 
     if geo is not None:
-        # get pixel coordinates
-        coord = geo.xy(center[0], center[1])
-        if coord is not None:
-            # transform to WGS84
-            lons, lats = rasterio.warp.transform(geo.crs, CRS.from_epsg(4326), [coord[0]], [coord[1]])
-            print(f"{label} {center} {lats[0]:.07f}, {lons[0]:.07f}")
-            cv2.putText(out, '{:.7f} {:.7f}'.format(lats[0], lons[0]), (center[0]+60, center[1]+30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color)
+        if geo.crs is None:
+            print(f"{label} {center} | no valid geo data")
+        else:
+            # get pixel coordinates
+            coord = geo.xy(center[0], center[1])
+            if coord is not None:
+                # transform to WGS84
+                lons, lats = rasterio.warp.transform(geo.crs, CRS.from_epsg(4326), [coord[0]], [coord[1]])
+                print(f"{label} {center} {lats[0]:.07f}, {lons[0]:.07f}")
+                cv2.putText(out, '{:.7f} {:.7f}'.format(lats[0], lons[0]), (center[0]+60, center[1]+30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color)
+            else:
+                print(f"{label} {center} | no valid geo coordinates")
     return img, out
 
 def find_mailboxes(img, output=None, scale=DEFAULT_SCALE_FACTOR, res=DEFAULT_RESOLUTION, geo=None, show_errors=False):
@@ -57,7 +62,7 @@ def find_mailboxes(img, output=None, scale=DEFAULT_SCALE_FACTOR, res=DEFAULT_RES
     results, error = mailbox_zebra.detect(img, res)
     #print('results', len(results))
     for cnt, result in enumerate(results):
-        print(f'ZEBRA_{cnt} | {result[0]} | {result[3]}')
+        #print(f'ZEBRA_{cnt} | {result[0]} | {result[3]}')
         img, out = process_result(img, out, result[2], f"ZEBRA_{cnt}", geo)
     if show_errors:
         print('number of errors', len(error))
@@ -94,7 +99,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     img = cv2.imread(args.img)
-    geo = None # get_geo_data(args.img)
+    geo = get_geo_data(args.img)
     find_mailboxes(img, args.output, args.scale, args.resolution, geo=geo, show_errors=args.error)
 
     if not args.no_view and args.output is not None:

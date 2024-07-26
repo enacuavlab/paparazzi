@@ -31,7 +31,7 @@ class ZebraDetector:
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         mask = None
         for th in self.hsv_th:
-            print('hsv th',th)
+            #print('hsv th',th)
             hsv_min = np.array(th[0])
             hsv_max = np.array(th[1])
             if mask is None:
@@ -40,10 +40,9 @@ class ZebraDetector:
                 mask += cv2.inRange(hsv, hsv_min, hsv_max)
 
         self.mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, self.kernel) # opening
-        cv2.imshow('mask '+self.color,cv2.resize(mask,(1024,720)))
         #cv2.imshow('mask '+self.color,mask)
         cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-        self.draw_all(img.copy(),cnts)
+        #self.draw_all(img.copy(),cnts)
         valid = []
         error = []
         for cnt in cnts:
@@ -63,16 +62,13 @@ class ZebraDetector:
             score = area_ratio * (1. - error_area) * (1. - error_ar)
             if error_size_min > self.size_th or error_size_max > self.size_th:
                 # too small or too big
-                #print("not correct size")
                 error.append((score, 'size', rect, (min_wh, max_wh, error_size_min, error_size_max, self.size_th)))
             elif error_ar > self.aspect_ratio_th:
                 # not correct aspect ratio
-                #print("not correct aspect ratio")
                 error.append((score, 'aspect', rect, (error_ar, aspect_ratio, self.aspect_ratio, self.aspect_ratio_th)))
             #print(area,cv2.contourArea(cnt),area_ratio)
             elif area_ratio < self.area_th:
                 # not enough full of color
-                #print("not good filling")
                 error.append((score, 'filling', rect, (area_ratio, self.area_th)))
             else:
                 valid.append((score, 'valid', rect, (min_wh, max_wh, error_ar, error_size_min, error_size_max, area_ratio)))
@@ -84,7 +80,7 @@ class ZebraDetector:
             box = boxPoints(cv2.minAreaRect(cnt))
             ctr = np.array(box).reshape((-1,1,2)).astype(np.int32)
             cv2.drawContours(img, [ctr], -1, (0, 255, 0), 4)
-        cv2.imshow('contour '+self.color,cv.resize(img,(1024,720)))
+        cv2.imshow('contour '+self.color,img)
 
     def set_hsv_th(self, th_min, th_max):
         if th_min[0] < th_max[0]: # h min < h max, normal case
