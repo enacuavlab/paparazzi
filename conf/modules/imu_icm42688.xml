@@ -30,8 +30,8 @@
     <configure name="IMU_SPI_DEV" default="spi1" case="lower|upper"/>
     <configure name="IMU_SPI_SLAVE_IDX" default="SPI_SLAVE0"/>
     <configure name="IMU_ODR" default="4KHZ"/>
-    <configure name="GYRO_RANGE" default="500DPS"/>
-    <configure name="ACCEL_RANGE" default="2G"/>
+    <configure name="GYRO_RANGE" default="2000DPS"/>
+    <configure name="ACCEL_RANGE" default="8G"/>
 
     <define name="IMU_SPI_DEV" value="$(IMU_SPI_DEV_LOWER)"/>
     <define name="USE_$(IMU_SPI_DEV_UPPER)"/>
@@ -43,8 +43,8 @@
     <define name="INVENSENSE3_GYRO_RANGE" value="INVENSENSE3_GYRO_RANGE_$(GYRO_RANGE)"/>
     <define name="INVENSENSE3_ACCEL_RANGE" value="INVENSENSE3_ACCEL_RANGE_$(ACCEL_RANGE)"/>
 
-    <define name="INVENSENSE3_GYRO_AAF" value="977"/>
-    <define name="INVENSENSE3_ACCEL_AAF" value="213"/>
+    <define name="INVENSENSE3_GYRO_AAF" value="42"/>
+    <define name="INVENSENSE3_ACCEL_AAF" value="42"/>
 
     <file name="invensense3.c" dir="peripherals"/>
     <file name="imu_icm42688.c"/>

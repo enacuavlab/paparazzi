@@ -39,7 +39,6 @@ extern "C" {
 #include "generated/airframe.h"
 #include "modules/radio_control/radio_control.h"
 #include "modules/actuators/actuators.h"
-#include "filters/low_pass_filter.h"
 #include "modules/core/abi.h"
 #include <stdio.h>
 
@@ -55,31 +54,37 @@ extern "C" {
 
 //struct FloatEulers stab_att_sp_euler;
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 #ifndef STABILIZATION_UDWADIA_IX
-#define STABILIZATION_UDWADIA_IX 0.04
+#define STABILIZATION_UDWADIA_IX 0.001
 #endif
 
 #ifndef STABILIZATION_UDWADIA_IY
-#define STABILIZATION_UDWADIA_IY 0.04
+#define STABILIZATION_UDWADIA_IY 0.001
 #endif
 
 #ifndef STABILIZATION_UDWADIA_IZ
-#define STABILIZATION_UDWADIA_IZ 0.08
+#define STABILIZATION_UDWADIA_IZ 0.002
 #endif
 
-#ifndef STABILIZATION_UDWADIA_D1
-#define STABILIZATION_UDWADIA_D1 6.3
+//6.3
+#ifndef STABILIZATION_UDWADIA_DD
+#define STABILIZATION_UDWADIA_DD 1
 #endif
 
-#ifndef STABILIZATION_UDWADIA_D2
-#define STABILIZATION_UDWADIA_D2 20
+//20
+#ifndef STABILIZATION_UDWADIA_DP
+#define STABILIZATION_UDWADIA_DP 1.5
 #endif
 
+// 0.12
 #ifndef STABILIZATION_UDWADIA_L
-#define STABILIZATION_UDWADIA_L 0.1
+#define STABILIZATION_UDWADIA_L 0.12
 #endif
 
+//0.025
 #ifndef STABILIZATION_UDWADIA_C
 #define STABILIZATION_UDWADIA_C 0.05
 #endif
@@ -108,9 +113,11 @@ Eigen::Vector4f yaw_quat;
 
 Eigen::Matrix4f J, B, B_pinv;
 
-Eigen::Vector4f F, F_bound, var, p1, att_quat_vect;
+Eigen::Vector4f F, omega_mot_bound, var, p1, att_quat_vect, q_dot;
 
-Butterworth2LowPass rates_lowpass_filters[3];
+
+float throttle;
+struct FloatEulers eul_sp;
 
 
 void qtoe(Eigen::Matrix4f *h, Eigen::Vector4f q);
@@ -119,13 +126,16 @@ void qtoe(Eigen::Matrix4f *h, Eigen::Vector4f q);
 #include "modules/datalink/telemetry.h"
 static void send_payload_float(struct transport_tx *trans, struct link_device *dev)
 {
-  float f[22] = {F(0), F(1), F(2), F(3),
+  float f[34] = {F(0), F(1), F(2), F(3),
                 Fc(0), Fc(1), Fc(2),
                 var(0), var(1), var(2), var(3),
                 p1(0), p1(1), p1(2), p1(3),
                 att_quat_vect(0), att_quat_vect(1), att_quat_vect(2), att_quat_vect(3),
-                body_rates_vect(0), body_rates_vect(1), body_rates_vect(2)}; 
-  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 22, f);
+                body_rates_vect(0), body_rates_vect(1), body_rates_vect(2),
+                throttle, DegOfRad(eul_sp.phi), DegOfRad(eul_sp.theta), DegOfRad(eul_sp.psi),
+                omega_mot_bound(0), omega_mot_bound(1), omega_mot_bound(2), omega_mot_bound(3),
+                q_dot(0), q_dot(1),q_dot(2), q_dot(3)}; 
+  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 34, f);
 }
 #endif
 
@@ -144,21 +154,12 @@ void stabilization_udwadia_init(void)
       -STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,
        STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,  STABILIZATION_UDWADIA_L, -STABILIZATION_UDWADIA_L,
        STABILIZATION_UDWADIA_C,  STABILIZATION_UDWADIA_C, -STABILIZATION_UDWADIA_C, -STABILIZATION_UDWADIA_C;
+  float heading = stabilization_attitude_get_heading_f();
 
-  yaw_quat << 1, 0, 0, 0;
+  yaw_quat << cos(heading/2), 0, 0, sin(heading/2);
  
   // B_pinv = B.completeOrthogonalDecomposition().pseudoInverse();
   B_pinv = (B.transpose()*B).ldlt().solve (B.transpose());
-
-  // tau = 1/(2*pi*Fc)
-  float tau = 1.0 / (2.0 * M_PI * 3.0);
-  float sample_time = 1.0 / PERIODIC_FREQUENCY;
-  // Filtering of the gyroscope
-  int8_t i;
-  for (i = 0; i < 3; i++) {
-    init_butterworth_2_low_pass(&rates_lowpass_filters[i], tau, sample_time, 0.0);
-  }
-
 
   #if PERIODIC_TELEMETRY
     register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PAYLOAD_FLOAT, send_payload_float);
@@ -186,17 +187,10 @@ void stabilization_udwadia_enter(void)
  */
 void stabilization_udwadia_run(bool __attribute__((unused)) in_flight)
 {
-  
 
-   /* Propagate the filter on the gyroscopes */
   struct FloatRates *body_rates = stateGetBodyRates_f();
-  float rate_vect[3] = {body_rates->p, body_rates->q, body_rates->r};
-  int8_t i;
-  for (i = 0; i < 3; i++) {
-    update_butterworth_2_low_pass(&rates_lowpass_filters[i], rate_vect[i]);
-  }
   
-  body_rates_vect << rates_lowpass_filters[0].o[0], rates_lowpass_filters[1].o[0], rates_lowpass_filters[2].o[0];
+  body_rates_vect << body_rates->p, body_rates->q, body_rates->r;
 
   struct FloatQuat *att_quat = stateGetNedToBodyQuat_f();
   
@@ -210,7 +204,7 @@ void stabilization_udwadia_run(bool __attribute__((unused)) in_flight)
   e_att_T = e_att.transpose();
   h_att = e_att.bottomRows(3);
   Eigen::Matrix<float, 4, 3> h_att_T = h_att.transpose();
-  Eigen::Vector4f q_dot = h_att_T * body_rates_vect;
+  q_dot = h_att_T * body_rates_vect;
   Eigen::Matrix<float, 1, 4> q_dot_T = q_dot.transpose();
   qtoe(&e_dot_att, q_dot);
   e_dot_att_T = e_dot_att.transpose();
@@ -222,29 +216,29 @@ void stabilization_udwadia_run(bool __attribute__((unused)) in_flight)
 
   Eigen::Matrix<float, 5, 4> A;
   Eigen::Matrix<float, 5, 1> b;
-  // A << att_quat_vect_T,
-  //      2*(-Fc(2)*att_quat_vect(1)-Fc(1)*att_quat_vect(0)), 2*(-Fc(2)*att_quat_vect(0)+Fc(1)*att_quat_vect(1)), 2*(Fc(2)*att_quat_vect(3)+Fc(1)*att_quat_vect(2)), 2*(-Fc(2)*att_quat_vect(2)-Fc(1)*att_quat_vect(3)),
-  //      2*(-Fc(2)*att_quat_vect(2)+Fc(0)*att_quat_vect(0)), 2*(-Fc(2)*att_quat_vect(3)-Fc(0)*att_quat_vect(1)), 2*(-Fc(2)*att_quat_vect(0)-Fc(0)*att_quat_vect(2)), 2*(-Fc(2)*att_quat_vect(1)+Fc(0)*att_quat_vect(3)),
-  //      2*(Fc(1)*att_quat_vect(2)+Fc(0)*att_quat_vect(1)), 2*(Fc(1)*att_quat_vect(3)+Fc(0)*att_quat_vect(0)), 2*(Fc(1)*att_quat_vect(0)-Fc(0)*att_quat_vect(3)), 2*(Fc(1)*att_quat_vect(1)-Fc(0)*att_quat_vect(2)),
-  //      yaw_quat(3), 0, 0, -yaw_quat(0);
-
-  // b << -STABILIZATION_UDWADIA_D1*att_quat_vect_T*q_dot-STABILIZATION_UDWADIA_D2*(att_quat_vect_T*att_quat_vect-1)-q_dot_T*q_dot,
-  //      4*Fc(2)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1))+2*Fc(1)*(pow(q_dot(0),2)-pow(q_dot(2),2)-pow(q_dot(3),2)+pow(q_dot(3),2)) - STABILIZATION_UDWADIA_D1 *(2*Fc(2)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))-2*Fc(1)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_D2*(2*Fc(2)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1)) - Fc(1)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
-  //      -4*Fc(2)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))+2*Fc(0)*(pow(q_dot(0),2)-pow(q_dot(1),2)-pow(q_dot(2),2)+pow(q_dot(3),2)) - STABILIZATION_UDWADIA_D1 *(-2*Fc(2)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))+2*Fc(0)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_D2*(-2*Fc(2)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) + Fc(0)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
-  //      -4*Fc(1)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))-4*Fc(0)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1)) - STABILIZATION_UDWADIA_D1 *(2*Fc(1)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))-2*Fc(0)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))) - STABILIZATION_UDWADIA_D2*(2*Fc(1)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) - 2*Fc(0)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1))),
-  //      -STABILIZATION_UDWADIA_D1 *(q_dot(0)*yaw_quat(3)-q_dot(3)*yaw_quat(0)) - STABILIZATION_UDWADIA_D2*(att_quat_vect(0)*yaw_quat(3)-att_quat_vect(3)*yaw_quat(0));
-  
   A << att_quat_vect_T,
        2*(-Fc(2)*att_quat_vect(1)-Fc(1)*att_quat_vect(0)), 2*(-Fc(2)*att_quat_vect(0)+Fc(1)*att_quat_vect(1)), 2*(Fc(2)*att_quat_vect(3)+Fc(1)*att_quat_vect(2)), 2*(-Fc(2)*att_quat_vect(2)-Fc(1)*att_quat_vect(3)),
        2*(-Fc(2)*att_quat_vect(2)+Fc(0)*att_quat_vect(0)), 2*(-Fc(2)*att_quat_vect(3)-Fc(0)*att_quat_vect(1)), 2*(-Fc(2)*att_quat_vect(0)-Fc(0)*att_quat_vect(2)), 2*(-Fc(2)*att_quat_vect(1)+Fc(0)*att_quat_vect(3)),
        2*(Fc(1)*att_quat_vect(2)+Fc(0)*att_quat_vect(1)), 2*(Fc(1)*att_quat_vect(3)+Fc(0)*att_quat_vect(0)), 2*(Fc(1)*att_quat_vect(0)-Fc(0)*att_quat_vect(3)), 2*(Fc(1)*att_quat_vect(1)-Fc(0)*att_quat_vect(2)),
-       -att_quat_vect(3), att_quat_vect(2), -att_quat_vect(1), att_quat_vect(0);
+       yaw_quat(3), 0, 0, -yaw_quat(0);
 
-  b << -STABILIZATION_UDWADIA_D1*att_quat_vect_T*q_dot-STABILIZATION_UDWADIA_D2*(att_quat_vect_T*att_quat_vect-1)-q_dot_T*q_dot,
-       4*Fc(2)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1))+2*Fc(1)*(pow(q_dot(0),2)-pow(q_dot(2),2)-pow(q_dot(3),2)+pow(q_dot(3),2)) - STABILIZATION_UDWADIA_D1 *(2*Fc(2)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))-2*Fc(1)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_D2*(2*Fc(2)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1)) - Fc(1)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
-       -4*Fc(2)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))+2*Fc(0)*(pow(q_dot(0),2)-pow(q_dot(1),2)-pow(q_dot(2),2)+pow(q_dot(3),2)) - STABILIZATION_UDWADIA_D1 *(-2*Fc(2)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))+2*Fc(0)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_D2*(-2*Fc(2)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) + Fc(0)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
-       -4*Fc(1)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))-4*Fc(0)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1)) - STABILIZATION_UDWADIA_D1 *(2*Fc(1)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))-2*Fc(0)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))) - STABILIZATION_UDWADIA_D2*(2*Fc(1)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) - 2*Fc(0)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1))),
-       -STABILIZATION_UDWADIA_D1 *(att_quat_vect(2)*q_dot(1)-att_quat_vect(3)*q_dot(0)+att_quat_vect(0)*q_dot(3)-att_quat_vect(1)*q_dot(2)) ;
+  b << -6.3*att_quat_vect_T*q_dot-10*(att_quat_vect_T*att_quat_vect-1)-q_dot_T*q_dot,
+       4*Fc(2)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1))+2*Fc(1)*(pow(q_dot(0),2)-pow(q_dot(2),2)-pow(q_dot(3),2)+pow(q_dot(3),2)) - STABILIZATION_UDWADIA_DD *(2*Fc(2)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))-2*Fc(1)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_DP*(2*Fc(2)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1)) - Fc(1)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
+       -4*Fc(2)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))+2*Fc(0)*(pow(q_dot(0),2)-pow(q_dot(1),2)-pow(q_dot(2),2)+pow(q_dot(3),2)) - STABILIZATION_UDWADIA_DD *(-2*Fc(2)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))+2*Fc(0)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_DP*(-2*Fc(2)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) + Fc(0)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
+       -4*Fc(1)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))-4*Fc(0)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1)) - STABILIZATION_UDWADIA_DD *(2*Fc(1)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))-2*Fc(0)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))) - STABILIZATION_UDWADIA_DP*(2*Fc(1)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) - 2*Fc(0)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1))),
+       att_quat_vect(3)*1 -STABILIZATION_UDWADIA_DD*(q_dot(0)*yaw_quat(3)-q_dot(3)*yaw_quat(0)) - STABILIZATION_UDWADIA_DP*(att_quat_vect(0)*yaw_quat(3)-att_quat_vect(3)*yaw_quat(0));
+  
+  // A << att_quat_vect_T,
+  //      2*(-Fc(2)*att_quat_vect(1)-Fc(1)*att_quat_vect(0)), 2*(-Fc(2)*att_quat_vect(0)+Fc(1)*att_quat_vect(1)), 2*(Fc(2)*att_quat_vect(3)+Fc(1)*att_quat_vect(2)), 2*(-Fc(2)*att_quat_vect(2)-Fc(1)*att_quat_vect(3)),
+  //      2*(-Fc(2)*att_quat_vect(2)+Fc(0)*att_quat_vect(0)), 2*(-Fc(2)*att_quat_vect(3)-Fc(0)*att_quat_vect(1)), 2*(-Fc(2)*att_quat_vect(0)-Fc(0)*att_quat_vect(2)), 2*(-Fc(2)*att_quat_vect(1)+Fc(0)*att_quat_vect(3)),
+  //      2*(Fc(1)*att_quat_vect(2)+Fc(0)*att_quat_vect(1)), 2*(Fc(1)*att_quat_vect(3)+Fc(0)*att_quat_vect(0)), 2*(Fc(1)*att_quat_vect(0)-Fc(0)*att_quat_vect(3)), 2*(Fc(1)*att_quat_vect(1)-Fc(0)*att_quat_vect(2)),
+  //      -att_quat_vect(3), att_quat_vect(2), -att_quat_vect(1), att_quat_vect(0);
+
+  // b << -6.3*att_quat_vect_T*q_dot-10*(att_quat_vect_T*att_quat_vect-1)-q_dot_T*q_dot,
+  //      4*Fc(2)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1))+2*Fc(1)*(pow(q_dot(0),2)-pow(q_dot(2),2)-pow(q_dot(3),2)+pow(q_dot(3),2)) - STABILIZATION_UDWADIA_DD *(2*Fc(2)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))-2*Fc(1)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_DP*(2*Fc(2)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1)) - Fc(1)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
+  //      -4*Fc(2)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))+2*Fc(0)*(pow(q_dot(0),2)-pow(q_dot(1),2)-pow(q_dot(2),2)+pow(q_dot(3),2)) - STABILIZATION_UDWADIA_DD *(-2*Fc(2)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))+2*Fc(0)*(att_quat_vect(0)*q_dot(0)-att_quat_vect(1)*q_dot(1)-att_quat_vect(2)*q_dot(2)+att_quat_vect(3)*q_dot(3))) - STABILIZATION_UDWADIA_DP*(-2*Fc(2)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) + Fc(0)*(pow(att_quat_vect(0),2)-pow(att_quat_vect(1),2)-pow(att_quat_vect(2),2)+pow(att_quat_vect(3),2))),
+  //      -4*Fc(1)*(q_dot(1)*q_dot(3)+q_dot(0)*q_dot(2))-4*Fc(0)*(q_dot(2)*q_dot(3)-q_dot(0)*q_dot(1)) - STABILIZATION_UDWADIA_DD *(2*Fc(1)*(att_quat_vect(1)*q_dot(3) + att_quat_vect(3)*q_dot(1) + att_quat_vect(0)*q_dot(2)+ att_quat_vect(2)*q_dot(0))-2*Fc(0)*(att_quat_vect(2)*q_dot(3) + att_quat_vect(3)*q_dot(2) - att_quat_vect(0)*q_dot(1)- att_quat_vect(1)*q_dot(0))) - STABILIZATION_UDWADIA_DP*(2*Fc(1)*(att_quat_vect(1)*att_quat_vect(3)+att_quat_vect(0)*att_quat_vect(2)) - 2*Fc(0)*(att_quat_vect(2)*att_quat_vect(3)-att_quat_vect(0)*att_quat_vect(1))),
+  //      -10 *(att_quat_vect(2)*q_dot(1)-att_quat_vect(3)*q_dot(0)+att_quat_vect(0)*q_dot(3)-att_quat_vect(1)*q_dot(2)) ;
 
   Eigen::Matrix<float, 5, 4> temp = A*M_inv;
   Eigen::Matrix<float, 4, 5> temp_pinv = (temp.transpose()*temp).ldlt().solve (temp.transpose()); // https://www.mrtrix.org/developer-documentation/least__squares_8h_source.html#l00039
@@ -252,21 +246,26 @@ void stabilization_udwadia_run(bool __attribute__((unused)) in_flight)
   p1 = temp_pinv * (b+temp*Q);
 
   
-  var << sqrtf(Fc(0)*Fc(0) + Fc(1)*Fc(1) + Fc(2)*Fc(2)),
+  var << -sqrtf(Fc(0)*Fc(0) + Fc(1)*Fc(1) + Fc(2)*Fc(2)),
           e_att.bottomRightCorner(3,4)*p1;
-  F = (B_pinv*var);
+  F = -(B_pinv*var);
 
 
    // Bound the inputs to the actuators
   for (int i = 0; i < 4; i++) {
     if (autopilot_get_motors_on()) {
-      F_bound(i) = sqrtf(F(i)/kf)*MAX_PPRZ/60000; 
-      Bound(F_bound(i), 0, MAX_PPRZ);
+      // omega_mot_bound(i) = sqrtf(abs(MIN(F(i),0))/kf)/30000*MAX_PPRZ; 
+      omega_mot_bound(i) = (sqrtf(abs(MAX(F(i),0))/kf)/30000)*MAX_PPRZ; 
+      Bound(omega_mot_bound(i), 0, MAX_PPRZ);
     } else {
-      F_bound(i) = -MAX_PPRZ;
+      omega_mot_bound(i) = -MAX_PPRZ;
     }
-    actuators_pprz[i] = (int16_t) F_bound(i);
   }
+  actuators_pprz[0] = (int16_t) omega_mot_bound(1); // FR 
+  actuators_pprz[1] = (int16_t) omega_mot_bound(2); // BR
+  actuators_pprz[2] = (int16_t) omega_mot_bound(3); // FL
+  actuators_pprz[3] = (int16_t) omega_mot_bound(0); // BL
+
 
 }
 
@@ -276,14 +275,14 @@ void stabilization_udwadia_run(bool __attribute__((unused)) in_flight)
 void stabilization_udwadia_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
 {
   struct FloatQuat q_sp;
-  struct FloatEulers eul_sp;
-  float throttle = (float) guidance_v.rc_delta_t;
+ 
+  throttle = (float) guidance_v.rc_delta_t;
   struct FloatVect3 force_vect;
   if(throttle<100){
-    force_vect = {0,0,1};
+    force_vect = {0,0,0.01};
   }
   else{
-    force_vect = {0,0,1000*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ}; //-20*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ
+    force_vect = {0,0,200*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ}; //-20*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ
   }
   
   struct FloatVect3 tmp_vect;

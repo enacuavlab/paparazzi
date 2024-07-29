@@ -1,6 +1,6 @@
 <!DOCTYPE airframe SYSTEM "../../airframe.dtd">
 
-<airframe name="CobraV2">
+<airframe name="octave_blanc">
 
   <description>
     * Autopilot:   TawakiV2
@@ -14,7 +14,7 @@
     <autopilot name="cobra_autopilot.xml"/>
     <configure name="RTOS_DEBUG" value="FALSE"/>
     <configure name="PERIODIC_FREQUENCY" value="500"/>
-    <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/>
+    <!-- <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/> -->
 
     <target name="ap" board="tawaki_2.0">
       <module name="radio_control" type="sbus"/>
@@ -25,7 +25,7 @@
     </target>
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
-      <module name="radio_control" type="ppm"/>
+      <!-- <module name="radio_control" type="datalink"/> -->
       <define name="TAWAKIV2_IMU_ROT" value=""/>
       <define name="TAWAKIV2_MAG_ROT" value=""/>
     </target>
@@ -59,19 +59,27 @@
     <module name="guidance" type="udwadia"/>
     <module name="nav" type="rotorcraft"/>
 
-    <module name="ins" type="ekf2">
+    <!-- <module name="ins" type="ekf2">
       <define name="INS_EKF2_OPTITRACK" value="TRUE"/>    
-    </module>
+    </module> -->
     <!--module name="preflight_checks"/-->
 
-    <!--module name="filter" type="1euro_imu">
+    <module name="ins"/>
+    <module name="ahrs" type="int_cmpl_quat">
+      <!-- <define name="AHRS_PROPAGATE_LOW_PASS_RATES"/>
+      <define name="AHRS_PROPAGATE_LOW_PASS_RATES_MUL" value="25"/>
+      <define name="AHRS_PROPAGATE_LOW_PASS_RATES_DIV" value="1000"/> -->
+    </module>
+
+    <!-- <module name="filter" type="1euro_imu">
       <define name="AHRS_ICQ_IMU_ID" value="IMU_F1E_ID"/>
-      <define name="AHRS_ALIGNER_IMU_ID" value="IMU_F1E_ID"/>
-    </module-->
+      <define name="AHRS_ALIGNER_IMU_ID" value="IMU_ICM42688_ID"/>
+      <define name="GYRO_MINCUTOFF" value="10"/>
+    </module> -->
 
 
     <module name="flight_recorder"/>
-    <define name="SDLOG_START_DELAY" value="1"/>
+    <define name="SDLOG_START_DELAY" value="5"/>
 
     <module name="sys_mon"/>
     <module name="shell">
@@ -83,8 +91,8 @@
   <servos driver="DShot">
     <servo name="FR" no="1" min="0" neutral="100" max="2000"/>
     <servo name="BR" no="2" min="0" neutral="100" max="2000"/>
-    <servo name="BL" no="4" min="0" neutral="100" max="2000"/>
     <servo name="FL" no="3" min="0" neutral="100" max="2000"/>
+    <servo name="BL" no="4" min="0" neutral="100" max="2000"/>
   </servos>
 
   <commands>
@@ -97,8 +105,8 @@
   <command_laws>
     <set servo="FR" value="autopilot_get_motors_on() ? actuators_pprz[0] : -MAX_PPRZ"/>
     <set servo="BR" value="autopilot_get_motors_on() ? actuators_pprz[1] : -MAX_PPRZ"/>
-    <set servo="BL" value="autopilot_get_motors_on() ? actuators_pprz[2] : -MAX_PPRZ"/>
-    <set servo="FL" value="autopilot_get_motors_on() ? actuators_pprz[3] : -MAX_PPRZ"/>
+    <set servo="FL" value="autopilot_get_motors_on() ? actuators_pprz[2] : -MAX_PPRZ"/>
+    <set servo="BL" value="autopilot_get_motors_on() ? actuators_pprz[3] : -MAX_PPRZ"/>
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
@@ -179,15 +187,15 @@
     <define name="ADAPTIVE_MU" value="0.0001"/>
 
     <!-- Full INDI -->
-    <!-- control effectiveness -->
+    <!-- control effectiveness FR BR FL BL -->
     <define name="G1" type="matrix">
       <field value="{ -20.0,  -20.0,  20.0,  20.0 }"/>
-      <field value="{  20.0,  -20.0, -20.0,  20.0 }"/>
-      <field value="{  3.,    -3.,    3.,   -3. }"/>
+      <field value="{  20.0,  -20.0,  20.0, -20.0 }"/>
+      <field value="{  -3.,    3.,    3.,   -3. }"/>
       <field value="{ -1., -1., -1., -1.}"/>
     </define>
     <!--Counter torque effect of spinning up a rotor-->
-    <define name="G2"        value="{80, -80, 80, -80.0 }"/>
+    <define name="G2"        value="{-80, 80, 80, -80.0 }"/>
     <!-- first order actuator dynamics -->
     <define name="ACT_FREQ" value="{23, 23, 23, 23}"/>
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
