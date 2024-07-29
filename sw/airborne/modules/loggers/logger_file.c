@@ -112,9 +112,9 @@ static void logger_file_write_row(FILE *file) {
   ins_ext_pos_log_data(file);
 #endif
 #ifdef COMMAND_THRUST
-  fprintf(file, "%d,%d,%d,%d,",
-      stabilization_cmd[COMMAND_THRUST], stabilization_cmd[COMMAND_ROLL],
-      stabilization_cmd[COMMAND_PITCH], stabilization_cmd[COMMAND_YAW]);
+  fprintf(file, "%d,%d,%d,%d\n",
+      stabilization.cmd[COMMAND_THRUST], stabilization.cmd[COMMAND_ROLL],
+      stabilization.cmd[COMMAND_PITCH], stabilization.cmd[COMMAND_YAW]);
 #else
   fprintf(file, "%d,%d,", h_ctl_aileron_setpoint, h_ctl_elevator_setpoint);
 #endif

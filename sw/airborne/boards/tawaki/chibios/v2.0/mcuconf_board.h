@@ -123,7 +123,7 @@
 #define STM32_SW                            STM32_SW_PLL1_P_CK
 
 #if HAL_USE_RTC
-#define STM32_RTCSEL                        STM32_RTCSEL_HSE_1M_CK
+#define STM32_RTCSEL                        STM32_RTCSEL_LSI_CK
 #else
 #define STM32_RTCSEL                        STM32_RTCSEL_NOCLK
 #endif
@@ -274,12 +274,32 @@
 #define STM32_GPT_USE_TIM2                  FALSE
 #define STM32_GPT_USE_TIM3                  FALSE
 #define STM32_GPT_USE_TIM4                  FALSE
+#if USE_GPT5
+#define STM32_GPT_USE_TIM5                  TRUE
+#else
 #define STM32_GPT_USE_TIM5                  FALSE
+#endif
 #define STM32_GPT_USE_TIM6                  TRUE
+#if USE_GPT7
+#define STM32_GPT_USE_TIM7                  TRUE
+#else
 #define STM32_GPT_USE_TIM7                  FALSE
+#endif
+#if USE_GPT8
+#define STM32_GPT_USE_TIM8                  TRUE
+#else
 #define STM32_GPT_USE_TIM8                  FALSE
-#define STM32_GPT_USE_TIM12                 FALSE
-#define STM32_GPT_USE_TIM13                 FALSE
+#endif
+#if USE_GPT12
+#define STM32_GPT_USE_TIM12                  TRUE
+#else
+#define STM32_GPT_USE_TIM12                  FALSE
+#endif
+#if USE_GPT13
+#define STM32_GPT_USE_TIM13                  TRUE
+#else
+#define STM32_GPT_USE_TIM13                  FALSE
+#endif
 #define STM32_GPT_USE_TIM14                 FALSE
 #define STM32_GPT_USE_TIM15                 FALSE
 #define STM32_GPT_USE_TIM16                 FALSE
@@ -394,7 +414,7 @@
 /*
  * SERIAL driver system settings.
  */
-#define STM32_SERIAL_USE_USART1             FALSE
+#define STM32_SERIAL_USE_USART1             TRUE // enabled by default for dshot telemetry
 #if USE_UART2
 #define STM32_SERIAL_USE_USART2             TRUE
 #else
@@ -562,5 +582,6 @@
 // #define CH_HEAP_USE_TLSF 0 // if 0 or undef, chAlloc will be used
 // #define CONSOLE_DEV_SD SD3
 
+#define HAL_USE_RTC     TRUE
 
 #endif /* MCUCONF_H */

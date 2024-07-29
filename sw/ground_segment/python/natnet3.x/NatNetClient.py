@@ -1,4 +1,4 @@
-﻿#Copyright © 2018 Naturalpoint
+#Copyright © 2018 Naturalpoint
 #
 #Licensed under the Apache License, Version 2.0 (the "License")
 #you may not use this file except in compliance with the License.
@@ -82,6 +82,7 @@ class NatNetClient:
         self.rigid_body_listener = None
         self.new_frame_listener  = None
         self.rigid_body_list_listener = None
+        self.marker_set_listener = None
 
         # Set Application Name
         self.__application_name = "Not Set"
@@ -897,6 +898,9 @@ class NatNetClient:
 
         if self.rigid_body_list_listener is not None:
             self.rigid_body_list_listener(rigid_body_data, timestamp)
+        
+        if self.marker_set_listener is not None:
+            self.marker_set_listener(marker_set_data)
 
         return offset, mocap_data
 
