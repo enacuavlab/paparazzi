@@ -127,10 +127,6 @@
 
     <!-- Kill throttle mode -->
     <mode name="KILL">
-<<<<<<< HEAD
-=======
-      <select cond="$DEFAULT_MODE"/>
->>>>>>> 694136c1b020514be3fca6b53b1ccba325bf086f
       <select cond="kill_switch_is_on()"/>
       <on_enter>
         <call fun="autopilot_set_in_flight(false)"/>

@@ -42,6 +42,8 @@ extern "C" {
 #include "modules/core/abi.h"
 #include <stdio.h>
 
+#include "filters/low_pass_filter.h"
+
 
 #ifdef __cplusplus
 }
@@ -71,12 +73,12 @@ extern "C" {
 
 //6.3
 #ifndef STABILIZATION_UDWADIA_DD
-#define STABILIZATION_UDWADIA_DD 1
+#define STABILIZATION_UDWADIA_DD 0.001
 #endif
 
 //20
 #ifndef STABILIZATION_UDWADIA_DP
-#define STABILIZATION_UDWADIA_DP 1.5
+#define STABILIZATION_UDWADIA_DP 0.01
 #endif
 
 // 0.12
@@ -122,6 +124,8 @@ struct FloatEulers eul_sp;
 
 void qtoe(Eigen::Matrix4f *h, Eigen::Vector4f q);
 
+Butterworth2LowPass gyro_lowpass_filters[3];
+
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
 static void send_payload_float(struct transport_tx *trans, struct link_device *dev)
@@ -161,6 +165,16 @@ void stabilization_udwadia_init(void)
   // B_pinv = B.completeOrthogonalDecomposition().pseudoInverse();
   B_pinv = (B.transpose()*B).ldlt().solve (B.transpose());
 
+  // tau = 1/(2*pi*Fc)
+  float tau = 1.0 / (2.0 * M_PI * 4.0);
+  float sample_time = 1.0 / PERIODIC_FREQUENCY;
+  // Filtering of the gyroscope
+  int8_t i;
+  for (i = 0; i < 3; i++) {
+    init_butterworth_2_low_pass(&gyro_lowpass_filters[i], tau, sample_time, 0.0);
+  }
+
+
   #if PERIODIC_TELEMETRY
     register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PAYLOAD_FLOAT, send_payload_float);
     // register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_REF_QUAT, send_ahrs_ref_quat);
@@ -188,10 +202,16 @@ void stabilization_udwadia_enter(void)
 void stabilization_udwadia_run(bool __attribute__((unused)) in_flight)
 {
 
-  struct FloatRates *body_rates = stateGetBodyRates_f();
-  
-  body_rates_vect << body_rates->p, body_rates->q, body_rates->r;
+  // body_rates_vect << body_rates->p, body_rates->q, body_rates->r;
 
+  struct FloatRates *body_rates = stateGetBodyRates_f();
+  float rate_vect[3] = {body_rates->p, body_rates->q, body_rates->r};
+  int8_t i;
+  for (i = 0; i < 3; i++) {
+    update_butterworth_2_low_pass(&gyro_lowpass_filters[i], rate_vect[i]);
+  }
+  body_rates_vect << gyro_lowpass_filters[0].o[0], gyro_lowpass_filters[1].o[0], gyro_lowpass_filters[2].o[0];
+  
   struct FloatQuat *att_quat = stateGetNedToBodyQuat_f();
   
   att_quat_vect << att_quat->qi, att_quat->qx, att_quat->qy, att_quat->qz;
