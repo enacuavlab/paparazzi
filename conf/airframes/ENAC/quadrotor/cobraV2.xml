@@ -64,7 +64,10 @@
     <module name="shell">
       <configure name="SHELL_PORT" value="usb_serial_debug" />
     </module>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 694136c1b020514be3fca6b53b1ccba325bf086f
     <!-- <module name="preflight_checks"/> -->
 
     <!--module name="filter" type="1euro_imu">
