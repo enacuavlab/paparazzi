@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import cv2
-from DetectZebra import ZebraDetector
+from DetectRectangle import RectangleDetector
 import numpy as np
 import rasterio.warp
 from rasterio.crs import CRS
@@ -16,7 +16,7 @@ DEFAULT_IMAGE_OUTPUT = "out_detect.png"
 DEFAULT_SCALE_FACTOR = 4
 DEFAULT_RESOLUTION = 20 # pixels per meter
 
-mailbox_zebra = ZebraDetector([[0, 0, 230],[179, 15, 255]], (1.7, 0.6), color="Zebra")
+mailbox_zebra = RectangleDetector([[0, 0, 230],[179, 15, 255]], (1.7, 0.6), color_name="Zebra")
 
 
 def get_geo_data(filename):

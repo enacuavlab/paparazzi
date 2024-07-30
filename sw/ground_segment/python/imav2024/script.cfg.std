@@ -1,0 +1,20 @@
+# Demo configuration script for ObjectTracker module.
+
+# Set camera to fixed color balance, gain, and exposure, so that we get more reliable colors than we would obtain under
+# automatic mode:
+#setcam autowb 1
+#setcam autogain 0
+#setcam autoexp 0
+#setcam redbal 110
+#setcam bluebal 170
+#setcam gain 16
+#setcam absexp 500
+
+# Send info log messages to None, send serial strings from module to Hard serial port:
+setpar serlog None
+setpar serout Hard
+
+# Custom HSV ranges here
+#hsv 97 125 0 142 228 255
+calib 658.4892 659.2282 320.7412 248.8963
+

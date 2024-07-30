@@ -8,9 +8,9 @@ def boxPoints(pts):
         else:
                     return cv2.cv.BoxPoints(pts)
 
-class ZebraDetector:
+class RectangleDetector:
 
-    def __init__(self, hsv_th, size, aspect_ratio_th=0.2, area_th=0.5, size_th=0.2, color="Unknown"):
+    def __init__(self, hsv_th, size, aspect_ratio_th=0.2, area_th=0.5, size_th=0.2, color_name="Unknown"):
         self.hsv_th = None
         self.set_hsv_th(hsv_th[0], hsv_th[1])
         self.size_min = min(size) # in meters
@@ -23,7 +23,7 @@ class ZebraDetector:
         self.size_th = size_th
         self.kernel = np.ones((8,8),np.uint8) # create convolution
         self.mask = None
-        self.color = color # color name
+        self.color_name = color_name # color name
 
     def detect(self, img, resolution):
 
@@ -80,7 +80,7 @@ class ZebraDetector:
             box = boxPoints(cv2.minAreaRect(cnt))
             ctr = np.array(box).reshape((-1,1,2)).astype(np.int32)
             cv2.drawContours(img, [ctr], -1, (0, 255, 0), 4)
-        cv2.imshow('contour '+self.color,img)
+        cv2.imshow('contour '+self.color_name,img)
 
     def set_hsv_th(self, th_min, th_max):
         if th_min[0] < th_max[0]: # h min < h max, normal case
