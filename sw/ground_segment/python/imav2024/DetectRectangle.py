@@ -40,7 +40,7 @@ class RectangleDetector:
                 mask += cv2.inRange(hsv, hsv_min, hsv_max)
 
         self.mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, self.kernel) # opening
-        #cv2.imshow('mask '+self.color,mask)
+        #cv2.imshow('mask '+self.color_name,mask)
         cnts = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         #self.draw_all(img.copy(),cnts)
         valid = []
@@ -48,8 +48,8 @@ class RectangleDetector:
         for cnt in cnts:
             rect = cv2.minAreaRect(cnt)
             _, (w, h), _ = rect
-            if w == 0 or h == 0:
-                continue
+            if w < 5 or h < 5:
+                continue # not enough pixels
             min_wh = min(w, h) / float(resolution)
             max_wh = max(w, h) / float(resolution)
             aspect_ratio = max_wh / min_wh

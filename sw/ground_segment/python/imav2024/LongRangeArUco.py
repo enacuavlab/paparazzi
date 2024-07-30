@@ -14,16 +14,16 @@ class LongRangeArUco:
         self.alt = 1000. # in mm from AP, default in image plane
 
         # initial color thresholds
-        self.rect_aruco = RectangleDetector([[0, 0, 230],[179, 15, 255]],
+        self.rect_aruco = RectangleDetector([[0, 0, 200],[179, 40, 255]],
                 (0.3, 0.3),
                 aspect_ratio_th=0.2,
                 area_th=0.8,
-                size_th=1.1, # disable size check for now
+                size_th=10., # disable size check for now
                 color_name="")
 
         # aruco params
-        self.aruco_dict = aruco.Dictionary_get(aruco.DICT_5X5_1000)
-        self.parameters =  aruco.DetectorParameters_create()
+        self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
+        self.parameters =  aruco.DetectorParameters()
         self.marker_len = 150
 
         # cam params
@@ -42,11 +42,11 @@ class LongRangeArUco:
         detect = self.processImage(img)
         if detect is not None:
             if detect[0] == "rect":
-                box = cv2.boxPoints(detect[0])
+                box = cv2.boxPoints(detect[1][2])
                 ctr = np.array(box).reshape((-1,1,2)).astype(np.int32)
                 cv2.drawContours(img, [ctr], -1, (0, 255, 0), 4)
             elif detect[0] == "tag":
-                frame_markers = aruco.drawDetectedMarkers(img, [detect[1]], [detect[2]])
+                frame_markers = aruco.drawDetectedMarkers(img, detect[1], detect[2])
         outframe.sendCv(img)
         #outframe.sendCv(self.mailbox_yellow.mask)
 
@@ -70,11 +70,11 @@ class LongRangeArUco:
                     self.marker_len, self.cam_matrix, self.cam_dist)
 
         if tvec is not None:
-            self.send_message_pose(ids[0], tvec[0])
-            return ("tag", corners[0], ids[0])
+            self.send_message_pose(ids[0][0], tvec[0][0])
+            return ("tag", corners, ids)
 
         # FIXME compute resolution correctly
-        resolution = math.sqrt(self.cam_matrix[0][0] * self.cam_matrix[1][1] / (self.alt * self.alt))
+        resolution = 1000. * math.sqrt(self.cam_matrix[0][0] * self.cam_matrix[1][1] / (self.alt * self.alt))
 
         # white square detection
         rect, _ = self.rect_aruco.detect(img, resolution)
@@ -90,7 +90,7 @@ class LongRangeArUco:
         '''
         send estimated pose
         '''
-        jevois.sendSerial("D3 U{} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} 1.0 1.0 0.0 0.0 0.0".format(mark,
+        jevois.sendSerial('D3 U{} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} 1.0 1.0 0.0 0.0 0.0 "aruco"'.format(mark,
             pos[0], pos[1], pos[2],
             self.marker_len, self.marker_len))
 
@@ -112,7 +112,7 @@ class LongRangeArUco:
         else:
             x = z * (u - self.cam_matrix[0][0]) / self.cam_matrix[0][2]
             y = z * (v - self.cam_matrix[1][1]) / self.cam_matrix[1][2]
-        jevois.sendSerial("D3 U{} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} 1.0 1.0 0.0 0.0 0.0".format(mark, x, y, z, w, h))
+        jevois.sendSerial('D3 U{} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} 1.0 1.0 0.0 0.0 0.0 "rect"'.format(mark, x, y, z, w, h))
 
     def parseSerial(self, cmd):
         str_list = cmd.split(' ')
