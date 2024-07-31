@@ -71,6 +71,9 @@
 
     <module name="digital_cam" type="pprzlink"/>
     <module name="power_switch"/>
+    <module name="current_sensor">
+      <configure name="ADC_CURRENT_SENSOR" value="ADC_8"/>
+    </module>
 
     <module name="extra_dl">
       <configure name="EXTRA_DL_PORT" value="uart4"/>
@@ -222,6 +225,7 @@
 
   <section name="BAT">
     <define name="CRITIC_BAT_LEVEL" value="9.3" unit="V"/>
+    <define name="MilliAmpereOfAdc(_adc)" value="(20.76*_adc-9970)"/>
   </section>
 
   <section name="AUTOPILOT">
