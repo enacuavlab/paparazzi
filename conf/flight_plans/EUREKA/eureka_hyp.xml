@@ -5,10 +5,10 @@
     #include "autopilot.h"
   </header>
   <waypoints>
-    <waypoint name="HOME" x="-13.2" y="-50.3"/>
-    <waypoint name="CLIMB" x="0.2" y="-73.6"/>
-    <waypoint name="STDBY" x="0.6" y="-52.1"/>
-    <waypoint name="TD" x="-5630.35" y="639.818" alt="152"/>
+    <waypoint name="HOME" lat="43.5941459" lon="1.4036070"/>
+    <waypoint name="CLIMB" lat="43.5939385" lon="1.4037785"/>
+    <waypoint name="STDBY" lat="43.5941321" lon="1.4037783"/>
+    <waypoint name="TD" alt="152" lat="43.5993644" lon="1.3338751"/>
     <waypoint name="H1" lat="43.5946009" lon="1.4037585"/>
     <waypoint name="H2" lat="43.5873120" lon="1.3991880"/>
     <waypoint name="H3" lat="43.5842190" lon="1.4074921"/>
@@ -27,7 +27,7 @@
     </sector>
   </sectors>
   <modules>
-    <module name="nav" type="survey_poly_rotorcraft" />
+    <module name="nav" type="survey_poly_rotorcraft"/>
   </modules>
   <blocks>
     <block name="Wait GPS">
@@ -57,7 +57,7 @@
       <deroute block="Run survey H"/>
     </block>
     <block name="Run survey H">
-      <exception cond="PolySurveySweepBackNum > 0" deroute="land here"/>
+      <exception cond="PolySurveySweepBackNum &gt; 0" deroute="land here"/>
       <call fun="nav_survey_poly_run()"/>
     </block>
     <block name="perte_controle">
