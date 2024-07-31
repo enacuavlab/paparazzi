@@ -25,6 +25,11 @@ class LongRangeArUco:
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
         self.parameters =  aruco.DetectorParameters()
         self.marker_len = 150
+        self.marker_points = np.array(
+                [[-self.marker_len / 2,  self.marker_len / 2, 0],
+                 [ self.marker_len / 2,  self.marker_len / 2, 0],
+                 [ self.marker_len / 2, -self.marker_len / 2, 0],
+                 [-self.marker_len / 2, -self.marker_len / 2, 0]], dtype=np.float32)
 
         # cam params
         self.cam_matrix = np.array([[770., 0., 320.],[0., 770., 240.],[0., 0., 1.]])
@@ -48,7 +53,7 @@ class LongRangeArUco:
             elif detect[0] == "tag":
                 frame_markers = aruco.drawDetectedMarkers(img, detect[1], detect[2])
         outframe.sendCv(img)
-        #outframe.sendCv(self.mailbox_yellow.mask)
+        #outframe.sendCv(self.rect_aruco.mask)
 
     def processImage(self, img):
         '''
@@ -63,17 +68,22 @@ class LongRangeArUco:
         # ArUco detector
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         corners, ids, _ = aruco.detectMarkers(gray, self.aruco_dict, parameters=self.parameters)
-        tvec = None
         if ids is not None and len(ids) > 0:
             # only first match ?
-            _, tvec, _ = aruco.estimatePoseSingleMarkers(corners[0],
-                    self.marker_len, self.cam_matrix, self.cam_dist)
-
-        if tvec is not None:
-            self.send_message_pose(ids[0][0], tvec[0][0])
+            if self.use_fisheye:
+                undist_corners = cv.fisheye.undistortPoints(corners[0],
+                                     self.cam_matrix, self.cam_dist)
+                _, _, tvec = cv2.solvePnP(self.marker_points, undist_corners,
+                                     self.cam_matrix, np.array([[0.], [0.], [0.], [0.]]),
+                                     flags=cv2.SOLVEPNP_IPPE_SQUARE)
+            else:
+                _, _, tvec = cv2.solvePnP(self.marker_points, corners[0],
+                                     self.cam_matrix, self.cam_dist,
+                                     flags=cv2.SOLVEPNP_IPPE_SQUARE)
+            self.send_message_pose(ids[0][0], tvec.transpose()[0])
             return ("tag", corners, ids)
 
-        # FIXME compute resolution correctly
+        # estimate resolution in pixels / meter
         resolution = 1000. * math.sqrt(self.cam_matrix[0][0] * self.cam_matrix[1][1] / (self.alt * self.alt))
 
         # white square detection
