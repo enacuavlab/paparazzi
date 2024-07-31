@@ -82,6 +82,7 @@
 
     <module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
+      <define name="JEVOIS_SEND_ALT"/>
     </module>
 
     <module name="flight_recorder"/>
