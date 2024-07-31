@@ -11,7 +11,8 @@
   </description>
 
   <firmware name="rotorcraft">
-    <autopilot name="cobra_autopilot.xml"/>
+    <autopilot name="octave_autopilot.xml"/>
+    <!-- <autopilot name="rotorcraft_autopilot.xml"/> -->
     <configure name="RTOS_DEBUG" value="FALSE"/>
     <configure name="PERIODIC_FREQUENCY" value="500"/>
     <!-- <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/> -->
@@ -53,22 +54,22 @@
     </module-->
     <module name="gps" type="optitrack"/>
 
-    <module name="stabilization" type="indi"/>
-    <module name="guidance" type="indi"/>
+    <!-- <module name="stabilization" type="indi"/>
+    <module name="guidance" type="indi"/> -->
     <module name="stabilization" type="udwadia"/>
     <module name="guidance" type="udwadia"/>
     <module name="nav" type="rotorcraft"/>
 
-    <module name="ins" type="ekf2">
+    <!-- <module name="ins" type="ekf2">
       <define name="INS_EKF2_OPTITRACK" value="TRUE"/>    
-    </module>
+    </module> -->
     <!--module name="preflight_checks"/-->
     <configure name="GYRO_AAF" value="122" />
     <configure name="ACCEL_AAF" value="213"/>
 
-    <!-- <module name="ins"/>
+    <module name="ins"/>
     <module name="ahrs" type="int_cmpl_quat">
-    </module> -->
+    </module>
       <!-- <define name="AHRS_PROPAGATE_LOW_PASS_RATES"/>
       <define name="AHRS_PROPAGATE_LOW_PASS_RATES_MUL" value="25"/>
       <define name="AHRS_PROPAGATE_LOW_PASS_RATES_DIV" value="1000"/> -->

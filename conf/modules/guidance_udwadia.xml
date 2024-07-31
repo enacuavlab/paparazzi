@@ -16,24 +16,19 @@
     </dl_settings> -->
   </settings>
   <dep>
-    <!-- <depends>@navigation, guidance_rotorcraft</depends>  -->
+    <depends>@navigation,guidance_rotorcraft</depends>
     <provides>guidance,attitude_command</provides>
   </dep>
   <header>
     <file name="guidance_udwadia.h"/>
   </header>
-  <!-- <init fun="guidance_udwadia_init()"/>
-  <init fun="guidance_udwadia_enter()"/> -->
+  <init fun="guidance_udwadia_init()"/>
+  <init fun="guidance_udwadia_enter()"/>
   <makefile target="ap|nps" firmware="rotorcraft">
     <configure name="CXXSTANDARD" value="-std=c++14"/>
     <!-- <flag name="CXXFLAGS" value="Wno-unused-but-set-variable"/>
     <flag name="CXXFLAGS" value="Wno-unused-variable"/> -->
     <file name="guidance_udwadia.cpp" dir="$(SRC_FIRMWARE)/guidance"/>
-    <file name="guidance_h.c" dir="$(SRC_FIRMWARE)/guidance"/>
-    <file name="guidance_h_ref.c" dir="$(SRC_FIRMWARE)/guidance"/>
-    <file name="guidance_v.c" dir="$(SRC_FIRMWARE)/guidance"/>
-    <file name="guidance_v_ref.c" dir="$(SRC_FIRMWARE)/guidance"/>
-    <!-- <define name="GUIDANCE_PID_USE_AS_DEFAULT" value="FALSE"/>
-    <define name="GUIDANCE_INDI_USE_AS_DEFAULT" value="TRUE"/> -->
+    <define name="GUIDANCE_PID_USE_AS_DEFAULT" value="FALSE"/>
   </makefile>
 </module>

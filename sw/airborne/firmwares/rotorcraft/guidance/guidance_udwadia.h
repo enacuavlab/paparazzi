@@ -50,6 +50,7 @@ extern struct StabilizationSetpoint guidance_udwadia_run(struct FloatVect3 *acce
 
 
 extern struct FloatVect3 sp_accel;
+// extern struct ThrustSetpoint thrust_sp;
 
 #ifdef __cplusplus
 }

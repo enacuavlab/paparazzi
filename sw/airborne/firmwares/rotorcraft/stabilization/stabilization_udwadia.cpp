@@ -52,12 +52,13 @@ extern "C" {
 #include <Eigen/Dense> // https://eigen.tuxfamily.org/dox/GettingStarted.html
 // variables needed for control
 
-//int32_t stabilization_cmd[COMMANDS_NB];
 
 //struct FloatEulers stab_att_sp_euler;
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+#define RAD2DEG(x) ((x) * (180. / M_PI))
 
 #ifndef STABILIZATION_UDWADIA_IX
 #define STABILIZATION_UDWADIA_IX 0.001
@@ -117,9 +118,9 @@ Eigen::Matrix4f J, B, B_pinv;
 
 Eigen::Vector4f F, omega_mot_bound, var, p1, att_quat_vect, q_dot;
 
-
-float throttle;
+float th_cmd_z;
 struct FloatEulers eul_sp;
+struct FloatQuat quat_sp;
 
 
 void qtoe(Eigen::Matrix4f *h, Eigen::Vector4f q);
@@ -136,7 +137,7 @@ static void send_payload_float(struct transport_tx *trans, struct link_device *d
                 p1(0), p1(1), p1(2), p1(3),
                 att_quat_vect(0), att_quat_vect(1), att_quat_vect(2), att_quat_vect(3),
                 body_rates_vect(0), body_rates_vect(1), body_rates_vect(2),
-                throttle, DegOfRad(eul_sp.phi), DegOfRad(eul_sp.theta), DegOfRad(eul_sp.psi),
+                th_cmd_z, RAD2DEG(eul_sp.phi), RAD2DEG(eul_sp.theta), RAD2DEG(eul_sp.psi),
                 omega_mot_bound(0), omega_mot_bound(1), omega_mot_bound(2), omega_mot_bound(3),
                 q_dot(0), q_dot(1),q_dot(2), q_dot(3)}; 
   pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 34, f);
@@ -199,8 +200,29 @@ void stabilization_udwadia_enter(void)
  *
  * Function that calculates the commands
  */
-void stabilization_udwadia_run(bool __attribute__((unused)) in_flight)
+void stabilization_udwadia_run(bool in_flight, struct StabilizationSetpoint *att_sp, struct ThrustSetpoint *thrust, int32_t *cmd)
 {
+
+  eul_sp = stab_sp_to_eulers_f(att_sp);  // stab_att_sp_euler.psi still used in ref..
+  quat_sp = stab_sp_to_quat_f(att_sp);     // quat attitude setpoint
+
+  yaw_quat << cos(eul_sp.psi/2), 0, 0, sin(eul_sp.psi/2);
+
+  th_cmd_z = th_sp_to_thrust_f(thrust, 0, THRUST_AXIS_Z); ///< float is assumed to be normalized in [0.:1.]
+  if (in_flight) {
+    //estimate the weight
+  }
+
+  struct FloatVect3 force_vect;
+  if(th_cmd_z<0.1){
+    force_vect = {0,0,0.01};
+  }
+  else{
+    force_vect = {0,0,200*th_cmd_z}; 
+  }
+  struct FloatVect3 tmp_vect;
+  float_quat_vmult(&tmp_vect, &quat_sp, &force_vect);
+  Fc << tmp_vect.x, tmp_vect.y, tmp_vect.z;
 
   // body_rates_vect << body_rates->p, body_rates->q, body_rates->r;
 
@@ -281,39 +303,19 @@ void stabilization_udwadia_run(bool __attribute__((unused)) in_flight)
       omega_mot_bound(i) = -MAX_PPRZ;
     }
   }
+  // cmd[0] = (int16_t) omega_mot_bound(1); // FR 
+  // cmd[1] = (int16_t) omega_mot_bound(2); // BR
+  // cmd[2] = (int16_t) omega_mot_bound(3); // FL
+  // cmd[3] = (int16_t) omega_mot_bound(0); // BL
+
   actuators_pprz[0] = (int16_t) omega_mot_bound(1); // FR 
   actuators_pprz[1] = (int16_t) omega_mot_bound(2); // BR
   actuators_pprz[2] = (int16_t) omega_mot_bound(3); // FL
   actuators_pprz[3] = (int16_t) omega_mot_bound(0); // BL
 
-
 }
 
 
-
-// This function reads rc commands
-void stabilization_udwadia_read_rc(bool in_flight, bool in_carefree, bool coordinated_turn)
-{
-  struct FloatQuat q_sp;
- 
-  throttle = (float) guidance_v.rc_delta_t;
-  struct FloatVect3 force_vect;
-  if(throttle<100){
-    force_vect = {0,0,0.01};
-  }
-  else{
-    force_vect = {0,0,200*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ}; //-20*STABILIZATION_UDWADIA_MASS*throttle/MAX_PPRZ
-  }
-  
-  struct FloatVect3 tmp_vect;
-  stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
-  stabilization_attitude_read_rc_setpoint_eulers_f(&eul_sp, in_flight, in_carefree, coordinated_turn);
-
-  float_quat_vmult(&tmp_vect, &q_sp, &force_vect);
-  Fc << tmp_vect.x, tmp_vect.y, tmp_vect.z;
-
-  yaw_quat << cos(eul_sp.psi/2), 0, 0, sin(eul_sp.psi/2);
-}
 
 /**
  * Function that tries to get actuator feedback.

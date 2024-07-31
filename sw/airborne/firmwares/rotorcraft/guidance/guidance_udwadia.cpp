@@ -26,23 +26,21 @@
  * A guidance mode
  */
 #include "generated/airframe.h"
-// #include "firmwares/rotorcraft/guidance/guidance_indi.h"
-// #include "modules/ins/ins_int.h"
+#include "firmwares/rotorcraft/guidance/guidance_udwadia.h"
 #include "modules/radio_control/radio_control.h"
-#include "state.h"
-#include "modules/imu/imu.h"
+#include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/autopilot_rc_helpers.h"
 #include "mcu_periph/sys_time.h"
+#include "state.h"
 #include "autopilot.h"
-// #include "stabilization/stabilization_attitude_ref_quat_int.h"
-#include "firmwares/rotorcraft/stabilization.h"
 #include "filters/low_pass_filter.h"
 #include "modules/core/abi.h"
 
 
+static struct VerticalGuidance *_gv = &guidance_v;
+struct ThrustSetpoint thrust_sp;
 
 #if PERIODIC_TELEMETRY
 // #include "modules/datalink/telemetry.h"
@@ -69,6 +67,7 @@
  */
 void guidance_udwadia_init(void)
 {
+  // THRUST_SP_SET_ZERO(thrust_sp);
 //   AbiBindMsgACCEL_SP(GUIDANCE_INDI_ACCEL_SP_ID, &accel_sp_ev, accel_sp_cb);
 
 // #if PERIODIC_TELEMETRY
@@ -83,6 +82,11 @@ void guidance_udwadia_init(void)
 void guidance_udwadia_enter(void)
 {
   
+}
+
+void guidance_v_run_enter(void)
+{
+  // nothing to do
 }
 
 /**
@@ -119,25 +123,20 @@ void guidance_udwadia_enter(void)
 //   // return guidance_udwadia_run_mode(in_flight, gh, _gv, GUIDANCE_INDI_H_ACCEL, _v_mode);
 // }
 
-// int32_t guidance_v_run_pos(bool in_flight UNUSED, struct VerticalGuidance *gv)
-// {
-//   // _gv = gv;
-//   // _v_mode = GUIDANCE_INDI_V_POS;
-//   return 0; // nothing to do
-// }
+struct ThrustSetpoint guidance_v_run_pos(bool in_flight UNUSED, struct VerticalGuidance *gv)
+{
+  _gv = gv;
+  return thrust_sp;
+}
+struct ThrustSetpoint guidance_v_run_speed(bool in_flight UNUSED, struct VerticalGuidance *gv)
+{
+  _gv = gv;
+  return thrust_sp;
+}
 
-// int32_t guidance_v_run_speed(bool in_flight UNUSED, struct VerticalGuidance *gv)
-// {
-//   // _gv = gv;
-//   // _v_mode = GUIDANCE_INDI_V_SPEED;
-//   return 0; // nothing to do
-// }
-
-// int32_t guidance_v_run_accel(bool in_flight UNUSED, struct VerticalGuidance *gv)
-// {
-//   // _gv = gv;
-//   // _v_mode = GUIDANCE_INDI_V_ACCEL;
-//   return 0; // nothing to do
-// }
-
+struct ThrustSetpoint guidance_v_run_accel(bool in_flight UNUSED, struct VerticalGuidance *gv)
+{
+  _gv = gv;
+  return thrust_sp;
+}
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (C) Florian Sansou <fl.sansou@enac.fr>
- * ENAC uav lab
+ * Copyright (C) 
+ *
  *
  * This file is part of paparazzi.
  *
@@ -20,26 +20,16 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef STABILIZATION_UDWADIA
-#define STABILIZATION_UDWADIA
+/** @file stabilization_attitude_udwadia.h
+ * This is the header file of the corresponding c file
+ */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef STABILIZATION_ATTITUDE_UDWADIA_H
+#define STABILIZATION_ATTITUDE_UDWADIA_H
 
-#include "firmwares/rotorcraft/stabilization.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_common_int.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_quat_int.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_udwadia.h"
 
-//extern struct FloatEulers stab_att_sp_euler;
 
-extern void stabilization_udwadia_init(void);
-extern void stabilization_udwadia_enter(void);
-extern void stabilization_udwadia_run(bool in_flight, struct StabilizationSetpoint *att_sp, struct ThrustSetpoint *thrust, int32_t *cmd);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* STABILIZATION_UDWADIA */
+#endif /* STABILIZATION_ATTITUDE_UDWADIA_H */
 
