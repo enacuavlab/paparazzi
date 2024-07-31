@@ -71,9 +71,8 @@ class LongRangeArUco:
         if ids is not None and len(ids) > 0:
             # only first match ?
             if self.use_fisheye:
-                undist_corners = cv.fisheye.undistortPoints(corners[0],
-                                     self.cam_matrix, self.cam_dist)
-                _, _, tvec = cv2.solvePnP(self.marker_points, undist_corners,
+                # FIXME fisheye.solvePNP not available yet, don't use cam_dist
+                _, _, tvec = cv2.solvePnP(self.marker_points, corners[0],
                                      self.cam_matrix, np.array([[0.], [0.], [0.], [0.]]),
                                      flags=cv2.SOLVEPNP_IPPE_SQUARE)
             else:
