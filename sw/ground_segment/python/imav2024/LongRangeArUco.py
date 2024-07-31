@@ -81,7 +81,7 @@ class LongRangeArUco:
 
         if len(rect) > 0:
             # send best detection
-            self.send_message_rect('0', rect[0])
+            self.send_message_rect('0', rect[0][2])
             return ("rect", rect[0])
 
         return None
@@ -106,12 +106,12 @@ class LongRangeArUco:
         # and alt is the distance to onject
         if self.use_fisheye:
             pts_uv = np.array([[[u, v]]], dtype=np.float32)
-            undist = cv2.fisheye.undistortPoints(pts_uv, self.calib_fisheye[0], self.calib_fisheye[1])
+            undist = cv2.fisheye.undistortPoints(pts_uv, self.cam_matrix, self.cam_dist)
             x = z * undist[0][0][0]
             y = z * undist[0][0][1]
         else:
-            x = z * (u - self.cam_matrix[0][0]) / self.cam_matrix[0][2]
-            y = z * (v - self.cam_matrix[1][1]) / self.cam_matrix[1][2]
+            x = z * (u - self.cam_matrix[0][2]) / self.cam_matrix[0][0]
+            y = z * (v - self.cam_matrix[1][2]) / self.cam_matrix[1][1]
         jevois.sendSerial('D3 U{} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} 1.0 1.0 0.0 0.0 0.0 "rect"'.format(mark, x, y, z, w, h))
 
     def parseSerial(self, cmd):
