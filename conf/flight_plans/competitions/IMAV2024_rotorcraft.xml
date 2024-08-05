@@ -111,7 +111,8 @@
     <variable init="7." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="5." var="takeoff_height" min="0.5" max="15." step="0.1"/>
     <variable init="4." var="land_speed" min="0.5" max="10." step="0.1"/>
-    <variable init="4.5" var="search_height" min="0.5" max="15." step="0.1"/>
+    <variable init="4.5" var="tag_height" min="0.5" max="15." step="0.1"/>
+    <variable init="10." var="images_height" min="0.5" max="15." step="0.1"/>
     <variable init="40." var="mapping_height" min="5." max="120." step="0.1"/>
     <variable init="25." var="mapping_sweep" min="5." max="20." step="0.1"/>
     <variable init="7." var="mapping_speed" min="0.5" max="10." step="0.1"/>
@@ -120,7 +121,7 @@
     <variable init="2." var="drop_height" min="0.5" max="15." step="0.1"/>
     <variable init="42." var="tag_distance"/>
     <variable init="false" type="bool" var="tag_valid"/>
-    <variable init="false" type="bool" var="stay_on_wp"/>
+    <variable init="false" type="bool" var="stay_on_wp" min="0" max="1" step="1"/>
     <abi_binding name="JEVOIS_MSG" handler="fp_tag_cb"/>
   </variables>
   <modules>
@@ -238,11 +239,11 @@
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
       <call_once fun="waypoint_position_copy(WP_TAG, WP_DROP)"/>
       <call_once fun="jevois_stream(true)"/>
-      <stay wp="DROP" until="(tag_tracking_get(TAG_TRACKING_ANY) @DEREF status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="search_height"/>
+      <stay wp="DROP" until="(tag_tracking_get(TAG_TRACKING_ANY) @DEREF status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="tag_height"/>
       <deroute block="Drop Camera"/>
     </block>
     <block name="Drop Camera">
-      <stay wp="TAG" until="(stage_time @GT 2 @AND tag_tracking_get(TAG_TRACKING_ANY) @DEREF status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 5)" height="search_height"/>
+      <stay wp="TAG" until="(stage_time @GT 2 @AND tag_tracking_get(TAG_TRACKING_ANY) @DEREF status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 5)" height="tag_height"/>
       <stay wp="TAG" climb="-0.5" vmode="climb" until="((tag_distance @LT drop_height) @AND tag_valid) @OR (GetPosHeight() @LT drop_height/2.)" post_call="tag_valid = false"/>
       <call_once fun="DropOpen()"/>
       <stay wp="TAG" until="stage_time @GT 3" height="goto_height"/>
@@ -264,22 +265,22 @@
     <block name="Image 1" strip_button="Image 1" group="images">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <go from="_HERE" hmode="route" wp="D1" alt="goto_height"/>
-      <stay wp="D1" alt="search_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
+      <stay wp="D1" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
     </block>
     <block name="Image 2" strip_button="Image 2" group="images">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <go from="_HERE" hmode="route" wp="D2" alt="goto_height"/>
-      <stay wp="D2" alt="search_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
+      <stay wp="D2" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
     </block>
     <block name="Image 3" strip_button="Image 3" group="images">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <go from="_HERE" hmode="route" wp="D3" alt="goto_height"/>
-      <stay wp="D3" alt="search_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
+      <stay wp="D3" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
     </block>
     <block name="Image 4" strip_button="Image 4" group="images">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <go from="_HERE" hmode="route" wp="D1" alt="goto_height"/>
-      <stay wp="D4" alt="search_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
+      <go from="_HERE" hmode="route" wp="D4" alt="goto_height"/>
+      <stay wp="D4" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
       <deroute block="Landing"/>
     </block>
 
