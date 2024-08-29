@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="200" ground_alt="185" lat0="43.46223" lon0="1.27289" max_dist_from_home="400" name="Rotorcraft Drop Muret" security_height="10" wp_frame="ltp">
+<flight_plan alt="195" ground_alt="185" lat0="43.462457" lon0="1.272634" max_dist_from_home="400" name="Rotorcraft Drop Muret" security_height="10" wp_frame="ltp">
   <header>
     #ifndef SwitchServoOn
     #define SwitchServoOn(_x) {}
@@ -10,30 +10,13 @@
     #endif
     #define DropOpen SwitchServoOff
     #define DropClose SwitchServoOn
-
-    #ifdef NAV_C
-    #ifndef TAG_TRACKING_COORD_TO_M
-    #define TAG_TRACKING_COORD_TO_M (1.f / 1000.f)
-    #endif
-
-    static void fp_tag_cb(uint8_t sender_id UNUSED,
-        uint8_t type, char * id UNUSED,
-        uint8_t nb UNUSED, int16_t * coord, uint16_t * dim UNUSED,
-        struct FloatQuat quat UNUSED, char * extra UNUSED)
-    {
-      if (type == JEVOIS_MSG_D3) {
-        tag_distance = coord[2] * TAG_TRACKING_COORD_TO_M;
-        tag_valid = true;
-      }
-    }
-    #endif
   </header>
   <waypoints>
-    <waypoint name="HOME" x="-8.1" y="9.8"/>
-    <waypoint name="STDBY" x="40.209" y="42.714"/>
-    <waypoint name="LANDPAD" x="32.0" y="33.0"/>
-    <waypoint name="TAG" x="28.432" y="2.551"/>
-    <waypoint name="DROP" x="48.432" y="65.551"/>
+    <waypoint name="HOME" x="0" y="9.8"/>
+    <waypoint name="STDBY" x="8.641" y="8.541"/>
+    <waypoint name="LANDPAD" x="0.279" y="-0.407"/>
+    <waypoint name="TAG" x="11.728" y="45.306"/>
+    <waypoint name="DROP" x="27.744" y="37.354"/>
     <waypoint name="_FLY1" x="-120.135" y="264.94"/>
     <waypoint name="_FLY2" x="299.403" y="176.814"/>
     <waypoint name="_FLY3" x="236.684" y="-88.655"/>
@@ -64,10 +47,6 @@
     <variable init="15" var="fp_datalink_lost" max="60" min="1" step="1"/>
     <variable init="10." var="goto_height" min="0.5" max="15." step="0.1"/>
     <variable init="4.5" var="search_height" min="0.5" max="15." step="0.1"/>
-    <variable init="1.5" var="drop_height" min="0.5" max="15." step="0.1"/>
-    <variable init="42." var="tag_distance"/>
-    <variable init="false" type="bool" var="tag_valid"/>
-    <abi_binding name="JEVOIS_MSG" handler="fp_tag_cb"/>
   </variables>
   <modules>
     <module name="nav" type="takeoff_and_landing"/>
@@ -103,7 +82,7 @@
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
-      <exception cond="GetPosHeight() @GT 10." deroute="Standby"/>
+      <exception cond="GetPosHeight() @GT 6." deroute="Standby"/>
       <call_once fun="ins_reset_vertical_pos()"/>
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
       <call_once fun="DropClose()"/>
@@ -123,26 +102,24 @@
     <block name="Goto Drop" strip_button="Goto Drop">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
-      <set var="tag_tracking_get(TAG_TRACKING_ANY)-> motion_type" value="TAG_TRACKING_FIXED_POS"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go wp="DROP" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="NavSetWaypointHere(WP_TAG)"/>
       <call_once fun="jevois_stream(true)"/>
-      <stay wp="DROP" until="(tag_tracking_get(TAG_TRACKING_ANY) @DEREF status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="search_height"/>
+      <stay wp="DROP" until="(tag_tracking_get_status(TAG_TRACKING_ANY) == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="search_height"/>
       <deroute block="Drop Package"/>
     </block>
     <block name="Drop Package">
-      <stay wp="TAG" until="(stage_time @GT 2 @AND tag_tracking_get(TAG_TRACKING_ANY) @DEREF status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 5)" height="search_height"/>
-      <stay wp="TAG" climb="-0.5" vmode="climb" until="((tag_distance @LT drop_height) @AND tag_valid) @OR (GetPosHeight() @LT drop_height/2.)" post_call="tag_valid = false"/>
+      <stay wp="TAG" until="(stage_time @GT 2 @AND tag_tracking_get_status(TAG_TRACKING_ANY) == TAG_TRACKING_RUNNING) @OR (stage_time @GT 5)" height="search_height"/>
+      <stay wp="TAG" climb="-0.5" vmode="climb" until="!nav_is_in_flight() @OR (stage_time @GT 30)"/>
+      <call_once fun="NavKillThrottle()"/>
       <call_once fun="DropOpen()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 2" vmode="throttle"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 2" vmode="throttle"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="TAG" until="GetPosHeight() @GT 6."/>
       <stay wp="TAG" until="stage_time @GT 3" height="goto_height"/>
       <deroute block="Standby"/>
-    </block>
-    <block group="land" name="Land Tag Tracking" strip_button="Land tracking">
-      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
-      <go wp="LANDPAD"/>
-      <call_once fun="jevois_stream(true)"/>
-      <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
     </block>
     <block group="land" name="Land auto" strip_button="Land auto">
       <call fun="nav_land_at_wp(WP_LANDPAD, WP_LANDPAD, 0.)"/>

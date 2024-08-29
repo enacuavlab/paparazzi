@@ -46,10 +46,10 @@
     <module name="gps" type="ublox">
       <configure name="GPS_BAUD" value="B115200"/>
     </module>
-    <module name="mag_hmc58xx.xml">
+    <!--module name="mag_hmc58xx.xml">
       <define name="MODULE_HMC58XX_UPDATE_AHRS"/>
       <configure name="MAG_HMC58XX_I2C_DEV" value="i2c2"/>
-    </module>
+    </module-->
 
     <module name="extra_dl">
       <configure name="EXTRA_DL_PORT" value="UART6"/>
@@ -57,7 +57,12 @@
     </module>
     <module name="digital_cam" type="pprzlink"/>
 
+    <module name="current_sensor">
+      <configure name="ADC_CURRENT_SENSOR" value="ADC_1"/>
+    </module>
+
     <module name="takeoff_detect"/>
+    <module name="flight_recorder"/>
   </firmware>
 
 <!-- commands section -->
@@ -142,6 +147,7 @@
 
   <section name="BAT">
     <define name="CATASTROPHIC_BAT_LEVEL" value="9.3" unit="V"/>
+    <define name="MilliAmpereOfAdc(_adc)" value="(_adc)"/>
   </section>
 
   <section name="MISC">

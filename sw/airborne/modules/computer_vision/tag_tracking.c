@@ -225,6 +225,16 @@ struct tag_tracking_public* tag_tracking_get(int16_t tag_id) {
   return &dummy;
 }
 
+uint8_t tag_tracking_get_status(int16_t tag_id)
+{
+  return tag_tracking_get(tag_id)->status;
+}
+
+uint8_t tag_tracking_get_motion_type(int16_t tag_id)
+{
+  return tag_tracking_get(tag_id)->motion_type;
+}
+
 float tag_tracking_get_heading(int16_t tag_id) {
   struct tag_tracking_public* tag = tag_tracking_get(tag_id);
   struct FloatEulers e;

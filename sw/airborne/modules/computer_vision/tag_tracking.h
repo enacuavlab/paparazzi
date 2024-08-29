@@ -78,6 +78,8 @@ void tag_tracking_set_kp(float kp);
 void tag_tracking_set_kpz(float kpz);
 
 extern struct tag_tracking_public* tag_tracking_get(int16_t tag_id);
+extern uint8_t tag_tracking_get_status(int16_t tag_id);
+extern uint8_t tag_tracking_get_motion_type(int16_t tag_id);
 extern void tag_tracking_init(void);
 extern void tag_tracking_propagate(void);
 extern void tag_tracking_propagate_start(void);

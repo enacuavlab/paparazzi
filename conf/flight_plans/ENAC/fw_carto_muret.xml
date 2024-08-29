@@ -86,7 +86,7 @@ static inline bool delay_test_gf(bool test, int delay) {
     </sector>
   </sectors>
   <variables>
-    <variable init="40." var="mapping_height" min="20." max="120." step="1."/>
+    <variable init="30." var="mapping_height" min="20." max="120." step="1."/>
     <variable init="25." var="mapping_sweep" min="5." max="20." step="0.1"/>
     <variable init="300." var="mapping_length" min="50." max="600." step="10."/>
     <variable init="5." var="mapping_lines" min="3." max="15." step="0.1"/>
@@ -144,11 +144,11 @@ static inline bool delay_test_gf(bool test, int delay) {
     </block>
     <block group="mission" name="ZamboniSurvey" strip_button="Zamboni">
       <set var="mapping_shot" value="1"/>
-      <!--call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/-->
+      <call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/>
       <call_once fun="nav_survey_zamboni_setup(WP_ZBC, WP_ZBDIR, mapping_length, mapping_sweep, mapping_lines, GetAltRef()+mapping_height)"/>
       <call fun="nav_survey_zamboni_run()"/>
       <!--deroute block="Standby"/-->
-      <deroute block="Land Left AF-TD"/>
+      <deroute block="Land Right AF-TD"/>
     </block>
     <block group="land" name="Land Right AF-TD" strip_button="Land right (wp AF-TD)" strip_icon="land-right.png">
       <set value="DEFAULT_CIRCLE_RADIUS" var="nav_radius"/>
