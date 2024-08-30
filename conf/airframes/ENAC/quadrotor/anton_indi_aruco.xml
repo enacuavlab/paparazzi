@@ -97,7 +97,7 @@
   </servos>
 
   <servos driver="Pwm">
-    <servo name="SWITCH" no="1" min="1000" neutral="1000" max="2000"/>
+    <servo name="SWITCH" no="1" min="1230" neutral="1230" max="1800"/>
   </servos>
 
   <commands>
@@ -261,7 +261,7 @@
     <define name="WPS" type="array">
       <field type="struct">
         <field name="wp_id" value="WP_TAG"/>
-        <field name="tag_id" value="0"/>
+        <field name="tag_id" value="800"/>
       </field>
     </define>
   </section>

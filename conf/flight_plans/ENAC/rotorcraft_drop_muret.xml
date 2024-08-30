@@ -8,8 +8,8 @@
     #ifndef SwitchServoOff
     #define SwitchServoOff(_x) {}
     #endif
-    #define DropOpen SwitchServoOff
-    #define DropClose SwitchServoOn
+    #define DropClose SwitchServoOff
+    #define DropOpen SwitchServoOn
   </header>
   <waypoints>
     <waypoint name="HOME" x="0" y="9.8"/>

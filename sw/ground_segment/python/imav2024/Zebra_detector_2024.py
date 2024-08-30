@@ -11,12 +11,12 @@ def boxPoints(pts):
     else:
         return cv2.cv.BoxPoints(pts)
 
-DEFAULT_IMAGE_VIEWER = "gwenview"
 DEFAULT_IMAGE_OUTPUT = "out_detect.png"
-DEFAULT_SCALE_FACTOR = 4
+DEFAULT_SCALE_FACTOR = 1
 DEFAULT_RESOLUTION = 20 # pixels per meter
 
-zebra = RectangleDetector([[0, 0, 230],[179, 15, 255]], (1.7, 0.6), color_name="Zebra")
+zebra = RectangleDetector([[0, 0, 200],[179, 30, 255]], (1.7, 0.6), color_name="Zebra", aspect_ratio_th=0.25) # high expo
+#zebra = RectangleDetector([[0, 0, 138],[179, 110, 255]], (1.7, 0.6), color_name="Zebra", size_th=0.25) # low expo
 
 def get_geo_data(filename):
     import os
@@ -55,7 +55,7 @@ def process_result(img, out, res, label, geo=None, color=(0, 255, 0)):
                 print(f"{label} {center} | no valid geo coordinates")
     return img, out
 
-def find_boxes(img, output=None, scale=DEFAULT_SCALE_FACTOR, res=DEFAULT_RESOLUTION, geo=None, show_errors=False):
+def find_boxes(img, output=None, scale=DEFAULT_SCALE_FACTOR, res=DEFAULT_RESOLUTION, geo=None, show_errors=False, show_image=True):
     out = img.copy()
 
     results, error = zebra.detect(img, res)
@@ -69,27 +69,27 @@ def find_boxes(img, output=None, scale=DEFAULT_SCALE_FACTOR, res=DEFAULT_RESOLUT
             s = ' '.join(format(f, '.3f') for f in result[3])
             img, out = process_result(img, out, result[2], f"{result[1]} | {s}", geo, color=(0, 0, 255))
 
-    if output is None:
+    if output is not None:
+        cv2.imwrite(output, out)
+
+    if show_image:
         w, h, _ = img.shape
+        cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
         img_out = cv2.resize(out, (int(h/scale),int(w/scale)))
         cv2.imshow('frame',img_out)
         while True:
             if cv2.waitKey(-1)  & 0xFF == ord('q'):
                 break
         cv2.destroyAllWindows()
-    else:
-        cv2.imwrite(output, out)
 
 if __name__ == '__main__':
     '''
     When used as a standalone script
     '''
     import argparse
-    import subprocess
 
     parser = argparse.ArgumentParser(description="Search boxes in image")
     parser.add_argument('img', help="image path")
-    parser.add_argument("-v", "--viewer", help="program used to open the image", default=DEFAULT_IMAGE_VIEWER)
     parser.add_argument("-nv", "--no_view", help="Do not open image after processing", action='store_true')
     parser.add_argument("-o", "--output", help="output file name", default=None)
     parser.add_argument("-s", "--scale", help="resize scale factor", type=int, default=DEFAULT_SCALE_FACTOR)
@@ -99,8 +99,5 @@ if __name__ == '__main__':
 
     img = cv2.imread(args.img)
     geo = get_geo_data(args.img)
-    find_boxes(img, args.output, args.scale, args.resolution, geo=geo, show_errors=args.error)
-
-    if not args.no_view and args.output is not None:
-        subprocess.call([args.viewer, args.output])
+    find_boxes(img, args.output, args.scale, args.resolution, geo=geo, show_errors=args.error, show_image=(not args.no_view))
 
