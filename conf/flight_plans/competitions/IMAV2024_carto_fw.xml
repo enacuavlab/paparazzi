@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="40" ground_alt="5" home_mode_height="30" lat0="51.4046689" lon0="-2.8193400" max_dist_from_home="600" name="IMAV2024 Carto fixed-wing" qfu="250." security_height="10">
+<flight_plan alt="40" ground_alt="5" home_mode_height="30" lat0="51.4045109" lon0="-2.8193286" max_dist_from_home="600" name="IMAV2024 Carto fixed-wing" qfu="250." security_height="10">
   <header>
 #include "modules/datalink/datalink.h"
 static inline bool delay_test_rc(bool test, int delay) {
@@ -32,6 +32,8 @@ static inline bool delay_test_gf(bool test, int delay) {
   }
 }
 
+#define WaypointDist(_wp1, _wp2) (sqrtf(DistanceSquare(WaypointX(_wp1),WaypointY(_wp1),WaypointX(_wp2),WaypointY(_wp2))))
+
 #if DIGITAL_CAM
 #define LINE_START_FUNCTION if (mapping_shot) { dc_Survey(mapping_shot_distance); } else { dc_autoshoot = DC_AUTOSHOOT_STOP; }
 #define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
@@ -40,30 +42,41 @@ static inline bool delay_test_gf(bool test, int delay) {
 #define NavQdrCloseToAxis(_from, _to) NavQdrCloseTo(DegOfRad(-atan2f(WaypointY(_to) - WaypointY(_from), WaypointX(_to) - WaypointX(_from))))
   </header>
   <waypoints>
-    <waypoint name="HOME" x="0" y="0"/>
-    <waypoint name="STDBY" x="33.027" y="-40.427"/>
-    <waypoint alt="5" name="TD" x="-2.818" y="9.54"/>
-    <waypoint alt="25" name="AF" x="112.927" y="69.016"/>
+    <waypoint name="HOME" x="18.462" y="-72.154"/>
+    <waypoint name="STDBY" x="38.643" y="-48.229"/>
+    <waypoint alt="5" name="TD" x="10.666" y="-11.268"/>
+    <waypoint alt="25" name="AF" x="126.381" y="60.49"/>
     <waypoint name="_BASELEG" x="168.8" y="-13.8"/>
-    <waypoint name="CLIMB" x="-121.049" y="-95.346"/>
-    <waypoint name="P1" x="164.51" y="27.772"/>
-    <waypoint name="P2" x="-85.857" y="-127.667"/>
-    <waypoint name="_C1" x="164.51" y="27.772"/>
-    <waypoint name="_C2" x="-85.857" y="-127.667"/>
-    <waypoint name="MAP1" x="196.241" y="75.436"/>
-    <waypoint name="MAP2" x="316.762" y="-62.664"/>
-    <waypoint name="MAP3" x="-45.783" y="-272.004"/>
-    <waypoint name="MAP4" x="-129.4" y="-123.311"/>
-    <waypoint name="ZBC" x="84.959" y="-93.962"/>
-    <waypoint name="ZBDIR" x="133.029" y="-67.177"/>
-    <waypoint name="_KILL1" x="189.216" y="163.751"/>
-    <waypoint name="_KILL2" x="540.415" y="-63.411"/>
-    <waypoint name="_KILL3" x="-72.668" y="-399.168"/>
-    <waypoint name="_KILL4" x="-259.616" y="-87.104"/>
-    <waypoint name="_FLY1" x="180.673" y="129.783"/>
-    <waypoint name="_FLY2" x="454.314" y="-70.491"/>
-    <waypoint name="_FLY3" x="-52.468" y="-352.381"/>
-    <waypoint name="_FLY4" x="-205.315" y="-106.372"/>
+    <waypoint name="CLIMB" x="-64.705" y="-94.836"/>
+    <!--waypoint name="P1" x="164.51" y="27.772"/>
+    <waypoint name="P2" x="-41.797" y="-139.096"/>
+    <waypoint name="_C1" x="151.573" y="31.161"/>
+    <waypoint name="_C2" x="-55.663" y="-114.939"/-->
+    <waypoint name="MAP1" lat="51.40397348780787" lon="-2.820792534133579"/>
+    <waypoint name="MAP2" lat="51.40324827491988" lon="-2.822579075697425"/>
+    <waypoint name="MAP3" lat="51.40216290330571" lon="-2.821736580096323"/>
+    <waypoint name="MAP4" lat="51.40318633735384" lon="-2.820434907050242"/>
+    <waypoint name="ZBC" x="-136.955" y="-155.073"/>
+    <waypoint name="ZBDIR" x="-169.598" y="-175.953"/>
+    <waypoint name="C1" lat="51.40337101177714" lon="-2.81946343972307"/>
+    <waypoint name="C2" lat="51.40269828686684" lon="-2.81854499646789"/>
+    <waypoint name="C3" lat="51.40412401003561" lon="-2.81582776937354"/>
+    <waypoint name="C4" lat="51.40480870184149" lon="-2.81670290546800"/>
+    <waypoint name="_KILL1" lat="51.4037999994502" lon="-2.81235628238941"/>
+    <waypoint name="_KILL2" lat="51.4068594662325" lon="-2.81500423477735"/>
+    <waypoint name="_KILL3" lat="51.4057914135146" lon="-2.81767832087734"/>
+    <waypoint name="_KILL4" lat="51.4050872678795" lon="-2.81840937698165"/>
+    <waypoint name="_KILL5" lat="51.4044429026898" lon="-2.81999822497422"/>
+    <waypoint name="_KILL6" lat="51.4045354063380" lon="-2.82099070071843"/>
+    <waypoint name="_KILL7" lat="51.4029174531834" lon="-2.82498963302300"/>
+    <waypoint name="_KILL8" lat="51.3999463540515" lon="-2.82207948203042"/>
+    <waypoint name="_FLY1" lat="51.40424870902749" lon="-2.820119499603871"/>
+    <!--waypoint name="_FLY2" lat="51.40364806450683" lon="-2.821602369304292"/-->
+    <waypoint name="_FLY3" lat="51.40277234701238" lon="-2.823731664510897"/>
+    <waypoint name="_FLY4" lat="51.40074322069155" lon="-2.821774308525683"/>
+    <waypoint name="_FLY5" lat="51.40400414773781" lon="-2.813566012884135"/>
+    <waypoint name="_FLY6" lat="51.40610220954286" lon="-2.815401874714203"/>
+    <!--waypoint name="_FLY7" lat="51.40434319438164" lon="-2.819871389267096"/-->
   </waypoints>
   <sectors>
     <sector color="red" name="Kill">
@@ -71,12 +84,17 @@ static inline bool delay_test_gf(bool test, int delay) {
       <corner name="_KILL2"/>
       <corner name="_KILL3"/>
       <corner name="_KILL4"/>
+      <corner name="_KILL5"/>
+      <corner name="_KILL6"/>
+      <corner name="_KILL7"/>
+      <corner name="_KILL8"/>
     </sector>
     <sector color="green" name="Flight_Area">
       <corner name="_FLY1"/>
-      <corner name="_FLY2"/>
       <corner name="_FLY3"/>
       <corner name="_FLY4"/>
+      <corner name="_FLY5"/>
+      <corner name="_FLY6"/>
     </sector>
     <sector color="yellow" name="Survey">
       <corner name="MAP1"/>
@@ -84,21 +102,27 @@ static inline bool delay_test_gf(bool test, int delay) {
       <corner name="MAP3"/>
       <corner name="MAP4"/>
     </sector>
+    <sector color="blue" name="Circuit">
+      <corner name="C1"/>
+      <corner name="C2"/>
+      <corner name="C3"/>
+      <corner name="C4"/>
+    </sector>
   </sectors>
   <variables>
-    <variable init="40." var="mapping_height" min="20." max="120." step="1."/>
+    <variable init="30." var="mapping_height" min="20." max="120." step="1."/>
     <variable init="25." var="mapping_sweep" min="5." max="20." step="0.1"/>
-    <variable init="300." var="mapping_length" min="50." max="600." step="10."/>
+    <variable init="120." var="mapping_length" min="50." max="600." step="10."/>
     <variable init="5." var="mapping_lines" min="3." max="15." step="0.1"/>
     <variable init="0" var="mapping_shot" min="0" max="1" step="1"/>
     <variable init="20." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
   </variables>
   <modules>
     <module name="nav" type="survey_zamboni"/>
-    <module name="nav" type="poles"/>
+    <!--module name="nav" type="poles"/-->
   </modules>
-  <!--exceptions>
-    <exception cond="(delay_test_rc(RCLost(),20) @AND
+  <exceptions>
+    <!--exception cond="(delay_test_rc(RCLost(),20) @AND
       !(IndexOfBlock('Takeoff') @GT nav_block) @AND
       !(nav_block >= IndexOfBlock('Land Right AF-TD')) @AND
       (autopilot.launch == true) )" deroute="EmergencyLanding"/>
@@ -106,11 +130,11 @@ static inline bool delay_test_gf(bool test, int delay) {
       !(IndexOfBlock('Takeoff') @GT nav_block) @AND
       !(nav_block >= IndexOfBlock('Land Right AF-TD')) @AND
       (autopilot.launch == true) )" deroute="EmergencyLanding"/>
-    <exception cond="(delay_test_gf(!InsideFlyZone(GetPosX(), GetPosY()),10) @AND
+    <exception cond="(delay_test_gf(!InsideFlight_Area(GetPosX(), GetPosY()),10) @AND
       !(IndexOfBlock('Takeoff') @GT nav_block) @AND
       !(nav_block >= IndexOfBlock('Land Right AF-TD')) @AND
-      (autopilot.launch == true) )" deroute="EmergencyLanding"/>
-  </exceptions-->
+      (autopilot.launch == true) )" deroute="EmergencyLanding"/-->
+  </exceptions>
   <blocks>
     <block name="Wait GPS">
       <set value="1" var="autopilot.kill_throttle"/>
@@ -128,24 +152,25 @@ static inline bool delay_test_gf(bool test, int delay) {
       <set value="0" var="autopilot.kill_throttle"/>
       <set value="0" var="autopilot.flight_time"/>
       <go from="HOME" pitch="30" throttle="0.8" vmode="throttle" wp="CLIMB"/>
-      <deroute block="Align Zamboni"/>
+      <deroute block="Endurance"/>
     </block>
     <block group="home" key="Ctrl+a" name="Standby" strip_button="Standby" strip_icon="home.png">
       <circle radius="nav_radius" wp="STDBY"/>
     </block>
     <block name="Endurance" strip_button="Endurance" group="mission">
       <set var="mapping_shot" value="0"/>
-      <call_once fun="nav_poles_init(WP_P1, WP_P2, WP__C1, WP__C2, nav_radius)"/>
-      <oval p1="_C1" p2="_C2" radius="nav_radius" until="nav_oval_count==3"/>
-      <deroute block="Align Zamboni"/>
+      <!--call_once fun="nav_poles_init(WP_P1, WP_P2, WP__C1, WP__C2, nav_radius)"/>
+      <oval p1="_C1" p2="_C2" radius="nav_radius" until="nav_oval_count==3"/-->
+        <oval p1="C2" p2="C3" radius="-WaypointDist(WP_C1,WP_C2)/2." until="nav_oval_count==3"/>
+      <deroute block="ZamboniSurvey"/>
     </block>
-    <block name="Align Zamboni">
+    <!--block name="Align Zamboni">
       <circle radius="nav_radius" until="NavQdrCloseToAxis(WP_STDBY,WP_ZBC) @AND fabsf(GetPosAlt() - WaypointAlt(WP_ZBC)) @LT 10." wp="STDBY"/>
-    </block>
+    </block-->
     <block group="mission" name="ZamboniSurvey" strip_button="Zamboni">
       <set var="mapping_shot" value="1"/>
       <call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/>
-      <call_once fun="nav_survey_zamboni_setup(WP_ZBC, WP_ZBDIR, mapping_length, mapping_sweep, mapping_lines, GetAltRef()+mapping_height)"/>
+      <call_once fun="nav_survey_zamboni_setup(WP_ZBC, WP_ZBDIR, mapping_length, -mapping_sweep, mapping_lines, GetAltRef()+mapping_height)"/>
       <call fun="nav_survey_zamboni_run()"/>
       <!--deroute block="Standby"/-->
       <deroute block="Land Left AF-TD"/>
