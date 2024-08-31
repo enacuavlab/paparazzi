@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="40" ground_alt="5" home_mode_height="30" lat0="51.4046689" lon0="-2.8193400" max_dist_from_home="600" name="IMAV2024 Rotorcraft" qfu="250." security_height="10">
+<flight_plan alt="35" ground_alt="5" home_mode_height="30" lat0="51.4045109" lon0="-2.8193286" max_dist_from_home="600" name="IMAV2024 Rotorcraft" qfu="250." security_height="10">
   <header>
     #define FP_NONE       0
     #define FP_ENDURANCE  1
@@ -21,25 +21,6 @@
     #define LINE_START_FUNCTION dc_Survey(mapping_shot_distance);
     #define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
     #endif
-
-    #ifdef NAV_C
-    #ifndef TAG_TRACKING_COORD_TO_M
-    #define TAG_TRACKING_COORD_TO_M (1.f / 1000.f)
-    #ifdef SITL
-    #define jevois_stream(_x) {}
-    #endif
-    #endif
-
-    static void fp_tag_cb(uint8_t sender_id UNUSED,
-        uint8_t type, char * id UNUSED,
-        uint8_t nb UNUSED, int16_t * coord, uint16_t * dim UNUSED,
-        struct FloatQuat quat UNUSED, char * extra UNUSED)
-    {
-      if (type == JEVOIS_MSG_D3) {
-        tag_distance = coord[2] * TAG_TRACKING_COORD_TO_M;
-        tag_valid = true;
-      }
-    }
     
     static inline bool delay_test_rc(bool test, int delay) {
       static int nb = 0;
@@ -55,35 +36,47 @@
         return false;
       }
     }
-
-    #endif
   </header>
   <waypoints>
-    <waypoint name="HOME" x="0" y="0"/>
-    <waypoint name="STDBY" x="7.726" y="-13.381"/>
-    <waypoint name="LANDPAD" x="-2.975" y="13.864"/>
-    <waypoint name="MAP1" x="196.241" y="75.436"/>
-    <waypoint name="MAP2" x="316.762" y="-62.664"/>
-    <waypoint name="MAP3" x="-45.783" y="-272.004"/>
-    <waypoint name="MAP4" x="-129.4" y="-123.311"/>
-    <waypoint name="DROP" x="49.024" y="-47.319"/>
-    <waypoint name="START_IMAGES" x="16.17" y="-31.049"/>
-    <waypoint name="D1" x="135.525" y="62.216"/>
-    <waypoint name="D2" x="150.017" y="-63.538"/>
-    <waypoint name="D3" x="8.956" y="-57.934"/>
-    <waypoint name="D4" x="-101.448" y="-76.813"/>
-    <waypoint name="P1" x="164.51" y="27.772"/>
-    <waypoint name="P2" x="-85.857" y="-127.667"/>
+    <waypoint name="HOME" lat="51.4041653" lon="-2.8191115"/>
+    <waypoint name="STDBY" lat="51.4044281" lon="-2.8191812"/>
+    <waypoint name="LANDPAD" lat="51.4045109" lon="-2.8193286"/>
     <waypoint name="TAG" x="47.13" y="-3.824"/>
     <waypoint name="_HERE" x="100.545" y="24.169"/>
-    <waypoint name="_KILL1" x="189.216" y="163.751"/>
-    <waypoint name="_KILL2" x="540.415" y="-63.411"/>
-    <waypoint name="_KILL3" x="-72.668" y="-399.168"/>
-    <waypoint name="_KILL4" x="-259.616" y="-87.104"/>
-    <waypoint name="_FLY1" x="180.673" y="129.783"/>
-    <waypoint name="_FLY2" x="454.314" y="-70.491"/>
-    <waypoint name="_FLY3" x="-52.468" y="-352.381"/>
-    <waypoint name="_FLY4" x="-205.315" y="-106.372"/>
+    <waypoint name="MAP1" lat="51.40397348780787" lon="-2.820792534133579"/>
+    <waypoint name="MAP2" lat="51.40324827491988" lon="-2.822579075697425"/>
+    <waypoint name="MAP3" lat="51.40216290330571" lon="-2.821736580096323"/>
+    <waypoint name="MAP4" lat="51.40318633735384" lon="-2.820434907050242"/>
+    <waypoint name="DROP" lat="51.4045959" lon="-2.8191027"/>
+    <waypoint name="START_IMAGES" lat="51.4041454" lon="-2.8197853"/>
+    <waypoint name="D1" lat="51.4037624" lon="-2.8200670"/>
+    <waypoint name="D2" lat="51.4035808" lon="-2.8202947"/>
+    <waypoint name="D3" lat="51.4037931" lon="-2.8204535"/>
+    <waypoint name="D4" lat="51.4039687" lon="-2.8204949"/>
+    <waypoint name="C1" lat="51.40337101177714" lon="-2.81946343972307"/>
+    <waypoint name="C2" lat="51.40269828686684" lon="-2.81854499646789"/>
+    <waypoint name="C3" lat="51.40412401003561" lon="-2.81582776937354"/>
+    <waypoint name="C4" lat="51.40480870184149" lon="-2.81670290546800"/>
+    <waypoint name="_KILL1" lat="51.4037999994502" lon="-2.81235628238941"/>
+    <waypoint name="_KILL2" lat="51.4068594662325" lon="-2.81500423477735"/>
+    <waypoint name="_KILL3" lat="51.4057914135146" lon="-2.81767832087734"/>
+    <waypoint name="_KILL4" lat="51.4050872678795" lon="-2.81840937698165"/>
+    <waypoint name="_KILL5" lat="51.4044429026898" lon="-2.81999822497422"/>
+    <waypoint name="_KILL6" lat="51.4045354063380" lon="-2.82099070071843"/>
+    <waypoint name="_KILL7" lat="51.4029174531834" lon="-2.82498963302300"/>
+    <waypoint name="_KILL8" lat="51.3999463540515" lon="-2.82207948203042"/>
+    <waypoint name="_FLY1" lat="51.40424870902749" lon="-2.820119499603871"/>
+    <!--waypoint name="_FLY2" lat="51.40364806450683" lon="-2.821602369304292"/-->
+    <waypoint name="_FLY3" lat="51.40277234701238" lon="-2.823731664510897"/>
+    <waypoint name="_FLY4" lat="51.40074322069155" lon="-2.821774308525683"/>
+    <waypoint name="_FLY5" lat="51.40400414773781" lon="-2.813566012884135"/>
+    <waypoint name="_FLY6" lat="51.40610220954286" lon="-2.815401874714203"/>
+    <!--waypoint name="_FLY7" lat="51.40434319438164" lon="-2.819871389267096"/-->
+    <waypoint name="_P1" lat="51.40362957556762" lon="-2.819863662028597"/>
+    <waypoint name="_P2" lat="51.40429280586027" lon="-2.820004683319591"/>
+    <waypoint name="_P3" lat="51.40397717175711" lon="-2.820793630630163"/>
+    <waypoint name="_P4" lat="51.40359227287529" lon="-2.820623028420364"/>
+    <waypoint name="_P5" lat="51.40318748775402" lon="-2.820433716921217"/>
   </waypoints>
   <sectors>
     <sector color="red" name="Kill">
@@ -91,18 +84,38 @@
       <corner name="_KILL2"/>
       <corner name="_KILL3"/>
       <corner name="_KILL4"/>
+      <corner name="_KILL5"/>
+      <corner name="_KILL6"/>
+      <corner name="_KILL7"/>
+      <corner name="_KILL8"/>
     </sector>
     <sector color="green" name="Flight_Area">
       <corner name="_FLY1"/>
-      <corner name="_FLY2"/>
+      <!--corner name="_FLY2"/-->
       <corner name="_FLY3"/>
       <corner name="_FLY4"/>
+      <corner name="_FLY5"/>
+      <corner name="_FLY6"/>
+      <!--corner name="_FLY7"/-->
     </sector>
     <sector color="yellow" name="Survey">
       <corner name="MAP1"/>
       <corner name="MAP2"/>
       <corner name="MAP3"/>
       <corner name="MAP4"/>
+    </sector>
+    <sector color="purple" name="Photos">
+      <corner name="_P1"/>
+      <corner name="_P2"/>
+      <corner name="_P3"/>
+      <corner name="_P4"/>
+      <corner name="_P5"/>
+    </sector>
+    <sector color="blue" name="Circuit">
+      <corner name="C1"/>
+      <corner name="C2"/>
+      <corner name="C3"/>
+      <corner name="C4"/>
     </sector>
   </sectors>
   <variables>
@@ -113,22 +126,20 @@
     <variable init="4." var="land_speed" min="0.5" max="10." step="0.1"/>
     <variable init="4.5" var="tag_height" min="0.5" max="15." step="0.1"/>
     <variable init="10." var="images_height" min="0.5" max="15." step="0.1"/>
-    <variable init="40." var="mapping_height" min="5." max="120." step="0.1"/>
+    <variable init="4." var="images_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="30." var="mapping_height" min="5." max="120." step="0.1"/>
     <variable init="25." var="mapping_sweep" min="5." max="20." step="0.1"/>
     <variable init="7." var="mapping_speed" min="0.5" max="10." step="0.1"/>
     <variable init="-1." var="mapping_radius" min="-1." max="100." step="1.0"/>
     <variable init="20." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
-    <variable init="2." var="drop_height" min="0.5" max="15." step="0.1"/>
-    <variable init="42." var="tag_distance"/>
-    <variable init="false" type="bool" var="tag_valid"/>
     <variable init="false" type="bool" var="stay_on_wp" min="0" max="1" step="1"/>
-    <abi_binding name="JEVOIS_MSG" handler="fp_tag_cb"/>
   </variables>
   <modules>
     <module name="nav" type="survey_hybrid">
       <define name="SURVEY_HYBRID_MAX_SWEEP_BACK" value="1"/>
       <define name="SURVEY_HYBRID_APPROACHING_TIME" value="0"/>
-      <define name="SURVEY_HYBRID_ENTRY_DISTANCE" value="survey_private.sweep_distance"/>
+      <define name="SURVEY_HYBRID_ENTRY_DISTANCE" value="0.7*survey_private.sweep_distance"/>
+      <define name="SURVEY_HYBRID_ENTRY_CIRCLE" value="FALSE"/>
     </module>
     <module name="tag_tracking">
       <define name="TAG_TRACKING_WP" value="WP_LANDPAD"/>
@@ -136,10 +147,18 @@
     </module>
   </modules>
   <exceptions>
-    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 100))                @AND (nav_block @GT IndexOfBlock('Holding point')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
-    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 120))                @AND (nav_block @GT IndexOfBlock('Holding point')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Kill landed"/>
-    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed'))                @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 5))" deroute="Kill landed"/>
-    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed'))                @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))" deroute="Kill landed"/>
+    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 100))
+      @AND (nav_block @GT IndexOfBlock('Holding point'))
+      @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
+    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 120))
+      @AND (nav_block @GT IndexOfBlock('Holding point'))
+      @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed'))
+      @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20)
+      @AND (datalink_time @GT 5))" deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed'))
+      @AND (delay_test_rc(RadioControlIsLost(),20)
+      @AND (datalink_time @GT 15))" deroute="Kill landed"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">
@@ -199,27 +218,26 @@
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="mapping_height"/>
-      <go wp="P1" from="_HERE" hmode="route" height="mapping_height"/>
+      <go wp="C1" from="_HERE" hmode="route" height="mapping_height"/>
       <deroute block="Run Endurance"/>
     </block>
     <block name="Run Endurance">
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
       <for var="i" from="1" to="3">
-        <go wp="P2" from="P1" hmode="route" height="mapping_height"/>
-        <go wp="P1" from="P2" hmode="route" height="mapping_height"/>
+        <path wpts="C1,C2,C3,C4,C1" height="mapping_height"/>
       </for>
       <deroute block="Goto Mapping"/>
     </block>
 
     <block name="Goto Mapping">
       <set var="mission_nb" value="FP_NONE"/>
-      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <!--call_once fun="NavSetWaypointHere(WP__HERE)"/-->
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
-      <stay wp="_HERE" until="stage_time @GT 3" height="mapping_height"/>
-      <go wp="MAP1" from="_HERE" hmode="route" height="mapping_height"/>
+      <!--stay wp="_HERE" until="stage_time @GT 3" height="mapping_height"/>
+      <go wp="MAP1" from="_HERE" hmode="route" height="mapping_height"/-->
       <call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/>
-      <call_once fun="nav_survey_hybrid_setup_towards(WP_MAP1, WP_MAP4, 4, mapping_sweep, mapping_radius, mapping_height)"/>
+      <call_once fun="nav_survey_hybrid_setup_towards(WP_MAP1, WP_MAP2, 4, mapping_sweep, mapping_radius, mapping_height)"/>
       <deroute block="Run Mapping"/>
     </block>
     <block name="Run Mapping">
@@ -233,19 +251,23 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <set var="tag_tracking_get(TAG_TRACKING_ANY)->motion_type" value="TAG_TRACKING_FIXED_POS"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go wp="DROP" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
       <call_once fun="waypoint_position_copy(WP_TAG, WP_DROP)"/>
       <call_once fun="jevois_stream(true)"/>
-      <stay wp="DROP" until="(tag_tracking_get(TAG_TRACKING_ANY) @DEREF status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="tag_height"/>
+      <stay wp="DROP" until="(tag_tracking_get_status(TAG_TRACKING_ANY) == TAG_TRACKING_RUNNING) @OR (stage_time @GT 15)" height="tag_height"/>
       <deroute block="Drop Camera"/>
     </block>
     <block name="Drop Camera">
-      <stay wp="TAG" until="(stage_time @GT 2 @AND tag_tracking_get(TAG_TRACKING_ANY) @DEREF status == TAG_TRACKING_RUNNING) @OR (stage_time @GT 5)" height="tag_height"/>
-      <stay wp="TAG" climb="-0.5" vmode="climb" until="((tag_distance @LT drop_height) @AND tag_valid) @OR (GetPosHeight() @LT drop_height/2.)" post_call="tag_valid = false"/>
+      <stay wp="TAG" until="(stage_time @GT 2 @AND tag_tracking_get_status(TAG_TRACKING_ANY) == TAG_TRACKING_RUNNING) @OR (stage_time @GT 5)" height="tag_height"/>
+      <stay wp="TAG" climb="-0.5" vmode="climb" until="!nav_is_in_flight() @OR (stage_time @GT 30)"/>
+      <call_once fun="NavKillThrottle()"/>
       <call_once fun="DropOpen()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 2" vmode="throttle"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 2" vmode="throttle"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="TAG" until="GetPosHeight() @GT takeoff_height"/>
       <stay wp="TAG" until="stage_time @GT 3" height="goto_height"/>
       <deroute block="Goto Images"/>
     </block>
@@ -260,6 +282,7 @@
       <deroute block="Waiting WP"/>
     </block>
     <block name="Waiting WP">
+      <call_once fun="guidance_h_SetMaxSpeed(images_speed)"/>
       <stay wp="START_IMAGES" alt="goto_height"/>
     </block>
     <block name="Image 1" strip_button="Image 1" group="images">
