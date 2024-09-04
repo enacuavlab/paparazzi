@@ -147,7 +147,7 @@
 
   <section name="BAT">
     <define name="CATASTROPHIC_BAT_LEVEL" value="9.3" unit="V"/>
-    <define name="MilliAmpereOfAdc(_adc)" value="(_adc)"/>
+    <define name="MilliAmpereOfAdc(_adc)" value="(9.82587*(_adc-421))"/>
   </section>
 
   <section name="MISC">
