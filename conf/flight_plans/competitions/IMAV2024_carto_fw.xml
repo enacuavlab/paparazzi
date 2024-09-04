@@ -138,6 +138,7 @@ static inline bool delay_test_gf(bool test, int delay) {
   <blocks>
     <block name="Wait GPS">
       <set value="1" var="autopilot.kill_throttle"/>
+      <call_once fun="power_switch_set(true)"/>
       <while cond="!GpsFixValid()"/>
     </block>
     <block name="Geo init">
