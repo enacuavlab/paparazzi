@@ -61,6 +61,10 @@ static void tag_motion_sim(void);
 #define TAG_MOTION_RANGE_X 4.f
 #define TAG_MOTION_RANGE_Y 4.f
 
+#ifndef TAG_TRACKING_SIM_ID
+#define TAG_TRACKING_SIM_ID "U1"
+#endif
+
 static uint8_t tag_motion_sim_type = TAG_MOTION_NONE;
 static struct FloatVect3 tag_motion_speed = { TAG_MOTION_SPEED_X, TAG_MOTION_SPEED_Y, 0.f };
 
@@ -561,7 +565,7 @@ static void tag_tracking_sim(void)
       uint16_t dim[3] = { 100, 100, 0 };
       struct FloatQuat quat; // TODO
       float_quat_identity(&quat);
-      AbiSendMsgJEVOIS_MSG(42, JEVOIS_MSG_D3, "1", 3, coord, dim, quat, "");
+      AbiSendMsgJEVOIS_MSG(42, JEVOIS_MSG_D3, TAG_TRACKING_SIM_ID, 3, coord, dim, quat, "");
     }
   }
 }

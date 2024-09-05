@@ -12,6 +12,7 @@ class LongRangeArUco:
 
     def __init__(self):
         self.alt = 1000. # in mm from AP, default in image plane
+        self.rect_id = '0' # default ID when detecting a rectangle shape
 
         # initial color thresholds
         self.rect_aruco = RectangleDetector([[0, 0, 200],[179, 40, 255]],
@@ -90,7 +91,7 @@ class LongRangeArUco:
 
         if len(rect) > 0:
             # send best detection
-            self.send_message_rect('0', rect[0][2])
+            self.send_message_rect(self.rect_id, rect[0][2])
             return ("rect", rect[0])
 
         return None
@@ -128,6 +129,9 @@ class LongRangeArUco:
         str_len = len(str_list)
         if str_len == 2 and str_list[0] == "alt" and str_list[1].isdigit():
             self.alt = max(float(str_list[1]), 1000.)
+            return "OK"
+        elif str_len == 2 and str_list[0] == "set_rect_id" and str_list[1].isdigit():
+            self.rect_id = str_list[1]
             return "OK"
         elif str_len == 2 and str_list[0] == "marker_len" and str_list[1].isdigit():
             self.marker_len = int(str_list[1])
