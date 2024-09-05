@@ -17,6 +17,9 @@
     #define DropOpen SwitchServoOff
     #define DropClose SwitchServoOn
 
+    #define TagID 800
+    #define SetRectID jevois_send_string("set_rect_id 800")
+
     #if DIGITAL_CAM
     #define LINE_START_FUNCTION dc_Survey(mapping_shot_distance);
     #define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
@@ -42,6 +45,7 @@
     <waypoint name="STDBY" lat="51.4044281" lon="-2.8191812"/>
     <waypoint name="LANDPAD" lat="51.4045109" lon="-2.8193286"/>
     <waypoint name="TAG" x="47.13" y="-3.824"/>
+    <waypoint name="_TAG_SIM" x="57.13" y="-3.824"/>
     <waypoint name="_HERE" x="100.545" y="24.169"/>
     <waypoint name="MAP1" lat="51.40397348780787" lon="-2.820792534133579"/>
     <waypoint name="MAP2" lat="51.40324827491988" lon="-2.822579075697425"/>
@@ -143,7 +147,7 @@
     </module>
     <module name="tag_tracking">
       <define name="TAG_TRACKING_WP" value="WP_LANDPAD"/>
-      <define name="TAG_TRACKING_SIM_WP" value="WP_TAG"/>
+      <define name="TAG_TRACKING_SIM_WP" value="WP__TAG_SIM"/>
     </module>
   </modules>
   <exceptions>
@@ -250,6 +254,8 @@
       <set var="mission_nb" value="FP_NONE"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
+      <call_once fun="tag_tracking_set_tracker_id(TagID, WP_TAG)"/>
+      <call_once fun="SetRectID"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
       <go wp="DROP" from="_HERE" hmode="route" height="goto_height"/>

@@ -183,8 +183,8 @@ struct tag_info {
 };
 
 struct wp_tracking {
-  uint8_t wp_id;
   int16_t tag_id;
+  uint8_t wp_id;
 };
 
 
@@ -219,7 +219,7 @@ struct tag_tracking_public* tag_tracking_get(int16_t tag_id) {
     }
 
     // tag_id == TAG_TRACKING_ANY, returns the first running tag.
-    if(tag_id == TAG_TRACKING_ANY && tag_infos[i].tag_tracking.status == TAG_TRACKING_RUNNING) {
+    if (tag_id == TAG_TRACKING_ANY && tag_infos[i].tag_tracking.status == TAG_TRACKING_RUNNING) {
       return &tag_infos[i].tag_tracking;
     }
   }
@@ -292,13 +292,13 @@ static void tag_track_cb(uint8_t sender_id UNUSED,
 {
   if (type == JEVOIS_MSG_D3) {
     int16_t tag_id = (int16_t)jevois_extract_nb(id);
-    for(int i=0; i<TAG_TRACKING_NB_MAX; i++) {
+    for (int i=0; i<TAG_TRACKING_NB_MAX; i++) {
       // free slot, store tag ID
-      if(tag_infos[i].tag_track_private.id == TAG_UNUSED_ID) {
+      if (tag_infos[i].tag_track_private.id == TAG_UNUSED_ID) {
         tag_infos[i].tag_track_private.id = tag_id;
       }
 
-      if(tag_infos[i].tag_track_private.id == tag_id) {
+      if (tag_infos[i].tag_track_private.id == tag_id) {
         // store data from Jevois detection
         tag_infos[i].tag_track_private.meas.x = coord[0] * TAG_TRACKING_COORD_TO_M;
         tag_infos[i].tag_track_private.meas.y = coord[1] * TAG_TRACKING_COORD_TO_M;
@@ -338,9 +338,7 @@ void tag_tracking_parse_target_pos(uint8_t *buf)
 // Update and display tracking WP
 static void update_wp(struct tag_info* tag_info UNUSED, bool report UNUSED)
 {
-#ifdef TAG_TRACKING_WPS
-
-  if(tag_info->wp_id == 0) {
+  if (tag_info->wp_id == 0) {
     // not associated with any WP
     return;
   }
@@ -362,8 +360,6 @@ static void update_wp(struct tag_info* tag_info UNUSED, bool report UNUSED)
   } else {
     waypoint_set_enu_i(tag_info->wp_id, &pos_i);
   }
-
-#endif
 }
 
 // Init function
@@ -512,7 +508,7 @@ void tag_tracking_report()
  */
 void tag_tracking_compute_speed(void)
 {
-  for(int i=0; i<TAG_TRACKING_NB_MAX; i++) {
+  for (int i = 0; i < TAG_TRACKING_NB_MAX; i++) {
     if (tag_infos[i].tag_tracking.status == TAG_TRACKING_RUNNING) {
       // compute speed command as estimated tag speed + gain * position error
       struct NedCoor_f pos = *stateGetPositionNed_f();
@@ -527,6 +523,18 @@ void tag_tracking_compute_speed(void)
       FLOAT_VECT3_ZERO(tag_infos[i].tag_tracking.speed_cmd);
     }
   }
+}
+
+bool tag_tracking_set_tracker_id(int16_t tag_id, uint8_t wp_id)
+{
+  for (int i = 0; i < TAG_TRACKING_NB_MAX; i++) {
+    if (tag_infos[i].tag_track_private.id == TAG_UNUSED_ID || tag_infos[i].tag_track_private.id == tag_id) {
+      tag_infos[i].tag_track_private.id = tag_id;
+      tag_infos[i].wp_id = wp_id;
+      return true;
+    }
+  }
+  return false; // fail to set tracker id
 }
 
 // Simulate detection using a WP coordinate
