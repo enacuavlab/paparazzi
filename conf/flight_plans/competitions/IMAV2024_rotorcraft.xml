@@ -39,6 +39,13 @@
         return false;
       }
     }
+
+    static inline void send_image_mark(uint8_t id) {
+      struct LlaCoor_f lla = *stateGetPositionLla_f();
+      float lat_deg = DegOfRad(lla.lat);
+      float lon_deg = DegOfRad(lla.lon);
+      DOWNLINK_SEND_MARK(DefaultChannel, DefaultDevice, Ptr(id), Ptr(lat_deg), Ptr(lon_deg));
+    }
   </header>
   <waypoints>
     <waypoint name="HOME" lat="51.4041653" lon="-2.8191115"/>
@@ -168,6 +175,7 @@
     <block name="Wait GPS">
       <call_once fun="NavKillThrottle()"/>
       <call_once fun="jevois_stream(false)"/>
+      <call_once fun="tag_tracking_tag_tracking_report_status = MODULES_STOP"/>
       <while cond="!GpsFixValid()"/>
     </block>
     <block name="Geo init">
@@ -289,26 +297,30 @@
     </block>
     <block name="Waiting WP">
       <call_once fun="guidance_h_SetMaxSpeed(images_speed)"/>
-      <stay wp="START_IMAGES" alt="goto_height"/>
+      <stay wp="START_IMAGES" alt="images_height"/>
     </block>
     <block name="Image 1" strip_button="Image 1" group="images">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <go from="_HERE" hmode="route" wp="D1" alt="goto_height"/>
+      <go from="_HERE" hmode="route" wp="D1" alt="images_height"/>
+      <call_once fun="send_image_mark(1)"/>
       <stay wp="D1" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
     </block>
     <block name="Image 2" strip_button="Image 2" group="images">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <go from="_HERE" hmode="route" wp="D2" alt="goto_height"/>
+      <go from="_HERE" hmode="route" wp="D2" alt="images_height"/>
+      <call_once fun="send_image_mark(2)"/>
       <stay wp="D2" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
     </block>
     <block name="Image 3" strip_button="Image 3" group="images">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <go from="_HERE" hmode="route" wp="D3" alt="goto_height"/>
+      <go from="_HERE" hmode="route" wp="D3" alt="images_height"/>
+      <call_once fun="send_image_mark(3)"/>
       <stay wp="D3" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
     </block>
     <block name="Image 4" strip_button="Image 4" group="images">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <go from="_HERE" hmode="route" wp="D4" alt="goto_height"/>
+      <go from="_HERE" hmode="route" wp="D4" alt="images_height"/>
+      <call_once fun="send_image_mark(4)"/>
       <stay wp="D4" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
       <deroute block="Landing"/>
     </block>
