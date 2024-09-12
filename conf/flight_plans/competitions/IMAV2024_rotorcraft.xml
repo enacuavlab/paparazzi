@@ -14,8 +14,8 @@
     #ifndef SwitchServoOff
     #define SwitchServoOff(_x) {}
     #endif
-    #define DropOpen SwitchServoOff
-    #define DropClose SwitchServoOn
+    #define DropOpen SwitchServoOn
+    #define DropClose SwitchServoOff
 
     #define TagID 800
     #define SetRectID jevois_send_string("set_rect_id 800")
@@ -153,7 +153,6 @@
       <define name="SURVEY_HYBRID_ENTRY_CIRCLE" value="FALSE"/>
     </module>
     <module name="tag_tracking">
-      <define name="TAG_TRACKING_WP" value="WP_LANDPAD"/>
       <define name="TAG_TRACKING_SIM_WP" value="WP__TAG_SIM"/>
     </module>
   </modules>
