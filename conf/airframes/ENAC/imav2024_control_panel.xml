@@ -1,0 +1,39 @@
+<control_panel name="paparazzi control panel">
+  <section name="programs">
+  </section>
+  <section name="sessions">
+    <session name="IMAV">
+      <program name="Data Link">
+        <arg flag="-transport" constant="pprz"/>
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="Server"/>
+      <program name="GCS"/>
+      <program name="Image Capture"/>
+    </session>
+    <session name="Flight: XBee 57600">
+      <program name="Data Link">
+        <arg flag="-transport" constant="xbee"/>
+        <arg flag="-uplink"/>
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="Server"/>
+      <program name="GCS"/>
+      <program name="Messages"/>
+    </session>
+    <session name="Test: XBEE 57600">
+      <program name="Server">
+        <arg flag="-n"/>
+      </program>
+      <program name="Data Link">
+        <arg flag="-transport" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+      </program>
+      <program name="Messages"/>
+      <program name="GCS"/>
+    </session>
+  </section>
+</control_panel>
