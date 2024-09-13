@@ -1,22 +1,12 @@
-#!/usr/bin/env python3
 import cv2
-from DetectRectangle import RectangleDetector
 import numpy as np
 import rasterio.warp
 from rasterio.crs import CRS
+import PIL.Image
+from ultralytics import YOLO
 
-def boxPoints(pts):
-    if int(cv2.__version__[0]) >= 3:
-        return cv2.boxPoints(pts)
-    else:
-        return cv2.cv.BoxPoints(pts)
-
-DEFAULT_IMAGE_OUTPUT = "out_detect.png"
+DEFAULT_IMAGE_OUTPUT = "yolo_out_detect.png"
 DEFAULT_SCALE_FACTOR = 1
-DEFAULT_RESOLUTION = 20 # pixels per meter
-
-zebra = RectangleDetector([[0, 0, 200],[179, 30, 255]], (1.7, 0.6), color_name="Zebra", aspect_ratio_th=0.25) # high expo
-#zebra = RectangleDetector([[0, 0, 138],[179, 110, 255]], (1.7, 0.6), color_name="Zebra", size_th=0.25) # low expo
 
 def get_geo_data(filename):
     import os
@@ -34,7 +24,7 @@ def get_geo_data(filename):
         print('not a tif file')
         return None
 
-def process_result(img, out, res, label, geo=None, color=(0, 255, 0)):
+def process_result(out, res, label, geo=None, color=(0, 255, 0)):
     center = (int(res[0][0]), int(res[0][1]))
     cv2.circle(out, center, 50, color, 5)
     #cv2.putText(out, label, (center[0]+60, center[1]), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), lineType=cv2.LINE_AA)
@@ -53,27 +43,41 @@ def process_result(img, out, res, label, geo=None, color=(0, 255, 0)):
                 cv2.putText(out, '{:.7f} {:.7f}'.format(lats[0], lons[0]), (center[0]+60, center[1]+30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, color)
             else:
                 print(f"{label} {center} | no valid geo coordinates")
-    return img, out
+    return out
 
-def find_boxes(img, output=None, scale=DEFAULT_SCALE_FACTOR, res=DEFAULT_RESOLUTION, geo=None, show_errors=False, show_image=True):
-    out = img.copy()
+def find_zebras(img_name, output=None, scale=DEFAULT_SCALE_FACTOR, geo=None, show_errors=False, show_image=True):
+    out = cv2.imread(img_name)
+    img = PIL.Image.open(img_name)
+    
+    # Load a pretrained YOLOv8n model
+    model = YOLO("best.pt")
 
-    results, error = zebra.detect(img, res)
-    #print('results', len(results))
-    for cnt, result in enumerate(results):
-        #print(f'ZEBRA_{cnt} | {result[0]} | {result[3]}')
-        img, out = process_result(img, out, result[2], f"ZEBRA_{cnt}", geo)
-    if show_errors:
-        print('number of errors', len(error))
-        for cnt, result in enumerate(error):
-            s = ' '.join(format(f, '.3f') for f in result[3])
-            img, out = process_result(img, out, result[2], f"{result[1]} | {s}", geo, color=(0, 0, 255))
+    # YOLO output a warning if the image dimension are not multiple of max stride 32,
+    # and rescale it. 
+    # Even though the outputed results are converted back to original shape,
+    # rescaling can hurt prediction performances, 
+    # so I am padding the image to have dimensions that are multiple
+    # of YOLO max stride = 32 and prevent rescaling
+    padded_img = PIL.Image.new(img.mode, ((img.width // 32 + 1 ) * 32, (img.height // 32 + 1 ) * 32 ))
+    padded_img.paste(img, (0, 0)) # origin of the image in top left corner
+    
+    # Run inference
+    results = model.predict(
+        source=padded_img,
+        conf=0.4,
+        imgsz=(padded_img.height, padded_img.width),
+        # max_det=3, # maximum number of detection if needed
+        )
+ 
+    for res in results:
+        for cnt, r in enumerate(res):
+            out = process_result(out, r.obb.xywhr, f"ZEBRA_{cnt}", geo)
 
     if output is not None:
         cv2.imwrite(output, out)
 
     if show_image:
-        w, h, _ = img.shape
+        w, h, _ = out.shape
         cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
         img_out = cv2.resize(out, (int(h/scale),int(w/scale)))
         cv2.imshow('frame',img_out)
@@ -84,22 +88,33 @@ def find_boxes(img, output=None, scale=DEFAULT_SCALE_FACTOR, res=DEFAULT_RESOLUT
                 break
         cv2.destroyAllWindows()
 
+    #for r in results: # actually len(results) = 1 because only 1 image
+    #    print(r.obb) # all results info
+    #    print(r.obb.conf) # confidence in the detection
+    #    print(r.obb.xywhr) # rotated bounding boxes in [x_center, y_center, width, height, rotation] format
+    #    print(r.obb.xyxyxyxy) # rotated bounding boxes in 8-point (xyxyxyxy) coordinate format : 4 points (x, y), starting from the top-left corner and moving clockwise
+    #    print(r.obb.xyxy) # axis-aligned bounding boxes in xyxy format  
+    #    r.plot(img=img, # plotting results on the original image without padding
+    #           save=True,
+    #           font_size=20,
+    #           line_width=2,
+    #           labels=True,
+    #           filename="result.tif")
+
+
 if __name__ == '__main__':
     '''
     When used as a standalone script
     '''
     import argparse
 
-    parser = argparse.ArgumentParser(description="Search boxes in image")
+    parser = argparse.ArgumentParser(description="Search zebras in image with YOLO")
     parser.add_argument('img', help="image path")
     parser.add_argument("-nv", "--no_view", help="Do not open image after processing", action='store_true')
     parser.add_argument("-o", "--output", help="output file name", default=None)
     parser.add_argument("-s", "--scale", help="resize scale factor", type=int, default=DEFAULT_SCALE_FACTOR)
-    parser.add_argument("-r", "--resolution", help="resolution in pixels per meter", type=float, default=DEFAULT_RESOLUTION)
-    parser.add_argument("-e", "--error", help="show invalid detection", default=False, action='store_true')
     args = parser.parse_args()
 
-    img = cv2.imread(args.img)
     geo = get_geo_data(args.img)
-    find_boxes(img, args.output, args.scale, args.resolution, geo=geo, show_errors=args.error, show_image=(not args.no_view))
+    find_zebras(args.img, args.output, args.scale, geo=geo, show_image=(not args.no_view))
 
