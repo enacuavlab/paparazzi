@@ -4,6 +4,9 @@
   <header>
 #include "modules/datalink/datalink.h"
 static inline bool delay_test_rc(bool test, int delay) {
+#if SITL
+  return false;
+#else
   static int nb = 0;
   if (test) {
     nb++;
@@ -16,8 +19,12 @@ static inline bool delay_test_rc(bool test, int delay) {
     nb = 0;
     return false;
   }
+#endif
 }
 static inline bool delay_test_gf(bool test, int delay) {
+#if SITL
+  return false;
+#else
   static int nb = 0;
   if (test) {
     nb++;
@@ -30,6 +37,7 @@ static inline bool delay_test_gf(bool test, int delay) {
     nb = 0;
     return false;
   }
+#endif
 }
 
 #define WaypointDist(_wp1, _wp2) (sqrtf(DistanceSquare(WaypointX(_wp1),WaypointY(_wp1),WaypointX(_wp2),WaypointY(_wp2))))
@@ -119,21 +127,21 @@ static inline bool delay_test_gf(bool test, int delay) {
   </variables>
   <modules>
     <module name="nav" type="survey_zamboni"/>
-    <!--module name="nav" type="poles"/-->
+    <module name="power_switch"/>
   </modules>
   <exceptions>
-    <!--exception cond="(delay_test_rc(RCLost(),20) @AND
-      !(IndexOfBlock('Takeoff') @GT nav_block) @AND
-      !(nav_block >= IndexOfBlock('Land Right AF-TD')) @AND
-      (autopilot.launch == true) )" deroute="EmergencyLanding"/>
-    <exception cond="(datalink_time @GT 10 @AND
-      !(IndexOfBlock('Takeoff') @GT nav_block) @AND
-      !(nav_block >= IndexOfBlock('Land Right AF-TD')) @AND
-      (autopilot.launch == true) )" deroute="EmergencyLanding"/>
-    <exception cond="(delay_test_gf(!InsideFlight_Area(GetPosX(), GetPosY()),10) @AND
-      !(IndexOfBlock('Takeoff') @GT nav_block) @AND
-      !(nav_block >= IndexOfBlock('Land Right AF-TD')) @AND
-      (autopilot.launch == true) )" deroute="EmergencyLanding"/-->
+    <exception cond="(delay_test_rc(RCLost(),20)
+      @AND (nav_block @GT IndexOfBlock('Holding point'))
+      @AND (nav_block @LEQ IndexOfBlock('flare'))
+      @AND (autopilot.launch == true))" deroute="EmergencyLanding"/>
+    <exception cond="(datalink_time @GT 10
+      @AND (nav_block @GT IndexOfBlock('Holding point'))
+      @AND (nav_block @LEQ IndexOfBlock('flare'))
+      @AND (autopilot.launch == true))" deroute="EmergencyLanding"/>
+    <exception cond="(delay_test_gf(!InsideFlight_Area(GetPosX(), GetPosY()),20)
+      @AND (nav_block @GT IndexOfBlock('Takeoff'))
+      @AND (nav_block @LEQ IndexOfBlock('Land Right AF-TD'))
+      @AND (autopilot.launch == true))" deroute="EmergencyLanding"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">
@@ -160,9 +168,7 @@ static inline bool delay_test_gf(bool test, int delay) {
     </block>
     <block name="Endurance" strip_button="Endurance" group="mission">
       <set var="mapping_shot" value="0"/>
-      <!--call_once fun="nav_poles_init(WP_P1, WP_P2, WP__C1, WP__C2, nav_radius)"/>
-      <oval p1="_C1" p2="_C2" radius="nav_radius" until="nav_oval_count==3"/-->
-        <oval p1="C2" p2="C3" radius="-WaypointDist(WP_C1,WP_C2)/2." until="nav_oval_count==3"/>
+      <oval p1="C2" p2="C3" radius="-WaypointDist(WP_C1,WP_C2)/2." until="nav_oval_count==3"/>
       <deroute block="ZamboniSurvey"/>
     </block>
     <!--block name="Align Zamboni">
@@ -173,7 +179,6 @@ static inline bool delay_test_gf(bool test, int delay) {
       <call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/>
       <call_once fun="nav_survey_zamboni_setup(WP_ZBC, WP_ZBDIR, mapping_length, -mapping_sweep, mapping_lines, GetAltRef()+mapping_height)"/>
       <call fun="nav_survey_zamboni_run()"/>
-      <!--deroute block="Standby"/-->
       <deroute block="Land Left AF-TD"/>
     </block>
     <block group="land" name="Land Right AF-TD" strip_button="Land right (wp AF-TD)" strip_icon="land-right.png">
