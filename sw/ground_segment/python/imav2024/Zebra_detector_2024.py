@@ -15,7 +15,8 @@ DEFAULT_IMAGE_OUTPUT = "out_detect.png"
 DEFAULT_SCALE_FACTOR = 1
 DEFAULT_RESOLUTION = 20 # pixels per meter
 
-zebra = RectangleDetector([[0, 0, 200],[179, 30, 255]], (1.7, 0.6), color_name="Zebra", aspect_ratio_th=0.25) # high expo
+zebra = RectangleDetector([[0, 0, 200],[179, 100, 255]], (1.3, 0.5), color_name="Zebra", aspect_ratio_th=0.25) # Bristol
+#zebra = RectangleDetector([[0, 0, 200],[179, 30, 255]], (1.3, 0.5), color_name="Zebra", aspect_ratio_th=0.25) # high expo
 #zebra = RectangleDetector([[0, 0, 138],[179, 110, 255]], (1.7, 0.6), color_name="Zebra", size_th=0.25) # low expo
 
 def get_geo_data(filename):
