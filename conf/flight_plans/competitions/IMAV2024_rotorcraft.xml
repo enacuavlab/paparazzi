@@ -49,16 +49,16 @@
   </header>
   <waypoints>
     <waypoint name="HOME" lat="51.4041653" lon="-2.8191115"/>
-    <waypoint name="STDBY" lat="51.4044281" lon="-2.8191812"/>
-    <waypoint name="LANDPAD" lat="51.4045109" lon="-2.8193286"/>
+    <waypoint name="STDBY" lat="51.4043" lon="-2.81948"/>
+    <waypoint name="LANDPAD" lat="51.4045" lon="-2.81923"/>
     <waypoint name="TAG" x="47.13" y="-3.824"/>
     <waypoint name="_TAG_SIM" x="57.13" y="-3.824"/>
     <waypoint name="_HERE" x="100.545" y="24.169"/>
     <waypoint name="MAP1" lat="51.40397348780787" lon="-2.820792534133579"/>
     <waypoint name="MAP2" lat="51.40324827491988" lon="-2.822579075697425"/>
-    <waypoint name="MAP3" lat="51.40216290330571" lon="-2.821736580096323"/>
+    <waypoint name="MAP3" lat="51.4023" lon="-2.82183"/>
     <waypoint name="MAP4" lat="51.40318633735384" lon="-2.820434907050242"/>
-    <waypoint name="DROP" lat="51.4045959" lon="-2.8191027"/>
+    <waypoint name="DROP" lat="51.404539" lon="-2.8189669"/>
     <waypoint name="START_IMAGES" lat="51.4041454" lon="-2.8197853"/>
     <waypoint name="D1" lat="51.4037624" lon="-2.8200670"/>
     <waypoint name="D2" lat="51.4035808" lon="-2.8202947"/>
@@ -134,6 +134,7 @@
     <variable init="20." var="goto_height" min="5." max="120." step="0.1"/>
     <variable init="7." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="5." var="takeoff_height" min="0.5" max="15." step="0.1"/>
+    <variable init="10." var="land_height" min="0.5" max="15." step="0.1"/>
     <variable init="4." var="land_speed" min="0.5" max="10." step="0.1"/>
     <variable init="4.5" var="tag_height" min="0.5" max="15." step="0.1"/>
     <variable init="10." var="images_height" min="0.5" max="15." step="0.1"/>
@@ -149,7 +150,7 @@
     <module name="nav" type="survey_hybrid">
       <define name="SURVEY_HYBRID_MAX_SWEEP_BACK" value="1"/>
       <define name="SURVEY_HYBRID_APPROACHING_TIME" value="0"/>
-      <define name="SURVEY_HYBRID_ENTRY_DISTANCE" value="0.7*survey_private.sweep_distance"/>
+      <define name="SURVEY_HYBRID_ENTRY_DISTANCE" value="survey_private.sweep_distance"/>
       <define name="SURVEY_HYBRID_ENTRY_CIRCLE" value="FALSE"/>
     </module>
     <module name="tag_tracking">
@@ -174,6 +175,7 @@
     <block name="Wait GPS">
       <call_once fun="NavKillThrottle()"/>
       <call_once fun="jevois_stream(false)"/>
+      <call_once fun="power_switch_set(false)"/>
       <call_once fun="tag_tracking_tag_tracking_report_status = MODULES_STOP"/>
       <while cond="!GpsFixValid()"/>
     </block>
@@ -227,6 +229,7 @@
       <set var="mission_nb" value="FP_NONE"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
+      <call_once fun="power_switch_set(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="mapping_height"/>
       <go wp="C1" from="_HERE" hmode="route" height="mapping_height"/>
@@ -244,6 +247,7 @@
       <set var="mission_nb" value="FP_NONE"/>
       <!--call_once fun="NavSetWaypointHere(WP__HERE)"/-->
       <call_once fun="jevois_stream(false)"/>
+      <call_once fun="power_switch_set(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
       <!--stay wp="_HERE" until="stage_time @GT 3" height="mapping_height"/>
       <go wp="MAP1" from="_HERE" hmode="route" height="mapping_height"/-->
@@ -261,11 +265,12 @@
       <set var="mission_nb" value="FP_NONE"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
+      <call_once fun="power_switch_set(true)"/>
       <call_once fun="tag_tracking_set_tracker_id(TagID, WP_TAG)"/>
       <call_once fun="SetRectID"/>
-      <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
-      <go wp="DROP" from="_HERE" hmode="route" height="goto_height"/>
+      <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="images_height"/>
+      <go wp="DROP" from="_HERE" hmode="route" height="images_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
       <call_once fun="waypoint_position_copy(WP_TAG, WP_DROP)"/>
       <call_once fun="jevois_stream(true)"/>
@@ -281,7 +286,7 @@
       <call_once fun="NavResurrect()"/>
       <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 2" vmode="throttle"/>
       <stay climb="nav.climb_vspeed" vmode="climb" wp="TAG" until="GetPosHeight() @GT takeoff_height"/>
-      <stay wp="TAG" until="stage_time @GT 3" height="goto_height"/>
+      <stay wp="TAG" until="stage_time @GT 3" height="images_height"/>
       <deroute block="Goto Images"/>
     </block>
 
@@ -289,9 +294,10 @@
       <set var="mission_nb" value="FP_NONE"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="jevois_stream(false)"/>
+      <call_once fun="power_switch_set(true)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <stay wp="_HERE" until="stage_time @GT 3" alt="goto_height"/>
-      <go from="_HERE" hmode="route" wp="START_IMAGES" alt="goto_height"/>
+      <stay wp="_HERE" until="stage_time @GT 3" alt="images_height"/>
+      <go from="_HERE" hmode="route" wp="START_IMAGES" alt="images_height"/>
       <deroute block="Waiting WP"/>
     </block>
     <block name="Waiting WP">
@@ -302,25 +308,25 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <go from="_HERE" hmode="route" wp="D1" alt="images_height"/>
       <call_once fun="send_image_mark(1)"/>
-      <stay wp="D1" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
+      <stay wp="D1" alt="images_height" until="stage_time @GT 3 @AND !stay_on_wp"/>
     </block>
     <block name="Image 2" strip_button="Image 2" group="images">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <go from="_HERE" hmode="route" wp="D2" alt="images_height"/>
       <call_once fun="send_image_mark(2)"/>
-      <stay wp="D2" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
+      <stay wp="D2" alt="images_height" until="stage_time @GT 3 @AND !stay_on_wp"/>
     </block>
     <block name="Image 3" strip_button="Image 3" group="images">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <go from="_HERE" hmode="route" wp="D3" alt="images_height"/>
       <call_once fun="send_image_mark(3)"/>
-      <stay wp="D3" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
+      <stay wp="D3" alt="images_height" until="stage_time @GT 3 @AND !stay_on_wp"/>
     </block>
     <block name="Image 4" strip_button="Image 4" group="images">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <go from="_HERE" hmode="route" wp="D4" alt="images_height"/>
       <call_once fun="send_image_mark(4)"/>
-      <stay wp="D4" alt="images_height" until="stage_time @GT 5 @AND !stay_on_wp"/>
+      <stay wp="D4" alt="images_height" until="stage_time @GT 3 @AND !stay_on_wp"/>
       <deroute block="Landing"/>
     </block>
 
@@ -333,9 +339,10 @@
       <call_once fun="dc_send_command(DC_OFF)"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <go wp="STDBY" from="_HERE" hmode="route" height="goto_height"/>
+      <go wp="STDBY" from="_HERE" hmode="route" height="land_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
-      <go wp="LANDPAD" from="STDBY" hmode="route" height="goto_height"/>
+      <go wp="LANDPAD" from="STDBY" hmode="route" height="land_height"/>
+      <deroute block="Flare"/>
     </block>
     <block name="Flare">
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
@@ -345,6 +352,7 @@
       <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
     </block>
     <block name="Kill landed">
+      <call_once fun="power_switch_set(false)"/>
       <call_once fun="NavKillThrottle()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>

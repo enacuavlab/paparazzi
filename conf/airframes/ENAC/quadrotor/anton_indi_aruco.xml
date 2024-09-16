@@ -97,7 +97,7 @@
   </servos>
 
   <servos driver="Pwm">
-    <servo name="SWITCH" no="1" min="1230" neutral="1230" max="1800"/>
+    <servo name="SWITCH" no="1" min="1150" neutral="1150" max="1800"/>
   </servos>
 
   <commands>
@@ -112,6 +112,10 @@
     <set servo="BR" value="autopilot_get_motors_on() ? actuators_pprz[1] : -MAX_PPRZ"/>
     <set servo="BL" value="autopilot_get_motors_on() ? actuators_pprz[2] : -MAX_PPRZ"/>
     <set servo="FL" value="autopilot_get_motors_on() ? actuators_pprz[3] : -MAX_PPRZ"/>
+    <!--set servo="FR" value="autopilot_get_motors_on() ? 0 : -MAX_PPRZ"/>
+    <set servo="BR" value="autopilot_get_motors_on() ? 0 : -MAX_PPRZ"/>
+    <set servo="BL" value="autopilot_get_motors_on() ? 0 : -MAX_PPRZ"/>
+    <set servo="FL" value="autopilot_get_motors_on() ? 0 : -MAX_PPRZ"/-->
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
@@ -132,12 +136,12 @@
     <define name="MAG_X_SIGN" value="-1"/>
     <define name="MAG_Y_SIGN" value="-1"/>
     <define name="MAG_Z_SIGN" value="1"/>
-    <define name="MAG_X_NEUTRAL" value="415"/>
-    <define name="MAG_Y_NEUTRAL" value="-2365"/>
-    <define name="MAG_Z_NEUTRAL" value="1626"/>
-    <define name="MAG_X_SENS" value="0.6639205812316621" integer="16"/>
-    <define name="MAG_Y_SENS" value="0.6470134039115051" integer="16"/>
-    <define name="MAG_Z_SENS" value="0.6456573321937272" integer="16"/>
+    <define name="MAG_X_NEUTRAL" value="437"/>
+    <define name="MAG_Y_NEUTRAL" value="-2357"/>
+    <define name="MAG_Z_NEUTRAL" value="1978"/>
+    <define name="MAG_X_SENS" value="0.6420696170457475" integer="16"/>
+    <define name="MAG_Y_SENS" value="0.6426945667319279" integer="16"/>
+    <define name="MAG_Z_SENS" value="0.6220200205771864" integer="16"/>
 
     <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
@@ -150,7 +154,7 @@
     <define name="LIS3MDL_MAG_TO_IMU_PSI" value="0." unit="deg"/>
   </section>
 
-  <include href="conf/mag/toulouse_muret.xml"/>
+  <include href="conf/mag/uk_bristol.xml"/>
 
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
     <!-- setpoints -->

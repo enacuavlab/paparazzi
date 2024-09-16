@@ -4,13 +4,15 @@
   <section name="sessions">
     <session name="IMAV">
       <program name="Data Link">
-        <arg flag="-transport" constant="pprz"/>
+        <arg flag="-transport" constant="xbee"/>
         <arg flag="-d" constant="/dev/ttyUSB0"/>
         <arg flag="-s" constant="57600"/>
       </program>
       <program name="Server"/>
-      <program name="GCS"/>
-      <program name="Image Capture"/>
+      <program name="PprzGCS"/>
+      <program name="Image Capture">
+        <arg flag="-s" constant="2"/>
+      </program>
     </session>
     <session name="Flight: XBee 57600">
       <program name="Data Link">
@@ -20,7 +22,7 @@
         <arg flag="-s" constant="57600"/>
       </program>
       <program name="Server"/>
-      <program name="GCS"/>
+      <program name="PprzGCS"/>
       <program name="Messages"/>
     </session>
     <session name="Test: XBEE 57600">
@@ -33,7 +35,7 @@
         <arg flag="-d" constant="/dev/ttyUSB0"/>
       </program>
       <program name="Messages"/>
-      <program name="GCS"/>
+      <program name="PprzGCS"/>
     </session>
   </section>
 </control_panel>
