@@ -8,7 +8,6 @@
 #define ActuatorsDefaultInit() ActuatorsPwmInit()
 #define ActuatorsDefaultCommit() ActuatorsPwmCommit()
 
-#define POWER_SWITCH_GPIO GPIOB,GPIO12
 #define DefaultVoltageOfAdc(adc) (1.0*adc)
 
 #ifndef USE_BARO_BOARD

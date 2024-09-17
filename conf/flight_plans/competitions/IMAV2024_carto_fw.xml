@@ -3,7 +3,7 @@
 <flight_plan alt="40" ground_alt="5" home_mode_height="30" lat0="51.4045109" lon0="-2.8193286" max_dist_from_home="600" name="IMAV2024 Carto fixed-wing" qfu="250." security_height="10">
   <header>
 #include "modules/datalink/datalink.h"
-static inline bool delay_test_rc(bool test, int delay) {
+static inline bool delay_test_rc(bool test UNUSED, int delay UNUSED) {
 #if SITL
   return false;
 #else
@@ -21,7 +21,7 @@ static inline bool delay_test_rc(bool test, int delay) {
   }
 #endif
 }
-static inline bool delay_test_gf(bool test, int delay) {
+static inline bool delay_test_gf(bool test UNUSED, int delay UNUSED) {
 #if SITL
   return false;
 #else
@@ -52,8 +52,8 @@ static inline bool delay_test_gf(bool test, int delay) {
   <waypoints>
     <waypoint name="HOME" x="18.462" y="-72.154"/>
     <waypoint name="STDBY" x="38.643" y="-48.229"/>
-    <waypoint alt="5" name="TD" x="10.666" y="-11.268"/>
-    <waypoint alt="25" name="AF" x="126.381" y="60.49"/>
+    <waypoint alt="5" name="TD" x="15.73" y="-22.048"/>
+    <waypoint alt="25" name="AF" x="131.918" y="51.292"/>
     <waypoint name="_BASELEG" x="168.8" y="-13.8"/>
     <waypoint name="CLIMB" x="-64.705" y="-94.836"/>
     <!--waypoint name="P1" x="164.51" y="27.772"/>
@@ -121,7 +121,7 @@ static inline bool delay_test_gf(bool test, int delay) {
     <variable init="30." var="mapping_height" min="20." max="120." step="1."/>
     <variable init="25." var="mapping_sweep" min="5." max="20." step="0.1"/>
     <variable init="120." var="mapping_length" min="50." max="600." step="10."/>
-    <variable init="5." var="mapping_lines" min="3." max="15." step="0.1"/>
+    <variable init="3." var="mapping_lines" min="3." max="15." step="0.1"/>
     <variable init="0" var="mapping_shot" min="0" max="1" step="1"/>
     <variable init="20." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
   </variables>
