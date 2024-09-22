@@ -112,10 +112,6 @@
     <set servo="BR" value="autopilot_get_motors_on() ? actuators_pprz[1] : -MAX_PPRZ"/>
     <set servo="BL" value="autopilot_get_motors_on() ? actuators_pprz[2] : -MAX_PPRZ"/>
     <set servo="FL" value="autopilot_get_motors_on() ? actuators_pprz[3] : -MAX_PPRZ"/>
-    <!--set servo="FR" value="autopilot_get_motors_on() ? 0 : -MAX_PPRZ"/>
-    <set servo="BR" value="autopilot_get_motors_on() ? 0 : -MAX_PPRZ"/>
-    <set servo="BL" value="autopilot_get_motors_on() ? 0 : -MAX_PPRZ"/>
-    <set servo="FL" value="autopilot_get_motors_on() ? 0 : -MAX_PPRZ"/-->
   </command_laws>
 
   <section name="IMU" prefix="IMU_">

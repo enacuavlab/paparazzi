@@ -100,7 +100,7 @@ def main(logfile):
             filename = f"{prefix}{ac_id}.csv"
             with open(filename, 'w') as out:
                 print(f"created {filename}")
-                out.write("time,latitude,longitude,altitude\n")
+                out.write("time,latitude,longitude,altitude,current,voltage\n")
                 date = date_from_filename(logfile)
                 for p in points:
                     line = f"{date}T{p.time},{p.lat:.07f},{p.lon:.07f},{p.alt:.01f},{p.current:.03f},{p.voltage:.02f}\n"

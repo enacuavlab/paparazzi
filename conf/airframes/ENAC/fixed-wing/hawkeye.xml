@@ -11,7 +11,7 @@
 
     <target name="ap" board="apogee_1.0_chibios">
       <module name="radio_control" type="sbus">
-        <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
+        <!--define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/-->
       </module>
       <!--module name="ins" type="float_invariant">
         <define name="USE_MAGNETOMETER"/>
@@ -29,6 +29,7 @@
       <module name="ins" type="alt_float"/>
       <module name="uart"/>
       <define name="UART6_DEV" value="/tmp/ttya"/>
+      <define name="POWER_SWITCH_GPIO" value="GPIOA,GPIO0"/>
     </target>
 
     <!-- Communication -->
