@@ -1,0 +1,118 @@
+<!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
+
+<flight_plan alt="149.5" ground_alt="146" lat0="43.5640917" lon0="1.4829201" wp_frame="ltp" max_dist_from_home="100" name="Colibri voliere" security_height="2">
+  <header>
+#include "autopilot.h"
+  </header>
+  <waypoints>
+    <waypoint name="HOME" x="0.0" y="1.0"/>
+    <waypoint name="STDBY" x="0.0" y="0.0" height="2.0"/>
+    <waypoint name="WIND" x="0.9" y="3" height="1.5"/>
+    <waypoint name="CENTER_CIRCLE" x="1." y="0." height="2."/>
+    <waypoint name="TD" x="0.0" y="3.0"/>
+    <waypoint name="_N1" x="4.5" y="5.2"/>
+    <waypoint name="_N2" x="4.5" y="-5.2"/>
+    <waypoint name="_N3" x="-4.5" y="-5.2"/>
+    <waypoint name="_N4" x="-4.5" y="5.2"/>
+    <waypoint name="P1" x="-2" y="-2" height="2.0"/>
+    <waypoint name="P2" x="2" y="-2" height="2.0"/>
+    <waypoint name="P3" x="2" y="2" height="2.0"/>
+    <waypoint name="P4" x="-2" y="2" height="2.0"/>
+    <waypoint name="L1" x="0" y="1"/>
+    <waypoint name="L2" x="0" y ="-3"/>
+  </waypoints>
+
+  <sectors>
+    <sector name="Net" color="red">
+      <corner name="_N1"/>
+      <corner name="_N2"/>
+      <corner name="_N3"/>
+      <corner name="_N4"/>
+    </sector>
+  </sectors>
+
+  <blocks>
+
+    <!-- <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block> -->
+
+    <block name="Holding point" group="home">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+
+    <block name="Start Engine">
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+
+    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png" group="home">
+      <exception cond="GetPosHeight() @GT 1.0" deroute="Standby"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0.1" vmode="throttle" until="stage_time @GT 2"/>
+      <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
+      <stay vmode="climb" climb="nav.climb_vspeed" wp="STDBY"/>
+    </block>
+
+    <block name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
+      <stay wp="STDBY"/>
+    </block>
+
+    <block name="Wind" strip_button="Wind" strip_icon="learn.png" group="home">
+      <call_once fun="nav_set_heading_deg(90)"/>
+      <stay wp="WIND"/>
+    </block>
+
+    <block name="line_p1_p2">
+      <go from="P1" hmode="route" wp="P2"/>
+      <stay wp="P2" until="stage_time @GT 10"/>
+      <go from="P2" hmode="route" wp="P1"/>
+      <deroute block="Standby"/>
+    </block>
+
+    <block name="route">
+      <call_once fun="nav_set_heading_deg(90)"/>
+      <go from="P1" hmode="route" wp="P2"/>
+      <stay wp="P2" until="stage_time @GT 3"/>
+      <call_once fun="nav_set_heading_deg(0)"/>
+      <go from="P2" hmode="route" wp="P3"/>
+      <stay wp="P3" until="stage_time @GT 3"/>
+      <call_once fun="nav_set_heading_deg(-90)"/>
+      <go from="P3" hmode="route" wp="P4"/>
+      <stay wp="P4" until="stage_time @GT 3"/>
+      <call_once fun="nav_set_heading_deg(-180)"/>
+      <go from="P4" hmode="route" wp="P1"/>
+      <stay wp="P1" until="stage_time @GT 3"/>
+      <go wp="HOME"/>
+      <call_once fun="NavSetWaypointHere(WP_TD)"/>
+      <deroute block="Land"/>
+    </block>
+
+    <block name="circle" post_call="nav_set_heading_towards(nav.carrot.x, nav.carrot.y)">
+      <circle radius="nav.radius" wp="CENTER_CIRCLE"/>
+    </block>
+
+    <block name="Land Here" strip_button="Land Here" group="home">
+      <call_once fun="NavSetWaypointHere(WP_TD)"/>
+    </block>
+
+    <block name="Land" strip_button="Land" strip_icon="land-right.png" group="home">
+      <go wp="TD"/>
+    </block>
+
+    <block name="Flare">
+      <!--exception cond="NavDetectGround()" deroute="Holding point"/-->
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <!--call_once fun="NavStartDetectGround()"/-->
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="TD"/>
+    </block>
+
+    <block name="Kill landed">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    
+  </blocks>
+</flight_plan>
