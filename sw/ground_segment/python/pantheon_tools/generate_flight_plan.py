@@ -1,5 +1,6 @@
 #!/usr/env python
 
+import os
 import json
 import geojson
 import lxml.etree as etree
@@ -9,7 +10,19 @@ from pathlib import Path
 parser = argparse.ArgumentParser(description="Create flight plan from geojson")
 parser.add_argument('file', help="geojson input file")
 parser.add_argument('-o', '--output', help="output flight plan base name", default="fp")
+parser.add_argument('-d', '--delay', help="add a constant delay in seconds between takeoff", type=int, default=0)
 args = parser.parse_args()
+
+try:
+    from srtm import Srtm1HeightMapCollection
+    from srtm.exceptions import NoHeightMapDataException
+    srtm_data = Srtm1HeightMapCollection()
+    if os.getenv("SRTM1_DIR") is None:
+        os.environ["SRTM1_DIR"] = '.'
+    use_srtm = True
+except:
+    print('SRTM lib not found')
+    use_srtm = False
 
 geo = None
 
@@ -22,15 +35,16 @@ if geo is None:
     exit()
 
 
-START_FP = '''
+def START_FP(delay=0):
+    return f'''
   <blocks>
     <block name="Wait GPS">
       <call_once fun="NavKillThrottle()"/>
       <while cond="!GpsFixValid()"/>
-      <while cond="LessThan(NavBlockTime(), 10)"/>
+      <while cond="LessThan(NavBlockTime(), {10 + delay})"/>
     </block>
     <block name="Takeoff">
-      <exception cond="GetPosAlt() @GT 2.0" deroute="Trajectory"/>
+      <exception cond="GetPosHeight() @GT 10.0" deroute="Trajectory"/>
       <call_once fun="NavResurrect()"/>
       <stay vmode="climb" climb="nav.climb_vspeed" wp="HOME"/>
     </block>
@@ -53,15 +67,21 @@ nb_drones = geo['features'][0]['properties']['number']
 model = geo['features'][0]['properties']['model']
 ref_points = geo['features'][0]['geometry']['coordinates']
 trajectories = geo['features'][1]['geometry']['coordinates']
-#print(ref_points)
+ground_alt = 0.
 print(f'generating flight plans for {nb_drones} drones of type {model}')
 
 for i in range(nb_drones):
+    lon0, lat0 = ref_points[i][0], ref_points[i][1]
+    if use_srtm:
+        try:
+            ground_alt = srtm_data.get_altitude(longitude=lon0, latitude=lat0)
+        except NoHeightMapDataException:
+            print('No SRTM data avalaible')
     fp = etree.Element("flight_plan")
-    fp.set('alt', str(ref_points[i][2]))
-    fp.set('ground_alt', '0')
-    fp.set('lon0', str(ref_points[i][0]))
-    fp.set('lat0', str(ref_points[i][1]))
+    fp.set('alt', str(ground_alt+ref_points[i][2]))
+    fp.set('ground_alt', str(ground_alt))
+    fp.set('lon0', str(lon0))
+    fp.set('lat0', str(lat0))
     fp.set('max_dist_from_home', '10000')
     fp.set('security_height', '50')
     fp.set('name', f'FP from {args.file} drone {i}')
@@ -74,13 +94,21 @@ for i in range(nb_drones):
     
     nb_wpts = 1
     for j, wp in enumerate(trajectories[i][1:-1]):
+        lon, lat, height = wp[0], wp[1], wp[2]
+        galt = 0.
+        if use_srtm:
+            try:
+                galt = srtm_data.get_altitude(longitude=lon, latitude=lat)
+            except NoHeightMapDataException:
+                print('No SRTM data avalaible')
         wpt = etree.SubElement(wpts, "waypoint")
-        wpt.set('name', f'P{j+1}')
-        wpt.set('lon', str(wp[0]))
-        wpt.set('lat', str(wp[1]))
+        wpt.set('name', f'P{j}')
+        wpt.set('lon', str(lon))
+        wpt.set('lat', str(lat))
+        wpt.set('alt', str(galt+height))
         nb_wpts += 1
 
-    start_fp = etree.fromstring(START_FP)
+    start_fp = etree.fromstring(START_FP(i * args.delay))
     for b in start_fp.getchildren():
         blocks.append(b)
 
@@ -97,6 +125,7 @@ for i in range(nb_drones):
         else:
             go.set('wp', f'P{j}')
         go.set('hmode', 'route')
+        go.set('vmode', 'glide')
 
     end_fp = etree.fromstring(END_FP)
     for b in end_fp.getchildren():
