@@ -58,7 +58,7 @@ print(f'generating flight plans for {nb_drones} drones of type {model}')
 
 for i in range(nb_drones):
     fp = etree.Element("flight_plan")
-    fp.set('alt', '120')
+    fp.set('alt', str(ref_points[i][2]))
     fp.set('ground_alt', '0')
     fp.set('lon0', str(ref_points[i][0]))
     fp.set('lat0', str(ref_points[i][1]))
