@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import cv2
 import numpy as np
 import rasterio.warp
@@ -50,7 +51,7 @@ def find_zebras(img_name, output=None, scale=DEFAULT_SCALE_FACTOR, geo=None, sho
     img = PIL.Image.open(img_name)
     
     # Load a pretrained YOLOv8n model
-    model = YOLO("best.pt")
+    model = YOLO(args.model)
 
     # YOLO output a warning if the image dimension are not multiple of max stride 32,
     # and rescale it. 
@@ -64,9 +65,9 @@ def find_zebras(img_name, output=None, scale=DEFAULT_SCALE_FACTOR, geo=None, sho
     # Run inference
     results = model.predict(
         source=padded_img,
-        conf=0.4,
+        conf=0.1,
         imgsz=(padded_img.height, padded_img.width),
-        # max_det=3, # maximum number of detection if needed
+        max_det=args.count, # maximum number of detection if needed
         )
  
     for res in results:
@@ -112,6 +113,8 @@ if __name__ == '__main__':
     parser.add_argument('img', help="image path")
     parser.add_argument("-nv", "--no_view", help="Do not open image after processing", action='store_true')
     parser.add_argument("-o", "--output", help="output file name", default=None)
+    parser.add_argument("-m", "--model", help="model file name", default='best.pt')
+    parser.add_argument("-c", "--count", help="number of zebras", type=int)
     parser.add_argument("-s", "--scale", help="resize scale factor", type=int, default=DEFAULT_SCALE_FACTOR)
     args = parser.parse_args()
 
