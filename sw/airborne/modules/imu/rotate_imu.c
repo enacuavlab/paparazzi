@@ -29,6 +29,8 @@
 #include "math/pprz_simple_matrix.h"
 #include "modules/core/abi.h"
 
+#include "firmwares/rotorcraft/stabilization/stabilization_indi_pend.h"
+
 #include "modules/datalink/downlink.h"
 
 /* Enable by default */
@@ -112,6 +114,13 @@ static void send_payload_float(struct transport_tx *trans, struct link_device *d
   //                integrated_gyro.p, integrated_gyro.q, integrated_gyro.r,
   //                integrated_acc.x, integrated_acc.y, integrated_acc.z};
   // pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 21, f);
+
+  float f[17] = {-encoder_amt22.amt22.angle_rad, -encoder_amt22.H_g_filter.hatx[0], -encoder_amt22.H_g_filter.hatx[1],
+                 actuators_pprz[6], actuators_pprz[7], DegOfRad(euler_fus.theta),
+                 gyro_rot_f.p, gyro_rot_f.q, gyro_rot_f.r, encoder_amt22.amt22.position, rates_vect.y, 
+                 integrated_gyro.p, integrated_gyro.q, integrated_gyro.r,
+                 integrated_acc.x, integrated_acc.y, integrated_acc.z};
+  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 17, f);
 }
 #endif
 

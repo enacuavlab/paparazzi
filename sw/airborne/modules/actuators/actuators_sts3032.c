@@ -119,7 +119,7 @@ void actuators_sts3032_periodic(void)
     feedback.set.position = true;
 
     // Send ABI message
-    AbiSendMsgACT_FEEDBACK(ACT_FEEDBACK_SERVO_SENSOR_ID, &feedback, 1);
+    AbiSendMsgACT_FEEDBACK(ACT_FEEDBACK_RPM_SENSOR_ID, &feedback, 1);
   }
 
 #if STS3032_DEBUG
