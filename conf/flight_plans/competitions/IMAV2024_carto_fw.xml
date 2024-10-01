@@ -138,7 +138,7 @@ static inline bool delay_test_gf(bool test UNUSED, int delay UNUSED) {
       @AND (nav_block @GT IndexOfBlock('Holding point'))
       @AND (nav_block @LEQ IndexOfBlock('flare'))
       @AND (autopilot.launch == true))" deroute="EmergencyLanding"/>
-    <exception cond="(delay_test_gf(!InsideFlight_Area(GetPosX(), GetPosY()),20)
+    <exception cond="(delay_test_gf(!InsideKill(GetPosX(), GetPosY()),20)
       @AND (nav_block @GT IndexOfBlock('Takeoff'))
       @AND (nav_block @LEQ IndexOfBlock('Land Right AF-TD'))
       @AND (autopilot.launch == true))" deroute="EmergencyLanding"/>
