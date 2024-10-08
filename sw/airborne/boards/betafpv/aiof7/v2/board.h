@@ -19,7 +19,7 @@
 /*
  * Board identifier.
  */
-#define BOARD_TAWAKI
+#define BOARD_AIOF7
 #define BOARD_NAME                  "AIO F7"
 
 /*
@@ -32,7 +32,7 @@
 #define STM32_LSEDRV                (3U << 3U)
 
 #if !defined(STM32_HSECLK)
-#define STM32_HSECLK                16000000U
+#define STM32_HSECLK                8000000U
 #endif
 
 /*
@@ -60,8 +60,8 @@
 #define	AUX                            8U
 #define	UART1_TX                       9U
 #define	UART1_RX                       10U
-#define	PA11                           11U
-#define	PA12                           12U
+#define	OTG_FS_DM                      11U
+#define	OTG_FS_DP                      12U
 #define	SWDIO                          13U
 #define	SWCLK                          14U
 #define	OSD_CS                         15U
@@ -77,7 +77,7 @@
 #define	I2C1_SCL                       8U
 #define	I2C1_SDA                       9U
 #define	UART3_TX                       10U
-#define	UART3_RX                       11U
+#define	RC1                            11U
 #define	FLASH_CS                       12U
 #define	SPI2_CLK                       13U
 #define	SPI2_MISO                      14U
@@ -250,6 +250,8 @@
 #define	LINE_AUX                       PAL_LINE(GPIOA, 8U)
 #define	LINE_UART1_TX                  PAL_LINE(GPIOA, 9U)
 #define	LINE_UART1_RX                  PAL_LINE(GPIOA, 10U)
+#define	LINE_OTG_FS_DM                 PAL_LINE(GPIOA, 11U)
+#define	LINE_OTG_FS_DP                 PAL_LINE(GPIOA, 12U)
 #define	LINE_SWDIO                     PAL_LINE(GPIOA, 13U)
 #define	LINE_SWCLK                     PAL_LINE(GPIOA, 14U)
 #define	LINE_OSD_CS                    PAL_LINE(GPIOA, 15U)
@@ -265,7 +267,7 @@
 #define	LINE_I2C1_SCL                  PAL_LINE(GPIOB, 8U)
 #define	LINE_I2C1_SDA                  PAL_LINE(GPIOB, 9U)
 #define	LINE_UART3_TX                  PAL_LINE(GPIOB, 10U)
-#define	LINE_UART3_RX                  PAL_LINE(GPIOB, 11U)
+#define	LINE_RC1                       PAL_LINE(GPIOB, 11U)
 #define	LINE_FLASH_CS                  PAL_LINE(GPIOB, 12U)
 #define	LINE_SPI2_CLK                  PAL_LINE(GPIOB, 13U)
 #define	LINE_SPI2_MISO                 PAL_LINE(GPIOB, 14U)
@@ -322,8 +324,8 @@
 					 PIN_MODE_ALTERNATE(AUX) | \
 					 PIN_MODE_ALTERNATE(UART1_TX) | \
 					 PIN_MODE_ALTERNATE(UART1_RX) | \
-					 PIN_MODE_INPUT(PA11) | \
-					 PIN_MODE_INPUT(PA12) | \
+					 PIN_MODE_ALTERNATE(OTG_FS_DM) | \
+					 PIN_MODE_ALTERNATE(OTG_FS_DP) | \
 					 PIN_MODE_ALTERNATE(SWDIO) | \
 					 PIN_MODE_ALTERNATE(SWCLK) | \
 					 PIN_MODE_OUTPUT(OSD_CS))
@@ -339,8 +341,8 @@
 					 PIN_OTYPE_PUSHPULL(AUX) | \
 					 PIN_OTYPE_PUSHPULL(UART1_TX) | \
 					 PIN_OTYPE_PUSHPULL(UART1_RX) | \
-					 PIN_OTYPE_PUSHPULL(PA11) | \
-					 PIN_OTYPE_PUSHPULL(PA12) | \
+					 PIN_OTYPE_PUSHPULL(OTG_FS_DM) | \
+					 PIN_OTYPE_PUSHPULL(OTG_FS_DP) | \
 					 PIN_OTYPE_PUSHPULL(SWDIO) | \
 					 PIN_OTYPE_PUSHPULL(SWCLK) | \
 					 PIN_OTYPE_PUSHPULL(OSD_CS))
@@ -356,8 +358,8 @@
 					 PIN_OSPEED_SPEED_HIGH(AUX) | \
 					 PIN_OSPEED_SPEED_HIGH(UART1_TX) | \
 					 PIN_OSPEED_SPEED_HIGH(UART1_RX) | \
-					 PIN_OSPEED_SPEED_VERYLOW(PA11) | \
-					 PIN_OSPEED_SPEED_VERYLOW(PA12) | \
+					 PIN_OSPEED_SPEED_HIGH(OTG_FS_DM) | \
+					 PIN_OSPEED_SPEED_HIGH(OTG_FS_DP) | \
 					 PIN_OSPEED_SPEED_HIGH(SWDIO) | \
 					 PIN_OSPEED_SPEED_HIGH(SWCLK) | \
 					 PIN_OSPEED_SPEED_HIGH(OSD_CS))
@@ -373,8 +375,8 @@
 					 PIN_PUPDR_FLOATING(AUX) | \
 					 PIN_PUPDR_FLOATING(UART1_TX) | \
 					 PIN_PUPDR_FLOATING(UART1_RX) | \
-					 PIN_PUPDR_PULLDOWN(PA11) | \
-					 PIN_PUPDR_PULLDOWN(PA12) | \
+					 PIN_PUPDR_FLOATING(OTG_FS_DM) | \
+					 PIN_PUPDR_FLOATING(OTG_FS_DP) | \
 					 PIN_PUPDR_FLOATING(SWDIO) | \
 					 PIN_PUPDR_FLOATING(SWCLK) | \
 					 PIN_PUPDR_FLOATING(OSD_CS))
@@ -390,8 +392,8 @@
 					 PIN_ODR_LEVEL_LOW(AUX) | \
 					 PIN_ODR_LEVEL_HIGH(UART1_TX) | \
 					 PIN_ODR_LEVEL_HIGH(UART1_RX) | \
-					 PIN_ODR_LEVEL_LOW(PA11) | \
-					 PIN_ODR_LEVEL_LOW(PA12) | \
+					 PIN_ODR_LEVEL_HIGH(OTG_FS_DM) | \
+					 PIN_ODR_LEVEL_HIGH(OTG_FS_DP) | \
 					 PIN_ODR_LEVEL_HIGH(SWDIO) | \
 					 PIN_ODR_LEVEL_HIGH(SWCLK) | \
 					 PIN_ODR_LEVEL_HIGH(OSD_CS))
@@ -408,8 +410,8 @@
 #define VAL_GPIOA_AFRH			(PIN_AFIO_AF(AUX, 1) | \
 					 PIN_AFIO_AF(UART1_TX, 7) | \
 					 PIN_AFIO_AF(UART1_RX, 7) | \
-					 PIN_AFIO_AF(PA11, 0) | \
-					 PIN_AFIO_AF(PA12, 0) | \
+					 PIN_AFIO_AF(OTG_FS_DM, 10) | \
+					 PIN_AFIO_AF(OTG_FS_DP, 10) | \
 					 PIN_AFIO_AF(SWDIO, 0) | \
 					 PIN_AFIO_AF(SWCLK, 0) | \
 					 PIN_AFIO_AF(OSD_CS, 0))
@@ -425,7 +427,7 @@
 					 PIN_MODE_ALTERNATE(I2C1_SCL) | \
 					 PIN_MODE_ALTERNATE(I2C1_SDA) | \
 					 PIN_MODE_ALTERNATE(UART3_TX) | \
-					 PIN_MODE_ALTERNATE(UART3_RX) | \
+					 PIN_MODE_ALTERNATE(RC1) | \
 					 PIN_MODE_OUTPUT(FLASH_CS) | \
 					 PIN_MODE_ALTERNATE(SPI2_CLK) | \
 					 PIN_MODE_ALTERNATE(SPI2_MISO) | \
@@ -442,7 +444,7 @@
 					 PIN_OTYPE_OPENDRAIN(I2C1_SCL) | \
 					 PIN_OTYPE_OPENDRAIN(I2C1_SDA) | \
 					 PIN_OTYPE_PUSHPULL(UART3_TX) | \
-					 PIN_OTYPE_PUSHPULL(UART3_RX) | \
+					 PIN_OTYPE_PUSHPULL(RC1) | \
 					 PIN_OTYPE_PUSHPULL(FLASH_CS) | \
 					 PIN_OTYPE_PUSHPULL(SPI2_CLK) | \
 					 PIN_OTYPE_PUSHPULL(SPI2_MISO) | \
@@ -459,7 +461,7 @@
 					 PIN_OSPEED_SPEED_HIGH(I2C1_SCL) | \
 					 PIN_OSPEED_SPEED_HIGH(I2C1_SDA) | \
 					 PIN_OSPEED_SPEED_HIGH(UART3_TX) | \
-					 PIN_OSPEED_SPEED_HIGH(UART3_RX) | \
+					 PIN_OSPEED_SPEED_HIGH(RC1) | \
 					 PIN_OSPEED_SPEED_HIGH(FLASH_CS) | \
 					 PIN_OSPEED_SPEED_HIGH(SPI2_CLK) | \
 					 PIN_OSPEED_SPEED_HIGH(SPI2_MISO) | \
@@ -476,7 +478,7 @@
 					 PIN_PUPDR_PULLUP(I2C1_SCL) | \
 					 PIN_PUPDR_PULLUP(I2C1_SDA) | \
 					 PIN_PUPDR_FLOATING(UART3_TX) | \
-					 PIN_PUPDR_FLOATING(UART3_RX) | \
+					 PIN_PUPDR_FLOATING(RC1) | \
 					 PIN_PUPDR_FLOATING(FLASH_CS) | \
 					 PIN_PUPDR_FLOATING(SPI2_CLK) | \
 					 PIN_PUPDR_FLOATING(SPI2_MISO) | \
@@ -493,7 +495,7 @@
 					 PIN_ODR_LEVEL_HIGH(I2C1_SCL) | \
 					 PIN_ODR_LEVEL_HIGH(I2C1_SDA) | \
 					 PIN_ODR_LEVEL_HIGH(UART3_TX) | \
-					 PIN_ODR_LEVEL_HIGH(UART3_RX) | \
+					 PIN_ODR_LEVEL_HIGH(RC1) | \
 					 PIN_ODR_LEVEL_HIGH(FLASH_CS) | \
 					 PIN_ODR_LEVEL_HIGH(SPI2_CLK) | \
 					 PIN_ODR_LEVEL_HIGH(SPI2_MISO) | \
@@ -511,7 +513,7 @@
 #define VAL_GPIOB_AFRH			(PIN_AFIO_AF(I2C1_SCL, 4) | \
 					 PIN_AFIO_AF(I2C1_SDA, 4) | \
 					 PIN_AFIO_AF(UART3_TX, 7) | \
-					 PIN_AFIO_AF(UART3_RX, 7) | \
+					 PIN_AFIO_AF(RC1, 7) | \
 					 PIN_AFIO_AF(FLASH_CS, 0) | \
 					 PIN_AFIO_AF(SPI2_CLK, 5) | \
 					 PIN_AFIO_AF(SPI2_MISO, 5) | \
@@ -1464,6 +1466,10 @@
 #define AF_LINE_UART1_TX                 7U
 #define AF_UART1_RX                      7U
 #define AF_LINE_UART1_RX                 7U
+#define AF_OTG_FS_DM                     10U
+#define AF_LINE_OTG_FS_DM                10U
+#define AF_OTG_FS_DP                     10U
+#define AF_LINE_OTG_FS_DP                10U
 #define AF_SWDIO                         0U
 #define AF_LINE_SWDIO                    0U
 #define AF_SWCLK                         0U
@@ -1488,8 +1494,8 @@
 #define AF_LINE_I2C1_SDA                 4U
 #define AF_UART3_TX                      7U
 #define AF_LINE_UART3_TX                 7U
-#define AF_UART3_RX                      7U
-#define AF_LINE_UART3_RX                 7U
+#define AF_RC1                           7U
+#define AF_LINE_RC1                      7U
 #define AF_SPI2_CLK                      5U
 #define AF_LINE_SPI2_CLK                 5U
 #define AF_SPI2_MISO                     5U
@@ -1542,6 +1548,9 @@
 #define MOTOR_6_TIM_FN	 CH
 #define MOTOR_6_TIM_CH	 2
 #define MOTOR_6_TIM_AF	 2
+#define RC1_USART	 3
+#define RC1_USART_FN	 RX
+#define RC1_USART_AF	 7
 #define VBAT_MEAS_ADC	 1
 #define VBAT_MEAS_ADC_FN	 IN
 #define VBAT_MEAS_ADC_IN	 10
