@@ -57,14 +57,7 @@
 #endif
 
 
-/*
- * R1 = 2.2k
- * R2 = 12k
- * adc * (3.3 / 2^12) * ((R1 + R2) / R1)
- */
-#define VBAT_R1 2200.0f
-#define VBAT_R2 12000.0f
-#define DefaultVoltageOfAdc(adc) ((3.3f/4096.0f)*((VBAT_R1+VBAT_R2)/VBAT_R1)*adc)
+#define DefaultVoltageOfAdc(adc) ((3.3f/4096.0f)*10.91*adc)
 
 
 /*
@@ -171,12 +164,19 @@
 
 // servo index starting at 1 + regular servos + aux servos
 // so NB = 1+8+8
-#define ACTUATORS_PWM_NB 6
+#define ACTUATORS_PWM_NB 7
 
 
 /**
  * DSHOT
  */
+
+
+#define DSHOT_TIM3_TELEMETRY_DEV NULL
+#define DSHOT_TIM4_TELEMETRY_DEV NULL
+#define DSHOT_TIM5_TELEMETRY_DEV NULL
+
+
 
 #ifndef USE_DSHOT_TIM3
 #define USE_DSHOT_TIM3 1 // MOTOR_1 MOTOR_2

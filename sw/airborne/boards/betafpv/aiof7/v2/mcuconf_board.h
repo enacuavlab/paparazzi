@@ -54,7 +54,7 @@
 #define STM32_PLS                           STM32_PLS_LEV0
 #define STM32_BKPRAM_ENABLE                 FALSE
 #define STM32_HSI_ENABLED                   TRUE
-#define STM32_LSI_ENABLED                   FALSE
+#define STM32_LSI_ENABLED                   TRUE
 #define STM32_HSE_ENABLED                   TRUE
 #define STM32_LSE_ENABLED                   FALSE
 #define STM32_CLOCK48_REQUIRED              TRUE
@@ -224,7 +224,7 @@
 #define STM32_I2C_USE_I2C3                  FALSE
 #define STM32_I2C_BUSY_TIMEOUT              50
 #define STM32_I2C_I2C1_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 0)
-#define STM32_I2C_I2C1_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 6)
+#define STM32_I2C_I2C1_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 7)
 #define STM32_I2C_I2C2_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 2)
 #define STM32_I2C_I2C2_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 7)
 #define STM32_I2C_I2C3_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 2)
@@ -281,6 +281,21 @@
 #define STM32_PWM_USE_TIM13                 FALSE
 #define STM32_PWM_USE_TIM14                 FALSE
 
+#define STM32_PWM3_UP_DMA_STREAM            STM32_DMA_STREAM_ID(1, 2)
+#define STM32_PWM3_UP_DMA_CHANNEL           5
+#define STM32_PWM3_UP_DMA_IRQ_PRIORITY      6
+#define STM32_PWM3_UP_DMA_PRIORITY          2
+
+#define STM32_PWM4_UP_DMA_STREAM            STM32_DMA_STREAM_ID(1, 6)
+#define STM32_PWM4_UP_DMA_CHANNEL           2
+#define STM32_PWM4_UP_DMA_IRQ_PRIORITY      6
+#define STM32_PWM4_UP_DMA_PRIORITY          2
+
+#define STM32_PWM5_UP_DMA_STREAM            STM32_DMA_STREAM_ID(1, 0)
+#define STM32_PWM5_UP_DMA_CHANNEL           6
+#define STM32_PWM5_UP_DMA_IRQ_PRIORITY      6
+#define STM32_PWM5_UP_DMA_PRIORITY          2
+
 /*
  * RTC driver system settings.
  */
@@ -299,7 +314,7 @@
 #define STM32_SDC_SDMMC_READ_TIMEOUT        25
 #define STM32_SDC_SDMMC_CLOCK_DELAY         10
 #define STM32_SDC_SDMMC_PWRSAV              FALSE
-#define STM32_SDC_SDMMC1_DMA_STREAM         STM32_DMA_STREAM_ID(2, 3)
+#define STM32_SDC_SDMMC1_DMA_STREAM         STM32_DMA_STREAM_ID(2, 6)
 #define STM32_SDC_SDMMC2_DMA_STREAM         STM32_DMA_STREAM_ID(2, 0)
 #define STM32_SDC_SDMMC1_DMA_PRIORITY       3
 #define STM32_SDC_SDMMC2_DMA_PRIORITY       3
