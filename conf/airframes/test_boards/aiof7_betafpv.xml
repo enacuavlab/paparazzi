@@ -36,12 +36,12 @@
       <module name="ins" type="alt_float"/>
     </target>
 
-    <module name="telemetry" type="transparent">
+    <!-- <module name="telemetry" type="transparent">
       <configure name="MODEM_PORT" value="usb_serial" />
+    </module> -->
+    <module name="telemetry" type="xbee_api"> 
+      <configure name="MODEM_PORT" value="UART2" />
     </module>
-    <!-- <module name="telemetry" type="xbee_api"> 
-
-    </module>-->
 
     <module name="board" type="betafpv_aiof7">
     </module>
