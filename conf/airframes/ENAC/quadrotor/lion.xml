@@ -3,7 +3,7 @@
 <airframe name="Lion">
 
   <description>
-    * Autopilot:   BetaFPV AIO 35A
+    * Autopilot:   TMOTOR AIO 35A
     * Telemetry:   ESP 32 dronebridge
     * GPS:         datalink
     * RC:          SBUS
@@ -14,8 +14,7 @@
     <!-- <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/> -->
     <configure name="RTOS_DEBUG" value="FALSE" />
     
-    <target name="ap" board="betafpv_aiof7">
-    <!-- <target name="ap" board="tawaki_1.1"> -->
+    <target name="ap" board="tmotor_aiof7">
       <module name="radio_control" type="sbus"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
       <!-- <define name="INS_EKF2_OPTITRACK" value="TRUE"/> -->
@@ -43,11 +42,11 @@
     </module> -->
 
 
-    <!-- <module name="actuators" type="dshot">
+    <module name="actuators" type="dshot">
        <define name="DSHOT_SPEED" value="600"/>
-    </module> -->
+    </module>
 
-    <module name="actuators" type="pwm">
+    <!-- <module name="actuators" type="pwm">
       <define name="SERVO_HZ" value="400"/>
       <define name="USE_PWM1"/>
       <define name="USE_PWM2"/>
@@ -56,11 +55,10 @@
       <define name="USE_DSHOT_TIM3" value="0"></define>
       <define name="USE_DSHOT_TIM4" value="0"></define>
       <define name="USE_DSHOT_TIM5" value="0"></define>
-    </module>
-
-    <!-- <module name="board" type="tawaki">
     </module> -->
-    <module name="board" type="betafpv_aiof7">
+
+
+    <module name="board" type="tmotor_aiof7">
     </module>
       <!-- <configure name="IMU_ODR" value="1KHZ" /> -->
       <!-- <configure name="GYRO_RANGE" value="500DPS" /> -->
@@ -84,19 +82,19 @@
      </module>
   </firmware>
 
-  <!-- <servos driver="DShot">
+  <servos driver="DShot">
     <servo name="BR" no="1" min="0" neutral="100" max="2000"/>
     <servo name="BL" no="2" min="0" neutral="100" max="2000"/>
     <servo name="FR" no="3" min="0" neutral="100" max="2000"/>
     <servo name="FL" no="4" min="0" neutral="100" max="2000"/>
-  </servos> -->
+  </servos>
 
-  <servos driver="Pwm">
+  <!-- <servos driver="Pwm">
     <servo name="BR" no="1" min="1000" neutral="1100" max="2000"/>
     <servo name="BL" no="2" min="1000" neutral="1100" max="2000"/>
     <servo name="FR" no="3" min="1000" neutral="1100" max="2000"/>
     <servo name="FL" no="4" min="1000" neutral="1100" max="2000"/>
-  </servos>
+  </servos> -->
 
   <commands>
     <axis name="ROLL" failsafe_value="0"/>
