@@ -26,14 +26,22 @@
 /*
  * LEDs
  */
-/* color, on PC15, 1 on LED_ON, 0 on LED_OFF */
+/* color, on PC14 and PC13, 1 on LED_ON, 0 on LED_OFF */
 #ifndef USE_LED_1
 #define USE_LED_1 1
 #endif
-#define LED_1_GPIO PAL_PORT(LINE_LED)
-#define LED_1_GPIO_PIN PAL_PAD(LINE_LED)
+#define LED_1_GPIO PAL_PORT(LINE_LED1)
+#define LED_1_GPIO_PIN PAL_PAD(LINE_LED1)
 #define LED_1_GPIO_ON gpio_set
 #define LED_1_GPIO_OFF gpio_clear
+
+#ifndef USE_LED_2
+#define USE_LED_2 1
+#endif
+#define LED_2_GPIO PAL_PORT(LINE_LED2)
+#define LED_2_GPIO_PIN PAL_PAD(LINE_LED2)
+#define LED_2_GPIO_ON gpio_set
+#define LED_2_GPIO_OFF gpio_clear
 
 
 /*
@@ -65,21 +73,25 @@
  */
 
 /*
- * enable TIM5, TIM3, TIM4 by default
+ * enable TIM1, TIM2, TIM3, TIM4 by default
  */
+#ifndef USE_PWM_TIM1
+#define USE_PWM_TIM1 1
+#endif
+
+#ifndef USE_PWM_TIM2
+#define USE_PWM_TIM2 0
+#endif
+
 #ifndef USE_PWM_TIM3
-#define USE_PWM_TIM3 1
+#define USE_PWM_TIM3 0
 #endif
 
 #ifndef USE_PWM_TIM4
-#define USE_PWM_TIM4 1
+#define USE_PWM_TIM4 0
 #endif
 
-#ifndef USE_PWM_TIM5
-#define USE_PWM_TIM5 1
-#endif
-
-// motors,  PWM mode disabled by default (DShot is enabled by default)
+// motors,  PWM mode disabled by default (DShot is enabled by default) 
 
 #ifndef USE_PWM1
 #define USE_PWM1 0
@@ -161,10 +173,52 @@
 #endif
 
 
+#ifndef USE_PWM7
+#define USE_PWM7 0
+#endif
+#if USE_PWM6
+#define PWM_SERVO_7 7
+#define PWM_SERVO_7_GPIO PAL_PORT(LINE_MOTOR_7)
+#define PWM_SERVO_7_PIN PAL_PAD(LINE_MOTOR_7)
+#define PWM_SERVO_7_AF AF_MOTOR_7
+#define PWM_SERVO_7_DRIVER CONCAT_BOARD_PARAM(PWMD, MOTOR_7_TIM)
+#define PWM_SERVO_7_CHANNEL (MOTOR_7_TIM_CH-1)
+#define PWM_SERVO_7_CONF CONCAT_BOARD_PARAM(pwmcfg, MOTOR_7_TIM)
+#endif
+
+
+
+#ifndef USE_PWM8
+#define USE_PWM8 0
+#endif
+#if USE_PWM8
+#define PWM_SERVO_8 8
+#define PWM_SERVO_8_GPIO PAL_PORT(LINE_MOTOR_8)
+#define PWM_SERVO_8_PIN PAL_PAD(LINE_MOTOR_8)
+#define PWM_SERVO_8_AF AF_MOTOR_8
+#define PWM_SERVO_8_DRIVER CONCAT_BOARD_PARAM(PWMD, MOTOR_8_TIM)
+#define PWM_SERVO_8_CHANNEL (MOTOR_8_TIM_CH-1)
+#define PWM_SERVO_8_CONF CONCAT_BOARD_PARAM(pwmcfg, MOTOR_8_TIM)
+#endif
+
+// AUX activated in PWM mode by default for servo
+#ifndef USE_PWM9
+#define USE_PWM9 1
+#endif
+#if USE_PWM9
+#define PWM_SERVO_9 9
+#define PWM_SERVO_9_GPIO PAL_PORT(LINE_AUX)
+#define PWM_SERVO_9_PIN PAL_PAD(LINE_AUX)
+#define PWM_SERVO_9_AF AF_AUX
+#define PWM_SERVO_9_DRIVER CONCAT_BOARD_PARAM(PWMD, AUX_TIM)
+#define PWM_SERVO_9_CHANNEL (AUX_TIM_CH-1)
+#define PWM_SERVO_9_CONF CONCAT_BOARD_PARAM(pwmcfg, AUX_TIM)
+#endif
+
 
 // servo index starting at 1 + regular servos + aux servos
-// so NB = 1+8+8
-#define ACTUATORS_PWM_NB 7
+// so NB = 1+9
+#define ACTUATORS_PWM_NB 10
 
 
 /**
@@ -172,55 +226,25 @@
  */
 
 
+#define DSHOT_TIM2_TELEMETRY_DEV NULL
 #define DSHOT_TIM3_TELEMETRY_DEV NULL
 #define DSHOT_TIM4_TELEMETRY_DEV NULL
-#define DSHOT_TIM5_TELEMETRY_DEV NULL
 
 
+#ifndef USE_DSHOT_TIM2
+#define USE_DSHOT_TIM2 1 // MOTOR_5 MOTOR_6
+#endif
 
 #ifndef USE_DSHOT_TIM3
-#define USE_DSHOT_TIM3 1 // MOTOR_1 MOTOR_2
+#define USE_DSHOT_TIM3 1 // MOTOR_1 MOTOR_2 MOTOR_3 MOTOR_4
 #endif
 
 #ifndef USE_DSHOT_TIM4
-#define USE_DSHOT_TIM4 1 // MOTOR_5 MOTOR_6
-#endif
-
-#ifndef USE_DSHOT_TIM5
-#define USE_DSHOT_TIM5 1 // MOTOR_3 MOTOR_4
-#endif
-
-#if USE_DSHOT_TIM3 // MOTOR_1 MOTOR_2 on TIM3
-
-#define DSHOT_SERVO_1 1
-#define DSHOT_SERVO_1_GPIO PAL_PORT(LINE_MOTOR_1)
-#define DSHOT_SERVO_1_PIN PAL_PAD(LINE_MOTOR_1)
-#define DSHOT_SERVO_1_AF AF_MOTOR_1
-#define DSHOT_SERVO_1_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_1_TIM)
-#define DSHOT_SERVO_1_CHANNEL MOTOR_1_TIM_CH
-
-#define DSHOT_SERVO_2 2
-#define DSHOT_SERVO_2_GPIO PAL_PORT(LINE_MOTOR_2)
-#define DSHOT_SERVO_2_PIN PAL_PAD(LINE_MOTOR_2)
-#define DSHOT_SERVO_2_AF AF_MOTOR_2
-#define DSHOT_SERVO_2_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_2_TIM)
-#define DSHOT_SERVO_2_CHANNEL MOTOR_2_TIM_CH
-
-
-#define DSHOT_CONF_TIM3 1
-#define DSHOT_CONF3_DEF { \
-  .dma_stream = STM32_PWM3_UP_DMA_STREAM,   \
-  .dma_channel = STM32_PWM3_UP_DMA_CHANNEL, \
-  .pwmp = &PWMD3,                           \
-  .tlm_sd = DSHOT_TIM3_TELEMETRY_DEV,       \
-  .dma_buf = &dshot3DmaBuffer,              \
-  .dcache_memory_in_use = false             \
-}
-
+#define USE_DSHOT_TIM4 1 // MOTOR_7 MOTOR_8
 #endif
 
 
-#if USE_DSHOT_TIM4 // MOTOR_5 MOTOR_6 on TIM4
+#if USE_DSHOT_TIM2 // MOTOR_5 MOTOR_6 on TIM2
 
 #define DSHOT_SERVO_5 5
 #define DSHOT_SERVO_5_GPIO PAL_PORT(LINE_MOTOR_5)
@@ -237,19 +261,33 @@
 #define DSHOT_SERVO_6_CHANNEL MOTOR_6_TIM_CH
 
 
-#define DSHOT_CONF_TIM4 1
-#define DSHOT_CONF4_DEF { \
-  .dma_stream = STM32_PWM4_UP_DMA_STREAM,   \
-  .dma_channel = STM32_PWM4_UP_DMA_CHANNEL, \
-  .pwmp = &PWMD4,                           \
-  .tlm_sd = DSHOT_TIM4_TELEMETRY_DEV,       \
-  .dma_buf = &dshot4DmaBuffer,              \
+#define DSHOT_CONF_TIM2 1
+#define DSHOT_CONF2_DEF { \
+  .dma_stream = STM32_PWM2_UP_DMA_STREAM,   \
+  .dma_channel = STM32_PWM2_UP_DMA_CHANNEL, \
+  .pwmp = &PWMD2,                           \
+  .tlm_sd = DSHOT_TIM2_TELEMETRY_DEV,       \
+  .dma_buf = &dshot2DmaBuffer,              \
   .dcache_memory_in_use = false             \
 }
-
 #endif
 
-#if USE_DSHOT_TIM5 // MOTOR_3 MOTOR_4 on TIM5
+
+#if USE_DSHOT_TIM3 // MOTOR_1 MOTOR_2 MOTOR_3 MOTOR_4 on TIM3
+
+#define DSHOT_SERVO_1 1
+#define DSHOT_SERVO_1_GPIO PAL_PORT(LINE_MOTOR_1)
+#define DSHOT_SERVO_1_PIN PAL_PAD(LINE_MOTOR_1)
+#define DSHOT_SERVO_1_AF AF_MOTOR_1
+#define DSHOT_SERVO_1_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_1_TIM)
+#define DSHOT_SERVO_1_CHANNEL MOTOR_1_TIM_CH
+
+#define DSHOT_SERVO_2 2
+#define DSHOT_SERVO_2_GPIO PAL_PORT(LINE_MOTOR_2)
+#define DSHOT_SERVO_2_PIN PAL_PAD(LINE_MOTOR_2)
+#define DSHOT_SERVO_2_AF AF_MOTOR_2
+#define DSHOT_SERVO_2_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_2_TIM)
+#define DSHOT_SERVO_2_CHANNEL MOTOR_2_TIM_CH
 
 #define DSHOT_SERVO_3 3
 #define DSHOT_SERVO_3_GPIO PAL_PORT(LINE_MOTOR_3)
@@ -266,13 +304,43 @@
 #define DSHOT_SERVO_4_CHANNEL MOTOR_4_TIM_CH
 
 
-#define DSHOT_CONF_TIM5 1
-#define DSHOT_CONF5_DEF { \
-  .dma_stream = STM32_PWM5_UP_DMA_STREAM,   \
-  .dma_channel = STM32_PWM5_UP_DMA_CHANNEL, \
-  .pwmp = &PWMD5,                           \
-  .tlm_sd = DSHOT_TIM5_TELEMETRY_DEV,       \
-  .dma_buf = &dshot5DmaBuffer,              \
+#define DSHOT_CONF_TIM3 1
+#define DSHOT_CONF3_DEF { \
+  .dma_stream = STM32_PWM3_UP_DMA_STREAM,   \
+  .dma_channel = STM32_PWM3_UP_DMA_CHANNEL, \
+  .pwmp = &PWMD3,                           \
+  .tlm_sd = DSHOT_TIM3_TELEMETRY_DEV,       \
+  .dma_buf = &dshot3DmaBuffer,              \
+  .dcache_memory_in_use = false             \
+}
+
+#endif
+
+
+#if USE_DSHOT_TIM4 // MOTOR_7 MOTOR_8 on TIM4
+
+#define DSHOT_SERVO_7 7
+#define DSHOT_SERVO_7_GPIO PAL_PORT(LINE_MOTOR_7)
+#define DSHOT_SERVO_7_PIN PAL_PAD(LINE_MOTOR_7)
+#define DSHOT_SERVO_7_AF AF_MOTOR_7
+#define DSHOT_SERVO_7_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_7_TIM)
+#define DSHOT_SERVO_7_CHANNEL MOTOR_7_TIM_CH
+
+#define DSHOT_SERVO_8 8
+#define DSHOT_SERVO_8_GPIO PAL_PORT(LINE_MOTOR_8)
+#define DSHOT_SERVO_8_PIN PAL_PAD(LINE_MOTOR_8)
+#define DSHOT_SERVO_8_AF AF_MOTOR_8
+#define DSHOT_SERVO_8_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_8_TIM)
+#define DSHOT_SERVO_8_CHANNEL MOTOR_8_TIM_CH
+
+
+#define DSHOT_CONF_TIM4 1
+#define DSHOT_CONF4_DEF { \
+  .dma_stream = STM32_PWM4_UP_DMA_STREAM,   \
+  .dma_channel = STM32_PWM4_UP_DMA_CHANNEL, \
+  .pwmp = &PWMD4,                           \
+  .tlm_sd = DSHOT_TIM4_TELEMETRY_DEV,       \
+  .dma_buf = &dshot4DmaBuffer,              \
   .dcache_memory_in_use = false             \
 }
 
@@ -280,16 +348,18 @@
 
 
 
+
+
 /**
- * UART1, UART2, UART3, UART4, UART5, UART6
+ * UART1, UART2, UART3, UART4, UART6
  * 
  */
 
-#define UART1_GPIO_PORT_TX  PAL_PORT(LINE_UART1_TX)
-#define UART1_GPIO_TX       PAL_PAD(LINE_UART1_TX)
-#define UART1_GPIO_PORT_RX  PAL_PORT(LINE_UART1_RX)
-#define UART1_GPIO_RX       PAL_PAD(LINE_UART1_RX)
-#define UART1_GPIO_AF       AF_UART1_TX
+// #define UART1_GPIO_PORT_TX  PAL_PORT(LINE_UART1_TX)
+// #define UART1_GPIO_TX       PAL_PAD(LINE_UART1_TX)
+// #define UART1_GPIO_PORT_RX  PAL_PORT(LINE_UART1_RX)
+// #define UART1_GPIO_RX       PAL_PAD(LINE_UART1_RX)
+// #define UART1_GPIO_AF       AF_UART1_TX
 
 #define UART2_GPIO_PORT_TX  PAL_PORT(LINE_UART2_TX)
 #define UART2_GPIO_TX       PAL_PAD(LINE_UART2_TX)
@@ -297,11 +367,11 @@
 #define UART2_GPIO_RX       PAL_PAD(LINE_UART2_RX)
 #define UART2_GPIO_AF       AF_UART2_TX
 
-// #define UART3_GPIO_PORT_TX  PAL_PORT(LINE_UART3_TX)
-// #define UART3_GPIO_TX       PAL_PAD(LINE_UART3_TX)
-// #define UART3_GPIO_PORT_RX  PAL_PORT(LINE_UART3_RX)
-// #define UART3_GPIO_RX       PAL_PAD(LINE_UART3_RX)
-// #define UART3_GPIO_AF       AF_UART3_TX
+#define UART3_GPIO_PORT_TX  PAL_PORT(LINE_UART3_TX)
+#define UART3_GPIO_TX       PAL_PAD(LINE_UART3_TX)
+#define UART3_GPIO_PORT_RX  PAL_PORT(LINE_UART3_RX)
+#define UART3_GPIO_RX       PAL_PAD(LINE_UART3_RX)
+#define UART3_GPIO_AF       AF_UART3_TX
 
 #define UART4_GPIO_PORT_TX  PAL_PORT(LINE_AUX_A1)
 #define UART4_GPIO_TX       PAL_PAD(LINE_AUX_A1)
@@ -317,18 +387,18 @@
  */
 
 // In case, do dynamic config of UARTs
-#ifndef USE_UART3_RX
-#define USE_UART3_RX TRUE
+#ifndef USE_UART1_RX
+#define USE_UART1_RX TRUE
 #endif
-#ifndef USE_UART3_TX // may be used in half duplex mode
-#define USE_UART3_TX FALSE
+#ifndef USE_UART1_TX // may be used in half duplex mode
+#define USE_UART1_TX FALSE
 #endif
 // Tx and Rx are configured on the same pin, only one of them should be used
-#define UART3_GPIO_PORT_TX  PAL_PORT(LINE_RC1)
-#define UART3_GPIO_TX       PAL_PAD(LINE_RC1)
-#define UART3_GPIO_PORT_RX  PAL_PORT(LINE_RC1)
-#define UART3_GPIO_RX       PAL_PAD(LINE_RC1)
-#define UART3_GPIO_AF       RC1_USART_AF
+#define UART1_GPIO_PORT_TX  PAL_PORT(LINE_RC1)
+#define UART1_GPIO_TX       PAL_PAD(LINE_RC1)
+#define UART1_GPIO_PORT_RX  PAL_PORT(LINE_RC1)
+#define UART1_GPIO_RX       PAL_PAD(LINE_RC1)
+#define UART1_GPIO_AF       RC1_USART_AF
 
 // no wait with chibios as the RTC oscillator takes longer to stabilize
 #define SPEKTRUM_BIND_WAIT 30000
@@ -410,21 +480,18 @@
 #define SPI3_GPIO_SCK         PAL_PAD( LINE_SPI3_INTERNAL_CLK)
 
 
-// GYRO1 on PA04
+// GYRO1 on PB02
 #define SPI_SELECT_SLAVE0_PORT  PAL_PORT(LINE_GYRO_CS_1)
 #define SPI_SELECT_SLAVE0_PIN   PAL_PAD(LINE_GYRO_CS_1)
-// OSD_CS on PA15
+// OSD_CS on PB12
 #define SPI_SELECT_SLAVE1_PORT  PAL_PORT(LINE_OSD_CS)
 #define SPI_SELECT_SLAVE1_PIN   PAL_PAD(LINE_OSD_CS)
-// FLASH_CS on PB12
+// FLASH_CS on PD02
 #define SPI_SELECT_SLAVE2_PORT  PAL_PORT(LINE_FLASH_CS)
 #define SPI_SELECT_SLAVE2_PIN   PAL_PAD(LINE_FLASH_CS)
-// GYRO_CS_2 on PC03
+// GYRO_CS_2 on PC15
 #define SPI_SELECT_SLAVE3_PORT  PAL_PORT(LINE_GYRO_CS_2)
 #define SPI_SELECT_SLAVE3_PIN   PAL_PAD(LINE_GYRO_CS_2)
-// BARO_CS on PC13
-#define SPI_SELECT_SLAVE4_PORT  PAL_PORT(LINE_BARO_CS)
-#define SPI_SELECT_SLAVE4_PIN   PAL_PAD(LINE_BARO_CS)
 
 
 // bat monitoring for file closing
@@ -442,19 +509,7 @@
 #define ActuatorsDefaultCommit() ActuatorsPwmCommit()
 
 
-/**
- * For WS2812
- */
-#define WS2812D1_GPIO PAL_PORT(LINE_AUX)
-#define WS2812D1_PIN  PAL_PAD(LINE_AUX)
-#define WS2812D1_AF 2
-#define WS2812D1_CFG_DEF { \
-  .dma_stream = STM32_PWM5_UP_DMA_STREAM, \
-  .dma_channel = STM32_PWM5_UP_DMA_CHANNEL, \
-  .dma_priority = STM32_PWM5_UP_DMA_PRIORITY, \
-  .pwm_channel = 0, \
-  .pwmp = &PWMD5 \
-}
 
-#endif /* CONFIG_AIOF7_H */
+
+#endif /* CONFIG_AIOF7TMOTOR_H */
 

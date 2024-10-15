@@ -163,7 +163,7 @@
 
 
 // servo index starting at 1 + regular servos + aux servos
-// so NB = 1+8+8
+// so NB = 1+6
 #define ACTUATORS_PWM_NB 7
 
 
