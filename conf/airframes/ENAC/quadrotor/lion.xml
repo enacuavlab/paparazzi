@@ -28,7 +28,6 @@
     </target>
 
     <module name="telemetry" type="xbee_api">
-      <configure name="MODEM_PORT" value="UART2" />
     </module>
 
     <!-- <module name="telemetry" type="transparent">
@@ -42,11 +41,11 @@
     </module> -->
 
 
-    <module name="actuators" type="dshot">
+    <!-- <module name="actuators" type="dshot">
        <define name="DSHOT_SPEED" value="600"/>
-    </module>
+    </module> -->
 
-    <!-- <module name="actuators" type="pwm">
+    <module name="actuators" type="pwm">
       <define name="SERVO_HZ" value="400"/>
       <define name="USE_PWM1"/>
       <define name="USE_PWM2"/>
@@ -55,7 +54,7 @@
       <define name="USE_DSHOT_TIM3" value="0"></define>
       <define name="USE_DSHOT_TIM4" value="0"></define>
       <define name="USE_DSHOT_TIM5" value="0"></define>
-    </module> -->
+    </module>
 
 
     <module name="board" type="tmotor_aiof7">
@@ -82,19 +81,19 @@
      </module>
   </firmware>
 
-  <servos driver="DShot">
+  <!-- <servos driver="DShot">
     <servo name="BR" no="1" min="0" neutral="100" max="2000"/>
     <servo name="BL" no="2" min="0" neutral="100" max="2000"/>
     <servo name="FR" no="3" min="0" neutral="100" max="2000"/>
     <servo name="FL" no="4" min="0" neutral="100" max="2000"/>
-  </servos>
+  </servos> -->
 
-  <!-- <servos driver="Pwm">
+  <servos driver="Pwm">
     <servo name="BR" no="1" min="1000" neutral="1100" max="2000"/>
     <servo name="BL" no="2" min="1000" neutral="1100" max="2000"/>
     <servo name="FR" no="3" min="1000" neutral="1100" max="2000"/>
     <servo name="FL" no="4" min="1000" neutral="1100" max="2000"/>
-  </servos> -->
+  </servos>
 
   <commands>
     <axis name="ROLL" failsafe_value="0"/>

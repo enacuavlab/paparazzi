@@ -26,7 +26,7 @@
 /*
  * LEDs
  */
-/* color, on PC14 and PC13, 1 on LED_ON, 0 on LED_OFF */
+/* color, on PB02, 1 on LED_ON, 0 on LED_OFF */
 #ifndef USE_LED_1
 #define USE_LED_1 1
 #endif
@@ -35,13 +35,6 @@
 #define LED_1_GPIO_ON gpio_set
 #define LED_1_GPIO_OFF gpio_clear
 
-#ifndef USE_LED_2
-#define USE_LED_2 1
-#endif
-#define LED_2_GPIO PAL_PORT(LINE_LED2)
-#define LED_2_GPIO_PIN PAL_PAD(LINE_LED2)
-#define LED_2_GPIO_ON gpio_set
-#define LED_2_GPIO_OFF gpio_clear
 
 
 /*
@@ -76,15 +69,11 @@
  * enable TIM1, TIM2, TIM3, TIM4 by default
  */
 #ifndef USE_PWM_TIM1
-#define USE_PWM_TIM1 1
-#endif
-
-#ifndef USE_PWM_TIM2
-#define USE_PWM_TIM2 0
+#define USE_PWM_TIM1 0
 #endif
 
 #ifndef USE_PWM_TIM3
-#define USE_PWM_TIM3 0
+#define USE_PWM_TIM3 1
 #endif
 
 #ifndef USE_PWM_TIM4
@@ -187,7 +176,6 @@
 #endif
 
 
-
 #ifndef USE_PWM8
 #define USE_PWM8 0
 #endif
@@ -201,24 +189,10 @@
 #define PWM_SERVO_8_CONF CONCAT_BOARD_PARAM(pwmcfg, MOTOR_8_TIM)
 #endif
 
-// AUX activated in PWM mode by default for servo
-#ifndef USE_PWM9
-#define USE_PWM9 1
-#endif
-#if USE_PWM9
-#define PWM_SERVO_9 9
-#define PWM_SERVO_9_GPIO PAL_PORT(LINE_AUX)
-#define PWM_SERVO_9_PIN PAL_PAD(LINE_AUX)
-#define PWM_SERVO_9_AF AF_AUX
-#define PWM_SERVO_9_DRIVER CONCAT_BOARD_PARAM(PWMD, AUX_TIM)
-#define PWM_SERVO_9_CHANNEL (AUX_TIM_CH-1)
-#define PWM_SERVO_9_CONF CONCAT_BOARD_PARAM(pwmcfg, AUX_TIM)
-#endif
-
 
 // servo index starting at 1 + regular servos + aux servos
 // so NB = 1+9
-#define ACTUATORS_PWM_NB 10
+#define ACTUATORS_PWM_NB 9
 
 
 /**
@@ -231,46 +205,20 @@
 #define DSHOT_TIM4_TELEMETRY_DEV NULL
 
 
-#ifndef USE_DSHOT_TIM2
-#define USE_DSHOT_TIM2 1 // MOTOR_5 MOTOR_6
-#endif
 
 #ifndef USE_DSHOT_TIM3
 #define USE_DSHOT_TIM3 1 // MOTOR_1 MOTOR_2 MOTOR_3 MOTOR_4
 #endif
 
 #ifndef USE_DSHOT_TIM4
-#define USE_DSHOT_TIM4 1 // MOTOR_7 MOTOR_8
+#define USE_DSHOT_TIM4 1 // MOTOR_5 MOTOR_6 MOTOR_7 
 #endif
 
 
-#if USE_DSHOT_TIM2 // MOTOR_5 MOTOR_6 on TIM2
-
-#define DSHOT_SERVO_5 5
-#define DSHOT_SERVO_5_GPIO PAL_PORT(LINE_MOTOR_5)
-#define DSHOT_SERVO_5_PIN PAL_PAD(LINE_MOTOR_5)
-#define DSHOT_SERVO_5_AF AF_MOTOR_5
-#define DSHOT_SERVO_5_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_5_TIM)
-#define DSHOT_SERVO_5_CHANNEL MOTOR_5_TIM_CH
-
-#define DSHOT_SERVO_6 6
-#define DSHOT_SERVO_6_GPIO PAL_PORT(LINE_MOTOR_6)
-#define DSHOT_SERVO_6_PIN PAL_PAD(LINE_MOTOR_6)
-#define DSHOT_SERVO_6_AF AF_MOTOR_6
-#define DSHOT_SERVO_6_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_6_TIM)
-#define DSHOT_SERVO_6_CHANNEL MOTOR_6_TIM_CH
-
-
-#define DSHOT_CONF_TIM2 1
-#define DSHOT_CONF2_DEF { \
-  .dma_stream = STM32_PWM2_UP_DMA_STREAM,   \
-  .dma_channel = STM32_PWM2_UP_DMA_CHANNEL, \
-  .pwmp = &PWMD2,                           \
-  .tlm_sd = DSHOT_TIM2_TELEMETRY_DEV,       \
-  .dma_buf = &dshot2DmaBuffer,              \
-  .dcache_memory_in_use = false             \
-}
+#ifndef USE_DSHOT_TIM8
+#define USE_DSHOT_TIM8 1 // MOTOR_8
 #endif
+
 
 
 #if USE_DSHOT_TIM3 // MOTOR_1 MOTOR_2 MOTOR_3 MOTOR_4 on TIM3
@@ -317,7 +265,21 @@
 #endif
 
 
-#if USE_DSHOT_TIM4 // MOTOR_7 MOTOR_8 on TIM4
+#if USE_DSHOT_TIM4 // MOTOR_5 MOTOR_6 MOTOR_7 on TIM4
+
+#define DSHOT_SERVO_5 5
+#define DSHOT_SERVO_5_GPIO PAL_PORT(LINE_MOTOR_5)
+#define DSHOT_SERVO_5_PIN PAL_PAD(LINE_MOTOR_5)
+#define DSHOT_SERVO_5_AF AF_MOTOR_5
+#define DSHOT_SERVO_5_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_5_TIM)
+#define DSHOT_SERVO_5_CHANNEL MOTOR_5_TIM_CH
+
+#define DSHOT_SERVO_6 6
+#define DSHOT_SERVO_6_GPIO PAL_PORT(LINE_MOTOR_6)
+#define DSHOT_SERVO_6_PIN PAL_PAD(LINE_MOTOR_6)
+#define DSHOT_SERVO_6_AF AF_MOTOR_6
+#define DSHOT_SERVO_6_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_6_TIM)
+#define DSHOT_SERVO_6_CHANNEL MOTOR_6_TIM_CH
 
 #define DSHOT_SERVO_7 7
 #define DSHOT_SERVO_7_GPIO PAL_PORT(LINE_MOTOR_7)
@@ -325,14 +287,6 @@
 #define DSHOT_SERVO_7_AF AF_MOTOR_7
 #define DSHOT_SERVO_7_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_7_TIM)
 #define DSHOT_SERVO_7_CHANNEL MOTOR_7_TIM_CH
-
-#define DSHOT_SERVO_8 8
-#define DSHOT_SERVO_8_GPIO PAL_PORT(LINE_MOTOR_8)
-#define DSHOT_SERVO_8_PIN PAL_PAD(LINE_MOTOR_8)
-#define DSHOT_SERVO_8_AF AF_MOTOR_8
-#define DSHOT_SERVO_8_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_8_TIM)
-#define DSHOT_SERVO_8_CHANNEL MOTOR_8_TIM_CH
-
 
 #define DSHOT_CONF_TIM4 1
 #define DSHOT_CONF4_DEF { \
@@ -346,7 +300,26 @@
 
 #endif
 
+#if USE_DSHOT_TIM8 // MOTOR_8
 
+#define DSHOT_SERVO_8 8
+#define DSHOT_SERVO_8_GPIO PAL_PORT(LINE_MOTOR_8)
+#define DSHOT_SERVO_8_PIN PAL_PAD(LINE_MOTOR_8)
+#define DSHOT_SERVO_8_AF AF_MOTOR_8
+#define DSHOT_SERVO_8_DRIVER CONCAT_BOARD_PARAM(DSHOTD, MOTOR_8_TIM)
+#define DSHOT_SERVO_8_CHANNEL MOTOR_8_TIM_CH
+
+
+#define DSHOT_CONF_TIM8 1
+#define DSHOT_CONF8_DEF { \
+  .dma_stream = STM32_PWM8_UP_DMA_STREAM,   \
+  .dma_channel = STM32_PWM8_UP_DMA_CHANNEL, \
+  .pwmp = &PWMD8,                           \
+  .tlm_sd = DSHOT_TIM2_TELEMETRY_DEV,       \
+  .dma_buf = &dshot2DmaBuffer,              \
+  .dcache_memory_in_use = false             \
+}
+#endif
 
 
 
@@ -422,24 +395,24 @@
 
 // Internal I2C (baro, magneto)
 
-#ifndef I2C1_CLOCK_SPEED
-#define I2C1_CLOCK_SPEED 400000
+#ifndef I2C2_CLOCK_SPEED
+#define I2C2_CLOCK_SPEED 400000
 #endif
 
-#if I2C1_CLOCK_SPEED == 400000
-#define I2C1_CFG_DEF { \
+#if I2C2_CLOCK_SPEED == 400000
+#define I2C2_CFG_DEF { \
   .timingr = I2C_FAST_400KHZ_DNF0_100NS_PCLK54MHZ_TIMINGR, \
   .cr1 = STM32_CR1_DNF(0), \
   .cr2 = 0 \
 }
-#elif I2C1_CLOCK_SPEED == 100000
-#define I2C1_CFG_DEF { \
+#elif I2C2_CLOCK_SPEED == 100000
+#define I2C2_CFG_DEF { \
   .timingr = I2C_STD_100KHZ_DNF0_100NS_PCLK54MHZ_TIMINGR, \
   .cr1 = STM32_CR1_DNF(0), \
   .cr2 = 0 \
 }
 #else
-#error "Unknown I2C1 clock speed"
+#error "Unknown I2C2 clock speed"
 #endif
 
 
@@ -480,18 +453,18 @@
 #define SPI3_GPIO_SCK         PAL_PAD( LINE_SPI3_INTERNAL_CLK)
 
 
-// GYRO1 on PB02
-#define SPI_SELECT_SLAVE0_PORT  PAL_PORT(LINE_GYRO_CS_1)
-#define SPI_SELECT_SLAVE0_PIN   PAL_PAD(LINE_GYRO_CS_1)
+// GYRO on PA04
+#define SPI_SELECT_SLAVE0_PORT  PAL_PORT(LINE_GYRO_CS)
+#define SPI_SELECT_SLAVE0_PIN   PAL_PAD(LINE_GYRO_CS)
 // OSD_CS on PB12
 #define SPI_SELECT_SLAVE1_PORT  PAL_PORT(LINE_OSD_CS)
 #define SPI_SELECT_SLAVE1_PIN   PAL_PAD(LINE_OSD_CS)
-// FLASH_CS on PD02
+// FLASH_CS on PC08
 #define SPI_SELECT_SLAVE2_PORT  PAL_PORT(LINE_FLASH_CS)
 #define SPI_SELECT_SLAVE2_PIN   PAL_PAD(LINE_FLASH_CS)
-// GYRO_CS_2 on PC15
-#define SPI_SELECT_SLAVE3_PORT  PAL_PORT(LINE_GYRO_CS_2)
-#define SPI_SELECT_SLAVE3_PIN   PAL_PAD(LINE_GYRO_CS_2)
+// BARO_CS on PC15
+#define SPI_SELECT_SLAVE3_PORT  PAL_PORT(LINE_BARO_CS)
+#define SPI_SELECT_SLAVE3_PIN   PAL_PAD(LINE_BARO_CS)
 
 
 // bat monitoring for file closing

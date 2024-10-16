@@ -220,7 +220,11 @@
 #else
 #define STM32_I2C_USE_I2C1                  FALSE
 #endif
+#if USE_I2C2
+#define STM32_I2C_USE_I2C2                  TRUE
+#else
 #define STM32_I2C_USE_I2C2                  FALSE
+#endif
 #define STM32_I2C_USE_I2C3                  FALSE
 #define STM32_I2C_BUSY_TIMEOUT              50
 #define STM32_I2C_I2C1_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 0)
@@ -273,19 +277,21 @@
 #define STM32_PWM_USE_TIM4                  TRUE
 #endif
 
+#ifndef STM32_PWM_USE_TIM8
+#define STM32_PWM_USE_TIM8                  TRUE
+#endif
+
+#ifndef STM32_PWM_USE_TIM11
+#define STM32_PWM_USE_TIM11                  TRUE
+#endif
+
 #define STM32_PWM_USE_TIM5                  FALSE
-#define STM32_PWM_USE_TIM8                  FALSE
 #define STM32_PWM_USE_TIM9                  FALSE
 #define STM32_PWM_USE_TIM10                 FALSE
-#define STM32_PWM_USE_TIM11                 FALSE
 #define STM32_PWM_USE_TIM12                 FALSE
 #define STM32_PWM_USE_TIM13                 FALSE
 #define STM32_PWM_USE_TIM14                 FALSE
 
-#define STM32_PWM2_UP_DMA_STREAM            STM32_DMA_STREAM_ID(1, 1)
-#define STM32_PWM2_UP_DMA_CHANNEL           3
-#define STM32_PWM2_UP_DMA_IRQ_PRIORITY      6
-#define STM32_PWM2_UP_DMA_PRIORITY          2
 
 #define STM32_PWM3_UP_DMA_STREAM            STM32_DMA_STREAM_ID(1, 2)
 #define STM32_PWM3_UP_DMA_CHANNEL           5
@@ -296,6 +302,11 @@
 #define STM32_PWM4_UP_DMA_CHANNEL           2
 #define STM32_PWM4_UP_DMA_IRQ_PRIORITY      6
 #define STM32_PWM4_UP_DMA_PRIORITY          2
+
+#define STM32_PWM8_UP_DMA_STREAM            STM32_DMA_STREAM_ID(2, 7)
+#define STM32_PWM8_UP_DMA_CHANNEL           3
+#define STM32_PWM8_UP_DMA_IRQ_PRIORITY      6
+#define STM32_PWM8_UP_DMA_PRIORITY          2
 
 
 /*
@@ -309,7 +320,7 @@
 /*
  * SDC driver system settings.
  */
-#define STM32_SDC_USE_SDMMC1                TRUE
+#define STM32_SDC_USE_SDMMC1                FALSE
 #define STM32_SDC_USE_SDMMC2                FALSE
 #define STM32_SDC_SDMMC_UNALIGNED_SUPPORT   TRUE
 #define STM32_SDC_SDMMC_WRITE_TIMEOUT       250
@@ -358,13 +369,14 @@
 #endif
 #endif
 
-#ifndef STM32_SERIAL_USE_USART6
-#if USE_UART6
-#define STM32_SERIAL_USE_USART6             TRUE
+#ifndef STM32_SERIAL_USE_UART5
+#if USE_UART5
+#define STM32_SERIAL_USE_UART5              TRUE
 #else
-#define STM32_SERIAL_USE_USART6             FALSE
+#define STM32_SERIAL_USE_UART5              FALSE
 #endif
 #endif
+
 
 
 /*
