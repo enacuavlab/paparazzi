@@ -36,6 +36,7 @@
     </module> -->
     <!-- <configure name="MODEM_PORT" value="UART2" />  -->
 
+    <!-- DroneBridge -->
     <!-- <module name="telemetry" type="transparent">
       <configure name="MODEM_PORT" value="UART6" />
       <configure name="MODEM_BAUD" value="B115200" />

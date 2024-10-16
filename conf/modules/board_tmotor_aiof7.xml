@@ -10,12 +10,11 @@
     </description>
   </doc>
   <dep>
-    <depends>imu_mpu6000,baro_bmp3</depends>
+    <depends>imu_mpu6000</depends>
   </dep>
   <makefile target="!sim|nps|fbw">
     <configure name="IMU_SPI_DEV" value="spi1" case="upper|lower"/>
     <configure name="IMU_SPI_SLAVE_IDX" value="SPI_SLAVE0"/>
-    <configure name="BMP3_I2C_DEV" value="i2c1" case="upper|lower"/>
-    <define name="BMP3_SLAVE_ADDR" value="BMP3_I2C_ADDR_ALT"/>
+    <define name="USE_I2C2"/>
   </makefile>
 </module>
