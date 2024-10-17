@@ -27,9 +27,9 @@
       <module name="radio_control" type="ppm"/>
     </target>
 
-    <module name="telemetry" type="xbee_api">
+    <!-- <module name="telemetry" type="xbee_api">
       <configure name="MODEM_PORT" value="UART2" />
-    </module>
+    </module> -->
 
     <!-- <module name="telemetry" type="transparent">
       <configure name="MODEM_PORT" value="usb_serial" />
@@ -37,10 +37,10 @@
     <!-- <configure name="MODEM_PORT" value="UART2" />  -->
 
     <!-- DroneBridge -->
-    <!-- <module name="telemetry" type="transparent">
+    <module name="telemetry" type="transparent">
       <configure name="MODEM_PORT" value="UART6" />
       <configure name="MODEM_BAUD" value="B115200" />
-    </module> -->
+    </module>
 
 
     <module name="actuators" type="dshot">
