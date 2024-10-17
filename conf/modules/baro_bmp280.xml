@@ -1,0 +1,43 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="baro_bmp280" dir="sensors" task="sensors">
+  <doc>
+    <description>
+      Bosch-Sensortech BMP280xx pressure sensor (I2C or SPI)
+    </description>
+    <define name="BMP280_BUS_TYPE" value="I2C/SPI" description="select which bus (SPI or I2C) use (default I2C)"/>
+    <configure name="BMP280_I2C_DEV" value="i2cX" description="select which i2c peripheral to use (default i2c1)"/>
+    <define name="BMP280_SLAVE_ADDR" value="BMP280_I2C_ADDR|BMP280_I2C_ADDR_ALT" description="i2c slave address (default BMP280_I2C_ADDR)"/>
+    <define name="BMP280_SYNC_SEND" description="flag to transmit the data as it is acquired"/>
+  </doc>
+  <dep>
+    <depends>i2c,spi_master</depends>
+    <provides>baro</provides>
+  </dep>
+  <header>
+    <file name="baro_bmp280.h"/>
+  </header>
+  <init fun="baro_bmp280_init()"/>
+  <periodic fun="baro_bmp280_periodic()" freq="50"/>
+  <event fun="baro_bmp280_event()"/>
+  <makefile target="ap">
+    <!-- <define name="BMP280_BUS_TYPE" value="I2C"/>
+    <raw>
+      ifeq ($(BMP280_BUS_TYPE),I2C)
+      <configure name="BMP280_I2C_DEV" default="i2c1" case="upper|lower"/>
+      <define name="USE_$(BMP280_I2C_DEV_UPPER)"/>
+      <define name="BMP280_I2C_DEV" value="$(BMP280_I2C_DEV_LOWER)"/>
+      else
+      <configure name="BMP280_SPI_DEV" default="spi1" case="upper|lower"/>
+      <configure name="BMP280_SLAVE_IDX" default="spi_slave0" case="upper|lower"/>
+      <define name="USE_$(BMP280_SPI_DEV_UPPER)" />
+      <define name="USE_$(BMP280_SLAVE_IDX_UPPER)" />
+      <define name="BMP280_SPI_DEV" value="$(BMP280_SPI_DEV_LOWER)" />
+      <define name="BMP280_SLAVE_IDX" value="$(BMP280_SLAVE_IDX_UPPER)" />
+        endif
+    </raw> -->
+    
+    <file name="baro_bmp280.c"/>
+    <file name="bmp280.c" dir="peripherals"/>
+  </makefile>
+</module>
