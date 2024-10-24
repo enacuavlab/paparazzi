@@ -10,13 +10,14 @@
     </description>
   </doc>
   <dep>
-    <depends>imu_mpu6000,baro_bmp280</depends>
+    <depends>imu_mpu6000,baro_bmp280</depends> 
   </dep>
   <makefile target="!sim|nps|fbw">
     <configure name="IMU_SPI_DEV" value="spi1" case="upper|lower"/>
     <configure name="IMU_SPI_SLAVE_IDX" value="SPI_SLAVE0"/>
-    <define name="BMP280_BUS_TYPE" value="SPI"/>
-    <configure name="BMP280_SPI_DEV" value="spi1"/>
+
+    <configure name="BMP280_USE_SPI" value="TRUE"/>
+    <configure name="BMP280_DEV" value="spi3"/>
     <configure name="BMP280_SLAVE_IDX" value="SPI_SLAVE3"/>
   </makefile>
 </module>
