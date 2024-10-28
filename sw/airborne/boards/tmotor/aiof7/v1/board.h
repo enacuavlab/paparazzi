@@ -60,8 +60,8 @@
 #define	AUX                            8U
 #define	UART1_TX                       9U
 #define	RC1                            10U
-#define	PA11                           11U
-#define	PA12                           12U
+#define	OTG_FS_DM                      11U
+#define	OTG_FS_DP                      12U
 #define	SWDIO                          13U
 #define	SWCLK                          14U
 #define	PA15                           15U
@@ -250,6 +250,8 @@
 #define	LINE_AUX                       PAL_LINE(GPIOA, 8U)
 #define	LINE_UART1_TX                  PAL_LINE(GPIOA, 9U)
 #define	LINE_RC1                       PAL_LINE(GPIOA, 10U)
+#define	LINE_OTG_FS_DM                 PAL_LINE(GPIOA, 11U)
+#define	LINE_OTG_FS_DP                 PAL_LINE(GPIOA, 12U)
 #define	LINE_SWDIO                     PAL_LINE(GPIOA, 13U)
 #define	LINE_SWCLK                     PAL_LINE(GPIOA, 14U)
 
@@ -321,8 +323,8 @@
 					 PIN_MODE_ALTERNATE(AUX) | \
 					 PIN_MODE_ALTERNATE(UART1_TX) | \
 					 PIN_MODE_ALTERNATE(RC1) | \
-					 PIN_MODE_INPUT(PA11) | \
-					 PIN_MODE_INPUT(PA12) | \
+					 PIN_MODE_ALTERNATE(OTG_FS_DM) | \
+					 PIN_MODE_ALTERNATE(OTG_FS_DP) | \
 					 PIN_MODE_ALTERNATE(SWDIO) | \
 					 PIN_MODE_ALTERNATE(SWCLK) | \
 					 PIN_MODE_INPUT(PA15))
@@ -338,8 +340,8 @@
 					 PIN_OTYPE_PUSHPULL(AUX) | \
 					 PIN_OTYPE_PUSHPULL(UART1_TX) | \
 					 PIN_OTYPE_PUSHPULL(RC1) | \
-					 PIN_OTYPE_PUSHPULL(PA11) | \
-					 PIN_OTYPE_PUSHPULL(PA12) | \
+					 PIN_OTYPE_PUSHPULL(OTG_FS_DM) | \
+					 PIN_OTYPE_PUSHPULL(OTG_FS_DP) | \
 					 PIN_OTYPE_PUSHPULL(SWDIO) | \
 					 PIN_OTYPE_PUSHPULL(SWCLK) | \
 					 PIN_OTYPE_PUSHPULL(PA15))
@@ -355,8 +357,8 @@
 					 PIN_OSPEED_SPEED_HIGH(AUX) | \
 					 PIN_OSPEED_SPEED_HIGH(UART1_TX) | \
 					 PIN_OSPEED_SPEED_HIGH(RC1) | \
-					 PIN_OSPEED_SPEED_VERYLOW(PA11) | \
-					 PIN_OSPEED_SPEED_VERYLOW(PA12) | \
+					 PIN_OSPEED_SPEED_HIGH(OTG_FS_DM) | \
+					 PIN_OSPEED_SPEED_HIGH(OTG_FS_DP) | \
 					 PIN_OSPEED_SPEED_HIGH(SWDIO) | \
 					 PIN_OSPEED_SPEED_HIGH(SWCLK) | \
 					 PIN_OSPEED_SPEED_VERYLOW(PA15))
@@ -372,8 +374,8 @@
 					 PIN_PUPDR_FLOATING(AUX) | \
 					 PIN_PUPDR_FLOATING(UART1_TX) | \
 					 PIN_PUPDR_FLOATING(RC1) | \
-					 PIN_PUPDR_PULLDOWN(PA11) | \
-					 PIN_PUPDR_PULLDOWN(PA12) | \
+					 PIN_PUPDR_FLOATING(OTG_FS_DM) | \
+					 PIN_PUPDR_FLOATING(OTG_FS_DP) | \
 					 PIN_PUPDR_FLOATING(SWDIO) | \
 					 PIN_PUPDR_FLOATING(SWCLK) | \
 					 PIN_PUPDR_PULLDOWN(PA15))
@@ -389,8 +391,8 @@
 					 PIN_ODR_LEVEL_LOW(AUX) | \
 					 PIN_ODR_LEVEL_HIGH(UART1_TX) | \
 					 PIN_ODR_LEVEL_HIGH(RC1) | \
-					 PIN_ODR_LEVEL_LOW(PA11) | \
-					 PIN_ODR_LEVEL_LOW(PA12) | \
+					 PIN_ODR_LEVEL_HIGH(OTG_FS_DM) | \
+					 PIN_ODR_LEVEL_HIGH(OTG_FS_DP) | \
 					 PIN_ODR_LEVEL_HIGH(SWDIO) | \
 					 PIN_ODR_LEVEL_HIGH(SWCLK) | \
 					 PIN_ODR_LEVEL_LOW(PA15))
@@ -407,8 +409,8 @@
 #define VAL_GPIOA_AFRH			(PIN_AFIO_AF(AUX, 1) | \
 					 PIN_AFIO_AF(UART1_TX, 7) | \
 					 PIN_AFIO_AF(RC1, 7) | \
-					 PIN_AFIO_AF(PA11, 0) | \
-					 PIN_AFIO_AF(PA12, 0) | \
+					 PIN_AFIO_AF(OTG_FS_DM, 10) | \
+					 PIN_AFIO_AF(OTG_FS_DP, 10) | \
 					 PIN_AFIO_AF(SWDIO, 0) | \
 					 PIN_AFIO_AF(SWCLK, 0) | \
 					 PIN_AFIO_AF(PA15, 0))
@@ -1031,8 +1033,8 @@
 					 PIN_AFIO_AF(PG14, 0) | \
 					 PIN_AFIO_AF(PG15, 0))
 
-#define VAL_GPIOH_MODER                 (PIN_MODE_ALTERNATE(OSC_IN) | \
-					 PIN_MODE_ALTERNATE(OSC_OUT) | \
+#define VAL_GPIOH_MODER                 (PIN_MODE_INPUT(OSC_IN) | \
+					 PIN_MODE_INPUT(OSC_OUT) | \
 					 PIN_MODE_INPUT(PH02) | \
 					 PIN_MODE_INPUT(PH03) | \
 					 PIN_MODE_INPUT(PH04) | \
@@ -1463,6 +1465,10 @@
 #define AF_LINE_UART1_TX                 7U
 #define AF_RC1                           7U
 #define AF_LINE_RC1                      7U
+#define AF_OTG_FS_DM                     10U
+#define AF_LINE_OTG_FS_DM                10U
+#define AF_OTG_FS_DP                     10U
+#define AF_LINE_OTG_FS_DP                10U
 #define AF_SWDIO                         0U
 #define AF_LINE_SWDIO                    0U
 #define AF_SWCLK                         0U
@@ -1509,10 +1515,6 @@
 #define AF_LINE_UART5_TX                 8U
 #define AF_UART5_RX                      8U
 #define AF_LINE_UART5_RX                 8U
-#define AF_OSC_IN                        0U
-#define AF_LINE_OSC_IN                   0U
-#define AF_OSC_OUT                       0U
-#define AF_LINE_OSC_OUT                  0U
 
 
 #define AUX_TIM	 1
