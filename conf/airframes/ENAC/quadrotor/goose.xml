@@ -1,9 +1,9 @@
 <!DOCTYPE airframe SYSTEM "../../airframe.dtd">
 
-<airframe name="Panther">
+<airframe name="Goose">
 
   <description>
-    * Autopilot:   BetaFPV AIO 35A
+    * Autopilot:   TMOTOR AIO 35A
     * Telemetry:   ESP 32 dronebridge
     * GPS:         datalink
     * RC:          SBUS
@@ -12,15 +12,12 @@
   <firmware name="rotorcraft">
     <configure name="PERIODIC_FREQUENCY" value="500"/>
     <!-- <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/> -->
-    <configure name="RTOS_DEBUG" value="TRUE" />
+    <configure name="RTOS_DEBUG" value="FALSE" />
     
-    <target name="ap" board="betafpv_aiof7">
+    <target name="ap" board="tmotor_aiof7">
       <module name="radio_control" type="sbus"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
       <!-- <define name="INS_EKF2_OPTITRACK" value="TRUE"/> -->
-      <configure name="USE_MAGNETOMETER" value="FALSE"/>
-      <define name="USE_GPS"/>
-      <define name="AHRS_USE_GPS_HEADING" value="TRUE" />
     </target>
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
@@ -28,7 +25,6 @@
     </target>
 
     <!-- <module name="telemetry" type="xbee_api">
-      <configure name="MODEM_PORT" value="UART2" />
     </module> -->
 
     <!-- <module name="telemetry" type="transparent">
@@ -36,9 +32,8 @@
     </module> -->
     <!-- <configure name="MODEM_PORT" value="UART2" />  -->
 
-    <!-- DroneBridge -->
     <module name="telemetry" type="transparent">
-      <configure name="MODEM_PORT" value="UART6" />
+      <configure name="MODEM_PORT" value="UART5" />
       <configure name="MODEM_BAUD" value="B115200" />
     </module>
 
@@ -59,28 +54,35 @@
     </module> -->
 
 
-    <module name="board" type="betafpv_aiof7">
+    <module name="board" type="tmotor_aiof7">
     </module>
-      <!-- <configure name="IMU_ODR" value="1KHZ" /> -->
-      <!-- <configure name="GYRO_RANGE" value="500DPS" /> -->
 
-    <module name="gps" type="optitrack"/>
+    <module name="gps" type="ublox">
+      <configure name="GPS_BAUD" value="B115200"/>
+      <configure name="GPS_PORT" value="UART4"/>
+    </module>
+    <module name="mag" type="hmc59xx">
+      <configure name="MAG_HMC58XX_I2C_DEV" value="i2c2"/>
+      <define name="MODULE_HMC58XX_UPDATE_AHRS" value="TRUE"/>
+      <define name="MODULE_HMC58XX_SYNC_SEND" value="FALSE"/> 
+      <define name="USE_I2C2"/>
+    </module>
 
     <module name="stabilization" type="indi"/>
     <module name="guidance" type="indi"/>
 
-    <module name="ahrs" type="int_cmpl_quat"/>
+    <!-- <module name="ahrs" type="int_cmpl_quat"/> -->
     <!-- <module name="ahrs"  type="float_dcm"/> -->
-    <module name="ins"  type="gps_passthrough"/>
+    <!-- <module name="ins"  type="gps_passthrough"/> -->
     <!-- <module name="ins"/> -->
-    <!-- <module name="ins" type="ekf2"/> -->
+    <module name="ins" type="ekf2"/>
     <!-- <module name="preflight_checks"/> -->
 
     <!-- <module name="flight_recorder"/> -->
-     <module name="sys_mon"></module>
+     <!-- <module name="sys_mon"></module>
      <module name="shell">
       <configure name="SHELL_PORT" value="usb_serial_debug"/>
-     </module>
+     </module> -->
   </firmware>
 
   <servos driver="DShot">
@@ -219,9 +221,12 @@
     <define name="FAILSAFE_FIXED_THROTTLE" value="0.4"/>
   </section>
 
-  <!-- <section name="MISC">
-    <define name="INS_EKF2_GPS_COURSE_YAW" value="TRUE"/>
-  </section> -->
+  <section name="INS" prefix="INS_">
+    <!--muret-->
+    <define name="H_X" value="0.5180"/>
+    <define name="H_Y" value="-0.0071"/>
+    <define name="H_Z" value="0.8554"/>
+  </section>
 
 
   <section name="GCS">

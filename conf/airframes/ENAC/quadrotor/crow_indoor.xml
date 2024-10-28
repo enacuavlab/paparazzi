@@ -1,9 +1,9 @@
 <!DOCTYPE airframe SYSTEM "../../airframe.dtd">
 
-<airframe name="Lion">
+<airframe name="Crow">
 
   <description>
-    * Autopilot:   TMOTOR AIO 35A
+    * Autopilot:   BetaFPV AIO 35A
     * Telemetry:   ESP 32 dronebridge
     * GPS:         datalink
     * RC:          SBUS
@@ -14,35 +14,40 @@
     <!-- <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/> -->
     <configure name="RTOS_DEBUG" value="TRUE" />
     
-    <target name="ap" board="tmotor_aiof7">
+    <target name="ap" board="betafpv_aiof7">
       <module name="radio_control" type="sbus"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
       <!-- <define name="INS_EKF2_OPTITRACK" value="TRUE"/> -->
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+      <define name="USE_GPS"/>
+      <define name="AHRS_USE_GPS_HEADING" value="TRUE" />
     </target>
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
       <module name="radio_control" type="ppm"/>
     </target>
 
-    <module name="telemetry" type="xbee_api">
-    </module>
+    <!-- <module name="telemetry" type="xbee_api">
+      <configure name="MODEM_PORT" value="UART2" />
+    </module> -->
 
     <!-- <module name="telemetry" type="transparent">
       <configure name="MODEM_PORT" value="usb_serial" />
     </module> -->
     <!-- <configure name="MODEM_PORT" value="UART2" />  -->
 
-    <!-- <module name="telemetry" type="transparent">
+    <!-- DroneBridge -->
+    <module name="telemetry" type="transparent">
       <configure name="MODEM_PORT" value="UART6" />
       <configure name="MODEM_BAUD" value="B115200" />
-    </module> -->
+    </module>
 
 
-    <!-- <module name="actuators" type="dshot">
+    <module name="actuators" type="dshot">
        <define name="DSHOT_SPEED" value="600"/>
-    </module> -->
+    </module>
 
-    <module name="actuators" type="pwm">
+    <!-- <module name="actuators" type="pwm">
       <define name="SERVO_HZ" value="400"/>
       <define name="USE_PWM1"/>
       <define name="USE_PWM2"/>
@@ -51,30 +56,23 @@
       <define name="USE_DSHOT_TIM3" value="0"></define>
       <define name="USE_DSHOT_TIM4" value="0"></define>
       <define name="USE_DSHOT_TIM5" value="0"></define>
-    </module>
+    </module> -->
 
 
-    <module name="board" type="tmotor_aiof7">
+    <module name="board" type="betafpv_aiof7">
     </module>
+      <!-- <configure name="IMU_ODR" value="1KHZ" /> -->
+      <!-- <configure name="GYRO_RANGE" value="500DPS" /> -->
 
-    <module name="gps" type="ublox">
-      <configure name="GPS_BAUD" value="B115200"/>
-      <configure name="GPS_PORT" value="UART4"/>
-    </module>
-    <module name="mag" type="hmc59xx">
-      <configure name="MAG_HMC58XX_I2C_DEV" value="i2c2"/>
-      <define name="MODULE_HMC58XX_UPDATE_AHRS" value="TRUE"/>
-      <define name="MODULE_HMC58XX_SYNC_SEND" value="FALSE"/> 
-      <define name="USE_I2C2"/>
-    </module>
+    <module name="gps" type="optitrack"/>
 
     <module name="stabilization" type="indi"/>
     <module name="guidance" type="indi"/>
 
     <module name="ahrs" type="int_cmpl_quat"/>
     <!-- <module name="ahrs"  type="float_dcm"/> -->
-    <!-- <module name="ins"  type="gps_passthrough"/> -->
-    <module name="ins"/>
+    <module name="ins"  type="gps_passthrough"/>
+    <!-- <module name="ins"/> -->
     <!-- <module name="ins" type="ekf2"/> -->
     <!-- <module name="preflight_checks"/> -->
 
@@ -85,19 +83,19 @@
      </module>
   </firmware>
 
-  <!-- <servos driver="DShot">
+  <servos driver="DShot">
     <servo name="BR" no="1" min="0" neutral="100" max="2000"/>
     <servo name="BL" no="2" min="0" neutral="100" max="2000"/>
     <servo name="FR" no="3" min="0" neutral="100" max="2000"/>
     <servo name="FL" no="4" min="0" neutral="100" max="2000"/>
-  </servos> -->
+  </servos>
 
-  <servos driver="Pwm">
+  <!-- <servos driver="Pwm">
     <servo name="BR" no="1" min="1000" neutral="1100" max="2000"/>
     <servo name="BL" no="2" min="1000" neutral="1100" max="2000"/>
     <servo name="FR" no="3" min="1000" neutral="1100" max="2000"/>
     <servo name="FL" no="4" min="1000" neutral="1100" max="2000"/>
-  </servos>
+  </servos> -->
 
   <commands>
     <axis name="ROLL" failsafe_value="0"/>
@@ -221,12 +219,9 @@
     <define name="FAILSAFE_FIXED_THROTTLE" value="0.4"/>
   </section>
 
-  <section name="INS" prefix="INS_">
-    <!--muret-->
-    <define name="H_X" value="0.5180"/>
-    <define name="H_Y" value="-0.0071"/>
-    <define name="H_Z" value="0.8554"/>
-  </section>
+  <!-- <section name="MISC">
+    <define name="INS_EKF2_GPS_COURSE_YAW" value="TRUE"/>
+  </section> -->
 
 
   <section name="GCS">

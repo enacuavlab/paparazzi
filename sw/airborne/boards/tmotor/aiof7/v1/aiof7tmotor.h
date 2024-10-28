@@ -52,13 +52,30 @@
 #define ADC_1_GPIO_PIN PAL_PAD(LINE_VBAT_MEAS)
 #endif
 
+#ifndef USE_ADC_2
+#define USE_ADC_2 1
+#endif
+
+#if USE_ADC_2
+#define AD1_2_CHANNEL CONCAT_BOARD_PARAM(ADC_CHANNEL_IN, ADC_CURR_ADC_IN)
+#define ADC_2 AD1_2
+#define ADC_2_GPIO_PORT PAL_PORT(LINE_ADC_CURR)
+#define ADC_2_GPIO_PIN PAL_PAD(LINE_ADC_CURR)
+#endif
+
 /* allow to define ADC_CHANNEL_VSUPPLY in the airframe file*/
 #ifndef ADC_CHANNEL_VSUPPLY
 #define ADC_CHANNEL_VSUPPLY ADC_1
 #endif
 
+#define DefaultVoltageOfAdc(adc) ((3.3f/4096.0f)*11.08866*adc)
 
-#define DefaultVoltageOfAdc(adc) ((3.3f/4096.0f)*10.91*adc)
+#ifndef ADC_CHANNEL_CURRENT
+#define ADC_CHANNEL_CURRENT ADC_2
+#endif
+
+#define MilliAmpereOfAdc(adc)((float)adc) * (3.3f / 4096.0f) * (90.0f / 5.0f)// TODO: determine 100% correct value
+
 
 
 /*
@@ -200,10 +217,10 @@
  */
 
 
-#define DSHOT_TIM2_TELEMETRY_DEV NULL
+
 #define DSHOT_TIM3_TELEMETRY_DEV NULL
 #define DSHOT_TIM4_TELEMETRY_DEV NULL
-
+#define DSHOT_TIM8_TELEMETRY_DEV NULL
 
 
 #ifndef USE_DSHOT_TIM3
@@ -211,12 +228,12 @@
 #endif
 
 #ifndef USE_DSHOT_TIM4
-#define USE_DSHOT_TIM4 1 // MOTOR_5 MOTOR_6 MOTOR_7 
+#define USE_DSHOT_TIM4 0 // MOTOR_5 MOTOR_6 MOTOR_7 
 #endif
 
 
 #ifndef USE_DSHOT_TIM8
-#define USE_DSHOT_TIM8 1 // MOTOR_8
+#define USE_DSHOT_TIM8 0 // MOTOR_8
 #endif
 
 
@@ -315,8 +332,8 @@
   .dma_stream = STM32_PWM8_UP_DMA_STREAM,   \
   .dma_channel = STM32_PWM8_UP_DMA_CHANNEL, \
   .pwmp = &PWMD8,                           \
-  .tlm_sd = DSHOT_TIM2_TELEMETRY_DEV,       \
-  .dma_buf = &dshot2DmaBuffer,              \
+  .tlm_sd = DSHOT_TIM8_TELEMETRY_DEV,       \
+  .dma_buf = &dshot8DmaBuffer,              \
   .dcache_memory_in_use = false             \
 }
 #endif

@@ -85,7 +85,7 @@
 
 #define	PC00                           0U
 #define	VBAT_MEAS                      1U
-#define	PC02                           2U
+#define	ADC_CURR                       2U
 #define	PC03                           3U
 #define	GYRO_EXTI_1                    4U
 #define	PC05                           5U
@@ -273,6 +273,7 @@
 #define	LINE_SPI2_MOSI                 PAL_LINE(GPIOB, 15U)
 
 #define	LINE_VBAT_MEAS                 PAL_LINE(GPIOC, 1U)
+#define	LINE_ADC_CURR                  PAL_LINE(GPIOC, 2U)
 #define	LINE_GYRO_EXTI_1               PAL_LINE(GPIOC, 4U)
 #define	LINE_MOTOR_1                   PAL_LINE(GPIOC, 6U)
 #define	LINE_MOTOR_2                   PAL_LINE(GPIOC, 7U)
@@ -520,7 +521,7 @@
 
 #define VAL_GPIOC_MODER                 (PIN_MODE_INPUT(PC00) | \
 					 PIN_MODE_ANALOG(VBAT_MEAS) | \
-					 PIN_MODE_INPUT(PC02) | \
+					 PIN_MODE_ANALOG(ADC_CURR) | \
 					 PIN_MODE_INPUT(PC03) | \
 					 PIN_MODE_INPUT(GYRO_EXTI_1) | \
 					 PIN_MODE_INPUT(PC05) | \
@@ -537,7 +538,7 @@
 
 #define VAL_GPIOC_OTYPER                (PIN_OTYPE_PUSHPULL(PC00) | \
 					 PIN_OTYPE_PUSHPULL(VBAT_MEAS) | \
-					 PIN_OTYPE_PUSHPULL(PC02) | \
+					 PIN_OTYPE_PUSHPULL(ADC_CURR) | \
 					 PIN_OTYPE_PUSHPULL(PC03) | \
 					 PIN_OTYPE_OPENDRAIN(GYRO_EXTI_1) | \
 					 PIN_OTYPE_PUSHPULL(PC05) | \
@@ -554,7 +555,7 @@
 
 #define VAL_GPIOC_OSPEEDR               (PIN_OSPEED_SPEED_VERYLOW(PC00) | \
 					 PIN_OSPEED_SPEED_VERYLOW(VBAT_MEAS) | \
-					 PIN_OSPEED_SPEED_VERYLOW(PC02) | \
+					 PIN_OSPEED_SPEED_VERYLOW(ADC_CURR) | \
 					 PIN_OSPEED_SPEED_VERYLOW(PC03) | \
 					 PIN_OSPEED_SPEED_VERYLOW(GYRO_EXTI_1) | \
 					 PIN_OSPEED_SPEED_VERYLOW(PC05) | \
@@ -571,7 +572,7 @@
 
 #define VAL_GPIOC_PUPDR                 (PIN_PUPDR_PULLDOWN(PC00) | \
 					 PIN_PUPDR_FLOATING(VBAT_MEAS) | \
-					 PIN_PUPDR_PULLDOWN(PC02) | \
+					 PIN_PUPDR_FLOATING(ADC_CURR) | \
 					 PIN_PUPDR_PULLDOWN(PC03) | \
 					 PIN_PUPDR_PULLUP(GYRO_EXTI_1) | \
 					 PIN_PUPDR_PULLDOWN(PC05) | \
@@ -588,7 +589,7 @@
 
 #define VAL_GPIOC_ODR                   (PIN_ODR_LEVEL_LOW(PC00) | \
 					 PIN_ODR_LEVEL_LOW(VBAT_MEAS) | \
-					 PIN_ODR_LEVEL_LOW(PC02) | \
+					 PIN_ODR_LEVEL_LOW(ADC_CURR) | \
 					 PIN_ODR_LEVEL_LOW(PC03) | \
 					 PIN_ODR_LEVEL_LOW(GYRO_EXTI_1) | \
 					 PIN_ODR_LEVEL_LOW(PC05) | \
@@ -605,7 +606,7 @@
 
 #define VAL_GPIOC_AFRL			(PIN_AFIO_AF(PC00, 0) | \
 					 PIN_AFIO_AF(VBAT_MEAS, 0) | \
-					 PIN_AFIO_AF(PC02, 0) | \
+					 PIN_AFIO_AF(ADC_CURR, 0) | \
 					 PIN_AFIO_AF(PC03, 0) | \
 					 PIN_AFIO_AF(GYRO_EXTI_1, 0) | \
 					 PIN_AFIO_AF(PC05, 0) | \
@@ -1551,6 +1552,9 @@
 #define VBAT_MEAS_ADC	 1
 #define VBAT_MEAS_ADC_FN	 IN
 #define VBAT_MEAS_ADC_IN	 11
+#define ADC_CURR_ADC	 1
+#define ADC_CURR_ADC_FN	 IN
+#define ADC_CURR_ADC_IN	 12
 #define MOTOR_1_TIM	 3
 #define MOTOR_1_TIM_FN	 CH
 #define MOTOR_1_TIM_CH	 1
