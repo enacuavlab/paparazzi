@@ -4,7 +4,7 @@
   <doc>
     <description>
       Autoload several onboard sensors for the T-Motor aiof7 board with proper configuration
-      - IMU (MP6500) 
+      - IMU (MPU6500) 
       - Baro (BMP280 SPI)
       - Mag (Externe)
     </description>
@@ -15,6 +15,8 @@
   <makefile target="!sim|nps|fbw">
     <configure name="IMU_SPI_DEV" value="spi1" case="upper|lower"/>
     <configure name="IMU_SPI_SLAVE_IDX" value="SPI_SLAVE0"/>
+    <define name="TMOTOR_AIO_IMU_ROT" value=".body_to_sensor={{16383,0,0,0,-16383,0,0,0,-16382}}"/>
+    <define name="TMOTOR_AIO_MAG_ROT" value=".body_to_sensor={{11585,11585,0,-11585,11585,0,0,0,16382}}"/>
 
     <configure name="BMP280_USE_SPI" value="TRUE"/>
     <configure name="BMP280_DEV" value="spi3"/>

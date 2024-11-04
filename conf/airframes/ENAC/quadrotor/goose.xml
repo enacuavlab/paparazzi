@@ -86,10 +86,10 @@
   </firmware>
 
   <servos driver="DShot">
-    <servo name="BR" no="1" min="0" neutral="100" max="2000"/>
-    <servo name="BL" no="2" min="0" neutral="100" max="2000"/>
-    <servo name="FR" no="3" min="0" neutral="100" max="2000"/>
-    <servo name="FL" no="4" min="0" neutral="100" max="2000"/>
+    <servo name="BL" no="1" min="0" neutral="100" max="2000"/>
+    <servo name="BR" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="FL" no="3" min="0" neutral="100" max="2000"/>
+    <servo name="FR" no="4" min="0" neutral="100" max="2000"/>
   </servos>
 
   <!-- <servos driver="Pwm">
@@ -114,19 +114,43 @@
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
-    <define name="IMU_ACCEL_CALIB" type="array">
+    <define name="ACCEL_CALIB" type="array">
       <field type="struct">
-        <field name="abi_id" value="24"/>
+        <field name="abi_id" value="9"/>
         <field name="calibrated" type="struct">
           <field name="neutral" value="true"/>
           <field name="scale" value="true"/>
+          <field name="rotation" value="true"/>
         </field>
-        <field name="neutral" value="-9,1,75" type="int[]"/>
-        <field name="scale" value="{{23855,47132,18064},{9728,19217,7339}}"/>
+        <field name="neutral" value="46,23,6" type="int[]"/>
+        <field name="scale" value="{{1753,57088,52129},{357,11657,10783}}"/>
+        <field value="TMOTOR_AIO_IMU_ROT"/>
       </field>
     </define>
-    
-
+    <define name="GYRO_CALIB" type="array">
+      <field type="struct">
+        <field name="abi_id" value="9"/>
+        <field name="calibrated" type="struct">
+          <field name="neutral" value="false"/>
+          <field name="scale" value="false"/>
+          <field name="rotation" value="true"/>
+        </field>
+        <field value="TMOTOR_AIO_IMU_ROT"/>
+      </field>
+    </define>
+    <define name="MAG_CALIB" type="array">
+      <field type="struct">
+        <field name="abi_id" value="2"/>
+        <field name="calibrated" type="struct">
+          <field name="neutral" value="true"/>
+          <field name="scale" value="true"/>
+          <field name="rotation" value="true"/>
+        </field>
+        <field name="neutral" value="-73,-128,17" type="int[]"/>
+        <field name="scale" value="{{610,13504,52135},{163,3657,14546}}"/>
+        <field value="TMOTOR_AIO_MAG_ROT"/>
+      </field>
+    </define>    
     <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
