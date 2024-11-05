@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 <flight_plan alt="152" ground_alt="147" lat0="43 33 50.83" lon0="1 28 52.61" max_dist_from_home="100" name="Rotorcraft Basic (Enac)" security_height="2"
-geofence_sector="Flight_Area" geofence_max_alt="160">
+geofence_sector="Flight_Area" geofence_max_alt="199">
   <header>
 #include "autopilot.h"
   </header>
