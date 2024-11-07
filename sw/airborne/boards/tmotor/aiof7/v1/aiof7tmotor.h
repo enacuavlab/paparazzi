@@ -74,7 +74,7 @@
 #define ADC_CHANNEL_CURRENT ADC_2
 #endif
 
-#define MilliAmpereOfAdc(adc)((float)adc) * (3.3f / 4096.0f) * (90.0f / 5.0f)// TODO: determine 100% correct value
+#define MilliAmpereOfAdc(adc) (3.3f / 4096.0f)*1095.18629*((float)adc) 
 
 
 
