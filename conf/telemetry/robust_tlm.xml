@@ -37,10 +37,8 @@
       <message name="INS_EKF2"                 period=".25"/>
       <message name="WIND_INFO_RET"            period="1."/>
       <message name="AHRS_REF_QUAT"            period="0.5"/>
-      <message name="STAB_ATTITUDE"            period=".25"/>
-      <message name="EFF_MAT_STAB"             period="2.0"/>
-      <message name="ACTUATORS"                period="0.05"/>  
-      </mode>
+      <message name="ESC"                      period="0.2"/>
+    </mode>
 
     <mode name="ppm">
       <message name="DL_VALUE"                 period="0.5"/>
@@ -63,7 +61,6 @@
       <message name="BARO_RAW"                    period=".1"/>
       <message name="IMU_MAG_CURRENT_CALIBRATION" period=".05"/>
       <message name="ARDRONE_NAVDATA"             period=".05"/>
-      <message name="AIRSPEED_RAW"                period="0.1"/>
     </mode>
 
     <mode name="scaled_sensors">
@@ -104,7 +101,7 @@
       <message name="AHRS_REF_QUAT" period="0.05"/>
     </mode>
 
-    <mode name="attitude_loop" key_press="a">
+   <!-- <mode name="attitude_loop" key_press="a">
       <message name="ROTORCRAFT_STATUS" period="1.2"/>
       <message name="DL_VALUE"          period="0.5"/>
       <message name="ALIVE"             period="0.9"/>
@@ -112,9 +109,9 @@
       <message name="STAB_ATTITUDE_REF_INT"   period=".03"/>
       <message name="STAB_ATTITUDE_FLOAT"     period=".03"/>
       <message name="STAB_ATTITUDE_REF_FLOAT" period=".03"/>
-      <message name="STAB_ATTITUDE"           period=".25"/>
-      <message name="EFF_MAT_STAB"            period="2.0"/>
-    </mode>
+      <message name="STAB_ATTITUDE_INDI"      period=".25"/>
+      <message name="INDI_G"            period="2.0"/>
+    </mode> -->
 
     <mode name="vert_loop" key_press="v">
       <message name="ROTORCRAFT_STATUS" period="1.2"/>
@@ -205,11 +202,9 @@
       <message name="IMU_GYRO_SCALED"          period=".075"/>
       <message name="IMU_ACCEL_SCALED"         period=".075"/>
       <message name="IMU_MAG_SCALED"           period=".2"/>
-      <message name="LIDAR"                    period="0.05"/>
-      <message name="ESC"                      period="0.05"/>
-      <message name="STAB_ATTITUDE"            period=".1"/>
+      <!-- <message name="LIDAR"                    period="0.05"/> -->
+      <message name="ESC"                      period="0.002"/>
     </mode>
   </process>
 
 </telemetry>
-
