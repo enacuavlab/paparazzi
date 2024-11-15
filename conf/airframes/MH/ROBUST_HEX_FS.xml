@@ -97,12 +97,12 @@
     <servo name="M5" no="2" min="0" neutral="100" max="2000"/>
     <servo name="M6" no="3" min="0" neutral="100" max="2000"/> -->
 
-    <servo name="M1" no="2" min="0" neutral="100" max="2000"/>
-    <servo name="M2" no="1" min="0" neutral="100" max="2000"/>
-    <servo name="M3" no="3" min="0" neutral="100" max="2000"/>
-    <servo name="M4" no="7" min="0" neutral="100" max="2000"/>
-    <servo name="M5" no="6" min="0" neutral="100" max="2000"/>
-    <servo name="M6" no="5" min="0" neutral="100" max="2000"/>
+    <servo name="M1" no="5" min="0" neutral="100" max="2000"/>
+    <servo name="M2" no="6" min="0" neutral="100" max="2000"/>
+    <servo name="M3" no="7" min="0" neutral="100" max="2000"/>
+    <servo name="M4" no="1" min="0" neutral="100" max="2000"/>
+    <servo name="M5" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="M6" no="3" min="0" neutral="100" max="2000"/>
   </servos>
 
   <servos driver="Pwm">

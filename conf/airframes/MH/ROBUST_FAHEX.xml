@@ -167,7 +167,7 @@
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
   </section>
-  <!-- <section name="IMU" prefix="IMU_"> 
+  <section name="IMU" prefix="IMU_"> 
     <define name="ACCEL_CALIB" type="array">
       <field type="struct">
         <field name="abi_id" value="24"/>
@@ -208,8 +208,8 @@
   
     <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
-    <define name="BODY_TO_IMU_PSI" value="180." unit="deg"/>
-  </section> -->
+    <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
+  </section> 
 
   <include href="conf/mag/toulouse_muret.xml"/>
 
