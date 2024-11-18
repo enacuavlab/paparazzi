@@ -227,9 +227,9 @@
   </section>
 
   <section name="NAV">
-    <define name="ARRIVED_AT_WAYPOINT" value="0.25"/>
-    <define name="NAV_CLIMB_VSPEED" value="0.8"/>
-    <define name="NAV_DESCEND_VSPEED" value="-0.5"/>
+    <define name="ARRIVED_AT_WAYPOINT" value="2."/>
+    <define name="NAV_CLIMB_VSPEED" value="2.5"/>
+    <define name="NAV_DESCEND_VSPEED" value="-1.5"/>
   </section>
 
   <section name="BAT">
