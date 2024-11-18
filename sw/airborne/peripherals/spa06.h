@@ -67,7 +67,6 @@ enum bmp_device_t{
  */
 enum spa06_status_t {
   SPL06_STATUS_UNINIT,
-  SPL06_STATUS_COEFF_AVAIL,
   SPL06_STATUS_INIT_OK,
   SPL06_STATUS_GET_CALIB,
   SPL06_STATUS_CONFIGURE,
@@ -78,7 +77,7 @@ enum spa06_status_t {
 /**
  * @brief Register Trim Variables
  */ 
-struct spl06_reg_calib_data {
+struct spl06_reg_calbi_data {
   int16_t c0;
   int16_t c1;
   int16_t c01;
@@ -110,6 +109,8 @@ struct spa06_t {
   uint8_t* rx_buffer;
   uint8_t* tx_buffer;
   uint16_t* rx_length;
+
+  uint8_t config_idx;                 ///< The current configuration index
 };
 
 

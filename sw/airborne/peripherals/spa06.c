@@ -28,16 +28,20 @@
 
 #include "peripherals/spa06.h"
 
+#define SPL06_PRESSURE_OVERSAMPLING SPL06_OVERSAMPLING_16X_P
+#define SPL06_TEMPERATURE_OVERSAMPLING SPL06_OVERSAMPLING_8X_T
+
 /** local function to extract raw data from i2c/spi buffer
  *  and compute compensation with selected precision
  */
 static void parse_sensor_data(struct spa06_t *spa, uint8_t *data);
-static void parse_calib_data(struct spa06_t *spa, uint8_t *data);
+static void parse_calib_data(struct spa06_t *spa, uint8_t *coef);
 static double compensate_pressure(struct spa06_t *spa);
 static double compensate_temperature(struct spa06_t *spa);
+static bool spa06_config(struct spa06 *spa);
 static void spa06_register_write(struct spa06_t *spa, uint8_t reg, uint8_t value);
 static void spa06_register_read(struct spa06_t *spa, uint8_t reg, uint16_t size);
-
+static int32_t getTwosComplement(uint32_t raw, uint8_t length);
 
 /**
  * @brief Initialize the spa06 sensor instance
@@ -50,6 +54,8 @@ void spa06_init(struct spa06_t *spa)
     spa->data_available = false;
     spa->initialized = false;
     spa->status = SPL06_STATUS_UNINIT;
+
+    bmp->config_idx = 0;
 
   /* SPI setup */
   if(spa->bus == SPA06_SPI) {
@@ -114,37 +120,38 @@ void spa06_periodic(struct spa06_t *spa)
           spa06_register_read(spa, SPL06_REG_CHIP_ID, 1);
           break;
 
-        case SPL06_STATUS_COEFF_AVAIL:
-          break;
 
         case SPL06_STATUS_INIT_OK:
+          spa06_register_read(spa, SPL06_REG_MODE_AND_STATUS, 1);
           break;
 
         case SPA06_STATUS_GET_CALIB:
           // request calibration data
-          spa06_register_read(spa, SPA06_CALIB_LSB_DATA_ADDR, SPA06_CALIB_DATA_LEN);
+          if(spa->device == SPA06){
+            spa06_register_read(spa, SPL06_REG_CALIB_COEFFS_START, SPA06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1);
+          }
+          else if (spa->device == SPL06)
+          {
+            spa06_register_read(spa, SPL06_REG_CALIB_COEFFS_START, SPL06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1);
+          }
           //process in spa06_event()
           break;
 
         case SPA06_STATUS_CONFIGURE:
-          // From datasheet, recommended config for drone usecase:
-          // osrs_p = 16, osrs_t = 2
-          // IIR filter = 2 (note: this one doesn't exist...)
-
-          spa06_register_write(spa, SPA06_CTRL_MEAS_REG_ADDR, (SPA06_OVERSAMPLING_2X_T | SPA06_OVERSAMPLING_16X_P | SPA06_POWER_NORMAL_MODE)); 
-
-          spa06_register_write(spa, SPA06_CONFIG_REG_ADDR, (SPA06_INACTIVITY_HALF_MS | SPA06_IIR_FILTER_COEFF_16));
-
+          if(spa06_config(spa)) {
+            spa->status = SPA06_STATUS_READ_STATUS_REG;
+            spa->initialized = true;
+          }
           break;
 
         case  SPA06_STATUS_READ_STATUS_REG:
           // READ THE STATUS BYTE
-          spa06_register_read(spa, SPA06_STATUS_REG_ADDR, 1);
+          spa06_register_read(spa, SPL06_REG_MODE_AND_STATUS, 1);
           break;
 
         case  SPA06_STATUS_READ_DATA_REGS:
           // READ ALL 6 DATA REGISTERS
-          spa06_register_read(spa, SPA06_DATA_START_REG_ADDR, SPA06_P_T_DATA_LEN);
+          spa06_register_read(spa, SPL06_REG_PRESSURE_B2, SPL06_PRESSURE_LEN + SPL06_TEMPERATURE_LEN);
           break;
 
         default:
@@ -171,22 +178,23 @@ void spa06_event(struct spa06_t *spa)
           /* WHO_AM_I */
           if(spa->rx_buffer[0] == SPA06_CHIP_ID) {
             spa->device = SPA06;
-            spa->status = SPL06_STATUS_COEFF_AVAIL;
+            spa->status = SPL06_STATUS_INIT_OK;
           } 
           else if (spa->rx_buffer[0] == SPL06_CHIP_ID)
           {
             spa->device = SPL06;
-            spa->status = SPL06_STATUS_COEFF_AVAIL;
+            spa->status = SPL06_STATUS_INIT_OK;
           }
           else {
             spa->status = SPA06_STATUS_IDLE;
           }
           break;
         
-        case SPL06_STATUS_COEFF_AVAIL:
-          break;
-
         case SPL06_STATUS_INIT_OK:
+          uint8_t status = spa->rx_buffer[0];
+          if((status & SPL06_MEAS_CFG_COEFFS_RDY) == 1 && (status & SPL06_MEAS_CFG_SENSOR_RDY) == 1){
+            spa->status = SPA06_STATUS_GET_CALIB;
+          }
           break;
 
         case SPA06_STATUS_GET_CALIB:
@@ -196,14 +204,15 @@ void spa06_event(struct spa06_t *spa)
           break;
 
         case SPA06_STATUS_CONFIGURE:
-          // nothing else to do, start reading
-          spa->status = SPA06_STATUS_READ_STATUS_REG;
-          spa->initialized = true;
+          if(spa06_config(spa)) {
+            spa->status = SPA06_STATUS_READ_STATUS_REG;
+            spa->initialized = true;
+          }
           break;
 
         case SPA06_STATUS_READ_STATUS_REG:
           // check status byte
-          if ((spa->rx_buffer[0] & (SPA06_EOC_BIT | SPA06_NVRAM_COPY_BIT)) == 0) {
+          if ((spa->rx_buffer[0] & (SPL06_MEAS_CFG_PRESSURE_RDY | SPL06_MEAS_CFG_TEMPERATURE_RDY)) == 1) {
             spa->status = SPA06_STATUS_READ_DATA_REGS;
           }
           break;
@@ -247,24 +256,8 @@ void spa06_event(struct spa06_t *spa)
 
 static void parse_sensor_data(struct spa06_t *spa, uint8_t *data)
 {
-  /* Temporary variables to store the sensor data */
-  uint32_t data_xlsb;
-  uint32_t data_lsb;
-  uint32_t data_msb;
-
-  // SPA06 HAS THE 6 DATA REGISTERS START AT F7 AND GOING UP TO FC MSB FIRST THEN LSB AND LAST THE XLSB BYTE.
-  // THE FIRST THREE BYTES ARE THE PRESSURE AND THE NEXT 3 THE TEMPERATURE.
-  /* Store the parsed register values for pressure data */
-  data_msb = (uint32_t)data[0] << 16;
-  data_lsb = (uint32_t)data[1] << 8;
-  data_xlsb = (uint32_t)data[2];
-  spa->raw_pressure = (int32_t)((data_msb | data_lsb | data_xlsb) >> 4);
-
-  /* Store the parsed register values for temperature data */
-  data_msb = (uint32_t)data[3] << 16;
-  data_lsb = (uint32_t)data[4] << 8;
-  data_xlsb = (uint32_t)data[5];
-  spa->raw_temperature = (int32_t)((data_msb | data_lsb | data_xlsb) >> 4);
+  spa->raw_pressure = getTwosComplement((data[0] << 16) + (data[1] << 8) + data[2], 24);
+  spa->raw_temperature = getTwosComplement((data[3] << 16) + (data[4] << 8) + data[5], 24);
 }
 
 
@@ -272,23 +265,45 @@ static void parse_sensor_data(struct spa06_t *spa, uint8_t *data)
  *  @brief This internal API is used to parse the calibration data, compensates
  *  it and store it in device structure (float version)
  */
-static void parse_calib_data(struct spa06_t *spa, uint8_t *data)
+static void parse_calib_data(struct spa06_t *spa, uint8_t *coef)
 {
-  spa->calib.dig_t1 = SPA06_CONCAT_BYTES(data[1], data[0]);
-  spa->calib.dig_t2 = (int16_t)SPA06_CONCAT_BYTES(data[3], data[2]);
-  spa->calib.dig_t3 = (int16_t)SPA06_CONCAT_BYTES(data[5], data[4]);
+  // 0x11 c0 [3:0] + 0x10 c0 [11:4]
+  spa->calib.c0 = getTwosComplement(((uint32_t)coef[0] << 4) | (((uint32_t)coef[1] >> 4) & 0x0F), 12);
 
-  spa->calib.dig_p1 = SPA06_CONCAT_BYTES(data[7], data[6]);
-  spa->calib.dig_p2 = (int16_t)SPA06_CONCAT_BYTES(data[9], data[8]);
-  spa->calib.dig_p3 = (int16_t)SPA06_CONCAT_BYTES(data[11], data[10]);
-  spa->calib.dig_p4 = (int16_t)SPA06_CONCAT_BYTES(data[13], data[12]);
-  spa->calib.dig_p5 = (int16_t)SPA06_CONCAT_BYTES(data[15], data[14]);
-  spa->calib.dig_p6 = (int16_t)SPA06_CONCAT_BYTES(data[17], data[16]);
-  spa->calib.dig_p7 = (int16_t)SPA06_CONCAT_BYTES(data[19], data[18]);
-  spa->calib.dig_p8 = (int16_t)SPA06_CONCAT_BYTES(data[21], data[20]);
-  spa->calib.dig_p9 = (int16_t)SPA06_CONCAT_BYTES(data[23], data[22]);
+  // 0x11 c1 [11:8] + 0x12 c1 [7:0]
+  spa->calib.c1 = getTwosComplement((((uint32_t)coef[1] & 0x0F) << 8) | (uint32_t)coef[2], 12);
 
-  return;
+  // 0x13 c00 [19:12] + 0x14 c00 [11:4] + 0x15 c00 [3:0]
+  spa->calib.c00 = getTwosComplement(((uint32_t)coef[3] << 12) | ((uint32_t)coef[4] << 4) | (((uint32_t)coef[5] >> 4) & 0x0F), 20);
+
+  // 0x15 c10 [19:16] + 0x16 c10 [15:8] + 0x17 c10 [7:0]
+  spa->calib.c10 = getTwosComplement((((uint32_t)coef[5] & 0x0F) << 16) | ((uint32_t)coef[6] << 8) | (uint32_t)coef[7], 20);
+
+  // 0x18 c01 [15:8] + 0x19 c01 [7:0]
+  spa->calib.c01 = getTwosComplement(((uint32_t)coef[8] << 8) | (uint32_t)coef[9], 16);
+
+  // 0x1A c11 [15:8] + 0x1B c11 [7:0]
+  spa->calib.c11 = getTwosComplement(((uint32_t)coef[10] << 8) | (uint32_t)coef[11], 16);
+
+  // 0x1C c20 [15:8] + 0x1D c20 [7:0]
+  spa->calib.c20 = getTwosComplement(((uint32_t)coef[12] << 8) | (uint32_t)coef[13], 16);
+
+  // 0x1E c21 [15:8] + 0x1F c21 [7:0]
+  spa->calib.c21 = getTwosComplement(((uint32_t)coef[14] << 8) | (uint32_t)coef[15], 16);
+
+  // 0x20 c30 [15:8] + 0x21 c30 [7:0]
+  spa->calib.c30 = getTwosComplement(((uint32_t)coef[16] << 8) | (uint32_t)coef[17], 16);
+
+  if (spa->device == SPA06) {
+        // 0x23 c31 [3:0] + 0x22 c31 [11:4]
+        spa->calib.c31 = getTwosComplement(((uint32_t)coef[18] << 4) | (((uint32_t)coef[19] >> 4) & 0x0F), 12);
+
+        // 0x23 c40 [11:8] + 0x24 c40 [7:0]
+        spa->calib.c40 = getTwosComplement((((uint32_t)coef[19] & 0x0F) << 8) | (uint32_t)coef[20], 12);
+    } else {
+        spa->calib.c31 = 0;
+        spa->calib.c40 = 0; 
+    }
 }
 
 /**
@@ -334,6 +349,51 @@ static double compensate_pressure(struct spa06_t *spa)
   spa->pressure = p;
 
   return (p);
+}
+
+/**
+ * @brief Configure the spa06 device register by register
+ * 
+ * @param spa The spa06 instance
+ * @return true When the configuration is completed
+ * @return false Still busy configuring
+ */
+static bool spa06_config(struct spa06_t *spa) {
+  // Only one transaction can be made per call to the periodic function 
+  switch(spa->config_idx) {
+    case 0:
+      // PRS_CFG: pressure measurement rate (32 Hz) and oversampling (16 time standard)
+      bmp280_register_write(spa, SPL06_REG_PRESSURE_CFG, (SPL06_PRES_RATE_32HZ | SPL06_PRESSURE_OVERSAMPLING)); 
+      spa->config_idx++;
+      break;
+
+    case 1: 
+       // TMP_CFG: temperature measurement rate (32 Hz) and oversampling (8 times)
+      bmp280_register_write(spa, SPL06_REG_TEMPERATURE_CFG, (SPL06_TEMP_RATE_32HZ | SPL06_TEMPERATURE_OVERSAMPLING));
+      spa->config_idx++;
+      break;
+
+    case 2:
+      uint8_t int_and_fifo_reg_value = 0;
+      if (SPL06_TEMPERATURE_OVERSAMPLING > 8) {
+          int_and_fifo_reg_value |= SPL06_TEMPERATURE_RESULT_BIT_SHIFT;
+      }
+      if (SPL06_PRESSURE_OVERSAMPLING > 8) {
+          int_and_fifo_reg_value |= SPL06_PRESSURE_RESULT_BIT_SHIFT;
+      }
+      bmp280_register_write(spa, SPL06_REG_INT_AND_FIFO_CFG, int_and_fifo_reg_value);
+      spa->config_idx++;
+      break;
+
+     case 3:
+      bmp280_register_write(spa, SPL06_REG_MODE_AND_STATUS, SPL06_MEAS_CON_PRE_TEM);
+      spa->config_idx++;
+      break;
+
+    default:
+      return true;
+  }
+  return false;
 }
 
 
@@ -383,4 +443,14 @@ static void spa06_register_read(struct spa06_t *spa, uint8_t reg, uint16_t size)
   else {
     i2c_transceive(spa->i2c.p, &(spa->i2c.trans), spa->i2c.slave_addr, 1, size);
   }
+}
+
+static int32_t getTwosComplement(uint32_t raw, uint8_t length)
+{
+    if (raw & ((int)1 << (length - 1))) {
+        return ((int32_t)raw) - ((int32_t)1 << length);
+    }
+    else {
+        return raw;
+    }
 }

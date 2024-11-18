@@ -73,7 +73,7 @@
 // MODE_AND_STATUS_REG
 #define SPL06_MEAS_PRESSURE                    (1<<0)  // measure pressure
 #define SPL06_MEAS_TEMPERATURE                 (1<<1)  // measure temperature
-#define SPL06_MEAS_CON_PRE_TEM				         0x07
+#define SPL06_MEAS_CON_PRE_TEM				         0x07  // Continuous pressure and temperature measurement
 
 #define SPL06_MEAS_CFG_CONTINUOUS              (1<<2)
 #define SPL06_MEAS_CFG_PRESSURE_RDY            (1<<4)
@@ -85,8 +85,25 @@
 #define SPL06_PRESSURE_RESULT_BIT_SHIFT        (1<<2)  // necessary for pressure oversampling > 8
 #define SPL06_TEMPERATURE_RESULT_BIT_SHIFT     (1<<3)  // necessary for temperature oversampling > 8
 
-// Don't set oversampling higher than 8 or the measurement time will be higher than 20ms (timer period)
-#define SPL06_PRESSURE_OVERSAMPLING            8
+#define SPL06_OVERSAMPLING_1X_T                0x00 // single. (Default) - Measurement time 3.6 ms
+#define SPL06_OVERSAMPLING_2X_T                0x01 // 2 times
+#define SPL06_OVERSAMPLING_4X_T                0x02 // 4 times
+#define SPL06_OVERSAMPLING_8X_T                0x03 // 8 times.
+#define SPL06_OVERSAMPLING_16X_T               0x04 // 16 times
+#define SPL06_OVERSAMPLING_32X_T               0x05 // 32 times  
+#define SPL06_OVERSAMPLING_64X_T               0x06 // 64 times 
+#define SPL06_OVERSAMPLING_128X_T              0x07 // 128 times 
+
+#define SPL06_OVERSAMPLING_1X_P                0x00 // Single. (Low Precision)
+#define SPL06_OVERSAMPLING_2X_P                0x01 // 2 times (Low Power)
+#define SPL06_OVERSAMPLING_4X_P                0x02 // 4 times
+#define SPL06_OVERSAMPLING_8X_P                0x03 // 8 times.
+#define SPL06_OVERSAMPLING_16X_P               0x04 // 16 times (Standard) Use in combination with a bit shift
+#define SPL06_OVERSAMPLING_32X_P               0x05 // 32 times  Use in combination with a bit shift
+#define SPL06_OVERSAMPLING_64X_P               0x06 // 64 times (High Precision) Use in combination with a bit shift
+#define SPL06_OVERSAMPLING_128X_P              0x07 // 128 times Use in combination with a bit shift
+
+
 #define SPL06_TEMPERATURE_OVERSAMPLING         8
 
 
