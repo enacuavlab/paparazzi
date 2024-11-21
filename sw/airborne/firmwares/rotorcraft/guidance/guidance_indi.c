@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (C) 2015 Ewoud Smeur <ewoud.smeur@gmail.com>
  *
  * This file is part of paparazzi.
