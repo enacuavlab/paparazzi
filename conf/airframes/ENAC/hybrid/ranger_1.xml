@@ -32,7 +32,7 @@
 
     <module name="telemetry" type="xbee_api"/>
     <module name="sys_mon"/>
-    <!--module name="flight_recorder"/-->
+    <module name="flight_recorder"/>
     <!--module name="logger" type="control_effectiveness">
       <define name="LOGGER_CONTROL_EFFECTIVENESS_COMMANDS" value="FALSE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
@@ -41,7 +41,7 @@
       <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="TRUE"/>
     </module-->
     <module name="shell">
-      <configure name="SHELL_PORT" value="usb_serial"/>
+      <configure name="SHELL_PORT" value="uart3"/>
     </module>
 
     <module name="actuators" type="pwm">
@@ -151,7 +151,7 @@
         <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
-    <define name="IMU_ACCEL_CALIB" type="array">
+    <define name="ACCEL_CALIB" type="array">
       <field type="struct">
         <field name="abi_id" value="24"/>
         <field name="calibrated" type="struct">
@@ -164,7 +164,7 @@
         <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
-    <define name="IMU_MAG_CALIB" type="array">
+    <define name="MAG_CALIB" type="array">
       <field type="struct">
         <field name="abi_id" value="3"/>
         <field name="calibrated" type="struct">
