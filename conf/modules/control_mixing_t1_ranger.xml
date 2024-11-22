@@ -1,0 +1,14 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="control_mixing_t1_ranger" dir="ctrl" task="control">
+  <doc>
+    <description>Control mixing specific to the Heewing T1 Ranger</description>
+  </doc>
+  <header>
+    <file name="control_mixing_t1_ranger.h"/>
+  </header>
+  <init fun="control_mixing_t1_ranger_init()"/>
+  <makefile>
+    <file name="control_mixing_t1_ranger.c"/>
+    <test/>
+  </makefile>
+</module>

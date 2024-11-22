@@ -32,7 +32,7 @@
 
     <module name="telemetry" type="xbee_api"/>
     <module name="sys_mon"/>
-    <module name="flight_recorder"/>
+    <!--module name="flight_recorder"/-->
     <!--module name="logger" type="control_effectiveness">
       <define name="LOGGER_CONTROL_EFFECTIVENESS_COMMANDS" value="FALSE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
@@ -40,6 +40,9 @@
       <define name="LOGGER_CONTROL_EFFECTIVENESS_SPEED" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="TRUE"/>
     </module-->
+    <module name="shell">
+      <configure name="SHELL_PORT" value="usb_serial"/>
+    </module>
 
     <module name="actuators" type="pwm">
       <define name="USE_PWM_TIM3" value="TRUE"/>
@@ -63,7 +66,11 @@
       <!--define name="USE_AIRSPEED_AIR_DATA" value="TRUE"/-->
     </module>
 
-    <module name="stabilization" type="indi"/>
+    <module name="control_mixing" type="t1_ranger"/>
+    <module name="stabilization" type="indi">
+      <define name="WLS_N_U_MAX" value = "8"/>
+      <define name="WLS_N_V_MAX" value = "4"/>
+    </module>
     <!--module name="guidance" type="indi_hybrid_ranger"/-->
     <module name="nav" type="hybrid"/>
 
@@ -80,26 +87,22 @@
     <servo name="MOTOR_RIGHT"   no="5" min="1000" neutral="1100" max="1800"/>
     <servo name="MOTOR_LEFT"    no="6" min="1000" neutral="1100" max="1800"/>
     <servo name="MOTOR_TAIL"    no="7" min="1000" neutral="1100" max="1800"/>
-    <servo name="AILERON_RIGHT" no="8" min="1200" neutral="1500" max="1800"/>
-    <servo name="AILERON_LEFT"  no="3" min="1200" neutral="1500" max="1800"/>
-    <servo name="ELEVATOR"      no="4" min="1200" neutral="1500" max="1800"/>
-    <servo name="TILT_RIGHT"    no="2" min="1200" neutral="1500" max="1800"/>
-    <servo name="TILT_LEFT"     no="1" min="1200" neutral="1500" max="1800"/>
+    <servo name="AILERON_RIGHT" no="8" min="1800" neutral="1550" max="1200"/>
+    <servo name="AILERON_LEFT"  no="3" min="1800" neutral="1450" max="1200"/>
+    <servo name="ELEVATOR"      no="4" min="1100" neutral="1500" max="1900"/>
+    <servo name="TILT_RIGHT"    no="2" min="900" neutral="900" max="2200"/>
+    <servo name="TILT_LEFT"     no="1" min="2000" neutral="2000" max="700"/>
   </servos>
 
   <commands>
     <axis name="MOTOR_RIGHT"    group="REAL"    failsafe_value="0"/>
     <axis name="MOTOR_LEFT"     group="REAL"    failsafe_value="0"/>
     <axis name="MOTOR_TAIL"     group="REAL"    failsafe_value="0"/>
-    <!--axis name="AILERON_RIGHT"  group="REAL"    failsafe_value="0"/>
-    <axis name="AILERON_LEFT"   group="REAL"    failsafe_value="0"/-->
-    <axis name="ELEVATOR"       group="REAL"    failsafe_value="0"/>
-    <axis name="TILT_RIGHT"     group="REAL"    failsafe_value="0"/>
-    <axis name="TILT_LEFT"      group="REAL"    failsafe_value="0"/>
     <axis name="PITCH"          group="VIRTUAL" failsafe_value="0"/>
     <axis name="ROLL"           group="VIRTUAL" failsafe_value="0"/>
     <axis name="YAW"            group="VIRTUAL" failsafe_value="0"/>
     <axis name="THRUST"         group="VIRTUAL" failsafe_value="0"/>
+    <axis name="TILT"           group="VIRTUAL" failsafe_value="0"/>
   </commands>
 
   <command_laws>
@@ -109,13 +112,13 @@
     <set servo="AILERON_RIGHT"  value="@ROLL"/>
     <set servo="AILERON_LEFT"   value="@ROLL"/>
     <set servo="ELEVATOR"       value="@PITCH"/>
-    <set servo="TILT_RIGHT"     value="@TILT_RIGHT"/>
-    <set servo="TILT_LEFT"      value="@TILT_LEFT"/>
+    <set servo="TILT_RIGHT"     value="@TILT + @YAW"/>
+    <set servo="TILT_LEFT"      value="@TILT - @YAW"/>
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
     <!-- IMU calibration, make sure to calibrate the IMU properly before flight, see the wiki for more info-->
-    <define name="MAG_X_NEUTRAL" value="-33"/>
+    <!--define name="MAG_X_NEUTRAL" value="-33"/>
     <define name="MAG_Y_NEUTRAL" value="1485"/>
     <define name="MAG_Z_NEUTRAL" value="1184"/>
     <define name="MAG_X_SENS" value="0.6709952296917457" integer="16"/>
@@ -135,7 +138,45 @@
     <define name="ACCEL_Z_NEUTRAL" value="-28"/>
     <define name="ACCEL_X_SENS" value="4.907307048714179" integer="16"/>
     <define name="ACCEL_Y_SENS" value="4.561138191178077" integer="16"/>
-    <define name="ACCEL_Z_SENS" value="4.895601825888152" integer="16"/>
+    <define name="ACCEL_Z_SENS" value="4.895601825888152" integer="16"/-->
+
+    <define name="GYRO_CALIB" type="array">
+      <field type="struct">
+        <field name="abi_id" value="24"/>
+        <field name="calibrated" type="struct">
+          <field name="neutral" value="false"/>
+          <field name="scale" value="false"/>
+          <field name="rotation" value="true"/>
+        </field>
+        <field value="TAWAKIV2_IMU_ROT"/>
+      </field>
+    </define>
+    <define name="IMU_ACCEL_CALIB" type="array">
+      <field type="struct">
+        <field name="abi_id" value="24"/>
+        <field name="calibrated" type="struct">
+          <field name="neutral" value="true"/>
+          <field name="scale" value="true"/>
+          <field name="rotation" value="true"/>
+        </field>
+        <field name="neutral" value="-15,-2,55" type="int[]"/>
+        <field name="scale" value="{{6605,5456,56432},{2691,2225,22965}}"/>
+        <field value="TAWAKIV2_IMU_ROT"/>
+      </field>
+    </define>
+    <define name="IMU_MAG_CALIB" type="array">
+      <field type="struct">
+        <field name="abi_id" value="3"/>
+        <field name="calibrated" type="struct">
+          <field name="neutral" value="true"/>
+          <field name="scale" value="true"/>
+          <field name="rotation" value="true"/>
+        </field>
+        <field name="neutral" value="-397,-161,-5045" type="int[]"/>
+        <field name="scale" value="{{51767,39473,6973},{59286,49477,8529}}"/>
+        <field value="TAWAKIV2_MAG_ROT"/>
+      </field>
+    </define>
 
     <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
@@ -213,7 +254,20 @@
   </section>
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-    <define name="MAX_BANK" value="60" unit="deg"/>
+    <define name="MAX_BANK" value="20" unit="deg"/>
+    <define name="USE_SPEED_REF" value="TRUE"/>
+    <define name="PGAIN" value="180"/>
+    <define name="DGAIN" value="180"/>
+    <define name="AGAIN" value="0"/>
+    <define name="IGAIN" value="30"/>
+  </section>
+
+  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
+    <define name="HOVER_KP" value="150"/>
+    <define name="HOVER_KD" value="80"/>
+    <define name="HOVER_KI" value="20"/>
+    <define name="NOMINAL_HOVER_THROTTLE" value="0.35"/>
+    <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
   </section>
 
   <section name="GUIDANCE_INDI">

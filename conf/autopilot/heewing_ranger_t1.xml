@@ -91,8 +91,7 @@
         <call fun="nav_periodic_task()"/>
       </control>
       <control>
-        <call_block name="run_attitude_control"/>
-        <call_block name="set_commands"/>
+        <call fun="control_mixing_t1_ranger_manual()"/>
       </control>
       <exception cond="RCLost()" deroute="FAILSAFE"/>
     </mode>
