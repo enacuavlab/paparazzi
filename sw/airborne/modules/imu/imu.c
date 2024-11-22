@@ -340,7 +340,7 @@ static void send_mag_current(struct transport_tx *trans, struct link_device *dev
 #include "string.h"
 
 static void show_calibrated(shell_stream_t *sh, struct imu_calib_t *calibrated) {
-  chprintf(sh, "  calibrated: neutral %d, scale %d, rotation %d, current %d, filter%d\r\n",
+  chprintf(sh, "  calibrated: neutral %d, scale %d, rotation %d, current %d, filter %d\r\n",
       calibrated->neutral, calibrated->scale, calibrated->rotation, calibrated->current, calibrated->filter);
 }
 
@@ -378,6 +378,9 @@ static void cmd_imu(shell_stream_t *sh, int argc, const char *const argv[])
       show_matrix(sh, "body_to_sensor", &imu.gyros[i].body_to_sensor);
       show_rates(sh, "unscaled", &imu.gyros[i].unscaled);
       show_rates(sh, "scaled", &imu.gyros[i].scaled);
+      struct FloatRates gf;
+      RATES_FLOAT_OF_BFP(gf, imu.gyros[i].scaled);
+      chprintf(sh, "  -> gyro (rad/s): %.3f, %.3f, %.3f\r\n", gf.p, gf.q, gf.r);
     }
   }
   chprintf(sh, "ACCEL IMU data\r\n");
@@ -391,6 +394,25 @@ static void cmd_imu(shell_stream_t *sh, int argc, const char *const argv[])
       show_matrix(sh, "body_to_sensor", &imu.accels[i].body_to_sensor);
       show_vect3(sh, "unscaled", &imu.accels[i].unscaled);
       show_vect3(sh, "scaled", &imu.accels[i].scaled);
+      struct FloatVect3 af;
+      ACCELS_FLOAT_OF_BFP(af, imu.accels[i].scaled);
+      chprintf(sh, "  -> accel (m/s2): %.3f, %.3f, %.3f\r\n", af.x, af.y, af.z);
+    }
+  }
+  chprintf(sh, "MAG IMU data\r\n");
+  for (i = 0; i < IMU_MAX_SENSORS; i++) {
+    if (imu.mags[i].abi_id != 0) {
+      chprintf(sh, " Mag id: %u\r\n", imu.mags[i].abi_id);
+      show_calibrated(sh, &imu.mags[i].calibrated);
+      show_vect3(sh, "neutral", &imu.mags[i].neutral);
+      show_vect3(sh, "scale_num", &imu.mags[i].scale[0]);
+      show_vect3(sh, "scale_den", &imu.mags[i].scale[1]);
+      show_matrix(sh, "body_to_sensor", &imu.mags[i].body_to_sensor);
+      show_vect3(sh, "unscaled", &imu.mags[i].unscaled);
+      show_vect3(sh, "scaled", &imu.mags[i].scaled);
+      struct FloatVect3 mf;
+      MAGS_FLOAT_OF_BFP(mf, imu.mags[i].scaled);
+      chprintf(sh, "  -> mag (unit): %.3f, %.3f, %.3f\r\n", mf.x, mf.y, mf.z);
     }
   }
 }
