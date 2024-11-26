@@ -95,6 +95,8 @@
 #endif
 
 
+// #define INDI_NUM_ACT 6
+
 #if !STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE
 #if INDI_NUM_ACT > WLS_N_U_MAX
 #error Matrix-WLS_N_U_MAX too small or not defined: define WLS_N_U_MAX >= INDI_NUM_ACT in airframe file
@@ -270,7 +272,8 @@ float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
 #if INDI_OUTPUTS == 6
 float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
                                         STABILIZATION_INDI_G1_PITCH, STABILIZATION_INDI_G1_YAW,
-                                        STABILIZATION_INDI_G1_THRUST, STABILIZATION_INDI_G1_THRUST_X,STABILIZATION_INDI_G1_THRUST_Y
+                                        STABILIZATION_INDI_G1_THRUST,
+                                        STABILIZATION_INDI_G1_THRUST_X,STABILIZATION_INDI_G1_THRUST_Y
                                        };
 #else
 float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
@@ -643,7 +646,7 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
 #endif
     }
     // Add the current estimated thrust to the increment
-    VECT3_ADD(v_thrust, thrust_filt);
+    VECT3_ADD(v_thrust, thrust_filt); //WHY?
   } else {
     // build incremental thrust
     float th_cmd_z = (float)th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
@@ -676,6 +679,10 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
   indi_v[3] = v_thrust.z;
 #if INDI_OUTPUTS == 5
   indi_v[4] = v_thrust.x;
+#endif
+#if INDI_OUTPUTS == 6
+  indi_v[4] = v_thrust.x;
+  indi_v[5] = v_thrust.y;
 #endif
 
 #if STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE

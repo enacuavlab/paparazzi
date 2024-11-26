@@ -11,9 +11,9 @@
    gui_color="blue"
   />
   <aircraft
-   name="ROBUST_FAHEX_FS"
+   name="ROBUST_FAHEX_2"
    ac_id="1"
-   airframe="airframes/MH/ROBUST_HEX_FS.xml"
+   airframe="airframes/MH/ROBUST_HEX_2.xml"
    radio="radios/T10CG_SBUS.xml"
    telemetry="telemetry/robust_tlm.xml"
    flight_plan="flight_plans/rotorcraft_basic.xml"

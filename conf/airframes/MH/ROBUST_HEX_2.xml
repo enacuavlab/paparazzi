@@ -15,6 +15,7 @@
     <configure name="PERIODIC_FREQUENCY" value="512"/>
     <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/>
 
+
     <target name="ap" board="tawaki_2.0">
     <!--<configure name="RTOS_DEBUG" value="0" /> -->
     <module name="radio_control" type="sbus"/>
@@ -60,16 +61,20 @@
     </module>
 
     <module name="gps" type="datalink"/>
+        
 
     <module name="stabilization" type="indi">
       <configure name="INDI_NUM_ACT" value="6"/>
-      <configure name="INDI_OUTPUTS" value="6"/>
+      <configure name="WLS_N_U_MAX" value="6"/>
+      <configure name="WLS_N_V_MAX" value="6"/>
     </module>
 
     <module name="guidance" type="indi">
       <define name="GUIDANCE_INDI_SPECIFIC_FORCE_GAIN" value="-500.0"/>
       <define name="GUIDANCE_INDI_THRUST_DYNAMICS_FREQ" value="0.03"/>
       <define name="GUIDANCE_INDI_RC_DEBUG" value="FALSE"/>
+      <define name="ACT_FEEDBACK_ID" value="15"/>
+      <define name="ACCEL_SP_ID" value="23"/>
     </module>
     <!--module name="fc_rotor"/-->
     
@@ -262,12 +267,11 @@
     <define name="G1_ROLL"   value="{  -19.0,  -37,  -19,  19.0,  37,   19 }"/>
     <define name="G1_PITCH"  value="{  30,   0,   -30,   -30,    0,  30 }"/>
     <define name="G1_YAW"    value="{   2,   -2,    2,   -2,    2,   -2 }"/>
-    <define name="G1_THRUST" value="{-0.9, -0.9, -0.9, -0.9, -0.9, -0.9 }"/>
     <define name="G1_THRUST_X" value="{-0.9, -0.9, -0.9, -0.9, -0.9, -0.9 }"/>
     <define name="G1_THRUST_Y" value="{-0.9, -0.9, -0.9, -0.9, -0.9, -0.9 }"/>
+    <define name="G1_THRUST" value="{-0.9, -0.9, -0.9, -0.9, -0.9, -0.9 }"/>
 
     <define name="G2"        value="{80.0, -80, 80, -80.0 , 80.0 , -80.0}"/>
-
 
     <!-- first order actuator dynamics -->
     <!-- <define name="ACT_DYN" value="{0.03, 0.03, 0.03, 0.03, 0.03, 0.03}"/> -->
@@ -276,6 +280,10 @@
 
     <!--Priority for each axis (roll, pitch, yaw and thrust)-->
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
+  </section>
+  <section name="WLS" >
+    <define name="N_U_MAX" value="6"/>
+    <define name="N_V_MAX" value="6"/>
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
