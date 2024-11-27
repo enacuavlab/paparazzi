@@ -91,6 +91,7 @@
       <board name="matek_.*"/>
       <board name="holybro_.*"/>
       <board name="cube_.*"/>
+      <board name="speedybee_f405aio"/>
     </boards>
   </mode>
   <mode name="BlackMagic Probe (SWD_NOPWR)">

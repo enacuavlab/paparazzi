@@ -1,0 +1,22 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="board_speedybee_f405aio" dir="boards">
+  <doc>
+    <description>
+      Autoload several onboard sensors for the T-Motor aiof7 board with proper configuration
+      - IMU (ICM42688P) 
+      - Baro (SPA06)
+      - Mag (Externe)
+    </description>
+  </doc>
+  <dep>
+    <depends>imu_icm42688,baro_spa06</depends> 
+  </dep>
+  <makefile target="!sim|nps|fbw">
+    <configure name="IMU_SPI_DEV" value="spi1" case="upper|lower"/>
+    <configure name="IMU_SPI_SLAVE_IDX" value="SPI_SLAVE0"/>
+    <define name="SPEEDYBEE_AIO_IMU_ROT" value=".body_to_sensor={{16383,0,0,0,-16383,0,0,0,-16382}}"/>
+    <define name="SPEEDYBEE_AIO_MAG_ROT" value=".body_to_sensor={{11585,11585,0,-11585,11585,0,0,0,16382}}"/>
+    <configure name="SPA06_DEV" value="i2c1"/>
+  </makefile>
+</module>

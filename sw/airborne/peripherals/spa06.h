@@ -55,7 +55,7 @@ enum spa06_bus_t {
   SPA06_I2C
 };
 
-enum bmp_device_t{
+enum spa06_device_t{
   UNKOWN,
   SPA06,
   SPL06
@@ -66,18 +66,19 @@ enum bmp_device_t{
  * @brief Different states the spa06 driver can be in
  */
 enum spa06_status_t {
-  SPL06_STATUS_UNINIT,
-  SPL06_STATUS_INIT_OK,
-  SPL06_STATUS_GET_CALIB,
-  SPL06_STATUS_CONFIGURE,
-  SPL06_STATUS_READ_STATUS_REG,
-  SPL06_STATUS_READ_DATA_REGS
+  SPA06_STATUS_UNINIT,
+  SPA06_STATUS_IDLE,
+  SPA06_STATUS_INIT_OK,
+  SPA06_STATUS_GET_CALIB,
+  SPA06_STATUS_CONFIGURE,
+  SPA06_STATUS_READ_STATUS_REG,
+  SPA06_STATUS_READ_DATA_REGS
 };
 
 /**
  * @brief Register Trim Variables
  */ 
-struct spl06_reg_calbi_data {
+struct spa06_reg_calbi_data {
   int16_t c0;
   int16_t c1;
   int16_t c01;
@@ -93,12 +94,14 @@ struct spl06_reg_calbi_data {
 
 struct spa06_t {
   enum spa06_status_t status;           ///< state machine status
-  enum spa06_device_t device;   ///< The device type detected
+  enum spa06_device_t device;       ///< The device type detected
   bool initialized;                 ///< config done flag
+  bool reset;                       //
+  uint32_t timer;                     ///< Used to time operations during configuration (samples left during measuring)
   volatile bool data_available;     ///< data ready flag
-  struct spl06_reg_calib_data calib; ///< calibration data
-  uint32_t raw_pressure;            ///< uncompensated pressure
-  uint32_t raw_temperature;         ///< uncompensated temperature
+  struct spa06_reg_calbi_data calib; ///< calibration data
+  int32_t raw_pressure;            ///< uncompensated pressure
+  int32_t raw_temperature;         ///< uncompensated temperature
   float pressure;                   ///< pressure in Pascal
   float temperature;                ///< temperature in deg Celcius
   enum spa06_bus_t bus;       ///< The communication bus used to connect the device SPI/I2C
@@ -111,6 +114,7 @@ struct spa06_t {
   uint16_t* rx_length;
 
   uint8_t config_idx;                 ///< The current configuration index
+  uint8_t calib_idx;                 ///< The current calibration index
 };
 
 

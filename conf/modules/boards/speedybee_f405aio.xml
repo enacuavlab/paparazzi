@@ -1,0 +1,13 @@
+<!DOCTYPE module SYSTEM "../module.dtd">
+
+<module name="speedybee_f405aio" dir="boards">
+  <doc>
+    <description>
+      Specific configuration for SpeedyBee AIO F405
+    </description>
+  </doc>
+  <dep>
+    <depends>hard_fault_recovery</depends>
+  </dep>
+  <makefile target="!sim|nps|fbw"/>
+</module>
