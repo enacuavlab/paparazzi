@@ -47,6 +47,11 @@
 #define STM32F405xx
 
 /*
+ * No vbus pin connected on the board
+ */
+#define BOARD_OTG_NOVBUSSENS
+
+/*
  * IO pins assignments.
  */
 #define	MOTOR_2                        0U

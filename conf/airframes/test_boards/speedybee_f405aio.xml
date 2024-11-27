@@ -36,15 +36,16 @@
       <module name="ins" type="alt_float"/>
     </target>
 
-    <!-- <module name="telemetry" type="transparent">
+    <module name="telemetry" type="transparent">
       <configure name="MODEM_PORT" value="usb_serial" />
-    </module> -->
-    <module name="telemetry" type="xbee_api"> 
     </module>
+    <!-- <module name="telemetry" type="xbee_api"> 
+    </module> -->
 
     <module name="board" type="speedybee_f405aio">
       <define name="SPA06_SYNC_SEND"/>
     </module>
+
     <module name="actuators" type="pwm"/>
 
     <!-- <module name="gps" type="ublox">
@@ -62,9 +63,9 @@
       <define name="AIR_DATA_CALC_AMSL_BARO" value="TRUE"/>
     </module>
     <module name="sys_mon"></module>
-     <module name="shell">
+     <!-- <module name="shell">
       <configure name="SHELL_PORT" value="usb_serial"/>
-     </module>
+     </module> -->
 
   </firmware>
 
