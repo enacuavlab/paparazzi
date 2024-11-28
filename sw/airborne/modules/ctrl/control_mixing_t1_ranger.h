@@ -26,14 +26,21 @@
 #ifndef CONTROL_MIXING_T1_RANGER_H
 #define CONTROL_MIXING_T1_RANGER_H
 
+// INDI actuators output indexes
+#define CMTR_ACT_MOTOR_RIGHT  0
+#define CMTR_ACT_MOTOR_LEFT   1
+#define CMTR_ACT_MOTOR_TAIL   2
+#define CMTR_ACT_YAW          3
+
 extern void control_mixing_t1_ranger_init(void);
 
 /** Direct manual control in plane style flight
  */
 extern void control_mixing_t1_ranger_manual(void);
 
-/** Stabilization in hover mode
+/** Stabilization in attitude direct mode
  */
-extern void control_mixing_t1_ranger_hover(void);
+extern void control_mixing_t1_ranger_attitude_direct(void);
+extern void control_mixing_t1_ranger_attitude_direct_enter(void);
 
 #endif  // CONTROL_MIXING_T1_RANGER_H

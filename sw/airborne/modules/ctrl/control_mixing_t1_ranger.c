@@ -27,6 +27,11 @@
 #include "modules/radio_control/radio_control.h"
 #include "generated/radio.h"
 #include "modules/core/commands.h"
+#include "modules/actuators/actuators.h"
+#include "autopilot.h"
+#include "firmwares/rotorcraft/stabilization.h"
+#include "firmwares/rotorcraft/guidance.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 
 // Tilt position in forward flight
 #ifndef CMTR_TILT_FORWARD
@@ -36,6 +41,16 @@
 // Tilt vertical position for hovering
 #ifndef CMTR_TILT_VERTICAL
 #define CMTR_TILT_VERTICAL 7400
+#endif
+
+// Max tilt differential for yaw
+#ifndef CMTR_TILT_DIFF_MAX
+#define CMTR_TILT_DIFF_MAX (MAX_PPRZ-CMTR_TILT_VERTICAL)
+#endif
+
+// Motor idle position
+#ifndef CMTR_MOTOR_IDLE
+#define CMTR_MOTOR_IDLE 800
 #endif
 
 void control_mixing_t1_ranger_init(void)
@@ -52,9 +67,61 @@ void control_mixing_t1_ranger_manual(void)
   commands[COMMAND_MOTOR_RIGHT] = radio_control_get(RADIO_THROTTLE);
   commands[COMMAND_MOTOR_LEFT] = radio_control_get(RADIO_THROTTLE);
   commands[COMMAND_MOTOR_TAIL] = MIN_PPRZ;
+  commands[COMMAND_THRUST] = (commands[COMMAND_MOTOR_RIGHT] + commands[COMMAND_MOTOR_LEFT]) / 2;
+  autopilot.throttle = commands[COMMAND_THRUST];
 }
 
-void control_mixing_t1_ranger_hover(void)
+void control_mixing_t1_ranger_attitude_direct(void)
 {
+  commands[COMMAND_TILT] = CMTR_TILT_VERTICAL;
+  commands[COMMAND_ROLL] = 0;
+  commands[COMMAND_PITCH] = 0;
+  struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
+  stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
+  if (autopilot_get_motors_on()) {
+    commands[COMMAND_MOTOR_RIGHT] = actuators_pprz[CMTR_ACT_MOTOR_RIGHT];
+    commands[COMMAND_MOTOR_LEFT]  = actuators_pprz[CMTR_ACT_MOTOR_LEFT];
+    commands[COMMAND_MOTOR_TAIL]  = actuators_pprz[CMTR_ACT_MOTOR_TAIL];
+    if (autopilot_in_flight()) {
+      commands[COMMAND_YAW]       = actuators_pprz[CMTR_ACT_YAW];
+    } else {
+      commands[CMTR_ACT_YAW]      = 0;
+    }
+    commands[COMMAND_THRUST]      = stabilization.cmd[COMMAND_THRUST];
+  } else {
+    commands[COMMAND_MOTOR_RIGHT] = -MAX_PPRZ;
+    commands[COMMAND_MOTOR_LEFT]  = -MAX_PPRZ;
+    commands[COMMAND_MOTOR_TAIL]  = -MAX_PPRZ;
+    commands[COMMAND_YAW]         = 0;
+    commands[COMMAND_THRUST]      = 0;
+  }
+  autopilot.throttle = commands[COMMAND_THRUST];
+}
+
+void control_mixing_t1_ranger_attitude_direct_enter(void)
+{
+  guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
+  guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
+  stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
+}
+
+void stabilization_indi_set_wls_settings(void)
+{
+   // Calculate the min and max increments
+   wls_stab_p.u_min[CMTR_ACT_MOTOR_RIGHT] = CMTR_MOTOR_IDLE;
+   wls_stab_p.u_max[CMTR_ACT_MOTOR_RIGHT] = MAX_PPRZ;
+   wls_stab_p.u_pref[CMTR_ACT_MOTOR_RIGHT] = act_pref[CMTR_ACT_MOTOR_RIGHT];
+
+   wls_stab_p.u_min[CMTR_ACT_MOTOR_LEFT] = CMTR_MOTOR_IDLE;
+   wls_stab_p.u_max[CMTR_ACT_MOTOR_LEFT] = MAX_PPRZ;
+   wls_stab_p.u_pref[CMTR_ACT_MOTOR_LEFT] = act_pref[CMTR_ACT_MOTOR_LEFT];
+
+   wls_stab_p.u_min[CMTR_ACT_MOTOR_TAIL] = CMTR_MOTOR_IDLE;
+   wls_stab_p.u_max[CMTR_ACT_MOTOR_TAIL] = MAX_PPRZ;
+   wls_stab_p.u_pref[CMTR_ACT_MOTOR_TAIL] = act_pref[CMTR_ACT_MOTOR_TAIL];
+
+   wls_stab_p.u_min[CMTR_ACT_YAW] = -CMTR_TILT_DIFF_MAX;
+   wls_stab_p.u_max[CMTR_ACT_YAW] = CMTR_TILT_DIFF_MAX;
+   wls_stab_p.u_pref[CMTR_ACT_YAW] = act_pref[CMTR_ACT_YAW];
 }
 

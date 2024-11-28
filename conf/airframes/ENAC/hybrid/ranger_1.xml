@@ -15,7 +15,6 @@
     <autopilot name="heewing_ranger_t1"/>
 
     <configure name="PERIODIC_FREQUENCY" value="500"/>
-    <configure name="INDI_NUM_ACT" value="8"/>
 
     <target name="ap" board="tawaki_2.0">
       <module name="radio_control" type="sbus">
@@ -68,6 +67,7 @@
 
     <module name="control_mixing" type="t1_ranger"/>
     <module name="stabilization" type="indi">
+      <configure name="INDI_NUM_ACT" value="4"/> <!-- only rotorcraft part for now -->
       <define name="WLS_N_U_MAX" value = "8"/>
       <define name="WLS_N_V_MAX" value = "4"/>
     </module>
@@ -95,9 +95,9 @@
   </servos>
 
   <commands>
-    <axis name="MOTOR_RIGHT"    group="REAL"    failsafe_value="0"/>
-    <axis name="MOTOR_LEFT"     group="REAL"    failsafe_value="0"/>
-    <axis name="MOTOR_TAIL"     group="REAL"    failsafe_value="0"/>
+    <axis name="MOTOR_RIGHT"    group="REAL"    failsafe_value="-9600"/>
+    <axis name="MOTOR_LEFT"     group="REAL"    failsafe_value="-9600"/>
+    <axis name="MOTOR_TAIL"     group="REAL"    failsafe_value="-9600"/>
     <axis name="PITCH"          group="VIRTUAL" failsafe_value="0"/>
     <axis name="ROLL"           group="VIRTUAL" failsafe_value="0"/>
     <axis name="YAW"            group="VIRTUAL" failsafe_value="0"/>
@@ -106,9 +106,9 @@
   </commands>
 
   <command_laws>
-    <set servo="MOTOR_RIGHT"    value="autopilot.motors_on ? @MOTOR_RIGHT : -MAX_PPRZ"/>
-    <set servo="MOTOR_LEFT"     value="autopilot.motors_on ? @MOTOR_LEFT : -MAX_PPRZ"/>
-    <set servo="MOTOR_TAIL"     value="autopilot.motors_on ? @MOTOR_TAIL : -MAX_PPRZ"/>
+    <set servo="MOTOR_RIGHT"    value="@MOTOR_RIGHT"/>
+    <set servo="MOTOR_LEFT"     value="@MOTOR_LEFT"/>
+    <set servo="MOTOR_TAIL"     value="@MOTOR_TAIL"/>
     <set servo="AILERON_RIGHT"  value="@ROLL"/>
     <set servo="AILERON_LEFT"   value="@ROLL"/>
     <set servo="ELEVATOR"       value="@PITCH"/>
@@ -117,29 +117,6 @@
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
-    <!-- IMU calibration, make sure to calibrate the IMU properly before flight, see the wiki for more info-->
-    <!--define name="MAG_X_NEUTRAL" value="-33"/>
-    <define name="MAG_Y_NEUTRAL" value="1485"/>
-    <define name="MAG_Z_NEUTRAL" value="1184"/>
-    <define name="MAG_X_SENS" value="0.6709952296917457" integer="16"/>
-    <define name="MAG_Y_SENS" value="0.6497329786931962" integer="16"/>
-    <define name="MAG_Z_SENS" value="0.6842444448328998" integer="16"/>
-
-    <define name="ACCEL_X_SIGN" value="1"/>
-    <define name="ACCEL_Y_SIGN" value="1"/>
-    <define name="ACCEL_Z_SIGN" value="-1"/>
-
-    <define name="GYRO_P_SIGN" value="1"/>
-    <define name="GYRO_Q_SIGN" value="1"/>
-    <define name="GYRO_R_SIGN" value="-1"/>
-
-    <define name="ACCEL_X_NEUTRAL" value="-20"/>
-    <define name="ACCEL_Y_NEUTRAL" value="-106"/>
-    <define name="ACCEL_Z_NEUTRAL" value="-28"/>
-    <define name="ACCEL_X_SENS" value="4.907307048714179" integer="16"/>
-    <define name="ACCEL_Y_SENS" value="4.561138191178077" integer="16"/>
-    <define name="ACCEL_Z_SENS" value="4.895601825888152" integer="16"/-->
-
     <define name="GYRO_CALIB" type="array">
       <field type="struct">
         <field name="abi_id" value="24"/>
@@ -188,6 +165,7 @@
     <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
+    <define name="AUTOPILOT_IN_FLIGHT_MIN_THRUST" value="1000"/>
   </section>
 
   <section name="BAT">
@@ -209,28 +187,18 @@
     <define name="SP_PSI_DELTA_LIMIT" value="90" unit="deg"/>
   </section>
 
-  <section name="EFF_SCHEDULING" prefix="FWD_">
-    <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-    <define name="G1" type="matrix">
-      <field value="{  -9.0,  -9.0,    9.0,   9.0,   0.0,   0.0}"/>
-      <field value="{ -20.0,  20.0,   20.0, -20.0,  15.0, -15.0}"/> <!-- 12 , -12 -->
-      <field value="{  -3.0,   3.0,   -3.0,   3.0, -10.0, -10.0}"/> <!-- -20  -20 -->
-      <field value="{  -0.6,  -0.6,   -0.6,  -0.6,   0.0,   0.0}"/>
-    </define>
-  </section>
-
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
-    <!--  UR BR BL UL-->
+    <!--  MR ML MT Y -->
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
     <define name="G1" type="matrix">
-      <field value="{  -9.0,  -9.0,    9.0,   9.0,   0.0,   0.0}"/>
-      <field value="{ -19.5,  19.5,   19.5, -19.5,   0.0,   0.0}"/>
-      <field value="{  -3.0,   3.0,   -3.0,   3.0,   0.0,   0.0}"/>
-      <field value="{ -0.85,  -0.85,  -0.85, -0.85,  0.0,   0.0}"/>
+      <field value="{ -16.,    16.,    0.,  0.  }"/>
+      <field value="{   8.,     8.,  -12.,  0.  }"/>
+      <field value="{   0.,     0.,    0.,  -20.0 }"/>
+      <field value="{ -0.85,  -0.85,  -0.85, 0.}"/>
     </define>
 
     <!--Counter torque effect of spinning up a rotor-->
-    <define name="G2" value="{0, 0, 0, 0, 0, 0}"/>
+    <define name="G2" value="{0, 0, 0, 0}"/>
 
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="100"/>
@@ -244,9 +212,9 @@
     <define name="FILT_CUTOFF" value="5.0"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 12.66, 25.6, 25.6}"/>
-    <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 170, 170}"/>
-    <define name="ACT_IS_SERVO" value="{0, 0, 0, 0, 1, 1}"/>
+    <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 25.6}"/>
+    <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 170}"/>
+    <define name="ACT_IS_SERVO" value="{0, 0, 0, 1}"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
