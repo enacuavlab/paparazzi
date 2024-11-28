@@ -143,15 +143,15 @@
     <!--Fight arena flight-->
     <module name="gps" type="optitrack"/>
 
-    <module name="ins" type="ekf2">
+    <!-- <module name="ins" type="ekf2">
       <define name="INS_EKF2_OPTITRACK" value="TRUE"/>    
 
       <define name="INS_EKF2_ACCEL_ID" value="IMU_ROT_ID" />
       <define name="INS_EKF2_GYRO_ID" value="IMU_ROT_ID" />
       <define name="INS_EKF2_MAG_ID" value="MAG_ROT_ID" />
-    </module>
+    </module> -->
 
-    <!-- <module name="ins">
+    <module name="ins">
       <define name="INS_INT_IMU_ID" value="IMU_ROT_ID"/>
     </module>
 
@@ -160,7 +160,7 @@
       <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
       <define name="AHRS_ICQ_IMU_ID" value="IMU_ROT_ID" />
       <define name="AHRS_ICQ_MAG_ID" value="IMU_ROT_ID" />
-    </module> -->
+    </module>
 
 
       
