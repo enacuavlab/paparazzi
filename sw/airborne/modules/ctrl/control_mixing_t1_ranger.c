@@ -40,7 +40,7 @@
 
 // Tilt vertical position for hovering
 #ifndef CMTR_TILT_VERTICAL
-#define CMTR_TILT_VERTICAL 7400
+#define CMTR_TILT_VERTICAL 8700
 #endif
 
 // Max tilt differential for yaw

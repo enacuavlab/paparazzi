@@ -84,14 +84,14 @@
   </firmware>
 
   <servos driver="Pwm">
-    <servo name="MOTOR_RIGHT"   no="5" min="1000" neutral="1100" max="1800"/>
-    <servo name="MOTOR_LEFT"    no="6" min="1000" neutral="1100" max="1800"/>
+    <servo name="MOTOR_RIGHT"   no="6" min="1000" neutral="1100" max="1800"/>
+    <servo name="MOTOR_LEFT"    no="5" min="1000" neutral="1100" max="1800"/>
     <servo name="MOTOR_TAIL"    no="7" min="1000" neutral="1100" max="1800"/>
     <servo name="AILERON_RIGHT" no="8" min="1800" neutral="1550" max="1200"/>
     <servo name="AILERON_LEFT"  no="3" min="1800" neutral="1450" max="1200"/>
     <servo name="ELEVATOR"      no="4" min="1100" neutral="1500" max="1900"/>
-    <servo name="TILT_RIGHT"    no="2" min="900" neutral="900" max="2200"/>
-    <servo name="TILT_LEFT"     no="1" min="2000" neutral="2000" max="700"/>
+    <servo name="TILT_RIGHT"    no="2" min="900" neutral="900" max="2000"/>
+    <servo name="TILT_LEFT"     no="1" min="2000" neutral="2000" max="900"/>
   </servos>
 
   <commands>
@@ -193,7 +193,7 @@
     <define name="G1" type="matrix">
       <field value="{ -16.,    16.,    0.,  0.  }"/>
       <field value="{   8.,     8.,  -12.,  0.  }"/>
-      <field value="{   0.,     0.,    0.,  -20.0 }"/>
+      <field value="{   0.,     0.,    0.,  20.0 }"/>
       <field value="{ -0.85,  -0.85,  -0.85, 0.}"/>
     </define>
 
