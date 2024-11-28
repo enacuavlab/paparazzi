@@ -39,6 +39,8 @@
       <message name="AHRS_REF_QUAT"            period="0.5"/>
       <message name="STAB_ATTITUDE"            period=".25"/>
       <message name="EFF_MAT_STAB"             period="2.0"/>
+      <message name="WLS_V"                    period="0.2"/>
+      <message name="WLS_U"                    period="0.2"/>
     </mode>
 
     <mode name="ppm">
@@ -50,6 +52,8 @@
       <message name="ROTORCRAFT_RADIO_CONTROL" period="0.5"/>
       <message name="ROTORCRAFT_STATUS"        period="1"/>
       <message name="BEBOP_ACTUATORS"          period="0.2"/>
+      <message name="ACTUATORS"                period="0.1"/>
+      <message name="COMMANDS"                 period="0.1"/>
     </mode>
 
     <mode name="raw_sensors">
@@ -63,6 +67,7 @@
       <message name="IMU_MAG_CURRENT_CALIBRATION" period=".05"/>
       <message name="ARDRONE_NAVDATA"             period=".05"/>
       <message name="AIRSPEED_RAW"                period="0.1"/>
+      <message name="ACTUATORS_RAW"     period="0.1"/>
     </mode>
 
     <mode name="scaled_sensors">
