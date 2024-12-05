@@ -12,7 +12,7 @@
   </description>
 
   <firmware name="rotorcraft">
-    <autopilot name="heewing_ranger_t1"/>
+    <autopilot name="heewing_vtol"/>
 
     <configure name="PERIODIC_FREQUENCY" value="500"/>
 
@@ -26,8 +26,6 @@
       <module name="fdm" type="jsbsim"/>
       <module name="radio_control" type="datalink"/>
     </target>
-
-    <!--module name="eff_scheduling_ranger_t1"/-->
 
     <module name="telemetry" type="xbee_api"/>
     <module name="sys_mon"/>
@@ -65,7 +63,7 @@
       <!--define name="USE_AIRSPEED_AIR_DATA" value="TRUE"/-->
     </module>
 
-    <module name="control_mixing" type="t1_ranger"/>
+    <module name="control_mixing" type="heewing"/>
     <module name="stabilization" type="indi">
       <configure name="INDI_NUM_ACT" value="4"/> <!-- only rotorcraft part for now -->
       <define name="WLS_N_U_MAX" value = "8"/>
