@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2014 Felix Ruess
+ * Chris Efstathiou hendrixgr@gmail.com
+ * Florian Sansou florian.sansou@enac.fr
  *
  * This file is part of paparazzi.
  *
@@ -14,33 +15,30 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with paparazzi; see the file COPYING.  If not, write to
- * the Free Software Foundation, 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
  */
 
 /**
- * @file modules/ahrs/ahrs_chimu.h
+ * @file modules/sensors/baro_bmp280.h
+ * Bosch BMP280  sensor interface.
+ *
+ * This reads the values for pressure and temperature from the Bosch BMP280 sensor.
  */
 
-#ifndef AHRS_CHIMU_H
-#define AHRS_CHIMU_H
+#ifndef BARO_BMP280_H
+#define BARO_BMP280_H
 
-#include "modules/ins/ins_module.h"
-#include "modules/ahrs/ahrs.h"
+#include "peripherals/bmp280.h"
 
-struct AhrsChimu {
-  bool is_enabled;
-  bool is_aligned;
-};
+extern struct bmp280_t baro_bmp280;
 
-extern struct AhrsChimu ahrs_chimu;
+extern float baro_alt;
+extern  bool baro_alt_valid;
 
-#ifndef PRIMARY_AHRS
-#define PRIMARY_AHRS ahrs_chimu
-#endif
-
-extern void ahrs_chimu_register(void);
-extern void ahrs_chimu_init(void);
+void baro_bmp280_init(void);
+void baro_bmp280_periodic(void);
+void baro_bmp280_event(void);
 
 #endif

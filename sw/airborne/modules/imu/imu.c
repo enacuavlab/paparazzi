@@ -364,7 +364,7 @@ static void cmd_imu(shell_stream_t *sh, int argc, const char *const argv[])
   (void) argv;
   int i = 0;
   if (argc > 0) {
-    chprintf(sh, "Usage: rtos_mon\r\n");
+    chprintf(sh, "Usage: imu\r\n");
     return;
   }
   chprintf(sh, "GYRO IMU data\r\n");
