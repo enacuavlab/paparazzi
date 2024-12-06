@@ -32,6 +32,7 @@
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/guidance.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_plane_pid.h"
 
 // Tilt position in forward flight
 #ifndef CMH_TILT_FORWARD
@@ -123,5 +124,29 @@ void stabilization_indi_set_wls_settings(void)
    wls_stab_p.u_min[CMH_ACT_YAW] = -CMH_TILT_DIFF_MAX;
    wls_stab_p.u_max[CMH_ACT_YAW] = CMH_TILT_DIFF_MAX;
    wls_stab_p.u_pref[CMH_ACT_YAW] = act_pref[CMH_ACT_YAW];
+}
+
+void control_mixing_heewing_attitude_plane_enter(void)
+{
+  // don't use forward submode to avoid pitch offset on RC input
+  control_mixing_heewing_attitude_direct_enter();
+  stabilization_attitude_plane_pid_enter();
+}
+
+void control_mixing_heewing_attitude_plane(void)
+{
+  struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
+  stabilization_attitude_plane_pid_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
+
+  commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
+  commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
+  commands[COMMAND_THRUST] = stabilization.cmd[COMMAND_THRUST];
+  commands[COMMAND_MOTOR_RIGHT] = stabilization.cmd[COMMAND_THRUST];
+  commands[COMMAND_MOTOR_LEFT] = stabilization.cmd[COMMAND_THRUST];
+  commands[COMMAND_MOTOR_TAIL] = MIN_PPRZ;
+  commands[COMMAND_TILT] = CMH_TILT_FORWARD;
+  commands[COMMAND_YAW] = 0;
+  autopilot.throttle = commands[COMMAND_THRUST];
+
 }
 
