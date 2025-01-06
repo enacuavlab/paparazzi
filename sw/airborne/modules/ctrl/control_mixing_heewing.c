@@ -150,3 +150,60 @@ void control_mixing_heewing_attitude_plane(void)
 
 }
 
+void control_mixing_heewing_nav_enter(void)
+{
+  guidance_h_mode_changed(GUIDANCE_H_MODE_NAV);
+  guidance_v_mode_changed(GUIDANCE_V_MODE_NAV);
+  stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
+}
+
+void control_mixing_heewing_nav_(void)
+{
+  if (nav.horizontal_mode == NAV_HORIZONTAL_MODE_ROUTE ||
+      nav.horizontal_mode == NAV_HORIZONTAL_MODE_CIRCLE) {
+    // for now, assume lines and circles are in plane mode
+    commands[COMMAND_MOTOR_TAIL] = MIN_PPRZ;
+    commands[COMMAND_TILT] = CMH_TILT_FORWARD;
+    commands[COMMAND_YAW] = 0;
+
+    struct ThrustSetpoint th_sp;
+    struct StabilizationSetpoint stab_sp;
+    stabilization_attitude_plane_pid_run(autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
+
+    if (autopilot_get_motors_on()) {
+    } else {
+      commands[COMMAND_MOTOR_RIGHT] = MIN_PPRZ;
+      commands[COMMAND_MOTOR_LEFT]  = MIN_PPRZ;
+      commands[COMMAND_THRUST]      = 0;
+    }
+
+  } else {
+    // all other nav modes are in rotorcraft flight mode
+    commands[COMMAND_TILT] = CMH_TILT_VERTICAL;
+    commands[COMMAND_ROLL] = 0;
+    commands[COMMAND_PITCH] = 0;
+
+    struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
+    struct StabilizationSetpoint stab_sp = guidance_h_run(autopilot_in_flight());
+    stabilization_run(autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
+
+    if (autopilot_get_motors_on()) {
+      commands[COMMAND_MOTOR_RIGHT] = actuators_pprz[CMH_ACT_MOTOR_RIGHT];
+      commands[COMMAND_MOTOR_LEFT]  = actuators_pprz[CMH_ACT_MOTOR_LEFT];
+      commands[COMMAND_MOTOR_TAIL]  = actuators_pprz[CMH_ACT_MOTOR_TAIL];
+      if (autopilot_in_flight()) {
+        commands[COMMAND_YAW]       = actuators_pprz[CMH_ACT_YAW];
+      } else {
+        commands[CMH_ACT_YAW]      = 0;
+      }
+      commands[COMMAND_THRUST]      = stabilization.cmd[COMMAND_THRUST];
+    } else {
+      commands[COMMAND_MOTOR_RIGHT] = -MAX_PPRZ;
+      commands[COMMAND_MOTOR_LEFT]  = -MAX_PPRZ;
+      commands[COMMAND_MOTOR_TAIL]  = -MAX_PPRZ;
+      commands[COMMAND_YAW]         = 0;
+      commands[COMMAND_THRUST]      = 0;
+    }
+  }
+  autopilot.throttle = commands[COMMAND_THRUST];
+}

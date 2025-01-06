@@ -1,0 +1,68 @@
+/*
+ * Copyright (C) 2025 Gautier Hattenberger <gautier.hattenberger@enac.fr>
+ *
+ * This file is part of paparazzi.
+ *
+ * paparazzi is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * paparazzi is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+
+/** @file firmwares/rotorcraft/guidance/guidance_plane.h
+ *  Guidance controller for planes in rotorcraft firmware
+ *  using basic PID controller
+ *
+ */
+
+#ifndef GUIDANCE_PLANE_H
+#define GUIDANCE_PLANE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "std.h"
+#include "math/pprz_algebra_int.h"
+#include "math/pprz_algebra_float.h"
+#include "firmwares/rotorcraft/guidance.h"
+
+struct GuidancePlane {
+  // horizontal gains
+  //int32_t kp;
+  //int32_t kd;
+  //int32_t ki;
+  //int32_t kv;
+  //int32_t ka;
+  //// vertical gains
+  //int32_t v_kp;
+  //int32_t v_kd;
+  //int32_t v_ki;
+  //// outputs
+  //struct Int32Vect2 cmd_earth;  // Horizontal guidance command (north/east with #INT32_ANGLE_FRAC)
+  //int32_t cmd_thrust;           // Vertical guidance command (in pprz_t)
+};
+
+/** Guidance PID structyre
+ */
+extern struct GuidancePlane guidance_plane;
+
+extern void guidance_plane_init(void);
+extern void guidance_plane_enter(void);
+extern struct StabilizationSetpoint guidance_plane_h_run_pos(bool in_flight, struct HorizontalGuidance *gh);
+extern struct ThrustSetpoint guidance_plane_v_run(bool in_flight, struct VerticalGuidance *gv);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GUIDANCE_PLANE_H */
