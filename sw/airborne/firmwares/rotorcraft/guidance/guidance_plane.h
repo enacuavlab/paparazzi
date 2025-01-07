@@ -37,19 +37,19 @@ extern "C" {
 #include "firmwares/rotorcraft/guidance.h"
 
 struct GuidancePlane {
+  float course_sp;
   // horizontal gains
-  //int32_t kp;
-  //int32_t kd;
-  //int32_t ki;
-  //int32_t kv;
-  //int32_t ka;
+  float course_kp;
+  float course_kd;
+  float course_pre_bank_correction;
   //// vertical gains
   //int32_t v_kp;
   //int32_t v_kd;
   //int32_t v_ki;
-  //// outputs
-  //struct Int32Vect2 cmd_earth;  // Horizontal guidance command (north/east with #INT32_ANGLE_FRAC)
-  //int32_t cmd_thrust;           // Vertical guidance command (in pprz_t)
+  // outputs
+  float roll_sp;
+  float pitch_sp;
+  uint32_t thrust_cmd;
 };
 
 /** Guidance PID structyre
@@ -58,7 +58,7 @@ extern struct GuidancePlane guidance_plane;
 
 extern void guidance_plane_init(void);
 extern void guidance_plane_enter(void);
-extern struct StabilizationSetpoint guidance_plane_h_run_pos(bool in_flight, struct HorizontalGuidance *gh);
+extern struct StabilizationSetpoint guidance_plane_h_run(bool in_flight, struct HorizontalGuidance *gh);
 extern struct ThrustSetpoint guidance_plane_v_run(bool in_flight, struct VerticalGuidance *gv);
 
 #ifdef __cplusplus
