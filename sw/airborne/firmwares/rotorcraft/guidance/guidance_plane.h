@@ -21,6 +21,7 @@
 /** @file firmwares/rotorcraft/guidance/guidance_plane.h
  *  Guidance controller for planes in rotorcraft firmware
  *  using basic PID controller
+ *  no airspeed control
  *
  */
 
@@ -37,19 +38,26 @@ extern "C" {
 #include "firmwares/rotorcraft/guidance.h"
 
 struct GuidancePlane {
-  float course_sp;
+  float roll_max_setpoint;
+  float pitch_max_setpoint;
+  float pitch_min_setpoint;
+  float course_setpoint;
+  float climb_setpoint;
   // horizontal gains
   float course_kp;
   float course_kd;
   float course_pre_bank_correction;
-  //// vertical gains
-  //int32_t v_kp;
-  //int32_t v_kd;
-  //int32_t v_ki;
+  // vertical gains, pitch and throttle
+  float p_kp;
+  float p_kd;
+  float p_ki;
+  float t_kp;
+  float t_kd;
+  float t_ki;
   // outputs
-  float roll_sp;
-  float pitch_sp;
-  uint32_t thrust_cmd;
+  float roll_cmd;
+  float pitch_cmd;
+  int32_t thrust_cmd;           // Throttle command (in pprz_t)
 };
 
 /** Guidance PID structyre

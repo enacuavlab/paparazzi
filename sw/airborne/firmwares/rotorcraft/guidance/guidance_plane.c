@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Gautier Hattenberger <gautier.hattenberger@enac.fr>
+ * Copyright (C) 2024 Gautier Hattenberger <gautier.hattenberger@enac.fr>
  *
  * This file is part of paparazzi.
  *
@@ -18,8 +18,10 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-/** @file firmwares/rotorcraft/guidance/guidance_pid.c
- *  Guidance controller with PID for rotorcrafts.
+/** @file firmwares/rotorcraft/guidance/guidance_plane.c
+ *  Guidance controller for planes with PID
+ *  compatible with the rotorcraft firmware
+ *  no airspeed control
  *
  */
 
