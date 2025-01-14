@@ -35,29 +35,39 @@ extern "C" {
 #include "std.h"
 #include "math/pprz_algebra_int.h"
 #include "math/pprz_algebra_float.h"
-#include "firmwares/rotorcraft/guidance.h"
 
 struct GuidancePlane {
+  // horizontal
   float roll_max_setpoint;
   float pitch_max_setpoint;
   float pitch_min_setpoint;
   float course_setpoint;
-  float climb_setpoint;
   // horizontal gains
   float course_kp;
   float course_kd;
   float course_pre_bank_correction;
+
+  // vertical
+  float altitude_setpoint;
+  float climb_max_setpoint;
+  float climb_setpoint;
+  float pitch_trim;
   // vertical gains, pitch and throttle
+  float cruise_throttle;
+  float climb_kp;
+  float pitch_of_vz;
+  float climb_throttle_increment;
   float p_kp;
   float p_kd;
   float p_ki;
   float t_kp;
   float t_kd;
   float t_ki;
+
   // outputs
   float roll_cmd;
   float pitch_cmd;
-  int32_t thrust_cmd;           // Throttle command (in pprz_t)
+  int32_t throttle_cmd;           // Throttle command (in pprz_t)
 };
 
 /** Guidance PID structyre
@@ -66,8 +76,8 @@ extern struct GuidancePlane guidance_plane;
 
 extern void guidance_plane_init(void);
 extern void guidance_plane_enter(void);
-extern struct StabilizationSetpoint guidance_plane_h_run(bool in_flight, struct HorizontalGuidance *gh);
-extern struct ThrustSetpoint guidance_plane_v_run(bool in_flight, struct VerticalGuidance *gv);
+extern struct StabilizationSetpoint guidance_plane_h_from_nav(bool in_flight);
+extern struct ThrustSetpoint guidance_plane_v_from_nav(bool in_flight);
 
 #ifdef __cplusplus
 }

@@ -8,8 +8,8 @@
     </description>
     <section name="GUIDANCE_PLANE" prefix="GUIDANCE_PLANE_">
       <define name="MAX_BANK" value="20" description="maximum commanded bank angle" unit="deg"/>
-      <define name="COURSE_PGAIN" value="79" description="feedback horizontal control P gain"/>
-      <define name="COURSE_DGAIN" value="100" description="feedback horizontal control D gain"/>
+      <define name="COURSE_KP" value="79" description="feedback horizontal control P gain"/>
+      <define name="COURSE_KD" value="100" description="feedback horizontal control D gain"/>
       <define name="ALT_KP" value="283" description="feedback vertical control P gain"/>
       <define name="MAX_CLIMB" value="1.5" description="maximum commanded vertical speed" unit="m/s"/>
       <define name="PITCH_KP" value="283" description="feedback vertical control P gain"/>
