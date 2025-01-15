@@ -70,6 +70,7 @@
       <define name="WLS_N_V_MAX" value = "4"/>
     </module>
     <module name="stabilization" type="plane_pid"/>
+    <module name="guidance" type="indi"/>
     <module name="guidance" type="plane_pid_rotorcraft"/>
     <module name="nav" type="hybrid"/>
 
@@ -270,6 +271,19 @@
     <define name="FE_LIFT_B_PITCH" value="0.00072"/>
     <define name="FE_LIFT_A_AS" value="0.0008"/>
     <define name="FE_LIFT_B_AS" value="0.00009"/>
+  </section>
+
+  <section name="GUIDANCE_PLANE" prefix="GUIDANCE_PLANE_">
+    <define name="COURSE_KP" value="1.0"/>
+    <define name="COURSE_KD" value="0.1"/>
+    <define name="CLIMB_KP" value="0.1"/>
+    <define name="PITCH_KP" value="0.1"/>
+    <define name="PITCH_KD" value="0.1"/>
+    <define name="PITCH_KI" value="0."/>
+    <define name="THROTTLE_KP" value="0.1"/>
+    <define name="THROTTLE_KD" value="0.1"/>
+    <define name="THROTTLE_KI" value="0."/>
+    <define name="NOMINAL_THROTTLE" value="0.4"/>
   </section>
 
   <section name="NAV">

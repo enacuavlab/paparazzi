@@ -30,6 +30,8 @@
 #include "firmwares/rotorcraft/guidance.h"
 #include "firmwares/rotorcraft/stabilization.h"
 #include "generated/airframe.h"
+#include "generated/flight_plan.h"
+#include "modules/nav/waypoints.h"
 #include "state.h"
 
 #ifndef GUIDANCE_PLANE_MAX_BANK
@@ -71,10 +73,10 @@ struct GuidancePlane guidance_plane;
  */
 
 static float pitch_sum_err;
-#define V_CTL_AUTO_PITCH_MAX_SUM_ERR (RadOfDeg(10.))
+#define GUIDANCE_PLANE_PITCH_MAX_SUM_ERR (RadOfDeg(10.))
 
 static float throttle_sum_err;
-#define V_CTL_AUTO_THROTTLE_MAX_SUM_ERR 0.4
+#define GUIDANCE_PLANE_THROTTLE_MAX_SUM_ERR 0.4
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
@@ -118,7 +120,7 @@ void guidance_plane_init(void)
 /**
  * run horizontal control loop for position and speed control
  */
-struct StabilizationSetpoint guidance_plane_attitude_from_nav(bool in_flight)
+struct StabilizationSetpoint guidance_plane_attitude_from_nav(bool in_flight UNUSED)
 {
   struct FloatEulers att_sp;
 
@@ -197,7 +199,7 @@ static void guidance_plane_set_pitch(bool in_flight)
   last_err = err;
 
   if (guidance_plane.p_ki > 0.) {
-    v_ctl_auto_pitch_sum_err += err * (1. / PERIODIC_FREQUENCY);
+    pitch_sum_err += err * (1. / PERIODIC_FREQUENCY);
     BoundAbs(pitch_sum_err, GUIDANCE_PLANE_PITCH_MAX_SUM_ERR / guidance_plane.p_ki);
   }
 
@@ -243,9 +245,6 @@ static void guidance_plane_set_throttle(bool in_flight)
  */
 struct ThrustSetpoint guidance_plane_thrust_from_nav(bool in_flight)
 {
-  struct ThrustSetpoint sp;
-  THRUST_SP_SET_ZERO(sp);
-
   if (nav.vertical_mode == NAV_VERTICAL_MODE_MANUAL) {
     guidance_plane.throttle_cmd = (int32_t) nav.throttle;
   } else {
@@ -254,7 +253,7 @@ struct ThrustSetpoint guidance_plane_thrust_from_nav(bool in_flight)
       float alt_err = guidance_plane.altitude_setpoint - stateGetPositionEnu_f()->z;
       guidance_plane.climb_setpoint = guidance_plane.climb_kp * alt_err;
     } else if (nav.vertical_mode == NAV_VERTICAL_MODE_CLIMB) {
-      guidance_plane.climb_setpoint = nav.nav_climb;
+      guidance_plane.climb_setpoint = nav.climb;
     } else {
       guidance_plane.climb_setpoint = 0.f;
     }
@@ -271,8 +270,8 @@ void guidance_plane_enter(void)
 {
   /* set nav_heading to current heading */
   //nav.heading = stateGetNedToBodyEulers_f()->psi;
-  //guidance_pid_z_sum_err = 0;
-}
 
-#endif
+  pitch_sum_err = 0.f;
+  throttle_sum_err = 0.f;
+}
 

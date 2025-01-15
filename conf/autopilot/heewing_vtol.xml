@@ -13,17 +13,17 @@
       <include name="stabilization.h"/>
       <include name="modules/radio_control/radio_control.h"/>
       <include name="modules/gps/gps.h"/>
-      <include name="modules/actuators/actuators.h"/>
       <!--define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT" cond="ifndef MODE_MANUAL"/>
       <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD" cond="ifndef MODE_AUTO1"/-->
       <define name="MODE_AUTO2" value="AP_MODE_NAV" cond="ifndef MODE_AUTO2"/>
       <define name="RCLost()" value="(radio_control.status == RC_REALLY_LOST)"/>
-      <define name="DLModeNav()" value="(autopilot_mode_auto2 == AP_MODE_NAV)"/>
+      <define name="DLModeAtt()" value="(autopilot_mode_auto2 == 0)"/>
+      <define name="DLModeNav()" value="(autopilot_mode_auto2 == 1)"/>
     </includes>
 
     <settings>
       <dl_setting var="autopilot.kill_throttle" min="0" step="1" max="1" module="autopilot" values="Resurrect|Kill" handler="KillThrottle"/>
-      <dl_setting var="autopilot_mode_auto2" min="2" step="1" max="3" module="autopilot" values="NAV|GUIDED"/>
+      <dl_setting var="autopilot_mode_auto2" min="0" step="1" max="1" module="autopilot" values="ATT|NAV"/>
     </settings>
 
     <control_block name="set_commands">
@@ -85,22 +85,8 @@
       <exception cond="RCLost()" deroute="FAILSAFE"/>
     </mode>
 
-    <mode name="ATTITUDE" shortname="ATT">
-      <select cond="RCMode1()"/>
-      <on_enter>
-        <call fun="control_mixing_heewing_attitude_direct_enter()"/>
-      </on_enter>
-      <control freq="NAVIGATION_FREQUENCY">
-        <call fun="nav_periodic_task()"/>
-      </control>
-      <control>
-        <call fun="control_mixing_heewing_attitude_direct()"/>
-      </control>
-      <exception cond="RCLost()" deroute="FAILSAFE"/>
-    </mode>
-
     <mode name="FORWARD" shortname="FWD">
-      <select cond="RCMode2()"/>
+      <select cond="RCMode1()"/>
       <on_enter>
         <call fun="control_mixing_heewing_attitude_plane_enter()"/>
       </on_enter>
@@ -109,6 +95,20 @@
       </control>
       <control>
         <call fun="control_mixing_heewing_attitude_plane()"/>
+      </control>
+      <exception cond="RCLost()" deroute="FAILSAFE"/>
+    </mode>
+
+    <mode name="ATTITUDE" shortname="ATT">
+      <select cond="RCMode2() && DLModeAtt()"/>
+      <on_enter>
+        <call fun="control_mixing_heewing_attitude_direct_enter()"/>
+      </on_enter>
+      <control freq="NAVIGATION_FREQUENCY">
+        <call fun="nav_periodic_task()"/>
+      </control>
+      <control>
+        <call fun="control_mixing_heewing_attitude_direct()"/>
       </control>
       <exception cond="RCLost()" deroute="FAILSAFE"/>
     </mode>
