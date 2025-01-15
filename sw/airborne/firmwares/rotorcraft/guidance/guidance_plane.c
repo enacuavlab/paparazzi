@@ -118,7 +118,7 @@ void guidance_plane_init(void)
 /**
  * run horizontal control loop for position and speed control
  */
-struct StabilizationSetpoint guidance_plane_h_from_nav(bool in_flight)
+struct StabilizationSetpoint guidance_plane_attitude_from_nav(bool in_flight)
 {
   struct FloatEulers att_sp;
 
@@ -241,7 +241,7 @@ static void guidance_plane_set_throttle(bool in_flight)
 /**
  * run vertical control loop for position and speed control
  */
-struct ThrustSetpoint guidance_plane_v_from_nav(bool in_flight)
+struct ThrustSetpoint guidance_plane_thrust_from_nav(bool in_flight)
 {
   struct ThrustSetpoint sp;
   THRUST_SP_SET_ZERO(sp);
@@ -264,7 +264,7 @@ struct ThrustSetpoint guidance_plane_v_from_nav(bool in_flight)
     guidance_plane_set_throttle(in_flight);
   }
 
-  return th_sp_from_thrust_i(guidance_plane.throttle_cmd, THRUST_AXIS_Z);
+  return th_sp_from_thrust_i(guidance_plane.throttle_cmd, THRUST_AXIS_X);
 }
 
 void guidance_plane_enter(void)

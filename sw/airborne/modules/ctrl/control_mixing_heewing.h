@@ -45,6 +45,6 @@ extern void control_mixing_heewing_attitude_direct_enter(void);
 extern void control_mixing_heewing_attitude_plane(void);
 extern void control_mixing_heewing_attitude_plane_enter(void);
 extern void control_mixing_heewing_nav_enter(void);
-extern void control_mixing_heewing_nav_(void);
+extern void control_mixing_heewing_nav_run(void);
 
 #endif  // CONTROL_MIXING_HEEWING_H

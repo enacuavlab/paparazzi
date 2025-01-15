@@ -70,7 +70,7 @@
       <define name="WLS_N_V_MAX" value = "4"/>
     </module>
     <module name="stabilization" type="plane_pid"/>
-    <!--module name="guidance" type="indi_hybrid_ranger"/-->
+    <module name="guidance" type="plane_pid_rotorcraft"/>
     <module name="nav" type="hybrid"/>
 
     <module name="ins" type="ekf2"/>

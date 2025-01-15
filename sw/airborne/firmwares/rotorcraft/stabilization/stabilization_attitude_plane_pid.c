@@ -138,7 +138,7 @@ void stabilization_attitude_plane_pid_run(bool in_flight, struct StabilizationSe
   cmd[COMMAND_ROLL] = (int32_t)stab_plane_att_cmd[COMMAND_ROLL];
   cmd[COMMAND_PITCH] = (int32_t)stab_plane_att_cmd[COMMAND_PITCH];
   cmd[COMMAND_YAW] = 0;
-  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z); // TODO check that
+  cmd[COMMAND_THRUST] = th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_X);
 
   /* bound the result */
   BoundAbs(cmd[COMMAND_ROLL], MAX_PPRZ);

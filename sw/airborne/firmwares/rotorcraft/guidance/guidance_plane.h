@@ -76,8 +76,8 @@ extern struct GuidancePlane guidance_plane;
 
 extern void guidance_plane_init(void);
 extern void guidance_plane_enter(void);
-extern struct StabilizationSetpoint guidance_plane_h_from_nav(bool in_flight);
-extern struct ThrustSetpoint guidance_plane_v_from_nav(bool in_flight);
+extern struct StabilizationSetpoint guidance_plane_attitude_from_nav(bool in_flight);
+extern struct ThrustSetpoint guidance_plane_thrust_from_nav(bool in_flight);
 
 #ifdef __cplusplus
 }

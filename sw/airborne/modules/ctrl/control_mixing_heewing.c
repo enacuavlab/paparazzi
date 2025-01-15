@@ -31,6 +31,7 @@
 #include "autopilot.h"
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/guidance.h"
+#include "firmwares/rotorcraft/guidance/guidance_plane.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_plane_pid.h"
 
@@ -157,7 +158,7 @@ void control_mixing_heewing_nav_enter(void)
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
 }
 
-void control_mixing_heewing_nav_(void)
+void control_mixing_heewing_nav_run(void)
 {
   if (nav.horizontal_mode == NAV_HORIZONTAL_MODE_ROUTE ||
       nav.horizontal_mode == NAV_HORIZONTAL_MODE_CIRCLE) {
@@ -166,15 +167,20 @@ void control_mixing_heewing_nav_(void)
     commands[COMMAND_TILT] = CMH_TILT_FORWARD;
     commands[COMMAND_YAW] = 0;
 
-    struct ThrustSetpoint th_sp;
-    struct StabilizationSetpoint stab_sp;
+    struct ThrustSetpoint th_sp = guidance_plane_thrust_from_nav(autopilot_in_flight());
+    struct StabilizationSetpoint stab_sp = guidance_plane_attitude_from_nav(autopilot_in_flight());
     stabilization_attitude_plane_pid_run(autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
 
+    commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
+    commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
     if (autopilot_get_motors_on()) {
+      commands[COMMAND_THRUST] = stabilization.cmd[COMMAND_THRUST];
+      commands[COMMAND_MOTOR_RIGHT] = stabilization.cmd[COMMAND_THRUST];
+      commands[COMMAND_MOTOR_LEFT] = stabilization.cmd[COMMAND_THRUST];
     } else {
+      commands[COMMAND_THRUST]      = 0;
       commands[COMMAND_MOTOR_RIGHT] = MIN_PPRZ;
       commands[COMMAND_MOTOR_LEFT]  = MIN_PPRZ;
-      commands[COMMAND_THRUST]      = 0;
     }
 
   } else {
@@ -194,7 +200,7 @@ void control_mixing_heewing_nav_(void)
       if (autopilot_in_flight()) {
         commands[COMMAND_YAW]       = actuators_pprz[CMH_ACT_YAW];
       } else {
-        commands[CMH_ACT_YAW]      = 0;
+        commands[CMH_ACT_YAW]       = 0;
       }
       commands[COMMAND_THRUST]      = stabilization.cmd[COMMAND_THRUST];
     } else {
