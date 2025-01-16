@@ -100,7 +100,7 @@
     </mode>
 
     <mode name="ATTITUDE" shortname="ATT">
-      <select cond="RCMode2() && DLModeAtt()"/>
+      <select cond="RCMode2()"/>
       <on_enter>
         <call fun="control_mixing_heewing_attitude_direct_enter()"/>
       </on_enter>
@@ -114,7 +114,7 @@
     </mode>
 
     <mode name="NAV">
-      <select cond="RCMode2() && DLModeNav()" exception="HOME"/>
+      <!--select cond="RCMode2() && DLModeNav()" exception="HOME"/-->
       <on_enter>
         <call fun="control_mixing_heewing_nav_enter()"/>
       </on_enter>

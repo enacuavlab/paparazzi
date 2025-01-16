@@ -136,7 +136,7 @@ void control_mixing_heewing_attitude_plane_enter(void)
 
 void control_mixing_heewing_attitude_plane(void)
 {
-  struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
+  struct ThrustSetpoint th_sp = th_sp_from_thrust_i(radio_control_get(RADIO_THROTTLE), THRUST_AXIS_X);
   stabilization_attitude_plane_pid_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
 
   commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
