@@ -32,7 +32,11 @@
 #define INDI_G_SCALING 1000.0
 
 extern float g1g2[INDI_OUTPUTS][INDI_NUM_ACT];
+extern float g_thrust[3][INDI_NUM_ACT];
 extern float actuator_state_filt_vect[INDI_NUM_ACT];
+extern float Thrust_filtered[3];
+// extern struct FloatVect3 Thrust_filtered;
+
 extern bool act_is_servo[INDI_NUM_ACT];
 
 extern bool indi_use_adaptive;

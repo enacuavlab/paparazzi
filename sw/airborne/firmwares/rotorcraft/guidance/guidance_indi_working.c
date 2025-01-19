@@ -44,10 +44,6 @@
 #include "filters/low_pass_filter.h"
 #include "modules/core/abi.h"
 
-// BY MH 
-#include "math/wls/wls_alloc.h" 
-#include "modules/actuators/actuators.h"
-
 // The acceleration reference is calculated with these gains. If you use GPS,
 // they are probably limited by the update rate of your GPS. The default
 // values are tuned for 4 Hz GPS updates. If you have high speed position updates, the
@@ -63,21 +59,12 @@ float guidance_indi_speed_gain = GUIDANCE_INDI_SPEED_GAIN;
 #else
 float guidance_indi_speed_gain = 1.8;
 #endif
-// ABI messages Sender 
+
 #ifndef GUIDANCE_INDI_ACCEL_SP_ID
 #define GUIDANCE_INDI_ACCEL_SP_ID ABI_BROADCAST
 #endif
 abi_event accel_sp_ev;
 static void accel_sp_cb(uint8_t sender_id, uint8_t flag, struct FloatVect3 *accel_sp);
-
-// ------------------------ABI message RPM MH -----------------------------//
-#ifndef GUIDANCE_INDI_ACT_FEEDBACK_ID
-#define GUIDANCE_INDI_ACT_FEEDBACK_ID ABI_BROADCAST 
-#endif
-// abi_event act_feedback_ev;
-// static void act_feedback_cb(uint8_t sender_id, struct act_feedback_t *feedback, uint8_t num_act);
-// ------------------------------------------------------------------------//
-
 struct FloatVect3 indi_accel_sp = {0.0f, 0.0f, 0.0f};
 bool indi_accel_sp_set_2d = false;
 bool indi_accel_sp_set_3d = false;
@@ -135,71 +122,42 @@ float time_of_accel_sp_3d = 0.0;
 struct FloatEulers guidance_euler_cmd;
 struct ThrustSetpoint thrust_sp;
 float thrust_in;
-float thrust_vect[3];
 
-//----------------------- BY MH --------------------------  // 
-float act_obs_Guidance[INDI_NUM_ACT];
-float act_obs_Guidance_rad_sec[INDI_NUM_ACT];
-// Butterworth2LowPass actuator_lowpass_filters_Guidance[INDI_NUM_ACT];
-struct FloatMat35 {
-  float m[3 * 5];
-};
-float Gm[3][5];
-// float Thrust_filtered_Guidance[3] = {0.0f}; 
-
-
-// #define INDI_G_SCALING 1000.0      // Taken from stabilization_indi.h ( Should find smarter way to use it) Scaling for the control effectiveness to make it readible
-
-#define NU_MAX 5  // Example constant value // [dtheta, dphi, dthrust, dtx , dty]
-#define NV_MAX 3 // Example constant value (ax,ay,az)
-//float Ga_FA[NV_MAX][NU_MAX];
-
-float du_guidance[NU_MAX];               // Store Control Increments from WLS 
-// struct FloatMat35 Ga_FA;
-// float Ga_FA[3 * 5];
-
-float Ga_FA[NV_MAX][NU_MAX];
-float *Bwls_gih[NV_MAX];
-
-struct WLS_t wls_guid_p = {
-  .nu        = NU_MAX,
-  .nv        = NV_MAX,
-  .gamma_sq  = 100000.0,
-  .v         = {0.0},
-  .Wv        = {10.f, 10.f, 10.f},         // x,y,z
-  .Wu        = {1.f,1.f,1.f,1.f,1.f}, // minimize the control input (thet,phi,Tx,Ty,Tz)
-  .u_pref    = {0.0},
-  .u_min     = {0.0},
-  .u_max     = {0.0},
-  .PC        = 0.0,
-  .SC        = 0.0,
-  .iter      = 0
-};
-// static void guidance_indi_calcG_xyz_FA(float Gmat[NV_MAX][NU_MAX], struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance); // By MH
-static void guidance_indi_calcG_yxz_FA(float Ga_FA[NV_MAX][NU_MAX], struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance); // By MH
-static void guidance_indi_set_wls_settings(struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance, float m, struct FloatEulers *euler_yxz_ref);
-//------------------------------------------------------------// 
 static void guidance_indi_propagate_filters(struct FloatEulers *eulers);
-//static void guidance_indi_calcG(struct FloatMat33 *Gmat);
-//static void guidance_indi_calcG_yxz(struct FloatMat33 *Gmat, struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance);
+static void guidance_indi_calcG(struct FloatMat33 *Gmat);
+static void guidance_indi_calcG_yxz(struct FloatMat33 *Gmat, struct FloatEulers *euler_yxz);
+  float thrust_vect[3];
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
 static void send_indi_guidance(struct transport_tx *trans, struct link_device *dev)
 {
   pprz_msg_send_GUIDANCE_INDI_HYBRID(trans, dev, AC_ID,
-                              &du_guidance[0],
-                              &du_guidance[1], 
-                              &du_guidance[2], 
-                              &du_guidance[3], 
-                              &du_guidance[4], 
+                              &sp_accel.x,
+                              &sp_accel.y,
+                              &sp_accel.z,
+                              &control_increment.x,
+                              &control_increment.y,
+                              &control_increment.z,
+                              &filt_accel_ned[0].o[0],
+                              &filt_accel_ned[1].o[0],
+                              &filt_accel_ned[2].o[0],
+                              &speed_sp.x,
+                              &speed_sp.y,
+                              &speed_sp.z); 
+/*pprz_msg_send_GUIDANCE_INDI_HYBRID(trans, dev, AC_ID,
                               &actuator_state_filt_vect[0],
-                              &actuator_state_filt_vect[1],
-                              &actuator_state_filt_vect[2],
-                              &actuator_state_filt_vect[3],
+                              &actuator_state_filt_vect[1], 
+                              &actuator_state_filt_vect[2], 
+                              &actuator_state_filt_vect[3], 
+                              &actuator_state_filt_vect[4], 
+                              &actuator_state_filt_vect[5],
+                              &thrust_vect[0],
+                              &thrust_vect[1],
+                              &thrust_vect[2],
                               &Thrust_filtered[0],
                               &Thrust_filtered[1],
-                              &Thrust_filtered[2]);
+                              &Thrust_filtered[2]);*/
 }
 #endif
 
@@ -211,9 +169,7 @@ void guidance_indi_init(void)
   FLOAT_EULERS_ZERO(guidance_euler_cmd);
   THRUST_SP_SET_ZERO(thrust_sp);
   AbiBindMsgACCEL_SP(GUIDANCE_INDI_ACCEL_SP_ID, &accel_sp_ev, accel_sp_cb);
-  //------------- BY MH Call back ACT_FEEDBACK------------------//
-  // AbiBindMsgACT_FEEDBACK(GUIDANCE_INDI_ACT_FEEDBACK_ID, &act_feedback_ev, act_feedback_cb);   // RPM_FEEDBACK From the telemetry 
-  //------------------------------------------------------------//
+
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GUIDANCE_INDI_HYBRID, send_indi_guidance);
 #endif
@@ -247,12 +203,6 @@ void guidance_indi_enter(void)
   init_butterworth_2_low_pass(&roll_filt, tau, sample_time, stateGetNedToBodyEulers_f()->phi);
   init_butterworth_2_low_pass(&pitch_filt, tau, sample_time, stateGetNedToBodyEulers_f()->theta);
   init_butterworth_2_low_pass(&thrust_filt, tau, sample_time, thrust_in);
-  // -------------------------------- MH Filtering RPM --------------------------//
-  /* for (int i = 0; i < INDI_NUM_ACT; i++) {
-    init_butterworth_2_low_pass(&actuator_lowpass_filters_Guidance[i], tau, sample_time, 0.0);
-  }*/
-  //  ---------------------------------------------------------------------------//
-
 }
 
 /**
@@ -264,35 +214,17 @@ void guidance_indi_enter(void)
  */
 struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, float heading_sp)
 {
-  struct FloatEulers euler_yxz;
+  struct FloatEulers eulers_yxz;
   struct FloatQuat * statequat = stateGetNedToBodyQuat_f();
-  float_eulers_of_quat_yxz(&euler_yxz, statequat);
-
-  // ----------------------------------BY MH---------------------------------------// 
-  float Thrust_filtered_Guidance[3];
-  Thrust_filtered_Guidance[0] = Thrust_filtered[0];
-  Thrust_filtered_Guidance[1] = Thrust_filtered[1];
-  Thrust_filtered_Guidance[2] = Thrust_filtered[2];
-  struct FloatEulers euler_yxz_ref;   // Fix for traj or RC 
-  /* float actuator_state_filt_vect_prev[INDI_NUM_ACT];
-    for (int i = 0; i < INDI_NUM_ACT; i++) {
-    update_butterworth_2_low_pass(&actuator_lowpass_filters_Guidance[i], act_obs_Guidance[i]);
-    actuator_state_filt_vect_prev[i] = actuator_lowpass_filters_Guidance[i].o[1];
-  }
- for (int i =0;i < 3; i++) {
-      for (int j =0;j < INDI_NUM_ACT; j++) {
-        Thrust_filtered_Guidance[i] += (g_thrust[i][j]*actuator_state_filt_vect[j])/INDI_G_SCALING; // should I squarte the actuator_lowpass_filters_Guidance
-      }
-  }*/
-  // ------------------------------------------------------------------------------// 
+  float_eulers_of_quat_yxz(&eulers_yxz, statequat);
 
   // set global accel sp variable FIXME clean this
   sp_accel = *accel_sp;
 
   //filter accel to get rid of noise and filter attitude to synchronize with accel
-  guidance_indi_propagate_filters(&euler_yxz);
+  guidance_indi_propagate_filters(&eulers_yxz);
 
-  /*// FIXME the ABI message overwrite the accel setpoint
+  // FIXME the ABI message overwrite the accel setpoint
   // it update should be replaced by a call to the run function
   // If the acceleration setpoint is set over ABI message
   if (indi_accel_sp_set_2d) {
@@ -314,10 +246,10 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
     if (dt > 0.5) {
       indi_accel_sp_set_3d = false;
     }
-  }*/
+  }
   // else, don't change sp_accel
 
-/*#if GUIDANCE_INDI_RC_DEBUG
+#if GUIDANCE_INDI_RC_DEBUG
 #warning "GUIDANCE_INDI_RC_DEBUG lets you control the accelerations via RC, but disables autonomous flight!"
   //for rc control horizontal, rotate from body axes to NED
   float psi = stateGetNedToBodyEulers_f()->psi;
@@ -328,17 +260,13 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
 
   //for rc vertical control
   sp_accel.z = -(radio_control.values[RADIO_THROTTLE] - 4500) * 8.0 / 9600.0;
-#endif*/
+#endif
 
   //Calculate matrix of partial derivatives
-  // --------------------- BY MH -----------------------------------------//
-  //guidance_indi_calcG_yxz(&Ga, &euler_yxz, Thrust_filtered_Guidance); // Commnented By MH 
-  // guidance_indi_calcG_xyz_FA(&Ga_FA, &euler_yxz, Thrust_filtered_Guidance); 
-  guidance_indi_calcG_yxz_FA(Ga_FA, &euler_yxz, Thrust_filtered_Guidance); 
+  guidance_indi_calcG_yxz(&Ga, &eulers_yxz);
 
   //Invert this matrix
-  // MAT33_INV(Ga_inv, Ga); // Commented by MH we are going to use WLS instead of this
-  //---------------------------------------------------------------------//
+  MAT33_INV(Ga_inv, Ga);
 
   struct FloatVect3 a_diff = { sp_accel.x - filt_accel_ned[0].o[0], sp_accel.y - filt_accel_ned[1].o[0], sp_accel.z - filt_accel_ned[2].o[0]};
 
@@ -346,68 +274,44 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   Bound(a_diff.x, -6.0, 6.0);
   Bound(a_diff.y, -6.0, 6.0);
   Bound(a_diff.z, -9.0, 9.0);
-  
-   // --------------------- BY MH -----------------------------------------//
+
   //If the thrust to specific force ratio has been defined, include vertical control
   //else ignore the vertical acceleration error
-  //#ifndef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
-  //#ifndef STABILIZATION_ATTITUDE_INDI_FULL
-  //      a_diff.z = 0.0;
-  //#endif
-  //#endif 
-  float m = 1.0f;  // Define the weighting parameters
-  wls_guid_p.v[0] = m*a_diff.x;   
-  wls_guid_p.v[1] = m*a_diff.y;
-  wls_guid_p.v[2] = m*a_diff.z;
-  // To be taken from an RC later or a planer
-  euler_yxz_ref.phi = 0;
-  euler_yxz_ref.theta= 0;
-  euler_yxz_ref.psi = 0;
-  guidance_indi_set_wls_settings(&euler_yxz,Thrust_filtered_Guidance, m, &euler_yxz_ref);
-for (int i = 0; i < NV_MAX; i++) {
-    // Bwls_gih[i] = &(Ga_FA.m)[i * NU_MAX];  // Points to the start of each row in Ga_FA.m
-    Bwls_gih[i] = Ga_FA[i];  // Points to the start of each row in Ga_FA.m
+#ifndef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
+#ifndef STABILIZATION_ATTITUDE_INDI_FULL
+  a_diff.z = 0.0;
+#endif
+#endif
 
-}
-  wls_alloc(&wls_guid_p,Bwls_gih, 0, 0, 10);
+  //Calculate roll,pitch and thrust command
+  MAT33_VECT3_MUL(control_increment, Ga_inv, a_diff);
 
-  for (int i = 0; i < NU_MAX; i++) {
-    du_guidance [i] = wls_guid_p.u[i];
-  }
-  // --------------------------------------------------------------------//
-
-// ----------------------- BY MH -----------------------------------------//
-// Commnected by MH because it is already computed in WLS
-//Calculate roll,pitch and thrust command
-  // MAT33_VECT3_MUL(control_increment, Ga_inv, a_diff);
-  guidance_euler_cmd.theta = pitch_filt.o[0] + du_guidance[0];  // change control_increment.x;
-  guidance_euler_cmd.phi = roll_filt.o[0] + du_guidance[1];      // change control_increment.y;
+  guidance_euler_cmd.theta = pitch_filt.o[0] + control_increment.x;
+  guidance_euler_cmd.phi = roll_filt.o[0] + control_increment.y;
   guidance_euler_cmd.psi = heading_sp;
-// -----------------------------------------------------------------------//
 
   // Compute and store thust setpoint
-/*#ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
+#ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
   guidance_indi_filter_thrust();
   //Add the increment in specific force * specific_force_to_thrust_gain to the filtered thrust
-  thrust_in = thrust_filt.o[0] + du_guidance[2] * guidance_indi_specific_force_gain;
+  thrust_in = thrust_filt.o[0] + control_increment.z * guidance_indi_specific_force_gain;
   Bound(thrust_in, 0, 9600);
-/* #if GUIDANCE_INDI_RC_DEBUG
+#if GUIDANCE_INDI_RC_DEBUG
   if (radio_control.values[RADIO_THROTTLE] < 300) {
     thrust_in = 0;
   }
-#endif*/
+#endif
   // return required thrust
-  //thrust_sp = th_sp_from_thrust_i(thrust_in, THRUST_AXIS_Z);
+  thrust_sp = th_sp_from_thrust_i(thrust_in, THRUST_AXIS_Z);
 
-//#else
-// --------------------- BY MH ---------------------------
-  thrust_vect[0] = du_guidance[3];   // (TX)
-  thrust_vect[1] = du_guidance[4];   // (TY)
-  thrust_vect[2] = du_guidance[2];   // (TZ)
-// --------------------- BY MH ---------------------------
+#else
+  thrust_vect[0] = 0.0f;  // Fill for quadplanes
+  thrust_vect[1] = 0.0f;
+  thrust_vect[2] = control_increment.z;
+
   // specific force not defined, return required increment
   thrust_sp = th_sp_from_incr_vect_f(thrust_vect);
-//#endif
+#endif
 
   //Bound euler angles to prevent flipping
   Bound(guidance_euler_cmd.phi, -guidance_indi_max_bank, guidance_indi_max_bank);
@@ -509,7 +413,7 @@ void guidance_indi_propagate_filters(struct FloatEulers *eulers)
  * w.r.t. the NED accelerations for YXZ eulers
  * ddx = G*[dtheta,dphi,dT]
  */
- UNUSED void guidance_indi_calcG_yxz(struct FloatMat33 *Gmat, struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance)
+void guidance_indi_calcG_yxz(struct FloatMat33 *Gmat, struct FloatEulers *euler_yxz)
 {
 
   float sphi = sinf(euler_yxz->phi);
@@ -517,7 +421,7 @@ void guidance_indi_propagate_filters(struct FloatEulers *eulers)
   float stheta = sinf(euler_yxz->theta);
   float ctheta = cosf(euler_yxz->theta);
   //minus gravity is a guesstimate of the thrust force, thrust measurement would be better
-  float T; T = Thrust_filtered_Guidance[2];
+  float T = -9.81;
 
   RMAT_ELMT(*Gmat, 0, 0) = ctheta * cphi * T;
   RMAT_ELMT(*Gmat, 1, 0) = 0;
@@ -529,117 +433,6 @@ void guidance_indi_propagate_filters(struct FloatEulers *eulers)
   RMAT_ELMT(*Gmat, 1, 2) = -sphi;
   RMAT_ELMT(*Gmat, 2, 2) = ctheta * cphi;
 }
-// -------------- By MH ----------------------------------// 
-/**
- * @param Ga_FA array to write the matrix to [3x5]
- *
- * Calculate the matrix of partial derivatives of the pitch, roll and thrust.
- * w.r.t. the NED accelerations for YXZ eulers
- * ddx = G*[dtheta,dphi,dTx,dTy,dTz]
- */
-UNUSED void guidance_indi_calcG_xyz_FA(float Gmat[NV_MAX][NU_MAX], struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance) // By MH
-{
-  // Euler Angles
-  float sphi = sinf(euler_yxz->phi);
-  float cphi = cosf(euler_yxz->phi);
-  float stheta = sinf(euler_yxz->theta);
-  float ctheta = cosf(euler_yxz->theta);
-  float cpsi  = cosf(euler_yxz->psi);
-  float spsi  = sinf(euler_yxz->psi);
-
-  // Estimated Thrust 
-  float Tx =  0;//Thrust_filtered_Guidance[0];
-  float Ty =  0;//Thrust_filtered_Guidance[1];
-  float Tz =  Thrust_filtered_Guidance[2];
-
-  // dtheta
-   Gmat[0][0]=   Tx * -cpsi * stheta  + Ty * cpsi * ctheta * sphi + Tz * cphi * cpsi * ctheta ;
-   Gmat[1][0]=   Tx * -spsi * stheta  + Ty * spsi * ctheta * sphi + Tz * cphi * ctheta * spsi ;
-   Gmat[2][0]=   Tx * -ctheta - Ty * stheta * sphi - Tz * stheta * cphi ;
-  // dphi 
-  Gmat[0][1] =  Ty * ( cpsi * stheta * cphi + spsi * sphi) + Tz * ( cphi * spsi - cpsi * sphi * stheta );
-  Gmat[1][1] =  Ty * ( spsi * stheta * cphi - cpsi * sphi) + Tz * ( -spsi * stheta * sphi - cpsi * cphi);
-  Gmat[2][1] =  Ty * ctheta * cphi - Tz * ctheta * sphi;
-// dTz 
-  Gmat[0][2] =  sphi * spsi + cphi * cpsi * stheta;
-  Gmat[1][2] =  cphi * spsi * stheta - cpsi * sphi;
-  Gmat[2][2] =  cphi * ctheta;
-  // dTx 
-  Gmat[0][3] =  cpsi * ctheta;
-  Gmat[1][3] =  spsi * ctheta;
-  Gmat[2][3] = -stheta;
-  // dTy 
-  Gmat[0][4] =  cpsi * stheta * cphi + spsi * sphi;
-  Gmat[1][4] =  spsi * stheta * cphi - cpsi * cphi;
-  Gmat[2][4] =  ctheta * cphi;
-}
-
-void guidance_indi_calcG_yxz_FA(float Ga_FA[NV_MAX][NU_MAX], struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance) // By MH
-{
-// Euler Angles
-float sphi = sinf(euler_yxz->phi);
-float cphi = cosf(euler_yxz->phi);
-float stheta = sinf(euler_yxz->theta);
-float ctheta = cosf(euler_yxz->theta);
-float cpsi  = cosf(euler_yxz->psi);
-float spsi  = sinf(euler_yxz->psi);
-
-// Estimated Thrust 
-float Tx = Thrust_filtered_Guidance[0];
-float Ty = Thrust_filtered_Guidance[1];
-float Tz = Thrust_filtered_Guidance[2];
-
-// dTheta (Pitch)
-Ga_FA[0][0] = Tx * (-cpsi * stheta - spsi * sphi * ctheta) + Tz * (cpsi * ctheta - spsi * sphi * stheta);
-Ga_FA[1][0] = Tx * (-spsi * stheta + cpsi * sphi * ctheta) + Tz * (spsi * ctheta + cpsi * sphi * stheta);
-Ga_FA[2][0] = Tx * (-cphi * ctheta)                        + Tz * (-cphi * stheta);
-
-// dPhi (Roll)
-Ga_FA[0][1] = Tx * (-spsi * cphi * stheta) + Ty * (spsi * sphi) + Tz * (spsi * cphi * ctheta);
-Ga_FA[1][1] = Tx * (cpsi * cphi * stheta) + Ty * (-cpsi * sphi) + Tz * (-cpsi * cphi * ctheta);
-Ga_FA[2][1] = Tx * (sphi * stheta) + Ty * (cphi) + Tz * (-sphi * ctheta);
-
-// dTz
-Ga_FA[0][2] = cpsi * stheta + spsi * sphi * ctheta;
-Ga_FA[1][2] = spsi * stheta - cpsi * sphi * ctheta;
-Ga_FA[2][2] = cphi * ctheta;
-
-// dTx 
-Ga_FA[0][3]  =  cpsi * ctheta - spsi * sphi * stheta;
-Ga_FA[1][3]  =  spsi * ctheta + cpsi * sphi * stheta;
-Ga_FA[2][3]  = -stheta * cphi;
-
-// dTy
-Ga_FA[0][4] = -spsi * cphi;
-Ga_FA[1][4] =  cpsi * cphi;
-Ga_FA[2][4] =  sphi;
-}
-
-void guidance_indi_set_wls_settings(struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance, float m, struct FloatEulers *euler_yxz_ref) 
-{
-  float grav = 9.81f;  // gravitational constant
-  // Set lower limits
-  wls_guid_p.u_min[0] =  -0.5 - euler_yxz->theta; //theta
-  wls_guid_p.u_min[1] =  -0.5 - euler_yxz->phi;   //phi
-  wls_guid_p.u_min[2] =  -15 - Thrust_filtered_Guidance[2]; //Tz (MAX_PPRZ  - stabilization.cmd[COMMAND_THRUST])
-  wls_guid_p.u_min[3] =  -3 -  Thrust_filtered_Guidance[0]; //Tx
-  wls_guid_p.u_min[4] =  -3  -  Thrust_filtered_Guidance[1]; //Ty 
-  // Set upper limits limits 
-  wls_guid_p.u_max[0] =   0.5 - euler_yxz->theta; //theta
-  wls_guid_p.u_max[1] =   0.5 - euler_yxz->phi; //phi
-  wls_guid_p.u_max[2] =   -Thrust_filtered_Guidance[2]; //Tz
-  wls_guid_p.u_max[3] =   3 -  Thrust_filtered_Guidance[0]; //Tx
-  wls_guid_p.u_max[4] =   3  -  Thrust_filtered_Guidance[1]; //Ty
-  // Set prefered states
-  wls_guid_p.u_pref[0] =  euler_yxz_ref->theta - euler_yxz->theta;      // prefered delta theta
-  wls_guid_p.u_pref[1] =  euler_yxz_ref->phi - euler_yxz->phi;        // prefered delta phi
-  wls_guid_p.u_pref[2] =  0;//Thrust_filtered_Guidance[2];//wls_guid_p.u_min[2];                     // prefered Tz
-  wls_guid_p.u_pref[3] =  0;//Thrust_filtered_Guidance[0];//wls_guid_p.u_max[3];          // prefred Tx
-  wls_guid_p.u_pref[4] =  0;//Thrust_filtered_Guidance[1];//wls_guid_p.u_max[4];          // prefered Ty*/
-  // Set prefered states
-}
-
-// -----------------------------------------------------//
 
 /**
  * @param Gmat array to write the matrix to [3x3]
@@ -690,20 +483,6 @@ static void accel_sp_cb(uint8_t sender_id __attribute__((unused)), uint8_t flag,
     indi_accel_sp.z = accel_sp->z;
     indi_accel_sp_set_3d = true;
     time_of_accel_sp_3d = get_sys_time_float();
-  }
-}
-static void act_feedback_cb(uint8_t sender_id UNUSED, struct act_feedback_t *feedback, uint8_t num_act)
-{
-  int8_t i;
-  for (i = 0; i < num_act; i++) {
-    // Sanity check that index is valid
-    if (feedback[i].idx < INDI_NUM_ACT && feedback[i].set.rpm) {
-      int8_t idx = feedback[i].idx;
-      act_obs_Guidance[idx] = (feedback[i].rpm - get_servo_min_DSHOT(idx)); //get_servo_idx_DSHOT
-      act_obs_Guidance_rad_sec[idx] = feedback[i].rpm * 0.10472; // rpm ro rad/sec
-      act_obs_Guidance[idx] *= (MAX_PPRZ / (float)(get_servo_max_DSHOT(idx) - get_servo_min_DSHOT(idx)));
-      Bound(act_obs_Guidance[idx], 0, MAX_PPRZ);
-    }
   }
 }
 

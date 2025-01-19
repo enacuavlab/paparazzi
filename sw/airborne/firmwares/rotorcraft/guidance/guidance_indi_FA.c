@@ -48,9 +48,7 @@
 #include "math/wls/wls_alloc.h" 
 #include "modules/actuators/actuators.h"
 
-// This struct should be change because WLS_N_V_MAX are different in the stabilization and guidance loops 
-#define NU_MAX 5  // Example constant value (Fx,Fy,Fz,phi,theta)
-#define NV_MAX 3  // Example constant value (ax,ay,az)
+
 // other variables 
 
 // #define INDI_NUM_ACT 6
@@ -73,15 +71,34 @@ float guidance_indi_speed_gain = GUIDANCE_INDI_SPEED_GAIN;
 float guidance_indi_speed_gain = 1.8;
 #endif
 
+// Call ABI messages acc_sp
 #ifndef GUIDANCE_INDI_ACCEL_SP_ID
-#define GUIDANCE_INDI_ACCEL_SP_ID ABI_BROADCAST //23
+#define GUIDANCE_INDI_ACCEL_SP_ID ABI_BROADCAST 
 #endif
+abi_event accel_sp_ev;
+static void accel_sp_cb(uint8_t sender_id, uint8_t flag, struct FloatVect3 *accel_sp);
 
-
-// RPM Feedback from the dshot of each motor  Should check if using ABI_BROADCAST Works 
+// RPM
 #ifndef GUIDANCE_INDI_ACT_FEEDBACK_ID
-#define GUIDANCE_INDI_ACT_FEEDBACK_ID ABI_BROADCAST //15 
+#define GUIDANCE_INDI_ACT_FEEDBACK_ID ABI_BROADCAST 
 #endif
+abi_event act_feedback_ev;
+static void act_feedback_cb(uint8_t sender_id, struct act_feedback_t *feedback, uint8_t num_act);
+struct FloatVect3 indi_accel_sp = {0.0f, 0.0f, 0.0f};
+bool indi_accel_sp_set_2d = false;
+bool indi_accel_sp_set_3d = false;
+
+#ifndef GUIDANCE_INDI_FILTER_CUTOFF
+#ifdef STABILIZATION_INDI_FILT_CUTOFF
+#define GUIDANCE_INDI_FILTER_CUTOFF STABILIZATION_INDI_FILT_CUTOFF
+#else
+#define GUIDANCE_INDI_FILTER_CUTOFF 3.0
+#endif
+#endif
+
+#ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
+float guidance_indi_specific_force_gain = GUIDANCE_INDI_SPECIFIC_FORCE_GAIN;
+// static void guidance_indi_filter_thrust(void);
 
 #ifdef GUIDANCE_INDI_THRUST_DYNAMICS
 #warning GUIDANCE_INDI_THRUST_DYNAMICS is deprecated, use GUIDANCE_INDI_THRUST_DYNAMICS_FREQ instead.
@@ -96,40 +113,23 @@ float guidance_indi_speed_gain = 1.8;
 #define GUIDANCE_INDI_THRUST_DYNAMICS_FREQ STABILIZATION_INDI_ACT_FREQ_P
 #endif
 #endif //GUIDANCE_INDI_THRUST_DYNAMICS_FREQ
-
-#ifndef GUIDANCE_INDI_FILTER_CUTOFF
-#ifdef STABILIZATION_INDI_FILT_CUTOFF
-#define GUIDANCE_INDI_FILTER_CUTOFF STABILIZATION_INDI_FILT_CUTOFF
-#else
-#define GUIDANCE_INDI_FILTER_CUTOFF 3.0
-#endif
-#endif
-
-#ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
-float guidance_indi_specific_force_gain = GUIDANCE_INDI_SPECIFIC_FORCE_GAIN;
-#endif
+#endif //GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
 
 // Callback function for RPM
 float act_obs_Guidance[INDI_NUM_ACT];
+float act_obs_Guidance_rad_sec[INDI_NUM_ACT];
+
 // uint8_t num_act;
 // num_act = 6 ; //INDI_NUM_ACT; 
-abi_event act_feedback_ev;
-static void act_feedback_cb(uint8_t sender_id, struct act_feedback_t *feedback, uint8_t num_act);
-// Callback function to send acc_sp
-abi_event accel_sp_ev;
-static void accel_sp_cb(uint8_t sender_id, uint8_t flag, struct FloatVect3 *accel_sp);
 
 
-struct FloatVect3 indi_accel_sp = {0.0f, 0.0f, 0.0f};
-bool indi_accel_sp_set_2d = false;
-bool indi_accel_sp_set_3d = false;
 
 // All parameters that are going to be used in the following functions 
 // Strcutures for the filters 
 Butterworth2LowPass filt_accel_ned[3];
 Butterworth2LowPass roll_filt;
 Butterworth2LowPass pitch_filt;
-//Butterworth2LowPass thrust_filt;
+Butterworth2LowPass thrust_filt;
 Butterworth2LowPass yaw_filt;
 Butterworth2LowPass actuator_lowpass_filters_Guidance[INDI_NUM_ACT];
 struct FloatMat35 {
@@ -149,9 +149,16 @@ float thrust_in;
 float thrust_dyn = 0.f;
 float thrust_act = 0.f;
 #define INDI_G_SCALING 1000.0                                 // Taken from stabilization_indi.h ( Should find smarter way to use it) Scaling for the control effectiveness to make it readible
+
 float g_thrust[3][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_THRUST_X,
                                   STABILIZATION_INDI_G1_THRUST_Y,
                                   STABILIZATION_INDI_G1_THRUST};
+
+
+// This struct should be change because WLS_N_V_MAX are different in the stabilization and guidance loops 
+#define NU_MAX 5  // Example constant value (Fx,Fy,Fz,phi,theta)
+#define NV_MAX 3  // Example constant value (ax,ay,az)
+
 
 struct WLS_t wls_guid_p = {
   .nu        = NU_MAX,
@@ -179,7 +186,7 @@ static void guidance_indi_set_wls_settings(struct FloatEulers *euler_yxz, float 
 
 
 // to be changed 
-/* 
+
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
 static void send_indi_guidance(struct transport_tx *trans, struct link_device *dev)
@@ -188,9 +195,9 @@ static void send_indi_guidance(struct transport_tx *trans, struct link_device *d
                               &sp_accel.x,
                               &sp_accel.y,
                               &sp_accel.z,
-                              &control_increment.x,
-                              &control_increment.y,
-                              &control_increment.z,
+                              &du_guidance[2],
+                              &du_guidance[3],
+                              &du_guidance[4],
                               &filt_accel_ned[0].o[0],
                               &filt_accel_ned[1].o[0],
                               &filt_accel_ned[2].o[0],
@@ -198,7 +205,7 @@ static void send_indi_guidance(struct transport_tx *trans, struct link_device *d
                               &speed_sp.y,
                               &speed_sp.z);
 }
-#endif */
+#endif 
 
 
 
@@ -208,13 +215,14 @@ static void send_indi_guidance(struct transport_tx *trans, struct link_device *d
  */
 void guidance_indi_init(void)
 {
-  AbiBindMsgACT_FEEDBACK(15, &act_feedback_ev, act_feedback_cb);   // RPM_FEEDBACK From the telemetry 
   FLOAT_EULERS_ZERO(guidance_euler_cmd); 
   THRUST_SP_SET_ZERO(thrust_sp);        
-  AbiBindMsgACCEL_SP(23, &accel_sp_ev, accel_sp_cb);
-/*#if PERIODIC_TELEMETRY
+  AbiBindMsgACCEL_SP(GUIDANCE_INDI_ACCEL_SP_ID, &accel_sp_ev, accel_sp_cb);
+  AbiBindMsgACT_FEEDBACK(GUIDANCE_INDI_ACT_FEEDBACK_ID, &act_feedback_ev, act_feedback_cb);   // RPM_FEEDBACK From the telemetry 
+
+#if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GUIDANCE_INDI_HYBRID, send_indi_guidance);
-#endif*/
+#endif
 }
 
 /**
@@ -244,8 +252,8 @@ void guidance_indi_enter(void)
   }
   init_butterworth_2_low_pass(&roll_filt, tau, sample_time, stateGetNedToBodyEulers_f()->phi);
   init_butterworth_2_low_pass(&pitch_filt, tau, sample_time, stateGetNedToBodyEulers_f()->theta);
-  //init_butterworth_2_low_pass(&thrust_filt, tau, sample_time, thrust_in); // mainly this won't be used 
-    // intializing filters for the rotor speed 
+  init_butterworth_2_low_pass(&thrust_filt, tau, sample_time, thrust_in); // mainly this won't be used 
+  // intializing filters for the rotor speed 
   for (int i = 0; i < INDI_NUM_ACT; i++) {
     init_butterworth_2_low_pass(&actuator_lowpass_filters_Guidance[i], tau, sample_time, 0.0);
   }
@@ -270,7 +278,7 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   float Thrust_filtered[3] = {0.0f}; 
   float actuator_state_filt_vect_prev[INDI_NUM_ACT];
   for (int i = 0; i < INDI_NUM_ACT; i++) {
-    update_butterworth_2_low_pass(&actuator_lowpass_filters_Guidance[i], act_obs_Guidance[i]);
+    update_butterworth_2_low_pass(&actuator_lowpass_filters_Guidance[i], act_obs_Guidance_rad_sec[i]);
     actuator_state_filt_vect_prev[i] = actuator_lowpass_filters_Guidance[i].o[1];
   }
   for (int i =0;i < 3; i++) {
@@ -516,6 +524,7 @@ static void act_feedback_cb(uint8_t sender_id UNUSED, struct act_feedback_t *fee
     if (feedback[i].idx < INDI_NUM_ACT && feedback[i].set.rpm) {
       int8_t idx = feedback[i].idx;
       act_obs_Guidance[idx] = (feedback[i].rpm - get_servo_min_PWM(idx));
+      act_obs_Guidance_rad_sec[idx] = feedback[i].rpm * 0.10472; // rpm ro rad/sec
       act_obs_Guidance[idx] *= (MAX_PPRZ / (float)(get_servo_max_PWM(idx) - get_servo_min_PWM(idx)));
       Bound(act_obs_Guidance[idx], 0, MAX_PPRZ);
     }

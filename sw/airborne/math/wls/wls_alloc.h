@@ -61,7 +61,7 @@
 #endif
 
 #ifndef WLS_N_V_MAX
-#define WLS_N_V_MAX 4
+#define WLS_N_V_MAX 6
 #endif
 struct WLS_t{
   int nu;                    // number of actuators

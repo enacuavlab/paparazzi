@@ -20,7 +20,7 @@
     <module name="radio_control" type="sbus"/>
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
     <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
-    <!-- <define name="INS_EKF2_OPTITRACK" value="TRUE"/> -->
+    <define name="INS_EKF2_OPTITRACK" value="TRUE"/>
     </target>
 
     <target name="nps" board="pc">
@@ -59,7 +59,7 @@
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
     </module>
 
-    <module name="gps" type="datalink"/>
+    <module name="gps" type="optitrack"/>
 
     <module name="stabilization" type="indi">
       <configure name="INDI_NUM_ACT" value="6"/>
@@ -71,8 +71,8 @@
     </module>
     <!--module name="fc_rotor"/-->
     
-    <module name="ins" type="ekf2"/>
-    <!-- <module name="ins" type="gps_passthrough"/> -->
+    <!-- <module name="ins" type="ekf2"/> -->
+    <module name="ins" type="gps_passthrough"/>
     <module name="ahrs" type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="FALSE"/>
       <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>

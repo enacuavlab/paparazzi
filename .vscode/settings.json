@@ -10,8 +10,14 @@
     },
     "files.associations": {
         "Makefile.*": "makefile",
-        "random": "c"
+        "random": "c",
+        "any": "c",
+        "*.tcc": "cpp",
+        "optional": "cpp",
+        "system_error": "cpp",
+        "regex": "cpp"
     },
     "C_Cpp.dimInactiveRegions": false,
     "esbonio.sphinx.confDir": "",
+    "cmake.sourceDirectory": "/home/hachemmo/paparazzi/sw/ext/TRICAL",
 }

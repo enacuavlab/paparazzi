@@ -38,7 +38,9 @@
       <message name="WIND_INFO_RET"            period="1."/>
       <message name="AHRS_REF_QUAT"            period="0.5"/>
       <message name="ESC"                      period="0.2"/>
-      <message name="ACTUATORS"                      period="0.2"/>
+      <message name="ACTUATORS"                period="0.2"/>
+      <message name="GUIDANCE_INDI_HYBRID"     period="0.2"/>
+
     </mode>
 
     <mode name="ppm">
@@ -205,6 +207,7 @@
       <message name="IMU_MAG_SCALED"           period=".2"/>
       <!-- <message name="LIDAR"                    period="0.05"/> -->
       <message name="ESC"                      period="0.002"/>
+      <message name="GUIDANCE_INDI_HYBRID"     period="0.002"/>
     </mode>
   </process>
 

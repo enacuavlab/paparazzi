@@ -77,10 +77,10 @@
   <makefile target="ap|nps" firmware="rotorcraft">
     <file name="stabilization_indi.c" dir="$(SRC_FIRMWARE)/stabilization"/>
     <file name="stabilization_attitude_quat_indi.c" dir="$(SRC_FIRMWARE)/stabilization"/>
-    <configure name="INDI_OUTPUTS" default="4"/>
-    <configure name="INDI_NUM_ACT" default="4"/>
-    <define name="INDI_OUTPUTS" value="$(INDI_OUTPUTS)"/>
-    <define name="INDI_NUM_ACT" value="$(INDI_NUM_ACT)"/>
+    <!-- <configure name="INDI_OUTPUTS" default="4"/> -->
+    <!-- <configure name="INDI_NUM_ACT" default="4"/> -->
+    <!-- <define name="INDI_OUTPUTS" value="$(INDI_OUTPUTS)"/> -->
+    <!-- <define name="INDI_NUM_ACT" value="$(INDI_NUM_ACT)"/> -->
     <define name="STABILIZATION_ATTITUDE_INDI_FULL" value="true"/>
   </makefile>
 </module>
