@@ -25,7 +25,7 @@
 
 #include "modules/ctrl/control_mixing_heewing.h"
 #include "modules/radio_control/radio_control.h"
-#include "generated/radio.h"
+#include "generated/modules.h"
 #include "modules/core/commands.h"
 #include "modules/actuators/actuators.h"
 #include "autopilot.h"

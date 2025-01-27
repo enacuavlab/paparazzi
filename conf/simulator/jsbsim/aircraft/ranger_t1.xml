@@ -120,12 +120,12 @@
     <property value="30.">fcs/motor_lag</property>
     <property value="54.">fcs/servo_lag</property>
     <property value="0.">fcs/tilt_min_rad</property>
-    <property value="1.74533">fcs/tilt/tilt_max_rad</property> <!-- 100 deg -->
+    <property value="1.74533">fcs/tilt_max_rad</property> <!-- 100 deg -->
 
     <channel name="filtering">
       <!--First order filter represents actuator dynamics-->
       <lag_filter name="motor_right_lag">
-        <input> fcs/motor_right </input>
+        <input> fcs/MOTOR_RIGHT </input>
         <clipto>
             <min>0</min>
             <max>1</max>
@@ -134,7 +134,7 @@
         <output> fcs/motor_right_lag</output>
       </lag_filter>
       <lag_filter name="motor_left_lag">
-        <input> fcs/motor_left </input>
+        <input> fcs/MOTOR_LEFT </input>
         <clipto>
             <min>0</min>
             <max>1</max>
@@ -142,23 +142,23 @@
         <c1> fcs/motor_lag </c1>
         <output> fcs/motor_left_lag</output>
       </lag_filter>
-      <lag_filter name="motor_back_lag">
-        <input> fcs/motor_back </input>
+      <lag_filter name="motor_tail_lag">
+        <input> fcs/MOTOR_TAIL </input>
         <clipto>
             <min>0</min>
             <max>1</max>
         </clipto>
         <c1> fcs/motor_lag </c1>
-        <output> fcs/motor_back_lag</output>
+        <output> fcs/motor_tail_lag</output>
       </lag_filter>
 
       <lag_filter name="aileron_lag">
-        <input> fcs/aileron </input>
+        <input> fcs/ROLL </input>
         <c1> fcs/servo_lag </c1>
         <output> fcs/aileron_lag</output>
       </lag_filter>
       <lag_filter name="elevator_lag">
-        <input> fcs/elevator </input>
+        <input> fcs/PITCH </input>
         <c1> fcs/servo_lag </c1>
         <output> fcs/elevator_lag</output>
       </lag_filter>
@@ -166,7 +166,16 @@
     </channel>
 
     <channel name="tilt">
-      <aerosurface_scale name="tilt_right">
+      <fcs_function name="tilt_right">
+        <function>
+          <sum>
+            <property>fcs/TILT</property>
+            <property>fcs/YAW</property>
+          </sum>
+        </function>
+        <output> fcs/tilt_right </output>
+      </fcs_function>
+      <aerosurface_scale name="tilt_right_dyn">
         <input> fcs/tilt_right </input>
         <zero_centered> false </zero_centered>
         <domain>
@@ -174,8 +183,8 @@
           <max> 1. </max>
         </domain>
         <range>
-          <min> fcs/tilt_min_rad </min>
-          <max> fcs/tilt_max_rad </max>
+          <min> 0. </min>
+          <max> 1.74533 </max>
         </range>
         <output> fcs/tilt_right_rad </output>
       </aerosurface_scale >
@@ -188,40 +197,40 @@
         </clipto>
         <output> fcs/tilt_right_lag </output>
       </actuator>
-      <fcs_function name="tilt_right_pos_x">
-        <function>
-          <sum>
-            <value> 0.09 </value> <!-- 9cm in front of CG -->
-            <product>
-              <value> 0.03 </value> <!-- 3cm rotating arm -->
-              <cos><property> fcs/tilt_right_lag </property></cos>
-            </product>
-          </sum>
-        </function>
-        <output> fcs/tilt_right_pos_x </output>
-      </fcs_function>
-      <fcs_function name="tilt_right_pos_z">
-        <function>
-          <product>
-            <value> -0.03 </value> <!-- 3cm rotating arm -->
-            <sin><property> fcs/tilt_right_lag </property></sin>
-          </product>
-        </function>
-        <output> fcs/tilt_right_pos_z </output>
-      </fcs_function>
       <fcs_function name="tilt_right_dir_x">
         <function>
-          <cos><property> fcs/tilt_right_lag </property></cos>
+          <cos><property> -fcs/tilt_right_lag </property></cos>
         </function>
-        <output> fcs/tilt_right_dir_x </output>
+        <output> external_reactions/motor_right/x </output>
       </fcs_function>
       <fcs_function name="tilt_right_dir_z">
         <function>
           <sin><property> -fcs/tilt_right_lag </property></sin>
         </function>
-        <output> fcs/tilt_right_dir_z </output>
+        <output> external_reactions/motor_right/z </output>
+      </fcs_function>
+      <fcs_function name="torque_right_dir_x">
+        <function>
+          <cos><property> -fcs/tilt_right_lag </property></cos>
+        </function>
+        <output> external_reactions/motor_right_torque/l </output>
+      </fcs_function>
+      <fcs_function name="torque_right_dir_z">
+        <function>
+          <sin><property> -fcs/tilt_right_lag </property></sin>
+        </function>
+        <output> external_reactions/motor_right_torque/n </output>
       </fcs_function>
 
+      <fcs_function>
+        <function>
+          <sum>
+            <property>fcs/TILT</property>
+            <property>-fcs/YAW</property>
+          </sum>
+        </function>
+        <output> fcs/tilt_left </output>
+      </fcs_function>
       <aerosurface_scale name="tilt_left">
         <input> fcs/tilt_left </input>
         <zero_centered> false </zero_centered>
@@ -230,8 +239,8 @@
           <max> 1. </max>
         </domain>
         <range>
-          <min> fcs/tilt_min_rad </min>
-          <max> fcs/tilt_max_rad </max>
+          <min> 0. </min>
+          <max> 1.74533 </max>
         </range>
         <output> fcs/tilt_left_rad </output>
       </aerosurface_scale >
@@ -244,38 +253,35 @@
         </clipto>
         <output> fcs/tilt_left_lag </output>
       </actuator>
-      <fcs_function name="tilt_left_pos_x">
-        <function>
-          <sum>
-            <value> 0.09 </value> <!-- 9cm in front of CG -->
-            <product>
-              <value> 0.03 </value> <!-- 3cm rotating arm -->
-              <cos><property> fcs/tilt_left_lag </property></cos>
-            </product>
-          </sum>
-        </function>
-        <output> fcs/tilt_left_pos_x </output>
-      </fcs_function>
-      <fcs_function name="tilt_left_pos_z">
-        <function>
-          <product>
-            <value> -0.03 </value> <!-- 3cm rotating arm -->
-            <sin><property> fcs/tilt_left_lag </property></sin>
-          </product>
-        </function>
-        <output> fcs/tilt_left_pos_z </output>
-      </fcs_function>
       <fcs_function name="tilt_left_dir_x">
         <function>
-          <cos><property> fcs/tilt_left_lag </property></cos>
+          <cos><property> -fcs/tilt_left_lag </property></cos>
         </function>
-        <output> fcs/tilt_left_dir_x </output>
+        <output> external_reactions/motor_left/x </output>
       </fcs_function>
       <fcs_function name="tilt_left_dir_z">
         <function>
           <sin><property> -fcs/tilt_left_lag </property></sin>
         </function>
-        <output> fcs/tilt_left_dir_z </output>
+        <output> external_reactions/motor_left/z </output>
+      </fcs_function>
+      <fcs_function name="torque_left_dir_x">
+        <function>
+          <product>
+            <value>-1.</value>
+            <cos><property> -fcs/tilt_left_lag </property></cos>
+          </product>
+        </function>
+        <output> external_reactions/motor_left_torque/l </output>
+      </fcs_function>
+      <fcs_function name="torque_left_dir_z">
+        <function>
+          <product>
+            <value>-1.</value>
+            <sin><property> -fcs/tilt_left_lag </property></sin>
+          </product>
+        </function>
+        <output> external_reactions/motor_left_torque/n </output>
       </fcs_function>
     </channel>
 
@@ -283,21 +289,20 @@
 
   <external_reactions>
 
-    <property>fcs/motor_right</property>
-    <property>fcs/motor_left</property>
-    <property>fcs/motot_back</property>
+    <property>fcs/MOTOR_RIGHT</property>
+    <property>fcs/MOTOR_LEFT</property>
+    <property>fcs/MOTOR_TAIL</property>
+    <property>fcs/PITCH</property>
+    <property>fcs/ROLL</property>
+    <property>fcs/YAW</property>
+    <property>fcs/THRUST</property>
+    <property>fcs/TILT</property>
     <property>fcs/motor_right_lag</property>
     <property>fcs/motor_left_lag</property>
-    <property>fcs/motot_back_lag</property>
-    <property>fcs/aileron_left</property>
-    <property>fcs/aileron_left_lag</property>
-    <property>fcs/aileron_right</property>
-    <property>fcs/aileron_right_lag</property>
-    <property>fcs/elevator</property>
+    <property>fcs/motor_tail_lag</property>
+    <property>fcs/aileron_lag</property>
     <property>fcs/elevator_lag</property>
-    <property>fcs/tilt_left</property>
     <property>fcs/tilt_left_lag</property>
-    <property>fcs/tilt_right</property>
     <property>fcs/tilt_right_lag</property>
 
     <property value="6.">fcs/motor_max_thrust</property> <!-- FIXME -->
@@ -314,14 +319,14 @@
         </product>
       </function>
       <location unit="M">
-        <x> fcs/tilt_right_pos_x </x>
+        <x> 0.09 </x>
         <y> 0.12 </y>
-        <z> fcs/tilt_right_pos_z </z>
+        <z> 0. </z>
       </location>
       <direction>
-        <x> fcs/tilt_right_dir_x </x>
+        <x> 1 </x>
         <y> 0 </y>
-        <z> fcs/tilt_right_dir_z </z>
+        <z> 0 </z>
       </direction>
     </force>
     <force name="motor_left" frame="BODY" unit="LBS">
@@ -333,20 +338,20 @@
         </product>
       </function>
       <location unit="M">
-        <x> fcs/tilt_left_pos_x </x>
+        <x> 0.09 </x>
         <y> -0.12 </y>
-        <z> fcs/tilt_left_pos_z </z>
+        <z> 0 </z>
       </location>
       <direction>
-        <x> fcs/tilt_left_dir_x </x>
+        <x> 1 </x>
         <y> 0 </y>
-        <z> fcs/tilt_left_dir_z </z>
+        <z> 0 </z>
       </direction>
     </force>
-    <force name="motor_back" frame="BODY" unit="LBS">
+    <force name="motor_tail" frame="BODY" unit="LBS">
       <function>
         <product>
-          <property>fcs/motor_back_lag</property>
+          <property>fcs/motor_tail_lag</property>
           <property>fcs/motor_max_thrust</property>
           <value>0.224808943</value> <!-- N to LBS -->
         </product>
@@ -365,7 +370,7 @@
     
     <!-- Then the Moment Couples -->
 
-    <moment name="motor_right_couple" frame="BODY">
+    <moment name="motor_right_torque" frame="BODY">
       <function>
         <product>
           <property>fcs/motor_right_lag</property>
@@ -374,18 +379,19 @@
         </product>
       </function>
       <location unit="M">
-        <x> fcs/tilt_right_pos_x </x>
+        <x> 0.09 </x>
         <y> 0.12 </y>
-        <z> fcs/tilt_right_pos_z </z>
+        <z> 0. </z>
       </location>
       <direction>
-        <x> fcs/tilt_right_dir_x </x>
+        <x> 1 </x>
         <y> 0 </y>
-        <z> fcs/tilt_right_dir_z </z>
+        <z> 0 </z>
       </direction>
-    </force>
+    </moment>
 
-    <moment name="motor_left_couple" frame="BODY">
+
+    <moment name="motor_left_torque" frame="BODY">
       <function>
         <product>
           <property>fcs/motor_left_lag</property>
@@ -394,21 +400,21 @@
         </product>
       </function>
       <location unit="M">
-        <x> fcs/tilt_left_pos_x </x>
+        <x> 0.09 </x>
         <y> -0.12 </y>
-        <z> fcs/tilt_left_pos_z </z>
+        <z> 0. </z>
       </location>
       <direction>
-        <x> -fcs/tilt_left_dir_x </x>
+        <x> -1 </x>
         <y> 0 </y>
-        <z> -fcs/tilt_left_dir_z </z>
+        <z> 0 </z>
       </direction>
     </moment>
 
-    <moment name="motor_back_couple" frame="BODY">
+    <moment name="motor_tail_torque" frame="BODY">
       <function>
         <product>
-          <property>fcs/motor_back_lag</property>
+          <property>fcs/motor_tail_lag</property>
           <property>fcs/motor_max_torque</property>
           <value> 0.738 </value> <!-- N.m to FT.LBS -->
         </product>
