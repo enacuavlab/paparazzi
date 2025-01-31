@@ -10,14 +10,14 @@
   </fileheader>
 
   <metrics>
-    <wingarea unit="M2"> 0.075 </wingarea>
-    <wingspan unit="M"> 0.9 </wingspan>
-    <chord unit="M"> 0.12 </chord>
-    <htailarea unit="M2"> 0 </htailarea>
-    <htailarm unit="M"> 0 </htailarm>
-    <vtailarea unit="M2"> 0 </vtailarea>
-    <vtailarm unit="M"> 0 </vtailarm>
-    <wing_incidence unit="DEG"> 90 </wing_incidence>
+    <wingarea unit="M2"> 0.09 </wingarea>
+    <wingspan unit="M"> 0.73 </wingspan>
+    <chord unit="M"> 0.15 </chord>
+    <htailarea unit="M2"> 0.029 </htailarea>
+    <htailarm unit="M"> 0.4 </htailarm>
+    <vtailarea unit="M2"> 0.01 </vtailarea>
+    <vtailarm unit="M"> 0.4 </vtailarm>
+    <wing_incidence unit="DEG"> 0 </wing_incidence>
     <location name="AERORP" unit="M">
       <x> 0 </x>
       <y> 0 </y>

@@ -52,7 +52,7 @@
            <property>aero/qbar-psf</property>
            <property>metrics/Sw-sqft</property>
            <property>aero/beta-rad</property>
-           <value>-1</value>
+           <value>-0.1</value>
        </product>
     </function>
 
@@ -129,7 +129,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/cbarw-ft</property>
           <property>fcs/elevator_lag</property>
-          <value>-1.1</value>
+          <value>1.1</value>
        </product>
     </function>
 
@@ -179,8 +179,7 @@
            <property>metrics/Sw-sqft</property>
            <property>metrics/bw-ft</property>
            <property>fcs/aileron_lag</property>
-           <!--value>-0.01</value-->
-           <value>0.0</value>
+           <value>-0.01</value>
        </product>
     </function>
 
