@@ -28,7 +28,7 @@
        <product>
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
-          <value> 0.02 </value>
+          <value> 0.134 </value>
        </product>
     </function>
 
@@ -38,7 +38,7 @@
            <property>aero/qbar-psf</property>
            <property>metrics/Sw-sqft</property>
            <property>aero/cl-squared</property>
-           <value>0.04</value>
+           <value>0.268</value>
          </product>
     </function>
 
