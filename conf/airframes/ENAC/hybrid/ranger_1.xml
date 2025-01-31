@@ -76,7 +76,9 @@
     <module name="guidance" type="plane_pid_rotorcraft"/>
     <module name="nav" type="hybrid"/>
 
-    <module name="ins" type="ekf2"/>
+    <!--module name="ins" type="ekf2"/-->
+    <module name="ins"/>
+    <module name="ahrs" type="int_cmpl_quat"/>
 
     <module name="gps"           type="ublox">
       <configure name="GPS_BAUD" value="B115200"/>
@@ -279,13 +281,14 @@
     <define name="COURSE_KP" value="1.0"/>
     <define name="COURSE_KD" value="0.1"/>
     <define name="CLIMB_KP" value="0.1"/>
-    <define name="PITCH_KP" value="0.1"/>
+    <define name="PITCH_KP" value="0.5"/>
     <define name="PITCH_KD" value="0.1"/>
     <define name="PITCH_KI" value="0."/>
     <define name="THROTTLE_KP" value="0.1"/>
     <define name="THROTTLE_KD" value="0.1"/>
     <define name="THROTTLE_KI" value="0."/>
-    <define name="NOMINAL_THROTTLE" value="0.4"/>
+    <define name="NOMINAL_THROTTLE" value="0.3"/>
+    <define name="PITCH_TRIM" value="2." unit="deg"/>
   </section>
 
   <section name="NAV">

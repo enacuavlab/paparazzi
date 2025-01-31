@@ -58,6 +58,10 @@
 #define GUIDANCE_PLANE_PITCH_OF_VZ RadOfDeg(5.f)
 #endif
 
+#ifndef GUIDANCE_PLANE_PITCH_TRIM
+#define GUIDANCE_PLANE_PITCH_TRIM RadOfDeg(0.f)
+#endif
+
 #ifndef GUIDANCE_PLANE_CLIMB_THROTTLE_INCREMENT
 #define GUIDANCE_PLANE_CLIMB_THROTTLE_INCREMENT 0.1f
 #endif
@@ -98,6 +102,7 @@ void guidance_plane_init(void)
   guidance_plane.altitude_setpoint = 0.f;
   guidance_plane.climb_setpoint = 0.f;
   guidance_plane.climb_kp = GUIDANCE_PLANE_CLIMB_KP;
+  guidance_plane.pitch_trim = GUIDANCE_PLANE_PITCH_TRIM;
   guidance_plane.pitch_of_vz = GUIDANCE_PLANE_PITCH_OF_VZ;
   guidance_plane.climb_throttle_increment = GUIDANCE_PLANE_CLIMB_THROTTLE_INCREMENT;
   guidance_plane.p_kp = GUIDANCE_PLANE_PITCH_KP;
@@ -232,11 +237,13 @@ static void guidance_plane_set_throttle(bool in_flight)
   }
 
   // PID loop + feedforward ctl
-  guidance_plane.throttle_cmd = guidance_plane.cruise_throttle
+  float th_cmd = guidance_plane.cruise_throttle
     + guidance_plane.climb_throttle_increment * guidance_plane.climb_setpoint
     + guidance_plane.t_kp * err
     + guidance_plane.t_kd * d_err
     + guidance_plane.t_ki * throttle_sum_err;
+
+  guidance_plane.throttle_cmd = TRIM_UPPRZ(MAX_PPRZ * th_cmd);
 
 }
 

@@ -37,7 +37,6 @@
 
     <!-- Kill throttle mode -->
     <mode name="KILL">
-      <select cond="$DEFAULT_MODE"/>
       <select cond="kill_switch_is_on()"/>
       <on_enter>
         <call fun="guidance_h_mode_changed(GUIDANCE_H_MODE_NONE)"/>
@@ -114,6 +113,7 @@
     </mode>
 
     <mode name="NAV">
+      <select cond="$DEFAULT_MODE"/>
       <!--select cond="RCMode2() && DLModeNav()" exception="HOME"/-->
       <on_enter>
         <call fun="control_mixing_heewing_nav_enter()"/>
