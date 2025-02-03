@@ -1,29 +1,25 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
-<flight_plan alt="215" ground_alt="185" lat0="43.46223" lon0="1.27289" max_dist_from_home="400" name="Muret test wind quad" security_height="1" wp_frame="ltp">
+<flight_plan alt="215" ground_alt="185" lat0="43.4625469" lon0="1.2732527" max_dist_from_home="600" name="Muret test wind quad" security_height="1" wp_frame="ltp">
   <header>
-    #if DIGITAL_CAM
-    #define LINE_START_FUNCTION dc_Survey(20);
-    #define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
-    #endif
   </header>
   <waypoints>
-    <waypoint name="HOME" x="-8.1" y="9.8"/>
-    <waypoint name="CLIMB" x="-28.0" y="29.0"/>
-    <waypoint name="STDBY" x="40.209" y="42.714"/>
-    <waypoint name="p1" x="67.492" y="32.136"/>
-    <waypoint name="p2" x="-35.356" y="78.947"/>
-    <waypoint name="p3" x="-16.718" y="133.25"/>
-    <waypoint name="p4" x="90.03" y="73.004"/>
-    <waypoint name="TD" x="31.809" y="46.501"/>
-    <waypoint name="_FLY1" x="-120.135" y="264.94"/>
-    <waypoint name="_FLY2" x="299.403" y="176.814"/>
-    <waypoint name="_FLY3" x="236.684" y="-88.655"/>
-    <waypoint name="_FLY4" x="-210.99" y="29.788"/>
-    <waypoint name="_KILL1" x="-130.009" y="292.981"/>
-    <waypoint name="_KILL2" x="324.67" y="196.132"/>
-    <waypoint name="_KILL3" x="256.662" y="-119.374"/>
-    <waypoint name="_KILL4" x="-251.128" y="10.603"/>
+    <waypoint name="HOME" x="10.011" y="45.283"/>
+    <waypoint name="CLIMB" x="-0.987" y="1.47"/>
+    <waypoint name="STDBY" x="7.868" y="16.094"/>
+    <waypoint name="p1" x="5.484" y="27.089"/>
+    <waypoint name="p2" x="-106.925" y="71.379"/>
+    <waypoint name="p3" x="-61.349" y="146.365"/>
+    <waypoint name="p4" x="60.577" y="107.312"/>
+    <waypoint name="TD" x="18.456" y="-8.405"/>
+    <waypoint name="_FLY1" x="-210.427" y="344.535"/>
+    <waypoint name="_FLY2" x="361.91" y="272.849"/>
+    <waypoint name="_FLY3" x="306.146" y="-117.204"/>
+    <waypoint name="_FLY4" x="-301.288" y="30.657"/>
+    <waypoint name="_KILL1" x="-224.642" y="366.52"/>
+    <waypoint name="_KILL2" x="390.65" y="296.493"/>
+    <waypoint name="_KILL3" x="325.256" y="-145.327"/>
+    <waypoint name="_KILL4" x="-339.689" y="15.798"/>
   </waypoints>
   <sectors>
     <sector color="lime" name="Flight_Area">
@@ -80,26 +76,31 @@
     <block name="stay_p1">
       <stay wp="p1"/>
     </block>
-    <block name="line_p1_p2">
-      <stay wp="p1" until="stage_time @GT 5"/>
-      <go wp="p2" from="p1" hmode="route"/>
-      <stay wp="p2"/>
-    </block>
-    <block name="transistion">
-      <go wp="p2" until="stage_time @GT 3"/>
-      <go wp="p2" from="p1" hmode="route"/>
-      <stay wp="p2"/>
-    </block>
-    <block name="square">
+    <block name="line p1 p2">
       <go wp="p1"/>
+      <call_once fun="nav_set_heading_towards_waypoint(WP_p2)"/>
+      <stay wp="p1" until="stage_time @GT 2"/>
+      <go wp="p2" until="stage_time @GT 2"/>
+      <go wp="p2" from="p1" hmode="route"/>
+      <stay wp="p2"/>
+    </block>
+    <block name="oval p1 p2">
+      <go wp="p1"/>
+      <call_once fun="nav_set_heading_towards_waypoint(WP_p2)"/>
+      <stay wp="p1" until="stage_time @GT 2"/>
+      <go wp="p2" until="stage_time @GT 2"/>
+      <oval p1="p2" p2="p1" radius="nav.radius"/>
+    </block>
+    <block name="path">
+      <go wp="p1"/>
+      <call_once fun="nav_set_heading_towards_waypoint(WP_p2)"/>
+      <stay wp="p1" until="stage_time @GT 2"/>
+      <go wp="p2" until="stage_time @GT 2"/>
       <path wpts="p1,p2,p3,p4,p1"/>
-      <deroute block="stay_p1"/>
+      <deroute block="circle"/>
     </block>
     <block name="circle">
       <circle radius="nav.radius" wp="STDBY"/>
-    </block>
-    <block name="oval">
-      <oval p1="p2" p2="p1" radius="nav.radius"/>
     </block>
     <block name="Land (module)" strip_button="Land (module)" group="module">
       <call fun="nav_land_at_wp(WP_TD, WP_TD, 0.)"/>
