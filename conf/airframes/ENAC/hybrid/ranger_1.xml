@@ -76,9 +76,9 @@
     <module name="guidance" type="plane_pid_rotorcraft"/>
     <module name="nav" type="hybrid"/>
 
-    <!--module name="ins" type="ekf2"/-->
-    <module name="ins"/>
-    <module name="ahrs" type="int_cmpl_quat"/>
+    <module name="ins" type="ekf2"/>
+    <!--module name="ins"/>
+    <module name="ahrs" type="int_cmpl_quat"/-->
 
     <module name="gps"           type="ublox">
       <configure name="GPS_BAUD" value="B115200"/>
