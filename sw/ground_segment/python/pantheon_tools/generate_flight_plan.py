@@ -1,6 +1,7 @@
 #!/usr/env python
 
 import os
+import sys
 import json
 import geojson
 import lxml.etree as etree
@@ -11,6 +12,7 @@ parser = argparse.ArgumentParser(description="Create flight plan from geojson")
 parser.add_argument('file', help="geojson input file")
 parser.add_argument('-o', '--output', help="output flight plan base name", default="fp")
 parser.add_argument('-d', '--delay', help="add a constant delay in seconds between takeoff", type=int, default=0)
+parser.add_argument('-v', '--version', help="format version", type=int, default=1)
 args = parser.parse_args()
 
 try:
@@ -63,11 +65,30 @@ END_FP = '''
   </blocks>
   '''
 
-nb_drones = geo['features'][0]['properties']['number']
-model = geo['features'][0]['properties']['model']
-ref_points = geo['features'][0]['geometry']['coordinates']
-trajectories = geo['features'][1]['geometry']['coordinates']
 ground_alt = 0.
+if args.version == 1:
+    nb_drones = geo['features'][0]['properties']['number']
+    model = geo['features'][0]['properties']['model']
+    ref_points = geo['features'][0]['geometry']['coordinates']
+    trajectories = geo['features'][1]['geometry']['coordinates']
+elif args.version == 2:
+    nb_drones = 0
+    model = []
+    ref_points = []
+    trajectories = []
+    for e in geo['features']:
+        _type = e['properties']['type']
+        if _type == 'Drone':
+            nb_drones += 1
+            model.append(e['properties']['model'])
+            ref_points.append(e['geometry']['coordinates'])
+        elif _type == 'Path':
+            trajectories = e['geometry']['coordinates']
+            # only one path node is expected
+else:
+    print("unknown version")
+    sys.exit()
+
 print(f'generating flight plans for {nb_drones} drones of type {model}')
 
 for i in range(nb_drones):
@@ -78,7 +99,10 @@ for i in range(nb_drones):
         except NoHeightMapDataException:
             print('No SRTM data avalaible')
     fp = etree.Element("flight_plan")
-    fp.set('alt', str(ground_alt+ref_points[i][2]))
+    if args.version == 1:
+        fp.set('alt', str(ground_alt+ref_points[i][2]))
+    elif args.version == 2:
+        fp.set('alt', str(ref_points[i][2]))
     fp.set('ground_alt', str(ground_alt))
     fp.set('lon0', str(lon0))
     fp.set('lat0', str(lat0))
@@ -96,7 +120,7 @@ for i in range(nb_drones):
     for j, wp in enumerate(trajectories[i][1:-1]):
         lon, lat, height = wp[0], wp[1], wp[2]
         galt = 0.
-        if use_srtm:
+        if use_srtm and args.version == 1:
             try:
                 galt = srtm_data.get_altitude(longitude=lon, latitude=lat)
             except NoHeightMapDataException:
