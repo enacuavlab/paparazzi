@@ -252,6 +252,32 @@ class MissionManager():
             for _id in self.uavs:
                 send_circle(_id, lat, lon, alt, radius, mission_id, insert_mode.value)
 
+    def add_mission_poles(self, mission_id:int, lat1:float, lon1:float, lat2:float, lon2:float, height:float, radius:float, insert_mode:MissionInsert = MissionInsert.APPEND, ac_id:int=None):
+        ''' send MISSION_CUSTOM message to a specified uav or all if None
+            for the navigation between two poles at position lat (deg), lon (deg), height above ref point (m) and radius (m) format
+        '''
+        def send_poles(_ac_id, _lat1, _lon1, _lat2, _lon2, _height, _radius, _index, _insert):
+            msg = PprzMessage("datalink", "MISSION_CUSTOM")
+            msg['ac_id'] = _ac_id
+            msg['insert'] = _insert
+            msg['duration'] = -1.
+            msg['index'] = _index % 256
+            msg['type'] = 'POLES'
+            msg['params'] = [float(_lat1), float(_lon1), float(_lat2), float(_lon2), float(_height), float(_radius), 1.] # fixed margin of 1.
+            self.connect.ivy.send(msg)
+            if self.verbose:
+                print(msg)
+
+        if mission_id <= 0 or mission_id > 255:
+            print('invalid mission id', mission_id)
+            return # TODO raise error
+
+        if ac_id is not None and ac_id in self.uavs:
+            send_poles(ac_id, lat1, lon1, lat2, lon2, height, radius, mission_id, insert_mode.value)
+        elif ac_id is None:
+            for _id in self.uavs:
+                send_poles(_id, lat1, lon1, lat2, lon2, height, radius, mission_id, insert_mode.value)
+
     def add_mission_takeoff(self, mission_id:int, insert_mode:MissionInsert = MissionInsert.APPEND, ac_id:int=None):
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the takeoff mission at the current position
