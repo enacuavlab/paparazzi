@@ -111,6 +111,7 @@ static bool compute_oval_points(struct EnuCoor_f *enu1, struct EnuCoor_f *enu2, 
   printf("%f %f |  %f %f | %f %f | %f %f\n", dx, dy, oval_wp1.x, oval_wp1.y, oval_wp2.x, oval_wp2.y, radius, margin);
 
   oval_radius = radius;
+  NavVerticalAltitudeMode(height, 0.f);
 
   return true;
 }
