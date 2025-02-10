@@ -10,10 +10,12 @@
           <table>
             <independentVar lookup="row">aero/alpha-rad</independentVar>
             <tableData>
+              -1.57  0.
               -0.20 -0.750
                0.00  0.250
                0.23  1.400
                0.60  0.710
+               1.57  0.
             </tableData>
           </table>
       </product>
@@ -66,8 +68,10 @@
            <property>aero/qbar-psf</property>
            <property>metrics/Sw-sqft</property>
            <property>metrics/bw-ft</property>
-           <property>aero/beta-rad</property>
-           <value>-0.1</value>
+           <sin>
+             <property>aero/beta-rad</property>
+           </sin>
+           <value>-0.01</value>
        </product>
     </function>
 
@@ -119,6 +123,16 @@
            <property>metrics/cbarw-ft</property>
            <property>aero/alpha-rad</property>
            <value>-0.5</value>
+           <table>
+             <independentVar lookup="row">aero/alpha-rad</independentVar>
+             <tableData>
+               -1.57  0.
+               -0.60 0.3
+               0.00  0.
+               0.60  -0.3
+               1.57  0.
+             </tableData>
+           </table>
        </product>
     </function>
 
@@ -155,7 +169,9 @@
            <property>aero/qbar-psf</property>
            <property>metrics/Sw-sqft</property>
            <property>metrics/bw-ft</property>
-           <property>aero/beta-rad</property>
+           <sin>
+             <property>aero/beta-rad</property>
+           </sin>
            <value>0.12</value>
        </product>
     </function>
