@@ -80,7 +80,6 @@
       <go wp="p1"/>
       <call_once fun="nav_set_heading_towards_waypoint(WP_p2)"/>
       <stay wp="p1" until="stage_time @GT 2"/>
-      <go wp="p2" until="stage_time @GT 2"/>
       <go wp="p2" from="p1" hmode="route"/>
       <stay wp="p2"/>
     </block>
@@ -88,14 +87,12 @@
       <go wp="p1"/>
       <call_once fun="nav_set_heading_towards_waypoint(WP_p2)"/>
       <stay wp="p1" until="stage_time @GT 2"/>
-      <go wp="p2" until="stage_time @GT 2"/>
       <oval p1="p2" p2="p1" radius="nav.radius"/>
     </block>
     <block name="path">
       <go wp="p1"/>
       <call_once fun="nav_set_heading_towards_waypoint(WP_p2)"/>
       <stay wp="p1" until="stage_time @GT 2"/>
-      <go wp="p2" until="stage_time @GT 2"/>
       <path wpts="p1,p2,p3,p4,p1"/>
       <deroute block="circle"/>
     </block>
