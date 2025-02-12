@@ -22,9 +22,12 @@
 import sys
 from os import path, getenv
 import math
+from typing import Dict
 import numpy as np
 from dataclasses import dataclass
 from enum import Enum
+import time
+import functools
 
 # if PAPARAZZI_SRC or PAPARAZZI_HOME not set, then assume the tree containing this
 # file is a reasonable substitute
@@ -35,8 +38,11 @@ sys.path.append(PPRZ_HOME + "/var/lib/python") # pprzlink
 
 from pprzlink.message import PprzMessage
 from pprz_connect import PprzConnect, PprzConfig
-from flight_plan import FlightPlan
+from flight_plan import FlightPlan, Block
 
+
+MAX_RETRY = 3
+ACK_TIME = 0.5
 
 @dataclass
 class UAVData:
@@ -62,7 +68,7 @@ class UAVData:
     mission_status: list[int] = None
     datalink_lost_time: int = 0
     flight_plan: FlightPlan = None
-    start_mission_fp_block: int = None
+    start_mission_fp_block: Block = None
 
 class MissionInsert(Enum):
     APPEND = 0
@@ -77,27 +83,14 @@ class MissionManager():
     and start mission mode from flight plan
     Bind to state messages and update UAV data
     '''
-    def __init__(self, verbose=False):
+    def __init__(self, ac_id=False, verbose=False):
         self.verbose = verbose
 
-        self.uavs = {}
-
-        ''' get aircraft config '''
-        def connect_cb(conf):
-            if not conf.id in self.uavs:
-                self.uavs[conf.id] = UAVData(conf.id, conf.name)
-            self.uavs[conf.id].flight_plan = FlightPlan.parse(conf.flight_plan)
-            try:
-                self.uavs[conf.id].start_mission_fp_block = self.uavs[conf.id].flight_plan.get_block('Mission')
-                if self.verbose:
-                    print("'Mission' block found",self.uavs[conf.id].start_mission_fp_block.no)
-            except:
-                print("'Mission' block not found in flight plan")
-            if self.verbose:
-                print(conf)
+        self.uav_data = None
+        self.ac_id = ac_id
 
         ''' create connect object, it will start Ivy interface '''
-        self.connect = PprzConnect(notify=connect_cb)
+        self.connect = PprzConnect(notify=self.connect_cb)
 
         ''' bind to messages '''
         self.connect.ivy.subscribe(self.flight_param_cb, PprzMessage("ground", "FLIGHT_PARAM"))
@@ -110,226 +103,193 @@ class MissionManager():
     def closing(self):
         ''' shutdown Ivy and window '''
         self.connect.shutdown()
+    
+        
+    def connect_cb(self, conf):
+        ''' get aircraft config '''
+        if self.ac_id is None:
+            self.ac_id = int(conf.id)
+            self.uav_data = UAVData(conf.id, conf.name)
+            self.uav_data.mission_status = []       # TODO replace that by the correct dataclass initializer
+        
+        if self.ac_id == int(conf.id):
+            self.uav_data.flight_plan = FlightPlan.parse(conf.flight_plan)
+            try:
+                self.uav_data.start_mission_fp_block = self.uav_data.flight_plan.get_block('Mission')
+                if self.verbose:
+                    print("'Mission' block found",self.uav_data.start_mission_fp_block.no)
+            except:
+                print("'Mission' block not found in flight plan")
+            if self.verbose:
+                print(conf)
 
     def flight_param_cb(self, ac_id, msg):
-        if ac_id in self.uavs:
-            self.uavs[ac_id].lat = float(msg['lat'])
-            self.uavs[ac_id].lon = float(msg['long'])
-            self.uavs[ac_id].alt = float(msg['alt'])
-            self.uavs[ac_id].height = float(msg['agl']) # FIXME height or AGL ?
-            self.uavs[ac_id].heading = float(msg['heading'])
+        if int(ac_id) == self.ac_id:
+            self.uav_data.lat = float(msg['lat'])
+            self.uav_data.lon = float(msg['long'])
+            self.uav_data.alt = float(msg['alt'])
+            self.uav_data.height = float(msg['agl']) # FIXME height or AGL ?
+            self.uav_data.heading = float(msg['heading'])
             speed = float(msg['speed'])
             course = np.deg2rad(float(msg['course']))
-            self.uavs[ac_id].vnorth = speed * math.cos(course)
-            self.uavs[ac_id].veast = speed * math.sin(course)
-            self.uavs[ac_id].vup = float(msg['climb'])
-            self.uavs[ac_id].gps_tow = int(msg['itow']) / 1000 # FIXME s or ms ?
+            self.uav_data.vnorth = speed * math.cos(course)
+            self.uav_data.veast = speed * math.sin(course)
+            self.uav_data.vup = float(msg['climb'])
+            self.uav_data.gps_tow = int(msg['itow']) / 1000 # FIXME s or ms ?
 
     def ap_status_cb(self, ac_id, msg):
-        if ac_id in self.uavs:
-            self.uavs[ac_id].AP_mode = msg['ap_mode']
-            self.uavs[ac_id].flight_time = msg['flight_time']
+        if int(ac_id) == self.ac_id:
+            self.uav_data.AP_mode = msg['ap_mode']
+            self.uav_data.flight_time = msg['flight_time']
 
     def nav_status_cb(self, ac_id, msg):
-        if ac_id in self.uavs:
+        if int(ac_id) == self.ac_id:
             block_id = int(msg['cur_block'])
-            block = self.uavs[ac_id].flight_plan.get_block(block_id)
-            self.uavs[ac_id].FP_block = block.name
+            block = self.uav_data.flight_plan.get_block(block_id)
+            self.uav_data.FP_block = block.name
 
     def engine_status_cb(self, ac_id, msg):
-        if ac_id in self.uavs:
-            self.uavs[ac_id].bat_voltage = float(msg['bat'])
+        if int(ac_id) == self.ac_id:
+            self.uav_data.bat_voltage = float(msg['bat'])
             # TODO compute % assuming 2 or 4 cells
 
     def telemetry_status_cb(self, ac_id, msg):
-        if ac_id in self.uavs:
-            self.uavs[ac_id].datalink_lost_time = int(msg['uplink_lost_time'])
+        if int(ac_id) == self.ac_id:
+            self.uav_data.datalink_lost_time = int(msg['uplink_lost_time'])
 
     def mission_status_cb(self, ac_id, msg):
-        ac_id = str(ac_id)
-        if ac_id in self.uavs:
-            self.uavs[ac_id].mission_status = [ int(e) for e in msg['index_list'] if int(e) != 0 ] 
+        if int(ac_id) == self.ac_id:
+            self.uav_data.mission_status = [ int(e) for e in msg['index_list'] if int(e) != 0 ] 
 
+    def send_mission_element(send_elt):
+        @functools.wraps(send_elt)
+        def wrapper(self:'MissionManager', mission_id: int, **kwargs):
+            if self.uav_data is None:
+                return False  # no AC
+            
+            if mission_id <= 0 or mission_id > 255:
+                print('invalid mission id', mission_id)
+                return False # invalid mission_id
 
-    def start_mission(self, ac_id:int=None):
+            for _ in range(MAX_RETRY):
+                send_elt(self, mission_id=mission_id, **kwargs)
+                time.sleep(ACK_TIME)    # wait a bit to receive the ACK
+                # Check if the mission element has been added
+                if mission_id in self.uav_data.mission_status:
+                    return True
+            return False
+
+        return wrapper
+    
+    def start_mission(self):
         ''' enter Mission flight block for selected UAV or all if None'''
-        def jump_to_block(_ac_id, _block_id):
-            msg = PprzMessage("ground", "JUMP_TO_BLOCK")
-            msg['ac_id'] = _ac_id
-            msg['block_id'] = int(_block_id)
-            self.connect.ivy.send(msg)
-            if self.verbose:
-                print(msg)
+        msg = PprzMessage("ground", "JUMP_TO_BLOCK")
+        msg['ac_id'] = self.ac_id
+        msg['block_id'] = int(self.uav_data.start_mission_fp_block.no)
+        self.connect.ivy.send(msg)
+        if self.verbose:
+            print(msg)
 
-        if ac_id is not None and ac_id in self.uavs:
-            jump_to_block(ac_id, self.uavs[ac_id].start_mission_fp_block.no)
-        elif ac_id is None:
-            for _id in self.uavs:
-                jump_to_block(_id, self.uavs[_id].start_mission_fp_block.no)
+    @send_mission_element
+    def add_mission_point(self, lat: float, lon: float, alt: float, mission_id: int, insert:MissionInsert = MissionInsert.APPEND):
+        msg = PprzMessage("datalink", "MISSION_GOTO_WP_LLA")
+        msg['ac_id'] = self.ac_id
+        msg['insert'] = insert.value
+        msg['duration'] = -1.
+        msg['index'] = mission_id
+        msg['wp_lat'] = int(lat * 1e7)
+        msg['wp_lon'] = int(lon * 1e7)
+        msg['wp_alt'] = int(alt * 1e3)
+        self.connect.ivy.send(msg)
+        if self.verbose:
+            print(msg)
 
-    def add_mission_point(self, mission_id:int, lat:float, lon:float, alt:float, insert_mode:MissionInsert = MissionInsert.APPEND, ac_id:int=None):
-        ''' send MISSION_GOTO_WP_LLA message to a specified uav or all if None
-            point is described by lat (deg), lon (deg), alt amsl (m) format
-        '''
-        def send_point(_ac_id, _lat, _lon, _alt, _index, _insert):
-            msg = PprzMessage("datalink", "MISSION_GOTO_WP_LLA")
-            msg['ac_id'] = _ac_id
-            msg['insert'] = _insert
-            msg['duration'] = -1.
-            msg['index'] = _index % 256
-            msg['wp_lat'] = int(_lat * 1e7)
-            msg['wp_lon'] = int(_lon * 1e7)
-            msg['wp_alt'] = int(_alt * 1e3)
-            self.connect.ivy.send(msg)
-            if self.verbose:
-                print(msg)
-
-        if mission_id <= 0 or mission_id > 255:
-            print('invalid mission id', mission_id)
-            return # TODO raise error
-
-        if ac_id is not None and ac_id in self.uavs:
-            send_point(ac_id, lat, lon, alt, mission_id, insert_mode.value)
-        elif ac_id is None:
-            for _id in self.uavs:
-                send_point(_id, lat, lon, alt, mission_id, insert_mode.value)
-
-    def add_mission_path(self, mission_id:int, path:list[(float,float)], alt:float, insert_mode:MissionInsert = MissionInsert.APPEND, ac_id:int=None):
+    @send_mission_element
+    def add_mission_path(self, mission_id:int, path:list[(float,float)], alt:float, insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_PATH_LLA message to a specified uav or all if None
             path is described by a list of points in (lat (deg), lon (deg)) + alt amsl (m) format
         '''
-        def send_path(_ac_id, _path, _alt, _index, _insert):
-            msg = PprzMessage("datalink", "MISSION_PATH_LLA")
-            msg['ac_id'] = _ac_id
-            msg['insert'] = _insert
-            msg['duration'] = -1.
-            msg['nb'] = max(len(_path), 5)
-            msg['index'] = _index % 256
-            msg['path_alt'] = int(_alt * 1e3)
-            for i in range(msg['nb']):
-                lat, lon = _path[i]
-                msg['point_lat_'+str(i+1)] = int(lat * 1e7)
-                msg['point_lon_'+str(i+1)] = int(lon * 1e7)
-            self.connect.ivy.send(msg)
-            if self.verbose:
-                print(msg)
+        msg = PprzMessage("datalink", "MISSION_PATH_LLA")
+        msg['ac_id'] = self.ac_id
+        msg['insert'] = insert_mode.value
+        msg['duration'] = -1.
+        msg['nb'] = max(len(path), 5)
+        msg['index'] = mission_id
+        msg['path_alt'] = int(alt * 1e3)
+        for i in range(msg['nb']):
+            lat, lon = path[i]
+            msg['point_lat_'+str(i+1)] = int(lat * 1e7)
+            msg['point_lon_'+str(i+1)] = int(lon * 1e7)
+        self.connect.ivy.send(msg)
+        if self.verbose:
+            print(msg)
 
-        if len(path) > 5 or mission_id <= 0 or mission_id > 255:
-            print('invalid mission id or path len', mission_id, len(path))
-            return # TODO raise error
-
-        if ac_id is not None and ac_id in self.uavs:
-            send_path(ac_id, path, alt, mission_id, insert_mode.value)
-        elif ac_id is None:
-            for _id in self.uavs:
-                send_path(_id, path, alt, mission_id, insert_mode.value)
-
-    def add_mission_circle(self, mission_id:int, lat:float, lon:float, alt:float, radius:float, insert_mode:MissionInsert = MissionInsert.APPEND, ac_id:int=None):
+    @send_mission_element
+    def add_mission_circle(self, mission_id:int, lat:float, lon:float, alt:float, radius:float, insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_CIRCLE_LLA message to a specified uav or all if None
             circle is described by a lat (m), lon (m), alt amsl (m) format and radius (m)
         '''
-        def send_circle(_ac_id, _lat, _lon, _alt, _radius, _index, _insert):
-            msg = PprzMessage("datalink", "MISSION_CIRCLE_LLA")
-            msg['ac_id'] = _ac_id
-            msg['insert'] = _insert
-            msg['duration'] = -1.
-            msg['index'] = _index % 256
-            msg['center_lat'] = int(_lat * 1e7)
-            msg['center_lon'] = int(_lon * 1e7)
-            msg['center_alt'] = int(_alt * 1e3)
-            msg['radius'] = _radius
-            self.connect.ivy.send(msg)
-            if self.verbose:
-                print(msg)
+        msg = PprzMessage("datalink", "MISSION_CIRCLE_LLA")
+        msg['ac_id'] = self.ac_id
+        msg['insert'] = insert_mode.value
+        msg['duration'] = -1.
+        msg['index'] = mission_id
+        msg['center_lat'] = int(lat * 1e7)
+        msg['center_lon'] = int(lon * 1e7)
+        msg['center_alt'] = int(alt * 1e3)
+        msg['radius'] = radius
+        self.connect.ivy.send(msg)
+        if self.verbose:
+            print(msg)
 
-        if mission_id <= 0 or mission_id > 255:
-            print('invalid mission id', mission_id)
-            return # TODO raise error
-
-        if ac_id is not None and ac_id in self.uavs:
-            send_circle(ac_id, lat, lon, alt, radius, mission_id, insert_mode.value)
-        elif ac_id is None:
-            for _id in self.uavs:
-                send_circle(_id, lat, lon, alt, radius, mission_id, insert_mode.value)
-
-    def add_mission_poles(self, mission_id:int, lat1:float, lon1:float, lat2:float, lon2:float, height:float, radius:float, insert_mode:MissionInsert = MissionInsert.APPEND, ac_id:int=None):
+    @send_mission_element
+    def add_mission_poles(self, mission_id:int, lat1:float, lon1:float, lat2:float, lon2:float, height:float, radius:float, insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the navigation between two poles at position lat (deg), lon (deg), height above ref point (m) and radius (m) format
         '''
-        def send_poles(_ac_id, _lat1, _lon1, _lat2, _lon2, _height, _radius, _index, _insert):
-            msg = PprzMessage("datalink", "MISSION_CUSTOM")
-            msg['ac_id'] = _ac_id
-            msg['insert'] = _insert
-            msg['duration'] = -1.
-            msg['index'] = _index % 256
-            msg['type'] = 'POLES'
-            msg['params'] = [float(_lat1), float(_lon1), float(_lat2), float(_lon2), float(_height), float(_radius), 1.] # fixed margin of 1.
-            self.connect.ivy.send(msg)
-            if self.verbose:
-                print(msg)
+        msg = PprzMessage("datalink", "MISSION_CUSTOM")
+        msg['ac_id'] = self.ac_id
+        msg['insert'] = insert_mode.value
+        msg['duration'] = -1.
+        msg['index'] = mission_id
+        msg['type'] = 'POLES'
+        msg['params'] = [float(lat1), float(lon1), float(lat2), float(lon2), float(height), float(radius), 1.] # fixed margin of 1.
+        self.connect.ivy.send(msg)
+        if self.verbose:
+            print(msg)
 
-        if mission_id <= 0 or mission_id > 255:
-            print('invalid mission id', mission_id)
-            return # TODO raise error
-
-        if ac_id is not None and ac_id in self.uavs:
-            send_poles(ac_id, lat1, lon1, lat2, lon2, height, radius, mission_id, insert_mode.value)
-        elif ac_id is None:
-            for _id in self.uavs:
-                send_poles(_id, lat1, lon1, lat2, lon2, height, radius, mission_id, insert_mode.value)
-
-    def add_mission_takeoff(self, mission_id:int, insert_mode:MissionInsert = MissionInsert.APPEND, ac_id:int=None):
+    @send_mission_element
+    def add_mission_takeoff(self, mission_id:int, insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the takeoff mission at the current position
         '''
-        def send_takeoff(_ac_id, _index, _insert):
-            msg = PprzMessage("datalink", "MISSION_CUSTOM")
-            msg['ac_id'] = _ac_id
-            msg['insert'] = _insert
-            msg['duration'] = -1.
-            msg['index'] = _index % 256
-            msg['type'] = 'TKOFF'
-            msg['params'] = [0.]
-            self.connect.ivy.send(msg)
-            if self.verbose:
-                print(msg)
+        msg = PprzMessage("datalink", "MISSION_CUSTOM")
+        msg['ac_id'] = self.ac_id
+        msg['insert'] = insert_mode.value
+        msg['duration'] = -1.
+        msg['index'] = mission_id
+        msg['type'] = 'TKOFF'
+        msg['params'] = [0.]
+        self.connect.ivy.send(msg)
+        if self.verbose:
+            print(msg)
 
-        if mission_id <= 0 or mission_id > 255:
-            print('invalid mission id', mission_id)
-            return # TODO raise error
-
-        if ac_id is not None and ac_id in self.uavs:
-            send_takeoff(ac_id, mission_id, insert_mode.value)
-        elif ac_id is None:
-            for _id in self.uavs:
-                send_takeoff(_id, mission_id, insert_mode.value)
-
-    def add_mission_land(self, mission_id:int, lat:float, lon:float, height:float, insert_mode:MissionInsert = MissionInsert.APPEND, ac_id:int=None):
+    @send_mission_element
+    def add_mission_land(self, mission_id:int, lat:float, lon:float, height:float, insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the landing mission at the position in lat (deg), lon (deg), height above ref point (m) format
         '''
-        def send_land(_ac_id, _lat, _lon, _height, _index, _insert):
-            msg = PprzMessage("datalink", "MISSION_CUSTOM")
-            msg['ac_id'] = _ac_id
-            msg['insert'] = _insert
-            msg['duration'] = -1.
-            msg['index'] = _index % 256
-            msg['type'] = 'LAND'
-            msg['params'] = [float(_height), float(_lat), float(_lon), 0., 0.]
-            self.connect.ivy.send(msg)
-            if self.verbose:
-                print(msg)
-
-        if mission_id <= 0 or mission_id > 255:
-            print('invalid mission id', mission_id)
-            return # TODO raise error
-
-        if ac_id is not None and ac_id in self.uavs:
-            send_land(ac_id, lat, lon, height, mission_id, insert_mode.value)
-        elif ac_id is None:
-            for _id in self.uavs:
-                send_land(_id, lat, lon, height, mission_id, insert_mode.value)
-
+        msg = PprzMessage("datalink", "MISSION_CUSTOM")
+        msg['ac_id'] = self.ac_id
+        msg['insert'] = insert_mode.value
+        msg['duration'] = -1.
+        msg['index'] = mission_id
+        msg['type'] = 'LAND'
+        msg['params'] = [float(height), float(lat), float(lon), 0., 0.]
+        self.connect.ivy.send(msg)
+        if self.verbose:
+            print(msg)
+    
 
 
 if __name__ == '__main__':
@@ -342,16 +302,16 @@ if __name__ == '__main__':
         sleep(3)
         mission.add_mission_takeoff(1, insert_mode=MissionInsert.REPLACE_ALL)
         sleep(1)
-        mission.add_mission_point(2, 43., 1.6, 200.)
+        mission.add_mission_point(2, lat=43., lon=1.6, alt=200.)
         sleep(1)
-        mission.add_mission_path(3, [(43.1, 1.61),(43.2, 1.62),(43.3, 1.63),(43.4, 1.64),(43.5, 1.65)], 200.)
+        mission.add_mission_path(3, path=[(43.1, 1.61),(43.2, 1.62),(43.3, 1.63),(43.4, 1.64),(43.5, 1.65)], alt=200.)
         sleep(1)
-        mission.add_mission_circle(4, 43.5, 1.65, 200, 80)
+        mission.add_mission_circle(4, lat=43.5, lon=1.65, alt=200, radius=80)
         sleep(1)
-        mission.add_mission_land(5, 43.5, 1.65, 0.)
+        mission.add_mission_land(5, lat=43.5, lon=1.65, height=0.)
         sleep(1)
         mission.start_mission()
-        print('UAVs:',mission.uavs)
+        print('UAV:',mission.uav_data.name)
 
     except(KeyboardInterrupt,SystemExit):
         print("interrupt cohoma_bridge test")
