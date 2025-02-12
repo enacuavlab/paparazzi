@@ -173,7 +173,11 @@ void control_mixing_heewing_attitude_plane(void)
   commands[COMMAND_THRUST] = stabilization.cmd[COMMAND_THRUST];
   commands[COMMAND_MOTOR_RIGHT] = stabilization.cmd[COMMAND_THRUST];
   commands[COMMAND_MOTOR_LEFT] = stabilization.cmd[COMMAND_THRUST];
-  commands[COMMAND_MOTOR_TAIL] = command_from_transition(MAX_PPRZ/2, MIN_PPRZ);
+  if (autopilot_in_flight()) {
+    commands[COMMAND_MOTOR_TAIL] = command_from_transition(MAX_PPRZ/2, 0);
+  } else {
+    commands[COMMAND_MOTOR_TAIL] = 0;
+  }
   commands[COMMAND_TILT] = command_from_transition(CMH_TILT_VERTICAL, CMH_TILT_FORWARD);
   commands[COMMAND_YAW] = 0;
   autopilot.throttle = commands[COMMAND_THRUST];
