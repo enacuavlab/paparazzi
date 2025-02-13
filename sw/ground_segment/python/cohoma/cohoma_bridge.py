@@ -218,11 +218,11 @@ class MissionManager():
             print(msg)
 
     @send_mission_element
-    def add_mission_point(self, lat: float, lon: float, alt: float, mission_id: int, insert:MissionInsert = MissionInsert.APPEND):
+    def add_mission_point(self, lat: float, lon: float, alt: float, mission_id: int, duration:float = -1., insert:MissionInsert = MissionInsert.APPEND):
         msg = PprzMessage("datalink", "MISSION_GOTO_WP_LLA")
         msg['ac_id'] = self.ac_id
         msg['insert'] = insert.value
-        msg['duration'] = -1.
+        msg['duration'] = duration
         msg['index'] = mission_id
         msg['wp_lat'] = int(lat * 1e7)
         msg['wp_lon'] = int(lon * 1e7)
@@ -230,14 +230,14 @@ class MissionManager():
         return msg
 
     @send_mission_element
-    def add_mission_path(self, mission_id:int, path:list[(float,float)], alt:float, insert_mode:MissionInsert = MissionInsert.APPEND):
+    def add_mission_path(self, mission_id:int, path:list[(float,float)], alt:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_PATH_LLA message to a specified uav or all if None
             path is described by a list of points in (lat (deg), lon (deg)) + alt amsl (m) format
         '''
         msg = PprzMessage("datalink", "MISSION_PATH_LLA")
         msg['ac_id'] = self.ac_id
         msg['insert'] = insert_mode.value
-        msg['duration'] = -1.
+        msg['duration'] = duration
         msg['nb'] = max(len(path), 5)
         msg['index'] = mission_id
         msg['path_alt'] = int(alt * 1e3)
@@ -248,14 +248,14 @@ class MissionManager():
         return msg
 
     @send_mission_element
-    def add_mission_circle(self, mission_id:int, lat:float, lon:float, alt:float, radius:float, insert_mode:MissionInsert = MissionInsert.APPEND):
+    def add_mission_circle(self, mission_id:int, lat:float, lon:float, alt:float, radius:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_CIRCLE_LLA message to a specified uav or all if None
             circle is described by a lat (m), lon (m), alt amsl (m) format and radius (m)
         '''
         msg = PprzMessage("datalink", "MISSION_CIRCLE_LLA")
         msg['ac_id'] = self.ac_id
         msg['insert'] = insert_mode.value
-        msg['duration'] = -1.
+        msg['duration'] = duration
         msg['index'] = mission_id
         msg['center_lat'] = int(lat * 1e7)
         msg['center_lon'] = int(lon * 1e7)
@@ -264,42 +264,42 @@ class MissionManager():
         return msg
 
     @send_mission_element
-    def add_mission_poles(self, mission_id:int, lat1:float, lon1:float, lat2:float, lon2:float, height:float, radius:float, insert_mode:MissionInsert = MissionInsert.APPEND):
+    def add_mission_poles(self, mission_id:int, lat1:float, lon1:float, lat2:float, lon2:float, height:float, radius:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the navigation between two poles at position lat (deg), lon (deg), height above ref point (m) and radius (m) format
         '''
         msg = PprzMessage("datalink", "MISSION_CUSTOM")
         msg['ac_id'] = self.ac_id
         msg['insert'] = insert_mode.value
-        msg['duration'] = -1.
+        msg['duration'] = duration
         msg['index'] = mission_id
         msg['type'] = 'POLES'
         msg['params'] = [float(lat1), float(lon1), float(lat2), float(lon2), float(height), float(radius), 1.] # fixed margin of 1.
         return msg
 
     @send_mission_element
-    def add_mission_takeoff(self, mission_id:int, insert_mode:MissionInsert = MissionInsert.APPEND):
+    def add_mission_takeoff(self, mission_id:int, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the takeoff mission at the current position
         '''
         msg = PprzMessage("datalink", "MISSION_CUSTOM")
         msg['ac_id'] = self.ac_id
         msg['insert'] = insert_mode.value
-        msg['duration'] = -1.
+        msg['duration'] = duration
         msg['index'] = mission_id
         msg['type'] = 'TKOFF'
         msg['params'] = [0.]
         return msg
 
     @send_mission_element
-    def add_mission_land(self, mission_id:int, lat:float, lon:float, height:float, insert_mode:MissionInsert = MissionInsert.APPEND):
+    def add_mission_land(self, mission_id:int, lat:float, lon:float, height:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the landing mission at the position in lat (deg), lon (deg), height above ref point (m) format
         '''
         msg = PprzMessage("datalink", "MISSION_CUSTOM")
         msg['ac_id'] = self.ac_id
         msg['insert'] = insert_mode.value
-        msg['duration'] = -1.
+        msg['duration'] = duration
         msg['index'] = mission_id
         msg['type'] = 'LAND'
         msg['params'] = [float(height), float(lat), float(lon), 0., 0.]
