@@ -28,6 +28,8 @@ from dataclasses import dataclass
 from enum import Enum
 import time
 import functools
+from threading import Event
+
 
 # if PAPARAZZI_SRC or PAPARAZZI_HOME not set, then assume the tree containing this
 # file is a reasonable substitute
@@ -83,11 +85,13 @@ class MissionManager():
     and start mission mode from flight plan
     Bind to state messages and update UAV data
     '''
-    def __init__(self, ac_id=False, verbose=False):
+    def __init__(self, ac_id=None, verbose=False):
         self.verbose = verbose
 
         self.uav_data = None
         self.ac_id = ac_id
+
+        self.events: Dict[int, Event] = {0:Event()}
 
         ''' create connect object, it will start Ivy interface '''
         self.connect = PprzConnect(notify=self.connect_cb)
@@ -109,19 +113,32 @@ class MissionManager():
         ''' get aircraft config '''
         if self.ac_id is None:
             self.ac_id = int(conf.id)
-            self.uav_data = UAVData(conf.id, conf.name)
-            self.uav_data.mission_status = []       # TODO replace that by the correct dataclass initializer
         
         if self.ac_id == int(conf.id):
+            self.uav_data = UAVData(conf.id, conf.name)
+            self.uav_data.mission_status = []       # TODO replace that by the correct dataclass initializer
             self.uav_data.flight_plan = FlightPlan.parse(conf.flight_plan)
             try:
                 self.uav_data.start_mission_fp_block = self.uav_data.flight_plan.get_block('Mission')
                 if self.verbose:
                     print("'Mission' block found",self.uav_data.start_mission_fp_block.no)
             except:
-                print("'Mission' block not found in flight plan")
+                raise Exception("'Mission' block not found in flight plan")
             if self.verbose:
                 print(conf)
+            self.events[0].set()
+    
+    def wait_ready(self, timeout: float | None = None):
+        """
+        Blocking wait until ready to send mission elements.
+
+        Parameters:
+            timeout in seconds, or None for infinite.
+        
+        Return:
+            True if ready, False if not ready after the timeout.
+        """
+        return self.events[0].wait(timeout)
 
     def flight_param_cb(self, ac_id, msg):
         if int(ac_id) == self.ac_id:
@@ -159,24 +176,33 @@ class MissionManager():
 
     def mission_status_cb(self, ac_id, msg):
         if int(ac_id) == self.ac_id:
-            self.uav_data.mission_status = [ int(e) for e in msg['index_list'] if int(e) != 0 ] 
+            self.uav_data.mission_status = [ int(e) for e in msg['index_list'] if int(e) != 0 ]
+            # Unblock function waiting for ACK
+            for mission_id in self.uav_data.mission_status:
+                if mission_id in self.events:
+                    self.events[mission_id].set()
 
-    def send_mission_element(send_elt):
-        @functools.wraps(send_elt)
+    def send_mission_element(send_element):
+        @functools.wraps(send_element)
         def wrapper(self:'MissionManager', mission_id: int, **kwargs):
             if self.uav_data is None:
                 return False  # no AC
-            
-            if mission_id <= 0 or mission_id > 255:
-                print('invalid mission id', mission_id)
-                return False # invalid mission_id
+
+            # keep mission_id in the range [1;255]
+            mission_id = (mission_id-1)%255 + 1
 
             for _ in range(MAX_RETRY):
-                send_elt(self, mission_id=mission_id, **kwargs)
-                time.sleep(ACK_TIME)    # wait a bit to receive the ACK
-                # Check if the mission element has been added
-                if mission_id in self.uav_data.mission_status:
+                send_element(self, mission_id=mission_id, **kwargs)
+                # event to be notified as soon as the element is ACK
+                e = self.events.setdefault(mission_id, Event())
+                e.clear()
+                # wait a bit to receive the ACK
+                if e.wait(ACK_TIME):
+                    del self.events[mission_id]
                     return True
+            del self.events[mission_id] 
+            if self.verbose:
+                print("Fail to add mission element")
             return False
 
         return wrapper
@@ -299,17 +325,12 @@ if __name__ == '__main__':
     try:
         mission = MissionManager(verbose=True)
         print("cohoma_bridge test started")
-        sleep(3)
+        mission.wait_ready()
         mission.add_mission_takeoff(1, insert_mode=MissionInsert.REPLACE_ALL)
-        sleep(1)
         mission.add_mission_point(2, lat=43., lon=1.6, alt=200.)
-        sleep(1)
         mission.add_mission_path(3, path=[(43.1, 1.61),(43.2, 1.62),(43.3, 1.63),(43.4, 1.64),(43.5, 1.65)], alt=200.)
-        sleep(1)
         mission.add_mission_circle(4, lat=43.5, lon=1.65, alt=200, radius=80)
-        sleep(1)
         mission.add_mission_land(5, lat=43.5, lon=1.65, height=0.)
-        sleep(1)
         mission.start_mission()
         print('UAV:',mission.uav_data.name)
 
