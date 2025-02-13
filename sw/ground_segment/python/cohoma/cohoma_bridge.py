@@ -186,7 +186,7 @@ class MissionManager():
         @functools.wraps(forge_mission_msg)
         def wrapper(self:'MissionManager', mission_id: int, **kwargs):
             if self.uav_data is None:
-                return False  # no AC
+                raise Exception("No UAV!")
 
             # keep mission_id in the range [1;255]
             mission_id = (mission_id-1)%255 + 1
@@ -202,11 +202,9 @@ class MissionManager():
                 # wait a bit to receive the ACK
                 if e.wait(ACK_TIME):
                     del self.events[mission_id]
-                    return True
-            del self.events[mission_id] 
-            if self.verbose:
-                print("Fail to add mission element")
-            return False
+                    return
+            del self.events[mission_id]
+            raise Exception(f"Mission element no {mission_id} not ACKed in {MAX_RETRY*ACK_TIME:.1f}s!")
 
         return wrapper
     
