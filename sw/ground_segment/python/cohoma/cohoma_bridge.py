@@ -305,7 +305,19 @@ class MissionManager():
         msg['params'] = [float(height), float(lat), float(lon), 0., 0.]
         return msg
     
-
+    def next_mission(self):
+        msg = PprzMessage("datalink", "NEXT_MISSION")
+        msg['ac_id'] = self.ac_id
+        self.connect.ivy.send(msg)
+        if self.verbose:
+            print(msg)
+    
+    def end_mission(self):
+        msg = PprzMessage("datalink", "END_MISSION")
+        msg['ac_id'] = self.ac_id
+        self.connect.ivy.send(msg)
+        if self.verbose:
+            print(msg)
 
 if __name__ == '__main__':
     # run test
