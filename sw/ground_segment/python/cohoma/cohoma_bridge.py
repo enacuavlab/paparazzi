@@ -182,8 +182,8 @@ class MissionManager():
                 if mission_id in self.events:
                     self.events[mission_id].set()
 
-    def send_mission_element(send_element):
-        @functools.wraps(send_element)
+    def send_mission_element(forge_mission_msg):
+        @functools.wraps(forge_mission_msg)
         def wrapper(self:'MissionManager', mission_id: int, **kwargs):
             if self.uav_data is None:
                 return False  # no AC
@@ -192,7 +192,10 @@ class MissionManager():
             mission_id = (mission_id-1)%255 + 1
 
             for _ in range(MAX_RETRY):
-                send_element(self, mission_id=mission_id, **kwargs)
+                msg = forge_mission_msg(self, mission_id=mission_id, **kwargs)
+                self.connect.ivy.send(msg)
+                if self.verbose:
+                    print(msg)
                 # event to be notified as soon as the element is ACK
                 e = self.events.setdefault(mission_id, Event())
                 e.clear()
@@ -226,9 +229,7 @@ class MissionManager():
         msg['wp_lat'] = int(lat * 1e7)
         msg['wp_lon'] = int(lon * 1e7)
         msg['wp_alt'] = int(alt * 1e3)
-        self.connect.ivy.send(msg)
-        if self.verbose:
-            print(msg)
+        return msg
 
     @send_mission_element
     def add_mission_path(self, mission_id:int, path:list[(float,float)], alt:float, insert_mode:MissionInsert = MissionInsert.APPEND):
@@ -246,9 +247,7 @@ class MissionManager():
             lat, lon = path[i]
             msg['point_lat_'+str(i+1)] = int(lat * 1e7)
             msg['point_lon_'+str(i+1)] = int(lon * 1e7)
-        self.connect.ivy.send(msg)
-        if self.verbose:
-            print(msg)
+        return msg
 
     @send_mission_element
     def add_mission_circle(self, mission_id:int, lat:float, lon:float, alt:float, radius:float, insert_mode:MissionInsert = MissionInsert.APPEND):
@@ -264,9 +263,7 @@ class MissionManager():
         msg['center_lon'] = int(lon * 1e7)
         msg['center_alt'] = int(alt * 1e3)
         msg['radius'] = radius
-        self.connect.ivy.send(msg)
-        if self.verbose:
-            print(msg)
+        return msg
 
     @send_mission_element
     def add_mission_poles(self, mission_id:int, lat1:float, lon1:float, lat2:float, lon2:float, height:float, radius:float, insert_mode:MissionInsert = MissionInsert.APPEND):
@@ -280,9 +277,7 @@ class MissionManager():
         msg['index'] = mission_id
         msg['type'] = 'POLES'
         msg['params'] = [float(lat1), float(lon1), float(lat2), float(lon2), float(height), float(radius), 1.] # fixed margin of 1.
-        self.connect.ivy.send(msg)
-        if self.verbose:
-            print(msg)
+        return msg
 
     @send_mission_element
     def add_mission_takeoff(self, mission_id:int, insert_mode:MissionInsert = MissionInsert.APPEND):
@@ -296,9 +291,7 @@ class MissionManager():
         msg['index'] = mission_id
         msg['type'] = 'TKOFF'
         msg['params'] = [0.]
-        self.connect.ivy.send(msg)
-        if self.verbose:
-            print(msg)
+        return msg
 
     @send_mission_element
     def add_mission_land(self, mission_id:int, lat:float, lon:float, height:float, insert_mode:MissionInsert = MissionInsert.APPEND):
@@ -312,9 +305,7 @@ class MissionManager():
         msg['index'] = mission_id
         msg['type'] = 'LAND'
         msg['params'] = [float(height), float(lat), float(lon), 0., 0.]
-        self.connect.ivy.send(msg)
-        if self.verbose:
-            print(msg)
+        return msg
     
 
 
