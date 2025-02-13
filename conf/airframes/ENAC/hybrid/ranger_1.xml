@@ -65,7 +65,7 @@
       <!--define name="USE_AIRSPEED_AIR_DATA" value="TRUE"/-->
     </module>
 
-    <module name="control_mixing" type="heewing"/>
+    <!--module name="control_mixing" type="heewing"/-->
     <module name="stabilization" type="indi">
       <configure name="INDI_NUM_ACT" value="4"/> <!-- only rotorcraft part for now -->
       <define name="WLS_N_U_MAX" value = "8"/>
