@@ -56,7 +56,7 @@ class UAVData:
     lat: float = 0.
     lon: float = 0.
     alt: float = 0.
-    height: float = 0.
+    agl: float = 0.
     heading: float = 0.
     vnorth: float = 0.
     veast: float = 0.
@@ -145,7 +145,7 @@ class MissionManager():
             self.uav_data.lat = float(msg['lat'])
             self.uav_data.lon = float(msg['long'])
             self.uav_data.alt = float(msg['alt'])
-            self.uav_data.height = float(msg['agl']) # FIXME height or AGL ?
+            self.uav_data.agl = float(msg['agl'])
             self.uav_data.heading = float(msg['heading'])
             speed = float(msg['speed'])
             course = np.deg2rad(float(msg['course']))
