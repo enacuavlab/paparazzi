@@ -93,11 +93,11 @@
       <go wp="p1"/>
       <call_once fun="nav_set_heading_towards_waypoint(WP_p2)"/>
       <stay wp="p1" until="stage_time @GT 2"/>
-      <path wpts="p1,p2,p3,p4,p1"/>
+      <path wpts="p1,p2,p3,p4"/>
       <deroute block="circle"/>
     </block>
     <block name="circle">
-      <circle radius="nav.radius" wp="STDBY"/>
+      <circle radius="nav.radius" wp="p4"/>
     </block>
     <block name="Land (module)" strip_button="Land (module)" group="module">
       <call fun="nav_land_at_wp(WP_TD, WP_TD, 0.)"/>
