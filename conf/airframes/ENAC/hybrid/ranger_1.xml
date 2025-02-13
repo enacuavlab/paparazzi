@@ -65,15 +65,12 @@
       <!--define name="USE_AIRSPEED_AIR_DATA" value="TRUE"/-->
     </module>
 
-    <!--module name="control_mixing" type="heewing"/-->
     <module name="stabilization" type="indi">
       <configure name="INDI_NUM_ACT" value="4"/> <!-- only rotorcraft part for now -->
       <define name="WLS_N_U_MAX" value = "8"/>
       <define name="WLS_N_V_MAX" value = "4"/>
     </module>
-    <module name="stabilization" type="plane_pid"/>
     <module name="guidance" type="indi"/>
-    <module name="guidance" type="plane_pid_rotorcraft"/>
     <module name="nav" type="hybrid"/>
 
     <module name="ins" type="ekf2"/>
