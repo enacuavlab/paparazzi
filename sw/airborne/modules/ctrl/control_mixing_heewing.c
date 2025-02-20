@@ -29,6 +29,7 @@
 #include "modules/core/commands.h"
 #include "modules/actuators/actuators.h"
 #include "autopilot.h"
+#include "state.h"
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/guidance.h"
 #include "firmwares/rotorcraft/guidance/guidance_plane.h"
@@ -57,7 +58,12 @@
 
 // Time for forward transition
 #ifndef CMH_TRANSITION_TIME
-#define CMH_TRANSITION_TIME 5.f
+#define CMH_TRANSITION_TIME 4.f
+#endif
+
+// Transition airspeed, set a negative value to disable
+#ifndef CMH_TRANSITION_AIRSPEED
+#define CMH_TRANSITION_AIRSPEED 10.f
 #endif
 
 #define TRANSITION_TO_HOVER false
@@ -68,8 +74,12 @@ static const float transition_increment = 1.f / (CMH_TRANSITION_TIME * PERIODIC_
 
 static void transition_run(bool to_forward) {
   if (to_forward && transition_ratio < 1.f) {
-    transition_ratio += transition_increment;
-    //if (transition_ratio > 0.8) transition_ratio = 1.;
+    if (stateIsAirspeedValid()) {
+      if ((stateGetAirspeed_f() < CMH_TRANSITION_AIRSPEED && transition_ratio < 0.4f)
+          || stateGetAirspeed_f() >= CMH_TRANSITION_AIRSPEED) {
+        transition_ratio += transition_increment;
+      }
+    }
   } else if (!to_forward && transition_ratio > 0.f) {
     transition_ratio = 0.f; // immediately switch back to hover
   }
@@ -165,17 +175,32 @@ void control_mixing_heewing_attitude_plane_enter(void)
 void control_mixing_heewing_attitude_plane(void)
 {
   transition_run(TRANSITION_TO_FORWARD);
+
+  if (transition_ratio < 0.5f) {
+    struct ThrustSetpoint hover_th_sp = guidance_v_run(autopilot_in_flight());
+    stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &hover_th_sp, stabilization.cmd);
+  }
   struct ThrustSetpoint th_sp = th_sp_from_thrust_i(radio_control_get(RADIO_THROTTLE), THRUST_AXIS_X);
-  stabilization_attitude_plane_pid_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
+  stabilization_attitude_plane_pid_run(transition_ratio < 0.8 ? false : autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
 
   commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
   commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
   commands[COMMAND_THRUST] = stabilization.cmd[COMMAND_THRUST];
-  commands[COMMAND_MOTOR_RIGHT] = stabilization.cmd[COMMAND_THRUST];
-  commands[COMMAND_MOTOR_LEFT] = stabilization.cmd[COMMAND_THRUST];
   if (autopilot_in_flight()) {
-    commands[COMMAND_MOTOR_TAIL] = command_from_transition(MAX_PPRZ/2, 0);
+    if (transition_ratio < 0.5f) {
+      // only hover stabilization
+      commands[COMMAND_MOTOR_RIGHT] = actuators_pprz[CMH_ACT_MOTOR_RIGHT];
+      commands[COMMAND_MOTOR_LEFT] = actuators_pprz[CMH_ACT_MOTOR_LEFT];
+      commands[COMMAND_MOTOR_TAIL] = actuators_pprz[CMH_ACT_MOTOR_TAIL];
+    } else {
+      // blend with plane control
+      commands[COMMAND_MOTOR_RIGHT] = command_from_transition(actuators_pprz[CMH_ACT_MOTOR_RIGHT], stabilization.cmd[COMMAND_THRUST]);
+      commands[COMMAND_MOTOR_LEFT] = command_from_transition(actuators_pprz[CMH_ACT_MOTOR_LEFT], stabilization.cmd[COMMAND_THRUST]);
+      commands[COMMAND_MOTOR_TAIL] = command_from_transition(actuators_pprz[CMH_ACT_MOTOR_TAIL], 0);
+    }
   } else {
+    commands[COMMAND_MOTOR_RIGHT] = stabilization.cmd[COMMAND_THRUST];
+    commands[COMMAND_MOTOR_LEFT] = stabilization.cmd[COMMAND_THRUST];
     commands[COMMAND_MOTOR_TAIL] = 0;
   }
   commands[COMMAND_TILT] = command_from_transition(CMH_TILT_VERTICAL, CMH_TILT_FORWARD);
@@ -197,36 +222,43 @@ void control_mixing_heewing_nav_run(void)
       nav.horizontal_mode == NAV_HORIZONTAL_MODE_CIRCLE) {
     transition_run(TRANSITION_TO_FORWARD);
 
-    struct ThrustSetpoint th_sp = guidance_plane_thrust_from_nav(transition_ratio < 0.8 ? false : autopilot_in_flight());
-    if (transition_ratio < 0.5f) {
-      struct ThrustSetpoint hover_th_sp = guidance_v_run(autopilot_in_flight());
-      struct FloatEulers eulers_sp = { .phi = 0.f, .theta = 0.f, .psi = stateGetNedToBodyEulers_f()->psi };
-      struct StabilizationSetpoint hover_stab_sp = stab_sp_from_eulers_f(&eulers_sp);
-      stabilization_run(autopilot_in_flight(), &hover_stab_sp, &hover_th_sp, stabilization.cmd);
-      guidance_plane.pitch_cmd = 0.f;
-    } else if (transition_ratio < 0.8f) {
+    struct ThrustSetpoint th_sp = guidance_plane_thrust_from_nav(transition_ratio < 0.8f ? false : autopilot_in_flight());
+    if (transition_ratio < 0.8f) {
       guidance_plane.pitch_cmd = 0.f;
     }
     struct StabilizationSetpoint stab_sp = guidance_plane_attitude_from_nav(autopilot_in_flight());
-    stabilization_attitude_plane_pid_run(transition_ratio < 0.8 ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
-
-    if (transition_ratio > 0.5f) {
-      commands[COMMAND_TILT] = CMH_TILT_VERTICAL / 2; // fixed half forward until half of the transition
+    if (transition_ratio < 0.5f) {
+      stabilization_attitude_plane_pid_run(transition_ratio < 0.8f ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
+      struct ThrustSetpoint hover_th_sp = guidance_v_run(autopilot_in_flight());
+      struct FloatEulers eulers_sp = { .phi = 0.f , .theta = 0.f, .psi = stateGetNedToBodyEulers_f()->psi };
+      struct StabilizationSetpoint hover_stab_sp = stab_sp_from_eulers_f(&eulers_sp);
+      stabilization_run(autopilot_in_flight(), &hover_stab_sp, &hover_th_sp, stabilization.cmd); // will overwrite COMMAND_THRUST
     } else {
-      commands[COMMAND_TILT] = command_from_transition(CMH_TILT_VERTICAL, CMH_TILT_FORWARD);
+      stabilization_attitude_plane_pid_run(transition_ratio < 0.8f ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
     }
+
+    commands[COMMAND_TILT] = command_from_transition(CMH_TILT_VERTICAL, CMH_TILT_FORWARD);
     commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
     commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
     commands[COMMAND_YAW] = command_from_transition(actuators_pprz[CMH_ACT_YAW], 0);
-    commands[COMMAND_MOTOR_TAIL] = command_from_transition(actuators_pprz[CMH_ACT_MOTOR_TAIL], 0); // FIXME min value ?
     if (autopilot_get_motors_on()) {
+      if (transition_ratio < 0.5f) {
+        // only hover stabilization
+        commands[COMMAND_MOTOR_RIGHT] = actuators_pprz[CMH_ACT_MOTOR_RIGHT];
+        commands[COMMAND_MOTOR_LEFT] = actuators_pprz[CMH_ACT_MOTOR_LEFT];
+        commands[COMMAND_MOTOR_TAIL] = actuators_pprz[CMH_ACT_MOTOR_TAIL];
+      } else {
+        // blend with plane control
+        commands[COMMAND_MOTOR_RIGHT] = command_from_transition(actuators_pprz[CMH_ACT_MOTOR_RIGHT], stabilization.cmd[COMMAND_THRUST]);
+        commands[COMMAND_MOTOR_LEFT] = command_from_transition(actuators_pprz[CMH_ACT_MOTOR_LEFT], stabilization.cmd[COMMAND_THRUST]);
+        commands[COMMAND_MOTOR_TAIL] = command_from_transition(actuators_pprz[CMH_ACT_MOTOR_TAIL], 0);
+      }
       commands[COMMAND_THRUST] = stabilization.cmd[COMMAND_THRUST];
-      commands[COMMAND_MOTOR_RIGHT] = command_from_transition(actuators_pprz[CMH_ACT_MOTOR_RIGHT], stabilization.cmd[COMMAND_THRUST]);
-      commands[COMMAND_MOTOR_LEFT] = command_from_transition(actuators_pprz[CMH_ACT_MOTOR_LEFT], stabilization.cmd[COMMAND_THRUST]);
     } else {
       commands[COMMAND_THRUST]      = 0;
       commands[COMMAND_MOTOR_RIGHT] = MIN_PPRZ;
       commands[COMMAND_MOTOR_LEFT]  = MIN_PPRZ;
+      commands[COMMAND_MOTOR_TAIL] = 0;
     }
 
   } else {
