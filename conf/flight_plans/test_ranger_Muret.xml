@@ -47,7 +47,7 @@
       <while cond="!GpsFixValid()"/>
     </block>
     <block name="Geo init">
-      <while cond="LessThan(NavBlockTime(), 10)"/>
+      <while cond="LessThan(NavBlockTime(), 4)"/>
       <call_once fun="NavSetAltitudeReferenceHere()"/>
     </block>
     <block name="Holding point">
