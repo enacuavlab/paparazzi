@@ -79,6 +79,9 @@ static void transition_run(bool to_forward) {
           || stateGetAirspeed_f() >= CMH_TRANSITION_AIRSPEED) {
         transition_ratio += transition_increment;
       }
+      else if (stateGetAirspeed_f() < CMH_TRANSITION_AIRSPEED && transition_ratio > 0.4f) {
+        transition_ratio -= transition_increment;
+      }
     }
   } else if (!to_forward && transition_ratio > 0.f) {
     transition_ratio = 0.f; // immediately switch back to hover
