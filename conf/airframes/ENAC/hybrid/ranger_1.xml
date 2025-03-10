@@ -52,12 +52,12 @@
     </module>
 
     <!--Use an airspeed sensor and get the measured airspeed in the messages-->
-    <!--module name="airspeed" type="sdp3x">
+    <module name="airspeed" type="sdp3x">
       <define name="SDP3X_i2C_DEV" value="i2c2"/>
       <define name="SDP3X_PRESSURE_SCALE" value="7.0"/>
       <define name="SDP3X_PRESSURE_OFFSET" value="0.0"/>
       <define name="USE_AIRSPEED_SDP3X" value="TRUE"/>
-    </module-->
+    </module>
 
     <module name="board" type="tawaki_2.0"/>
 
@@ -82,6 +82,7 @@
       <define name="GPS_FIX_TIMEOUT" value="0.5"/>
     </module>
 
+    <module name="power_switch"/>
   </firmware>
 
   <servos driver="Pwm">
@@ -313,6 +314,8 @@
     <define name="ARRIVED_AT_WAYPOINT" value="5.0"/> <!-- For outdoor -->
     <define name="DEFAULT_CIRCLE_RADIUS" value="60"/> <!-- For outdoor -->
     <define name="CARROT" value="3.0"/>
+
+    <define name="POWER_SWITCH_GPIO" value="GPIOA,GPIO3"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_"> <!-- no model yet -->

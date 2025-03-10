@@ -29,6 +29,12 @@
       <call fun="SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on())"/>
     </control_block>
 
+    <mode_selection>
+      <mode_select cond="RCMode0()" mode="MODE_MANUAL"/>
+      <mode_select cond="RCMode1()" mode="MODE_AUTO1"/>
+      <mode_select cond="RCMode2()" mode="MODE_AUTO2"/>
+    </mode_selection>
+
     <exceptions>
       <exception cond="nav.too_far_from_home" deroute="HOME"/>
       <exception cond="kill_switch_is_on()" deroute="KILL"/>
@@ -68,7 +74,6 @@
     </mode>
 
     <mode name="MANUAL" shortname="MAN">
-      <select cond="RCMode0()"/>
       <on_enter>
         <call fun="guidance_h_mode_changed(GUIDANCE_H_MODE_NONE)"/>
         <call fun="guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT)"/>
@@ -84,7 +89,6 @@
     </mode>
 
     <mode name="FORWARD" shortname="FWD">
-      <select cond="RCMode1()"/>
       <on_enter>
         <call fun="control_mixing_heewing_attitude_plane_enter()"/>
       </on_enter>
@@ -98,7 +102,6 @@
     </mode>
 
     <mode name="ATTITUDE" shortname="ATT">
-      <select cond="RCMode2()"/>
       <on_enter>
         <call fun="control_mixing_heewing_attitude_direct_enter()"/>
       </on_enter>
@@ -113,7 +116,6 @@
 
     <mode name="NAV">
       <select cond="$DEFAULT_MODE"/>
-      <!--select cond="RCMode2() && DLModeNav()" exception="HOME"/-->
       <on_enter>
         <call fun="control_mixing_heewing_nav_enter()"/>
       </on_enter>

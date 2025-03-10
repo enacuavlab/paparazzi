@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
-<flight_plan alt="215" ground_alt="185" lat0="43.4625469" lon0="1.2732527" max_dist_from_home="600" name="Muret test wind quad" security_height="1" wp_frame="ltp">
+<flight_plan alt="225" ground_alt="185" lat0="43.4625469" lon0="1.2732527" max_dist_from_home="600" name="Muret test wind quad" security_height="1" wp_frame="ltp">
   <header>
   </header>
   <waypoints>
@@ -80,6 +80,7 @@
       <go wp="p1"/>
       <call_once fun="nav_set_heading_towards_waypoint(WP_p2)"/>
       <stay wp="p1" until="stage_time @GT 2"/>
+      <!--go wp="p2" until="stage_time @GT 4"/-->
       <go wp="p2" from="p1" hmode="route"/>
       <stay wp="p2"/>
     </block>
