@@ -32,13 +32,13 @@
     <module name="telemetry" type="xbee_api"/>
     <module name="sys_mon"/>
     <module name="flight_recorder"/>
-    <!--module name="logger" type="control_effectiveness">
-      <define name="LOGGER_CONTROL_EFFECTIVENESS_COMMANDS" value="FALSE"/>
+    <module name="logger" type="control_effectiveness">
+      <define name="LOGGER_CONTROL_EFFECTIVENESS_COMMANDS" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_POS" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_SPEED" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="TRUE"/>
-    </module-->
+    </module>
     <module name="shell">
       <configure name="SHELL_PORT" value="uart3"/>
     </module>
@@ -54,8 +54,8 @@
     <!--Use an airspeed sensor and get the measured airspeed in the messages-->
     <module name="airspeed" type="sdp3x">
       <define name="SDP3X_i2C_DEV" value="i2c2"/>
-      <define name="SDP3X_PRESSURE_SCALE" value="7.0"/>
-      <define name="SDP3X_PRESSURE_OFFSET" value="0.0"/>
+      <define name="SDP3X_PRESSURE_SCALE" value="16.0"/>
+      <define name="SDP3X_PRESSURE_OFFSET" value="-0.1"/>
       <define name="USE_AIRSPEED_SDP3X" value="TRUE"/>
     </module>
 
