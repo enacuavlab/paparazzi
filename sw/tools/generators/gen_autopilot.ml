@@ -403,6 +403,11 @@ let parse_and_gen_modes xml_file ap_name main_freq h_dir sm =
     if has_modules sm then fprintf out_h "\n#include \"generated/modules.h\"\n";
     fprintf out_h "\nuint8_t private_autopilot_mode_%s;\n" name;
     fprintf out_h "uint8_t last_autopilot_mode_%s;\n\n" name;
+    (* Print default mode if not defined by MODE_STARTUP *)
+    let default_mode = find_default_mode modes in
+    fprintf out_h "#ifndef MODE_STARTUP\n";
+    fprintf out_h "#define MODE_STARTUP %s\n" (print_mode_name name_up default_mode);
+    fprintf out_h "#endif\n";
     (* Print functions *)
     print_test_select modes (get_mode_selection sm) name out_h;
     print_test_exception modes name out_h;

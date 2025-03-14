@@ -32,8 +32,10 @@ EXT_DIR=$(PAPARAZZI_SRC)/sw/ext
 #
 include $(PAPARAZZI_SRC)/conf/Makefile.arm-embedded-toolchain
 
+MY_PYTHON := $(shell echo `which python3`)
+MY_MAVLINKTOOLS := $(shell $(MY_PYTHON) -c 'import imp; import future' 2>&1)
 
-all: libopencm3 luftboot chibios fatfs libsbp TRICAL hacl-c key_generator rustlink ecl matrix mavlink
+all: libopencm3 luftboot chibios fatfs libsbp TRICAL hacl-c key_generator rustlink ecl matrix mavlink dronecan
 
 # update (and init if needed) all submodules
 update_submodules:
@@ -90,9 +92,13 @@ matrix: matrix.update
 mavlink: mavlink.update mavlink.build
 
 mavlink.build:
+ifneq ($(findstring ModuleNotFoundError, $(MY_MAVLINKTOOLS)),ModuleNotFoundError)
 	@echo GENERATE $(PAPARAZZI_SRC)/var/include/mavlink
 	$(Q)PYTHONPATH=$(EXT_DIR)/mavlink python $(EXT_DIR)/mavlink/pymavlink/tools/mavgen.py --output $(PAPARAZZI_SRC)/var/include/mavlink --lang C $(EXT_DIR)/mavlink/message_definitions/v1.0/ardupilotmega.xml --wire-protocol 2.0 --no-validate > /dev/null
 	$(Q)PYTHONPATH=$(EXT_DIR)/mavlink python $(EXT_DIR)/mavlink/pymavlink/tools/mavgen.py --output $(PAPARAZZI_SRC)/var/include/mavlink --lang C $(EXT_DIR)/mavlink/message_definitions/v1.0/paparazzi.xml --wire-protocol 2.0 --no-validate > /dev/null
+else
+	@echo mavlink not installed, missing packages 'imp' or 'future'
+endif
 
 libsbp: libsbp.update
 
@@ -105,6 +111,9 @@ opencv_bebop: opencv_bebop.update opencv_bebop.build
 
 opencv_bebop.build:
 	$(Q)$(MAKE) -C opencv_bebop
+
+dronecan:
+	$(Q)$(MAKE) -C dronecan
 
 clean:
 	$(Q)if [ -f libopencm3/Makefile ]; then \
@@ -120,4 +129,7 @@ clean_opencv_bebop:
 	fi
 
 .NOTPARALLEL: libopencm3 luftboot
-.PHONY: all clean update_submodules libopencm3 luftboot chibios fatfs luftboot_flash libopencm3.build luftboot.build mavlink.build libsbp pprzlink pprzlink.build opencv_bebop opencv_bebop.build clean_opencv_bebop TRICAL
+.PHONY: all clean update_submodules libopencm3 luftboot \
+		chibios fatfs luftboot_flash libopencm3.build luftboot.build \
+		mavlink.build libsbp pprzlink pprzlink.build opencv_bebop \
+		opencv_bebop.build clean_opencv_bebop TRICAL dronecan
