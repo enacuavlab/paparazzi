@@ -184,7 +184,13 @@ void control_mixing_heewing_attitude_plane(void)
     stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &hover_th_sp, stabilization.cmd);
   }
   struct ThrustSetpoint th_sp = th_sp_from_thrust_i(radio_control_get(RADIO_THROTTLE), THRUST_AXIS_X);
-  stabilization_attitude_plane_pid_run(transition_ratio < 0.8 ? false : autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
+  struct FloatEulers rc_sp = {
+    .phi = radio_control_get(RADIO_ROLL),
+    .theta = radio_control_get(RADIO_PITCH),
+    .psi = 0.f
+  };
+  struct StabilizationSetpoint stab_sp = stab_sp_from_eulers_f(&rc_sp);
+  stabilization_attitude_plane_pid_run(transition_ratio < 0.8 ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
 
   commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
   commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
