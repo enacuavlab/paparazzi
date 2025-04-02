@@ -185,8 +185,8 @@ void control_mixing_heewing_attitude_plane(void)
   }
   struct ThrustSetpoint th_sp = th_sp_from_thrust_i(radio_control_get(RADIO_THROTTLE), THRUST_AXIS_X);
   struct FloatEulers rc_sp = {
-    .phi = radio_control_get(RADIO_ROLL),
-    .theta = radio_control_get(RADIO_PITCH),
+    .phi = STABILIZATION_ATTITUDE_SP_MAX_PHI * radio_control_get(RADIO_ROLL) / MAX_PPRZ,
+    .theta = STABILIZATION_ATTITUDE_SP_MAX_THETA * radio_control_get(RADIO_PITCH) / MAX_PPRZ,
     .psi = 0.f
   };
   struct StabilizationSetpoint stab_sp = stab_sp_from_eulers_f(&rc_sp);
