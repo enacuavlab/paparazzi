@@ -1,0 +1,145 @@
+<control_panel name="paparazzi control panel">
+  <section name="programs">
+    <program name="Gstreamer" command="/usr/bin/gst-launch-1.0"/>
+  </section>
+  <section name="sessions">
+    <session name="Flight Octave_101 Indoor single link">
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+      <program name="Data Link">
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+        <arg flag="-transport" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="NatNet3">
+        <arg flag="--up_axis" constant="z_up"/>
+        <arg flag="--long_edge" constant="near"/>
+        <arg flag="--x_side" constant="right"/>
+        <arg flag="--ac_nose" constant="far"/>
+        <arg flag="-ac" constant="101"/>
+        <arg flag="101"/>
+        <arg flag="-s" constant="192.168.1.240"/>
+      </program>
+    </session>
+    <session name="Flight Octave_101 Outdoor single link">
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+      <program name="Data Link">
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+        <arg flag="-transport" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+    </session>
+    <session name="Flight Octave_102 Indoor single link">
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+      <program name="Data Link">
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+        <arg flag="-transport" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="NatNet3">
+        <arg flag="--up_axis" constant="z_up"/>
+        <arg flag="--long_edge" constant="near"/>
+        <arg flag="--x_side" constant="right"/>
+        <arg flag="--ac_nose" constant="far"/>
+        <arg flag="-ac" constant="102"/>
+        <arg flag="102"/>
+        <arg flag="-s" constant="192.168.1.240"/>
+      </program>
+    </session>
+    <session name="Flight Octave_103 Indoor dual link">
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+      <program name="Datalink Linkpy">
+        <arg flag="-ac" constant="103:127.0.0.1:4244:4245"/>
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+        <arg flag="-t" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="NatNet3">
+        <arg flag="--up_axis" constant="z_up"/>
+        <arg flag="--long_edge" constant="near"/>
+        <arg flag="--x_side" constant="right"/>
+        <arg flag="--ac_nose" constant="far"/>
+        <arg flag="-ac" constant="103"/>
+        <arg flag="103"/>
+        <arg flag="-s" constant="192.168.1.240"/>
+      </program>
+    </session>
+    <session name="Flight Octave_103 Indoor single link">
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+      <program name="Data Link">
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+        <arg flag="-transport" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="NatNet3">
+        <arg flag="--up_axis" constant="z_up"/>
+        <arg flag="--long_edge" constant="near"/>
+        <arg flag="--x_side" constant="right"/>
+        <arg flag="--ac_nose" constant="far"/>
+        <arg flag="-ac" constant="103"/>
+        <arg flag="103"/>
+        <arg flag="-s" constant="192.168.1.240"/>
+      </program>
+    </session>
+    <session name="Flight Octave_104 Indoor dual link">
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+      <program name="Datalink Linkpy">
+        <arg flag="-ac" constant="104:127.0.0.1:4244:4245"/>
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+        <arg flag="-t" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="NatNet3">
+        <arg flag="--up_axis" constant="z_up"/>
+        <arg flag="--long_edge" constant="near"/>
+        <arg flag="--x_side" constant="right"/>
+        <arg flag="--ac_nose" constant="far"/>
+        <arg flag="-ac" constant="104"/>
+        <arg flag="104"/>
+        <arg flag="-s" constant="192.168.1.240"/>
+      </program>
+    </session>
+    <session name="Flight Octave_104 Indoor single link">
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+      <program name="Data Link">
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+        <arg flag="-transport" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="NatNet3">
+        <arg flag="--up_axis" constant="z_up"/>
+        <arg flag="--long_edge" constant="near"/>
+        <arg flag="--x_side" constant="right"/>
+        <arg flag="--ac_nose" constant="far"/>
+        <arg flag="-ac" constant="104"/>
+        <arg flag="104"/>
+        <arg flag="-s" constant="192.168.1.240"/>
+      </program>
+    </session>
+    <session name="Flight Octave_104 Outdoor dual link">
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+      <program name="Datalink Linkpy">
+        <arg flag="-ac" constant="104:127.0.0.1:4244:4245"/>
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+        <arg flag="-t" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+    </session>
+    <session name="Flight Octave_104 Outdoor single link">
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+      <program name="Data Link">
+        <arg flag="-d" constant="/dev/ttyUSB0"/>
+        <arg flag="-transport" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+    </session>
+  </section>
+</control_panel>

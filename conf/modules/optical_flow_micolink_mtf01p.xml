@@ -1,0 +1,30 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="optical_flow_micolink_mtf01p" dir="optical_flow">
+  <doc>
+    <description>A simple optical flow micolink protocol decoder</description>
+    <configure name="MICOLINK_MFT01P_PORT" value="UART1" description="Set which UART the sensor serial stream pin is connected to"/>
+    <configure name="MICOLINK_MFT01P_BAUD" value="115200" description="Sets the baudrate of the UART"/>
+
+    <define name="USE_MICOLINK_MTF01FD_AGL" value="0" description="Send AGL measurements on ABI bus"/>
+    <define name="USE_MICOLINK_MTF01FD_OPTICAL_FLOW" value="0" description="Send optical flow measurements on ABI bus"/>
+  </doc>
+
+  <header>
+    <file name="micolink_mtf01p.h"/>
+  </header>
+
+  <init fun="micolinkmtf01p_init()"/>
+  <event fun="micolinkmtf01p_event()"/>
+
+  <makefile>
+    <configure name="MICOLINK_MFT01P_PORT" default="UART3" case="upper|lower"/>
+    <configure name="MICOLINK_MFT01P_BAUD" default="B115200"/>
+    <!-- Enable UART and set baudrate -->
+    <define name="USE_$(MICOLINK_MFT01P_PORT_UPPER)"/>
+    <define name="USE_$(MICOLINK_MFT01P_PORT)_TX" value="FALSE"/>
+    <define name="$(MICOLINK_MFT01P_PORT_UPPER)_BAUD" value="$(MICOLINK_MFT01P_BAUD)"/>
+    <define name="MICOLINK_MFT01P_PORT" value="$(MICOLINK_MFT01P_PORT_LOWER)"/>
+    <file name="micolink_mtf01p.c"/>
+  </makefile>
+</module>
