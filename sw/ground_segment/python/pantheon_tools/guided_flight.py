@@ -41,10 +41,11 @@ def draw_circle(ivy, shape_id, center_lat, center_lon, radius, color):
     msg['fillcolor'] = f'"{color}"'
     msg['opacity'] = 0
     msg['shape'] = 0
-    msg['latarr'] = [center_lat]
-    msg['lonarr'] = [center_lon]
+    msg['status'] = 0
+    msg['latarr'] = [ int(1e7 * center_lat) ]
+    msg['lonarr'] = [ int(1e7 * center_lon) ]
     msg['radius'] = radius
-    msg['text'] = f'{shape_id}'
+    msg['text'] = f'"{shape_id}"'
     ivy.send(msg)
 
 origin = geo['origin']
@@ -71,7 +72,7 @@ try:
     for i in range(1,l):
         print(f'time {times[i]-t0:.1f} at pos {pos[i]}')
         dt = times[i] - times[i-1]
-        guided.goto_enu(conf.id, north=pos[i][0], east=pos[i][1], up=pos[i][2])
+        guided.goto_enu(conf.id, north=pos[i][1], east=pos[i][0], up=pos[i][2])
         for j, v in enumerate(victims[i]):
             v_id = victims_ids[i][j]
             print(f'found victim {v_id} at pos {v}')
