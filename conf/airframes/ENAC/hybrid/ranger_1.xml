@@ -308,7 +308,7 @@
     <define name="THROTTLE_KP" value="0.1"/>
     <define name="THROTTLE_KD" value="0.1"/>
     <define name="THROTTLE_KI" value="0."/>
-    <define name="NOMINAL_THROTTLE" value="0.3"/>
+    <define name="NOMINAL_THROTTLE" value="0.5"/>
     <define name="PITCH_TRIM" value="2." unit="deg"/>
   </section>
 
