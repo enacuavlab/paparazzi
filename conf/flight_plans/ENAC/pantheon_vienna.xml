@@ -1,6 +1,6 @@
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 
-<flight_plan alt="200" ground_alt="158" lat0="48.27350853694594" lon0="16.41557919452282" max_dist_from_home="2000" name="Pantheon Vienna Demo" security_height="30">
+<flight_plan alt="200" ground_alt="158" lat0="48.276291510877755" lon0="16.423130730335757" max_dist_from_home="2000" name="Pantheon Vienna Demo" security_height="30">
   <header>
   </header>
   <waypoints>

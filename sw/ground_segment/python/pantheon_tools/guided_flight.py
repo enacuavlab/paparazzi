@@ -48,11 +48,26 @@ def draw_circle(ivy, shape_id, center_lat, center_lon, radius, color):
     msg['text'] = f'"{shape_id}"'
     ivy.send(msg)
 
+def draw_lines(ivy, shape_id, lines_lat, lines_lon, color):
+    msg = PprzMessage('ground','SHAPE')
+    msg['id'] = shape_id
+    msg['linecolor'] = f'"{color}"'
+    msg['fillcolor'] = f'"{color}"'
+    msg['opacity'] = 0
+    msg['shape'] = 2
+    msg['status'] = 0
+    msg['latarr'] = [ int(1e7 * lat) for lat in lines_lat ]
+    msg['lonarr'] = [ int(1e7 * lon) for lon in lines_lon ]
+    msg['radius'] = 0.
+    msg['text'] = '" "'
+    ivy.send(msg)
+
 origin = geo['origin']
 data = geo[args.ac_name]
 times = data['times']
 
 pos = data['local_positions']
+pos_global = data['global_positions']
 victims = data['victims']
 victims_ids = data['victims_ids']
 
@@ -68,6 +83,9 @@ try:
     settings = PprzSettingsManager(conf.settings, conf.id, connect.ivy)
     guided = GuidedMode(connect.ivy)
     settings['auto2'] = 'Guided'
+    settings['max_speed'] = 13.
+    lines_lat = [pos_global[0][1]]
+    lines_lon = [pos_global[0][0]]
 
     for i in range(1,l):
         print(f'time {times[i]-t0:.1f} at pos {pos[i]}')
@@ -77,6 +95,9 @@ try:
             v_id = victims_ids[i][j]
             print(f'found victim {v_id} at pos {v}')
             draw_circle(connect.ivy, v_id, v[1], v[0], 2., 'red')
+        lines_lat.append(pos_global[i][1])
+        lines_lon.append(pos_global[i][0])
+        draw_lines(connect.ivy, 100, lines_lat, lines_lon, 'lime')
         sleep(dt)
 except KeyError:
     print(f"AC id {args.ac_id} not found")
