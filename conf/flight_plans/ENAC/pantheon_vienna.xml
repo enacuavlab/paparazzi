@@ -1,12 +1,12 @@
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 
-<flight_plan alt="200" ground_alt="158" lat0="48.276291510877755" lon0="16.423130730335757" max_dist_from_home="2000" name="Pantheon Vienna Demo" security_height="30">
+<flight_plan alt="200" ground_alt="158" lat0="48.27350853694594" lon0="16.41557919452282" max_dist_from_home="2000" name="Pantheon Vienna Demo" security_height="30">
   <header>
   </header>
   <waypoints>
     <waypoint name="HOME" x="0.0" y="0.0"/>
     <waypoint name="CLIMB" x="0.0" y="5.0"/>
-    <waypoint name="STDBY" x="-2.0" y="-5.0"/>
+    <waypoint name="STDBY" lat="48.276291510877755" lon="16.423130730335757"/>
     <waypoint name="TD" x="5.6" y="-10.9"/>
   </waypoints>
   <blocks>

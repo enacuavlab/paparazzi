@@ -4,7 +4,7 @@ import os
 from os import path, getenv
 import sys
 import json
-#import geojson
+import geojson
 import argparse
 from time import sleep
 
@@ -21,16 +21,20 @@ from settings import PprzSettingsManager
 from pprzlink.message import PprzMessage
 
 parser = argparse.ArgumentParser(description="Guided flight from json (cyber attack pantheon)")
-parser.add_argument('file', help="(geo)json input file")
+parser.add_argument('traj_file', help="json input file with traj and victims")
+parser.add_argument('area_file', help="geojson input file with flight area")
 parser.add_argument('ac_id', help="PPRZ uav ID", type=int)
 parser.add_argument('ac_name', help="Pantheon uav name", type=str)
 args = parser.parse_args()
 
-geo = None
-with open(args.file) as f:
-    geo = json.load(f)
+geo_traj = None
+geo_area = None
+with open(args.traj_file) as f:
+    geo_traj = json.load(f)
+with open(args.area_file) as f:
+    geo_area = geojson.load(f)
 
-if geo is None:
+if geo_traj is None:
     print("invalid input file")
     exit()
 
@@ -62,14 +66,21 @@ def draw_lines(ivy, shape_id, lines_lat, lines_lon, color):
     msg['text'] = '" "'
     ivy.send(msg)
 
-origin = geo['origin']
-data = geo[args.ac_name]
+origin = geo_traj['origin']
+data = geo_traj[args.ac_name]
 times = data['times']
 
 pos = data['local_positions']
 pos_global = data['global_positions']
 victims = data['victims']
 victims_ids = data['victims_ids']
+
+areas = []
+for e in geo_area['features']:
+    _type = e['properties']['type']
+    if _type == 'Areas':
+        areas = e['geometry']['coordinates']
+        # only one areas node is expected
 
 t0 = times[0]
 tf = times[-1] - t0
@@ -86,13 +97,22 @@ try:
     settings['max_speed'] = 13.
     lines_lat = [pos_global[0][1]]
     lines_lon = [pos_global[0][0]]
+    sleep(2)
+    print(areas)
+    for i, area in enumerate(areas):
+        print(area[0])
+        area_lat = [ p[1] for p in area[0] ]
+        area_lon = [ p[0] for p in area[0] ]
+        print(area_lat)
+        print(area_lon)
+        draw_lines(connect.ivy, 200+i, area_lat, area_lon, 'orange')
 
     for i in range(1,l):
         print(f'time {times[i]-t0:.1f} at pos {pos[i]}')
         dt = times[i] - times[i-1]
         guided.goto_enu(conf.id, north=pos[i][1], east=pos[i][0], up=pos[i][2])
-        for j, v in enumerate(victims[i]):
-            v_id = victims_ids[i][j]
+        for j, v in enumerate(victims[i-1]):
+            v_id = victims_ids[i-1][j]
             print(f'found victim {v_id} at pos {v}')
             draw_circle(connect.ivy, v_id, v[1], v[0], 2., 'red')
         lines_lat.append(pos_global[i][1])
