@@ -248,6 +248,7 @@ void control_mixing_heewing_nav_run(void)
     } else {
       stabilization_attitude_plane_pid_run(transition_ratio < 0.8f ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
     }
+    nav.heading = stateGetNedToBodyEulers_f()->psi; // overwrite nav heading to avoid problems when transition to hover
 
     commands[COMMAND_TILT] = command_from_transition(CMH_TILT_VERTICAL, CMH_TILT_FORWARD);
     commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];

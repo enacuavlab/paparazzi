@@ -20,6 +20,7 @@
       <module name="radio_control" type="sbus">
         <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
       </module>
+      <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
     </target>
 
     <target name="nps" board="pc">
@@ -83,7 +84,6 @@
     <module name="nav" type="hybrid"/>
 
     <module name="ins" type="ekf2">
-      <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
     </module>
     <!--module name="ins"/>
     <module name="ahrs" type="int_cmpl_quat"/-->
@@ -318,7 +318,7 @@
     <define name="NAV_TAKEOFF_HEIGHT" value="10."/>
     <define name="NAV_LANDING_AF_HEIGHT" value="20."/>
     <define name="NAV_LANDING_FLARE_HEIGHT" value="10."/>
-    <define name="NAV_LANDING_DESCEND_SPEED" value="-1.0"/>
+    <define name="NAV_LANDING_DESCEND_SPEED" value="-2.0"/>
     <define name="SURVEY_HYBRID_MAX_SWEEP_BACK" value="1"/>
     <define name="MISSION_ALT_PROXIMITY" value="4."/>
     <define name="NAV_HYBRID_LINE_GAIN" value="0.8"/>
