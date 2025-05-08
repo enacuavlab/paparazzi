@@ -1,0 +1,615 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="http://jsbsim.sourceforge.net/JSBSim.xsl"?>
+<fdm_config name="QUAD COMPLETE EXT" version="2.0" release="BETA" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://jsbsim.sourceforge.net/JSBSim.xsd">
+
+  <fileheader>
+    <author>ENAC</author>
+    <filecreationdate>05-07-2025</filecreationdate>
+    <version>1.0</version>
+    <description>Quadplane for the FlyHigh project</description>
+  </fileheader>
+
+  <metrics>
+    <wingarea unit="M2"> 0.09 </wingarea>
+    <wingspan unit="M"> 0.73 </wingspan>
+    <chord unit="M"> 0.15 </chord>
+    <htailarea unit="M2"> 0.029 </htailarea>
+    <htailarm unit="M"> 0.4 </htailarm>
+    <vtailarea unit="M2"> 0.01 </vtailarea>
+    <vtailarm unit="M"> 0.4 </vtailarm>
+    <wing_incidence unit="DEG"> 0 </wing_incidence>
+    <location name="AERORP" unit="M">
+      <x> 0 </x>
+      <y> 0 </y>
+      <z> 0 </z>
+    </location>
+    <location name="EYEPOINT" unit="M">
+      <x> 0 </x>
+      <y> 0 </y>
+      <z> 0 </z>
+    </location>
+    <location name="VRP" unit="M">
+      <x> 0 </x>
+      <y> 0 </y>
+      <z> 0 </z>
+    </location>
+  </metrics>
+
+  <mass_balance>
+    <ixx unit="KG*M2"> 0.005 </ixx>
+    <iyy unit="KG*M2"> 0.005  </iyy>
+    <izz unit="KG*M2"> 0.015 </izz>
+    <ixy unit="KG*M2"> 0. </ixy>
+    <ixz unit="KG*M2"> 0. </ixz>
+    <iyz unit="KG*M2"> 0. </iyz>
+    <emptywt unit="KG"> 0.893 </emptywt>
+    <location name="CG" unit="M">
+      <x> 0 </x>
+      <y> 0 </y>
+      <z> 0 </z>
+    </location>
+  </mass_balance>
+
+  <ground_reactions>
+    <contact type="STRUCTURE" name="CONTACT_FRONT">
+      <location unit="M">
+        <x> -0.12 </x>
+        <y> 0.0 </y>
+        <z>-0.1 </z>
+      </location>
+      <static_friction>  0.8 </static_friction>
+      <dynamic_friction> 0.5 </dynamic_friction>
+      <spring_coeff unit="N/M"> 500 </spring_coeff>
+      <damping_coeff unit="N/M/SEC"> 100 </damping_coeff>
+      <damping_coeff_rebound type="SQUARE" unit="N/M2/SEC2"> 1000 </damping_coeff_rebound>
+      <max_steer unit="DEG"> 0.0 </max_steer>
+      <brake_group> NONE </brake_group>
+      <retractable>0</retractable>
+    </contact>
+
+    <contact type="STRUCTURE" name="CONTACT_BACK">
+      <location unit="M">
+        <x>  0.12</x>
+        <y>  0.0</y>
+        <z> -0.1</z>
+      </location>
+      <static_friction>  0.8 </static_friction>
+      <dynamic_friction> 0.5 </dynamic_friction>
+      <spring_coeff unit="N/M"> 500 </spring_coeff>
+      <damping_coeff unit="N/M/SEC"> 100 </damping_coeff>
+      <damping_coeff_rebound type="SQUARE" unit="N/M2/SEC2"> 1000 </damping_coeff_rebound>
+      <max_steer unit="DEG"> 0.0 </max_steer>
+      <brake_group> NONE </brake_group>
+      <retractable>0</retractable>
+    </contact>
+
+    <contact type="STRUCTURE" name="CONTACT_RIGHT">
+      <location unit="M">
+        <x> 0.0  </x>
+        <y> 0.12</y>
+        <z> -0.1 </z>
+      </location>
+      <static_friction>  0.8 </static_friction>
+      <dynamic_friction> 0.5 </dynamic_friction>
+      <spring_coeff unit="N/M"> 500 </spring_coeff>
+      <damping_coeff unit="N/M/SEC"> 100 </damping_coeff>
+      <damping_coeff_rebound type="SQUARE" unit="N/M2/SEC2"> 1000 </damping_coeff_rebound>
+      <max_steer unit="DEG"> 0.0 </max_steer>
+      <brake_group> NONE </brake_group>
+      <retractable>0</retractable>
+    </contact>
+
+    <contact type="STRUCTURE" name="CONTACT_LEFT">
+      <location unit="M">
+        <x> 0.0  </x>
+        <y>-0.12</y>
+        <z> -0.1 </z>
+      </location>
+      <static_friction>  0.8 </static_friction>
+      <dynamic_friction> 0.5 </dynamic_friction>
+      <spring_coeff unit="N/M"> 500 </spring_coeff>
+      <damping_coeff unit="N/M/SEC"> 100 </damping_coeff>
+      <damping_coeff_rebound type="SQUARE" unit="N/M2/SEC2"> 1000 </damping_coeff_rebound>
+      <max_steer unit="DEG"> 0.0 </max_steer>
+      <brake_group> NONE </brake_group>
+      <retractable>0</retractable>
+    </contact>
+  </ground_reactions>
+
+  <flight_control name="actuator_dynamics">
+    <property value="30.">fcs/motor_lag</property>
+    <property value="54.">fcs/servo_lag</property>
+
+    <channel name="filtering">
+      <!--First order filter represents actuator dynamics-->
+      <lag_filter name="motor_front_right_lag">
+        <input> fcs/MOTOR_FRONT_RIGHT </input>
+        <clipto>
+            <min>0</min>
+            <max>1</max>
+        </clipto>
+        <c1> fcs/motor_lag </c1>
+        <output> fcs/motor_front_right_lag</output>
+      </lag_filter>
+      <lag_filter name="motor_front_left_lag">
+        <input> fcs/MOTOR_FRONT_LEFT </input>
+        <clipto>
+            <min>0</min>
+            <max>1</max>
+        </clipto>
+        <c1> fcs/motor_lag </c1>
+        <output> fcs/motor_front_left_lag</output>
+      </lag_filter>
+      <lag_filter name="motor_back_right_lag">
+        <input> fcs/MOTOR_BACK_RIGHT </input>
+        <clipto>
+            <min>0</min>
+            <max>1</max>
+        </clipto>
+        <c1> fcs/motor_lag </c1>
+        <output> fcs/motor_back_right_lag</output>
+      </lag_filter>
+      <lag_filter name="motor_back_left_lag">
+        <input> fcs/MOTOR_BACK_LEFT </input>
+        <clipto>
+            <min>0</min>
+            <max>1</max>
+        </clipto>
+        <c1> fcs/motor_lag </c1>
+        <output> fcs/motor_back_left_lag</output>
+      </lag_filter>
+      <lag_filter name="motor_pusher_lag">
+        <input> fcs/MOTOR_PUSHER </input>
+        <clipto>
+            <min>0</min>
+            <max>1</max>
+        </clipto>
+        <c1> fcs/motor_lag </c1>
+        <output> fcs/motor_pusher_lag</output>
+      </lag_filter>
+      <lag_filter name="ailevon_right_lag">
+        <input> fcs/AILEVON_RIGHT </input>
+        <c1> fcs/servo_lag </c1>
+        <output> fcs/ailevon_right_lag</output>
+      </lag_filter>
+      <lag_filter name="ailevon_left_lag">
+        <input> fcs/AILEVON_LEFT </input>
+        <c1> fcs/servo_lag </c1>
+        <output> fcs/ailevon_left_lag</output>
+      </lag_filter>
+      <fcs_function>
+        <function>
+          <sum>
+            <property>fcs/ailevon_right_lag</property>
+            <property>-fcs/ailevon_left_lag</property>
+          </sum>
+        </function>
+        <output> fcs/aileron_lag </output>
+      </fcs_function>
+      <fcs_function>
+        <function>
+          <product>
+            <sum>
+              <property>fcs/ailevon_right_lag</property>
+              <property>fcs/ailevon_left_lag</property>
+            </sum>
+            <value> 0.5 </value>
+          </product>
+        </function>
+        <output> fcs/elevator_lag </output>
+      </fcs_function>
+    </channel>
+
+  </flight_control>
+
+  <external_reactions>
+
+    <property>fcs/MOTOR_FRONT_RIGHT</property>
+    <property>fcs/MOTOR_FRONT_LEFT</property>
+    <property>fcs/MOTOR_BACK_RIGHT</property>
+    <property>fcs/MOTOR_BACK_LEFT</property>
+    <property>fcs/MOTOR_PUSHER</property>
+    <property>fcs/AILEVON_RIGHT</property>
+    <property>fcs/AILEVON_LEFT</property>
+    <property>fcs/PITCH</property>
+    <property>fcs/ROLL</property>
+    <property>fcs/YAW</property>
+    <property>fcs/THRUST</property>
+    <property>fcs/motor_front_right_lag</property>
+    <property>fcs/motor_front_left_lag</property>
+    <property>fcs/motor_back_right_lag</property>
+    <property>fcs/motor_back_left_lag</property>
+    <property>fcs/ailevon_right_lag</property>
+    <property>fcs/ailevon_left_lag</property>
+
+    <property value="5.7">fcs/motor_max_thrust</property> <!-- 0.768 kg hovering at 33% throttle with 4 motors -->
+    <!--property value="0.00001">fcs/motor_max_torque</property-->
+    <property value="0.">fcs/motor_max_torque</property>
+
+    <!-- First the lift forces produced by each propeller -->
+
+    <force name="motor_front_right" frame="BODY" unit="LBS">
+      <function>
+        <product>
+          <property>fcs/motor_front_right_lag</property>
+          <property>fcs/motor_max_thrust</property>
+          <value>0.224808943</value> <!-- N to LBS -->
+        </product>
+      </function>
+      <location unit="M">
+        <x> -0.187 </x>
+        <y> 0.145 </y>
+        <z> 0. </z>
+      </location>
+      <direction>
+        <x> 0 </x>
+        <y> 0.34202 </y>
+        <z> -0.939693 </z>
+      </direction>
+    </force>
+    <force name="motor_front_left" frame="BODY" unit="LBS">
+      <function>
+        <product>
+          <property>fcs/motor_front_left_lag</property>
+          <property>fcs/motor_max_thrust</property>
+          <value>0.224808943</value> <!-- N to LBS -->
+        </product>
+      </function>
+      <location unit="M">
+        <x> -0.187 </x>
+        <y> -0.145 </y>
+        <z> 0 </z>
+      </location>
+      <direction>
+        <x> 0 </x>
+        <y> -0.34202 </y>
+        <z> -0.939693 </z>
+      </direction>
+    </force>
+    <force name="motor_back_right" frame="BODY" unit="LBS">
+      <function>
+        <product>
+          <property>fcs/motor_back_right_lag</property>
+          <property>fcs/motor_max_thrust</property>
+          <value>0.224808943</value> <!-- N to LBS -->
+        </product>
+      </function>
+      <location unit="M">
+        <x> 0.187 </x>
+        <y> 0.145 </y>
+        <z> 0. </z>
+      </location>
+      <direction>
+        <x> 0 </x>
+        <y> 0.34202 </y>
+        <z> -0.939693 </z>
+      </direction>
+    </force>
+    <force name="motor_back_left" frame="BODY" unit="LBS">
+      <function>
+        <product>
+          <property>fcs/motor_back_left_lag</property>
+          <property>fcs/motor_max_thrust</property>
+          <value>0.224808943</value> <!-- N to LBS -->
+        </product>
+      </function>
+      <location unit="M">
+        <x> 0.187 </x>
+        <y> -0.145 </y>
+        <z> 0 </z>
+      </location>
+      <direction>
+        <x> 0 </x>
+        <y> -0.34202 </y>
+        <z> -0.939693 </z>
+      </direction>
+    </force>
+    <force name="motor_pusher" frame="BODY" unit="LBS">
+      <function>
+        <product>
+          <property>fcs/motor_pusher_lag</property>
+          <property>fcs/motor_max_thrust</property>
+          <value>0.224808943</value> <!-- N to LBS -->
+        </product>
+      </function>
+      <location unit="M">
+        <x> 0.11 </x>
+        <y> 0 </y>
+        <z> 0 </z>
+      </location>
+      <direction>
+        <x> -1 </x>
+        <y> 0 </y>
+        <z> 0 </z>
+      </direction>
+    </force>
+    
+    <!-- Then the Moment Couples -->
+
+    <moment name="motor_front_right_torque" frame="BODY">
+      <function>
+        <product>
+          <property>fcs/motor_front_right_lag</property>
+          <property>fcs/motor_max_torque</property>
+          <value> 0.738 </value> <!-- N.m to FT.LBS -->
+        </product>
+      </function>
+      <location unit="M">
+        <x> -0.187 </x>
+        <y> 0.145 </y>
+        <z> 0. </z>
+      </location>
+      <direction>
+        <x> 0 </x>
+        <y> -0.34202 </y>
+        <z> 0.939693 </z>
+      </direction>
+    </moment>
+    <moment name="motor_front_left_torque" frame="BODY">
+      <function>
+        <product>
+          <property>fcs/motor_front_left_lag</property>
+          <property>fcs/motor_max_torque</property>
+          <value> 0.738 </value> <!-- N.m to FT.LBS -->
+        </product>
+      </function>
+      <location unit="M">
+        <x> -0.187 </x>
+        <y> -0.145 </y>
+        <z> 0. </z>
+      </location>
+      <direction>
+        <x> 0 </x>
+        <y> -0.34202 </y>
+        <z> -0.939693 </z>
+      </direction>
+    </moment>
+    <moment name="motor_back_right_torque" frame="BODY">
+      <function>
+        <product>
+          <property>fcs/motor_back_right_lag</property>
+          <property>fcs/motor_max_torque</property>
+          <value> 0.738 </value> <!-- N.m to FT.LBS -->
+        </product>
+      </function>
+      <location unit="M">
+        <x> 0.187 </x>
+        <y> 0.145 </y>
+        <z> 0. </z>
+      </location>
+      <direction>
+        <x> 0 </x>
+        <y> 0.34202 </y>
+        <z> -0.939693 </z>
+      </direction>
+    </moment>
+    <moment name="motor_back_left_torque" frame="BODY">
+      <function>
+        <product>
+          <property>fcs/motor_back_left_lag</property>
+          <property>fcs/motor_max_torque</property>
+          <value> 0.738 </value> <!-- N.m to FT.LBS -->
+        </product>
+      </function>
+      <location unit="M">
+        <x> 0.187 </x>
+        <y> -0.145 </y>
+        <z> 0. </z>
+      </location>
+      <direction>
+        <x> 0 </x>
+        <y> 0.34202 </y>
+        <z> 0.939693 </z>
+      </direction>
+    </moment>
+    <moment name="motor_pusher_torque" frame="BODY">
+      <function>
+        <product>
+          <property>fcs/motor_pusher_lag</property>
+          <property>fcs/motor_max_torque</property>
+          <value> 0.738 </value> <!-- N.m to FT.LBS -->
+        </product>
+      </function>
+      <location unit="M">
+        <x> 0.11 </x>
+        <y> 0 </y>
+        <z> 0 </z>
+      </location>
+      <direction>
+        <x> 1 </x>
+        <y> 0 </y>
+        <z> 0 </z>
+      </direction>
+    </moment>
+
+  </external_reactions>
+
+  <propulsion/>
+
+  <flight_control name="FGFCS"/>
+
+  <aerodynamics>
+
+    <axis name="LIFT">
+      <function name="aero/force/Lift_alpha">
+        <description>Lift due to alpha</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <table>
+            <independentVar lookup="row">aero/alpha-rad</independentVar>
+            <tableData>
+              -1.57  0.
+              -0.20 -0.750
+              0.00  0.250
+              0.23  1.400
+              0.60  0.710
+              1.57  0.
+            </tableData>
+          </table>
+        </product>
+      </function>
+    </axis>
+
+    <axis name="DRAG">
+      <function name="aero/force/Drag_basic">
+        <description>Drag at zero lift</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <value> 0.083 </value>
+        </product>
+      </function>
+      <function name="aero/force/Drag_induced">
+        <description>Induced drag</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>aero/cl-squared</property>
+          <value> 0.18 </value>
+        </product>
+      </function>
+    </axis>
+
+    <axis name="SIDE">
+      <function name="aero/force/Side_beta">
+        <description>Side force due to beta</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>aero/beta-rad</property>
+          <value>-0.1</value>
+        </product>
+      </function>
+    </axis>
+
+    <axis name="ROLL">
+      <function name="aero/moment/Roll_beta">
+        <description>Roll moment due to beta</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <sin>
+            <property>aero/beta-rad</property>
+          </sin>
+          <value>0.0</value>
+        </product>
+      </function>
+      <function name="aero/moment/Roll_damp">
+        <description>Roll moment due to roll rate</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>aero/bi2vel</property>
+          <property>velocities/p-aero-rad_sec</property>
+          <value>-0.4</value>
+        </product>
+      </function>
+      <function name="aero/moment/Roll_yaw">
+        <description>Roll moment due to yaw rate</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>aero/bi2vel</property>
+          <property>velocities/r-aero-rad_sec</property>
+          <value>0.</value>
+        </product>
+      </function>
+      <function name="aero/moment/Roll_aileron">
+        <description>Roll moment due to aileron</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/aileron_lag</property>
+          <value> 0.17 </value>
+        </product>
+      </function>
+    </axis>
+
+    <axis name="PITCH">
+      <function name="aero/moment/Pitch_alpha">
+        <description>Pitch moment due to alpha</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/cbarw-ft</property>
+          <property>aero/alpha-rad</property>
+          <value>-0.5</value>
+          <table>
+            <independentVar lookup="row">aero/alpha-rad</independentVar>
+            <tableData>
+              -1.57  0.
+              -0.60 0.3
+              0.00  0.
+              0.60  -0.3
+              1.57  0.
+            </tableData>
+          </table>
+        </product>
+      </function>
+      <function name="aero/moment/Pitch_elevator">
+        <description>Pitch moment due to elevator</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/cbarw-ft</property>
+          <property>fcs/elevator_lag</property>
+          <value>1.1</value>
+        </product>
+      </function>
+      <function name="aero/moment/Pitch_damp">
+        <description>Pitch moment due to pitch rate</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/cbarw-ft</property>
+          <property>aero/ci2vel</property>
+          <property>velocities/q-aero-rad_sec</property>
+          <value>-12</value>
+        </product>
+      </function>
+    </axis>
+
+    <axis name="YAW">
+      <function name="aero/moment/Yaw_beta">
+        <description>Yaw moment due to beta</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <sin>
+            <property>aero/beta-rad</property>
+          </sin>
+          <value>0.05</value>
+        </product>
+      </function>
+      <function name="aero/moment/Yaw_damp">
+        <description>Yaw moment due to yaw rate</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>aero/bi2vel</property>
+          <property>velocities/r-aero-rad_sec</property>
+          <value>-0.15</value>
+        </product>
+      </function>
+      <function name="aero/moment/Yaw_aileron">
+        <description>Adverse yaw</description>
+        <product>
+          <property>aero/qbar-psf</property>
+          <property>metrics/Sw-sqft</property>
+          <property>metrics/bw-ft</property>
+          <property>fcs/aileron_lag</property>
+          <value>-0.01</value>
+        </product>
+      </function>
+    </axis>
+
+  </aerodynamics>
+
+</fdm_config>
