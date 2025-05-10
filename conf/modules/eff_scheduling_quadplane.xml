@@ -1,0 +1,18 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="eff_scheduling_quadplane" dir="ctrl">
+  <doc>
+    <description>
+      Interpolation of control effectivenss matrix of a quadplane (4 motors + 1 pusher)
+    </description>
+  </doc>
+ 
+  <header>
+    <file name="eff_scheduling_quadplane.h"/>
+  </header>
+  <init fun="eff_scheduling_quadplane_init()"/>
+  <periodic fun="eff_scheduling_quadplane_periodic()" freq="20.0"/>
+  <periodic fun="eff_scheduling_quadplane_report()" freq="0.5" autorun="FALSE"/> <!-- TRUE  FALSE-->
+  <makefile target="ap|nps" firmware="rotorcraft" >
+    <file name="eff_scheduling_quadplane.c"/>
+  </makefile>
+</module>
