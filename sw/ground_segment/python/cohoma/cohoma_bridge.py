@@ -238,7 +238,8 @@ class MissionManager():
         msg['ac_id'] = self.ac_id
         msg['insert'] = insert_mode.value
         msg['duration'] = duration
-        msg['nb'] = max(len(path), 5)
+        msg['nb'] = min(len(path), 5)
+        print(path, len(path),msg['nb'])
         msg['index'] = mission_id
         msg['path_alt'] = int(alt * 1e3)
         for i in range(msg['nb']):
@@ -264,7 +265,7 @@ class MissionManager():
         return msg
 
     @send_mission_element
-    def add_mission_poles(self, mission_id:int, lat1:float, lon1:float, lat2:float, lon2:float, height:float, radius:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+    def add_mission_poles(self, mission_id:int, lat1:float, lon1:float, lat2:float, lon2:float, height:float, radius:float, duration:float = -1., nb_laps:int = -1, insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the navigation between two poles at position lat (deg), lon (deg), height above ref point (m) and radius (m) format
         '''
@@ -274,7 +275,7 @@ class MissionManager():
         msg['duration'] = duration
         msg['index'] = mission_id
         msg['type'] = 'POLES'
-        msg['params'] = [float(lat1), float(lon1), float(lat2), float(lon2), float(height), float(radius), 1.] # fixed margin of 1.
+        msg['params'] = [float(lat1), float(lon1), float(lat2), float(lon2), float(height), float(radius), 1., float(nb_laps)] # fixed margin of 1.
         return msg
 
     @send_mission_element
@@ -323,15 +324,23 @@ if __name__ == '__main__':
     # run test
     from time import sleep
 
+    LANDPAD = (48.8658, 1.89994)
+    P1 = (48.8655, 1.89826)
+    P2 = (48.8654, 1.89617)
+    P3 = (48.8644, 1.89524)
+
     try:
         mission = MissionManager(verbose=True)
         print("cohoma_bridge test started")
         mission.wait_ready()
         mission.add_mission_takeoff(1, insert_mode=MissionInsert.REPLACE_ALL)
-        mission.add_mission_point(2, lat=48.866, lon=1.899, alt=150.)
-        mission.add_mission_path(3, path=[(48.865, 1.899),(48.865, 1.898),(48.866, 1.898),(48.866, 1.897),(48.865, 1.897)], alt=150.)
-        mission.add_mission_circle(4, lat=48.865, lon=1.898, alt=150, radius=-80, duration=20)
-        mission.add_mission_land(5, lat=48.8652, lon=1.899, height=0.)
+        mission.add_mission_path(2, path=[LANDPAD, P1, P2], alt=90)
+        mission.add_mission_poles(3, lat1=P2[0], lon1=P2[1], lat2=P3[0], lon2=P3[1], height=30., radius=60., nb_laps=2)
+        mission.add_mission_path(4, path=[P2, P1, LANDPAD] , alt=90)
+        #mission.add_mission_point(2, lat=48.866, lon=1.899, alt=150.)
+        #mission.add_mission_path(3, path=[(48.865, 1.899),(48.865, 1.898),(48.866, 1.898),(48.866, 1.897),(48.865, 1.897)], alt=150.)
+        #mission.add_mission_circle(4, lat=48.865, lon=1.898, alt=150, radius=-80, duration=20)
+        mission.add_mission_land(5, lat=LANDPAD[0], lon=LANDPAD[1], height=0.)
         mission.start_mission()
         print('UAV:',mission.uav_data.name)
 

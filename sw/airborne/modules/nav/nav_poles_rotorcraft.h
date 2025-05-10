@@ -48,7 +48,7 @@ extern void nav_poles_init(void);
  * @return true if init valid
  */
 extern bool nav_poles_setup_wp(uint8_t wp1, uint8_t wp2, float height,
-    float radius, float margin);
+    float radius, float margin, int8_t nb_laps);
 
 /** Init poles from waypoints coordinates in LLA format
  *
@@ -57,10 +57,11 @@ extern bool nav_poles_setup_wp(uint8_t wp1, uint8_t wp2, float height,
  * @param[in] height flight height above ref point
  * @param[in] radius turn radius in meters, CW is >0, CCW otherwise
  * @param[in] margin margin factor: 0 -> overfly points, 1 -> turn at 'radius' distance
+ * @param[in] nb_laps number of laps (<0 for no lap limit)
  * @return true if init valid
  */
 extern bool nav_poles_setup_lla(struct LlaCoor_f *lla1, struct LlaCoor_f *lla2, float height,
-    float radius, float margin);
+    float radius, float margin, int8_t nb_laps);
 
 extern bool nav_poles_run(void);
 

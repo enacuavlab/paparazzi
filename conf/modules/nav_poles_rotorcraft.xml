@@ -18,7 +18,9 @@
   <init fun="nav_poles_init()"/>
   <makefile firmware="rotorcraft">
     <file name="nav_poles_rotorcraft.c"/>
-    <test firmware="rotorcraft"/>
+    <test firmware="rotorcraft">
+      <define name="USE_MISSION"/>
+    </test>
   </makefile>
 </module>
 
