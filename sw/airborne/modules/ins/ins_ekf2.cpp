@@ -412,6 +412,13 @@ static void send_ins_ekf2(struct transport_tx *trans, struct link_device *dev)
     dead_reckoning = 0;
   }
 
+
+  // XP-DEBUG
+  Vector2f flowcompensate = ekf.getFlowCompensated();
+  flow = flowcompensate(0);
+  beta = flowcompensate(1);
+
+
   pprz_msg_send_INS_EKF2(trans, dev, AC_ID,
                          &control_mode, &filter_fault_status, &gps_check_status, &soln_status,
                          &innov_test_status, &mag, &vel, &pos, &hgt, &tas, &hagl, &flow, &beta,
@@ -1067,17 +1074,18 @@ static void optical_flow_cb(uint8_t sender_id __attribute__((unused)),
   }
 
   // Calculate the timestamp
-  sample.dt = (stamp - ekf2.flow_stamp);
+  //sample.dt = (stamp - ekf2.flow_stamp);
+  sample.dt = (stamp - ekf2.flow_stamp) * 1.e-6f * 2.0f; // sec
   ekf2.flow_stamp = stamp;
 
   /* Build integrated flow and gyro messages for filter
   NOTE: pure rotations should result in same flow_x and
   gyro_roll and same flow_y and gyro_pitch */
   Vector2f flowdata;
-  flowdata(0) = RadOfDeg(flow_y) * (1e-6 *
-                                    sample.dt);                       // INTEGRATED FLOW AROUND Y AXIS (RIGHT -X, LEFT +X)
-  flowdata(1) = - RadOfDeg(flow_x) * (1e-6 *
-                                      sample.dt);                     // INTEGRATED FLOW AROUND X AXIS (FORWARD +Y, BACKWARD -Y)
+  flowdata(0) = RadOfDeg(flow_y); //* (1e-6 *
+                                   // sample.dt);                       // INTEGRATED FLOW AROUND Y AXIS (RIGHT -X, LEFT +X)
+  flowdata(1) = - RadOfDeg(flow_x); // * (1e-6 *
+                                    //  sample.dt);                     // INTEGRATED FLOW AROUND X AXIS (FORWARD +Y, BACKWARD -Y)
 
   sample.quality = quality;                     // quality indicator between 0 and 255
   sample.flow_xy_rad =

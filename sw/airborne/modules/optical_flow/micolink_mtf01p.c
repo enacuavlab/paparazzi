@@ -7,16 +7,6 @@
 #include "pprzlink/messages.h"
 #include "modules/datalink/downlink.h"
 
-
-// Max Speed Measurement: 7m/s@1m height
-#ifndef MICOLINK_MTF01FD_MAX_FLOW
-#define MICOLINK_MTF01FD_MAX_FLOW 700
-#endif
-// TOF Range: 12m
-#ifndef MICOLINK_MTF01FD_MAX_DISTANCE
-#define MICOLINK_MTF01FD_MAX_DISTANCE 12000000
-#endif
-
 #ifndef USE_MICOLINK_MTF01FD_AGL
 #define USE_MICOLINK_MTF01FD_AGL 1
 #endif
@@ -24,6 +14,19 @@
 #ifndef USE_MICOLINK_MTF01FD_OPTICAL_FLOW
 #define USE_MICOLINK_MTF01FD_OPTICAL_FLOW 1
 #endif
+
+#define MICOLINK_MTF01FD_FLOW_RATE_HZ 100 
+
+// Max flow : 7 rad/s
+//   1 x 7 =  7 m/s @ 1 m
+//   12 x 7 = 84 m/s @ 12 m
+//
+#define MICOLINK_MTF01FD_MAX_FLOW 7
+#define MICOLINK_MTF01FD_MAX_FLOW_CM 700
+
+// TOF Range: 12m
+#define MICOLINK_MTF01FD_MAX_DISTANCE 12000000
+
 
 
 #define MICOLINK_MTF01P_MSG_HEAD            0xEF
@@ -70,7 +73,7 @@ struct micolinkmtf01p_pay_t {
   uint8_t  reserved1;    // reserved
   int16_t  flow_vel_x;   // optical flow velocity in x, cm/s @ 1m
   int16_t  flow_vel_y;	 // optical flow velocity in y, cm/s @ 1m
-  uint8_t  flow_quality; // optical flow quality
+  uint8_t  flow_quality; // optical flow quality, 0-255, bigger = higher quality
   uint8_t  flow_status;	 // optical flow status
   uint16_t reserved2;	 // reserved
 } micolinkmtf01p_pay;
@@ -106,7 +109,7 @@ static void send_optical_flow(struct transport_tx *trans, struct link_device *de
   time_sec = (float)opticflow.time_usec / 1e6f;
   flow_x = (int32_t)opticflow.flow_x;
   flow_y = (int32_t)opticflow.flow_y;
-  distance_quality = opticflow.quality;
+  flow_quality = opticflow.quality;
 
   ground_distance = (float)(opticflow.distance) * 0.001f;
   distance_compensated = (float)(opticflow.distance_compensated);
@@ -202,10 +205,11 @@ static void micolinkmtf01p_parse(uint8_t byte) {
         memcpy(&micolinkmtf01p_pay, micolinkmtf01p_msg.payload, micolinkmtf01p_msg.paylen);
 
 	if ((0 < micolinkmtf01p_pay.distance) && (micolinkmtf01p_pay.distance <=  MICOLINK_MTF01FD_MAX_DISTANCE) 
-	  && (abs(micolinkmtf01p_pay.flow_vel_x) <=  MICOLINK_MTF01FD_MAX_FLOW) 
-	  && (abs(micolinkmtf01p_pay.flow_vel_y) <=  MICOLINK_MTF01FD_MAX_FLOW)) {
+	  && (abs(micolinkmtf01p_pay.flow_vel_x) <=  MICOLINK_MTF01FD_MAX_FLOW_CM) 
+	  && (abs(micolinkmtf01p_pay.flow_vel_y) <=  MICOLINK_MTF01FD_MAX_FLOW_CM)) {
 
-          opticflow.time_usec = 1000 * micolinkmtf01p_pay.time_ms;
+          //opticflow.time_usec = 1000 * micolinkmtf01p_pay.time_ms;
+	  opticflow.time_usec = get_sys_time_usec();
 
 	  // Value inverted according to the orientation on the drone, should be configurable
           opticflow.flow_x = micolinkmtf01p_pay.flow_vel_y; // ROLL
@@ -225,12 +229,10 @@ static void micolinkmtf01p_parse(uint8_t byte) {
                         agl_m);
           } 
           if (USE_MICOLINK_MTF01FD_OPTICAL_FLOW) {
-            float flow_x_ds = opticflow.flow_x / 7.0f; // cm/s to deg/s
-            float flow_y_ds = opticflow.flow_y / 7.0f;
             AbiSendMsgOPTICAL_FLOW(FLOW_OPTICFLOW_MATEKSYS_3901_L0X_ID, 
                                 opticflow.time_usec, 
-                                flow_x_ds,
-                                flow_y_ds,
+                                opticflow.flow_x,
+                                opticflow.flow_y,
                                 0,
                                 0,
                                 opticflow.quality,
