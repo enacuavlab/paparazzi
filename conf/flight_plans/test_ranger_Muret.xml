@@ -66,7 +66,7 @@
       <stay climb="nav.climb_vspeed" vmode="climb" wp="CLIMB"/>
     </block>
     <block name="Takeoff (module)" strip_button="Takeoff (module)" group="module">
-      <call fun="nav_takeoff_from_here()"/>
+      <call fun="nav_takeoff_from_here(-1.)"/>
       <deroute block="Standby"/>
     </block>
     <!--block name="Standby" pre_call="if(!InsideKill(GetPosX(), GetPosY())) NavKillThrottle();" strip_button="Standby" strip_icon="home.png"-->

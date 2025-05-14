@@ -61,7 +61,7 @@
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
     <block name="Takeoff" strip_button="Takeoff" group="module">
-      <call fun="nav_takeoff_from_here()"/>
+      <call fun="nav_takeoff_from_here(-1.)"/>
       <call_once fun="power_switch_set(true)"/>
       <deroute block="Path"/>
     </block>

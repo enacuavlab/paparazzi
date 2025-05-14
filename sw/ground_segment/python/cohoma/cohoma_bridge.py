@@ -44,7 +44,7 @@ from flight_plan import FlightPlan, Block
 
 
 MAX_RETRY = 3
-ACK_TIME = 0.5
+ACK_TIME = 1
 
 @dataclass
 class UAVData:
@@ -279,7 +279,7 @@ class MissionManager():
         return msg
 
     @send_mission_element
-    def add_mission_takeoff(self, mission_id:int, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+    def add_mission_takeoff(self, mission_id:int, height:float = -1., duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the takeoff mission at the current position
         '''
@@ -289,7 +289,7 @@ class MissionManager():
         msg['duration'] = duration
         msg['index'] = mission_id
         msg['type'] = 'TKOFF'
-        msg['params'] = [0.]
+        msg['params'] = [height]
         return msg
 
     @send_mission_element
