@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (C) 2015 Ewoud Smeur <ewoud.smeur@gmail.com>
  *
  * This file is part of paparazzi.
@@ -126,7 +126,6 @@ float thrust_in;
 static void guidance_indi_propagate_filters(struct FloatEulers *eulers);
 static void guidance_indi_calcG(struct FloatMat33 *Gmat);
 static void guidance_indi_calcG_yxz(struct FloatMat33 *Gmat, struct FloatEulers *euler_yxz);
-  float thrust_vect[3];
 
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
@@ -144,20 +143,7 @@ static void send_indi_guidance(struct transport_tx *trans, struct link_device *d
                               &filt_accel_ned[2].o[0],
                               &speed_sp.x,
                               &speed_sp.y,
-                              &speed_sp.z); 
-/*pprz_msg_send_GUIDANCE_INDI_HYBRID(trans, dev, AC_ID,
-                              &actuator_state_filt_vect[0],
-                              &actuator_state_filt_vect[1], 
-                              &actuator_state_filt_vect[2], 
-                              &actuator_state_filt_vect[3], 
-                              &actuator_state_filt_vect[4], 
-                              &actuator_state_filt_vect[5],
-                              &thrust_vect[0],
-                              &thrust_vect[1],
-                              &thrust_vect[2],
-                              &Thrust_filtered[0],
-                              &Thrust_filtered[1],
-                              &Thrust_filtered[2]);*/
+                              &speed_sp.z);
 }
 #endif
 
@@ -305,6 +291,7 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   thrust_sp = th_sp_from_thrust_i(thrust_in, THRUST_AXIS_Z);
 
 #else
+  float thrust_vect[3];
   thrust_vect[0] = 0.0f;  // Fill for quadplanes
   thrust_vect[1] = 0.0f;
   thrust_vect[2] = control_increment.z;
@@ -539,4 +526,3 @@ struct ThrustSetpoint guidance_v_run_accel(bool in_flight UNUSED, struct Vertica
 }
 
 #endif
-

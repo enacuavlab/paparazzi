@@ -15,7 +15,9 @@
         "*.tcc": "cpp",
         "optional": "cpp",
         "system_error": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "nps_fdm.h": "c",
+        "sys_time.h": "c"
     },
     "C_Cpp.dimInactiveRegions": false,
     "esbonio.sphinx.confDir": "",

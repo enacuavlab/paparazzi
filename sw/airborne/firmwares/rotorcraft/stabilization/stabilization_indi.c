@@ -284,10 +284,9 @@ float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
                                         STABILIZATION_INDI_G1_THRUST,
                                         STABILIZATION_INDI_G1_THRUST_X,STABILIZATION_INDI_G1_THRUST_Y
                                        };
-/* float g_thrust[3][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_THRUST_X,
+    /* float g_thrust[3][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_THRUST_X,
                                   STABILIZATION_INDI_G1_THRUST_Y,
                                   STABILIZATION_INDI_G1_THRUST}; */
-float Thrust_filtered[3];
 // struct FloatVect3 Thrust_filtered;
 #else
 float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
@@ -296,6 +295,7 @@ float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
 #endif
 #endif
 
+float Thrust_filtered[3];
 float g1g2[INDI_OUTPUTS][INDI_NUM_ACT];
 float g1_est[INDI_OUTPUTS][INDI_NUM_ACT];
 float g2_est[INDI_NUM_ACT];
@@ -650,9 +650,48 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
 
   // calculate the virtual control (reference acceleration) based on a PD controller
   struct FloatRates rate_sp = stab_sp_to_rates_f(sp);
-  angular_accel_ref.p = (rate_sp.p - rates_filt.p) * indi_gains.rate.p;
-  angular_accel_ref.q = (rate_sp.q - rates_filt.q) * indi_gains.rate.q;
+  
+  // ----------------------------------------------------------------------
+  //calculate the virtual control (reference acceleration) based on a Hinfinty controller
+  float  Ad,Bd,Cd,Dd;
+  float xkp1p,xkp1q,xkp1r;
+  static float xkp;
+  static float xkq;
+  static float xkr;
+  struct FloatRates rate_error;
+  rate_error.p = rate_sp.p - rates_filt.p;
+  rate_error.q = rate_sp.q - rates_filt.q;
+  rate_error.r = rate_sp.r - rates_filt.r;
+  Ad =    0.9013; //  0.9066;
+  Bd =   -0.02509; //  -0.02944;
+  Cd =    91.15; //   61.81;
+  Dd =    44.57; //   39.22;
+
+  if (autopilot_in_flight()){
+  // p 
+  xkp1p = Ad * xkp + Bd * rate_error.p;
+  angular_accel_ref.p = Cd * xkp + Dd * rate_error.p;
+  xkp = xkp1p;
+
+  // q 
+  xkp1q = Ad * xkq + Bd * rate_error.q;
+  angular_accel_ref.q = Cd * xkq + Dd * rate_error.q;
+  xkq = xkp1q;
+
+  // r
+  //xkp1r = Ad * xkr + Bd * rate_error.r;
+  //angular_accel_ref.r = Cd * xkr + Dd * rate_error.r;
+  //xkr = xkp1r;
+  // printf("xkp1q = %f \n",xkp1q);
+  //angular_accel_ref.p = (rate_sp.p - rates_filt.p) * indi_gains.rate.p;
+  //angular_accel_ref.q = (rate_sp.q - rates_filt.q) * indi_gains.rate.q;
   angular_accel_ref.r = (rate_sp.r - rates_filt.r) * indi_gains.rate.r;
+  } 
+  // ----------------------------------------------------------------------
+  
+  //angular_accel_ref.p = (rate_sp.p - rates_filt.p) * indi_gains.rate.p;
+  //angular_accel_ref.q = (rate_sp.q - rates_filt.q) * indi_gains.rate.q;
+  //angular_accel_ref.r = (rate_sp.r - rates_filt.r) * indi_gains.rate.r;
 
   // compute virtual thrust
   struct FloatVect3 v_thrust = { 0.f, 0.f, 0.f };
@@ -669,18 +708,20 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
       thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
 #endif
 #if INDI_OUTPUTS == 6
-      thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_z[i];
-      thrust_filt.y += Bwls[5][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_z[i];
+      thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0];// * (int32_t) act_is_thruster_z[i];
+      thrust_filt.y += Bwls[5][i]* actuator_lowpass_filters[i].o[0];// * (int32_t) act_is_thruster_z[i];
 #endif
       }
-#if INDI_OUTPUTS == 6
+    // Add the current estimated thrust to the increment
+    VECT3_ADD(v_thrust, thrust_filt); //WHY?
     Thrust_filtered[0] = thrust_filt.x;
     Thrust_filtered[1] = thrust_filt.y;
     Thrust_filtered[2] = thrust_filt.z;
-#endif
 
-    // Add the current estimated thrust to the increment
-    VECT3_ADD(v_thrust, thrust_filt); //WHY?
+    /*printf("Thrust_x = %f", thrust_filt.x);
+    printf("Thrust_y = %f", thrust_filt.y);    
+    printf("Thrust_z = %f", thrust_filt.z);*/
+
   } else {
     // build incremental thrust
     float th_cmd_z = (float)th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
@@ -694,10 +735,15 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     }
     v_thrust.y = 0.f;
 #if INDI_OUTPUTS == 6
-        Thrust_filtered[0] = v_thrust.x;
-        Thrust_filtered[1] = v_thrust.y;
-        Thrust_filtered[2] = v_thrust.z;
-#endif
+     struct FloatVect3 thrust_filt = { 0.f, 0.f, 0.f };
+         for (i = 0; i < INDI_NUM_ACT; i++) {
+      thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_z[i];
+      thrust_filt.y += Bwls[5][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_z[i];
+         }
+      Thrust_filtered[0] = thrust_filt.x;
+      Thrust_filtered[1] = thrust_filt.y;
+      Thrust_filtered[2] = v_thrust.z;
+ #endif
   }
 
   // This term compensates for the spinup torque in the yaw axis
@@ -841,11 +887,43 @@ void stabilization_indi_attitude_run(bool in_flight, struct StabilizationSetpoin
 #endif
 
   // local variable to compute rate setpoints based on attitude error
-  struct FloatRates rate_sp;
-  // calculate the virtual control (reference acceleration) based on a PD controller
-  rate_sp.p = indi_gains.att.p * att_fb.x / indi_gains.rate.p;
-  rate_sp.q = indi_gains.att.q * att_fb.y / indi_gains.rate.q;
+  struct FloatRates rate_sp = {0.f,0.f,0.f};
+  // -------------------------------------------------------------
+   // calculate the virtual control (reference acceleration) based on a Hinfinty controller 
+  float Ap,Bp,Cp,Dp;
+  float xkp1pp,xkp1qp,xkp1rp;
+  static float xkpp = 0.0;
+  static float xkpq = 0.0;
+  static float xkpr = 0.0;
+
+  Ap =           1; //1;
+  Bp =           0.03518; //0.0003262;
+  Cp =           0.0191; //20.21;
+  Dp =           7.643; //7.533;
+  if (autopilot_in_flight()) {
+  // p
+  xkp1pp = Ap * xkpp + Bp * att_fb.x;
+  rate_sp.p  = Cp * xkpp + Dp * att_fb.x;
+  xkpp = xkp1pp ;
+
+  // q
+  xkp1qp = Ap * xkpq + Bp * att_fb.y;
+  rate_sp.q = Cp * xkpq + Dp * att_fb.y;
+  xkpq = xkp1qp ;
+
+   // r
+  //xkp1rp = Ap * xkpr + Bp * att_fb.z;
+  //rate_sp.r = Cp * xkpr + Dp * att_fb.z;
+  //xkpr = xkp1rp ;
+  }
+  //rate_sp.p = indi_gains.att.p * att_fb.x / indi_gains.rate.p;
+  //rate_sp.q = indi_gains.att.q * att_fb.y / indi_gains.rate.q;
   rate_sp.r = indi_gains.att.r * att_fb.z / indi_gains.rate.r;
+  // ---------------------------------------------------------
+  // calculate the virtual control (reference acceleration) based on a PD controller
+  //rate_sp.p = indi_gains.att.p * att_fb.x / indi_gains.rate.p;
+  //rate_sp.q = indi_gains.att.q * att_fb.y / indi_gains.rate.q;
+  //rate_sp.r = indi_gains.att.r * att_fb.z / indi_gains.rate.r;
 
   // Add feed-forward rates to the attitude feedback part
   struct FloatRates ff_rates = stab_sp_to_rates_f(att_sp);
