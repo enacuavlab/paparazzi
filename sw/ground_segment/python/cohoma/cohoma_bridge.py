@@ -61,6 +61,7 @@ class UAVData:
     vnorth: float = 0.
     veast: float = 0.
     vup: float = 0.
+    ref_alt: float = 0.
     bat_voltage: float = 0.
     bat_charge: float = 0.
     gps_tow: int = 0
@@ -69,6 +70,7 @@ class UAVData:
     FP_block: str = 'none'
     mission_status: list[int] = None
     datalink_lost_time: int = 0
+    time_since_last_msg: float = 0.
     flight_plan: FlightPlan = None
     start_mission_fp_block: Block = None
 
@@ -103,6 +105,7 @@ class MissionManager():
         self.connect.ivy.subscribe(self.engine_status_cb, PprzMessage("ground", "ENGINE_STATUS"))
         self.connect.ivy.subscribe(self.telemetry_status_cb, PprzMessage("ground", "TELEMETRY_STATUS"))
         self.connect.ivy.subscribe(self.mission_status_cb, PprzMessage("telemetry", "MISSION_STATUS"))
+        self.connect.ivy.subscribe(self.ins_ref_cb, PprzMessage("telemetry", "INS_REF"))
 
     def closing(self):
         ''' shutdown Ivy and window '''
@@ -173,6 +176,7 @@ class MissionManager():
     def telemetry_status_cb(self, ac_id, msg):
         if int(ac_id) == self.ac_id:
             self.uav_data.datalink_lost_time = int(msg['uplink_lost_time'])
+            self.uav_data.time_since_last_msg = float(msg['time_since_last_msg'])
 
     def mission_status_cb(self, ac_id, msg):
         if int(ac_id) == self.ac_id:
@@ -181,6 +185,10 @@ class MissionManager():
             for mission_id in self.uav_data.mission_status:
                 if mission_id in self.events:
                     self.events[mission_id].set()
+    
+    def ins_ref_cb(self, ac_id, msg):
+        if int(ac_id) == self.ac_id:
+            self.uav_data.ref_alt = int(msg['hmsl0'])/1000
 
     def send_mission_element(forge_mission_msg):
         @functools.wraps(forge_mission_msg)
