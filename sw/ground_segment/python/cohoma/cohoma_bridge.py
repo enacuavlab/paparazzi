@@ -332,19 +332,19 @@ if __name__ == '__main__':
     # run test
     from time import sleep
 
-    LANDPAD = (48.8658, 1.89994)
-    P1 = (48.8655, 1.89826)
-    P2 = (48.8654, 1.89617)
-    P3 = (48.8644, 1.89524)
+    LANDPAD = (48.8652, 1.89285)
+    P1 = (48.8653, 1.89503)
+    P2 = (48.8651, 1.89862)
+    P3 = (48.8654, 1.89621)
 
     try:
         mission = MissionManager(verbose=True)
         print("cohoma_bridge test started")
         mission.wait_ready()
-        mission.add_mission_takeoff(1, insert_mode=MissionInsert.REPLACE_ALL)
-        mission.add_mission_path(2, path=[LANDPAD, P1, P2], alt=90)
-        mission.add_mission_poles(3, lat1=P2[0], lon1=P2[1], lat2=P3[0], lon2=P3[1], height=30., radius=60., nb_laps=2)
-        mission.add_mission_path(4, path=[P2, P1, LANDPAD] , alt=90)
+        mission.add_mission_takeoff(1, height=40., insert_mode=MissionInsert.REPLACE_ALL)
+        mission.add_mission_path(2, path=[LANDPAD, P2], alt=120)
+        mission.add_mission_poles(3, lat1=P2[0], lon1=P2[1], lat2=P3[0], lon2=P3[1], height=40., radius=60., nb_laps=2)
+        mission.add_mission_path(4, path=[P2, LANDPAD] , alt=120)
         #mission.add_mission_point(2, lat=48.866, lon=1.899, alt=150.)
         #mission.add_mission_path(3, path=[(48.865, 1.899),(48.865, 1.898),(48.866, 1.898),(48.866, 1.897),(48.865, 1.897)], alt=150.)
         #mission.add_mission_circle(4, lat=48.865, lon=1.898, alt=150, radius=-80, duration=20)

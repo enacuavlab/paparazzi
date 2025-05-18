@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../../flight_plan.dtd">
-<flight_plan alt="90" ground_alt="54" lat0="48.8658" lon0="1.89994" max_dist_from_home="1200" name="COHOMA2" security_height="20" qfu="270">
+<flight_plan alt="120" ground_alt="80" lat0="48.8652734" lon0="1.8928199" max_dist_from_home="700" name="COHOMA3" security_height="20" qfu="90" home_mode_height="40">
   <header>
     static inline bool delay_test_rc(bool test, int delay) {
       static int nb = 0;
@@ -38,9 +38,9 @@
     #endif
   </header>
   <waypoints>
-    <waypoint name="HOME" lat="48.8659" lon="1.89958"/>
-    <waypoint name="STDBY" lat="48.8656" lon="1.89975"/>
-    <waypoint name="LANDPAD" lat="48.8658" lon="1.89994"/>
+    <waypoint name="HOME" lat="48.8653" lon="1.89287"/>
+    <waypoint name="STDBY" lat="48.8654" lon="1.89281"/>
+    <waypoint name="LANDPAD" lat="48.8652" lon="1.89285"/>
     <waypoint x="-18.653" y="-180.496" name="_HERE"/>
     <waypoint name="_KILL1" lat="48.8627" lon="1.90033"/>
     <waypoint name="_KILL2" lat="48.8617" lon="1.88663"/>
@@ -48,9 +48,9 @@
     <waypoint name="_KILL4" lat="48.8654" lon="1.88404"/>
     <waypoint name="_KILL5" lat="48.868" lon="1.88729"/>
     <waypoint name="_KILL6" lat="48.8662" lon="1.90142"/>
-    <waypoint name="P1" lat="48.8655" lon="1.89826"/>
-    <waypoint name="P2" lat="48.8654" lon="1.89617"/>
-    <waypoint name="P3" lat="48.8644" lon="1.89524"/>
+    <waypoint name="P1" lat="48.8653" lon="1.89503"/>
+    <waypoint name="P2" lat="48.8654" lon="1.89621"/>
+    <waypoint name="P3" lat="48.8651" lon="1.89862"/>
     <waypoint name="_FLY1" lat="48.8628" lon="1.90016"/>
     <waypoint name="_FLY2" lat="48.8622" lon="1.8864"/>
     <waypoint name="_FLY3" lat="48.8653" lon="1.88512"/>
@@ -76,9 +76,6 @@
   </sectors>
   <variables>
     <variable var="fp_max_height" init="100." min="10." max="150." step="1."/>
-    <variable var="fp_survey_dir" init="0." min="0." max="360." step="0.2"/>
-    <variable var="fp_survey_sweep" init="30." min="1." max="100." step="1."/>
-    <variable var="fp_survey_radius" init="-1." min="-1." max="150." step="0.1"/>
   </variables>
   <modules>
     <module name="mission" type="rotorcraft">
@@ -88,27 +85,18 @@
     <module name="nav" type="poles_rotorcraft"/>
   </modules>
   <exceptions>
-    <!-- RC-Loss -->
-    <!--exception cond="(delay_test_rc(RadioControlIsLost(),20) @AND
+    <!-- RC-Loss + datalink loss -->
+    <exception cond="(delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 10) @AND
       !(IndexOfBlock('Takeoff') @GT nav_block) @AND
       !(nav_block >= IndexOfBlock('Kill landed')) @AND
       (autopilot_in_flight() == true) )" deroute="EmergencyLanding"/-->
 
     <!-- Datalink loss -->
-    <exception cond="(datalink_time @GT 10 @AND
-      !(IndexOfBlock('Takeoff') @GT nav_block) @AND
-      !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND
-      (autopilot_in_flight() == true) )" deroute="EmergencyLanding"/>
+    <exception cond="(datalink_time @GT 10 @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="Standby"/>
 
     <!-- Geofence -->
-    <exception cond="((!InsideFlyZone(GetPosX(), GetPosY()) @OR GetPosHeight() @GT fp_max_height) @AND
-      !(IndexOfBlock('Takeoff') @GT nav_block) @AND
-      !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND
-      (autopilot_in_flight() == true) )" deroute="Standby"/>
-    <exception cond="((delay_test_gf(!InsideKillZone(GetPosX(), GetPosY()),10) @OR GetPosHeight() @GT fp_max_height+10) @AND
-      !(IndexOfBlock('Takeoff') @GT nav_block) @AND
-      !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND
-      (autopilot_in_flight() == true) )" deroute="Kill landed"/>
+    <exception cond="((!InsideFlyZone(GetPosX(), GetPosY()) @OR GetPosHeight() @GT fp_max_height) @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="Standby"/>
+    <exception cond="((delay_test_gf(!InsideKillZone(GetPosX(), GetPosY()),10) @OR GetPosHeight() @GT fp_max_height+10) @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="Kill landed"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">
