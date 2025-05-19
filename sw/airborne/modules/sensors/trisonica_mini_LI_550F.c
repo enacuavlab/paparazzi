@@ -32,42 +32,77 @@
 #include "modules/datalink/downlink.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
 
-
+//TODO Calibration Anemo, compas, and Level has to be done with an operator
+//TODO Should I keep this define ?
+#define TRISONCIA_ID 18
 // max string length
 #define TRISONICA_MAX_LEN 32
-// max number of coordinates
-#define JEVOIS_MAX_COORD 18
 // check delimiter
-#define JEVOIS_CHECK_DELIM(_c) (_c == ' ' || _c == '\n' || _c == '\r' || _c == '\0')
+#define TRISONICA_CHECK_DELIM(_c) (_c == '\n' || _c == '\r' || _c == ' ')
 
-// generic trisonica message structure
+// generic trisonica message structure _ 23 parameters
 struct trisonica_msg_t {
-  float windSpeed3D;
-  float windSpeed2D;
-  int16_t windDirHor;
-  int16_t windDirVer;
-  float sonicTemp;
-  float humidity;
-  float pressure;
-  float airDensity;
+  float windspeed3d;
+  float windspeed2d;
+  int16_t winddirhor;
+  int16_t winddirver;
+  float u_vector;
+  float v_vector;
+  float w_vector;
+  float speed_sound;
+  float temp;
+  float relative_humidity;
+  float dew_point;
+  float abs_pressure;
+  float airdensity;
+  float accel_x;
+  float accel_y;
+  float accel_z;
   float pitch;
   float roll;
+  float mag_x;
+  float mag_y;
+  float mag_z;
+  float mag_head_ang;
+  float true_head;
+};
+
+struct trisonica_tags {
+  char  windspeed3d       ='S ';
+  char  windspeed2d       ='S2';
+  char  winddirhor        ='D ';
+  char  winddirver        ='DV';
+  char  u_vector          ='U ';
+  char  v_vector          ='V ';
+  char  w_vector          ='W ';
+  char  speed_sound       ='C ';
+  char  temp              ='T ';
+  char  relative_humidity ='H ';
+  char  dew_point         ='DP';
+  char  abs_pressure      ='P ';
+  char  airdensity        ='AD';
+  char  accel_x           ='AX';
+  char  accel_y           ='AY';
+  char  accel_z           ='AZ';
+  char  pitch             ='PI';
+  char  roll              ='RO';
+  char  mag_x             ='MX';
+  char  mag_y             ='MY';
+  char  mag_z             ='MZ';
+  char  mag_head_ang      ='MD';
+  char  true_head         ='TD';
 };
 
 // decoder state
 enum trisonica_state {
   TS_SYNC = 0,
   TS_TYPE,
-  TS_ID,
-  TS_SIZE,
-  TS_COORD,
-  TS_DIM,
-  TS_QUAT,
-  TS_EXTRA
 };
 
-// jevois struct
+// trisonica struct
 struct trisonica_t {
   enum trisonica_state state; // decoder state
   char buf[TRISONICA_MAX_LEN]; // temp buffer
@@ -75,6 +110,7 @@ struct trisonica_t {
   uint8_t n; // temp coordinates/dimension index
   struct trisonica_msg_t msg; // last decoded message
   bool data_available; // new data to report
+  struct trisonica_tags tags;
 };
 
 struct trisonica_t trisonica;
@@ -88,297 +124,244 @@ void trisonica_report(void)
   }
 
   DOWNLINK_SEND_TRISONICA(DefaultChannel, DefaultDevice,
-      &trisonica.msg.airDensity,
-      &trisonica.msg.humidity,
+      &trisonica.msg.abs_pressure,
+      &trisonica.msg.accel_x,
+      &trisonica.msg.accel_y,
+      &trisonica.msg.accel_z,
+      &trisonica.msg.airdensity,
+      &trisonica.msg.dew_point,
+      &trisonica.msg.mag_head_ang,
+      &trisonica.msg.mag_x,
+      &trisonica.msg.mag_y,
+      &trisonica.msg.mag_z,
       &trisonica.msg.pitch,
-      &trisonica.msg.pressure,
+      &trisonica.msg.relative_humidity,
       &trisonica.msg.roll,
-      &trisonica.msg.sonicTemp,
-      &trisonica.msg.windDirHor,
-      &trisonica.msg.windDirVer,
-      &trisonica.msg.windSpeed2D,
-      &trisonica.msg.windSpeed3D,
+      &trisonica.msg.speed_sound,
+      &trisonica.msg.temp,
+      &trisonica.msg.true_head,
+      &trisonica.msg.u_vector,
+      &trisonica.msg.v_vector,
+      &trisonica.msg.w_vector,
+      &trisonica.msg.winddirhor,
+      &trisonica.msg.winddirver,
+      &trisonica.msg.windspeed2d,
+      &trisonica.msg.windspeed3d,
       );
   trisonica.data_available = false;
 }
 
 // initialization
 void trisonica_init(void)
-{  
+{
   trisonica.state = TS_SYNC;
   trisonica.idx = 0;
   trisonica.n = 0;
   trisonica.data_available = false;
   memset(trisonica.buf, 0,TRISONICA_MAX_LEN);
+  
+  	// Set Outputrate to 40 Hz
+	trisonica_send_string("outputrate 40");
+	//TODO read acqu
+	//TODO Send all param OK ?
 }
 
-// send specific message if requested
-static void jevois_send_message(void)
-{
-#if JEVOIS_SEND_MSG
-  // send pprzlink JEVOIS message
-  jevois_report();
-#endif
-#if JEVOIS_SEND_FOLLOW_TARGET
-  float cam_heading = (JEVOIS_HFOV / (2.f * JEVOIS_NORM)) * (float)(jevois.msg.coord[0]);
-  float cam_height = (JEVOIS_VFOV / (2.f * JEVOIS_NORM)) * (float)(jevois.msg.coord[1]);
-  // send a FOLLOW_TARGET message in camera frame
-  AbiSendMsgFOLLOW_TARGET(CAM_JEVOIS_ID, 0, 0, cam_heading, cam_height, 0.f);
-#endif
-#if JEVOIS_SEND_VISUAL_DETECTION
-  AbiSendMsgVISUAL_DETECTION(CAM_JEVOIS_ID,
-      jevois.msg.coord[0],
-      jevois.msg.coord[1],
-      jevois.msg.dim[0],
-      jevois.msg.dim[1],
-      0,
-      (int16_t)jevois_extract_nb(jevois.msg.id));
-#endif
-}
 
-static void jevois_handle_msg(struct jevois_t *jv) {
+static void trisonica_handle_msg(struct trisonica_t *ts) {
   // send ABI message
-  AbiSendMsgJEVOIS_MSG(CAM_JEVOIS_ID,
-      jv->msg.type,
-      jv->msg.id,
-      jv->msg.nb,
-      jv->msg.coord,
-      jv->msg.dim,
-      jv->msg.quat,
-      jv->msg.extra);
-  // also send specific messages if needed
-  jevois_send_message();
-  jv->data_available = true;
-  jv->idx = 0;
-  jv->n = 0;
+  AbiSendMsgTRISONCIA_MSG(TRISONCIA_ID,
+      ts->msg.abs_pressure,
+      ts->msg.accel_x,
+      ts->msg.accel_y,
+      ts->msg.accel_z,
+      ts->msg.airdensity,
+      ts->msg.dew_point,
+      ts->msg.mag_head_ang,
+      ts->msg.mag_x,
+      ts->msg.mag_y,
+      ts->msg.mag_z,
+      ts->msg.pitch,
+      ts->msg.relative_humidity,
+      ts->msg.roll,
+      ts->msg.speed_sound,
+      ts->msg.temp,
+      ts->msg.true_head,
+      ts->msg.u_vector,
+      ts->msg.v_vector,
+      ts->msg.w_vector,
+      ts->msg.winddirhor,
+      ts->msg.winddirver,
+      ts->msg.windspeed2d,
+      ts->msg.windspeed3d,
+      );
+  // Here can add the send of specific msg
+  ts->data_available = true;
+  ts->idx = 0;
+  ts->n = 0;
+}
+
+// Process for float
+static void process_character(struct trisonica_t *ts, char c, float *parameter) {
+    if (TRISONICA_CHECK_DELIM(c)) { // End of parameter, we save it
+        ts->buf[ts->idx] = '\0';  // End the buffer
+        parameter = (float)atof(ts->buf); // Convert
+        ts->idx = 0; // Reset index for next acquisition
+    } else {
+        //ts->buf[ts->idx++] = c; // Fill buffer
+        if (ts->idx > TRISONICA_MAX_LEN) {
+            ts->state = TS_SYNC; // Error
+        }
+    }
+}
+
+// Process for int16_t
+static void process_character_uint(struct trisonica_t *ts, char c, int16_t *parameter) {
+    if (TRISONICA_CHECK_DELIM(c)) { // End of parameter, we save it
+        ts->buf[ts->idx] = '\0';  // End the buffer
+        parameter = (int16_t)atoi(ts->buf); // Convert
+        ts->idx = 0; // Reset index for next acquisition
+    } else {
+        //ts->buf[ts->idx++] = c; // Fill buffer
+        if (ts->idx > TRISONICA_MAX_LEN) {
+            ts->state = TS_SYNC; // Error
+        }
+    }
 }
 
 // raw message parsing function
-static void trisonica_parse(struct jevois_t *jv, char c)
+// The LI-550 outputs data in an ASCII character string ending with carriage return
+// and line feed characters. Each line is a single record of all the measured parameters
+// contained in a single sample.
+static void trisonica_parse(struct trisonica_t *ts, char c)
 {
-  switch (jv->state) {
-    case JV_SYNC:
-      // wait for sync (newline character)
+  switch (ts->state) {
+    case TS_SYNC:
+      // wait for sync (Line feed character == Last line char)
       if (c == '\n') {
-        jv->state = JV_TYPE;
-        jv->idx = 0;
-        jv->n = 0;
+    	ts->state = TS_TYPE;
+    	ts->idx = 0;
+    	ts->n = 0;
       }
       break;
-    case JV_TYPE:
-      jv->buf[jv->idx++] = c; // fill buffer
-      // parse type
-      if (jv->idx > 2) { // msg type + white space
-        if (jv->buf[0] == 'T' && jv->buf[1] == '1') {
-          jv->state = JV_COORD;
-          jv->msg.type = JEVOIS_MSG_T1;
-          jv->msg.nb = 1;
-        } else if (jv->buf[0] == 'N' && jv->buf[1] == '1') {
-          jv->state = JV_ID;
-          jv->msg.type = JEVOIS_MSG_N1;
-          jv->msg.nb = 1;
-        } else if (jv->buf[0] == 'D' && jv->buf[1] == '1') {
-          jv->state = JV_ID;
-          jv->msg.type = JEVOIS_MSG_D1;
-          jv->msg.nb = 2;
-        } else if (jv->buf[0] == 'T' && jv->buf[1] == '2') {
-          jv->state = JV_COORD;
-          jv->msg.type = JEVOIS_MSG_T2;
-          jv->msg.nb = 2;
-        } else if (jv->buf[0] == 'N' && jv->buf[1] == '2') {
-          jv->state = JV_ID;
-          jv->msg.type = JEVOIS_MSG_N2;
-          jv->msg.nb = 2;
-        } else if (jv->buf[0] == 'D' && jv->buf[1] == '2') {
-          jv->state = JV_ID;
-          jv->msg.type = JEVOIS_MSG_D2;
-          jv->msg.nb = 8;
-        } else if (jv->buf[0] == 'F' && jv->buf[1] == '2') {
-          jv->state = JV_ID;
-          jv->msg.type = JEVOIS_MSG_F2;
-          jv->msg.nb = 0;
-        } else if (jv->buf[0] == 'T' && jv->buf[1] == '3') {
-          jv->state = JV_COORD;
-          jv->msg.type = JEVOIS_MSG_T3;
-          jv->msg.nb = 3;
-        } else if (jv->buf[0] == 'N' && jv->buf[1] == '3') {
-          jv->state = JV_ID;
-          jv->msg.type = JEVOIS_MSG_N3;
-          jv->msg.nb = 3;
-        } else if (jv->buf[0] == 'D' && jv->buf[1] == '3') {
-          jv->state = JV_ID;
-          jv->msg.type = JEVOIS_MSG_D3;
-          jv->msg.nb = 3;
-        } else if (jv->buf[0] == 'F' && jv->buf[1] == '3') {
-          jv->state = JV_ID;
-          jv->msg.type = JEVOIS_MSG_F3;
-          jv->msg.nb = 0;
-        } else {
-          jv->state = JV_SYNC; // error
+    case TS_TYPE:
+      ts->buf[ts->idx++] = c; // fill buffer
+      // parse type : 2 letter or 1 letter + 1 space
+      if (ts->idx > 1) {
+        if (ts->buf[0] == ts->tags.abs_pressure[0] && ts->buf[1] == ts->tags.abs_pressure[1]) {
+        	process_character(ts, c, ts->msg.abs_pressure);
+        	break;
         }
-        jv->idx = 0;
-      }
-      break;
-    case JV_ID:
-      if (JEVOIS_CHECK_DELIM(c)) {
-        jv->msg.id[jv->idx] = '\0'; // end string
-        if (jv->msg.type == JEVOIS_MSG_F2 ||
-            jv->msg.type == JEVOIS_MSG_F3) {
-          jv->state = JV_SIZE; // parse n before coordinates
-        } else {
-          jv->state = JV_COORD; // parse directly coordinates
+        if (ts->buf[0] == ts->tags.accel_x[0] && ts->buf[1] == ts->tags.accel_x[1]) {
+        	process_character(ts, c, ts->msg.accel_x);
+        	break;
         }
-        jv->idx = 0;
-        break;
-      }
-      else {
-        jv->msg.id[jv->idx++] = c;
-        if (jv->idx > JEVOIS_MAX_LEN - 1) {
-          jv->state = JV_SYNC; // too long, return to sync
+        if (ts->buf[0] == ts->tags.accel_y[0] && ts->buf[1] == ts->tags.accel_y[1]) {
+        	process_character(ts, c, ts->msg.accel_y);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.accel_z[0] && ts->buf[1] == ts->tags.accel_z[1]) {
+        	process_character(ts, c, ts->msg.accel_z);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.airdensity[0] && ts->buf[1] == ts->tags.airdensity[1]) {
+        	process_character(ts, c, ts->msg.airdensity);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.dew_point[0] && ts->buf[1] == ts->tags.dew_point[1]) {
+        	process_character(ts, c, ts->msg.dew_point);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.mag_head_ang[0] && ts->buf[1] == ts->tags.mag_head_ang[1]) {
+        	process_character(ts, c, ts->msg.mag_head_ang);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.mag_x[0] && ts->buf[1] == ts->tags.mag_x[1]) {
+        	process_character(ts, c, ts->msg.mag_x);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.mag_y[0] && ts->buf[1] == ts->tags.mag_y[1]) {
+        	process_character(ts, c, ts->msg.mag_y);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.mag_z[0] && ts->buf[1] == ts->tags.mag_z[1]) {
+        	process_character(ts, c, ts->msg.mag_z);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.pitch[0] && ts->buf[1] == ts->tags.pitch[1]) {
+        	process_character(ts, c, ts->msg.pitch);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.relative_humidity[0] && ts->buf[1] == ts->tags.relative_humidity[1]) {
+        	process_character(ts, c, ts->msg.relative_humidity);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.roll[0] && ts->buf[1] == ts->tags.roll[1]) {
+        	process_character(ts, c, ts->msg.roll);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.speed_sound[0] && ts->buf[1] == ts->tags.speed_sound[1]) {
+        	process_character(ts, c, ts->msg.speed_sound);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.temp[0] && ts->buf[1] == ts->tags.temp[1]) {
+        	process_character(ts, c, ts->msg.temp);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.true_head[0] && ts->buf[1] == ts->tags.true_head[1]) {
+        	process_character(ts, c, ts->msg.true_head);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.u_vector[0] && ts->buf[1] == ts->tags.u_vector[1]) {
+        	process_character(ts, c, ts->msg.u_vector);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.v_vector[0] && ts->buf[1] == ts->tags.v_vector[1]) {
+        	process_character(ts, c, ts->msg.v_vector);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.w_vector[0] && ts->buf[1] == ts->tags.w_vector[1]) {
+        	process_character(ts, c, ts->msg.w_vector);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.winddirhor[0] && ts->buf[1] == ts->tags.winddirhor[1]) {
+        	process_character_uint(ts, c, ts->msg.winddirhor);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.winddirver[0] && ts->buf[1] == ts->tags.winddirver[1]) {
+        	process_character_uint(ts, c, ts->msg.winddirver);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.windspeed2d[0] && ts->buf[1] == ts->tags.windspeed2d[1]) {
+        	process_character(ts, c, ts->msg.windspeed2d);
+        	break;
+        }
+        if (ts->buf[0] == ts->tags.windspeed3d[0] && ts->buf[1] == ts->tags.windspeed3d[1]) {
+        	process_character(ts, c, ts->msg.windspeed3d);
+        	break;
         }
       }
       break;
-    case JV_SIZE:
-      if (JEVOIS_CHECK_DELIM(c)) {
-        jv->buf[jv->idx] = '\0'; // end string
-        jv->msg.nb = (uint8_t)atoi(jv->buf); // store size
-        jv->state = JV_COORD;
-        jv->idx = 0;
-      }
-      else {
-        jv->buf[jv->idx++] = c; // fill buffer
-      }
-      break;
-    case JV_COORD:
-      if (JEVOIS_CHECK_DELIM(c)) {
-        jv->buf[jv->idx] = '\0'; // end string
-        jv->msg.coord[jv->n++] = (int16_t)atoi(jv->buf); // store value
-        if (jv->n == jv->msg.nb) {
-          // got all coordinates, go to next state
-          jv->n = 0; // reset number of received elements
-          jv->idx = 0; // reset index
-          switch (jv->msg.type) {
-            case JEVOIS_MSG_T1:
-            case JEVOIS_MSG_T2:
-            case JEVOIS_MSG_T3:
-              jevois_handle_msg(jv);
-              jv->state = JV_TYPE;
-              break;
-            case JEVOIS_MSG_N1:
-            case JEVOIS_MSG_N2:
-            case JEVOIS_MSG_N3:
-            case JEVOIS_MSG_D3:
-              jv->state = JV_DIM;
-              break;
-            case JEVOIS_MSG_D1:
-            case JEVOIS_MSG_D2:
-            case JEVOIS_MSG_F2:
-            case JEVOIS_MSG_F3:
-              jv->state = JV_EXTRA;
-              break;
-            default:
-              jv->state = JV_SYNC; // error
-              break;
-          }
-        }
-        jv->idx = 0; // reset index
-      }
-      else {
-        jv->buf[jv->idx++] = c; // fill buffer
-      }
-      break;
-    case JV_DIM:
-      if (JEVOIS_CHECK_DELIM(c)) {
-        jv->buf[jv->idx] = '\0'; // end string
-        jv->msg.dim[jv->n++] = (uint16_t)atoi(jv->buf); // store dimension
-        if (jv->n == jv->msg.nb) {
-          // got all dimensions, go to next state
-          jv->n = 0; // reset number of received elements
-          jv->idx = 0; // reset index
-          if (jv->msg.type == JEVOIS_MSG_D3) {
-            jv->state = JV_QUAT;
-          } else {
-            jevois_handle_msg(jv);
-            jv->state = JV_TYPE;
-          }
-          break;
-        }
-        jv->idx = 0; // reset index
-      }
-      else {
-        jv->buf[jv->idx++] = c; // fill buffer
-      }
-      break;
-    case JV_QUAT:
-      if (JEVOIS_CHECK_DELIM(c)) {
-        jv->buf[jv->idx] = '\0';
-        float q = (float)atof(jv->buf);
-        switch (jv->n) {
-          case 0:
-            jv->msg.quat.qi = q;
-            break;
-          case 1:
-            jv->msg.quat.qx = q;
-            break;
-          case 2:
-            jv->msg.quat.qy = q;
-            break;
-          case 3:
-            jv->msg.quat.qz = q;
-            jv->state = JV_EXTRA;
-            break;
-          default:
-            jv->state = JV_SYNC; // error
-            break;
-        }
-        jv->n++;
-        jv->idx = 0; // reset index
-      }
-      else {
-        jv->buf[jv->idx++] = c; // fill buffer
-      }
-      break;
-    case JV_EXTRA:
-      if (JEVOIS_CHECK_DELIM(c)) {
-        jv->msg.extra[jv->idx] = '\0'; // end string
 
-        if (c == '\n') {
-          jevois_handle_msg(jv);
-          jv->state = JV_TYPE;
-        } else if( c=='\r') {
-          // do nothing, just to consume '\r'
-        }
-        else {
-          jv->state = JV_SYNC;
-        }
-      }
-      else {
-        jv->msg.extra[jv->idx++] = c; // store extra string
-        if (jv->idx > JEVOIS_MAX_LEN - 1) {
-          jv->state = JV_SYNC; // too long, return to sync
-        }
-      }
-      break;
     default:
       // error, back to SYNC
-      jv->state = JV_SYNC;
+    	ts->state = TS_SYNC;
       break;
   }
 }
 
 
 // UART polling function
-void jevois_event(void)
+void trisonica_event(void)
 {
   // Look for data on serial link and send to parser
-  while (uart_char_available(&(JEVOIS_DEV))) {
-    uint8_t ch = uart_getch(&(JEVOIS_DEV));
-    jevois_parse(&jevois, ch);
+  while (uart_char_available(&(TRISONICA_DEV))) {
+    uint8_t ch = uart_getch(&(TRISONICA_DEV));
+    trisonica_parse(&trisonica, ch);
   }
 }
 
 // utility function to send a string
-void jevois_send_string(char *s)
+void trisonica_send_string(char *s)
 {
   uint8_t i = 0;
   while (s[i]) {
@@ -387,64 +370,4 @@ void jevois_send_string(char *s)
   }
 }
 
-void jevois_stream(bool activate)
-{
-  jevois_stream_setting = activate;
-  if (activate) {
-    jevois_send_string("streamon\r\n");
-  } else {
-    jevois_send_string("streamoff\r\n");
-  }
-}
 
-void jevois_setmapping(int number)
-{
-  jevois_mapping_setting = number;
-  jevois_stream(false);
-  jevois_send_string("setmapping ");
-  char s[4];
-#ifndef SITL
-  itoa(number, s, 10);
-#endif
-  jevois_send_string(s);
-  jevois_send_string("\r\n");
-  jevois_stream(true);
-}
-
-void jevois_send_state(void)
-{
-  char str[32] __attribute__((unused));
-#if JEVOIS_SEND_ALT
-  // send current altitude in millimeter
-  int alt_mm = (int)(stateGetPositionEnu_f()->z * 1000.f);
-  Bound(alt_mm, -999999, 999999);
-  sprintf(str, "alt %d\r\n", alt_mm);
-  jevois_send_string(str);
-#endif
-#if JEVOIS_SEND_POS
-  // send current position in millimeter
-  struct EnuCoor_f pos = *stateGetPositionEnu_f();
-  int x_mm = (int)(pos.x * 1000.f);
-  int y_mm = (int)(pos.y * 1000.f);
-  int z_mm = (int)(pos.z * 1000.f);
-  Bound(x_mm, -999999, 999999);
-  Bound(y_mm, -999999, 999999);
-  Bound(z_mm, -999999, 999999);
-  sprintf(str, "pos %d %d %d\r\n", x_mm, y_mm, z_mm);
-  jevois_send_string(str);
-#endif
-#if JEVOIS_SEND_QUAT
-  // send quaternion
-  struct FloatQuat quat = *stateGetNedToBodyQuat_f();
-  int qi = (int)(quat.qi * 1000.f);
-  int qx = (int)(quat.qx * 1000.f);
-  int qy = (int)(quat.qy * 1000.f);
-  int qz = (int)(quat.qz * 1000.f);
-  Bound(qi, -9999, 9999);
-  Bound(qx, -9999, 9999);
-  Bound(qy, -9999, 9999);
-  Bound(qz, -9999, 9999);
-  sprintf(str, "quat %d %d %d %d\r\n", qi, qx, qy, qz);
-  jevois_send_string(str);
-#endif
-}

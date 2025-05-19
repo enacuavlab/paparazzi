@@ -28,70 +28,39 @@
 
 #include "std.h"
 
-/** JEVOIS messages types */
-#define JEVOIS_MSG_T1 10
-#define JEVOIS_MSG_N1 11
-#define JEVOIS_MSG_D1 12
-#define JEVOIS_MSG_T2 20
-#define JEVOIS_MSG_N2 21
-#define JEVOIS_MSG_D2 22
-#define JEVOIS_MSG_F2 23
-#define JEVOIS_MSG_T3 30
-#define JEVOIS_MSG_N3 31
-#define JEVOIS_MSG_D3 32
-#define JEVOIS_MSG_F3 33
 
-/** Normalized data from JEVOIS are between -1000 and 1000 */
-#define JEVOIS_NORM 1000
 
-/** Camera horizontal FOV
- * From datasheet it should be 65deg,
- * but it seems that better results are acheived with 45
- */
-#ifndef JEVOIS_HFOV
-#define JEVOIS_HFOV RadOfDeg(45)
-#endif
-
-/** Camera vertical FOV
- * Camera has a 4/3 ratio
- */
-#ifndef JEVOIS_VFOV
-#define JEVOIS_VFOV (3*JEVOIS_HFOV/4)
-#endif
-
-extern void jevois_init(void);
-extern void jevois_event(void);
-extern void jevois_report(void);
+extern void trisonica_init(void);
+extern void trisonica_event(void);
+extern void trisonica_report(void);
 
 /**
  * Generic function to send a string command to Jevois
  * @param[in] s string command to send
  */
-extern void jevois_send_string(char *s);
+extern void trisonica_send_string(char *s);
 
-/** Start and stop streaming
- * @param[in] activate enable or disable streaming
+/**
+ * Generic function to parse incoming char
+ * @param[in] ts structure and c incoming char
  */
-extern void jevois_stream(bool activate);
+extern void trisonica_parse(struct trisonica_t *ts, char c);
 
-// dummy variable to start/stop stream from setting
-extern bool jevois_stream_setting;
-
-/** Set video mapping
- * @param[in] number video mapping number
+/**
+ * Generic function to help parsing for uint
+ * @param[in] ts structure and c incoming char and the allocation parameter
  */
-extern void jevois_setmapping(int number);
+extern void process_character_uint(struct trisonica_t *ts, char c, int16_t *parameter);
 
-// dummy variable to change mapping from setting
-extern int jevois_mapping_setting;
-
-/** Send state to camera
+/**
+ * Generic function to help parsing for float
+ * @param[in] ts structure and c incoming char and the allocation parameter
  */
-extern void jevois_send_state(void);
+extern void process_character(struct trisonica_t *ts, char c, float *parameter);
 
-/** Extract a number from jevoid ID field
+/** Trisonica handle msg
  */
-extern int jevois_extract_nb(char *in);
+extern void trisonica_handle_msg(struct trisonica_t *ts);
 
 #endif
 
