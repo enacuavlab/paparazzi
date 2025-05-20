@@ -42,20 +42,20 @@
     <waypoint name="STDBY" lat="48.8654" lon="1.89281"/>
     <waypoint name="LANDPAD" lat="48.8652" lon="1.89285" height="0"/>
     <waypoint x="-18.653" y="-180.496" name="_HERE"/>
-    <waypoint name="_KILL1" lat="48.8627" lon="1.90033"/>
-    <waypoint name="_KILL2" lat="48.8617" lon="1.88663"/>
-    <waypoint name="_KILL3" lat="48.8624" lon="1.8851"/>
-    <waypoint name="_KILL4" lat="48.8654" lon="1.88404"/>
-    <waypoint name="_KILL5" lat="48.868" lon="1.88729"/>
-    <waypoint name="_KILL6" lat="48.8662" lon="1.90142"/>
+    <waypoint name="_KILL1" lat="48.863" lon="1.90063"/>
+    <waypoint name="_KILL2" lat="48.8624" lon="1.89422"/>
+    <waypoint name="_KILL3" lat="48.8614" lon="1.88612"/>
+    <waypoint name="_KILL4" lat="48.8662" lon="1.8839"/>
+    <waypoint name="_KILL5" lat="48.8683" lon="1.88652"/>
+    <waypoint name="_KILL6" lat="48.8661" lon="1.90121"/>
     <waypoint name="P1" lat="48.8653" lon="1.89503"/>
     <waypoint name="P2" lat="48.8654" lon="1.89621"/>
     <waypoint name="P3" lat="48.8651" lon="1.89862"/>
-    <waypoint name="_FLY1" lat="48.8628" lon="1.90016"/>
-    <waypoint name="_FLY2" lat="48.8622" lon="1.8864"/>
-    <waypoint name="_FLY3" lat="48.8653" lon="1.88512"/>
-    <waypoint name="_FLY4" lat="48.8678" lon="1.88744"/>
-    <waypoint name="_FLY5" lat="48.8661" lon="1.90114"/>
+    <waypoint name="_FLY1" lat="48.8633" lon="1.90001"/>
+    <waypoint name="_FLY2" lat="48.8619" lon="1.88643"/>
+    <waypoint name="_FLY3" lat="48.8661" lon="1.88444"/>
+    <waypoint name="_FLY4" lat="48.8679" lon="1.88679"/>
+    <waypoint name="_FLY5" lat="48.8657" lon="1.9004"/>
   </waypoints>
   <sectors>
     <sector name="KillZone" color="red">
@@ -89,10 +89,7 @@
   </modules>
   <exceptions>
     <!-- RC-Loss + datalink loss -->
-    <exception cond="(delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 10) @AND
-      !(IndexOfBlock('Takeoff') @GT nav_block) @AND
-      !(nav_block >= IndexOfBlock('Kill landed')) @AND
-      (autopilot_in_flight() == true) )" deroute="EmergencyLanding"/>
+    <exception cond="(delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 10) @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block &gt;= IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="EmergencyLanding"/>
 
     <!-- Datalink loss -->
     <exception cond="(datalink_time @GT 10 @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="Standby"/>
