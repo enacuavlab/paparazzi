@@ -89,7 +89,7 @@
   </modules>
   <exceptions>
     <!-- RC-Loss + datalink loss -->
-    <exception cond="(delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 10) @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block &gt;= IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="EmergencyLanding"/>
+    <exception cond="(delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 10) @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="EmergencyLanding"/>
 
     <!-- Datalink loss -->
     <exception cond="(datalink_time @GT 10 @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="Standby"/>
