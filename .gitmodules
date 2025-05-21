@@ -47,6 +47,9 @@
 [submodule "sw/ext/ecl"]
 	path = sw/ext/ecl
 	url = https://github.com/PX4/ecl.git
+[submodule "sw/ext/matrix"]
+	path = sw/ext/matrix
+	url = https://github.com/PX4/Matrix.git
 [submodule "sw/ext/dronecan/DSDL"]
 	path = sw/ext/dronecan/DSDL
 	url = https://github.com/dronecan/DSDL.git
