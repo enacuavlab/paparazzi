@@ -84,7 +84,7 @@
 
     <!-- Compile needed ecl files -->
     <file name="geo.cpp" dir="ecl/geo"/>
-    <file name="geo_mag_declination.cpp" dir="ecl/geo_lookup"/>
+    <file name="geo_mag_declination.cpp" dir="ecl/world_magnetic_model"/>
     <file name="airspeed_fusion.cpp" dir="ecl/EKF"/>
     <file name="control.cpp" dir="ecl/EKF"/>
     <file name="mag_control.cpp" dir="ecl/EKF"/>
@@ -98,12 +98,10 @@
     <file name="optflow_fusion.cpp" dir="ecl/EKF"/>
     <file name="sideslip_fusion.cpp" dir="ecl/EKF"/>
     <file name="terrain_estimator.cpp" dir="ecl/EKF"/>
-    <file name="vel_pos_fusion.cpp" dir="ecl/EKF"/>
     <file name="gps_yaw_fusion.cpp" dir="ecl/EKF"/>
     <file name="imu_down_sampler.cpp" dir="ecl/EKF"/>
-    <file name="EKFGSF_yaw.cpp" dir="ecl/EKF"/>
+    <file name="EKFGSF_yaw.cpp" dir="ecl/EKF/yaw_estimator"/>
     <file name="sensor_range_finder.cpp" dir="ecl/EKF"/>
-    <file name="utils.cpp" dir="ecl/EKF"/>
 
   </makefile>
 </module>

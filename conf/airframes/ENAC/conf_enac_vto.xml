@@ -24,7 +24,7 @@
   <aircraft
    name="octave_102"
    ac_id="102"
-   airframe="airframes/ENAC/quadrotor/octave_102_indoor.xml"
+   airframe="airframes/ENAC/quadrotor/octave_102_indoor-opticflow.xml"
    radio="radios/FrSky_X-Lite.xml"
    telemetry="telemetry/ENAC/octave_extradl.xml"
    flight_plan="flight_plans/ENAC/rotorcraft_survey_vto.xml"

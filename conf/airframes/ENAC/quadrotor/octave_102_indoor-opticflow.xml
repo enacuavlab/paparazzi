@@ -1,6 +1,6 @@
 <!DOCTYPE airframe SYSTEM "../../airframe.dtd">
 
-<airframe name="Octave102_indoor">
+<airframe name="Octave102_indoor_opticflow">
 
   <description>
     * Autopilot:   TawakiV2
@@ -90,8 +90,8 @@
 
   <section name="INS" prefix="INS_">
     <!--define name="EKF2_OPTITRACK" value="TRUE"/-->
-    <define name="EKF2_FUSION_MODE" value="MASK_USE_OF | MASK_USE_EVPOS | MASK_USE_EVVEL | MASK_USE_EVYAW"/>
     <!--define name="EKF2_FUSION_MODE" value="MASK_USE_EVPOS | MASK_USE_EVVEL | MASK_USE_EVYAW"/-->
+    <define name="EKF2_FUSION_MODE" value="MASK_USE_OF | MASK_USE_EVPOS | MASK_USE_EVVEL | MASK_USE_EVYAW"/>
 
     <!--define name="EKF2_FUSION_MODE" value="MASK_USE_GPS | MASK_USE_OF"/-->
     <!--define name="EKF2_GPS_COURSE_YAW" value="FALSE"/-->
@@ -101,6 +101,7 @@
     <define name="EKF2_FLOW_SENSOR_DELAY" value="0.1"/>
     <define name="EKF2_SONAR_MAX_RANGE" value="12"/>
     <define name="EKF2_VDIST_SENSOR_TYPE" value="VDIST_SENSOR_RANGE"/>
+
   </section>
 
   <section name="IMU" prefix="IMU_">
