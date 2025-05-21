@@ -36,7 +36,7 @@ MY_PYTHON := $(shell echo `which python3`)
 MY_MAVLINKTOOLS := $(shell $(MY_PYTHON) -c 'import imp; import future' 2>&1)
 MY_DRONECANTOOLS := $(shell $(MY_PYTHON) -c 'import em' 2>&1)
 
-all: libopencm3 luftboot chibios fatfs libsbp TRICAL hacl-c key_generator rustlink ecl matrix mavlink dronecan
+all: libopencm3 luftboot chibios fatfs libsbp TRICAL hacl-c key_generator rustlink ecl mavlink dronecan
 
 # update (and init if needed) all submodules
 update_submodules:
