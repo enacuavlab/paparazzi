@@ -32,10 +32,6 @@
       }
     }
 
-    #if DIGITAL_CAM
-    #define LINE_START_FUNCTION dc_Survey(20);
-    #define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
-    #endif
   </header>
   <waypoints>
     <waypoint name="HOME" lat="48.8653" lon="1.89287"/>
@@ -113,7 +109,7 @@
     <block name="Takeoff" strip_button="Takeoff (Here)" group="takeoff">
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
       <call fun="nav_takeoff_from_here(-1.)"/>
-      <deroute block="Standby"/>
+      <deroute block="Path"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
       <stay wp="STDBY"/>
@@ -124,14 +120,14 @@
     </block>
     <block name="Path">
       <call_once fun="power_switch_set(true)"/>
-      <path wpts="LANDPAD,P1,P2,P3" height="fp_height"/>
+      <path wpts="LANDPAD,P3" height="fp_height"/>
     </block>
     <block name="Poles">
       <call_once fun="nav_poles_setup_wp(WP_P3, WP_P2, fp_height, nav.radius, 1., fp_turns)"/>
       <call fun="nav_poles_run()"/>
     </block>
     <block name="Path back">
-      <path wpts="P3,P2,P1,LANDPAD" height="fp_height"/>
+      <path wpts="P3,LANDPAD" height="fp_height"/>
       <call_once fun="power_switch_set(false)"/>
     </block>
     <block name="Land (WP)" strip_button="Land (WP)" group="land">

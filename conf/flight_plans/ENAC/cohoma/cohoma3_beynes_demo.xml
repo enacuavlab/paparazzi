@@ -33,10 +33,10 @@
     }
   </header>
   <waypoints>
-    <waypoint name="HOME" lat="48.8615" lon="1.89735"/>
-    <waypoint name="STDBY" lat="48.8615" lon="1.89711"/>
-    <waypoint name="LANDPAD" lat="48.8615" lon="1.8969" height="0"/>
-    <waypoint name="P1" lat="48.8615" lon="1.8978"/>
+    <waypoint name="HOME" lat="48.8617" lon="1.89775"/>
+    <waypoint name="STDBY" lat="48.8616884" lon="1.8975348"/>
+    <waypoint name="LANDPAD" height="0" lat="48.8616946" lon="1.8974178"/>
+    <waypoint name="P1" lat="48.8616" lon="1.89803"/>
     <waypoint x="45.569" y="-37.116" name="_HERE"/>
     <waypoint name="_KILL1" lat="48.8611" lon="1.89955"/>
     <waypoint name="_KILL2" lat="48.8614" lon="1.89602"/>
@@ -44,7 +44,7 @@
     <waypoint name="_KILL4" lat="48.8625" lon="1.89896"/>
     <waypoint name="_KILL5" lat="48.8624" lon="1.90066"/>
     <waypoint name="_FLY1" lat="48.8612" lon="1.89942"/>
-    <waypoint name="_FLY2" lat="48.8614" lon="1.89631"/>
+    <waypoint name="_FLY2" lat="48.8614537" lon="1.8964333"/>
     <waypoint name="_FLY3" lat="48.8622" lon="1.8976"/>
     <waypoint name="_FLY4" lat="48.8624" lon="1.89898"/>
     <waypoint name="_FLY5" lat="48.8623" lon="1.9004"/>

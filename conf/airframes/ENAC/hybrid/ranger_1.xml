@@ -163,7 +163,7 @@
           <field name="rotation" value="false"/>
         </field>
         <field name="neutral" value="-135,-5,-136" type="int[]"/>
-        <field name="scale" value="{{39914,9671,10914},{63177,14873,17995}}"/>
+        <field name="scale" value="{{16177,28166,11486},{28445,47907,20609}}"/>
       </field>
       <field type="struct">
         <field name="abi_id" value="3"/>
