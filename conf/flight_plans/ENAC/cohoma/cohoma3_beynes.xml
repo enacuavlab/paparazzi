@@ -109,7 +109,7 @@
     <block name="Takeoff" strip_button="Takeoff (Here)" group="takeoff">
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
       <call fun="nav_takeoff_from_here(40.)"/>
-      <deroute block="Path"/>
+      <deroute block="Standby"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
       <stay wp="STDBY"/>
