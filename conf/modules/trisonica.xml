@@ -1,0 +1,32 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="trisonica" dir="sensors">
+  <doc>
+    <description>
+      Decoder for standardized messages from the Trisonica Mini LI-550F https://www.licor.com/products/trisonica
+
+      Data are extracted from a serial link and produce a TRISONICA_MSG ABI message, TRISONICA telemetry, and log data on SD
+    </description>
+    <configure name="TRISONICA_UART" value="UARTX" description="UART on which TRISONICA camera is connected"/>
+    <configure name="TRISONICA_BAUD" value="B115200" description="UART Baudrate, default to 115200"/>
+    <define name="TRISONICA_SEND_MSG" value="FALSE|TRUE" description="Send synchronized trisonica message over telemetry link, use periodic report function otherwise"/>
+  </doc>
+  <dep>
+    <depends>uart</depends>
+  </dep>
+  <header>
+    <file name="trisonica.h"/>
+  </header>
+  <init fun="trisonica_init()"/>
+  <periodic fun="trisonica_report()" freq="5" autorun="FALSE"/>
+  <event fun="trisonica_event()"/>
+  <makefile>
+    <configure name="TRISONICA_UART" case="upper|lower"/>
+    <configure name="TRISONICA_BAUD" default="B115200"/>
+    <file name="trisonica.c"/>
+    <define name="USE_$(TRISONICA_UART_UPPER)"/>
+    <define name="TRISONICA_DEV" value="$(TRISONICA_UART_LOWER)"/>
+    <define name="$(TRISONICA_UART_UPPER)_BAUD" value="$(TRISONICA_BAUD)"/>
+  </makefile>
+</module>
+

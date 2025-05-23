@@ -18,13 +18,16 @@
  * <http://www.gnu.org/licenses/>.
  */
 /**
- * @file "modules/sensors/trisonica_mini_LI_550F.c"
+ * @file "modules/sensors/trisonica.c"
  * @author Jean-Baptiste FORESTIER
  * Decoder for standardized messages from the Trisonica Mini LI-550F
+ * Calibration Anemo, compas, and Level has to be done with an operator
+ * In CLI mode, set your output rate : (ctrl + C, ASCII 3), then , outputrate your_freq
+ * In CLI mode, select the parameters you want 
  */
 
-#ifndef TRISONICA_MINI_LI_550F_H
-#define TRISONICA_MINI_LI_550F_H
+#ifndef TRISONICA_H
+#define TRISONICA_H
 
 #include "std.h"
 
@@ -33,34 +36,10 @@
 extern void trisonica_init(void);
 extern void trisonica_event(void);
 extern void trisonica_report(void);
-
-/**
- * Generic function to send a string command to Jevois
- * @param[in] s string command to send
- */
+extern void trisonica_handle_msg(struct trisonica_t *ts);
 extern void trisonica_send_string(char *s);
 
-/**
- * Generic function to parse incoming char
- * @param[in] ts structure and c incoming char
- */
-extern void trisonica_parse(struct trisonica_t *ts, char c);
 
-/**
- * Generic function to help parsing for uint
- * @param[in] ts structure and c incoming char and the allocation parameter
- */
-extern void process_character_uint(struct trisonica_t *ts, char c, int16_t *parameter);
-
-/**
- * Generic function to help parsing for float
- * @param[in] ts structure and c incoming char and the allocation parameter
- */
-extern void process_character(struct trisonica_t *ts, char c, float *parameter);
-
-/** Trisonica handle msg
- */
-extern void trisonica_handle_msg(struct trisonica_t *ts);
 
 #endif
 
