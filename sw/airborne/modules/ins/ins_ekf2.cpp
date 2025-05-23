@@ -34,9 +34,7 @@
 #include "stabilization/stabilization_attitude.h"
 #include "generated/airframe.h"
 #include "generated/flight_plan.h"
-
-#include "EKF/myekf.h"
-
+#include "EKF/ekf.h"
 #include "math/pprz_isa.h"
 #include "math/pprz_geodetic_wgs84.h"
 #include "mcu_periph/sys_time.h"
@@ -48,7 +46,7 @@
 #include <stdio.h>
 #endif
 
-static Myekf toto;
+static Ekf toto;
 
 static parameters *ekf_params;                    ///< The EKF parameters
 
@@ -56,9 +54,11 @@ struct ekf2_t ekf2;                               ///< Local EKF2 status structu
 
 void ins_ekf2_init(void)
 {
-/*
+
   ekf_params = toto.getParamHandle();
+
   ekf_params->filter_update_interval_us = 0;
+/*
   ekf_params->delay_max_ms = 0;
   ekf_params->imu_ctrl = 0;
 */
