@@ -88,6 +88,15 @@
   </command_laws>
 
 
+  <section name="EKF2" prefix="CONFIG_EKF2_">
+    <define name="BAROMETER" value="0"/>
+    <define name="GNSS" value="0"/>
+    <define name="OPTICAL_FLOW" value="0"/>
+    <define name="RANGE_FINDER" value="0"/>
+    <define name="MAGNETOMETER" value="0"/>
+  </section>
+
+
   <section name="INS" prefix="INS_">
     <!--define name="EKF2_OPTITRACK" value="TRUE"/-->
     <!--define name="EKF2_FUSION_MODE" value="MASK_USE_EVPOS | MASK_USE_EVVEL | MASK_USE_EVYAW"/-->
