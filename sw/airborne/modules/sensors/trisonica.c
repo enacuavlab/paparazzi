@@ -70,19 +70,6 @@
 #include "std.h"
 
 
-
-/*
- * 
-static float fast_atof(const char *s);
-static int16_t fast_atoi16(const char *s);
-static int process_character(struct trisonica_t *ts, int local_idx, float *parameter);
-static int process_character_uint(struct trisonica_t *ts, int local_idx, int16_t *parameter);
-static void process_line(struct trisonica_t *ts);
-static void trisonica_parse(struct trisonica_t *ts, char c);
-static void trisonica_handle_msg(struct trisonica_t *ts);
-static inline void trisonica_log_data_ascii(struct trisonica_t *ts);
-*/
-
 // ** Declaration ** // 
 
 
