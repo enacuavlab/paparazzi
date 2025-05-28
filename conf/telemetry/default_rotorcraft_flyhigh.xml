@@ -39,8 +39,9 @@
       <message name="AHRS_REF_QUAT"            period="0.5"/>
       <message name="STAB_ATTITUDE"            period=".25"/>
       <message name="EFF_MAT_STAB"             period="2.0"/>
-      <message name="WLS_U" period="0.1"/>
-      <message name="WLS_V" period="0.1"/>
+      <message name="WLS_U"                    period="0.1"/>
+      <message name="WLS_V"                    period="0.1"/>
+      <message name="AEROPROBE"                period="0.1"/>
     </mode>
 
     <mode name="ppm">

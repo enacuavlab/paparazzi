@@ -21,113 +21,77 @@
  * @file "modules/sensors/trisonica.c"
  * @author Jean-Baptiste FORESTIER
  * Decoder for standardized messages from the Trisonica Mini LI-550F
+ * 
+ * CALIBRATION :
  * Calibration Anemo, compas, and Level has to be done with an operator
  * In CLI mode, set your output rate : (ctrl + C, ASCII 3), then , outputrate your_freq
  * In CLI mode, select the parameters you want 
+ * 
+ * TELEMETRY :
+ * Using name="AEROPROBE" id="179", use it just for control.
+ * Correpondance to trisonica value :
+ * counter = mag_head_ang (degree)
+ * velocity = absolute_value(pitch) (degree)
+ * a_attack = absolute_value(roll) (degree)
+ * a_slideslip = 100 * temperature (degC)
+ * altitude = absolute_value(winddirhor) (degree)
+ * dynamic_p = absolute_value(winddirver) (degree)
+ * static_p = 100 * windspeed2d (m/s)
+ * checksum = 100 * windspeed3d (m/s)
+ * 
+ * CONNECTION ON TAWAKIV2 : 
+ * Work on UART 3.
+ * 
+ * SD LOG :
+ * Log on SD card in /PPRZ/pprzlog_xxxx.LOG
+ * It will create a new pprzlog file at each startup.
+ * Data will be written here at each line reception and we timestamp it with the Tawaki onboard time on CSV format with ',' delimiter.
+ * All parameters are not sent with the nominal configuration, you will therefore see 0. You can add through the CLI the supplementary parameters you want to log.
+ * Time is in us since the Tawaki startup.
+ * 
+ * PARSER :
+ * ASCII parser
+ * Exemple of line received : S  00.04 S2  00.02 D  013 DV -063 U -00.00 V -00.02 W -00.04 T  22.53 H  58.56 P  1003.34 AD  1.1724622 PI -004.3 RO -002.7 MD  010 TD  010
  */
  
 
-#include "modules/sensors/trisonica_mini_LI_550F.h"
-
-#include "std.h"
+#include "modules/sensors/trisonica.h"
 #include "mcu_periph/uart.h"
 #include "modules/core/abi.h"
 #include "math/pprz_algebra_float.h"
 #include "modules/datalink/downlink.h"
+#include "pprzlink/messages.h"
+#include "generated/airframe.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include "std.h"
 
 
-//TODO Uart def in Paparazzi xml
-//TODO Should I send time to downling telemetry like ABI ?
-//TODO Should I change this define ?
-#define TRISONCIA_ID 18
-// max string length
-#define TRISONICA_MAX_LEN 300
 
+/*
+ * 
+static float fast_atof(const char *s);
+static int16_t fast_atoi16(const char *s);
+static int process_character(struct trisonica_t *ts, int local_idx, float *parameter);
+static int process_character_uint(struct trisonica_t *ts, int local_idx, int16_t *parameter);
+static void process_line(struct trisonica_t *ts);
+static void trisonica_parse(struct trisonica_t *ts, char c);
+static void trisonica_handle_msg(struct trisonica_t *ts);
+static inline void trisonica_log_data_ascii(struct trisonica_t *ts);
+*/
 
 // ** Declaration ** // 
 
-// generic trisonica message structure _ 23 parameters
-struct trisonica_msg_t {
-  float windspeed3d;
-  float windspeed2d;
-  int16_t winddirhor;
-  int16_t winddirver;
-  float u_vector;
-  float v_vector;
-  float w_vector;
-  float speed_sound;
-  float temp;
-  float relative_humidity;
-  float dew_point;
-  float abs_pressure;
-  float airdensity;
-  float accel_x;
-  float accel_y;
-  float accel_z;
-  float pitch;
-  float roll;
-  float mag_x;
-  float mag_y;
-  float mag_z;
-  float mag_head_ang;
-  float true_head;
-  uint32_t now_ts;
-};
-
-struct trisonica_tags {
-  char  windspeed3d[2];
-  char  windspeed2d[2];
-  char  winddirhor[2];
-  char  winddirver[2];
-  char  u_vector[2];
-  char  v_vector[2];
-  char  w_vector[2];
-  char  speed_sound[2];
-  char  temp[2];
-  char  relative_humidity[2];
-  char  dew_point[2];
-  char  abs_pressure[2];
-  char  airdensity[2];
-  char  accel_x[2];
-  char  accel_y[2];
-  char  accel_z[2];
-  char  pitch[2];
-  char  roll[2];
-  char  mag_x [2];
-  char  mag_y[2];
-  char  mag_z[2];
-  char  mag_head_ang[2];
-  char  true_head[2];
-};
-
-// decoder state
-enum trisonica_state {
-  TS_SYNC = 0,
-  TS_TYPE,
-};
-
-// trisonica struct
-struct trisonica_t {
-  enum trisonica_state state; // decoder state
-  char buf[TRISONICA_MAX_LEN]; // temp buffer
-  uint8_t idx; // temp buffer index
-  struct trisonica_msg_t msg; // last decoded message
-  bool data_available; // new data to report
-  struct trisonica_tags tags;
-  static bool log_ptu_started;
-};
 
 struct trisonica_t trisonica;
 
 
 // ** Tool functions ** // 
 
-static float fast_atof(const char *s) {
+float fast_atof(const char *s) {
     float result = 0.0f;
     float sign = 1.0f;
     float fraction = 0.0f;
@@ -158,7 +122,7 @@ static float fast_atof(const char *s) {
     return sign * (result + fraction / divisor);
 }
 
-static int16_t fast_atoi16(const char *s) {
+int16_t fast_atoi16(const char *s) {
     int16_t result = 0;
     int negative = 0;
 
@@ -212,7 +176,7 @@ void trisonica_init(void)
 }
 
 // Process char for float param
-static int process_character(struct trisonica_t *ts, int local_idx, float *parameter) {
+int process_character(struct trisonica_t *ts, int local_idx, float *parameter) {
 
 	char local_buff[20];
 	int i=0;
@@ -234,7 +198,7 @@ static int process_character(struct trisonica_t *ts, int local_idx, float *param
 }
 
 // Process char for int16_t param
-static int process_character_uint(struct trisonica_t *ts, int local_idx, int16_t *parameter) {
+int process_character_uint(struct trisonica_t *ts, int local_idx, int16_t *parameter) {
 
 	char local_buff[20];
 	int i=0;
@@ -257,7 +221,7 @@ static int process_character_uint(struct trisonica_t *ts, int local_idx, int16_t
 
 //Function for line processing
 //Exemple of line : S  00.04 S2  00.02 D  013 DV -063 U -00.00 V -00.02 W -00.04 T  22.53 H  58.56 P  1003.34 AD  1.1724622 PI -004.3 RO -002.7 MD  010 TD  010
-static void process_line(struct trisonica_t *ts){
+void process_line(struct trisonica_t *ts){
 
 	int loc_idx =0;
 
@@ -340,7 +304,7 @@ static void process_line(struct trisonica_t *ts){
 // The LI-550 outputs data in an ASCII character string ending with carriage return
 // and line feed characters. Each line is a single record of all the measured parameters
 // contained in a single sample.
-static void trisonica_parse(struct trisonica_t *ts, char c)
+void trisonica_parse(struct trisonica_t *ts, char c)
 {
   switch (ts->state) {
 
@@ -359,7 +323,9 @@ static void trisonica_parse(struct trisonica_t *ts, char c)
     		process_line(ts);
     		ts->now_ts = get_sys_time_usec(); // current timestamp
     		ts->data_available = true; // New data
-    	    trisonica_handle_msg(ts); // Send message to ABI 
+    		trisonica_report();
+    		trisonica_log_data_ascii(ts);
+    	    //trisonica_handle_msg(ts); // Send message to ABI 
     	    memset(ts->buf, 0,TRISONICA_MAX_LEN); // Reset Buffer
     	    ts->idx = 0; // Reset index for next acquisition
     	}
@@ -378,9 +344,10 @@ static void trisonica_parse(struct trisonica_t *ts, char c)
 // UART polling function
 void trisonica_event(void)
 {
+	uint8_t ch;
   // Look for data on serial link and send to parser
-  while (uart_char_available(&(TRISONICA_DEV))) {
-    uint8_t ch = uart_getch(&(TRISONICA_DEV));
+  while (uart_char_available(&TRISONICA_UART)) {
+    ch = uart_getch(&TRISONICA_UART);
     trisonica_parse(&trisonica, ch);
   }
 }
@@ -390,15 +357,48 @@ void trisonica_send_string(char *s)
 {
   uint8_t i = 0;
   while (s[i]) {
-    uart_put_byte(&(TRISONICA_DEV), 0, (uint8_t)(s[i]));
+    uart_put_byte(&(TRISONICA_UART), 0, (uint8_t)(s[i]));
     i++;
   }
 }
 
 // ** Report et event functions ** // 
 
-void trisonica_handle_msg(struct trisonica_t *ts) {
+// reporting function, send telemetry message
+void trisonica_report() {
 	
+  if (trisonica.data_available == false) {
+    // no new data, return
+    return;
+  }
+
+	//We cast our parameter to fit in an existing telemetry named AEROPROBE
+	uint32_t arg1 = (uint32_t)trisonica.msg.mag_head_ang;
+	int16_t arg2 = (int16_t)abs((int)trisonica.msg.pitch);
+	int16_t arg3 = (int16_t)abs((int)trisonica.msg.roll);
+	int16_t arg4 = (int16_t)(100 * trisonica.msg.temp);
+	int32_t arg5 = (int32_t)abs(trisonica.msg.winddirhor);
+	int32_t arg6 = (int32_t)abs(trisonica.msg.winddirver);
+	int32_t arg7 = (int32_t)(100 * trisonica.msg.windspeed2d);
+	uint8_t arg8 = (uint8_t)(100 * trisonica.msg.windspeed3d);
+	
+  DOWNLINK_SEND_AEROPROBE(DefaultChannel, DefaultDevice,
+       &arg1,
+       &arg2,
+       &arg3,
+       &arg4,
+       &arg5,
+       &arg6,
+       &arg7,
+       &arg8
+      );
+
+    trisonica.data_available = false;
+}
+
+/*
+static void trisonica_handle_msg(struct trisonica_t *ts) {
+
   // send ABI message
   AbiSendMsgTRISONICA_MSG(TRISONCIA_ID,
       ts->now_ts,
@@ -424,60 +424,23 @@ void trisonica_handle_msg(struct trisonica_t *ts) {
       ts->msg.winddirhor,
       ts->msg.winddirver,
       ts->msg.windspeed2d,
-      ts->msg.windspeed3d,
+      ts->msg.windspeed3d
       );
   // Here can add the send of specific msg
-}
-
-// reporting function, send telemetry message
-void trisonica_report() {
-	
-  if (ts.data_available == false) {
-    // no new data, return
-    return;
-  }
-    
-  DOWNLINK_SEND_TRISONICA(DefaultChannel, DefaultDevice, TRISONCIA_ID,
-      &ts.now_ts,
-      &ts.msg.abs_pressure,
-      &ts.msg.accel_x,
-      &ts.msg.accel_y,
-      &ts.msg.accel_z,
-      &ts.msg.airdensity,
-      &ts.msg.dew_point,
-      &ts.msg.mag_head_ang,
-      &ts.msg.mag_x,
-      &ts.msg.mag_y,
-      &ts.msg.mag_z,
-      &ts.msg.pitch,
-      &ts.msg.relative_humidity,
-      &ts.msg.roll,
-      &ts.msg.speed_sound,
-      &ts.msg.temp,
-      &ts.msg.true_head,
-      &ts.msg.u_vector,
-      &ts.msg.v_vector,
-      &ts.msg.w_vector,
-      &ts.msg.winddirhor,
-      &ts.msg.winddirver,
-      &ts.msg.windspeed2d,
-      &ts.msg.windspeed3d,
-      );
-  ts.data_available = false;
-}
+}*/
 
 // ** Log SD function ** // 
 
-static inline void trisonica_log_data_ascii(struct trisonica_t *ts) {
+void trisonica_log_data_ascii(struct trisonica_t *ts) {
 	
   if (pprzLogFile != -1) {
 	  
     if (!ts->log_ptu_started) {
       sdLogWriteLog(pprzLogFile, "#\n");
-      sdLogWriteLog(pprzLogFile,"time(timestamp) abs_pressure(hPa) accel_x(m/s2) accel_y(m/s2) accel_z(m/s2) airdensity(kg/m3) dew_point(degC) mag_head_ang(deg) mag_x() mag_y() mag_z() pitch(deg) relative_humidity(%) roll(deg) speed_sound(m/s) temp(degC) true_head(deg) u_vector() v_vector() w_vector() winddirhor(deg) winddirver(deg) windspeed2d(m/s) windspeed3d(m/s)\n");
+      sdLogWriteLog(pprzLogFile,"time(us),abs_pressure(hPa),accel_x(m/s2),accel_y,accel_z,airdensity(kg/m3),dew_point(degC),mag_head_ang(deg),mag_x,mag_y,mag_z,pitch(deg),relative_humidity,roll(deg),speed_sound(m/s),temp(degC),true_head(deg),u_vec,v_vec,w_vec,winddirhor(deg),winddirver(deg),windspeed2d(m/s),windspeed3d(m/s)\n");
       ts->log_ptu_started = true;
     } else {
-      sdLogWriteLog(pprzLogFile, "%u %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %d %d %.2f %.2f\n",
+      sdLogWriteLog(pprzLogFile, "%lu,%.2f,%.2f,%.2f,%.2f,%.7f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d,%d,%.2f,%.2f\n",
 		  ts->now_ts,
 		  ts->msg.abs_pressure,
 		  ts->msg.accel_x,
@@ -501,14 +464,10 @@ static inline void trisonica_log_data_ascii(struct trisonica_t *ts) {
 		  ts->msg.winddirhor,
 		  ts->msg.winddirver,
 		  ts->msg.windspeed2d,
-		  ts->msg.windspeed3d,
+		  ts->msg.windspeed3d
 		  );
     }
     
   }
 }
-
-
-
-
 
