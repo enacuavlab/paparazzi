@@ -36,6 +36,7 @@ extern "C" {
 #include "modules/ahrs/ahrs.h"
 #include "modules/ins/ins.h"
 
+
 /* Main EKF2 structure for keeping track of the status and use cross messaging */
 struct ekf2_t {
   struct FloatRates delta_gyro;   ///< Last gyroscope measurements
@@ -66,6 +67,7 @@ extern void ins_ekf2_remove_gps(int32_t mode);
 extern void ins_ekf2_parse_EXTERNAL_POSE(uint8_t *buf);
 extern void ins_ekf2_parse_EXTERNAL_POSE_SMALL(uint8_t *buf);
 extern struct ekf2_t ekf2;
+
 
 #ifdef INS_EXT_VISION_ROTATION
 extern struct FloatQuat ins_ext_vision_rot;

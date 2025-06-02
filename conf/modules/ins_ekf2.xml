@@ -67,8 +67,8 @@
   <datalink message="EXTERNAL_POSE_SMALL" fun="ins_ekf2_parse_EXTERNAL_POSE_SMALL(buf)"/>
   <makefile target="ap|nps">
     <configure name="CXXSTANDARD" value="-std=c++14"/>
-    <flag name="CXXFLAGS" value="Wno-unused-but-set-variable"/>
-    <flag name="CXXFLAGS" value="Wno-unused-variable"/>
+    <!--flag name="CXXFLAGS" value="Wno-unused-but-set-variable"/>
+    <flag name="CXXFLAGS" value="Wno-unused-variable"/-->
 
     <!-- EKF2 files -->
     <file name="ins.c"/>
@@ -77,25 +77,35 @@
     <!-- Include the ecl and matrix libraries from ext -->
     <include name="$(PAPARAZZI_SRC)/sw/ext/ecl/"/>
     <include name="$(PAPARAZZI_SRC)/sw/ext/matrix/"/>
-    <define name="__PAPARAZZI" value="TRUE"/>
+    <!--define name="__PAPARAZZI" value="TRUE"/>
     <define name="ECL_STANDALONE" value="TRUE"/>
-    <define name="IMU_INTEGRATION" value="TRUE"/> <!-- Needed to enable IMU integration -->
-    <define name="USE_ALT_LLA_WAYPOINTS" value="TRUE"/>
+    <define name="IMU_INTEGRATION" value="TRUE"/--> 
+    <!-- Needed to enable IMU integration -->
+    <!--define name="USE_ALT_LLA_WAYPOINTS" value="TRUE"/-->
 
     <!-- Compile needed ecl files -->
-    <file name="bias_estimator.cpp" dir="ecl/EKF"/>
-    <file name="covariance.cpp" dir="ecl/EKF"/>
-    <file name="ekf_helper.cpp" dir="ecl/EKF"/>
-    <file name="output_predictor.cpp" dir="ecl/EKF"/>
     <file name="estimator_interface.cpp" dir="ecl/EKF"/>
+    <file name="output_predictor.cpp" dir="ecl/EKF"/>
     <file name="imu_down_sampler.cpp" dir="ecl/EKF"/>
     <file name="ZeroGyroUpdate.cpp" dir="ecl/EKF/aid_sources"/>
+    <file name="ekf_helper.cpp" dir="ecl/EKF"/>
+    <file name="covariance.cpp" dir="ecl/EKF"/>
     <file name="ZeroVelocityUpdate.cpp" dir="ecl/EKF/aid_sources"/>
     <file name="ekf.cpp" dir="ecl/EKF"/>
 
-    <file name="EKFGSF_yaw.cpp" dir="ecl/EKF/yaw_estimator"/>
+
+    <!--define name="CONFIG_EKF2_OPTICAL_FLOW" value="0"/-->
+    <define name="CONFIG_EKF2_GNSS" value="0"/>
+
+
+    <!--file name="terrain_estimator.cpp" dir="ecl/EKF"/-->
+
+
+    <!--file name="bias_estimator.cpp" dir="ecl/EKF"/-->
+
+    <!--file name="EKFGSF_yaw.cpp" dir="ecl/EKF/yaw_estimator"/>
     <file name="position_fusion.cpp" dir="ecl/EKF"/>
-    <file name="geo.cpp" dir="ecl/geo"/>
+    <file name="geo.cpp" dir="ecl/geo"/-->
 
     <!--file name="velocity_fusion.cpp" dir="ecl/EKF"/>
     <file name="geo_mag_declination.cpp" dir="ecl/world_magnetic_model"/>

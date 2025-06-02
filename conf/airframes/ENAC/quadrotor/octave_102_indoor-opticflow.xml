@@ -88,13 +88,13 @@
   </command_laws>
 
 
-  <section name="EKF2" prefix="CONFIG_EKF2_">
-    <define name="BAROMETER" value="0"/>
-    <define name="GNSS" value="0"/>
-    <define name="OPTICAL_FLOW" value="0"/>
-    <define name="RANGE_FINDER" value="0"/>
-    <define name="MAGNETOMETER" value="0"/>
-  </section>
+  <!--section name="EKF2" prefix="CONFIG_EKF2_"-->
+    <!--define name="BAROMETER" value="0"/-->
+    <!--define name="GNSS" value="0"/-->
+    <!--define name="OPTICAL_FLOW" value="0"/-->
+    <!--define name="RANGE_FINDER" value="0"/-->
+    <!--define name="MAGNETOMETER" value="0"/-->
+  <!--/section-->
 
 
   <section name="INS" prefix="INS_">
