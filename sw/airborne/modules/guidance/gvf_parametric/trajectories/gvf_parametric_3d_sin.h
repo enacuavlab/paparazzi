@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Hector Garcia de Marina <hgarciad@ucm.es>
+ * Copyright (C) 2020 Mael Feurgard <maelfeurgard@gmail.com>
  *
  * This file is part of paparazzi.
  *
@@ -19,47 +19,52 @@
  */
 
 /**
- * @file modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_ellipse.h
+ * @file modules/guidance/gvf_parametric/trajectories/gvf_parametric_3d_sin.h
  *
  * Guiding vector field algorithm for 2D and 3D complex trajectories.
  *
- * 3D ellipse (intersection between a cylinder and a tilted plane)
+ * 3D sinusoid (oscillations along Y and Z axes)
+ * f(t) = [ t ,  ay * sinf(2pi * freq_y * t) , az * sinf(2pi * freq_z * t) ]
  */
 
-#ifndef GVF_PARAMETRIC_3D_ELLIPSE_H
-#define GVF_PARAMETRIC_3D_ELLIPSE_H
+#ifndef GVF_PARAMETRIC_3D_SIN_H
+#define GVF_PARAMETRIC_3D_SIN_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** @typedef gvf_3d_ell_par
-* @brief Parameters for the GVF parametric 3D ellipse
+/** @typedef gvf_3d_sin_par
+* @brief Parameters for the GVF parametric 3D sinusoid
 * @param kx Gain defining how agressive is the vector field in x coordinate
 * @param ky Gain defining how agressive is the vector field in y coordinate
 * @param kz Gain defining how agressive is the vector field in z coordinate
-* @param r Radius of the cylinder in meters
-* @param zl Altitude of the lowest point of the ellipse
-* @param zh Altitude of the highest point of the ellipse
-* @param alpha Heading of the lowest point zl in rads
+* @param ay Oscillations' amplitude along the y-axis
+* @param freq_y Frequency along the y-axis (in radiants, i.e. before multiplication by 2*PI)
+* @param phase_y Added phase to the y oscillations
+* @param az Oscillations' amplitude along the z-axis
+* @param freq_z Frequency along the z-axis (in radiants, i.e. before multiplication by 2*PI)
+* @param phase_z Added phase to the z oscillations
 */
 typedef struct {
   float kx;
   float ky;
   float kz;
-  float r;
-  float zl;
-  float zh;
-  float alpha;
-} gvf_par_3d_ell_par;
+  float ay;
+  float freq_y;
+  float phase_y;
+  float az;
+  float freq_z;
+  float phase_z;
+} gvf_par_3d_sin_par;
 
-extern gvf_par_3d_ell_par gvf_parametric_3d_ellipse_par;
+extern gvf_par_3d_sin_par gvf_parametric_3d_sin_par;
 
-extern void gvf_parametric_3d_ellipse_info(float *f1, float *f2, float *f3, float *f1d, float *f2d, float *f3d,
+extern void gvf_parametric_3d_sin_info(float *f1, float *f2, float *f3, float *f1d, float *f2d, float *f3d,
     float *f1dd, float *f2dd, float *f3dd);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GVF_PARAMETRIC_3D_ELLIPSE_H
+#endif // GVF_PARAMETRIC_3D_SIN_H

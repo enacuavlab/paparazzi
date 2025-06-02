@@ -7,18 +7,36 @@
       For more details we refer to https://wiki.paparazziuav.org/wiki/Module/guidance_vector_field .
       This algorithm needs the Eigen library, be sure you have it installed, e.g., git submodule update --init --recursive sw/ext/eigen
     </description>
+    <section name="Parameters" prefix="GVF_PARAMETRIC_COORDINATION_">
+      <define name="MAX_NEIGHBORS" value="4" description="Maximum number of accepted neighbors for an aircraft"/>
+      <define name="GAIN_KC" value="1" description="Control gain for the coordination algorithm, the higher the faster the synchronization"/>
+    </section>
   </doc>
 
-  <settings name="GVF_PARAMETRIC">
+  <settings>
     <dl_settings>
       <dl_settings NAME="GVF_PARAMETRIC">
         <dl_settings NAME="Control">
           <dl_setting MAX="1" MIN="-1" STEP="2" VAR="gvf_parametric_control.s" shortname = "direction"/>
           <dl_setting MAX="1.25" MIN="0.75" STEP="0.05" VAR="gvf_parametric_control.k_roll" shortname="k_roll" param="GVF_PARAMETRIC_CONTROL_KROLL"/>
           <dl_setting MAX="1.25" MIN="0.75" STEP="0.05" VAR="gvf_parametric_control.k_climb" shortname="k_climb" param="GVF_PARAMETRIC_CONTROL_KCLIMB"/>
-          <dl_setting MAX="10" MIN="0.01" STEP="0.05" VAR="gvf_parametric_control.L" shortname="L" param="GVF_PARAMETRIC_CONTROL_L"/>
-          <dl_setting MAX="1" MIN="0.001" STEP="0.005" VAR="gvf_parametric_control.beta" shortname="beta" param="GVF_PARAMETRIC_CONTROL_BETA"/>
-          <dl_setting MAX="1.5" MIN="0.5" STEP="0.01" VAR="gvf_parametric_control.k_psi" shortname="k_psi" param="GVF_PARAMETRIC_CONTROL_KPSI"/>
+          <dl_setting MAX="10" MIN="0.001" STEP="0.01" VAR="gvf_parametric_control.L" shortname="L" param="GVF_PARAMETRIC_CONTROL_L"/>
+          <dl_setting MAX="2" MIN="0.001" STEP="0.001" VAR="gvf_parametric_control.beta" shortname="beta" param="GVF_PARAMETRIC_CONTROL_BETA"/>
+          <dl_setting MAX="2" MIN="0.1" STEP="0.01" VAR="gvf_parametric_control.k_psi" shortname="k_psi" param="GVF_PARAMETRIC_CONTROL_KPSI"/>
+          <dl_setting MAX="1" MIN="0" STEP="1" VAR="gvf_parametric_control.step_adaptation" shortname="step_adaptation" param="GVF_PARAMETRIC_STEP_ADAPTATION"/>
+        </dl_settings>
+       <!--<dl_settings NAME="Affine Transform">
+          <dl_setting MAX="1000" MIN="-1000" STEP="1" VAR="gvf_parametric_affine_tr.transalation.x()" shortname = "X translation"/>
+          <dl_setting MAX="1000" MIN="-1000" STEP="1" VAR="gvf_parametric_affine_tr.transalation.y()" shortname = "Y translation"/>
+          <dl_setting MAX="1000" MIN="-1000" STEP="1" VAR="gvf_parametric_affine_tr.transalation.z()" shortname = "Z translation"/>
+        </dl_settings>-->
+        <dl_settings NAME="Coordination">
+          <dl_setting MAX="1" MIN="0" STEP="1" VAR="gvf_parametric_coordination.coordination" shortname = "Coordination" param="GVF_PARAMETRIC_COORDINATION_COORDINATION"/>
+          <dl_setting MAX="100" MIN="0" STEP="0.05" VAR="gvf_parametric_coordination.kc" shortname = "Consensus Gain" param="GVF_PARAMETRIC_COORDINATION_GAIN_KC"/>
+          <dl_setting MAX="100" MIN="0" STEP="0.05" VAR="gvf_parametric_coordination.ktol" shortname = "Consensus tolerance" param="GVF_PARAMETRIC_COORDINATION_GAIN_KTOL"/>
+          <dl_setting MAX="5000" MIN="0" STEP="1" VAR="gvf_parametric_coordination.timeout" shortname = "Timeout" param="GVF_PARAMETRIC_COORDINATION_TIMEOUT"/>
+          <dl_setting MAX="1000" MIN="0" STEP="1" VAR="gvf_parametric_coordination.broadtime" shortname = "Broadcasting" param="GVF_PARAMETRIC_COORDINATION_BROADTIME"/>
+          <dl_setting MAX="1" MIN="0" STEP="1" VAR="gvf_parametric_coordination.speed_ctl" shortname = "Speed Ctl" param="GVF_PARAMETRIC_COORDINATION_SPEED_CTL"/>
         </dl_settings>
         <dl_settings NAME="2D_trefoil">
           <dl_setting MAX="0.01" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_2d_trefoil_par.kx" shortname="2d_tre_kx" param="GVF_PARAMETRIC_2D_TREFOIL_KX"/>
@@ -57,7 +75,39 @@
           <dl_setting MAX="180" MIN="-180" STEP="1" VAR="gvf_parametric_3d_lissajous_par.dz" shortname="3d_lis_dz" param="GVF_PARAMETRIC_3D_LISSAJOUS_DZ"/>
           <dl_setting MAX="180" MIN="-180" STEP="1" VAR="gvf_parametric_3d_lissajous_par.alpha" shortname="3d_lis_alpha" param="GVF_PARAMETRIC_3D_LISSAJOUS_ALPHA"/>
         </dl_settings>
-        
+        <dl_settings NAME="3D_sinusoid">
+          <dl_setting MAX="0.01" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_3d_sin_par.kx" shortname="3d_sin_kx" param="GVF_PARAMETRIC_3D_SIN_KX"/>
+          <dl_setting MAX="0.01" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_3d_sin_par.ky" shortname="3d_sin_ky" param="GVF_PARAMETRIC_3D_SIN_KY"/>
+          <dl_setting MAX="0.1" MIN="0.0" STEP="0.0005" VAR="gvf_parametric_3d_sin_par.kz" shortname="3d_sin_kz" param="GVF_PARAMETRIC_3D_SIN_KZ"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="1" VAR="gvf_parametric_3d_sin_par.ay" shortname="3d_sin_ay" param="GVF_PARAMETRIC_3D_SIN_AY"/>
+          <dl_setting MAX="10" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_sin_par.freq_y" shortname="3d_sin_fy" param="GVF_PARAMETRIC_3D_SIN_FREQ_Y"/>
+          <dl_setting MAX="3.1415" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_sin_par.phase_y" shortname="3d_sin_phi_y" param="GVF_PARAMETRIC_3D_SIN_PHASE_Y"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="1" VAR="gvf_parametric_3d_sin_par.az" shortname="3d_sin_az" param="GVF_PARAMETRIC_3D_SIN_AZ"/>
+          <dl_setting MAX="10" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_sin_par.freq_z" shortname="3d_sin_fz" param="GVF_PARAMETRIC_3D_SIN_FREQ_Z"/>
+          <dl_setting MAX="3.1415" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_sin_par.phase_z" shortname="3d_sin_phi_z" param="GVF_PARAMETRIC_3D_SIN_PHASE_Z"/>
+        </dl_settings>
+        <dl_settings NAME="3D_growing_lissajou">
+          <dl_setting MAX="10" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.kx" shortname="3d_growing_lissajou_kx" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KX"/>
+          <dl_setting MAX="10" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.ky" shortname="3d_growing_lissajou_ky" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KY"/>
+          <dl_setting MAX="10" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.kz" shortname="3d_growing_lissajou_kz" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_KZ"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.ax" shortname="3d_growing_lissajou_ax" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AX"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.ay" shortname="3d_growing_lissajou_ay" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AY"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="0.001" VAR="gvf_parametric_3d_growing_lissajou_par.az" shortname="3d_growing_lissajou_az" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_AZ"/>
+          <dl_setting MAX="10" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_growing_lissajou_par.f_y" shortname="3d_growing_lissajou_fy" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_F_Y"/>
+          <dl_setting MAX="3.1415" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_growing_lissajou_par.phi_y" shortname="3d_growing_lissajou_phi_y" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_PHASE_Y"/>
+          <dl_setting MAX="10" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_growing_lissajou_par.f_z" shortname="3d_growing_lissajou_fz" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_F_Z"/>
+          <dl_setting MAX="3.1415" MIN="0.0" STEP="0.005" VAR="gvf_parametric_3d_growing_lissajou_par.phi_z" shortname="3d_growing_lissajou_phi_z" param="GVF_PARAMETRIC_3D_GROWING_LISSAJOU_PHASE_Z"/>
+        </dl_settings>
+        <dl_settings NAME="3D_drift_ellipse">
+          <dl_setting MAX="10" MIN="0.0" STEP="0.001" VAR="gvf_parametric_drift_ellipse_par.kx" shortname="drift_ellipse_kx" param="GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KX"/>
+          <dl_setting MAX="10" MIN="0.0" STEP="0.001" VAR="gvf_parametric_drift_ellipse_par.ky" shortname="drift_ellipse_ky" param="GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KY"/>
+          <dl_setting MAX="10" MIN="0.0" STEP="0.001" VAR="gvf_parametric_drift_ellipse_par.kz" shortname="drift_ellipse_kz" param="GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_KZ"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="1" VAR="gvf_parametric_drift_ellipse_par.v_x" shortname="drift_ellipse_vx" param="GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_V_X"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="1" VAR="gvf_parametric_drift_ellipse_par.a_x" shortname="drift_ellipse_ax" param="GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_A_X"/>
+          <dl_setting MAX="150" MIN="0.0" STEP="1" VAR="gvf_parametric_drift_ellipse_par.a_y" shortname="drift_ellipse_ay" param="GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_A_Y"/>
+          <dl_setting MAX="10" MIN="0.0" STEP="0.005" VAR="gvf_parametric_drift_ellipse_par.freq" shortname="drift_ellipse_freq" param="GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_FREQ"/>
+          <dl_setting MAX="3.1415" MIN="0.0" STEP="0.005" VAR="gvf_parametric_drift_ellipse_par.phi" shortname="drift_ellipse_phi" param="GVF_PARAMETRIC_3D_DRIFT_ELLIPSE_PHASE"/>
+        </dl_settings>
       </dl_settings>
     </dl_settings>
   </settings>
@@ -69,13 +119,20 @@
   <header>
     <file name="gvf_parametric.h"/>
     <file name="gvf_parametric_low_level_control.h"/>
+    <file name="gvf_adapted_step.h"/>
     <file name="trajectories/gvf_parametric_3d_ellipse.h"/>
     <file name="trajectories/gvf_parametric_3d_lissajous.h"/>
     <file name="trajectories/gvf_parametric_2d_trefoil.h"/>
     <file name="trajectories/gvf_parametric_2d_bezier_splines.h"/> 
+    <file name="trajectories/gvf_parametric_3d_sin.h"/>
+    <file name="trajectories/gvf_parametric_3d_growing_lissajou.h"/>
+    <file name="trajectories/gvf_parametric_drift_ellipse.h"/>
   </header>
 
   <init fun = "gvf_parametric_init()"/>
+
+  <datalink message="GVF_PARAMETRIC_REG_TABLE" fun="gvf_parametric_coordination_parseRegTable(buf)"/>
+  <datalink message="GVF_PARAMETRIC_W" fun="gvf_parametric_coordination_parseWTable(buf)"/>
 
   <makefile target="ap|nps" firmware="fixedwing">
     <configure name="CXXSTANDARD" value="-std=c++14"/>
@@ -85,9 +142,13 @@
     <define name="EIGEN_NO_AUTOMATIC_RESIZING"/>
     <file name="gvf_parametric.cpp"/>
     <file name="gvf_parametric_low_level_control.c"/>
+    <file name="gvf_adapted_step.c"/>
     <file name="trajectories/gvf_parametric_3d_ellipse.c"/>
     <file name="trajectories/gvf_parametric_3d_lissajous.c"/>
     <file name="trajectories/gvf_parametric_2d_trefoil.c"/>
+    <file name="trajectories/gvf_parametric_3d_sin.c"/>
+    <file name="trajectories/gvf_parametric_3d_growing_lissajou.c"/>
+    <file name="trajectories/gvf_parametric_drift_ellipse.c"/>
     <file name="trajectories/gvf_parametric_2d_bezier_splines.c"/>
     <flag name="LDFLAGS" value="lstdc++" />
   </makefile>

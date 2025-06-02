@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Hector Garcia de Marina <hgarciad@ucm.es>
+ * Copyright (C) 2021 Hector Garcia de Marina <hgarciad@ucm.es>
  *
  * This file is part of paparazzi.
  *
@@ -19,46 +19,42 @@
  */
 
 /**
- * @file modules/guidance/gvf_parametric/trajectories/gvf_parametric_2d_trefoil.h
+ * @file modules/guidance/gvf_parametric_surf/trajectories/gvf_parametric_surf_3d_torus.h
  *
  * Guiding vector field algorithm for 2D and 3D complex trajectories.
  *
- * 2D trefoil knot
+ * 3D torus figures
  */
 
-#ifndef GVF_PARAMETRIC_2D_TREFOIL_H
-#define GVF_PARAMETRIC_2D_TREFOIL_H
+#ifndef GVF_PARAMETRIC_SURF_3D_TORUS_H
+#define GVF_PARAMETRIC_SURF_3D_TORUS_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** @typedef gvf_2d_tre_par
-* @brief Parameters for the GVF parametric 2D trefoil knot
+/** @typedef gvf_3d_torus_par
+* @brief Parameters for the GVF parametric 3D torus
 * @param kx Gain defining how agressive is the vector field in x coordinate
 * @param ky Gain defining how agressive is the vector field in y coordinate
-* @param w1 1st frequency
-* @param w2 2nd frequency
-* @param off Off-phase
-* @param r Radius of the "circles"
-* @param alpha Orientation/rotation of the trajectory in the XY plane
+* @param kz Gain defining how agressive is the vector field in z coordinate
+* @param rh Horizontal radius
+* @param rv Vertical radius
 */
 typedef struct {
   float kx;
   float ky;
-  float w1;
-  float w2;
-  float ratio;
-  float r;
-  float alpha;
-} gvf_par_2d_tre_par;
+  float kz;
+  float rh;
+  float rv;
+} gvf_par_surf_3d_torus_par;
 
-extern gvf_par_2d_tre_par gvf_parametric_2d_trefoil_par;
+extern gvf_par_surf_3d_torus_par gvf_parametric_surf_3d_torus_par;
 
-extern void gvf_parametric_2d_trefoil_info(float *f1, float *f2, float *f1d, float *f2d, float *f1dd, float *f2dd);
+extern void gvf_parametric_surf_3d_torus_info(float *f1, float *f2, float *f3, float *f1dw1, float *f2dw1, float *f3dw1, float *f1ddw1, float *f2ddw1, float *f3ddw1, float *f1dw2, float *f2dw2, float *f3dw2, float *f1ddw2, float *f2ddw2, float *f3ddw2, float *f1dw1dw2, float *f1dw2dw1, float *f2dw1dw2, float *f2dw2dw1, float *f3dw1dw2, float *f3dw2dw1);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GVF_PARAMETRIC_2D_TREFOIL_H
+#endif // GVF_PARAMETRIC_SURF_3D_TORUS_H

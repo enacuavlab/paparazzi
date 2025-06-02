@@ -1,0 +1,17 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="gvf_mission" dir="guidance/gvf_mission" task="control">
+  <doc>
+    <description>A wrapper module to allow the use of GVF parametric trajectories in Mission mode.</description>
+  </doc>
+  <dep>
+    <depends>gvf_parametric, mission_common</depends>
+  </dep>
+  <header>
+    <file name="gvf_mission.h"/>
+  </header>
+  <init fun="gvf_mission_register()"/>
+  <makefile>
+    <file name="gvf_mission.c"/>
+    <test/>
+  </makefile>
+</module>

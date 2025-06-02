@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Hector Garcia de Marina <hgarciad@ucm.es>
+ * Copyright (C) 2023 Mael FEURGARD <mael.feurgard@enac.fr>
  *
  * This file is part of paparazzi.
  *
@@ -18,27 +18,25 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-/**
- * @file modules/guidance/gvf_parametric/gvf_parametric_low_level_control.h
- *
- * Firmware dependent file for the guiding vector field algorithm for 2D and 3D parametric trajectories.
- */
+#pragma once
 
-#ifndef GVF_PARAMETRIC_LOW_LEVEL_CONTROL_H
-#define GVF_PARAMETRIC_LOW_LEVEL_CONTROL_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Low level control functions
-extern void gvf_parametric_low_level_control_2d(float, float);
-extern void gvf_parametric_low_level_control_3d(float, float, float);
-
-#ifdef __cplusplus
-}
-#endif
-
-
-#endif // GVF_PARAMETRIC_LOW_LEVEL_CONTROL_H
+enum TRAJ_ID : int
+{
+  GENERIC,
+  SUM,
+  DIFFERENCE,
+  PRODUCT,
+  AFFINE,
+  TRANSLATION,
+  ROTATION,
+  PERMUTATION,
+  PROJ_X,
+  PROJ_Y,
+  PROJ_Z,
+  PROJ_XY,
+  PROJ_XZ,
+  PROJ_YZ,
+  SINUSOID,
+  LINE,
+};
 
