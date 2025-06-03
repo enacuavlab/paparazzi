@@ -45,6 +45,57 @@
 #include <stdio.h>
 #endif
 
+/** INS reference from flight plan, true by default */
+#ifndef USE_INS_NAV_INIT
+#define USE_INS_NAV_INIT TRUE
+#endif
+
+
+/* IMU X offset from CoG position in meters */
+#ifndef INS_EKF2_IMU_POS_X
+#define INS_EKF2_IMU_POS_X 0
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_IMU_POS_X)
+
+/* IMU Y offset from CoG position in meters */
+#ifndef INS_EKF2_IMU_POS_Y
+#define INS_EKF2_IMU_POS_Y 0
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_IMU_POS_Y)
+
+/* IMU Z offset from CoG position in meters */
+#ifndef INS_EKF2_IMU_POS_Z
+#define INS_EKF2_IMU_POS_Z 0
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_IMU_POS_Z)
+
+
+#if defined(CONFIG_EKF2_BAROMETER)
+static abi_event baro_ev;
+static void baro_cb(uint8_t sender_id, uint32_t stamp, float pressure);
+#ifndef INS_EKF2_BARO_ID
+#if USE_BARO_BOARD
+#define INS_EKF2_BARO_ID BARO_BOARD_SENDER_ID
+#else
+#define INS_EKF2_BARO_ID ABI_BROADCAST
+#endif
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_BARO_ID)
+#ifndef INS_EKF2_BARO_NOISE
+#define INS_EKF2_BARO_NOISE 3.5f
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_BARO_NOISE)
+#endif
+
+#if defined(CONFIG_EKF2_MAGNETOMETER)
+static abi_event mag_ev;
+static void mag_cb(uint8_t sender_id, uint32_t stamp, struct Int32Vect3 *mag);
+#ifndef INS_EKF2_MAG_ID
+#define INS_EKF2_MAG_ID ABI_BROADCAST
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_MAG_ID)
+#endif
+
 #if defined(CONFIG_EKF2_GNSS)
 static abi_event gps_ev;
 static void gps_cb(uint8_t sender_id, uint32_t stamp, struct GpsState *gps_s);
@@ -52,7 +103,36 @@ static void gps_cb(uint8_t sender_id, uint32_t stamp, struct GpsState *gps_s);
 #define INS_EKF2_GPS_ID GPS_MULTI_ID
 #endif
 PRINT_CONFIG_VAR(INS_EKF2_GPS_ID)
+
+/* GPS X offset from CoG position in meters */
+#ifndef INS_EKF2_GPS_POS_X
+#define INS_EKF2_GPS_POS_X 0
 #endif
+PRINT_CONFIG_VAR(INS_EKF2_GPS_POS_X)
+
+/* GPS Y offset from CoG position in meters */
+#ifndef INS_EKF2_GPS_POS_Y
+#define INS_EKF2_GPS_POS_Y 0
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_GPS_POS_Y)
+
+/* GPS Z offset from CoG position in meters */
+#ifndef INS_EKF2_GPS_POS_Z
+#define INS_EKF2_GPS_POS_Z 0
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_GPS_POS_Z)
+#endif
+
+
+# if defined(CONFIG_EKF2_RANGE_FINDER)
+static abi_event agl_ev;
+static void agl_cb(uint8_t sender_id, uint32_t stamp, float distance);
+#ifndef INS_EKF2_AGL_ID
+#define INS_EKF2_AGL_ID ABI_BROADCAST
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_AGL_ID)
+#endif
+
 
 #if defined(CONFIG_EKF2_OPTICAL_FLOW)
 static abi_event optical_flow_ev;
@@ -77,6 +157,13 @@ PRINT_CONFIG_VAR(INS_EKF2_ACCEL_ID)
 static abi_event accel_int_ev;
 static void accel_int_cb(uint8_t sender_id, uint32_t stamp, struct FloatVect3 *delta_accel, uint16_t dt);
 
+#ifndef INS_EKF2_TEMPERATURE_ID
+#define INS_EKF2_TEMPERATURE_ID ABI_BROADCAST
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_TEMPERATURE_ID)
+static abi_event temperature_ev;
+static void temperature_cb(uint8_t sender_id, float temp);
+
 
 static Ekf ekf;
 
@@ -88,15 +175,73 @@ void ins_ekf2_init(void)
 {
   ekf_params = ekf.getParamHandle();
 
+  ekf_params->accel_bias_p_noise = 3.0e-3f;
+
+  ekf_params->imu_pos_body = {
+    INS_EKF2_IMU_POS_X,
+    INS_EKF2_IMU_POS_Y,
+    INS_EKF2_IMU_POS_Z
+  };
+
+#if defined(CONFIG_EKF2_GNSS)
+  ekf_params->gps_pos_body = {
+    INS_EKF2_GPS_POS_X,
+    INS_EKF2_GPS_POS_Y,
+    INS_EKF2_GPS_POS_Z
+  };
+#endif 
+
+  ekf2.ltp_stamp = 0;
+  ekf2.flow_stamp = 0;
+  ekf2.gyro_valid = false;
+  ekf2.accel_valid = false;
+  ekf2.got_imu_data = false;
+  ekf2.quat_reset_counter = 0;
+  ekf2.temp = 20.0f; // Default temperature of 20 degrees celcius
+  ekf2.qnh = 1013.25f; // Default atmosphere
+
+
+  /* Initialize the origin from flight plan */
+#if USE_INS_NAV_INIT
+  if(ekf.setEkfGlobalOrigin(NAV_LAT0*1e-7, NAV_LON0*1e-7, (NAV_ALT0)*1e-3)) // EKF2 works HMSL
+  {
+    struct LlaCoor_i llh_nav0; /* Height above the ellipsoid */
+    llh_nav0.lat = NAV_LAT0;
+    llh_nav0.lon = NAV_LON0;
+    /* NAV_ALT0 = ground alt above msl, NAV_MSL0 = geoid-height (msl) over ellipsoid */
+    llh_nav0.alt = NAV_ALT0 + NAV_MSL0; // in millimeters above WGS84 reference ellipsoid
+    ltp_def_from_lla_i(&ekf2.ltp_def, &llh_nav0);
+    ekf2.ltp_def.hmsl = NAV_ALT0;
+    stateSetLocalOrigin_i(MODULE_INS_EKF2_ID, &ekf2.ltp_def);
+    /* update local ENU coordinates of global waypoints */
+    waypoints_localize_all();
+    ekf2.ltp_stamp = 1;
+  }
+#endif
+
   AbiBindMsgIMU_GYRO_INT(INS_EKF2_GYRO_ID, &gyro_int_ev, gyro_int_cb);
   AbiBindMsgIMU_ACCEL_INT(INS_EKF2_ACCEL_ID, &accel_int_ev, accel_int_cb);
+  AbiBindMsgTEMPERATURE(INS_EKF2_TEMPERATURE_ID, &temperature_ev, temperature_cb);
 
+#if defined(CONFIG_EKF2_BAROMETER)
+  ekf_params->baro_noise = INS_EKF2_BARO_NOISE;
+  AbiBindMsgBARO_ABS(INS_EKF2_BARO_ID, &baro_ev, baro_cb);
+#endif
 
+#if defined(CONFIG_EKF2_MAGNETOMETER)
+  AbiBindMsgIMU_MAG(INS_EKF2_MAG_ID, &mag_ev, mag_cb);
+#endif
+       
 #if defined(CONFIG_EKF2_GNSS)
   AbiBindMsgGPS(INS_EKF2_GPS_ID, &gps_ev, gps_cb);
 #endif
+
 #if defined(CONFIG_EKF2_OPTICAL_FLOW)
   AbiBindMsgOPTICAL_FLOW(INS_EKF2_OF_ID, &optical_flow_ev, optical_flow_cb);
+#endif
+
+# if defined(CONFIG_EKF2_RANGE_FINDER)
+ AbiBindMsgAGL(INS_EKF2_AGL_ID, &agl_ev, agl_cb);
 #endif
 }
 
@@ -197,6 +342,11 @@ static void accel_int_cb(uint8_t sender_id __attribute__((unused)),
   }
 }
 
+/* Save the latest temperature measurement for air density calculations */
+static void temperature_cb(uint8_t __attribute__((unused)) sender_id, float temp)
+{
+  ekf2.temp = temp;
+}
 
 #if defined(CONFIG_EKF2_GNSS)
 static void gps_cb(uint8_t sender_id __attribute__((unused)),
@@ -287,6 +437,18 @@ static void optical_flow_cb(uint8_t sender_id __attribute__((unused)),
 #endif
 
 
+#if defined(CONFIG_EKF2_RANGE_FINDER)
+/* Update INS based on AGL information */
+static void agl_cb(uint8_t __attribute__((unused)) sender_id, uint32_t stamp, float distance)
+{
+  rangeSample sample;
+  sample.time_us = stamp;
+  sample.rng = distance;
+  sample.quality = -1;
+  ekf.setRangeData(sample);
+}
+#endif // CONFIG_EKF2_RANGE_FINDER)
+
 #if defined(CONFIG_EKF2_EXTERNAL_VISION)
 void ins_ekf2_parse_EXTERNAL_POSE(uint8_t *buf) {
   if (DL_EXTERNAL_POSE_ac_id(buf) != AC_ID) { return; } // not for this aircraft
@@ -327,6 +489,123 @@ void ins_ekf2_parse_EXTERNAL_POSE(uint8_t *buf) {
 void ins_ekf2_parse_EXTERNAL_POSE(uint8_t *buf) {}
 #endif
 
-void ins_ekf2_update(void){};
+
+#if defined(CONFIG_EKF2_BAROMETER)
+/* Update INS based on Baro information */
+static void baro_cb(uint8_t __attribute__((unused)) sender_id, uint32_t stamp, float pressure)
+{
+  baroSample sample;
+  sample.time_us = stamp;
+  // Calculate the air density
+  float rho = pprz_isa_density_of_pressure(pressure, ekf2.temp);
+  ekf.set_air_density(rho);
+  // Calculate the height above mean sea level based on pressure
+  sample.hgt = pprz_isa_height_of_pressure_full(pressure, ekf2.qnh * 100.0f);
+  ekf.setBaroData(sample);
+}
+#endif // CONFIG_EKF2_BAROMETER
+
+
+#if defined(CONFIG_EKF2_MAGNETOMETER)
+/* Update INS based on Magnetometer information */
+static void mag_cb(uint8_t __attribute__((unused)) sender_id,
+                   uint32_t stamp,
+                   struct Int32Vect3 *mag)
+{
+  struct FloatVect3 mag_gauss;
+  magSample sample;
+  sample.time_us = stamp;
+  // Convert Magnetometer information to float and to radius 0.2f
+  MAGS_FLOAT_OF_BFP(mag_gauss, *mag);
+  mag_gauss.x *= 0.4f;
+  mag_gauss.y *= 0.4f;
+  mag_gauss.z *= 0.4f;
+  // Publish information to the EKF
+  sample.mag(0) = mag_gauss.x;
+  sample.mag(1) = mag_gauss.y;
+  sample.mag(2) = mag_gauss.z;
+  ekf.setMagData(sample);
+  ekf2.got_imu_data = true;
+}
+#endif // CONFIG_EKF2_MAGNETOMETER
+       
+       
+void ins_ekf2_update(void)
+{
+  /* Set EKF settings */
+  ekf.set_in_air_status(autopilot_in_flight());
+
+  /* Update the EKF */
+  if (ekf2.got_imu_data) {
+    // Update the EKF but ignore the response and also copy the faster intermediate filter
+    ekf.update();
+    filter_control_status_u control_status = ekf.control_status();
+
+    // Only publish position after successful alignment
+    if (control_status.flags.tilt_align) {
+      /* Get the position */
+      const Vector3f pos_f{ekf.getPosition()};
+      struct NedCoor_f pos;
+      pos.x = pos_f(0);
+      pos.y = pos_f(1);
+      pos.z = pos_f(2);
+
+      // Publish to the state
+      stateSetPositionNed_f(MODULE_INS_EKF2_ID, &pos);
+
+      /* Get the velocity in NED frame */
+      const Vector3f vel_f{ekf.getVelocity()};
+      struct NedCoor_f speed;
+      speed.x = vel_f(0);
+      speed.y = vel_f(1);
+      speed.z = vel_f(2);
+
+      // Publish to state
+      stateSetSpeedNed_f(MODULE_INS_EKF2_ID, &speed);
+
+      /* Get the accelerations in NED frame */
+      const Vector3f vel_deriv_f{ekf.getVelocityDerivative()};
+      struct NedCoor_f accel;
+      accel.x = vel_deriv_f(0);
+      accel.y = vel_deriv_f(1);
+      accel.z = vel_deriv_f(2);
+
+      // Publish to state
+      stateSetAccelNed_f(MODULE_INS_EKF2_ID, &accel);
+
+      /* Get local origin */
+      // Position of local NED origin in GPS / WGS84 frame
+      double ekf_origin_lat, ekf_origin_lon;
+      float ref_alt;
+      struct LlaCoor_i lla_ref;
+      uint64_t origin_time;
+
+      // Only update the origin when the state estimator has updated the origin
+      bool ekf_origin_valid = ekf.getEkfGlobalOrigin(origin_time, ekf_origin_lat, ekf_origin_lon, ref_alt);
+      if (ekf_origin_valid && (origin_time > ekf2.ltp_stamp)) {
+        lla_ref.lat = ekf_origin_lat * 1e7; // WGS-84 lat
+        lla_ref.lon = ekf_origin_lon * 1e7; // WGS-84 lon
+        lla_ref.alt = ref_alt * 1e3 + wgs84_ellipsoid_to_geoid_i(lla_ref.lat, lla_ref.lon); // in millimeters above WGS84 reference ellipsoid (ref_alt is in HMSL)
+        ltp_def_from_lla_i(&ekf2.ltp_def, &lla_ref);
+        ekf2.ltp_def.hmsl = ref_alt * 1e3;
+        stateSetLocalOrigin_i(MODULE_INS_EKF2_ID, &ekf2.ltp_def);
+
+        /* update local ENU coordinates of global waypoints */
+        waypoints_localize_all();
+
+        ekf2.ltp_stamp = origin_time;
+      }
+    }
+  }
+
+#if defined SITL && USE_NPS
+  if (nps_bypass_ins) {
+    sim_overwrite_ins();
+  }
+#endif
+
+  ekf2.got_imu_data = false;
+}
+
 void ins_ekf2_change_param(int32_t unk){};
 void ins_ekf2_remove_gps(int32_t mode){};
