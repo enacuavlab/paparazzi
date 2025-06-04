@@ -121,6 +121,18 @@ PRINT_CONFIG_VAR(INS_EKF2_GPS_POS_Y)
 #define INS_EKF2_GPS_POS_Z 0
 #endif
 PRINT_CONFIG_VAR(INS_EKF2_GPS_POS_Z)
+
+/* GPS measurement noise for horizontal velocity (m/s) */
+#ifndef INS_EKF2_GPS_V_NOISE
+#define INS_EKF2_GPS_V_NOISE 0.3f
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_GPS_V_NOISE)
+
+/* GPS measurement position noise (m) */
+#ifndef INS_EKF2_GPS_P_NOISE
+#define INS_EKF2_GPS_P_NOISE 0.5f
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_GPS_P_NOISE)
 #endif
 
 
@@ -141,7 +153,34 @@ static void optical_flow_cb(uint8_t sender_id, uint32_t stamp, int32_t flow_x, i
 #define INS_EKF2_OF_ID ABI_BROADCAST
 #endif
 PRINT_CONFIG_VAR(INS_EKF2_OF_ID)
+
+/* Flow sensor noise in rad/sec */
+#ifndef INS_EKF2_FLOW_NOISE
+#define INS_EKF2_FLOW_NOISE 0.03
 #endif
+PRINT_CONFIG_VAR(INS_EKF2_FLOW_NOISE)
+
+/* Flow sensor noise at qmin in rad/sec */
+#ifndef INS_EKF2_FLOW_NOISE_QMIN
+#define INS_EKF2_FLOW_NOISE_QMIN 0.05
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_FLOW_NOISE_QMIN)
+#endif
+
+
+#if defined(CONFIG_EKF2_EXTERNAL_VISION)
+/* External vision position noise (m) */
+#ifndef INS_EKF2_EVP_NOISE
+#define INS_EKF2_EVP_NOISE 0.02f
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_EVP_NOISE)
+/* External vision velocity noise (m/s) */
+#ifndef INS_EKF2_EVV_NOISE
+#define INS_EKF2_EVV_NOISE 0.1f
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_EVV_NOISE)
+#endif
+
 
 #ifndef INS_EKF2_GYRO_ID
 #define INS_EKF2_GYRO_ID ABI_BROADCAST
@@ -171,6 +210,38 @@ static parameters *ekf_params;                    ///< The EKF parameters
 
 struct ekf2_t ekf2;                               ///< Local EKF2 status structure
 
+
+#if PERIODIC_TELEMETRY
+#include "modules/datalink/telemetry.h"
+
+static void send_ins(struct transport_tx *trans, struct link_device *dev)
+{
+  struct NedCoor_i pos, speed, accel;
+
+  // Get it from the EKF
+  const Vector3f pos_f{ekf.getPosition()};
+  const Vector3f speed_f{ekf.getVelocity()};
+  const Vector3f accel_f{ekf.getVelocityDerivative()};
+
+  // Convert to integer
+  pos.x = POS_BFP_OF_REAL(pos_f(0));
+  pos.y = POS_BFP_OF_REAL(pos_f(1));
+  pos.z = POS_BFP_OF_REAL(pos_f(2));
+  speed.x = SPEED_BFP_OF_REAL(speed_f(0));
+  speed.y = SPEED_BFP_OF_REAL(speed_f(1));
+  speed.z = SPEED_BFP_OF_REAL(speed_f(2));
+  accel.x = ACCEL_BFP_OF_REAL(accel_f(0));
+  accel.y = ACCEL_BFP_OF_REAL(accel_f(1));
+  accel.z = ACCEL_BFP_OF_REAL(accel_f(2));
+
+  // Send the message
+  pprz_msg_send_INS(trans, dev, AC_ID,
+                    &pos.x, &pos.y, &pos.z,
+                    &speed.x, &speed.y, &speed.z,
+                    &accel.x, &accel.y, &accel.z);
+}
+#endif
+
 void ins_ekf2_init(void)
 {
   ekf_params = ekf.getParamHandle();
@@ -189,6 +260,9 @@ void ins_ekf2_init(void)
     INS_EKF2_GPS_POS_Y,
     INS_EKF2_GPS_POS_Z
   };
+
+  ekf_params->gps_vel_noise = INS_EKF2_GPS_V_NOISE;
+  ekf_params->gps_pos_noise = INS_EKF2_GPS_P_NOISE;
 #endif 
 
   ekf2.ltp_stamp = 0;
@@ -237,11 +311,22 @@ void ins_ekf2_init(void)
 #endif
 
 #if defined(CONFIG_EKF2_OPTICAL_FLOW)
+  ekf_params->flow_noise = INS_EKF2_FLOW_NOISE;
+  ekf_params->flow_noise_qual_min = INS_EKF2_FLOW_NOISE_QMIN;
   AbiBindMsgOPTICAL_FLOW(INS_EKF2_OF_ID, &optical_flow_ev, optical_flow_cb);
 #endif
 
 # if defined(CONFIG_EKF2_RANGE_FINDER)
  AbiBindMsgAGL(INS_EKF2_AGL_ID, &agl_ev, agl_cb);
+#endif
+
+#if defined(CONFIG_EKF2_EXTERNAL_VISION)
+ ekf_params->ev_pos_noise = INS_EKF2_EVP_NOISE;
+ ekf_params->ev_vel_noise = INS_EKF2_EVV_NOISE;
+#endif
+
+#if PERIODIC_TELEMETRY
+ register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_INS, send_ins);
 #endif
 }
 
