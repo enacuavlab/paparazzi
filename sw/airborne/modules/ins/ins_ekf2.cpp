@@ -162,7 +162,7 @@ PRINT_CONFIG_VAR(INS_EKF2_FLOW_NOISE)
 
 /* Flow sensor noise at qmin in rad/sec */
 #ifndef INS_EKF2_FLOW_NOISE_QMIN
-#define INS_EKF2_FLOW_NOISE_QMIN 0.05
+#define INS_EKF2_FLOW_NOISE_QMIN 0.15
 #endif
 PRINT_CONFIG_VAR(INS_EKF2_FLOW_NOISE_QMIN)
 #endif
@@ -246,13 +246,47 @@ void ins_ekf2_init(void)
 {
   ekf_params = ekf.getParamHandle();
 
-  ekf_params->accel_bias_p_noise = 3.0e-3f;
+  ekf_params->switch_on_accel_bias = 0.2;
+  ekf_params->acc_bias_learn_acc_lim = 25.0;
+  ekf_params->acc_bias_learn_gyr_lim = 3.0;
+  ekf_params->acc_bias_lim = 0.4;
+  ekf_params->acc_bias_learn_tc = 0.4;
+  ekf_params->accel_bias_p_noise = 0.003;
+  ekf_params->accel_noise = 0.35;
+  ekf_params->initial_tilt_err = 0.1;
+  ekf_params->baro_ctrl = 1;
+  ekf_params->baro_innov_gate = 5.0;
+  ekf_params->mag_declination_source = 3;
+
+  ekf_params->switch_on_gyro_bias = 0.1;
+  ekf_params->gyro_bias_p_noise = 0.001; 
+
+  ekf_params->gnd_effect_deadzone = 4.0;
+  ekf_params->gnd_effect_max_hgt = 0.5;
+
+  ekf_params->EKFGSF_tas_default = 15.0;
+  ekf_params->gyro_bias_lim = 0.15;
+  ekf_params->gyro_bias_p_noise = 0.001;
+  ekf_params->gyro_noise = 0.015;
+
+  ekf_params->imu_ctrl = 7;
+  ekf_params->terrain_gradient = 0.5;
+  ekf_params->terrain_p_noise = 5.0;
+
+  ekf_params->height_sensor_ref = 1;
+  ekf_params->pos_noaid_noise = 10.0;
+  ekf_params->valid_timeout_max = 5000000;
 
   ekf_params->imu_pos_body = {
     INS_EKF2_IMU_POS_X,
     INS_EKF2_IMU_POS_Y,
     INS_EKF2_IMU_POS_Z
   };
+
+  ekf_params->filter_update_interval_us = 10000;
+
+  ekf_params->rng_ctrl = 0;
+  ekf_params->flow_ctrl = 0;
 
 #if defined(CONFIG_EKF2_GNSS)
   ekf_params->gps_pos_body = {
@@ -261,8 +295,26 @@ void ins_ekf2_init(void)
     INS_EKF2_GPS_POS_Z
   };
 
+  ekf_params->gps_check_mask = 1023;
+  ekf_params->gnss_ctrl = 7;
+  ekf_params->gps_delay_ms = 110;
+  ekf_params->gps_pos_body(0) = 0.0;
+  ekf_params->gps_pos_body(1) = 0.0;
+  ekf_params->gps_pos_body(2) = 0.0;
+  ekf_params->gps_pos_innov_gate = 5.0;
+  ekf_params->gps_vel_innov_gate = 5.0;
   ekf_params->gps_vel_noise = INS_EKF2_GPS_V_NOISE;
   ekf_params->gps_pos_noise = INS_EKF2_GPS_P_NOISE;
+
+  ekf_params->req_hacc = 3.0;
+  ekf_params->req_vacc = 5.0;
+  ekf_params->req_hdrift = 0.1;
+  ekf_params->req_nsats = 6;
+  ekf_params->req_pdop = 2.5;
+  ekf_params->req_sacc = 0.5;
+  ekf_params->req_vdrift = 0.2;
+
+  AbiBindMsgGPS(INS_EKF2_GPS_ID, &gps_ev, gps_cb);
 #endif 
 
   ekf2.ltp_stamp = 0;
@@ -299,28 +351,68 @@ void ins_ekf2_init(void)
 
 #if defined(CONFIG_EKF2_BAROMETER)
   ekf_params->baro_noise = INS_EKF2_BARO_NOISE;
+
   AbiBindMsgBARO_ABS(INS_EKF2_BARO_ID, &baro_ev, baro_cb);
 #endif
 
 #if defined(CONFIG_EKF2_MAGNETOMETER)
+  ekf_params->mag_acc_gate = 0.5;
+  ekf_params->magb_p_noise = 0.0001;
+  ekf_params->mag_check = 1;
+  ekf_params->mag_check_inclination_tolerance_deg = 20.0;
+  ekf_params->mag_check_strength_tolerance_gs = 0.2;
+  ekf_params->mag_declination_deg = 0;
+  ekf_params->mag_delay_ms = 0;
+  ekf_params->mage_p_noise = 0.001;
+  ekf_params->mag_innov_gate = 3.0;
+
+  ekf_params->heading_innov_gate = 2.6;
+  ekf_params->mag_heading_noise = 0.3;
+  ekf_params->mag_fusion_type = 0;
+
   AbiBindMsgIMU_MAG(INS_EKF2_MAG_ID, &mag_ev, mag_cb);
 #endif
        
-#if defined(CONFIG_EKF2_GNSS)
-  AbiBindMsgGPS(INS_EKF2_GPS_ID, &gps_ev, gps_cb);
-#endif
-
 #if defined(CONFIG_EKF2_OPTICAL_FLOW)
+  ekf_params->flow_ctrl = 1;
+  ekf_params->flow_delay_ms = 20;
+  ekf_params->flow_innov_gate = 3.0;
   ekf_params->flow_noise = INS_EKF2_FLOW_NOISE;
   ekf_params->flow_noise_qual_min = INS_EKF2_FLOW_NOISE_QMIN;
+  ekf_params->flow_pos_body = {0,0,0};
+  ekf_params->flow_qual_min = 1;
+  ekf_params->flow_qual_min_gnd = 0;
+
   AbiBindMsgOPTICAL_FLOW(INS_EKF2_OF_ID, &optical_flow_ev, optical_flow_cb);
 #endif
 
 # if defined(CONFIG_EKF2_RANGE_FINDER)
- AbiBindMsgAGL(INS_EKF2_AGL_ID, &agl_ev, agl_cb);
+  ekf_params->rng_ctrl = 1;
+  ekf_params->max_hagl_for_range_aid = 5.0;
+  ekf_params->range_aid_innov_gate = 1.0;
+  ekf_params->max_vel_for_range_aid = 1.0;
+  ekf_params->rng_gnd_clearance = 0.1;
+  ekf_params->range_delay_ms = 5;
+  ekf_params->range_innov_gate = 5.0;
+  ekf_params->range_kin_consistency_gate = 1.0;
+  ekf_params->range_noise = 0.1;
+  ekf_params->rng_sens_pitch = 0.0;
+  ekf_params->rng_pos_body = {0.0, 0.0, 0.0};
+  ekf_params->range_valid_quality_s = 1.0;
+  ekf_params->range_noise_scaler = 0.05;
+
+  AbiBindMsgAGL(INS_EKF2_AGL_ID, &agl_ev, agl_cb);
 #endif
 
 #if defined(CONFIG_EKF2_EXTERNAL_VISION)
+ ekf_params->ev_att_noise = 0.1;
+ ekf_params->ev_pos_innov_gate = 5.0;
+ ekf_params->ev_vel_innov_gate = 3.0;
+ ekf_params->ev_delay_ms = 0;
+ ekf_params->ev_pos_body(0) = 0;
+ ekf_params->ev_pos_body(1) = 0;
+ ekf_params->ev_pos_body(2) = 0;
+ ekf_params->ev_quality_minimum = 0;
  ekf_params->ev_pos_noise = INS_EKF2_EVP_NOISE;
  ekf_params->ev_vel_noise = INS_EKF2_EVV_NOISE;
 #endif
