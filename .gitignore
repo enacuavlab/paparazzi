@@ -60,6 +60,8 @@ Cargo.lock
 
 /var
 /dox
+pprzEnv/**
+
 
 # /conf/
 /conf/conf.xml
