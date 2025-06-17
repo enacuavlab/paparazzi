@@ -1,0 +1,43 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="lidar_sf30d" dir="lidar">
+  <doc>
+    <description>
+      Ligthware SF30D LIDAR connected over i2c bus.
+    </description>
+    <configure name="LIDAR_SF30D_I2C_DEV" value="i2c2" description="I2C device to use for lidar"/>
+    <configure name="LIDAR_SF30D_I2C_ADDRESS" value="0x66" description="default slave address of lidar"/>
+    <configure name="USE_LIDAR_SF30D_AGL" value="0" description="use this lidar for AGL measurements. OFF by default"/>
+    <configure name="LIDAR_SF30D_COMPENSATE_ROTATION" value="1" description="compensate AGL measurements for body rotation"/>
+  </doc>
+
+  <dep>
+    <depends>i2c</depends>
+    <provides>sonar</provides>
+  </dep>
+
+  <header>
+    <file name="lidar_sf30d.h"/>
+  </header>
+  <init fun="lidar_sf30d_init()"/>
+  <periodic fun="lidar_sf30d_downlink()" freq="10" autorun="TRUE"/> <!-- for debug -->
+  <periodic fun="lidar_sf30d_periodic()" freq="500"/> <!-- Frequency use for logging -->
+  <event fun="lidar_sf30d_event()"/>
+  <makefile>
+    <configure name="LIDAR_SF30D_I2C_DEV" default="i2c2" case="lower|upper"/>
+    <configure name="LIDAR_SF30D_I2C_ADDRESS" default="0x66"/>
+    <configure name="USE_LIDAR_SF30D_AGL" default="0"/>
+    <configure name="LIDAR_SF30D_COMPENSATE_ROTATION" default="1"/>
+    <define name="LIDAR_SF30D_I2C_DEV" value="$(LIDAR_SF30D_I2C_DEV_LOWER)"/>
+    <define name="USE_$(LIDAR_SF30D_I2C_DEV_UPPER)"/>
+    <define name="LIDAR_SF30D_I2C_ADDRESS" value="$(LIDAR_SF30D_I2C_ADDR)"/>
+    <define name="USE_LIDAR_SF30D_AGL" value="$(USE_LIDAR_SF30D_AGL)"/>
+    <define name="LIDAR_SF30D_COMPENSATE_ROTATION" value="$(LIDAR_SF30D_COMPENSATE_ROTATION)"/>
+    <file name="lidar_sf30d.c"/>
+  </makefile>
+  <makefile target="nps">
+    <define name="USE_SONAR" value="1"/><!-- in NPS use a virtual sonar to simulate lidar measurements -->
+  </makefile>
+</module>
+
+

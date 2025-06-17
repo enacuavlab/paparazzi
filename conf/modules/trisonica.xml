@@ -1,0 +1,63 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="trisonica" dir="sensors">
+  <doc>
+    <description>
+  @file "modules/sensors/trisonica.c"
+  @author Jean-Baptiste FORESTIER
+  Decoder for standardized messages from the Trisonica Mini LI-550F
+  
+  CALIBRATION :
+  Calibration Anemo, compas, and Level has to be done with an operator
+  In CLI mode, set your output rate : (ctrl + C, ASCII 3), then , outputrate your_freq
+  In CLI mode, select the parameters you want 
+  
+  TELEMETRY :
+  Using name="AEROPROBE" id="179", use it just for control.
+  Correpondance to trisonica value :
+  counter = mag_head_ang (degree)
+  velocity = absolute_value(pitch) (degree)
+  a_attack = absolute_value(roll) (degree)
+  a_slideslip = 100 * temperature (degC)
+  altitude = absolute_value(winddirhor) (degree)
+  dynamic_p = absolute_value(winddirver) (degree)
+  static_p = 100 * windspeed2d (m/s)
+  checksum = 100 * windspeed3d (m/s)
+  
+  CONNECTION ON TAWAKIV2 : 
+  Work on UART 3.
+  
+  SD LOG :
+  Log on SD card in /PPRZ/pprzlog_xxxx.LOG
+  It will create a new pprzlog file at each startup.
+  Data will be written here at each line reception and we timestamp it with the Tawaki onboard time on CSV format with ',' delimiter.
+  All parameters are not sent with the nominal configuration, you will therefore see 0. You can add through the CLI the supplementary parameters you want to log.
+  Time is in us since the Tawaki startup.
+  
+  PARSER :
+  ASCII parser
+  Exemple of line received : S  00.04 S2  00.02 D  013 DV -063 U -00.00 V -00.02 W -00.04 T  22.53 H  58.56 P  1003.34 AD  1.1724622 PI -004.3 RO -002.7 MD  010 TD  010
+    </description>
+    <configure name="TRISONICA_UART" value="UART3" description="UART on which TRISONICA is connected"/>
+    <configure name="TRISONICA_BAUD" value="B115200" description="UART Baudrate, default to 115200"/>
+    <define name="TRISONICA_SEND_MSG" value="FALSE|TRUE" description="Send synchronized trisonica message over telemetry link, use periodic report function otherwise"/>
+  </doc>
+  <dep>
+    <depends>uart</depends>
+  </dep>
+  <header>
+    <file name="trisonica.h"/>
+  </header>
+  <init fun="trisonica_init()"/>
+  <periodic fun="trisonica_report()" freq="5" autorun="TRUE"/>
+  <event fun="trisonica_event()"/>
+  <makefile>
+    <configure name="TRISONICA_UART" default="uart3" case="upper|lower"/>
+    <configure name="TRISONICA_BAUD" default="B115200"/>
+    <file name="trisonica.c"/>
+    <define name="USE_$(TRISONICA_UART_UPPER)"/>
+    <define name="TRISONICA_UART" value="$(TRISONICA_UART_LOWER)"/>
+    <define name="$(TRISONICA_UART_UPPER)_BAUD" value="$(TRISONICA_BAUD)"/>
+  </makefile>
+</module>
+
