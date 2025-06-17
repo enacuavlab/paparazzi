@@ -54,8 +54,9 @@
 #include "modules/datalink/downlink.h"
 #include "pprzlink/messages.h"
 #include "generated/airframe.h"
-#include "filters/median_filter.h"
+// #include "filters/median_filter.h"
 #include "state.h" // State interface for rotation compensation
+
 
 #include <string.h>
 #include <stdio.h>
@@ -63,214 +64,136 @@
 #include <stdlib.h>
 #include "std.h"
 
-
-
 // ** Declaration ** // 
 
 struct LidarSF30D lidar_sf30d;
-struct MedianFilterInt lidar_sf30d_filter;
+
+static void sf30d_init(struct LidarSF30D* sf30d);
+static void sf30d_downlink(struct LidarSF30D* sf30d);
+static void lidar_sf30d_thd(void* arg);
 
 
 /**
  * Initialization function
  */
 void lidar_sf30d_init(void) {
-
-  lidar_sf30d.log_ptu_started = false;
-  lidar_sf30d.trans.status = I2CTransDone;
-  lidar_sf30d.addr = LIDAR_SF30D_I2C_ADRESS;
-  lidar_sf30d.update_agl = USE_LIDAR_SF30D_AGL;
-  lidar_sf30d.compensate_rotation = LIDAR_SF30D_COMPENSATE_ROTATION;
-  lidar_sf30d.init_status = LIDAR_CONF_UNINIT;
-  lidar_sf30d.error_init = false;
-  lidar_sf30d.initialized = false;
-
-  lidar_sf30d.msg.first = 0;
-  lidar_sf30d.msg.firstFiltered = 0;
-  lidar_sf30d.msg.firstStrength = 0;
-  lidar_sf30d.msg.last = 0;
-  lidar_sf30d.msg.homeFiltered = 0;
-  lidar_sf30d.msg.homeFiltered_raw = 0;
-  lidar_sf30d.msg.phi = 0;
-  lidar_sf30d.msg.theta = 0;
-  lidar_sf30d.msg.gain = 0;
-  lidar_sf30d.msg.now_ts = 0;
-      
-  init_median_filter_i(&lidar_sf30d_filter, MEDIAN_DEFAULT_SIZE);
+  sf30d_init(&lidar_sf30d);
 }
 
-/**
- * Lidar send configuration function
- * Configuration function called once before nominal use
- */
-void lidar_sf30d_send_config(void) {
+static void sf30d_init(struct LidarSF30D* sf30d) {
+  sf30d->log_ptu_started = false;
+  sf30d->trans.status = I2CTransDone;
+  sf30d->addr = LIDAR_SF30D_I2C_ADRESS;
+  sf30d->update_agl = USE_LIDAR_SF30D_AGL;
+  sf30d->compensate_rotation = LIDAR_SF30D_COMPENSATE_ROTATION;
+  sf30d->init_status = LIDAR_CONF_UNINIT;
+  sf30d->error_init = false;
+  sf30d->initialized = false;
 
-  switch (lidar_sf30d.init_status) {
-    case LIDAR_BASED_PROTOCOL:
-      // Enable register based protocol
-      lidar_sf30d.trans.buf[0]= 120;
-      lidar_sf30d.trans.buf[1]= 170;
-      lidar_sf30d.trans.buf[2]= 170;
-      i2c_transmit(&LIDAR_SF30D_I2C_DEV, &lidar_sf30d.trans, lidar_sf30d.addr, 3);
-      lidar_sf30d.init_status++;
-      break;
-    case LIDAR_OUTPUT_MODE:
-      // Set output mode
-      int distance_output_value = 255;
-      lidar_sf30d.trans.buf[0] = 29;
-      lidar_sf30d.trans.buf[1] = (distance_output_value >> 0) & 0xFF;
-      lidar_sf30d.trans.buf[2] = (distance_output_value >> 8) & 0xFF;
-      lidar_sf30d.trans.buf[3] = (distance_output_value >> 16) & 0xFF;
-      lidar_sf30d.trans.buf[4] = (distance_output_value >> 24) & 0xFF;
-      i2c_transmit(&LIDAR_SF30D_I2C_DEV, &lidar_sf30d.trans, lidar_sf30d.addr, 5);
-      lidar_sf30d.init_status++;
-      break;
- /* case LIDAR_UPDATE_RATE:
-      // Set update rate
-      lidar_sf30d.trans.buf[0] = 76;
-      lidar_sf30d.trans.buf[1] = 5; (625 readings/sec)
-      i2c_transmit(&LIDAR_SF30D_I2C_DEV, &lidar_sf30d.trans, lidar_sf30d.addr, 2);
-      lidar_sf30d.init_status++;
-      break;*/
-    case LIDAR_CONF_DONE:
-      lidar_sf30d.initialized = true;
-      lidar_sf30d.trans.status = I2CTransDone;
-      break;
-    default:
-      break;
+  sf30d->msg = (const struct lidar_sf30d_msg_t){0};
+
+  init_median_filter_i(&sf30d->lidar_sf30d_filter, MEDIAN_DEFAULT_SIZE);
+
+  pprz_mtx_init(&sf30d->mtx);
+
+  pprz_thread_create(&sf30d->thd_handle, 512, "sf30d", PPRZ_NORMAL_PRIO+1, lidar_sf30d_thd, sf30d);
+}
+
+
+static void lidar_sf30d_thd(void* arg) {
+  struct LidarSF30D* sf30d = (struct LidarSF30D*)arg;
+
+  sys_time_msleep(LIDAR_SF30D_STARTUP_DELAY*1000);
+
+  // Enable register based protocol
+  sf30d->trans.buf[0]= 120;
+  sf30d->trans.buf[1]= 170;
+  sf30d->trans.buf[2]= 170;
+
+  while(i2c_blocking_transmit(&LIDAR_SF30D_I2C_DEV, &sf30d->trans, sf30d->addr, 3, 0.5) != I2CTransSuccess) {
+    sys_time_msleep(50);
   }
-}
 
-/**
- * Lidar configure function
- * wait before starting the configuration
- * doing to early may void the mode configuration
- */
-void lidar_sf30d_start_configure(void) {
-
-  if (lidar_sf30d.init_status == LIDAR_CONF_UNINIT && get_sys_time_float() > LIDAR_SF30D_STARTUP_DELAY) {
-    lidar_sf30d.init_status++;
-    if (lidar_sf30d.trans.status == I2CTransSuccess || lidar_sf30d.trans.status == I2CTransDone) {
-      lidar_sf30d_send_config();
-    }
+  // Set output mode
+  int distance_output_value = 255;
+  sf30d->trans.buf[0] = 29;
+  sf30d->trans.buf[1] = (distance_output_value >> 0) & 0xFF;
+  sf30d->trans.buf[2] = (distance_output_value >> 8) & 0xFF;
+  sf30d->trans.buf[3] = (distance_output_value >> 16) & 0xFF;
+  sf30d->trans.buf[4] = (distance_output_value >> 24) & 0xFF;
+  while(i2c_blocking_transmit(&LIDAR_SF30D_I2C_DEV, &sf30d->trans, sf30d->addr, 5, 0.5) != I2CTransSuccess) {
+    sys_time_msleep(50);
   }
-}
 
-/**
- * Lidar event function
- * Check if the transaction succeded before reading the result
- */
-void lidar_sf30d_event(void) {
-
-  if (lidar_sf30d.initialized) {
-
-    if (lidar_sf30d.trans.status == I2CTransFailed) {
-      lidar_sf30d.trans.status = I2CTransDone;
-
-    } else if (lidar_sf30d.trans.status == I2CTransSuccess) {
-      
-      // Reset data
-      lidar_sf30d.msg.first = 0;
-      lidar_sf30d.msg.firstFiltered = 0;
-      lidar_sf30d.msg.firstStrength = 0;
-      lidar_sf30d.msg.last = 0;
-      lidar_sf30d.msg.homeFiltered = 0;
-      lidar_sf30d.msg.homeFiltered_raw = 0;
-      lidar_sf30d.msg.phi = 0;
-      lidar_sf30d.msg.theta = 0;
-      lidar_sf30d.msg.gain = 0;
-      lidar_sf30d.msg.now_ts = 0;
-
-      // Process results
-      lidar_sf30d.msg.now_ts = get_sys_time_usec();
-      lidar_sf30d.msg.first = lidar_sf30d.trans.buf[0] | (lidar_sf30d.trans.buf[1] << 8); 
-      lidar_sf30d.msg.firstFiltered = lidar_sf30d.trans.buf[2] | (lidar_sf30d.trans.buf[3] << 8); 
-      lidar_sf30d.msg.firstStrength = lidar_sf30d.trans.buf[4] | (lidar_sf30d.trans.buf[5] << 8); 
-      lidar_sf30d.msg.last = lidar_sf30d.trans.buf[6] | (lidar_sf30d.trans.buf[7] << 8); 
-
-      // filter data
-      lidar_sf30d.msg.homeFiltered_raw = update_median_filter_i(&lidar_sf30d_filter,lidar_sf30d.msg.first);
-      lidar_sf30d.msg.homeFiltered = ((float)lidar_sf30d.msg.homeFiltered_raw)/100.0;
-
-      // compensate rotation if requested
-      if (lidar_sf30d.compensate_rotation) {
-          lidar_sf30d.msg.phi = stateGetNedToBodyEulers_f()->phi;
-          lidar_sf30d.msg.theta = stateGetNedToBodyEulers_f()->theta;
-          lidar_sf30d.msg.gain = (float)fabs( (double) (cosf(lidar_sf30d.msg.phi) * cosf(lidar_sf30d.msg.theta)));
-          lidar_sf30d.msg.homeFiltered = lidar_sf30d.msg.homeFiltered / lidar_sf30d.msg.gain;
-      }
-
-      // Communication error management, if the first strength is 0 and the last distance is greater than 3000 cm, we consider it as an error
-      if (lidar_sf30d.msg.firstStrength == 0 && lidar_sf30d.msg.last > 3000) {
-        lidar_sf30d_init();
-        lidar_sf30d.error_init = true;
-        return;
-      }
-
-      // send ABI message (if requested)
-      if (lidar_sf30d.update_agl) {
-        //AbiSendMsgAGL(AGL_LIDAR_SF30D_ID, lidar_sf30d.msg.now_ts, lidar_sf30d.msg.homeFiltered);
-      }
-
-      // save to sd card
-      lidar_sf30d_log_data();
-
-      lidar_sf30d.trans.status = I2CTransDone;
+  while(true) {
+    //set tx to distance register
+    sf30d->trans.buf[0] = LIDAR_SF30D_REG_REQ_DATA;
+     // We send the reg and we get in return 8 byte
+    if(i2c_blocking_transceive(&LIDAR_SF30D_I2C_DEV, &sf30d->trans, sf30d->addr, 1, 8, 0.5) != I2CTransSuccess) {
+      continue;
     }
 
-  } else if (lidar_sf30d.init_status != LIDAR_CONF_UNINIT) { // Configuring but not yet initialized
-    if (lidar_sf30d.trans.status == I2CTransSuccess || lidar_sf30d.trans.status == I2CTransDone) {
-      lidar_sf30d.trans.status = I2CTransDone;
-      lidar_sf30d_send_config();
+    struct lidar_sf30d_msg_t msg = {0};
+
+    // Process results
+    msg.now_ts = get_sys_time_usec();
+    struct lidar_sf30d_data_t* data = (struct lidar_sf30d_data_t*)sf30d->trans.buf;
+    msg.sensor_data = *data;
+    // filter data
+    msg.homeFiltered_raw = update_median_filter_i(&sf30d->lidar_sf30d_filter,msg.sensor_data.first);
+    msg.homeFiltered = ((float)msg.homeFiltered_raw)/100.0;
+
+    // compensate rotation if requested
+    if (sf30d->compensate_rotation) {
+        msg.phi = stateGetNedToBodyEulers_f()->phi;
+        msg.theta = stateGetNedToBodyEulers_f()->theta;
+        msg.gain = (float)fabs( (double) (cosf(msg.phi) * cosf(msg.theta)));
+        msg.homeFiltered = msg.homeFiltered / msg.gain;
     }
-    if (lidar_sf30d.trans.status == I2CTransFailed) {
-      if(lidar_sf30d.init_status > LIDAR_CONF_UNINIT){
-        lidar_sf30d.init_status--; // Decrement the status to retry the last step, we don't want to go below 0 (LIDAR_CONF_UNINIT)
-      }
-      lidar_sf30d.trans.status = I2CTransDone;
-      lidar_sf30d_send_config(); // Retry config (TODO max retry)
+
+    // Communication error management, if the first strength is 0 and the last distance is greater than 3000 cm, we consider it as an error
+    // if (lidar_sf30d.msg.firstStrength == 0 && lidar_sf30d.msg.last > 3000) {
+    //   lidar_sf30d_init();
+    //   lidar_sf30d.error_init = true;
+    //   return;
+    // }
+
+    // send ABI message (if requested)
+    if (sf30d->update_agl) {
+      //AbiSendMsgAGL(AGL_LIDAR_SF30D_ID, lidar_sf30d.msg.now_ts, lidar_sf30d.msg.homeFiltered);
     }
+
+    // save to sd card
+    // lidar_sf30d_log_data();
+
+    pprz_mtx_lock(&sf30d->mtx);
+    sf30d->msg = msg;
+    pprz_mtx_unlock(&sf30d->mtx);
+
+    sys_time_msleep(2);
+
   }
+
 }
-
-/**
- * Lidar read function to register 
- */
-void lidar_sf30d_read(void) {
-
-  if (lidar_sf30d.initialized && lidar_sf30d.trans.status == I2CTransDone) {
-
-      lidar_sf30d.trans.buf[0] = LIDAR_SF30D_REG_REQ_DATA; //set tx to distance register
-      i2c_transceive(&LIDAR_SF30D_I2C_DEV, &lidar_sf30d.trans, lidar_sf30d.addr, 1, 8); // We send the reg and we get in return 8 byte
-  }    
-}
-
-/**
- * Poll Lidar for data
- */
-void lidar_sf30d_periodic(void) {
-
-  if (lidar_sf30d.initialized) {
-    lidar_sf30d_read();
-  } else {
-    lidar_sf30d_start_configure();
-  }
-}
-
 
 
 /**
  * Downlink message for debug
  */
 void lidar_sf30d_downlink(void) {
+  sf30d_downlink(&lidar_sf30d);
+}
 
-  uint8_t trans = lidar_sf30d.trans.status;
+static void sf30d_downlink(struct LidarSF30D* sf30d) {
+  pprz_mtx_lock(&sf30d->mtx);
+  uint8_t trans = sf30d->trans.status;
   uint8_t status = 3; // Default status: 3 (no error), random value chosen for debug
-  if(lidar_sf30d.error_init == true){
+  if(sf30d->error_init == true){
     status = 1; // Error during initialization
   }
-  lidar_sf30d.error_init = false; // Reset error flag after sending
-  float distance = lidar_sf30d.msg.homeFiltered;
+  sf30d->error_init = false; // Reset error flag after sending
+  float distance = sf30d->msg.homeFiltered;
+  pprz_mtx_unlock(&sf30d->mtx);
 
   DOWNLINK_SEND_LIDAR(DefaultChannel, DefaultDevice,
       &distance,
@@ -294,12 +217,12 @@ void lidar_sf30d_log_data(void) {
     } else {
       sdLogWriteLog(pprzLogFile, "%lu,%d,%d,%d,%.2f,%lu,%d,%.6f,%.6f,%.6f \n",
       lidar_sf30d.msg.now_ts,
-      lidar_sf30d.msg.first,
-      lidar_sf30d.msg.firstFiltered,
-      lidar_sf30d.msg.firstStrength,
+      lidar_sf30d.msg.sensor_data.first,
+      lidar_sf30d.msg.sensor_data.firstFiltered,
+      lidar_sf30d.msg.sensor_data.firstStrength,
       lidar_sf30d.msg.homeFiltered,
       lidar_sf30d.msg.homeFiltered_raw,
-      lidar_sf30d.msg.last,
+      lidar_sf30d.msg.sensor_data.last,
       lidar_sf30d.msg.phi,
       lidar_sf30d.msg.theta,
       lidar_sf30d.msg.gain

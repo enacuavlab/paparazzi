@@ -45,7 +45,8 @@
 
 #include "std.h"
 #include "mcu_periph/i2c.h"
-
+#include "modules/core/threads.h"
+#include "filters/median_filter.h"
 
 #define LIDAR_SF30D_ID 18
 #define UPDATE_RATE 8
@@ -55,12 +56,21 @@
 #define LOG_ASCII 0 // 0 == ASCII and 1 == Binary
 
 
-// generic lidar_sf30d message structure _ 24 parameters
-struct lidar_sf30d_msg_t {
+struct lidar_sf30d_data_t {
   int16_t first;
   int16_t firstFiltered;
   int16_t firstStrength;
   int16_t last;
+  int16_t lastFiltered;
+  int16_t lastStrength;
+  int16_t backgroundNoise;
+  int16_t temperature;
+} __attribute__((packed));
+
+
+struct lidar_sf30d_msg_t {
+  struct lidar_sf30d_data_t sensor_data;
+
   float homeFiltered;
   uint32_t homeFiltered_raw;
   float phi;
@@ -88,6 +98,10 @@ struct LidarSF30D
   bool initialized;
   bool error_init; // Flag to indicate if there was an error during initialization
   struct lidar_sf30d_msg_t msg;
+
+  pprz_mutex_t mtx;
+  pprz_thread_t thd_handle;
+  struct MedianFilterInt lidar_sf30d_filter;
 };
 
 
