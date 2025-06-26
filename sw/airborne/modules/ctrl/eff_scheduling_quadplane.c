@@ -67,6 +67,7 @@ void eff_scheduling_quadplane_periodic(void)
 
   if (airspeed > EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED) {
 
+
     // turn off vertical motors
     for (int8_t i = 0; i < 4; i++) {
       for (int8_t j = 0; j < 4; j++) {
@@ -80,14 +81,14 @@ void eff_scheduling_quadplane_periodic(void)
     float airspeed2 = offset_airspeed * offset_airspeed;
 
     float roll_eff = EFF_SCHEDULING_QUADPLANE_ROLL * airspeed2;
-    g1g2[0][4] = -roll_eff / INDI_G_SCALING; // elevon_right
-    g1g2[0][5] = -roll_eff / INDI_G_SCALING; // elevon_left
+    g1g2[0][4] = roll_eff / INDI_G_SCALING; // elevon_right
+    g1g2[0][5] = roll_eff / INDI_G_SCALING; // elevon_left
 
     float pitch_eff = EFF_SCHEDULING_QUADPLANE_PITCH * airspeed2;
     g1g2[1][4] =  pitch_eff / INDI_G_SCALING; // elevon_right
     g1g2[1][5] = -pitch_eff / INDI_G_SCALING; // elevon_left
 
-    //g1g2[4][6] = EFF_SCHEDULING_QUADPLANE_THRUST_X; // pusher motor ????
+    g1g2[4][6] = EFF_SCHEDULING_QUADPLANE_THRUST_X / INDI_G_SCALING; // pusher motor
   }
   else {
     // turn on vertical motors
@@ -98,16 +99,32 @@ void eff_scheduling_quadplane_periodic(void)
     }
 
     //Come back to motor control
-    g1g2[0][4] = 0; // elevon_left
-    g1g2[0][5] = 0; // elevon_right
+  //  g1g2[0][4] = 0; // elevon_right
+  //  g1g2[0][5] = 0; // elevon_left
 
-    g1g2[1][4] = 0; // elevon_left
-    g1g2[1][5] = 0; // elevon_right
+  //  g1g2[1][4] = 0; // elevon_right
+  //  g1g2[1][5] = 0; // elevon_left
+    
+    // elevon function of airspeed
+    float offset_airspeed = airspeed - EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED; //offset for start eff at zero!
+    Bound(offset_airspeed, 0.0f, 30.0f);
+    float airspeed2 = offset_airspeed * offset_airspeed;
+
+    float roll_eff = EFF_SCHEDULING_QUADPLANE_ROLL * airspeed2;
+    g1g2[0][4] = roll_eff / INDI_G_SCALING; // elevon_right
+    g1g2[0][5] = roll_eff / INDI_G_SCALING; // elevon_left
+
+    float pitch_eff = EFF_SCHEDULING_QUADPLANE_PITCH * airspeed2;
+    g1g2[1][4] =  pitch_eff / INDI_G_SCALING; // elevon_right
+    g1g2[1][5] = -pitch_eff / INDI_G_SCALING; // elevon_left
+    
+        
+    
 
     if (airspeed < EFF_SCHEDULING_QUADPLANE_PUSHER_AIRSPEED) {
-      //g1g2[4][6] = 0; // pusher motor ????
+      g1g2[4][6] = 0; // pusher motor
     } else {
-      //g1g2[4][6] = EFF_SCHEDULING_QUADPLANE_THRUST_X;
+      g1g2[4][6] = EFF_SCHEDULING_QUADPLANE_THRUST_X / INDI_G_SCALING; // pusher motor
     }
   }
 }
