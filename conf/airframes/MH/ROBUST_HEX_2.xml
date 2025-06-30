@@ -64,8 +64,10 @@
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
     </module>
 
-    <module name="gps" type="datalink"/>
-        
+    <!-- <module name="gps" type="datalink"/> -->
+    <module name="gps" type="optitrack">
+      <define name = "INS_EKF2_OPTITRACK" value = "TRUE"/>
+    </module>
 
     <module name="stabilization" type="indi">
       <define name="INDI_NUM_ACT" value="6"/>
@@ -85,14 +87,14 @@
     </module>
     <!--module name="fc_rotor"/-->
     
-    <!-- <module name="ins" type="ekf2"/> -->
-    <module name="ins" type="gps_passthrough"/>
+    <module name="ins" type="ekf2"/> 
+   <!--<module name="ins" type="gps_passthrough"/>
     <module name="ahrs" type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="FALSE"/>
       <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
       <define name="AHRS_HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
-     <!-- <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/> -->
-    </module>
+      <define name="AHRS_GPS_SPEED_IN_NEGATIVE_Z_DIRECTION" value="TRUE"/>
+    </module>-->
 
     <module name="air_data"/>
     <!--module name="logger_tune_indi"/-->
@@ -193,6 +195,7 @@
         <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
+    
     <define name="GYRO_CALIB" type="array">
       <field type="struct">
         <field name="abi_id" value="24"/>
@@ -261,32 +264,38 @@
     <define name="MAX_R" value="120" unit="deg/s"/>
 
     <!-- second order filter parameters -->
-    <define name="FILT_CUTOFF" value="3.0"/>
-    <define name="FILT_CUTOFF_R" value="3.0"/>
+    <define name="FILT_CUTOFF" value="4.0"/>
+    <define name="FILT_CUTOFF_R" value="4.0"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
     <define name="ADAPTIVE_MU" value="0.0001"/>
 
     <!-- control effectiveness Hexa Form-->
-    <define name="G1_ROLL"   value="{  -30.0,  -50,  -30,  30.0,  50,   30 }"/>
-    <define name="G1_PITCH"  value="{  50,   0,   -50,   -50,    0,  50 }"/>
+    <define name="G1_ROLL"   value="{  -20.0,  -35,  -20,  20.0,  35,   20 }"/>
+    <define name="G1_PITCH"  value="{  35,   0,   -35,   -35,    0,  35 }"/>
     <define name="G1_YAW"    value="{   2,   -2,    2,   -2,    2,   -2 }"/>
     <define name="G1_THRUST_X" value="{-0.1, 0.2, -0.1, -0.1, 0.2, -0.1}"/>
     <define name="G1_THRUST_Y" value="{0.2,  0,   -0.2,  0.2,  0 , -0.2 }"/>
+    <define name="G1_THRUST" value="{-0.35, -0.35, -0.35, -0.35, -0.35, -0.35}"/> 
+
+    <!--<define name="G1_THRUST_X" value="{-0.1, 0.2, -0.1, -0.1, 0.2, -0.1}"/>
+    <define name="G1_THRUST_Y" value="{0.2,  0,   -0.2,  0.2,  0 , -0.2 }"/> 
+    <define name="G1_THRUST" value="{-0.4, -0.4, -0.4, -0.4, -0.4, -0.4}"/>-->
     <!-- <define name="G1_THRUST_X" value="{0,0,0,0,0,0}"/>-->
     <!-- <define name="G1_THRUST_Y" value="{0,0,0,0,0,0}"/>-->
-    <define name="G1_THRUST" value="{-0.4, -0.4, -0.4, -0.4, -0.4, -0.4}"/>
     <define name="G2"        value="{0.0, -0, 0, -0.0 , 0.0 , -0.0}"/>
     <!-- <define name="G2"        value="{80.0, -80, 80, -80.0 , 80.0 , -80.0}"/> -->
 
     <!-- first order actuator dynamics -->
     <!-- <define name="ACT_DYN" value="{0.03, 0.03, 0.03, 0.03, 0.03, 0.03}"/> -->
-    <define name="ACT_FREQ" value="{10.10, 10.10, 10.10, 10.10, 10.10, 10.10}"/>
+    <!-- <define name="ACT_FREQ" value="{10.10,10.10,10.10,10.10,10.10,10.10,}"/>  -->
+    <define name="ACT_FREQ" value="{25.6, 25.6, 25.6, 25.6, 25.6, 25.6}"/>
+
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
 
     <!--Priority for each axis (roll, pitch, yaw and thrust)-->
-    <define name="WLS_PRIORITIES" value="{1000, 1000,1,1000,1000,1000}"/>   <!-- ROLL,PITCH,YAW,Tz,Tx,Ty -->
+    <define name="WLS_PRIORITIES" value="{10000, 10000,10,1000,100,100}"/>   <!-- ROLL,PITCH,YAW,Tz,Tx,Ty -->
     <!--<define name="WLS_PRIORITIES" value="{1000, 1000, 10,1000}"/> --><!-- ROLL,PITCH,YAW,Tz,Tx,Ty -->
     <define name="RPM_FEEDBACK" value="FALSE"/>
     <!-- <define name="ACT_IS_THRUSTER_X" value="{1,1,1,1,1,1}"/> -->

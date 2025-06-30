@@ -163,10 +163,10 @@ float Ga_FAinv[INDI_OUTPUTS][INDI_OUTPUTS];
 struct WLS_t wls_guid_p = {
   .nu        = NU_MAX,
   .nv        = NV_MAX,
-  .gamma_sq  = 10000000.0,
+  .gamma_sq  = 1000.0,
   .v         = {0.0},
-  .Wv        = {1.f, 1.f, 1.f},         // x,y,z
-  .Wu        = {10000.f,10000.f,1.f,1.f,1.f,100.f}, // minimize the control input (thetq,phi,Tx,Ty,Tz,psi)
+  .Wv        = {100.f, 100.f, 100.f},         // x,y,z
+  .Wu        = {10.f,10.f,0.f,0.f,0.f,10.f}, // minimize the control input (thetq,phi,Tx,Ty,Tz,psi)
   .u_pref    = {0.0},
   .u_min     = {0.0},
   .u_max     = {0.0},
@@ -290,8 +290,8 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   #if GUIDANCE_INDI_RC_SWITCH_EULER
     // euler_yxz_ref.phi =   (radio_control.values[RADIO_PITCH] / 9600.0);
     // euler_yxz_ref.theta = (radio_control.values[RADIO_ROLL] / 9600.0);
-    Euler_ref_tester[0] = (radio_control.values[RADIO_PITCH] / 9600.0)*0.2;
-    Euler_ref_tester[1] = (radio_control.values[RADIO_ROLL] / 9600.0)*0.2;
+    Euler_ref_tester[0] = (radio_control.values[RADIO_ROLL] / 9600.0)*0.5;
+    Euler_ref_tester[1] = (radio_control.values[RADIO_PITCH] / 9600.0)*0.5;
     euler_yxz_ref.phi  = Euler_ref_tester[0];
     euler_yxz_ref.theta = Euler_ref_tester[1];
   #endif
@@ -353,25 +353,25 @@ struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight UNUSED, struc
   static float xkdy = 0.0f;
   static float xkdz = 0.0f;
   // Kpxy
-  Ap =        0.9986;//0.997;//0.9992;
-  Bp =       -0.0009647;//-0.003251;//-0.002109;
-  Cp =       -0.4403;//-0.5215;//-0.01485;
-  Dp =        0.5603;//0.2667;// 0.6843;
+  Ap =     0.9985;//0.9986;//0.997;//0.9992;
+  Bp =     0.04362;//-0.0009647;//-0.003251;//-0.002109;
+  Cp =     0.009739;//-0.4403;//-0.5215;//-0.01485;
+  Dp =     0.5602;//0.5603;//0.2667;// 0.6843;
   // Kdxy
-  Ad =         1;//1;//1;
-  Bd =        -0.003343;//-0.01631;//0.0009014;
-  Cd =        -1.194;//-0.4905;//2.883;
-  Dd =         2.397;//3.605;//3.609;
+  Ad =      1;//1;//1;//1;
+  Bd =     -0.01418;//-0.003343;//-0.01631;//0.0009014;
+  Cd =     -0.2814;//-1.194;//-0.4905;//2.883;
+  Dd =      2.397;//2.397;//3.605;//3.609;
   // Kpz
-  Apz =  0.9953;
-  Bpz = -0.00106 ;
-  Cpz = -3.451;
-  Dpz = -0.0406;
+  Apz =  0.9987;//0.9816;//0.9953;
+  Bpz = -0.0003935;//0.007528;//-0.00106 ;
+  Cpz = -1.052;//-5.243;//-3.451;
+  Dpz =  1.084;//3.58;//-0.0406;
   // Kdz
-  Adz =  0.9999;
-  Bdz =  -0.004018;
-  Cdz =  -7.692;
-  Ddz =  6.773;
+  Adz =  1;//0.9937;// 0.9999;
+  Bdz =  0.003449;//-0.0008827;//-0.004018;
+  Cdz =  1.548;//-3.132;//-7.692;
+  Ddz =  3.357;//1.82;//6.773;
     if (autopilot_in_flight){
       // pos_err
       pos_err.x = POS_FLOAT_OF_BFP(gh->ref.pos.x) - stateGetPositionNed_f()->x;
@@ -379,35 +379,35 @@ struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight UNUSED, struc
       pos_err.z = POS_FLOAT_OF_BFP(gv->z_ref) - stateGetPositionNed_f()->z;
       // vx_sp
       //printf("pos_err_x = %f and pos_err_y = %f \n",pos_err.x,pos_err.y);
-      xk1px = Ap * xkpx + Bp * pos_err.x;
-      speed_sp.x = Cp*xkpx + Dp * pos_err.x;
+      xk1px = Apz * xkpx + Bpz * pos_err.x;
+      speed_sp.x = Cpz*xkpx + Dpz * pos_err.x;
       xkpx = xk1px;
       // vy_sp
-      xk1py = Ap * xkpy + Bp * pos_err.y;
-      speed_sp.y = Cp * xkpy + Dp * pos_err.y;
+      xk1py = Apz * xkpy + Bpz * pos_err.y;
+      speed_sp.y = Cpz * xkpy + Dpz * pos_err.y;
       xkpy = xk1py;
       // Compute Acc SP
       speed_err.x = speed_sp.x - stateGetSpeedNed_f()->x;
       speed_err.y = speed_sp.y - stateGetSpeedNed_f()->y;
       // acc_spx
       xk1dx = Ad * xkdx + Bd * speed_err.x;
-      speed_fb.x = Cd*xkdx + Dd * speed_err.x;
+      speed_fb.x = Cd * xkdx + Dd * speed_err.x;
       xkdx = xk1dx;
       // acc_spy
       xk1dy = Ad * xkdy + Bd * speed_err.y;
-      speed_fb.y = Cd*xkdy + Dd * speed_err.y;
+      speed_fb.y = Cd * xkdy + Dd * speed_err.y;
       xkdy = xk1dy;
       //printf("xkdy = %f \n",xkdy);
       // z
       // if (autopilot_get_motors_on()) {
       // vz_sp
-      xk1pz = Ap * xkpz + Bp * pos_err.z;
-      speed_sp.z = Cp * xkpz + Dp * pos_err.z;
+      xk1pz = Apz * xkpz + Bpz * pos_err.z;
+      speed_sp.z = Cpz * xkpz + Dpz * pos_err.z;
       xkpz = xk1pz;
       // acc_zsp
       speed_err.z = speed_sp.z - stateGetSpeedNed_f()->z;
-      xk1dz = Ad * xkdz + Bd * speed_err.z;
-      speed_fb.z = Cd*xkdz + Dd * speed_err.z;
+      xk1dz = Adz * xkdz + Bdz * speed_err.z;
+      speed_fb.z = Cdz * xkdz + Ddz * speed_err.z;
       xkdz = xk1dz;
       //printf("xkdz = %f \n",xkdz);
 
@@ -636,16 +636,16 @@ void guidance_indi_set_wls_settings(struct FloatEulers *euler_yxz, float *Thrust
   wls_guid_p.u_min[0] =  -0.5  - euler_yxz->theta; //theta
   wls_guid_p.u_min[1] =  -0.5  - euler_yxz->phi;   //phi
   wls_guid_p.u_min[2] =  -15   - Thrust_filtered_Guidance[2]; //Tz (MAX_PPRZ  - stabilization.cmd[COMMAND_THRUST])
-  wls_guid_p.u_min[3] =  -0.7  -  Thrust_filtered_Guidance[0]; //Tx
-  wls_guid_p.u_min[4] =  -0.7  -  Thrust_filtered_Guidance[1]; //Ty 
+  wls_guid_p.u_min[3] =  -1  -  Thrust_filtered_Guidance[0]; //Tx
+  wls_guid_p.u_min[4] =  -1  -  Thrust_filtered_Guidance[1]; //Ty 
   wls_guid_p.u_min[5] =  -1    -  euler_yxz->psi; //psi
 
   // Set upper limits limits 
   wls_guid_p.u_max[0] =   0.5  -  euler_yxz->theta; //theta
   wls_guid_p.u_max[1] =   0.5  -  euler_yxz->phi; //phi
-  wls_guid_p.u_max[2] =   5    -  Thrust_filtered_Guidance[2]; //Tz
-  wls_guid_p.u_max[3] =   0.7  -  Thrust_filtered_Guidance[0]; //Tx
-  wls_guid_p.u_max[4] =   0.7  -  Thrust_filtered_Guidance[1]; //Ty
+  wls_guid_p.u_max[2] =   6.3    -  Thrust_filtered_Guidance[2]; //Tz
+  wls_guid_p.u_max[3] =   1  -  Thrust_filtered_Guidance[0]; //Tx
+  wls_guid_p.u_max[4] =   1  -  Thrust_filtered_Guidance[1]; //Ty
   wls_guid_p.u_max[5] =   1    -  euler_yxz->psi; //psi
 
   // Set prefered states

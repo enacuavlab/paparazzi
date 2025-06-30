@@ -1,6 +1,6 @@
 <!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
 
-<flight_plan alt="148" ground_alt="146" lat0="43.5640917" lon0="1.4829201" wp_frame="ltp" max_dist_from_home="5" name="Rotorcraft Basic (Enac)" security_height="0.3">
+<flight_plan alt="147.3" ground_alt="146" lat0="43.5640917" lon0="1.4829201" wp_frame="ltp" max_dist_from_home="5" name="Rotorcraft Basic (Enac)" security_height="0.3">
   <header>
 #include "autopilot.h"
   </header>
@@ -8,11 +8,11 @@
     <waypoint name="HOME" x="0.0" y="0.0"/>
     <waypoint name="CLIMB" x="0.0" y="1.0"/>
     <waypoint name="STDBY" x="-1.0" y="0.0"/>
-    <waypoint name="p1" x="-2.0" y="0.0" />
+    <waypoint name="p1" x="-2.0" y="2.0" />
     <waypoint name="p2" x="-2.0" y="-2.0" />
     <waypoint name="p3" x="2.0" y="-2.0" />
     <waypoint name="p4" x="2.0" y="2.0" />
-    <waypoint name="p5" x="1.0" y="1.0" />
+    <waypoint name="p5" x="2.5" y="0.0" />
     <waypoint name="p6" x="2" y="3"/>
     <waypoint name="p7" x="2" y="-3" />
 
@@ -26,7 +26,7 @@
     </block>
     <block name="Geo init">
       <while cond="LessThan(NavBlockTime(), 10)"/>
-      <call_once fun="NavSetGroundReferenceHere()"/>
+      <!-- <call_once fun="NavSetGroundReferenceHere()"/> -->
       <!--<call_once fun="NavSetAltitudeReferenceHere()"/>-->
     </block>
     <block name="Holding point">
@@ -72,13 +72,13 @@
     </block>
     <block name="square_P1_P4">
       <go wp="p1"/>
-      <stay wp="p1" until="stage_time @GT 3"/>
+      <stay wp="p1" until="stage_time @GT 5"/>
       <go wp="p2"/>
-      <stay wp="p2" until="stage_time @GT 3"/>
+      <stay wp="p2" until="stage_time @GT 5"/>
       <go wp="p3"/>
-      <stay wp="p3" until="stage_time @GT 3"/>  
+      <stay wp="p3" until="stage_time @GT 5"/>  
       <go wp="p4"/>
-      <stay wp="p4" until="stage_time @GT 3"/>
+      <stay wp="p4" until="stage_time @GT 5"/>
       <stay wp="p1"/>
     </block>
     <block name="P6__p7_P1">
