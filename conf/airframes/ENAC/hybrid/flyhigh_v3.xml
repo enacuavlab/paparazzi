@@ -76,8 +76,10 @@
       <define name="SDP3X_PRESSURE_OFFSET" value="-0.1"/>
       <define name="USE_AIRSPEED_SDP3X" value="TRUE"/>
     </module>
-    
-    <!-- module name="air_data"/-->
+    <!--Don't know why but it's needed for getting the airspeed in the state-->
+    <module name="air_data">
+      <define name="USE_AIRSPEED_AIR_DATA" value="TRUE"/>
+    </module>
 
 	<!--  *** MODE GPS *** -->
     <module name="gps" type="ublox">
@@ -141,8 +143,8 @@
 
   <!-- ACTUATORS IN PWM : FORWARD MOTOR + AILERONS -->  
   <servos driver="Pwm">  
-    <servo name="AILERONS_RIGHT" no="1" min="870"  neutral="1510" max="2150"/>    <!-- min 870  neutral 1510 max 2150  min="1100" neutral="1500" max="1900"-->  
-    <servo name="AILERONS_LEFT"  no="2" min="870"  neutral="1510" max="2150"/>    <!-- Inverted one : min 870  neutral 1510 max 2150--> 
+    <servo name="AILERONS_RIGHT" no="1" min="1210"  neutral="1510" max="1810"/>    <!-- min 870  neutral 1510 max 2150  min="1100" neutral="1500" max="1900"-->  
+    <servo name="AILERONS_LEFT"  no="2" min="1210"  neutral="1510" max="1810"/>    <!-- Inverted one : min 870  neutral 1510 max 2150--> 
     <servo name="MOTOR_PUSH"     no="3" min="1000" neutral="1100" max="2000"/>
   </servos>
   <!-- *** END SERVOS *** -->
@@ -151,34 +153,35 @@
   
   <!-- *** COMMANDS *** -->  
   <commands>
-    <axis name="FR"              failsafe_value="0"/>
-    <axis name="BR"              failsafe_value="0"/>
-    <axis name="BL"              failsafe_value="0"/>
-    <axis name="FL"              failsafe_value="0"/>
-    <axis name="AILERONS_RIGHT"  failsafe_value="0"/>
-    <axis name="AILERONS_LEFT"   failsafe_value="0"/>
-    <axis name="MOTOR_PUSH"      failsafe_value="0"/>    
-    <!-- MANDATORY LINES : ROLL PITCH YAW THRUST FOR SYSTEM -->      
-    <axis name="ROLL"            failsafe_value="0"/>
-    <axis name="PITCH"           failsafe_value="0"/>
-    <axis name="YAW"             failsafe_value="0"/>
-    <axis name="THRUST"          failsafe_value="0"/>
-    <axis name="THRUST_X"        failsafe_value="0"/>    
+    <axis name="FR"               group="REAL"    failsafe_value="-9600"/>
+    <axis name="BR"               group="REAL"    failsafe_value="-9600"/>
+    <axis name="BL"               group="REAL"    failsafe_value="-9600"/>
+    <axis name="FL"               group="REAL"    failsafe_value="-9600"/>
+    <axis name="AILERONS_RIGHT"   group="REAL"    failsafe_value="-9600"/>
+    <axis name="AILERONS_LEFT"    group="REAL"    failsafe_value="-9600"/>    
+    <axis name="THRUST_X"         group="REAL"    failsafe_value="-9600"/>
+    <axis name="ROLL"             group="VIRTUAL" failsafe_value="0"/>
+    <axis name="PITCH"            group="VIRTUAL" failsafe_value="0"/>
+    <axis name="YAW"              group="VIRTUAL" failsafe_value="0"/>
+    <axis name="THRUST"           group="VIRTUAL" failsafe_value="0"/>  
   </commands>
   
   <!-- *** COMMANDS LAWS *** -->    
   <command_laws>
-    
-    <!-- HOVERING MOTORS -->     
-    <set servo="FR"             value="autopilot.motors_on ?  actuators_pprz[0] : -MAX_PPRZ"/>
-    <set servo="BR"             value="autopilot.motors_on ?  actuators_pprz[1] : -MAX_PPRZ"/>
-    <set servo="BL"             value="autopilot.motors_on ?  actuators_pprz[2] : -MAX_PPRZ"/>
-    <set servo="FL"             value="autopilot.motors_on ?  actuators_pprz[3] : -MAX_PPRZ"/>
-    
-       <!-- PLANE MOTORS AND ACTUATORS -->     
-    <set servo="AILERONS_RIGHT" value="autopilot.motors_on ?  actuators_pprz[4] : 0"/>
-    <set servo="AILERONS_LEFT"  value="autopilot.motors_on ?  actuators_pprz[5] : 0"/>
-    <set servo="MOTOR_PUSH"     value="autopilot.motors_on ?  actuators_pprz[6] : -MAX_PPRZ"/>    
+    <call fun="command_set(COMMAND_FR,               autopilot.motors_on ?  actuators_pprz[0] : -MAX_PPRZ)"/>
+    <call fun="command_set(COMMAND_BR,               autopilot.motors_on ?  actuators_pprz[1] : -MAX_PPRZ)"/>
+    <call fun="command_set(COMMAND_BL,               autopilot.motors_on ?  actuators_pprz[2] : -MAX_PPRZ)"/>
+    <call fun="command_set(COMMAND_FL,               autopilot.motors_on ?  actuators_pprz[3] : -MAX_PPRZ)"/>
+    <call fun="command_set(COMMAND_AILERONS_RIGHT,   autopilot.motors_on ?  actuators_pprz[4] : 0)"/>
+    <call fun="command_set(COMMAND_AILERONS_LEFT,    autopilot.motors_on ?  actuators_pprz[5] : 0)"/>
+    <call fun="command_set(COMMAND_THRUST_X,         autopilot.motors_on ?  eff_scheduling_thruster_X() : -MAX_PPRZ)"/>
+    <set servo="FR"              value="@FR"/>
+    <set servo="BR"              value="@BR"/>
+    <set servo="BL"              value="@BL"/>
+    <set servo="FL"              value="@FL"/>
+    <set servo="AILERONS_RIGHT"  value="@AILERONS_RIGHT"/>
+    <set servo="AILERONS_LEFT"   value="@AILERONS_LEFT"/>
+    <set servo="MOTOR_PUSH"      value="@THRUST_X"/>
   </command_laws>
     <!-- *** END COMMANDS LAWS *** -->  
 
@@ -285,7 +288,7 @@
       <field value="{ 15.0, -15.0, -15.0, 15.0, 0., 0.,   0.}"/> <!-- MY - PITCH -->
       <field value="{   3.,   -3.,    3.,  -3., 0., 0.,   0.}"/> <!-- MZ - YAW   -->
       <field value="{  -1.,   -1.,   -1.,  -1., 0., 0.,   0.}"/> <!-- FZ         -->
-      <field value="{  -1.,   -1.,   -1.,  -1., 0., 0.,   0.}"/> <!-- FX         -->
+      <field value="{   0.,    0.,    0.,   0., 0., 0.,   0.}"/> <!-- FX         -->
     </define>
     <!-- Ailerons right and left definition are done in scheduler -->    
     
@@ -305,11 +308,11 @@
   
 <section name ="EFFECTIVE_SCHEDULING">         
     <define name="FLT_CUTOFF_FREQ"                        value="0.001"/>
-    <define name="EFF_SCHEDULING_QUADPLANE_THRUST_X"      value="15"/> <!-- 15 ? -->
-    <define name="EFF_SCHEDULING_QUADPLANE_PITCH"         value="0.01"/> 
-    <define name="EFF_SCHEDULING_QUADPLANE_ROLL"          value="0.015"/> 
+    <define name="EFF_SCHEDULING_QUADPLANE_THRUST_X"      value="1"/> <!-- 15 ? -->
+    <define name="EFF_SCHEDULING_QUADPLANE_PITCH"         value="0.05"/> <!-- 0.1 --> 
+    <define name="EFF_SCHEDULING_QUADPLANE_ROLL"          value="0.07"/> <!-- 0.15 -->
     <define name="MASS"                                   value="0.67"/>
-    <define name="STABILIZATION_INDI_WLS_PRIORITIES"      value="{300, 300, 10, 200, 300}"/> <!-- Roll, Pitch, Yaw, Lift, Thrust WARNING HERE -->
+    <define name="STABILIZATION_INDI_WLS_PRIORITIES"      value="{300, 300, 1, 300, 300}"/> <!-- Roll, Pitch, Yaw, Lift, Thrust WARNING HERE -->
     <define name="STABILIZATION_INDI_WLS_WU"              value="{1.3, 1.3, 1.3, 1.3, 1.0, 1.0, 1.3}"/> <!-- Left Thrust, Right Thrust, Tail Thrust, Mean Tilt, Tilt Diff, Ailerons, Elevator -->
     <define name="GUIDANCE_INDI_HYBRID_USE_WLS"           value="1"/>
     <define name="GUIDANCE_INDI_WLS_PRIORITIES"           value="{10, 10, 10}"/> <!-- X, Y, Z Accelerations -->
@@ -424,10 +427,10 @@
   </section>
 
   <section name="AUTOPILOT">
-    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
-    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
-    <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
-    <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>  
+    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/> <!-- Here is defined RC Command MODE -->
+    <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/> <!-- Here is defined RC Command MODE -->
+    <define name="MODE_AUTO2" value="AP_MODE_NAV"/> <!-- Here is defined RC Command MODE -->
     <define name="FAILSAFE_FIXED_THROTTLE" value="0.4"/>
   </section>
 

@@ -28,5 +28,6 @@
 extern void eff_scheduling_quadplane_init(void);
 extern void eff_scheduling_quadplane_periodic(void);
 extern void eff_scheduling_quadplane_report(void);
+extern int eff_scheduling_thruster_X(void);
 
 #endif  // EFF_SCHEDULING_QUADPLANE_H
