@@ -11,6 +11,7 @@
   </description>
 
 
+
   <!-- *** FIRMWARE *** -->
   <firmware name="rotorcraft">
     <configure name="RTOS_DEBUG" value="FALSE"/>
@@ -21,7 +22,7 @@
       <module name="radio_control" type="sbus"/>
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
-      <define name="RADIO_CONTROL_THRUST_X"   value="RADIO_GAIN2"/>
+      <define name="RADIO_CONTROL_THRUST_X"   value="RADIO_GAIN2"/>   <!-- TODO -->
       <!--define name="INS_EKF2_OPTITRACK" value="TRUE"/-->
       <!-- define name="I2C2_CLOCK_SPEED" value="100000"/ --> 
     </target>
@@ -76,8 +77,10 @@
       <define name="SDP3X_PRESSURE_OFFSET" value="-0.1"/>
       <define name="USE_AIRSPEED_SDP3X" value="TRUE"/>
     </module>
-    
-    <!-- module name="air_data"/-->
+    <!--Don't know why but it's needed for getting the airspeed in the state-->
+    <module name="air_data">
+      <define name="USE_AIRSPEED_AIR_DATA" value="TRUE"/>
+    </module>
 
 	<!--  *** MODE GPS *** -->
     <module name="gps" type="ublox">
@@ -92,7 +95,7 @@
 	<!-- *** MODE OPTITRACK *** -->    
     <!--module name="gps" type="optitrack"/-->   
         <!-- INS TYPE : EKF2 -->
-    <!--module name="ins" type="ekf2"/-->
+    <!--module name="ins" type="ext_pose"/-->
 
 
 	<!-- STABILIZATION TYPE : INDI FOR HOOVERING -->
@@ -141,8 +144,8 @@
 
   <!-- ACTUATORS IN PWM : FORWARD MOTOR + AILERONS -->  
   <servos driver="Pwm">  
-    <servo name="AILERONS_RIGHT" no="1" min="870"  neutral="1510" max="2150"/>    <!-- min 870  neutral 1510 max 2150  min="1100" neutral="1500" max="1900"-->  
-    <servo name="AILERONS_LEFT"  no="2" min="870"  neutral="1510" max="2150"/>    <!-- Inverted one : min 870  neutral 1510 max 2150--> 
+    <servo name="AILERONS_RIGHT" no="1" min="1275"  neutral="1575" max="1875"/>    <!-- min 870  neutral 1510 max 2150  min="1100" neutral="1500" max="1900"-->  
+    <servo name="AILERONS_LEFT"  no="2" min="1270"  neutral="1570" max="1870"/>    <!-- Inverted one : min 870  neutral 1510 max 2150   --> 
     <servo name="MOTOR_PUSH"     no="3" min="1000" neutral="1100" max="2000"/>
   </servos>
   <!-- *** END SERVOS *** -->
@@ -151,34 +154,35 @@
   
   <!-- *** COMMANDS *** -->  
   <commands>
-    <axis name="FR"              failsafe_value="0"/>
-    <axis name="BR"              failsafe_value="0"/>
-    <axis name="BL"              failsafe_value="0"/>
-    <axis name="FL"              failsafe_value="0"/>
-    <axis name="AILERONS_RIGHT"  failsafe_value="0"/>
-    <axis name="AILERONS_LEFT"   failsafe_value="0"/>
-    <axis name="MOTOR_PUSH"      failsafe_value="0"/>    
-    <!-- MANDATORY LINES : ROLL PITCH YAW THRUST FOR SYSTEM -->      
-    <axis name="ROLL"            failsafe_value="0"/>
-    <axis name="PITCH"           failsafe_value="0"/>
-    <axis name="YAW"             failsafe_value="0"/>
-    <axis name="THRUST"          failsafe_value="0"/>
-    <axis name="THRUST_X"        failsafe_value="0"/>    
+    <axis name="FR"               group="REAL"    failsafe_value="-9600"/>
+    <axis name="BR"               group="REAL"    failsafe_value="-9600"/>
+    <axis name="BL"               group="REAL"    failsafe_value="-9600"/>
+    <axis name="FL"               group="REAL"    failsafe_value="-9600"/>
+    <axis name="AILERONS_RIGHT"   group="REAL"    failsafe_value="-9600"/>
+    <axis name="AILERONS_LEFT"    group="REAL"    failsafe_value="-9600"/>    
+    <axis name="THRUST_X"         group="REAL"    failsafe_value="-9600"/>
+    <axis name="ROLL"             group="VIRTUAL" failsafe_value="0"/>
+    <axis name="PITCH"            group="VIRTUAL" failsafe_value="0"/>
+    <axis name="YAW"              group="VIRTUAL" failsafe_value="0"/>
+    <axis name="THRUST"           group="VIRTUAL" failsafe_value="0"/>  
   </commands>
   
   <!-- *** COMMANDS LAWS *** -->    
   <command_laws>
-    
-    <!-- HOVERING MOTORS -->     
-    <set servo="FR"             value="autopilot.motors_on ?  actuators_pprz[0] : -MAX_PPRZ"/>
-    <set servo="BR"             value="autopilot.motors_on ?  actuators_pprz[1] : -MAX_PPRZ"/>
-    <set servo="BL"             value="autopilot.motors_on ?  actuators_pprz[2] : -MAX_PPRZ"/>
-    <set servo="FL"             value="autopilot.motors_on ?  actuators_pprz[3] : -MAX_PPRZ"/>
-    
-       <!-- PLANE MOTORS AND ACTUATORS -->     
-    <set servo="AILERONS_RIGHT" value="autopilot.motors_on ?  actuators_pprz[4] : 0"/>
-    <set servo="AILERONS_LEFT"  value="autopilot.motors_on ?  actuators_pprz[5] : 0"/>
-    <set servo="MOTOR_PUSH"     value="autopilot.motors_on ?  actuators_pprz[6] : -MAX_PPRZ"/>    
+    <call fun="command_set(COMMAND_FR,               autopilot.motors_on ?  actuators_pprz[0] : -MAX_PPRZ)"/>
+    <call fun="command_set(COMMAND_BR,               autopilot.motors_on ?  actuators_pprz[1] : -MAX_PPRZ)"/>
+    <call fun="command_set(COMMAND_BL,               autopilot.motors_on ?  actuators_pprz[2] : -MAX_PPRZ)"/>
+    <call fun="command_set(COMMAND_FL,               autopilot.motors_on ?  actuators_pprz[3] : -MAX_PPRZ)"/>
+    <call fun="command_set(COMMAND_AILERONS_RIGHT,   autopilot.motors_on ?  actuators_pprz[4] : 0)"/>
+    <call fun="command_set(COMMAND_AILERONS_LEFT,    autopilot.motors_on ?  actuators_pprz[5] : 0)"/>
+    <call fun="command_set(COMMAND_THRUST_X,         autopilot.motors_on ?  eff_scheduling_thruster_X() : -MAX_PPRZ)"/>
+    <set servo="FR"              value="@FR"/>
+    <set servo="BR"              value="@BR"/>
+    <set servo="BL"              value="@BL"/>
+    <set servo="FL"              value="@FL"/>
+    <set servo="AILERONS_RIGHT"  value="@AILERONS_RIGHT"/>
+    <set servo="AILERONS_LEFT"   value="@AILERONS_LEFT"/>
+    <set servo="MOTOR_PUSH"      value="@THRUST_X"/>
   </command_laws>
     <!-- *** END COMMANDS LAWS *** -->  
 
@@ -194,8 +198,8 @@
           <field name="scale_f"     value="true"/>
           <field name="rotation"  value="true"/>
         </field>
-		<field name="neutral" value="4,-5,44" type="int[]"/>
-		<field name="scale_f" value="{ 2.4534, 2.4517, 2.4548 }"/>
+        <field name="neutral" value="3,-7,46" type="int[]"/>
+        <field name="scale_f" value="{ 2.4538, 2.4555, 2.4573 }"/>
         <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
@@ -228,14 +232,26 @@
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
         </field>
-        <field name="neutral" value="-227,-48,29" type="int[]"/>
-        <field name="scale_f" value="{ 0.6944, 0.6727, 0.6799 }"/>
+        <field name="neutral" value="161,238,94" type="int[]"/>
+        <field name="scale_f" value="{ 0.6535, 0.6338, 0.6369 }"/>
       </field>
     </define>
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_PSI"   value="90." unit="deg"/>
-  </section>
+    
+    <define name="IMU_MAG_CALIB" type="array">
+      <field type="struct">
+        <field name="abi_id" value="5"/>
+        <field name="calibrated" type="struct">
+          <field name="neutral" value="true"/>
+          <field name="scale_f" value="true"/>
+        </field>
+        <field name="neutral" value="161,238,94" type="int[]"/>
+        <field name="scale_f" value="{ 0.6535, 0.6338, 0.6369 }"/>
+      </field>
+    </define>
+   </section>
   <!-- *** END IMU GYRO MAGNETO SECTION *** -->   
 
 
@@ -259,6 +275,7 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <define name="NUM_ACT"      value="7"/>
+    <define name="OUTPUTS"      value="5"/>
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P"    value="120"/>
     <define name="REF_ERR_Q"    value="130"/>
@@ -281,17 +298,17 @@
     <!-- control effectiveness All value are divided by INDI_G_SCALING (=1000)-->
     <define name="G1" type="matrix">
 		<!--COLUMNS:   FR    BR     BL     FL   AR  AL   TX  -->
-      <field value="{-15.0, -15.0,  15.0, 15.0, 0., 0.,   0.}"/> <!-- MX - ROLL  -->
-      <field value="{ 15.0, -15.0, -15.0, 15.0, 0., 0.,   0.}"/> <!-- MY - PITCH -->
-      <field value="{   3.,   -3.,    3.,  -3., 0., 0.,   0.}"/> <!-- MZ - YAW   -->
-      <field value="{  -1.,   -1.,   -1.,  -1., 0., 0.,   0.}"/> <!-- FZ         -->
-      <field value="{  -1.,   -1.,   -1.,  -1., 0., 0.,   0.}"/> <!-- FX         -->
+      <field name="ROLL"   value="{-15.0, -15.0,  15.0,  15.0, 0., 0.,   0.}"/> <!-- MX - ROLL  -->
+      <field name="PITCH"  value="{ 15.0, -15.0, -15.0,  15.0, 0., 0.,   0.}"/> <!-- MY - PITCH -->
+      <field name="YAW"    value="{  3.0,  -3.0,   3.0,  -3.0, 0., 0.,   0.}"/> <!-- MZ - YAW   -->
+      <field name="THRUST" value="{  -1.,   -1.,   -1.,   -1., 0., 0.,   0.}"/> <!-- FZ         -->
+      <field name="THRUST_X" value="{   0.,    0.,    0.,    0., 0., 0.,   0.}"/> <!-- FX         -->
     </define>
     <!-- Ailerons right and left definition are done in scheduler -->    
     
     
-    <!--Counter torque effect of spinning up a rotor-->
-    <define name="G2"                       value="{80, -80, 80, -80.0}"/>
+    <!--Counter torque effect of spinning up a rotor. This Matrix is added to the YAW line of G1 if(i==2) g1g2[i][j] = (g1[i][j] + g2[j]) / INDI_G_SCALING;-->
+    <define name="G2"                       value="{80, -80, 80, -80.0, 0 , 0, 0}"/><!-- TODO -->
     <!-- first order actuator dynamics -->
     <!-- define name="ACT_FREQ"                 value="{10.10, 10.10, 10.10, 10.10}"/ -->
     <define name="ESTIMATION_FILT_CUTOFF"   value="4.0"/>
@@ -301,29 +318,30 @@
     <define name="ACT_FREQ"                 value="{12.66, 12.66, 12.66, 12.66, 25.6, 25.6, 12.66}"/>  <!-- WARNING HERE -->
     <define name="ACT_RATE_LIMIT"           value="{9600, 9600, 9600, 9600, 170, 170, 9600}"/>
     <define name="ACT_IS_SERVO"             value="{0, 0, 0, 0, 1, 1, 0}"/>
+    <define name="G1_THRUST_X"         value="{   0.,    0.,    0.,    0., 0., 0.,   0.}"/>   <!-- TODO -->
+    <define name="ACT_IS_THRUSTER_X"   value="{0, 0, 0, 0, 0, 0, 1}"/> <!--value="{1, 1, 0, 1, 1, 0, 0}"/-->
+    <define name="ACT_IS_THRUSTER_Z"   value="{1, 1, 1, 1, 0, 0, 0}"/> <!--value="{1, 1, 1, 1, 1, 0, 0}"/-->
+    <define name="NUM_THRUSTERS"       value="4"/>
+    <define name="NUM_THRUSTERS_X"     value="1"/>
   </section>
   
 <section name ="EFFECTIVE_SCHEDULING">         
-    <define name="FLT_CUTOFF_FREQ"                        value="0.001"/>
-    <define name="EFF_SCHEDULING_QUADPLANE_THRUST_X"      value="15"/> <!-- 15 ? -->
-    <define name="EFF_SCHEDULING_QUADPLANE_PITCH"         value="0.01"/> 
-    <define name="EFF_SCHEDULING_QUADPLANE_ROLL"          value="0.015"/> 
-    <define name="MASS"                                   value="0.67"/>
-    <define name="STABILIZATION_INDI_WLS_PRIORITIES"      value="{300, 300, 10, 200, 300}"/> <!-- Roll, Pitch, Yaw, Lift, Thrust WARNING HERE -->
-    <define name="STABILIZATION_INDI_WLS_WU"              value="{1.3, 1.3, 1.3, 1.3, 1.0, 1.0, 1.3}"/> <!-- Left Thrust, Right Thrust, Tail Thrust, Mean Tilt, Tilt Diff, Ailerons, Elevator -->
-    <define name="GUIDANCE_INDI_HYBRID_USE_WLS"           value="1"/>
-    <define name="GUIDANCE_INDI_WLS_PRIORITIES"           value="{10, 10, 10}"/> <!-- X, Y, Z Accelerations -->
-    <define name="GUIDANCE_INDI_WLS_WU"                   value="{200, 200, 10, 100, 100}"/> <!-- Roll, Pitch, Thrust, Lift -->
-    <define name="GUIDANCE_INDI_PUSHER_INDEX"             value="1"/>
-    <define name="STABILIZATION_INDI_G1_THRUST_X"         value="4"/>
-    <define name="STABILIZATION_INDI_ACT_IS_THRUSTER_X"   value="{0, 0, 0, 0, 0, 0, 1}"/> <!--value="{1, 1, 0, 1, 1, 0, 0}"/-->
-    <define name="STABILIZATION_INDI_ACT_IS_THRUSTER_Z"   value="{1, 1, 1, 1, 0, 0, 0}"/> <!--value="{1, 1, 1, 1, 1, 0, 0}"/-->
-    <define name="STABILIZATION_INDI_NUM_THRUSTERS"       value="4"/>
-    <define name="STABILIZATION_INDI_NUM_THRUSTERS_X"     value="1"/>
+    <define name="FLT_CUTOFF_FREQ"                        value="0.001"/> <!-- 0.001 -->
+    <define name="EFF_SCHEDULING_QUADPLANE_THRUST_X"      value="1"/> <!-- 15 ? -->
+    <define name="EFF_SCHEDULING_QUADPLANE_PITCH"         value="0.5"/> <!-- 0.05 --> 
+    <define name="EFF_SCHEDULING_QUADPLANE_ROLL"          value="0.7"/> <!-- 0.07 -->
+    <!--define name="MASS"                                   value="0.67"/-->
+    <!--define name="STABILIZATION_INDI_WLS_PRIORITIES"      value="{300, 300, 1, 100, 1}"/--> <!-- Roll, Pitch, Yaw, Lift, Thrust WARNING HERE -->
+    <!--define name="STABILIZATION_INDI_WLS_WU"              value="{1.3, 1.3, 1.3, 1.3, 1.0, 1.0, 1.3}"/--> <!-- Left Thrust, Right Thrust, Tail Thrust, Mean Tilt, Tilt Diff, Ailerons, Elevator -->
+
     <!--define name="I_XX_0TILT"                          value="0.005"/--> <!-- X-AXIS MOMENT OF INERTIA AT TILT = 0 -->
     <!--define name="I_YY_0TILT"                          value="0.005"/--> <!-- Y-AXIS MOMENT OF INERTIA AT TILT = 0 -->
     <!--define name="I_ZZ_0TILT"                          value="0.015"/--> <!-- Z-AXIS MOMENT OF INERTIA AT TILT = 0 -->
     <!--define name="STABILIZATION_INDI_ACT_PREF"         value="{0,0,0,8700,0,0,0}"/-->
+    <define name="GUIDANCE_INDI_HYBRID_USE_WLS"           value="1"/>
+    <define name="GUIDANCE_INDI_WLS_PRIORITIES"           value="{10, 10, 10}"/> <!-- X, Y, Z Accelerations -->
+    <define name="GUIDANCE_INDI_WLS_WU"                   value="{200, 200, 10, 100, 100}"/> <!-- Roll, Pitch, Thrust, Lift -->
+    <define name="GUIDANCE_INDI_PUSHER_INDEX"             value="1"/>
   </section>
   <!-- *** END STABILIZATION ATTITUDE AND INDI *** -->   
 
@@ -361,7 +379,7 @@
   <section name="GUIDANCE_INDI" >	  
 	<define name="GUIDANCE_INDI_MAX_AIRSPEED" value="16.0"/>  
     <define name="SPECIFIC_FORCE_GAIN" value="-500.0"/>
-    <define name="THRUST_DYNAMICS_FREQ" value="25.64"/>   
+    <define name="THRUST_DYNAMICS_FREQ" value="25.64"/>     <!-- TODO -->
     <define name="RC_DEBUG" value="FALSE"/>
     <define name="GUIDANCE_INDI_POS_GAIN" value="0.2"/>
     <define name="GUIDANCE_INDI_SPEED_GAIN" value="0.8"/>
@@ -424,10 +442,10 @@
   </section>
 
   <section name="AUTOPILOT">
-    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
-    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
-    <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
-    <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>  
+    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/> <!-- Here is defined RC Command MODE -->
+    <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/> <!-- Here is defined RC Command MODE -->
+    <define name="MODE_AUTO2" value="AP_MODE_NAV"/> <!-- Here is defined RC Command MODE -->
     <define name="FAILSAFE_FIXED_THROTTLE" value="0.4"/>
   </section>
 

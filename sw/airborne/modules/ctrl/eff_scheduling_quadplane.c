@@ -29,23 +29,26 @@
 #include "modules/radio_control/radio_control.h"
 #include "state.h"
 #include "autopilot.h"
+#include "filters/median_filter.h"
 
 #include "modules/actuators/actuators.h"
 
 
 #include "modules/datalink/downlink.h"
 
-// Vecteur command airframe : OK
-// Comment commander moteur pusher et setter X thrust : OK
-// autopilot_get_mode (see autopilot.h) : OK
-// Effective scheduling plioter : transition_ratio (stabilization.c) (param TRANSITION_TIME) : OK
+// TODO :
 
-
+// NUM_ACT name
 // Retour eff_schedu_thruster_X int16 ?
+// Filtering airspeed
+// Remove flag_forward
+
+//Guidage :
 // Merge eff_schedu_thruster_X function with periodic
 // Guidage command transition ratio 
 // Orientation face au vent : guidage
-// TODO Filtering airspeed
+
+
 
 
 // Airspeed at which pusher motor is on/off
@@ -55,20 +58,20 @@
 
 // Airspeed at which vertical motors are on/off
 #ifndef EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED
-#define EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED 10.0f
+#define EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED 13.0f
 #endif
 
 // Pusher motor rate for transition
 #ifndef EFF_SCHEDULING_QUADPLANE_PUSHER_MOTOR_RATE
-#define EFF_SCHEDULING_QUADPLANE_PUSHER_MOTOR_RATE 3000
+#define EFF_SCHEDULING_QUADPLANE_PUSHER_MOTOR_RATE 6000
 #endif
 
 
 
 #ifdef STABILIZATION_INDI_G1
-static float g1g2_hover[INDI_OUTPUTS][INDI_NUM_ACT] = STABILIZATION_INDI_G1;
+static float g1g2_hover[STABILIZATION_INDI_OUTPUTS][STABILIZATION_INDI_NUM_ACT] = STABILIZATION_INDI_G1;
 #else
-static float g1g2_hover[INDI_OUTPUTS][INDI_NUM_ACT] = {
+static float g1g2_hover[STABILIZATION_INDI_OUTPUTS][STABILIZATION_INDI_NUM_ACT] = {
   STABILIZATION_INDI_G1_ROLL,
   STABILIZATION_INDI_G1_PITCH,
   STABILIZATION_INDI_G1_YAW,
@@ -77,23 +80,53 @@ static float g1g2_hover[INDI_OUTPUTS][INDI_NUM_ACT] = {
 };
 #endif
 
+
+#ifndef STABILIZATION_INDI_G2
+#error "You must define STABILIZATION_INDI_G2 matrix for the module eff_scheduling_quadplane"
+#else
+static float g2[STABILIZATION_INDI_NUM_ACT] = STABILIZATION_INDI_G2;
+#endif
+
+#define MODE_FULL_RC
+int flag_forward = 0; // TODO : To be erase
+struct MedianFilterInt airspeed_quadplane_sched_fltr;
+
+
+
+
 void eff_scheduling_quadplane_init(void)
 {
-  for (int8_t i = 0; i < INDI_OUTPUTS; i++) {
-    for (int8_t j = 0; j < INDI_NUM_ACT; j++) {
+  for (int8_t i = 0; i < STABILIZATION_INDI_OUTPUTS; i++) {
+    for (int8_t j = 0; j < STABILIZATION_INDI_NUM_ACT; j++) {
+      if(i != 2) {  
         g1g2[i][j] = g1g2_hover[i][j] / INDI_G_SCALING;
+      } else {
+        //We add the G2 vector to the G1 Matrix here on the YAW line
+        g1g2_hover[i][j] = g1g2_hover[i][j] + g2[j];
+        g1g2[i][j] = g1g2_hover[i][j] / INDI_G_SCALING;
+      }  
     }
   }
+
+    init_median_filter_i(&airspeed_quadplane_sched_fltr, MEDIAN_DEFAULT_SIZE);
 }
 
 void eff_scheduling_quadplane_periodic(void)
 {
-  // calculate squared airspeed
-  float airspeed = stateGetAirspeed_f();
+  // Get airspeed with a median filter
+  float airspeed_raw = stateGetAirspeed_f();
+  float airspeed = update_median_filter_i(&airspeed_quadplane_sched_fltr,airspeed_raw);
 
-  if (autopilot_get_mode() == AP_MODE_FORWARD && airspeed > EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED) { //Only forward mode  && autopilot_get_mode() == AP_MODE_FORWARD
 
+#ifdef MODE_FULL_RC 
+	if ((autopilot_get_mode() == AP_MODE_FORWARD && airspeed > EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED) || (flag_forward == 1 && autopilot_get_mode() != AP_MODE_ATTITUDE_DIRECT)) { // TODO : To be erase	
+#else
+	if (autopilot_get_mode() == AP_MODE_FORWARD && airspeed > EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED) { // The correct one for after
+#endif	  
 
+	// TODO : To be erase
+	flag_forward = 1;    
+    
     // turn off vertical motors
     for (int8_t i = 0; i < 4; i++) {
       for (int8_t j = 0; j < 4; j++) {
@@ -103,6 +136,7 @@ void eff_scheduling_quadplane_periodic(void)
 
     // elevon function of airspeed
     float offset_airspeed = airspeed - EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED; //offset for start eff at zero!
+    if(offset_airspeed < 0) {offset_airspeed =0;}
     Bound(offset_airspeed, 0.0f, 30.0f);
     float airspeed2 = offset_airspeed * offset_airspeed;
 
@@ -117,8 +151,17 @@ void eff_scheduling_quadplane_periodic(void)
 
     //g1g2[4][6] = EFF_SCHEDULING_QUADPLANE_THRUST_X / INDI_G_SCALING; // pusher motor
   }
-  else if (airspeed <= EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED || autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT){
-    // turn on vertical motors
+#ifdef MODE_FULL_RC   
+	//else if ((airspeed <= EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED && flag_forward == 0) || autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT){ // TODO : To be erase	  
+	else if (autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT){ // TODO : To be erase	  
+#else
+	else if (airspeed <= EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED || autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT){ // The correct one for after
+#endif	
+	  
+	// TODO : To be erase
+	flag_forward = 0;   	  
+	  
+    // turn on vertical motorsWLS_PRIORITIES
     for (int8_t i = 0; i < 4; i++) {
       for (int8_t j = 0; j < 4; j++) {
         g1g2[i][j] = g1g2_hover[i][j] / INDI_G_SCALING;
@@ -156,10 +199,19 @@ int eff_scheduling_thruster_X(void)
 	
 	else if(autopilot_get_mode() == AP_MODE_FORWARD) {
 		
-		float airspeed = stateGetAirspeed_f();
+    // Airspeed with a median filter
+    float airspeed_raw = stateGetAirspeed_f();
+    float airspeed = update_median_filter_i(&airspeed_quadplane_sched_fltr,airspeed_raw);
+    
 		//This condition to be piloting the X throttle and the attitude in the same time
-		if(stabilization.transition_ratio < 1.0 || airspeed <= EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED){
-			thrust_x = EFF_SCHEDULING_QUADPLANE_PUSHER_MOTOR_RATE;
+#ifdef MODE_FULL_RC   
+		if(stabilization.transition_ratio < 1.0 || (airspeed <= EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED && flag_forward == 0)){ // TODO : To be erase	 
+#else
+		if(stabilization.transition_ratio < 1.0 || airspeed <= EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED){ // The correct one for after
+#endif	
+				
+			// We use the transition_ratio to make a smooth start of the pusher from 0 to EFF_SCHEDULING_QUADPLANE_PUSHER_MOTOR_RATE %
+			thrust_x = (int) (EFF_SCHEDULING_QUADPLANE_PUSHER_MOTOR_RATE * stabilization.transition_ratio);
 		} else {
 			thrust_x = (int)radio_control_get(RADIO_THROTTLE);
 		}
