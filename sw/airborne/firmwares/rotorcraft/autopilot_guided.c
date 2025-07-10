@@ -164,7 +164,7 @@ void autopilot_guided_parse_GUIDED(uint8_t *buf) {
 }
 
 void autopilot_guided_parse_GUIDED_FULL(uint8_t *buf) {
-  if (DL_GUIDED_SETPOINT_NED_ac_id(buf) != AC_ID || autopilot_get_mode() != AP_MODE_GUIDED) {
+  if (DL_GUIDED_FULL_NED_ac_id(buf) != AC_ID || autopilot_get_mode() != AP_MODE_GUIDED) {
     return;
   }
 
