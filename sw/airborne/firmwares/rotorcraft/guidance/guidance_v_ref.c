@@ -80,9 +80,9 @@ int64_t gv_z_ref;
 #define GV_OMEGA_2    BFP_OF_REAL((GUIDANCE_V_REF_OMEGA*GUIDANCE_V_REF_OMEGA), GV_OMEGA_2_FRAC)
 
 /* first order time constant */
-#define GV_REF_THAU_F  0.25
+#define GV_REF_THAU_F  0.01
 #define GV_REF_INV_THAU_FRAC 16
-#define GV_REF_INV_THAU  BFP_OF_REAL((1./0.25), GV_REF_INV_THAU_FRAC)
+#define GV_REF_INV_THAU  BFP_OF_REAL((1./0.01), GV_REF_INV_THAU_FRAC)
 
 void gv_set_ref(int32_t alt, int32_t speed, int32_t accel)
 {

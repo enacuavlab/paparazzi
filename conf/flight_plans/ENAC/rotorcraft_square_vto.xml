@@ -10,10 +10,10 @@
     <waypoint name="STDBY" x="-1.0" y="0.0"/>
     <waypoint name="TD" x="0" y="-0"/>
 
-    <waypoint name="P1" x="-2.5" y="-2.5"/>
-    <waypoint name="P2" x="-2.5" y="2.5"/>
-    <waypoint name="P3" x="2.5" y="2.5"/>
-    <waypoint name="P4" x="2.5" y="-2.5"/>
+    <waypoint name="P1" x="-2." y="-2."/>
+    <waypoint name="P2" x="-2." y="2."/>
+    <waypoint name="P3" x="1.5" y="2."/>
+    <waypoint name="P4" x="1.5" y="-2."/>
 
     <waypoint name="_S1" x="3.5" y="3.5"/>
     <waypoint name="_S2" x="3.5" y="-3.5"/>
@@ -93,6 +93,12 @@
         <path wpts="P1,P2,P4,P3,P1" max_speed="fp_speed"/>
       </for>
       <deroute block="Standby"/>
+    </block>
+    <block group="square" name="Bilal" strip_button="Bilal">
+      <go wp="HOME"/>
+      <stay wp="HOME" until="stage_time @GT 5"/>
+      <path wpts="HOME,P1,P2,P3,P4,HOME" max_speed="fp_speed"/>
+      <stay wp="HOME"/>
     </block>
 
     <block group="extra_pattern" name="Survey NS" strip_button="SvySweep-NS" strip_icon="survey_rect_ns.png">

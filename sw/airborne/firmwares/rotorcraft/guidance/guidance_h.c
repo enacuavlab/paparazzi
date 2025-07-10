@@ -299,31 +299,37 @@ static void guidance_h_update_reference(void)
     guidance_h.ref.accel.x = ACCEL_BFP_OF_REAL(gh_ref.accel.x);
     guidance_h.ref.accel.y = ACCEL_BFP_OF_REAL(gh_ref.accel.y);
   } else {
-    switch (nav.setpoint_mode) {
-      case NAV_SETPOINT_MODE_SPEED:
-        guidance_h.ref.pos.x = stateGetPositionNed_i()->x;
-        guidance_h.ref.pos.y = stateGetPositionNed_i()->y;
-        guidance_h.ref.speed.x = guidance_h.sp.speed.x;
-        guidance_h.ref.speed.y = guidance_h.sp.speed.y;
-        guidance_h.ref.accel.x = 0;
-        guidance_h.ref.accel.y = 0;
-        break;
+    if (autopilot_get_mode() == AP_MODE_NAV) {
+      switch (nav.setpoint_mode) {
+        case NAV_SETPOINT_MODE_SPEED:
+          guidance_h.ref.pos.x = stateGetPositionNed_i()->x;
+          guidance_h.ref.pos.y = stateGetPositionNed_i()->y;
+          guidance_h.ref.speed.x = guidance_h.sp.speed.x;
+          guidance_h.ref.speed.y = guidance_h.sp.speed.y;
+          guidance_h.ref.accel.x = 0;
+          guidance_h.ref.accel.y = 0;
+          break;
 
-      case NAV_SETPOINT_MODE_ACCEL:
-        guidance_h.ref.pos.x = stateGetPositionNed_i()->x;
-        guidance_h.ref.pos.y = stateGetPositionNed_i()->y;
-        guidance_h.ref.speed.x = stateGetSpeedNed_i()->x;
-        guidance_h.ref.speed.y = stateGetSpeedNed_i()->y;
-        guidance_h.ref.accel.x = guidance_h.sp.accel.x;
-        guidance_h.ref.accel.y = guidance_h.sp.accel.y;
-        break;
+        case NAV_SETPOINT_MODE_ACCEL:
+          guidance_h.ref.pos.x = stateGetPositionNed_i()->x;
+          guidance_h.ref.pos.y = stateGetPositionNed_i()->y;
+          guidance_h.ref.speed.x = stateGetSpeedNed_i()->x;
+          guidance_h.ref.speed.y = stateGetSpeedNed_i()->y;
+          guidance_h.ref.accel.x = guidance_h.sp.accel.x;
+          guidance_h.ref.accel.y = guidance_h.sp.accel.y;
+          break;
 
-      case NAV_SETPOINT_MODE_POS:
-      default: // Fallback is guidance by pos
-        VECT2_COPY(guidance_h.ref.pos, guidance_h.sp.pos);
-        INT_VECT2_ZERO(guidance_h.ref.speed);
-        INT_VECT2_ZERO(guidance_h.ref.accel);
-        break;
+        case NAV_SETPOINT_MODE_POS:
+        default: // Fallback is guidance by pos
+          VECT2_COPY(guidance_h.ref.pos, guidance_h.sp.pos);
+          INT_VECT2_ZERO(guidance_h.ref.speed);
+          INT_VECT2_ZERO(guidance_h.ref.accel);
+          break;
+      }
+    } else {
+      VECT2_COPY(guidance_h.ref.pos, guidance_h.sp.pos);
+      VECT2_COPY(guidance_h.ref.speed, guidance_h.sp.speed);
+      VECT2_COPY(guidance_h.ref.accel, guidance_h.sp.accel);
     }
   }
 
