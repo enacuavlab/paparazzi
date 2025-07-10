@@ -180,8 +180,8 @@
     <define name="MAX_R" value="60" unit="deg/s"/>
 
     <!-- second order filter parameters -->
-    <define name="FILT_CUTOFF" value="2.0"/>
-    <define name="FILT_CUTOFF_R" value="2.0"/>
+    <define name="FILT_CUTOFF" value="4.0"/>
+    <define name="FILT_CUTOFF_R" value="4.0"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
@@ -192,7 +192,7 @@
     <define name="G1" type="matrix">
       <field value="{-30 , -30, 30 , 30 }"/>
       <field value="{30 , -30, -30 , 30 }"/>
-      <field value="{2, -2, 2, -2}"/>
+      <field value="{4, -4, 4, -4}"/>
       <field value="{-1., -1., -1., -1.}"/>
     </define>
     <!--Counter torque effect of spinning up a rotor-->

@@ -46,11 +46,11 @@
   <mass_balance>
     <ixx unit="KG*M2"> 0.0068 </ixx>
     <iyy unit="KG*M2"> 0.0068 </iyy>
-    <izz unit="KG*M2"> 0.0136 </izz>
+    <izz unit="KG*M2"> 0.008 </izz>
     <ixy unit="KG*M2"> 0. </ixy>
     <ixz unit="KG*M2"> 0. </ixz>
     <iyz unit="KG*M2"> 0. </iyz>
-    <emptywt unit="KG"> 0.8 </emptywt>
+    <emptywt unit="KG"> 0.616 </emptywt>
     <location name="CG" unit="M">
       <x> 0 </x>
       <y> 0 </y>
