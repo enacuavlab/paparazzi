@@ -274,7 +274,16 @@ static void guidance_h_update_reference(void)
 {
   /* compute reference even if usage temporarily disabled via guidance_h_use_ref */
 #if GUIDANCE_H_USE_REF
-  if (guidance_h.sp.h_mask == GUIDANCE_H_SP_ACCEL) {
+  if (guidance_h.sp.h_mask == GUIDANCE_H_SP_ALL) {
+    struct FloatVect2 sp_accel;
+    sp_accel.x = ACCEL_FLOAT_OF_BFP(guidance_h.sp.accel.x);
+    sp_accel.y = ACCEL_FLOAT_OF_BFP(guidance_h.sp.accel.y);
+    struct FloatVect2 sp_speed;
+    sp_speed.x = SPEED_FLOAT_OF_BFP(guidance_h.sp.speed.x);
+    sp_speed.y = SPEED_FLOAT_OF_BFP(guidance_h.sp.speed.y);
+    gh_set_ref(guidance_h.sp.pos, sp_speed, sp_accel);
+  }
+  else if (guidance_h.sp.h_mask == GUIDANCE_H_SP_ACCEL) {
     struct FloatVect2 sp_accel_local;
     sp_accel_local.x = ACCEL_FLOAT_OF_BFP(guidance_h.sp.accel.x);
     sp_accel_local.y = ACCEL_FLOAT_OF_BFP(guidance_h.sp.accel.y);
@@ -515,5 +524,16 @@ void guidance_h_set_heading_rate(float rate)
 {
   guidance_h.sp.yaw_mask = GUIDANCE_H_SP_YAW_RATE;
   guidance_h.sp.heading_rate = rate;
+}
+
+void guidance_h_set_all(float x, float y, float vx, float vy, float ax, float ay)
+{
+  guidance_h.sp.h_mask = GUIDANCE_H_SP_ALL;
+  guidance_h.sp.pos.x = POS_BFP_OF_REAL(x);
+  guidance_h.sp.pos.y = POS_BFP_OF_REAL(y);
+  guidance_h.sp.speed.x = SPEED_BFP_OF_REAL(vx);
+  guidance_h.sp.speed.y = SPEED_BFP_OF_REAL(vy);
+  guidance_h.sp.accel.x = ACCEL_BFP_OF_REAL(ax);
+  guidance_h.sp.accel.y = ACCEL_BFP_OF_REAL(ay);
 }
 
