@@ -176,7 +176,15 @@ void autopilot_guided_parse_GUIDED_FULL(uint8_t *buf) {
       DL_GUIDED_FULL_NED_ax(buf),
       DL_GUIDED_FULL_NED_ay(buf)
       );
-  guidance_h_set_heading(DL_GUIDED_FULL_NED_heading(buf));
+  guidance_h_set_heading(
+      DL_GUIDED_FULL_NED_heading(buf)
+      );
+  guidance_v_set_all(
+      DL_GUIDED_FULL_NED_z(buf),
+      DL_GUIDED_FULL_NED_vz(buf),
+      DL_GUIDED_FULL_NED_az(buf)
+      );
+
 }
 #else
 
