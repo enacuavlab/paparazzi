@@ -29,13 +29,13 @@
     
   <!-- Just for dev, can be supp after  /-->    
     <module name="logger_control_effectiveness"/> 
-    <module name="logger" type="control_effectiveness">
-      <define name="LOGGER_CONTROL_EFFECTIVENESS_COMMANDS" value="TRUE"/>
-      <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
-      <define name="LOGGER_CONTROL_EFFECTIVENESS_POS" value="TRUE"/>
-      <define name="LOGGER_CONTROL_EFFECTIVENESS_SPEED" value="TRUE"/>
-      <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="TRUE"/>
-    </module>
+    <!--module name="logger" type="control_effectiveness"-->
+    <define name="LOGGER_CONTROL_EFFECTIVENESS_COMMANDS" value="TRUE"/>
+    <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
+    <define name="LOGGER_CONTROL_EFFECTIVENESS_POS" value="TRUE"/>
+    <define name="LOGGER_CONTROL_EFFECTIVENESS_SPEED" value="TRUE"/>
+    <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="TRUE"/>
+    <!--/module-->
     
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
@@ -144,8 +144,8 @@
 
   <!-- ACTUATORS IN PWM : FORWARD MOTOR + AILERONS -->  
   <servos driver="Pwm">  
-    <servo name="AILERONS_RIGHT" no="1" min="1275"  neutral="1575" max="1875"/>    <!-- min 870  neutral 1510 max 2150  min="1100" neutral="1500" max="1900"-->  
-    <servo name="AILERONS_LEFT"  no="2" min="1270"  neutral="1570" max="1870"/>    <!-- Inverted one : min 870  neutral 1510 max 2150   --> 
+    <servo name="AILERONS_RIGHT" no="1" min="1300"  neutral="1583" max="1840"/>    <!-- min 870  neutral 1510 max 2150  min="1100" neutral="1500" max="1900" When 2 servos are in max, you should go to right-->  
+    <servo name="AILERONS_LEFT"  no="2" min="1300"  neutral="1570" max="1847"/>    <!-- Inverted one : min 870  neutral 1510 max 2150   --> 
     <servo name="MOTOR_PUSH"     no="3" min="1000" neutral="1100" max="2000"/>
   </servos>
   <!-- *** END SERVOS *** -->
@@ -282,7 +282,7 @@
     <define name="REF_ERR_R"    value="80"/>
     <define name="REF_RATE_P"   value="15"/>
     <define name="REF_RATE_Q"   value="15"/>
-    <define name="REF_RATE_R"   value="5"/>
+    <define name="REF_RATE_R"   value="8"/>
     <define name="MAX_R"        value="60" unit="deg/s"/>
 
     <!-- second order filter parameters -->
@@ -298,10 +298,10 @@
     <!-- control effectiveness All value are divided by INDI_G_SCALING (=1000)-->
     <define name="G1" type="matrix">
 		<!--COLUMNS:   FR    BR     BL     FL   AR  AL   TX  -->
-      <field name="ROLL"   value="{-15.0, -15.0,  15.0,  15.0, 0., 0.,   0.}"/> <!-- MX - ROLL  -->
-      <field name="PITCH"  value="{ 15.0, -15.0, -15.0,  15.0, 0., 0.,   0.}"/> <!-- MY - PITCH -->
-      <field name="YAW"    value="{  3.0,  -3.0,   3.0,  -3.0, 0., 0.,   0.}"/> <!-- MZ - YAW   -->
-      <field name="THRUST" value="{  -1.,   -1.,   -1.,   -1., 0., 0.,   0.}"/> <!-- FZ         -->
+      <field name="ROLL"     value="{-15.0, -15.0,  15.0,  15.0, 0., 0.,   0.}"/> <!-- MX - ROLL  -->
+      <field name="PITCH"    value="{ 15.0, -15.0, -15.0,  15.0, 0., 0.,   0.}"/> <!-- MY - PITCH -->
+      <field name="YAW"      value="{  3.0,  -3.0,   3.0,  -3.0, 0., 0.,   0.}"/> <!-- MZ - YAW   -->
+      <field name="THRUST"   value="{  -1.,   -1.,   -1.,   -1., 0., 0.,   0.}"/> <!-- FZ         -->
       <field name="THRUST_X" value="{   0.,    0.,    0.,    0., 0., 0.,   0.}"/> <!-- FX         -->
     </define>
     <!-- Ailerons right and left definition are done in scheduler -->    

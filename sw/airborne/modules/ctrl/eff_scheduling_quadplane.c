@@ -58,7 +58,7 @@
 
 // Airspeed at which vertical motors are on/off
 #ifndef EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED
-#define EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED 13.0f
+#define EFF_SCHEDULING_QUADPLANE_LOW_AIRSPEED 17.0f
 #endif
 
 // Pusher motor rate for transition
@@ -130,7 +130,9 @@ void eff_scheduling_quadplane_periodic(void)
     // turn off vertical motors
     for (int8_t i = 0; i < 4; i++) {
       for (int8_t j = 0; j < 4; j++) {
-        g1g2[i][j] = 0;
+        if(i != 2) {    // TODO We keep the control on YAW for now
+			g1g2[i][j] = 0;
+		}
       }
     }
 
@@ -140,11 +142,13 @@ void eff_scheduling_quadplane_periodic(void)
     Bound(offset_airspeed, 0.0f, 30.0f);
     float airspeed2 = offset_airspeed * offset_airspeed;
 
-    float roll_eff = EFF_SCHEDULING_QUADPLANE_ROLL * airspeed2;
+    //float roll_eff = EFF_SCHEDULING_QUADPLANE_ROLL * airspeed2;
+    float roll_eff = 3.0f; //EFF_SCHEDULING_QUADPLANE_ROLL * airspeed2;
     g1g2[0][4] = roll_eff / INDI_G_SCALING; // elevon_right
     g1g2[0][5] = roll_eff / INDI_G_SCALING; // elevon_left
 
-    float pitch_eff = EFF_SCHEDULING_QUADPLANE_PITCH * airspeed2;
+    //float pitch_eff = EFF_SCHEDULING_QUADPLANE_PITCH * airspeed2;
+    float pitch_eff = 3.0f; 
     g1g2[1][4] =  pitch_eff / INDI_G_SCALING; // elevon_right
     g1g2[1][5] = -pitch_eff / INDI_G_SCALING; // elevon_left
 
