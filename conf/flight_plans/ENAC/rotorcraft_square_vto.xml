@@ -5,15 +5,15 @@
 #include "autopilot.h"
   </header>
   <waypoints>
-    <waypoint name="HOME" x="0.0" y="0.0"/>
+    <waypoint name="HOME" x="0.0" y="0.0" height="2."/>
     <waypoint name="CLIMB" x="0.0" y="1.0"/>
     <waypoint name="STDBY" x="-1.0" y="0.0"/>
     <waypoint name="TD" x="0" y="-0"/>
 
-    <waypoint name="P1" x="-2." y="-2."/>
-    <waypoint name="P2" x="-2." y="2."/>
-    <waypoint name="P3" x="1.5" y="2."/>
-    <waypoint name="P4" x="1.5" y="-2."/>
+    <waypoint name="P1" x="-2.5" y="-2.5" height="3."/>
+    <waypoint name="P2" x="-2.5" y="2.5" height="3."/>
+    <waypoint name="P3" x="2." y="2.5" height="2."/>
+    <waypoint name="P4" x="2." y="-2.5" height="3."/>
 
     <waypoint name="_S1" x="3.5" y="3.5"/>
     <waypoint name="_S2" x="3.5" y="-3.5"/>
