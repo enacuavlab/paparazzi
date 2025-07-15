@@ -1,0 +1,16 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="logger_bilal" dir="loggers" task="core">
+  <doc>
+    <description>
+      Logs to a csv file data required by Bilal Alhawaisil for its PhD
+    </description>
+  </doc>
+  <header>
+    <file name="logger_bilal.h" />
+  </header>
+  <periodic fun="logger_bilal_periodic()" start="logger_bilal_start()" autorun="TRUE" freq="100"/>
+  <makefile target="ap">
+    <file name="logger_bilal.c"/>
+  </makefile>
+</module>
