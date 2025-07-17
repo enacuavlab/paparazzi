@@ -32,6 +32,7 @@
     <module name="telemetry" type="xbee_api"/>
 
     <module name="actuators" type="dshot"/>
+    <define name="DSHOT_TIM4_TELEMETRY_NUM" value="DSHOT_TLM_RX"/>
 
     <module name="board" type="tawaki">
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
@@ -91,9 +92,8 @@
     </module>
 
     <module name="flight_recorder"/>
-    <module name="logger" type="control_effectiveness">
-      <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
-    </module>
+    <module name="logger" type="bilal"/>
+    <module name="sys_mon"/>
   </firmware>
 
   <servos driver="DShot">
@@ -224,14 +224,14 @@
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
     <define name="REF_MIN_ZDD" value="-2.*9.81"/>
     <define name="REF_MAX_ZDD" value=" 0.8*9.81"/>
-    <define name="REF_MIN_ZD" value="-4."/>
-    <define name="REF_MAX_ZD" value=" 4."/>
+    <define name="REF_MIN_ZD" value="-2."/>
+    <define name="REF_MAX_ZD" value=" 2."/>
     <define name="NOMINAL_HOVER_THROTTLE" value="0.30"/>
   </section>
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
     <define name="MAX_BANK" value="45" unit="deg"/>
-    <define name="REF_MAX_SPEED" value="15."/>
+    <define name="REF_MAX_SPEED" value="2.5"/>
     <define name="REF_MAX_ACCEL" value="5."/>
     <define name="REF_TAU" value="0.01"/>
   </section>

@@ -10,15 +10,35 @@
     <waypoint name="STDBY" x="-1.0" y="0.0"/>
     <waypoint name="TD" x="0" y="-0"/>
 
-    <waypoint name="P1" x="-2.5" y="-2.5" height="3."/>
-    <waypoint name="P2" x="-2.5" y="2.5" height="3."/>
+    <waypoint name="START" x="0." y="0." height="2."/>
+    <waypoint name="MID" x="0." y="0." height="5."/>
+    <waypoint name="END" x="0." y="-2." height="2."/>
+    <waypoint name="P1" x="-2" y="-2.5" height="2."/>
+    <waypoint name="P2" x="-2" y="2.5" height="2."/>
     <waypoint name="P3" x="2." y="2.5" height="2."/>
-    <waypoint name="P4" x="2." y="-2.5" height="3."/>
+    <waypoint name="P4" x="2." y="-2.5" height="2."/>
+    <waypoint name="P1l1" x="-2." y="0." height="3.5"/>
+    <waypoint name="P2l1" x="0." y="2.5" height="3.5"/>
+    <waypoint name="P3l1" x="2." y="0." height="3.5"/>
+    <waypoint name="P4l1" x="0." y="-2.5" height="3.5"/>
+    <waypoint name="P1l2" x="-1." y="-1.5" height="5."/>
+    <waypoint name="P2l2" x="-1." y="1.5" height="5."/>
+    <waypoint name="P3l2" x="1." y="1.5" height="5."/>
+    <waypoint name="P4l2" x="1." y="-1.5" height="5."/>
+    <waypoint name="P5" x="-2" y="0." height="2."/>
+    <waypoint name="P6" x="0." y="2.5" height="2."/>
+    <waypoint name="P7" x="2." y="0." height="2."/>
+    <waypoint name="P8" x="0." y="-2.5" height="2."/>
+    <waypoint name="P11l1" x="-2." y="0." height="4."/>
+    <waypoint name="P22l1" x="0." y="2.5" height="4."/>
+    <waypoint name="P33l1" x="2." y="0." height="4."/>
+    <waypoint name="P44l1" x="0." y="-2.5" height="4."/>
+    <waypoint name="START2" x="0." y="-3." height="2."/>
 
-    <waypoint name="_S1" x="3.5" y="3.5"/>
-    <waypoint name="_S2" x="3.5" y="-3.5"/>
-    <waypoint name="_S3" x="-3.5" y="-3.5"/>
-    <waypoint name="_S4" x="-3.5" y="3.5"/>
+    <waypoint name="_S1" x="3.5" y="4."/>
+    <waypoint name="_S2" x="3.5" y="-4."/>
+    <waypoint name="_S3" x="-4." y="-4."/>
+    <waypoint name="_S4" x="-4." y="4."/>
 
     <waypoint name="_N1" x="4.5" y="5.2"/>
     <waypoint name="_N2" x="4.5" y="-5.2"/>
@@ -43,7 +63,7 @@
 
   <variables>
     <variable init="5" type="int" var="fp_laps" min="1" max="50." step="1"/>
-    <variable init="0.5" var="fp_speed" min="0.1" max="2.5" step="0.1"/>
+    <variable init="2.0" var="fp_speed" min="0.1" max="2.5" step="0.1"/>
   </variables>
 
   <modules>
@@ -51,7 +71,7 @@
   </modules>
 
   <exceptions>
-    <exception cond="(!InsideSafety(GetPosX(), GetPosY()) @OR (GetPosHeight() @GT 6.))
+    <exception cond="(!InsideSafety(GetPosX(), GetPosY()) @OR (GetPosHeight() @GT 6.5))
       @AND (nav_block @GT IndexOfBlock('Standby'))
       @AND (nav_block @LT IndexOfBlock('Land HERE'))" deroute="Standby"/>
   </exceptions>
@@ -94,10 +114,30 @@
       </for>
       <deroute block="Standby"/>
     </block>
-    <block group="square" name="Bilal" strip_button="Bilal">
+    <block group="square" name="Bilal S1" strip_button="Bilal S1">
       <go wp="HOME"/>
-      <stay wp="HOME" until="stage_time @GT 5"/>
+      <stay wp="HOME" until="stage_time @GT 7"/>
       <path wpts="HOME,P1,P2,P3,P4,HOME" max_speed="fp_speed"/>
+      <stay wp="HOME"/>
+    </block>
+    <block group="square" name="Bilal S2" strip_button="Bilal S2">
+      <go wp="HOME"/>
+      <stay wp="HOME" until="stage_time @GT 7"/>
+      <path wpts="HOME,P1,P2,P3,P4,P2,P7,P5,P1,P3,P5,P6,P7,P8,HOME" max_speed="fp_speed"/>
+      <stay wp="HOME"/>
+    </block>
+    <block group="square" name="Bilal S3" strip_button="Bilal S3">
+      <go wp="HOME"/>
+      <stay wp="HOME" until="stage_time @GT 7"/>
+      <go wp="START"/>
+      <stay wp="MID" until="GetPosHeight() @GT 4.8"/>
+      <path wpts="MID,P1l2,P2l2,P3l2,P4l2,P4l1,P1l1,P2l1,P3l1,P4,P1,P2,P3,P4,P3l1,P2l1,P1l1,P4l1,P4l2,P3l2,P2l2,P1l2,END" max_speed="fp_speed"/>
+      <stay wp="END"/>
+    </block>
+    <block group="square" name="Bilal S4" strip_button="Bilal S4">
+      <go wp="START2"/>
+      <stay wp="START2" until="stage_time @GT 7"/>
+      <path wpts="START2,MID,P2,P3,P44l1,P22l1,P1,P4,P11l1,P2,P44l1,HOME,P3,P4,P2,P1,P3,P4,P2,P1,START2,HOME" max_speed="fp_speed"/>
       <stay wp="HOME"/>
     </block>
 

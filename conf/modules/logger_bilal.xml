@@ -6,6 +6,9 @@
       Logs to a csv file data required by Bilal Alhawaisil for its PhD
     </description>
   </doc>
+  <dep>
+    <depends>logger_sd_chibios</depends>
+  </dep>
   <header>
     <file name="logger_bilal.h" />
   </header>

@@ -51,10 +51,10 @@ void logger_bilal_start(void)
     }
     for (unsigned int i = 0; i < ACTUATORS_DSHOT_NB; i++) {
       if (actuators_dshot_values[i].activated) {
-        sdLogWriteLog(pprzLogFile, ",rpm_%i,V_%i,A_%i", i, i, i);
+        sdLogWriteLog(pprzLogFile, ",rpm_%d,V_%d,A_%d", i, i, i);
       }
     }
-    sdLogWriteLog(pprzLogFile, ",V_bat,A_bat,E_bat,P_avg");
+    sdLogWriteLog(pprzLogFile, ",V_bat,A_bat,E_bat");
     sdLogWriteLog(pprzLogFile, ",mode,block,stage");
     sdLogWriteLog(pprzLogFile,"\n");
 
@@ -80,16 +80,16 @@ void logger_bilal_periodic(void)
   ref_pos.x = POS_FLOAT_OF_BFP(guidance_h.ref.pos.x);
   ref_pos.y = POS_FLOAT_OF_BFP(guidance_h.ref.pos.y);
   ref_pos.z = POS_FLOAT_OF_BFP(guidance_v.z_ref);
-  sdLogWriteLog(pprzLogFile, ",%.2f,%.2f,%.2f", ref_pos.x, ref_pos.y, ref_pos.z);
+  sdLogWriteLog(pprzLogFile, ",%.3f,%.3f,%.3f", ref_pos.x, ref_pos.y, ref_pos.z);
 
   struct NedCoor_f *pos = stateGetPositionNed_f();
-  sdLogWriteLog(pprzLogFile, ",%.2f,%.2f,%.2f", pos->x, pos->y, pos->z);
+  sdLogWriteLog(pprzLogFile, ",%.3f,%.3f,%.3f", pos->x, pos->y, pos->z);
 
   struct NedCoor_f *speed = stateGetSpeedNed_f();
-  sdLogWriteLog(pprzLogFile, ",%.2f,%.2f,%.2f", speed->x, speed->y, speed->z);
+  sdLogWriteLog(pprzLogFile, ",%.3f,%.3f,%.3f", speed->x, speed->y, speed->z);
 
   struct NedCoor_f *accel = stateGetAccelNed_f();
-  sdLogWriteLog(pprzLogFile, ",%.2f,%.2f,%.2f", accel->x, accel->y, accel->z);
+  sdLogWriteLog(pprzLogFile, ",%.3f,%.3f,%.3f", accel->x, accel->y, accel->z);
 
   struct FloatEulers *att = stateGetNedToBodyEulers_f();
   sdLogWriteLog(pprzLogFile, ",%.3f,%.3f,%.3f", att->phi, att->theta, att->psi);
@@ -108,8 +108,7 @@ void logger_bilal_periodic(void)
     }
   }
 
-  sdLogWriteLog(pprzLogFile, ",%.2f,%3.f,%.3f,%.3f", electrical.vsupply, electrical.current,
-      electrical.energy, (float)electrical.avg_power / electrical.avg_cnt);
+  sdLogWriteLog(pprzLogFile, ",%.2f,%.3f,%.3f", electrical.vsupply, electrical.current, electrical.energy);
 
   sdLogWriteLog(pprzLogFile, ",%d,%d,%d", autopilot_get_mode(), nav_block, nav_stage);
 
