@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Jesús Bautista <jesusbautistavillar@gmail.com> 
+ * Copyright (C) 2021 Jesús Bautista <jesusbautistavillar@gmail.com>
  *                    Hector García  <noeth3r@gmail.com>
  *
  * This file is part of paparazzi.
@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "std.h"
 #include "math/pprz_geodetic.h"
 #include "math/pprz_geodetic_double.h"
 #include "math/pprz_geodetic_float.h"
@@ -33,13 +34,33 @@
 
 #include "generated/airframe.h"
 #include "generated/flight_plan.h"
+#include "generated/modules.h"
 
-#include "firmwares/rover/guidance/rover_guidance_steering.h"
+//#include "firmwares/rover/guidance/rover_guidance_steering.h"
 #include "state.h"
 
-// Check if rover firmware 
+// Check if rover firmware
 #ifndef ROVER_FIRMWARE
 #error "The module nps_fdm_rover is designed for rovers and doesn't support other firmwares!!"
+#endif
+
+#ifndef NPS_ROVER_FRICTION
+#define NPS_ROVER_FRICTION 0.01f
+#endif
+
+// Maximum acceleration (m/s²)
+#ifndef NPS_ROVER_ACCELERATION
+#define NPS_ROVER_ACCELERATION 1.f
+#endif
+
+// Maximum speed (m/s)
+#ifndef NPS_ROVER_MAX_SPEED
+#define NPS_ROVER_MAX_SPEED 2.f
+#endif
+
+// Maximum turn rate (rad/s)
+#ifndef NPS_ROVER_TURN_RATE
+#define NPS_ROVER_TURN_RATE 2.f
 #endif
 
 // NpsFdm structure
@@ -57,14 +78,15 @@ static struct EnuCoor_d rover_vel;
 static struct EnuCoor_d rover_acc;
 
 /** Physical model parameters **/
-static float mu = 0.01;
+static float mu = NPS_ROVER_FRICTION;
 
 
 /** NPS FDM rover init ***************************/
 void nps_fdm_init(double dt)
 {
   fdm.init_dt = dt; // (1 / simulation freq)
-  fdm.curr_dt = 0.001; // ¿Configurable from GCS?
+  fdm.curr_dt = dt;
+  //fdm.curr_dt = 0.001; // ¿Configurable from GCS?
   fdm.time = dt;
 
   fdm.on_ground = TRUE;
@@ -81,7 +103,7 @@ void nps_fdm_init(double dt)
 }
 
 void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int commands_nb __attribute__((unused)))
-{ 
+{
 
   /****************************************************************************
   PHYSICAL MODEL
@@ -90,39 +112,61 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
   the LTP plane (so we transfer every integration step to NED and ECEF at the end).
   */
 
-  #ifdef COMMAND_STEERING // STEERING ROVER PHYSICS
+  // From previous step...
+  enu_of_ecef_point_d(&rover_pos, &ltpdef, &fdm.ecef_pos);
+  enu_of_ecef_vect_d(&rover_vel, &ltpdef, &fdm.ecef_ecef_vel);
 
-  // Steering rover cmds: 
+  #if (defined COMMAND_STEERING) && (defined COMMAND_THROTTLE) // STEERING ROVER PHYSICS
+
+  // Steering rover cmds:
   //    COMMAND_STEERING -> delta parameter
-  //    COMMAND_TRHOTTLE -> acceleration in heading direction
+  //    COMMAND_THROTTLE -> acceleration in heading direction
 
   double delta = RadOfDeg(commands[COMMAND_STEERING] * MAX_DELTA);
 
   /** Physical model for car-like robots .................. **/
-  // From previous step...
-  enu_of_ecef_point_d(&rover_pos, &ltpdef, &fdm.ecef_pos);
-  enu_of_ecef_vect_d(&rover_vel, &ltpdef, &fdm.ecef_ecef_vel);
   double speed = FLOAT_VECT2_NORM(rover_vel);
   double phi = fdm.ltpprz_to_body_eulers.psi;
-  double phi_d  = tan(delta) / DRIVE_SHAFT_DISTANCE * speed;
+  double phi_d = tan(delta) / DRIVE_SHAFT_DISTANCE * speed;
 
   // Setting accelerations
-  rover_acc.x = commands[COMMAND_THROTTLE] * cos(phi) - speed * (sin(phi) * phi_d + cos(phi) * mu);
-  rover_acc.y = commands[COMMAND_THROTTLE] * sin(phi) + speed * (cos(phi) * phi_d - sin(phi) * mu);
-  double phi_dd = tan(delta) / DRIVE_SHAFT_DISTANCE * commands[COMMAND_THROTTLE];
+  double accel = NPS_ROVER_ACCELERATION * commands[COMMAND_THROTTLE];
+  rover_acc.x = accel * cos(phi) - speed * (sin(phi) * phi_d + cos(phi) * mu);
+  rover_acc.y = accel * sin(phi) + speed * (cos(phi) * phi_d - sin(phi) * mu);
+  double phi_dd = tan(delta) / DRIVE_SHAFT_DISTANCE * commands[COMMAND_THROTTLE]; // FIXME accel ?
 
   // Velocities (EULER INTEGRATION)
   rover_vel.x += rover_acc.x * fdm.curr_dt;
   rover_vel.y += rover_acc.y * fdm.curr_dt;
-  phi_d  = tan(delta) / DRIVE_SHAFT_DISTANCE * speed;
 
   // Positions
   rover_pos.x += rover_vel.x * fdm.curr_dt;
   rover_pos.y += rover_vel.y * fdm.curr_dt;
   phi += phi_d * fdm.curr_dt;
-  
+
   // phi have to be contained in [-180º,180º). So:
-  phi = (phi > M_PI)? - 2*M_PI + phi : (phi < -M_PI)? 2*M_PI + phi : phi;
+  NormRadAngle(phi);
+  //phi = (phi > M_PI)? - 2*M_PI + phi : (phi < -M_PI)? 2*M_PI + phi : phi;
+
+  #elif (defined COMMAND_TURN) && (defined COMMAND_SPEED) // 2 wheels rover dynamic
+
+  double speed = FLOAT_VECT2_NORM(rover_vel);
+  double phi = fdm.ltpprz_to_body_eulers.psi;
+  double phi_d = -NPS_ROVER_TURN_RATE * commands[COMMAND_TURN];
+  double phi_dd = 0.; // FIXME
+  double speed_sp = NPS_ROVER_MAX_SPEED * commands[COMMAND_SPEED];
+  double accel = (speed_sp - speed) / fdm.curr_dt;
+  rover_acc.x = accel * cos(phi) - speed * (sin(phi) * phi_d + cos(phi) * mu);
+  rover_acc.y = accel * sin(phi) + speed * (cos(phi) * phi_d - sin(phi) * mu);
+  // Velocities (EULER INTEGRATION)
+  rover_vel.x += rover_acc.x * fdm.curr_dt;
+  rover_vel.y += rover_acc.y * fdm.curr_dt;
+  // Positions
+  rover_pos.x += rover_vel.x * fdm.curr_dt;
+  rover_pos.y += rover_vel.y * fdm.curr_dt;
+  // phi have to be contained in [-180º,180º). So:
+  phi += phi_d * fdm.curr_dt;
+  NormRadAngle(phi);
 
   #else
   #warning "The physics of this rover are not yet implemented in nps_fdm_rover!!"
@@ -153,7 +197,7 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
   double_quat_of_eulers(&fdm.ltp_to_body_quat, &fdm.ltp_to_body_eulers);
 
   // Angular vel & acc
-  fdm.body_ecef_rotvel.r   = phi_d; 
+  fdm.body_ecef_rotvel.r   = phi_d;
   fdm.body_ecef_rotaccel.r = phi_dd;
 
 }
