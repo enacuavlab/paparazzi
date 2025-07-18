@@ -39,14 +39,14 @@
       <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
     </module>
-    <!--module name="gps" type="ublox">
+    <module name="gps" type="ublox">
       <configure name="GPS_BAUD" value="B115200"/>
       <define name="USE_GPS_UBX_RTCM" value="TRUE"/>
       <define name="GPS_FIX_TIMEOUT" value="0.5"/>
-    </module-->
-    <module name="gps" type="optitrack">
-      <define name="INS_EKF2_OPTITRACK" value="TRUE"/>
     </module>
+    <!--module name="gps" type="optitrack">
+      <define name="INS_EKF2_OPTITRACK" value="TRUE"/>
+    </module-->
 
 
     <module name="stabilization" type="indi">
@@ -55,8 +55,8 @@
     </module>
     <module name="guidance" type="indi"/>
 
-    <module name="ins" type="ext_pose"/>
-    <!--module name="ins" type="ekf2"/-->
+    <!--module name="ins" type="ext_pose"/-->
+    <module name="ins" type="ekf2"/>
     <!--module name="ins"/>
     <module name="ahrs" type="int_cmpl_quat"/-->
     <module name="air_data"/>
@@ -75,21 +75,21 @@
     </module>
     <module name="agl_dist"/-->
 
-    <module name="digital_cam" type="pprzlink"/>
-    <module name="power_switch"/>
+    <!--module name="digital_cam" type="pprzlink"/>
+    <module name="power_switch"/-->
     <module name="current_sensor">
       <configure name="ADC_CURRENT_SENSOR" value="ADC_8"/>
     </module>
 
-    <module name="extra_dl">
+    <!--module name="extra_dl">
       <configure name="EXTRA_DL_PORT" value="uart4"/>
       <configure name="EXTRA_DL_BAUD" value="B115200"/>
-    </module>
+    </module-->
 
-    <module name="tag_tracking">
-      <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
+    <!--module name="tag_tracking">
+      <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/-->
       <!--define name="JEVOIS_SEND_ALT"/--> <!-- enable for color rectangle tracking -->
-    </module>
+    <!--/module-->
 
     <module name="flight_recorder"/>
     <module name="logger" type="bilal"/>
