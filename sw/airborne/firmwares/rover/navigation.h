@@ -40,7 +40,7 @@
 #endif
 
 #ifndef CARROT_DIST
-#define CARROT_DIST 2.f
+#define CARROT_DIST 5.f
 #endif
 
 /** default navigation frequency */

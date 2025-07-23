@@ -131,8 +131,10 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
 
   // Setting accelerations
   double accel = NPS_ROVER_ACCELERATION * commands[COMMAND_THROTTLE];
-  rover_acc.x = accel * cos(phi) - speed * (sin(phi) * phi_d + cos(phi) * mu);
-  rover_acc.y = accel * sin(phi) + speed * (cos(phi) * phi_d - sin(phi) * mu);
+  //rover_acc.x = accel * cos(phi) - speed * (sin(phi) * phi_d + cos(phi) * mu);
+  //rover_acc.y = accel * sin(phi) + speed * (cos(phi) * phi_d - sin(phi) * mu);
+  rover_acc.x = accel * cos(phi) - rover_vel.x * mu - speed * sin(phi) * phi_d;
+  rover_acc.y = accel * sin(phi) - rover_vel.y * mu + speed * cos(phi) * phi_d;
   double phi_dd = tan(delta) / DRIVE_SHAFT_DISTANCE * commands[COMMAND_THROTTLE]; // FIXME accel ?
 
   // Velocities (EULER INTEGRATION)
