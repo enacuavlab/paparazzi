@@ -44,14 +44,19 @@
 #error "The module nps_fdm_rover is designed for rovers and doesn't support other firmwares!!"
 #endif
 
+// Friction coef, proportional to speed
 #ifndef NPS_ROVER_FRICTION
 #define NPS_ROVER_FRICTION 0.01f
 #endif
+
+//// Used for car-like rover (steering wheels)
 
 // Maximum acceleration (m/s²)
 #ifndef NPS_ROVER_ACCELERATION
 #define NPS_ROVER_ACCELERATION 1.f
 #endif
+
+//// Used for 2-wheels rover
 
 // Maximum speed (m/s)
 #ifndef NPS_ROVER_MAX_SPEED
@@ -86,18 +91,15 @@ void nps_fdm_init(double dt)
 {
   fdm.init_dt = dt; // (1 / simulation freq)
   fdm.curr_dt = dt;
-  //fdm.curr_dt = 0.001; // ¿Configurable from GCS?
   fdm.time = dt;
 
   fdm.on_ground = TRUE;
-
   fdm.nan_count = 0;
   fdm.pressure = -1;
   fdm.pressure_sl = PPRZ_ISA_SEA_LEVEL_PRESSURE;
   fdm.total_pressure = -1;
   fdm.dynamic_pressure = -1;
   fdm.temperature = -1;
-
   fdm.ltpprz_to_body_eulers.psi = 0.0;
   init_ltp();
 }
@@ -122,44 +124,29 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
   //    COMMAND_STEERING -> delta parameter
   //    COMMAND_THROTTLE -> acceleration in heading direction
 
-  double delta = RadOfDeg(commands[COMMAND_STEERING] * MAX_DELTA);
-
   /** Physical model for car-like robots .................. **/
+  double delta = RadOfDeg(commands[COMMAND_STEERING] * MAX_DELTA);
   double speed = FLOAT_VECT2_NORM(rover_vel);
   double phi = fdm.ltpprz_to_body_eulers.psi;
   double phi_d = tan(delta) / DRIVE_SHAFT_DISTANCE * speed;
-
-  // Setting accelerations
-  double accel = NPS_ROVER_ACCELERATION * commands[COMMAND_THROTTLE];
-  //rover_acc.x = accel * cos(phi) - speed * (sin(phi) * phi_d + cos(phi) * mu);
-  //rover_acc.y = accel * sin(phi) + speed * (cos(phi) * phi_d - sin(phi) * mu);
-  rover_acc.x = accel * cos(phi) - rover_vel.x * mu - speed * sin(phi) * phi_d;
-  rover_acc.y = accel * sin(phi) - rover_vel.y * mu + speed * cos(phi) * phi_d;
   double phi_dd = tan(delta) / DRIVE_SHAFT_DISTANCE * commands[COMMAND_THROTTLE]; // FIXME accel ?
-
-  // Velocities (EULER INTEGRATION)
-  rover_vel.x += rover_acc.x * fdm.curr_dt;
-  rover_vel.y += rover_acc.y * fdm.curr_dt;
-
-  // Positions
-  rover_pos.x += rover_vel.x * fdm.curr_dt;
-  rover_pos.y += rover_vel.y * fdm.curr_dt;
-  phi += phi_d * fdm.curr_dt;
-
-  // phi have to be contained in [-180º,180º). So:
-  NormRadAngle(phi);
-  //phi = (phi > M_PI)? - 2*M_PI + phi : (phi < -M_PI)? 2*M_PI + phi : phi;
+  double accel = NPS_ROVER_ACCELERATION * commands[COMMAND_THROTTLE];
 
   #elif (defined COMMAND_TURN) && (defined COMMAND_SPEED) // 2 wheels rover dynamic
 
   double speed = FLOAT_VECT2_NORM(rover_vel);
   double phi = fdm.ltpprz_to_body_eulers.psi;
   double phi_d = -NPS_ROVER_TURN_RATE * commands[COMMAND_TURN];
-  double phi_dd = 0.; // FIXME
+  double phi_dd = 0.; // TODO
   double speed_sp = NPS_ROVER_MAX_SPEED * commands[COMMAND_SPEED];
   double accel = (speed_sp - speed) / fdm.curr_dt;
-  rover_acc.x = accel * cos(phi) - speed * (sin(phi) * phi_d + cos(phi) * mu);
-  rover_acc.y = accel * sin(phi) + speed * (cos(phi) * phi_d - sin(phi) * mu);
+
+  #else
+  #warning "The physics of this rover are not yet implemented in nps_fdm_rover!!"
+  #endif // STEERING ROVER PHYSICS
+
+  rover_acc.x = accel * cos(phi) - rover_vel.x * mu - speed * sin(phi) * phi_d;
+  rover_acc.y = accel * sin(phi) - rover_vel.y * mu + speed * cos(phi) * phi_d;
   // Velocities (EULER INTEGRATION)
   rover_vel.x += rover_acc.x * fdm.curr_dt;
   rover_vel.y += rover_acc.y * fdm.curr_dt;
@@ -169,11 +156,6 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
   // phi have to be contained in [-180º,180º). So:
   phi += phi_d * fdm.curr_dt;
   NormRadAngle(phi);
-
-  #else
-  #warning "The physics of this rover are not yet implemented in nps_fdm_rover!!"
-  #endif // STEERING ROVER PHYSICS
-
 
   /****************************************************************************/
   // Coordenates transformations |
