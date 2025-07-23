@@ -75,6 +75,7 @@
 #define NAV_MODE_HEADING  3
 #define NAV_MODE_MANUAL   4
 
+typedef void (*nav_rover_stage_init)(void);
 typedef void (*nav_rover_goto)(struct EnuCoor_f *wp);
 typedef void (*nav_rover_route)(struct EnuCoor_f *wp_start, struct EnuCoor_f *wp_end);
 typedef bool (*nav_rover_approaching)(struct EnuCoor_f *wp_to, struct EnuCoor_f *wp_from, float approaching_time);
@@ -106,6 +107,7 @@ struct RoverNavigation {
   struct EnuCoor_f last_pos;  ///< last stage position
 
   // pointers to basic nav functions
+  nav_rover_stage_init nav_stage_init;
   nav_rover_goto nav_goto;
   nav_rover_route nav_route;
   nav_rover_approaching nav_approaching;
@@ -118,6 +120,7 @@ extern struct RoverNavigation nav;
 
 /** Registering functions
  */
+extern void nav_register_stage_init(nav_rover_stage_init nav_stage_init);
 extern void nav_register_goto_wp(nav_rover_goto nav_goto,
     nav_rover_route nav_route,
     nav_rover_approaching nav_approaching);
@@ -244,7 +247,6 @@ static inline void NavGotoWaypoint(uint8_t wp)
 {
   nav.mode = NAV_MODE_WAYPOINT;
   VECT3_COPY(nav.target, waypoints[wp].enu_f);
-  //nav.dist2_to_wp = get_dist2_to_waypoint(wp); FIXME
 }
 
 /*********** Navigation along a line *************************************/

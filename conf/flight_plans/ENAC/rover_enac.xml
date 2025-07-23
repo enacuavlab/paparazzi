@@ -64,5 +64,8 @@
     <block name="Circle">
       <circle radius="nav.radius" wp="STDBY"/>
     </block>
+    <block name="Oval">
+      <oval p1="STDBY" p2="HOME" radius="nav.radius"/>
+    </block>
   </blocks>
 </flight_plan>
