@@ -103,6 +103,7 @@
     <define name="MODE_MANUAL" value="AP_MODE_DIRECT"/> <!-- for compilation -->
     <define name="MODE_AUTO1"  value="AP_MODE_DIRECT"/> <!-- for compilation -->
     <define name="MODE_AUTO2"  value="AP_MODE_NAV"/>
+    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
   </section>
 
   <section name="BAT">

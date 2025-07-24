@@ -148,8 +148,8 @@ extern void rover_guidance_steering_set_speed_igain(float igain);
 #define BoundThrottle(throttle) TRIM_PPRZ((int)throttle)
 
 // Set low level commands from high level commands
-#define GetCmdFromDelta(delta) (delta >= 0 ? -delta/MAX_DELTA * (MAX_PPRZ - (int)MAX_CMD_SHUT) : \
-                                             -delta/MIN_DELTA * (MAX_PPRZ - (int)MIN_CMD_SHUT))
+#define GetCmdFromDelta(delta) (delta >= 0 ? delta/MAX_DELTA * (MAX_PPRZ - (int)MAX_CMD_SHUT) : \
+                                             delta/MIN_DELTA * (MAX_PPRZ - (int)MIN_CMD_SHUT))
 
 // This macro is for NAV state
 #define GetCmdFromThrottle(throttle) (autopilot_throttle_killed() ? 0 : TRIM_PPRZ((int)throttle))

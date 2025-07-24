@@ -132,19 +132,19 @@ void rover_guidance_steering_setpoints(struct EnuCoor_f pos_sp, float *heading_s
     Bound(guidance_control.cmd.speed, 0.f, ROVER_GUIDANCE_MAX_SPEED);
     // if not close to WP, compute desired heading
     guidance_control.heading_sp = atan2f(pos_err.x, pos_err.y);
-    *heading_sp = guidance_control.heading_sp; // update nav sp
+    // update nav sp
+    *heading_sp = guidance_control.heading_sp;
+    // angular error
+    float heading_err = guidance_control.heading_sp - stateGetNedToBodyEulers_f()->psi;
+    NormRadAngle(heading_err);
+    // compute omega setpoint
+    guidance_control.omega_sp = guidance_control.heading_kp * heading_err;
   }
   else {
     guidance_control.cmd.speed = 0.f;
     guidance_control.heading_sp = *heading_sp;
     guidance_control.omega_sp = 0.f;
   }
-
-  // angular error
-  float heading_err = guidance_control.heading_sp - stateGetNedToBodyEulers_f()->psi;
-  NormRadAngle(heading_err);
-  // compute omega setpoint
-  guidance_control.omega_sp = guidance_control.heading_kp * heading_err;
 }
 
 /** PID RESET function**/

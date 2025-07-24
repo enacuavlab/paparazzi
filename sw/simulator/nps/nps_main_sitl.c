@@ -85,7 +85,6 @@ void nps_main_run_sim_step(void)
 
 }
 
-
 void *nps_main_loop(void *data __attribute__((unused)))
 {
   struct timespec requestStart;

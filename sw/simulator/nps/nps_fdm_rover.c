@@ -44,6 +44,8 @@
 #error "The module nps_fdm_rover is designed for rovers and doesn't support other firmwares!!"
 #endif
 
+#if (defined COMMAND_STEERING) && (defined COMMAND_THROTTLE) // STEERING ROVER PHYSICS
+
 // Friction coef, proportional to speed
 #ifndef NPS_ROVER_FRICTION
 #define NPS_ROVER_FRICTION 0.01f
@@ -56,7 +58,14 @@
 #define NPS_ROVER_ACCELERATION 1.f
 #endif
 
+/** Physical model parameters **/
+static float mu = NPS_ROVER_FRICTION;
+
+#endif
+
 //// Used for 2-wheels rover
+
+#if (defined COMMAND_TURN) && (defined COMMAND_SPEED) // 2 wheels rover dynamic
 
 // Maximum speed (m/s)
 #ifndef NPS_ROVER_MAX_SPEED
@@ -65,8 +74,24 @@
 
 // Maximum turn rate (rad/s)
 #ifndef NPS_ROVER_TURN_RATE
-#define NPS_ROVER_TURN_RATE 2.f
+#define NPS_ROVER_TURN_RATE 3.f
 #endif
+
+// Accel 1st order time constant
+#ifndef NPS_ROVER_ACCEL_TAU
+#define NPS_ROVER_ACCEL_TAU 0.2f
+#endif
+
+// Turn rate 1st order time constant
+#ifndef NPS_ROVER_TURN_TAU
+#define NPS_ROVER_TURN_TAU 0.1f
+#endif
+
+#include "filters/low_pass_filter.h"
+static struct FirstOrderLowPass speed_filter;
+static struct FirstOrderLowPass turn_filter;
+
+#endif // 2 wheels
 
 // NpsFdm structure
 struct NpsFdm fdm;
@@ -78,12 +103,9 @@ static struct LtpDef_d ltpdef;
 static void init_ltp(void);
 
 /** Physical model structures **/
-static struct EnuCoor_d rover_pos;
-static struct EnuCoor_d rover_vel;
-static struct EnuCoor_d rover_acc;
-
-/** Physical model parameters **/
-static float mu = NPS_ROVER_FRICTION;
+static struct NedCoor_d rover_pos;
+static struct NedCoor_d rover_vel;
+static struct NedCoor_d rover_acc;
 
 
 /** NPS FDM rover init ***************************/
@@ -102,6 +124,11 @@ void nps_fdm_init(double dt)
   fdm.temperature = -1;
   fdm.ltpprz_to_body_eulers.psi = 0.0;
   init_ltp();
+
+#if (defined COMMAND_TURN) && (defined COMMAND_SPEED) // 2 wheels rover dynamic
+  init_first_order_low_pass(&speed_filter, NPS_ROVER_ACCEL_TAU, fdm.curr_dt, 0.f);
+  init_first_order_low_pass(&turn_filter, NPS_ROVER_TURN_TAU, fdm.curr_dt, 0.f);
+#endif
 }
 
 void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int commands_nb __attribute__((unused)))
@@ -115,8 +142,9 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
   */
 
   // From previous step...
-  enu_of_ecef_point_d(&rover_pos, &ltpdef, &fdm.ecef_pos);
-  enu_of_ecef_vect_d(&rover_vel, &ltpdef, &fdm.ecef_ecef_vel);
+  ned_of_ecef_point_d(&rover_pos, &ltpdef, &fdm.ecef_pos);
+  ned_of_ecef_vect_d(&rover_vel, &ltpdef, &fdm.ecef_ecef_vel);
+  double phi = fdm.ltpprz_to_body_eulers.psi;
 
   #if (defined COMMAND_STEERING) && (defined COMMAND_THROTTLE) // STEERING ROVER PHYSICS
 
@@ -127,44 +155,47 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
   /** Physical model for car-like robots .................. **/
   double delta = RadOfDeg(commands[COMMAND_STEERING] * MAX_DELTA);
   double speed = FLOAT_VECT2_NORM(rover_vel);
-  double phi = fdm.ltpprz_to_body_eulers.psi;
   double phi_d = tan(delta) / DRIVE_SHAFT_DISTANCE * speed;
-  double phi_dd = tan(delta) / DRIVE_SHAFT_DISTANCE * commands[COMMAND_THROTTLE]; // FIXME accel ?
   double accel = NPS_ROVER_ACCELERATION * commands[COMMAND_THROTTLE];
+
+  // NED accel = R(psi) [accel; |V|*phi_d] - mu*V
+  rover_acc.x = accel * cos(phi) - speed * phi_d * sin(phi) - mu * rover_vel.x;
+  rover_acc.y = accel * sin(phi) + speed * phi_d * cos(phi) - mu * rover_vel.y;
+  // Velocities (EULER INTEGRATION)
+  rover_vel.x += rover_acc.x * fdm.curr_dt;
+  rover_vel.y += rover_acc.y * fdm.curr_dt;
 
   #elif (defined COMMAND_TURN) && (defined COMMAND_SPEED) // 2 wheels rover dynamic
 
-  double speed = FLOAT_VECT2_NORM(rover_vel);
-  double phi = fdm.ltpprz_to_body_eulers.psi;
-  double phi_d = -NPS_ROVER_TURN_RATE * commands[COMMAND_TURN];
-  double phi_dd = 0.; // TODO
+  double phi_sp = NPS_ROVER_TURN_RATE * commands[COMMAND_TURN];
+  double phi_d = update_first_order_low_pass(&turn_filter, phi_sp);
   double speed_sp = NPS_ROVER_MAX_SPEED * commands[COMMAND_SPEED];
-  double accel = (speed_sp - speed) / fdm.curr_dt;
+  double speed = update_first_order_low_pass(&speed_filter, speed_sp);
+  double vx = speed * cos(phi);
+  double vy = speed * sin(phi);
+  rover_acc.x = (vx - rover_vel.x) / fdm.curr_dt;
+  rover_acc.y = (vy - rover_vel.y) / fdm.curr_dt;
+  rover_vel.x = vx;
+  rover_vel.y = vy;
 
   #else
   #warning "The physics of this rover are not yet implemented in nps_fdm_rover!!"
   #endif // STEERING ROVER PHYSICS
 
-  rover_acc.x = accel * cos(phi) - rover_vel.x * mu - speed * sin(phi) * phi_d;
-  rover_acc.y = accel * sin(phi) - rover_vel.y * mu + speed * cos(phi) * phi_d;
-  // Velocities (EULER INTEGRATION)
-  rover_vel.x += rover_acc.x * fdm.curr_dt;
-  rover_vel.y += rover_acc.y * fdm.curr_dt;
   // Positions
   rover_pos.x += rover_vel.x * fdm.curr_dt;
   rover_pos.y += rover_vel.y * fdm.curr_dt;
   // phi have to be contained in [-180º,180º). So:
   phi += phi_d * fdm.curr_dt;
   NormRadAngle(phi);
-
   /****************************************************************************/
   // Coordenates transformations |
   // ----------------------------|
 
   /* in ECEF */
-  ecef_of_enu_point_d(&fdm.ecef_pos, &ltpdef, &rover_pos);
-  ecef_of_enu_vect_d(&fdm.ecef_ecef_vel, &ltpdef, &rover_vel);
-  ecef_of_enu_vect_d(&fdm.ecef_ecef_accel, &ltpdef, &rover_acc);
+  ecef_of_ned_point_d(&fdm.ecef_pos, &ltpdef, &rover_pos);
+  ecef_of_ned_vect_d(&fdm.ecef_ecef_vel, &ltpdef, &rover_vel);
+  ecef_of_ned_vect_d(&fdm.ecef_ecef_accel, &ltpdef, &rover_acc);
 
   /* in NED */
   ned_of_ecef_point_d(&fdm.ltpprz_pos, &ltpdef, &fdm.ecef_pos);
@@ -173,16 +204,14 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
 
   /* Eulers */
   fdm.ltpprz_to_body_eulers.psi = phi;
-
-  // ENU to NED and exporting heading (psi euler angle)
-  fdm.ltp_to_body_eulers.psi = - phi + M_PI / 2;
+  fdm.ltp_to_body_eulers.psi = phi;
 
   // Exporting Eulers to AHRS (in quaternions)
   double_quat_of_eulers(&fdm.ltp_to_body_quat, &fdm.ltp_to_body_eulers);
 
   // Angular vel & acc
+  fdm.body_ecef_rotaccel.r = (phi_d - fdm.body_ecef_rotvel.r) / fdm.curr_dt;
   fdm.body_ecef_rotvel.r   = phi_d;
-  fdm.body_ecef_rotaccel.r = phi_dd;
 
 }
 

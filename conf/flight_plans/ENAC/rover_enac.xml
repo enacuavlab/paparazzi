@@ -35,7 +35,7 @@
     </sector>
   </sectors>
   <exceptions>
-    <exception cond="!InsideFlight_Area(GetPosX(), GetPosY())" deroute="Standby"/>
+    <exception cond="!InsideFlight_Area(GetPosX(), GetPosY()) @AND (nav_block @GT IndexOfBlock('Holding point'))" deroute="Standby"/>
   </exceptions>
   <blocks>
     <block name="Wait GPS">

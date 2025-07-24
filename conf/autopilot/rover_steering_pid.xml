@@ -68,7 +68,7 @@
       <control>
         <call fun="rover_guidance_steering_periodic()"/>
       </control>
-      <!--exception cond="GpsIsLost() && autopilot_in_flight()" deroute="KILL"/-->
+      <exception cond="GpsIsLost() && autopilot_in_flight()" deroute="KILL"/>
     </mode>
     
     <mode name="HOME">
