@@ -141,20 +141,6 @@
       <stay wp="HOME"/>
     </block>
 
-    <block group="extra_pattern" name="Survey NS" strip_button="SvySweep-NS" strip_icon="survey_rect_ns.png">
-      <call_once fun="nav_survey_rectangle_rotorcraft_setup(WP_P1, WP_P3, 1, NS)"/>
-      <deroute block="Survey RECTANGLE RUN"/>
-    </block>
-    <block group="extra_pattern" name="Survey WE" strip_button="SvySweep-WE" strip_icon="survey_rect_we.png">
-      <call_once fun="nav_survey_rectangle_rotorcraft_setup(WP_P1, WP_P3, 1, WE)"/>
-      <deroute block="Survey RECTANGLE RUN"/>
-    </block>
-    <block group="extra_pattern" name="Survey RECTANGLE RUN" strip_button="SvySweep CONT" strip_icon="survey_rect_run.png">
-      <exception cond="rectangle_survey_sweep_num == 1" deroute="Standby"/>
-      <call_once fun="guidance_h_SetMaxSpeed(fp_speed)"/>
-      <call fun="nav_survey_rectangle_rotorcraft_run(WP_P1, WP_P3)"/>
-    </block>
-
     <block name="Land HERE" strip_button="Land Here" strip_icon="land-right.png">
       <call_once fun="NavSetWaypointHere(WP_TD)"/>
     </block>

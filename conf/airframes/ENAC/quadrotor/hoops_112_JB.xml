@@ -36,6 +36,7 @@
     </module>
 
     <module name="board" type="tawaki_2.0">
+      <configure name="GYRO_AAF" value="213"/>
     </module>
 
     <!--module name="gps" type="ublox">
@@ -162,15 +163,15 @@
     <!-- Full INDI -->
     <!-- control effectiveness -->
     <define name="G1" type="matrix">
-      <field value="{ -10.0,  -10.0,  10.0,  10.0 }"/>
-      <field value="{  10.0,  -10.0, -10.0,  10.0 }"/>
-      <field value="{  1.5,   -1.5,  1.5,  -1.5 }"/>
-      <field value="{ -0.6, -0.6, -0.6, -0.6}"/>
+      <field value="{ -14.0,  -14.0,  14.0,  14.0 }"/>
+      <field value="{  14.0,  -14.0, -14.0,  14.0 }"/>
+      <field value="{  0.9,   -0.9,  0.9,  -0.9 }"/>
+      <field value="{ -0.7, -0.7 -0.7, -0.7}"/>
     </define>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2"        value="{80, -80, 80, -80.0 }"/>
     <!-- first order actuator dynamics -->
-    <define name="ACT_FREQ" value="{20.0, 20.0, 20.0, 20.0}"/>
+    <define name="ACT_FREQ" value="{15.0, 15.0, 15.0, 15.0}"/>
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
     <!--Priority for each axis (roll, pitch, yaw and thrust)-->
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
