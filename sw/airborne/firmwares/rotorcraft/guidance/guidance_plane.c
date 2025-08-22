@@ -216,6 +216,7 @@ static void guidance_plane_set_pitch(bool in_flight)
     + guidance_plane.p_kd * d_err
     + guidance_plane.p_ki * pitch_sum_err;
 
+  Bound(guidance_plane.pitch_cmd, guidance_plane.pitch_min_setpoint, guidance_plane.pitch_max_setpoint);
 }
 
 static void guidance_plane_set_throttle(bool in_flight)
