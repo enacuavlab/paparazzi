@@ -246,7 +246,9 @@ bool nav_check_wp_time(struct EnuCoor_f *wp, float stay_time);
 static inline void NavGotoWaypoint(uint8_t wp)
 {
   nav.mode = NAV_MODE_WAYPOINT;
-  VECT3_COPY(nav.target, waypoints[wp].enu_f);
+  if (nav.nav_goto) {
+    nav.nav_goto(&waypoints[wp].enu_f);
+  }
 }
 
 /*********** Navigation along a line *************************************/

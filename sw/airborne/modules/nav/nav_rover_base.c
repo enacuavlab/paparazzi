@@ -41,6 +41,7 @@ static void nav_goto(struct EnuCoor_f *wp)
 {
   nav_rover_base.goto_wp.to = *wp;
   nav_rover_base.goto_wp.dist2_to_wp = get_dist2_to_point(wp);
+  VECT3_COPY(nav.target, *wp);
   nav.mode = NAV_MODE_WAYPOINT;
 }
 
