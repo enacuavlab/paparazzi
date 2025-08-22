@@ -52,21 +52,23 @@
 #define CMQ_TRANSITION_AIRSPEED 10.f
 #endif
 
+// Transition ratio cutoff (activate ailevons and reduce quad motors)
+#ifndef CMQ_TRANSITION_CUTOFF
+#define CMQ_TRANSITION_CUTOFF 0.8f
+#endif
+
 #define TRANSITION_TO_HOVER false
 #define TRANSITION_TO_FORWARD true
 
 static float transition_ratio;
-static const float transition_increment = 1.f / (CMH_TRANSITION_TIME * PERIODIC_FREQUENCY);
+static const float transition_increment = 1.f / (CMQ_TRANSITION_TIME * PERIODIC_FREQUENCY);
 
 static void transition_run(bool to_forward) {
   if (to_forward && transition_ratio < 1.f) {
     if (stateIsAirspeedValid()) {
-      if ((stateGetAirspeed_f() < CMH_TRANSITION_AIRSPEED && transition_ratio < 0.4f)
-          || stateGetAirspeed_f() >= CMH_TRANSITION_AIRSPEED) {
+      if ((stateGetAirspeed_f() < CMQ_TRANSITION_AIRSPEED && transition_ratio < CMQ_TRANSITION_CUTOFF-0.1)
+          || stateGetAirspeed_f() >= CMQ_TRANSITION_AIRSPEED) {
         transition_ratio += transition_increment;
-      }
-      else if (stateGetAirspeed_f() < CMH_TRANSITION_AIRSPEED && transition_ratio > 0.4f) {
-        transition_ratio -= transition_increment;
       }
     }
   } else if (!to_forward && transition_ratio > 0.f) {
@@ -94,8 +96,8 @@ void control_mixing_quadplane_manual(void)
   commands[COMMAND_MOTOR_PUSHER] = radio_control_get(RADIO_THROTTLE);
   commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
   commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
-  commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
   commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
+  commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
   commands[COMMAND_THRUST] = commands[COMMAND_MOTOR_PUSHER];
   autopilot.throttle = commands[COMMAND_THRUST];
 }
@@ -112,14 +114,14 @@ void control_mixing_quadplane_attitude_direct(void)
   if (autopilot_get_motors_on()) {
     commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
     commands[COMMAND_MOTOR_BACK_RIGHT]  = actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT];
-    commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
     commands[COMMAND_MOTOR_BACK_LEFT]   = actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT];
+    commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
     commands[COMMAND_THRUST]            = stabilization.cmd[COMMAND_THRUST];
   } else {
     commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
     commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
-    commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
     commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
+    commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
     commands[COMMAND_THRUST]            = 0;
   }
   autopilot.throttle = commands[COMMAND_THRUST];
@@ -166,7 +168,7 @@ void control_mixing_quadplane_attitude_plane(void)
 {
   transition_run(TRANSITION_TO_FORWARD);
 
-  if (transition_ratio < 0.5f) {
+  if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
     struct ThrustSetpoint hover_th_sp = guidance_v_run(autopilot_in_flight());
     stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &hover_th_sp, stabilization.cmd);
   }
@@ -177,32 +179,39 @@ void control_mixing_quadplane_attitude_plane(void)
     .psi = 0.f
   };
   struct StabilizationSetpoint stab_sp = stab_sp_from_eulers_f(&rc_sp);
-  stabilization_attitude_plane_pid_run(transition_ratio < 0.8 ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
+  stabilization_attitude_plane_pid_run(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
 
   commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
   commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
   commands[COMMAND_YAW] = 0;
-  commands[COMMAND_MOTOR_PUSHER] = command_from_transition(0, stabilization.cmd[COMMAND_THRUST]); // blend from 0
+  commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, stabilization.cmd[COMMAND_THRUST]); // blend from idle
   commands[COMMAND_THRUST] = commands[COMMAND_MOTOR_PUSHER];
   if (autopilot_in_flight()) {
-    if (transition_ratio < 0.5f) {
+    if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
       // hover stabilization
       commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
       commands[COMMAND_MOTOR_BACK_RIGHT]  = actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT];
-      commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
       commands[COMMAND_MOTOR_BACK_LEFT]   = actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT];
+      commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
     } else {
-      // blend to 0
-      commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0);
-      commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0);
-      commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0);
-      commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0);
+      // blend to idle and stop
+      if (transition_ratio < 0.99f) {
+        commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0);
+        commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0);
+        commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0);
+        commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0);
+      } else {
+        commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
+        commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
+        commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
+        commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
+      }
     }
   } else {
-    commands[COMMAND_MOTOR_FRONT_RIGHT] = -MAX_PPRZ;
-    commands[COMMAND_MOTOR_BACK_RIGHT]  = -MAX_PPRZ;
-    commands[COMMAND_MOTOR_FRONT_LEFT]  = -MAX_PPRZ;
-    commands[COMMAND_MOTOR_BACK_LEFT]   = -MAX_PPRZ;
+    commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
+    commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
+    commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
+    commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
   }
   autopilot.throttle = commands[COMMAND_THRUST];
 }
@@ -220,49 +229,60 @@ void control_mixing_quadplane_nav_run(void)
       nav.horizontal_mode == NAV_HORIZONTAL_MODE_CIRCLE) {
     transition_run(TRANSITION_TO_FORWARD);
 
-    struct ThrustSetpoint th_sp = guidance_plane_thrust_from_nav(transition_ratio < 0.8f ? false : autopilot_in_flight());
-    if (transition_ratio < 0.8f) {
+    struct ThrustSetpoint th_sp = guidance_plane_thrust_from_nav(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight());
+    if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
       guidance_plane.pitch_cmd = 0.f;
     }
     struct StabilizationSetpoint stab_sp = guidance_plane_attitude_from_nav(autopilot_in_flight());
-    if (transition_ratio < 0.5f) {
-      stabilization_attitude_plane_pid_run(transition_ratio < 0.8f ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
+    if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
+      stabilization_attitude_plane_pid_run(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
       struct ThrustSetpoint hover_th_sp = guidance_v_run(autopilot_in_flight());
       struct FloatEulers eulers_sp = { .phi = 0.f , .theta = 0.f, .psi = stateGetNedToBodyEulers_f()->psi };
       struct StabilizationSetpoint hover_stab_sp = stab_sp_from_eulers_f(&eulers_sp);
       stabilization_run(autopilot_in_flight(), &hover_stab_sp, &hover_th_sp, stabilization.cmd); // will overwrite COMMAND_THRUST
     } else {
-      stabilization_attitude_plane_pid_run(transition_ratio < 0.8f ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
+      stabilization_attitude_plane_pid_run(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
     }
     nav.heading = stateGetNedToBodyEulers_f()->psi; // overwrite nav heading to avoid problems when transition to hover
+      //struct FloatEulers esp = stab_sp_to_eulers_f(&stab_sp);
+      //printf("     ROLL %f %f %d\n", DegOfRad(stateGetNedToBodyEulers_f()->phi), DegOfRad(esp.phi), stabilization.cmd[COMMAND_ROLL]);
+      //printf("     PITCH %f %f %d\n", DegOfRad(stateGetNedToBodyEulers_f()->theta), DegOfRad(esp.theta), stabilization.cmd[COMMAND_PITCH]);
 
     commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
     commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
     commands[COMMAND_YAW] = 0;
     if (autopilot_get_motors_on()) {
-      if (transition_ratio < 0.5f) {
+      if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
         // hover stabilization
         commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
         commands[COMMAND_MOTOR_BACK_RIGHT]  = actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT];
-        commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
         commands[COMMAND_MOTOR_BACK_LEFT]   = actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT];
+        commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
       } else {
-        // blend to 0
-        commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0);
-        commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0);
-        commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0);
-        commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0);
+        // blend to idle and stop
+        if (transition_ratio < 0.99f) {
+          commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0);
+          commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0);
+          commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0);
+          commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0);
+        } else {
+          commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
+          commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
+          commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
+          commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
+        }
       }
-      commands[COMMAND_MOTOR_PUSHER] = command_from_transition(0, stabilization.cmd[COMMAND_THRUST]); // blend from 0
+      commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, stabilization.cmd[COMMAND_THRUST]); // blend from idle
       commands[COMMAND_THRUST] = commands[COMMAND_MOTOR_PUSHER];
     } else {
       commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
       commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
-      commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
       commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
+      commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
       commands[COMMAND_MOTOR_PUSHER]      = MIN_PPRZ;
       commands[COMMAND_THRUST]            = 0;
     }
+    //printf("CMD %f, %d %d %d (%d)\n", transition_ratio, commands[COMMAND_ROLL], commands[COMMAND_PITCH], commands[COMMAND_THRUST], stabilization.cmd[COMMAND_THRUST]);
 
   } else {
     // all other nav modes are in rotorcraft flight mode
@@ -278,18 +298,19 @@ void control_mixing_quadplane_nav_run(void)
     if (autopilot_get_motors_on()) {
       commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
       commands[COMMAND_MOTOR_BACK_RIGHT]  = actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT];
-      commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
       commands[COMMAND_MOTOR_BACK_LEFT]   = actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT];
+      commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
       commands[COMMAND_MOTOR_PUSHER]      = MIN_PPRZ;
       commands[COMMAND_THRUST]            = stabilization.cmd[COMMAND_THRUST];
     } else {
       commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
       commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
-      commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
       commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
+      commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
       commands[COMMAND_MOTOR_PUSHER]      = MIN_PPRZ;
       commands[COMMAND_THRUST]            = 0;
     }
   }
   autopilot.throttle = commands[COMMAND_THRUST];
 }
+

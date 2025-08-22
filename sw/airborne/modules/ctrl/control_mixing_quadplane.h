@@ -29,8 +29,8 @@
 // INDI actuators output indexes
 #define CMQ_ACT_MOTOR_FRONT_RIGHT 0
 #define CMQ_ACT_MOTOR_BACK_RIGHT  1
-#define CMQ_ACT_MOTOR_FRONT_LEFT  2
-#define CMQ_ACT_MOTOR_BACK_LEFT   3
+#define CMQ_ACT_MOTOR_BACK_LEFT   2
+#define CMQ_ACT_MOTOR_FRONT_LEFT  3
 
 extern void control_mixing_quadplane_init(void);
 
