@@ -1,0 +1,30 @@
+<joystick>
+  <input>
+    <axis index="0" name="yaw"/>
+    <axis index="1" name="pitch"/>
+    <axis index="2" name="roll"/>
+    <button index="0" name="shoot"/>
+    <button index="1" name="sensibility"/>
+    <button index="2" name="mode"/>
+    <button index="3" name="left"/>
+    <button index="4" name="right"/>
+    <button index="5" name="button6"/>
+    <button index="6" name="button7"/>
+    <button index="7" name="button8"/>
+    <button index="8" name="button9"/>
+    <button index="9" name="button10"/>
+    <button index="10" name="button11"/>
+  </input>
+
+<!--
+<variables>
+  <var name="current_mode" default="0"/>
+  <set var="current_mode" value="1" on_event="mode"/>
+</variables>-->
+
+  <messages period="0.1">
+    <message class="datalink" name="RC_UP" send_always="true">
+      <field name="channels" value="Fit(-roll,-100,100,-127,127);Fit(pitch,-100,100,-127,127);Fit(yaw,-100,100,-127,127)"/>
+    </message>
+  </messages>
+</joystick>
