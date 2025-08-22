@@ -34,6 +34,9 @@
       <corner name="_KILL4"/>
     </sector>
   </sectors>
+  <modules>
+    <module name="mission" type="rover"/>
+  </modules>
   <exceptions>
     <exception cond="!InsideFlight_Area(GetPosX(), GetPosY()) @AND (nav_block @GT IndexOfBlock('Holding point'))" deroute="Standby"/>
   </exceptions>
@@ -55,6 +58,10 @@
     </block>
     <block name="Standby" pre_call="if(!InsideKill(GetPosX(), GetPosY())) NavKillThrottle();" strip_button="Standby" strip_icon="home.png">
       <stay wp="STDBY"/>
+    </block>
+    <block name="Mission" strip_button="Mission">
+      <call fun="mission_run()"/>
+      <deroute block="Standby"/>
     </block>
     <block name="Square">
       <go wp="p1"/>

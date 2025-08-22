@@ -4,9 +4,9 @@
 
   <firmware name="rover">
     <autopilot name="rover_steering_pid"/>
+    <configure name="PERIODIC_FREQUENCY" value="150"/>
 
     <target name="ap" board="tawaki_1.0">
-      <configure name="PERIODIC_FREQUENCY" value="100"/>
       <module name="radio_control" type="sbus">
         <!--configure name="SBUS_PORT" value="UART6"/-->
       </module>
@@ -21,7 +21,19 @@
     
     <module name="actuators" type="pwm"/>
     <module name="telemetry" type="xbee_api"/>
+	
+    <module name="actuators" type="sbus">
+      <configure name="ACTUATORS_SBUS_DEV" value="UART4"/>
+    </module>
 
+
+	<module name="power_switch" >
+		<define  name="POWER_SWITCH_GPIO" value="GPIOA,GPIO1"/>
+	</module>
+
+	<module name="gimbal_ctrl"/>
+
+	
     <module name="board_tawaki" />
 	
     <module name="gps" type="ublox">
@@ -40,11 +52,21 @@
 
 
   <!-- COMMANDS SECTION ..................................................................... -->
-  <servos> 
+  <servos driver="Pwm"> 
     <!-- "no" 1 and 2 but no 0 because our board don't have S0 actuator entry... -->
-    <servo name="MOTOR_THROTTLE" no="1" min="1330" neutral="1510" max="1600"/>
+    <servo name="MOTOR_THROTTLE" no="1" min="1410" neutral="1510" max="1600"/>
     <servo name="MOTOR_STEERING" no="2" min="942" neutral="1436" max="1944"/>
   </servos> 
+  
+  <!-- gimbal -->
+  <servos driver="Sbus">
+    <servo name="CAM_MODE"  no="0" min="172" neutral="992" max="1811"/>
+    <servo name="CAM_ROLL"  no="1" min="172" neutral="992" max="1811"/>
+    <servo name="CAM_PITCH" no="2" min="172" neutral="992" max="1811"/>
+    <servo name="CAM_YAW"   no="3" min="172" neutral="992" max="1811"/>
+    <servo name="CAM_SENS"  no="4" min="172" neutral="992" max="1811"/>
+  </servos>
+
   
   <!-- Low level commands (PWM signal) -->
   <commands>
@@ -81,15 +103,6 @@
     <define name="USE_GPS" value="TRUE"/>
   </section>
 
-  <!--section name="ROVER_GUIDANCE" prefix="ROVER_GUIDANCE_">
-    <define name="SPEED_PGAIN" value="0.1"/>
-    <define name="SPEED_DGAIN" value="0.1"/>
-    <define name="SPEED_IGAIN" value="0."/>
-    <define name="TURN_PGAIN" value="0.1"/>
-    <define name="TURN_DGAIN" value="0.1"/>
-    <define name="TURN_IGAIN" value="0."/>
-  </section-->
-
   <section name="ROVER_GUIDANCE_STEERING">
     <define name="MAX_DELTA"            value="30.0"/>
     <define name="DRIVE_SHAFT_DISTANCE" value="0.5"/>
@@ -123,5 +136,9 @@
   <section name="GCS">
     <define name="AC_ICON" value="rover"/>
   </section>
-
+  
+  <section name="NPS">
+    <define name="NPS_USE_COMMANDS" value="TRUE"/>
+  </section>
+  
 </airframe>
