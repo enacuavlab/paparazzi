@@ -244,9 +244,6 @@ void control_mixing_quadplane_nav_run(void)
       stabilization_attitude_plane_pid_run(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
     }
     nav.heading = stateGetNedToBodyEulers_f()->psi; // overwrite nav heading to avoid problems when transition to hover
-      //struct FloatEulers esp = stab_sp_to_eulers_f(&stab_sp);
-      //printf("     ROLL %f %f %d\n", DegOfRad(stateGetNedToBodyEulers_f()->phi), DegOfRad(esp.phi), stabilization.cmd[COMMAND_ROLL]);
-      //printf("     PITCH %f %f %d\n", DegOfRad(stateGetNedToBodyEulers_f()->theta), DegOfRad(esp.theta), stabilization.cmd[COMMAND_PITCH]);
 
     commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
     commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
@@ -282,8 +279,6 @@ void control_mixing_quadplane_nav_run(void)
       commands[COMMAND_MOTOR_PUSHER]      = MIN_PPRZ;
       commands[COMMAND_THRUST]            = 0;
     }
-    //printf("CMD %f, %d %d %d (%d)\n", transition_ratio, commands[COMMAND_ROLL], commands[COMMAND_PITCH], commands[COMMAND_THRUST], stabilization.cmd[COMMAND_THRUST]);
-
   } else {
     // all other nav modes are in rotorcraft flight mode
     transition_run(TRANSITION_TO_HOVER);
