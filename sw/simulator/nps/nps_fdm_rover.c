@@ -113,7 +113,7 @@ void nps_fdm_init(double dt)
 {
   fdm.init_dt = dt; // (1 / simulation freq)
   fdm.curr_dt = dt;
-  fdm.time = dt;
+  fdm.time = 0;
 
   fdm.on_ground = TRUE;
   fdm.nan_count = 0;
@@ -133,6 +133,7 @@ void nps_fdm_init(double dt)
 
 void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int commands_nb __attribute__((unused)))
 {
+  fdm.time += fdm.curr_dt;
 
   /****************************************************************************
   PHYSICAL MODEL
@@ -202,6 +203,9 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
   ned_of_ecef_vect_d(&fdm.ltpprz_ecef_vel, &ltpdef, &fdm.ecef_ecef_vel);
   ned_of_ecef_vect_d(&fdm.ltpprz_ecef_accel, &ltpdef, &fdm.ecef_ecef_accel);
 
+  /* Height above sea level */
+  fdm.hmsl = ltpdef.hmsl - rover_pos.z;
+
   /* Eulers */
   fdm.ltpprz_to_body_eulers.psi = phi;
   fdm.ltp_to_body_eulers.psi = phi;
@@ -222,18 +226,19 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
 
 static void init_ltp(void)
 {
-
-  struct LlaCoor_d llh_nav0; /* Height above the ellipsoid */
+  struct LlaCoor_d llh_nav0;
   llh_nav0.lat = RadOfDeg((double)NAV_LAT0 / 1e7);
   llh_nav0.lon = RadOfDeg((double)NAV_LON0 / 1e7);
+  llh_nav0.alt = (double)(NAV_ALT0 + NAV_MSL0) / 1000.; /* Height above the ellipsoid */
 
   struct EcefCoor_d ecef_nav0;
-
   ecef_of_lla_d(&ecef_nav0, &llh_nav0);
 
   ltp_def_from_ecef_d(&ltpdef, &ecef_nav0);
-  fdm.ecef_pos = ecef_nav0;
+  ltpdef.hmsl = (double)NAV_ALT0 / 1000.; /* Height above the geoid */
 
+  fdm.ecef_pos = ecef_nav0;
+  fdm.hmsl = ltpdef.hmsl;
   fdm.ltp_g.x = 0.;
   fdm.ltp_g.y = 0.;
   fdm.ltp_g.z = 0.; // accel data are already with the correct format
@@ -245,9 +250,9 @@ static void init_ltp(void)
   fdm.ltp_h.z = AHRS_H_Z;
   PRINT_CONFIG_MSG("Using magnetic field as defined in airframe file.")
 #else
-  fdm.ltp_h.x = 0.4912;
-  fdm.ltp_h.y = 0.1225;
-  fdm.ltp_h.z = 0.8624;
+  fdm.ltp_h.x = 1.;
+  fdm.ltp_h.y = 0.;
+  fdm.ltp_h.z = 0.;
 #endif
 
 }
