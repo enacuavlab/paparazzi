@@ -7,16 +7,17 @@
     <configure name="PERIODIC_FREQUENCY" value="150"/>
 
     <target name="ap" board="tawaki_1.0">
-      <module name="radio_control" type="sbus">
-        <!--configure name="SBUS_PORT" value="UART6"/-->
-      </module>
+      <module name="radio_control" type="sbus"/>
     </target>
     
     <target name="nps" board="pc">
       <module name="radio_control" type="datalink"/>
-      <module name="fdm"           type="rover"/> <!-- NPS_FDM rover physics!! -->
+      <module name="fdm"           type="rover"/>
       <define name="NPS_BYPASS_AHRS" value="TRUE"/>
       <define name="NPS_BYPASS_INS"  value="TRUE"/>
+      <!-- Multiple agents simulation -->
+      <!--configure name="MODEM_PORT_OUT" value="4246"/>
+      <configure name="MODEM_PORT_IN"  value="4247"/-->
     </target>    
     
     <module name="actuators" type="pwm"/>
@@ -26,18 +27,16 @@
       <configure name="ACTUATORS_SBUS_DEV" value="UART4"/>
     </module>
 
+    <module name="power_switch" >
+      <define  name="POWER_SWITCH_GPIO" value="GPIOA,GPIO1"/>
+    </module>
+    <module name="gimbal_ctrl"/>
 
-	<module name="power_switch" >
-		<define  name="POWER_SWITCH_GPIO" value="GPIOA,GPIO1"/>
-	</module>
-
-	<module name="gimbal_ctrl"/>
-
-	
     <module name="board_tawaki" />
 	
     <module name="gps" type="ublox">
       <configure name="GPS_BAUD" value="B115200"/>
+      <define name="GPS_POS_BROADCAST"/>
     </module>
 
     <module name="ins"/>
@@ -54,7 +53,7 @@
   <!-- COMMANDS SECTION ..................................................................... -->
   <servos driver="Pwm"> 
     <!-- "no" 1 and 2 but no 0 because our board don't have S0 actuator entry... -->
-    <servo name="MOTOR_THROTTLE" no="1" min="1410" neutral="1510" max="1600"/>
+    <servo name="MOTOR_THROTTLE" no="1" min="1410" neutral="1510" max="1730"/>
     <servo name="MOTOR_STEERING" no="2" min="942" neutral="1436" max="1944"/>
   </servos> 
   
@@ -106,12 +105,13 @@
   <section name="ROVER_GUIDANCE_STEERING">
     <define name="MAX_DELTA"            value="30.0"/>
     <define name="DRIVE_SHAFT_DISTANCE" value="0.5"/>
-    <define name="SR_MEASURED_KF"       value="4800"/>
-    <define name="ROVER_GUIDANCE_MAX_SPEED" value="4.0"/>
-    <define name="ROVER_GUIDANCE_POS_KP" value="0.3"/>
+    <define name="SR_MEASURED_KF"       value="1920"/>
+    <define name="ROVER_GUIDANCE_MAX_SPEED" value="5.0"/>
+    <define name="ROVER_GUIDANCE_POS_KP" value="0.6"/>
     <define name="ROVER_GUIDANCE_HEADING_KP" value="0.8"/>
     <define name="ROVER_GUIDANCE_SPEED_KP" value="10.0"/>
     <define name="ROVER_GUIDANCE_SPEED_KI" value="10.0"/>
+    <define name="ROVER_GUIDANCE_PROXIMITY_DISTANCE" value="3.0"/>
   </section>
 
   <section name="AUTOPILOT">
@@ -123,6 +123,8 @@
 
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ROVER_FRICTION" value="0.5"/>
+    <define name="ROVER_ACCELERATION" value="2.5"/>
+    <define name="USE_COMMANDS" value="TRUE"/>
   </section>
   
   <section name="BAT">
@@ -135,10 +137,6 @@
 
   <section name="GCS">
     <define name="AC_ICON" value="rover"/>
-  </section>
-  
-  <section name="NPS">
-    <define name="NPS_USE_COMMANDS" value="TRUE"/>
   </section>
   
 </airframe>
