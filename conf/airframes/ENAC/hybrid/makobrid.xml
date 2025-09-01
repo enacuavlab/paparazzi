@@ -136,17 +136,17 @@
   <!-- *** SERVOS *** -->
   <!-- ACTUATORS IN DSHOT : 4 MOTORS FOR HOOVERING -->
   <servos driver="DShot">
-    <servo name="FR" no="1" min="0" neutral="100" max="2000"/>
-    <servo name="BR" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="FR" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="BR" no="1" min="0" neutral="100" max="2000"/>
     <servo name="BL" no="3" min="0" neutral="100" max="2000"/>
     <servo name="FL" no="4" min="0" neutral="100" max="2000"/>
   </servos>
 
   <!-- ACTUATORS IN PWM : FORWARD MOTOR + AILERONS -->  
   <servos driver="Pwm">  
-    <servo name="AILERONS_RIGHT" no="1" min="1300"  neutral="1583" max="1840"/>    <!-- min 870  neutral 1510 max 2150  min="1100" neutral="1500" max="1900" When 2 servos are in max, you should go to right-->  
-    <servo name="AILERONS_LEFT"  no="2" min="1300"  neutral="1570" max="1847"/>    <!-- Inverted one : min 870  neutral 1510 max 2150   --> 
-    <servo name="MOTOR_PUSH"     no="3" min="1000" neutral="1100" max="2000"/>
+    <servo name="AILERONS_RIGHT" no="1" min="1400"  neutral="1583" max="1840"/>    <!-- min 870  neutral 1510 max 2150  min="1100" neutral="1500" max="1900" When 2 servos are in max, you should go to right-->  
+    <servo name="AILERONS_LEFT"  no="2" min="1400"  neutral="1570" max="1847"/>    <!-- Inverted one : min 870  neutral 1510 max 2150   --> 
+    <servo name="MOTOR_PUSH"     no="3" min="100"  neutral="100" max="2000"/>
   </servos>
   <!-- *** END SERVOS *** -->
   
@@ -198,8 +198,8 @@
           <field name="scale_f"     value="true"/>
           <field name="rotation"  value="true"/>
         </field>
-        <field name="neutral" value="3,-7,46" type="int[]"/>
-        <field name="scale_f" value="{ 2.4538, 2.4555, 2.4573 }"/>
+        <field name="neutral" value="-17,-8,-30" type="int[]"/>
+        <field name="scale_f" value="{ 2.4480, 2.4523, 2.4596 }"/>
         <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
@@ -222,8 +222,8 @@
           <field name="scale_f"     value="true"/>
           <field name="rotation"  value="true"/>
         </field>
-        <field name="neutral" value="-223,-65,26" type="int[]"/>
-        <field name="scale_f" value="{ 0.6484, 0.6238, 0.6345 }"/>
+        <field name="neutral" value="-891,2158,-1280" type="int[]"/>
+        <field name="scale_f" value="{ 0.7506, 0.7926, 0.7831 }"/>
         <field value="TAWAKIV2_MAG_ROT"/>
       </field>
       <field type="struct">
@@ -238,7 +238,7 @@
     </define>
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
-    <define name="BODY_TO_IMU_PSI"   value="90." unit="deg"/>
+    <define name="BODY_TO_IMU_PSI"   value="0." unit="deg"/>
     
     <define name="IMU_MAG_CALIB" type="array">
       <field type="struct">
@@ -277,12 +277,12 @@
     <define name="NUM_ACT"      value="7"/>
     <define name="OUTPUTS"      value="5"/>
     <!-- reference acceleration for attitude control -->
-    <define name="REF_ERR_P"    value="120"/>
+    <define name="REF_ERR_P"    value="80"/>
     <define name="REF_ERR_Q"    value="130"/>
-    <define name="REF_ERR_R"    value="80"/>
-    <define name="REF_RATE_P"   value="15"/>
+    <define name="REF_ERR_R"    value="40"/>
+    <define name="REF_RATE_P"   value="12"/>
     <define name="REF_RATE_Q"   value="15"/>
-    <define name="REF_RATE_R"   value="8"/>
+    <define name="REF_RATE_R"   value="6"/>
     <define name="MAX_R"        value="60" unit="deg/s"/>
 
     <!-- second order filter parameters -->
@@ -297,9 +297,9 @@
     <!--COLUMNS: FR BR BL FL AILERONS_RIGHT AILERONS_LEFT MOTOR_PUSH -->
     <!-- control effectiveness All value are divided by INDI_G_SCALING (=1000)-->
     <define name="G1" type="matrix">
-		<!--COLUMNS:   FR    BR     BL     FL   AR  AL   TX  -->
-      <field name="ROLL"     value="{-15.0, -15.0,  15.0,  15.0, 0., 0.,   0.}"/> <!-- MX - ROLL  -->
-      <field name="PITCH"    value="{ 15.0, -15.0, -15.0,  15.0, 0., 0.,   0.}"/> <!-- MY - PITCH -->
+		                 <!--COLUMNS:   FR    BR     BL     FL   AR  AL   TX  -->
+      <field name="ROLL"     value="{-20.0, -20.0,  20.0,  20.0, 0., 0.,   0.}"/> <!-- MX - ROLL  -->
+      <field name="PITCH"    value="{ 13.0, -13.0, -13.0,  13.0, 0., 0.,   0.}"/> <!-- MY - PITCH -->
       <field name="YAW"      value="{  3.0,  -3.0,   3.0,  -3.0, 0., 0.,   0.}"/> <!-- MZ - YAW   -->
       <field name="THRUST"   value="{  -1.,   -1.,   -1.,   -1., 0., 0.,   0.}"/> <!-- FZ         -->
       <field name="THRUST_X" value="{   0.,    0.,    0.,    0., 0., 0.,   0.}"/> <!-- FX         -->
