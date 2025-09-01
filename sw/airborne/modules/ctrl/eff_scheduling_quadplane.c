@@ -37,11 +37,16 @@
 #include "modules/datalink/downlink.h"
 
 // TODO :
+// Next flight test
+// Find the flight speed
+// Remove Yaw control
+// Remettre controle elevon fonction de la vitesse
 
+
+
+// Remove flag_forward
 // NUM_ACT name
 // Retour eff_schedu_thruster_X int16 ?
-// Filtering airspeed
-// Remove flag_forward
 
 //Guidage :
 // Merge eff_schedu_thruster_X function with periodic
@@ -63,7 +68,7 @@
 
 // Pusher motor rate for transition
 #ifndef EFF_SCHEDULING_QUADPLANE_PUSHER_MOTOR_RATE
-#define EFF_SCHEDULING_QUADPLANE_PUSHER_MOTOR_RATE 6000
+#define EFF_SCHEDULING_QUADPLANE_PUSHER_MOTOR_RATE 100 //6000
 #endif
 
 
