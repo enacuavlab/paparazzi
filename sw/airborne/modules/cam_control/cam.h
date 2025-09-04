@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2005-  Pascal Brisset, Antoine Drouin
+ *               2025 Gautier Hattenberger <gautier.hattenberger@enac.fr>
  *
  * This file is part of paparazzi.
  *
@@ -27,73 +28,77 @@
 #ifndef CAM_H
 #define CAM_H
 
-#include <inttypes.h>
-#include "modules/core/commands.h"
+#include "std.h"
+#include "math/pprz_algebra_float.h"
+#include "math/pprz_geodetic_float.h"
 
-#define CAM_MODE_OFF 0         /* Do nothing */
-#define CAM_MODE_ANGLES 1      /* Input: servo angles */
-#define CAM_MODE_NADIR 2       /* Input: () */
-#define CAM_MODE_XY_TARGET 3   /* Input: target_x, target_y */
-#define CAM_MODE_WP_TARGET 4   /* Input: waypoint no */
-#define CAM_MODE_AC_TARGET 5   /* Input: ac id */
-#define CAM_MODE_STABILIZED    6   // Stabilized mode, input: camera angles from the pan and tilt radio channels, output pointing coordinates.
-#define CAM_MODE_RC            7   // Manual mode, input: camera angles from the pan and tilt radio channels, output servo positions.
+#define CAM_MODE_OFF        0  // Do nothing
+#define CAM_MODE_ANGLES     1  // Input: servo angles
+#define CAM_MODE_NADIR      2  // Input: look down
+#define CAM_MODE_XY_TARGET  3  // Input: target_x, target_y
+#define CAM_MODE_WP_TARGET  4  // Input: waypoint no
+#define CAM_MODE_AC_TARGET  5  // Input: ac id
+#define CAM_MODE_STABILIZED 6  // Stabilized mode, input: camera angles from the pan and tilt radio channels, output pointing coordinates.
+#define CAM_MODE_RC         7  // Manual mode, input: camera angles from the pan and tilt radio channels, output servo positions.
 
-//FIXME: use radians
-#ifndef CAM_PAN_MAX
-#define CAM_PAN_MAX 90
-#endif
-#ifndef CAM_PAN_MIN
-#define CAM_PAN_MIN -90
-#endif
-#ifndef CAM_TILT_MAX
-#define CAM_TILT_MAX 90
-#endif
-#ifndef CAM_TILT_MIN
-#define CAM_TILT_MIN -90
-#endif
+/** Function pointer to return cam angle from a specified direction
+ *
+ * The direction is the unit vector from the camera position to the target
+ * expressed in the gimbal frame.
+ * The resulting angles depends on the type of gimbal that is used,
+ * in particular the number and order of rotations.
+ * This function is provided by the user as it is specific to each mounting.
+ * It returns the pan and tilt angles.
+ */
+typedef void (*cam_angles_from_dir)(struct FloatVect3 dir, float *pan, float *tilt);
 
-extern uint8_t cam_mode;
-extern uint8_t cam_lock;
+struct CamControl {
+  uint8_t mode;                 ///< cam control mode
+  bool lock;                    ///< lock current command FIXME really needed ?
 
-extern float cam_phi_c, cam_theta_c;
+  int16_t pan_cmd;              ///< pan command [pprz]
+  int16_t tilt_cmd;             ///< tilt command [pprz]
 
-extern float cam_pan_c, cam_tilt_c;
-/* pan (move left and right), tilt (move up and down) */
-/** Radians, for CAM_MODE_ANGLES mode */
+  float pan_max;                ///< pan angle at maximum command
+  float pan_min;                ///< pan angle at minimum command
+  float tilt_max;               ///< tilt angle at maximum command
+  float tilt_min;               ///< tilt angle at minimum command
+  struct FloatRMat gimbal_to_body;  ///< rotation matrix from gimbal to body frame
+  struct FloatVect3 gimbal_pos;     ///< position of the gimbal in body NED frame [m]
 
-extern float cam_target_x, cam_target_y, cam_target_alt;
-/** For CAM_MODE_XY_TARGET mode */
+  float pan_angle;              ///< pan angle [rad]
+  float tilt_angle;             ///< tilt angle [rad]
+  struct EnuCoor_f target_pos;  ///< target point in ENU world frame [m]
+  uint8_t target_wp_id;         ///< waypoint ID to track
+  uint8_t target_ac_id;         ///< aircraft ID to track
+};
 
-extern uint8_t cam_target_wp;
-/** For CAM_MODE_WP_TARGET mode */
+extern struct CamControl cam_control;
 
-extern uint8_t cam_target_ac;
-/** For CAM_MODE_AC_TARGET mode */
+extern void cam_init(void);
+extern void cam_periodic(void);
 
-void cam_periodic(void);
-void cam_init(void);
+// API for internal and external use
+extern void cam_setup(struct CamControl *cam,
+    float pan_max, float pan_min,
+    float tilt_max, float tilt_min,
+    struct FloatEulers gimbal_to_body,
+    struct FloatVect3 gimbal_pos);
+extern void cam_run(struct CamControl *cam, cam_angles_from_dir compute_angles);
+extern void cam_set_mode(struct CamControl *cam, uint8_t mode);
+extern void cam_set_lock(struct CamControl *cam, bool lock);
+extern void cam_set_pan_command(struct CamControl *cam, int16_t pan);
+extern void cam_set_tilt_command(struct CamControl *cam, int16_t pan);
+extern void cam_set_angles_rad(struct CamControl *cam, float pan, float tilt);
+extern void cam_set_angles_deg(struct CamControl *cam, float pan, float tilt);
+extern void cam_set_target_pos(struct CamControl *cam, struct NedCoor_f target);
+extern void cam_set_wp_id(struct CamControl *cam, uint8_t wp_id);
+extern void cam_set_ac_id(struct CamControl *cam, uint8_t ac_id);
 
-extern int16_t cam_pan_command;
-#define cam_SetPanCommand(x) { cam_pan_command = x; command_set(COMMAND_CAM_PAN, cam_pan_command);}
-extern int16_t cam_tilt_command;
-#define cam_SetTiltCommand(x) { cam_tilt_command = x; command_set(COMMAND_CAM_TILT, cam_tilt_command);}
-
-#ifdef TEST_CAM
-extern float test_cam_estimator_x;
-extern float test_cam_estimator_y;
-extern float test_cam_estimator_z;
-extern float test_cam_estimator_phi;
-extern float test_cam_estimator_theta;
-extern float test_cam_estimator_hspeed_dir;
-#endif // TEST_CAM
-
-#if defined(COMMAND_CAM_PWR_SW) || defined(VIDEO_TX_SWITCH)
-
-extern bool video_tx_state;
-#define VIDEO_TX_ON()   { video_tx_state = 1; 0; }
-#define VIDEO_TX_OFF()  { video_tx_state = 0; 0; }
-
-#endif
+// settings handler
+#define cam_SetMode(x) cam_set_mode(&cam_control,x)
+#define cam_SetLock(x) cam_set_lock(&cam_control, x)
+#define cam_SetPanCommand(x) cam_set_pan_command(&cam_control, x)
+#define cam_SetTiltCommand(x) cam_set_pan_command(&cam_control, x)
 
 #endif // CAM_H

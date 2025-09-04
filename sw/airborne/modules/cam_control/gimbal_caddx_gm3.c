@@ -18,7 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-/** @file "modules/cam_control/gimbal_ctrl.c"
+/** @file "modules/cam_control/gimbal_caddx_gm3.c"
  * @author Julia Cabarbaye <julia.cabarbaye1@gmail.com>
  * caddx gm3 gimbal control sbus
  */
@@ -29,7 +29,7 @@
 #include "modules/datalink/datalink.h"
 #include "pprzlink/dl_protocol.h"   // datalink messages
 
-void gimbal_ctrl_init(void)
+void gimbal_caddx_gm3_init(void)
 {
   ActuatorSet(CAM_MODE, MIN_PPRZ);
   ActuatorSet(CAM_ROLL, 0);
@@ -38,7 +38,7 @@ void gimbal_ctrl_init(void)
   ActuatorSet(CAM_SENS, 0);
 }
 
-void gimbal_ctrl_periodic(void)
+void gimbal_caddx_gm3_periodic(void)
 {
   /*
   static int yaw = 0;
@@ -65,7 +65,7 @@ int16_t convert_to_CAM_boundary(int8_t channel, int8_t coef)
   return (int16_t) (((channel * coef / (127.0f * 127.0f)) + (10.0f / 127.0f)) * MAX_PPRZ);
 }
 
-void gimbal_ctrl_datalink(uint8_t* buf)
+void gimbal_caddx_gm3_datalink(uint8_t* buf)
 {
   //uint8_t ac_id = pprzlink_get_DL_RC_UP_ac_id(buf);  
   uint8_t lenght = pprzlink_get_RC_UP_channels_length(buf);

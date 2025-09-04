@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2025 Julia Cabarbaye <julia.cabarbaye1@gmail.com>
+ *                    Gautier Hattenberger <gautier.hattenberger@enac.fr>
  *
  * This file is part of paparazzi
  *
@@ -18,19 +19,19 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-/** @file "modules/cam_control/gimbal_ctrl.h"
+/** @file "modules/cam_control/gimbal_caddx_gm3.h"
  * @author Julia Cabarbaye <julia.cabarbaye1@gmail.com>
  * caddx gm3 gimbal control sbus
  */
 
-#ifndef GIMBAL_CTRL_H
-#define GIMBAL_CTRL_H
+#ifndef GIMBAL_CADDX_GM3_H
+#define GIMBAL_CADDX_GM3_H
 
 #include "stdint.h"
 
 extern void gimbal_ctrl_init(void);
 extern void gimbal_ctrl_periodic(void);
-extern void gimbal_ctrl_datalink(uint8_t* buf);	
-extern int16_t convert_to_CAM_boundary(int8_t channel, int8_t coef);
+extern void gimbal_ctrl_datalink(uint8_t* buf);
 
-#endif  // GIMBAL_CTRL_H
+#endif  // GIMBAL_CADDX_GM3_H
+

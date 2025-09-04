@@ -24,101 +24,87 @@
  *
  */
 
-#include <math.h>
 #include "cam.h"
-#include "modules/nav/common_nav.h" //needed for WaypointX, WaypointY and ground_alt
 #include "autopilot.h"
 #include "generated/flight_plan.h"
+#include "generated/modules.h"
+#include "modules/core/commands.h"
 #include "state.h"
-#ifdef POINT_CAM
-#include "point.h"
-#endif // POINT_CAM
-
 #include "modules/datalink/telemetry.h"
 
-#ifdef TEST_CAM
-float test_cam_estimator_x;
-float test_cam_estimator_y;
-float test_cam_estimator_z;
-float test_cam_estimator_phi;
-float test_cam_estimator_theta;
-float test_cam_estimator_hspeed_dir;
-#endif // TEST_CAM
-
-//FIXME: use radians
-#ifdef CAM_PAN_NEUTRAL
-#if (CAM_PAN_MAX == CAM_PAN_NEUTRAL)
-#error CAM_PAN_MAX has to be different from CAM_PAN_NEUTRAL
+// Minimum and maximum angles
+// used to convert angles to commands, assuming a linear interpolation
+#ifndef CAM_PAN_MAX
+#define CAM_PAN_MAX RadOfDeg(90.f)
 #endif
-#if (CAM_PAN_NEUTRAL == CAM_PAN_MIN)
-#error CAM_PAN_MIN has to be different from CAM_PAN_NEUTRAL
+#ifndef CAM_PAN_MIN
+#define CAM_PAN_MIN -CAM_PAN_MAX
 #endif
+#ifndef CAM_TILT_MAX
+#define CAM_TILT_MAX RadOfDeg(90.f)
+#endif
+#ifndef CAM_TILT_MIN
+#define CAM_TILT_MIN -CAM_TILT_MAX
 #endif
 
-//FIXME: use radians
-#ifdef CAM_TILT_NEUTRAL
-#if ((CAM_TILT_MAX) == (CAM_TILT_NEUTRAL))
-#error CAM_TILT_MAX has to be different from CAM_TILT_NEUTRAL
+// Default position and orientation of the gimbal in body frame
+#ifndef CAM_GIMBAL_POS_X
+#define CAM_GIMBAL_POS_X 0.f
 #endif
-#if (CAM_TILT_NEUTRAL == CAM_TILT_MIN)
-#error CAM_TILT_MIN has to be different from CAM_TILT_NEUTRAL
+#ifndef CAM_GIMBAL_POS_Y
+#define CAM_GIMBAL_POS_Y 0.f
 #endif
+#ifndef CAM_GIMBAL_POS_Z
+#define CAM_GIMBAL_POS_Z 0.f
+#endif
+#ifndef CAM_GIMBAL_TO_BODY_PHI
+#define CAM_GIMBAL_TO_BODY_PHI 0.f
+#endif
+#ifndef CAM_GIMBAL_TO_BODY_THETA
+#define CAM_GIMBAL_TO_BODY_THETA 0.f
+#endif
+#ifndef CAM_GIMBAL_TO_BODY_PSI
+#define CAM_GIMBAL_TO_BODY_PSI 0.f
 #endif
 
-//FIXME: use radians
-#ifndef CAM_PAN0
-#define CAM_PAN0  RadOfDeg(0)
-#endif
-float cam_pan_c;
-
-//FIXME: use radians
-#ifndef CAM_TILT0
-#define CAM_TILT0  RadOfDeg(0)
-#endif
-float cam_tilt_c;
-
-float cam_phi_c;
-float cam_theta_c;
-
-float cam_target_x, cam_target_y, cam_target_alt;
-uint8_t cam_target_wp;
-uint8_t cam_target_ac;
-
-#ifndef CAM_MODE0
-#define CAM_MODE0 CAM_MODE_OFF
-#endif
-uint8_t cam_mode;
-bool cam_lock;
-
-int16_t cam_pan_command;
-int16_t cam_tilt_command;
-
-void cam_nadir(void);
-void cam_angles(void);
-void cam_target(void);
-void cam_waypoint_target(void);
-void cam_ac_target(void);
+// Global cam structure
+struct CamControl cam_control;
 
 static void send_cam(struct transport_tx *trans, struct link_device *dev)
 {
-  int16_t x = cam_target_x;
-  int16_t y = cam_target_y;
-  int16_t phi = DegOfRad(cam_phi_c);
-  int16_t theta = DegOfRad(cam_theta_c);
+  int16_t x = cam_control.target_pos.x;
+  int16_t y = cam_control.target_pos.y;
+  int16_t phi = DegOfRad(cam_control.pan_angle);
+  int16_t theta = DegOfRad(cam_control.tilt_angle);
   pprz_msg_send_CAM(trans, dev, AC_ID, &phi, &theta, &x, &y);
 }
 
 #ifdef SHOW_CAM_COORDINATES
 static void send_cam_point(struct transport_tx *trans, struct link_device *dev)
 {
-  pprz_msg_send_CAM_POINT(trans, dev, AC_ID,
-                          &cam_point_distance_from_home, &cam_point_lat, &cam_point_lon);
+  // TODO target enu to lla
+  //pprz_msg_send_CAM_POINT(trans, dev, AC_ID,
+  //                        &cam_point_distance_from_home, &cam_point_lat, &cam_point_lon);
 }
 #endif
 
 void cam_init(void)
 {
-  cam_mode = CAM_MODE0;
+  // apply default settings
+  struct FloatEulers gimbal_to_body = {
+    CAM_GIMBAL_TO_BODY_PHI,
+    CAM_GIMBAL_TO_BODY_THETA,
+    CAM_GIMBAL_TO_BODY_PSI
+  };
+  struct FloatVect3 gimbal_pos = {
+    CAM_GIMBAL_POS_X,
+    CAM_GIMBAL_POS_Y,
+    CAM_GIMBAL_POS_Z
+  };
+  cam_setup(&cam_control,
+      CAM_PAN_MAX, CAM_PAN_MIN,
+      CAM_TILT_MAX, CAM_TILT_MIN,
+      gimbal_to_body, gimbal_pos);
 
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CAM, send_cam);
 #ifdef SHOW_CAM_COORDINATES
@@ -128,6 +114,13 @@ void cam_init(void)
 
 void cam_periodic(void)
 {
+  // cam_run(&cam_control, compute_angles); // TODO run from module using this API ???
+}
+
+void cam_run(struct CamControl *cam, cam_angles_from_dir compute_angles)
+{
+  //TODO
+  //
 #if defined(CAM_FIXED_FOR_FPV_IN_AUTO1) && CAM_FIXED_FOR_FPV_IN_AUTO1 == 1
   //Position the camera for straight view.
   if (autopilot_get_mode() == AP_MODE_AUTO2) {
@@ -192,11 +185,6 @@ void cam_periodic(void)
 #endif
 
 
-#if defined(COMMAND_CAM_PWR_SW)
-  if (video_tx_state) { command_set(COMMAND_CAM_PWR_SW, MAX_PPRZ); } else { command_set(COMMAND_CAM_PWR_SW, MIN_PPRZ); }
-#elif defined(VIDEO_TX_SWITCH)
-  if (video_tx_state) { LED_OFF(VIDEO_TX_SWITCH); } else { LED_ON(VIDEO_TX_SWITCH); }
-#endif
 }
 
 /** Computes the servo values from cam_pan_c and cam_tilt_c */
