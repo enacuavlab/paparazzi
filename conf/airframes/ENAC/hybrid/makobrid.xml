@@ -308,7 +308,7 @@
     
     
     <!--Counter torque effect of spinning up a rotor. This Matrix is added to the YAW line of G1 if(i==2) g1g2[i][j] = (g1[i][j] + g2[j]) / INDI_G_SCALING;-->
-    <define name="G2"                       value="{21.52, -42.56, 41.25, -17.78, 0 , 0, 0}"/><!-- TODO -->
+    <define name="G2"                       value="{20.00, -40.00, 40.00, -20.00, 0 , 0, 0}"/><!-- TODO -->
     <!-- first order actuator dynamics -->
     <!-- define name="ACT_FREQ"                 value="{10.10, 10.10, 10.10, 10.10}"/ -->
     <define name="ESTIMATION_FILT_CUTOFF"   value="4.0"/>
