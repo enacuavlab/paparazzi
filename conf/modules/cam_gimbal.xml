@@ -1,0 +1,31 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="cam_gimbal" dir="cam_control">
+  <doc>
+    <description>
+      Generic PAN/TILT camera gimbal control
+    </description>
+  </doc>
+  <settings>
+    <dl_settings NAME="cam control">
+      <dl_setting MAX="7" MIN="0" STEP="1" module="cam_control/cam" VAR="cam_control.mode" values="OFF|ANGLES|NADIR|TARGET|WP_TARGET|AC_TARGET|STABILIZED|RC" handler="SetMode">
+        <strip_button name="CAM_OFF" value="0"/>
+      </dl_setting>
+      <dl_setting MAX="90" MIN="-90" STEP="1" module="cam_control/cam" var="cam_control.tilt_angle" shortname="tilt" unit="rad" alt_unit="deg"/>
+      <dl_setting MAX="180" MIN="-180" STEP="1" module="cam_control/cam" var="cam_control.pan_angle" shortname="pan" unit="rad" alt_unit="deg"/>
+      <dl_setting min="1" max="27" step="1" module="cam_control/cam" var="cam_control.target_wp_id" shortname="wp id"/>
+      <dl_setting min="1" max="255" step="1" module="cam_control/cam" var="cam_control.target_ac_id" shortname="ac id"/>
+    </dl_settings>
+  </settings>
+  <header>
+    <file name="cam.h"/>
+  </header>
+  <init fun="cam_init()"/>
+  <periodic fun="cam_periodic()" />
+  <makefile>
+    <file name="cam.c"/>
+    <test firmware="fixedwing"/>
+    <test firmware="rotorcraft"/>
+    <test firmware="rover"/>
+  </makefile>
+</module>

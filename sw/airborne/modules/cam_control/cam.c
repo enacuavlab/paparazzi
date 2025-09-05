@@ -26,11 +26,24 @@
 
 #include "cam.h"
 #include "autopilot.h"
-#include "generated/flight_plan.h"
+#if FIXEDWING_FIRMWARE
+#include "modules/nav/common_nav.h"
+#else
+#include "modules/nav/waypoints.h"
+#endif
 #include "generated/modules.h"
+#include "generated/airframe.h"
 #include "modules/core/commands.h"
 #include "state.h"
 #include "modules/datalink/telemetry.h"
+
+// Default idle command
+#ifndef CAM_PAN0
+#define CAM_PAN0 0
+#endif
+#ifndef CAM_TILT0
+#define CAM_TILT0 0
+#endif
 
 // Minimum and maximum angles
 // used to convert angles to commands, assuming a linear interpolation
@@ -88,6 +101,165 @@ static void send_cam_point(struct transport_tx *trans, struct link_device *dev)
 }
 #endif
 
+/** Default callback function to compute gimbal pan/tilt angle
+ *  from a looking direction (unit vector in gimbal frame)
+ */
+static void default_compute_angles(struct FloatVect3 dir, float *pan, float *tilt)
+{
+  // TODO some default conf
+  (void)dir;
+  *pan = 0.f;
+  *tilt = 0.f;
+}
+
+/** Computes the servo values from pan and tilt angles */
+static void cam_angles(struct CamControl *cam)
+{
+  Bound(cam->pan_angle, cam->pan_min, cam->pan_max);
+  Bound(cam->tilt_angle, cam->tilt_min, cam->tilt_max);
+
+  float delta = cam->pan_max - cam->pan_min;
+  cam->pan_cmd = (int16_t) MAX_PPRZ * (cam->pan_angle - cam->pan_min) / delta;
+  cam->tilt_cmd = (int16_t) MAX_PPRZ * (cam->tilt_angle - cam->tilt_min) / delta;
+}
+
+/** Computes the right angles from target position */
+static void cam_target(struct CamControl *cam)
+{
+  struct FloatRMat *ltp_to_body = stateGetNedToBodyRMat_f();
+  struct NedCoor_f pos = *stateGetPositionNed_f();
+  struct NedCoor_f target;
+  ENU_OF_TO_NED(target, cam->target_pos);
+
+  // compute looking direction in gimbal frame
+  // o: Earth frame (ltp)
+  // b: body frame
+  // g: gimbal frame
+  // D/o = normalized(Pt/o - Pg/o = Pt/o - (Pb/o + Pg/b))
+  struct FloatVect3 dir_ltp;
+  VECT3_DIFF(dir_ltp, target, pos);
+  VECT3_SUB(dir_ltp, cam->gimbal_pos);
+  float_vect3_normalize(&dir_ltp);
+  // rotate D/o to get D/g = Rg/o D/o = Rg/b Rb/o D/o = Rg/b * inv(Ro/b) * D/o
+  struct FloatVect3 dir_body;
+  float_rmat_transp_vmult(&dir_body, ltp_to_body, &dir_ltp);
+  struct FloatVect3 dir_gimbal;
+  float_rmat_vmult(&dir_gimbal, &cam->gimbal_to_body, &dir_body);
+  // compute angles from direction
+  cam->compute_angles(dir_gimbal, &cam->pan_angle, &cam->tilt_angle);
+  // apply angles
+  cam_angles(cam);
+}
+
+/** Point straight down */
+static void cam_nadir(struct CamControl *cam)
+{
+  struct EnuCoor_f target = *stateGetPositionEnu_f();
+  target.z -= 10.f; // force looking below current position
+  cam_set_target_pos(cam, target);
+  cam_target(cam);
+}
+
+
+void cam_waypoint_target(struct CamControl *cam)
+{
+  if (cam->target_wp_id < nb_waypoint) {
+    struct EnuCoor_f target;
+    target.x = WaypointX(cam->target_wp_id);
+    target.y = WaypointY(cam->target_wp_id);
+    target.z = Min(0.f, stateGetPositionEnu_f()->z); // ground alt or A/C alt if lower
+    cam_set_target_pos(cam, target);
+    cam_target(cam);
+  }
+}
+
+static void cam_ac_target(struct CamControl *cam UNUSED)
+{
+#ifdef TRAFFIC_INFO
+  struct EnuCoor_f target = *acInfoGetPositionEnu_f(cam.target_ac_id);
+  cam_target(cam);
+#endif
+}
+
+static void cam_stabilized(struct CamControl *cam UNUSED)
+{
+  // TODO
+}
+
+static void cam_rc(struct CamControl *cam UNUSED)
+{
+  // TODO
+}
+
+void cam_setup(struct CamControl *cam,
+    float pan_max, float pan_min,
+    float tilt_max, float tilt_min,
+    struct FloatEulers gimbal_to_body_eulers,
+    struct FloatVect3 gimbal_pos)
+{
+  cam->pan_max = pan_max;
+  cam->pan_min = pan_min;
+  cam->tilt_max = tilt_max;
+  cam->tilt_min = tilt_min;
+  float_rmat_of_eulers(&cam->gimbal_to_body, &gimbal_to_body_eulers);
+  cam->gimbal_pos = gimbal_pos;
+}
+
+// TODO
+void cam_set_angles_callback(struct CamControl *cam, cam_angles_from_dir compute_angles);
+void cam_run(struct CamControl *cam);
+void cam_set_mode(struct CamControl *cam, uint8_t mode);
+void cam_set_lock(struct CamControl *cam, bool lock);
+void cam_set_pan_command(struct CamControl *cam, int16_t pan);
+void cam_set_tilt_command(struct CamControl *cam, int16_t tilt);
+void cam_set_angles_rad(struct CamControl *cam, float pan, float tilt);
+void cam_set_angles_deg(struct CamControl *cam, float pan, float tilt);
+void cam_set_target_pos(struct CamControl *cam, struct EnuCoor_f target);
+void cam_set_wp_id(struct CamControl *cam, uint8_t wp_id);
+void cam_set_ac_id(struct CamControl *cam, uint8_t ac_id);
+
+/** Run camera control
+ */
+void cam_run(struct CamControl *cam)
+{
+  switch (cam->mode) {
+    case CAM_MODE_OFF:
+      cam_set_pan_command(cam, CAM_PAN0);
+      cam_set_pan_command(cam, CAM_TILT0);
+      break;
+    case CAM_MODE_ANGLES:
+      cam_angles(cam);
+      break;
+    case CAM_MODE_NADIR:
+      cam_nadir(cam);
+      break;
+    case CAM_MODE_TARGET:
+      cam_target(cam);
+      break;
+    case CAM_MODE_WP_TARGET:
+      cam_waypoint_target(cam);
+      break;
+    case CAM_MODE_AC_TARGET:
+      cam_ac_target(cam);
+      break;
+    case CAM_MODE_STABILIZED:
+      cam_stabilized(cam);
+      break;
+    case CAM_MODE_RC:
+      cam_rc(cam);
+      break;
+    default:
+      break;
+  }
+#ifdef SHOW_CAM_COORDINATES
+  cam_point_lon = 0;
+  cam_point_lat = 0;
+  cam_point_distance_from_home = 0;
+#endif
+}
+
+/** Init module
+ */
 void cam_init(void)
 {
   // apply default settings
@@ -105,6 +277,7 @@ void cam_init(void)
       CAM_PAN_MAX, CAM_PAN_MIN,
       CAM_TILT_MAX, CAM_TILT_MIN,
       gimbal_to_body, gimbal_pos);
+  cam_set_angles_callback(&cam_control, default_compute_angles);
 
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CAM, send_cam);
 #ifdef SHOW_CAM_COORDINATES
@@ -112,195 +285,18 @@ void cam_init(void)
 #endif
 }
 
+/** Periodic call (run control)
+ */
 void cam_periodic(void)
 {
-  // cam_run(&cam_control, compute_angles); // TODO run from module using this API ???
-}
+  cam_run(&cam_control);
 
-void cam_run(struct CamControl *cam, cam_angles_from_dir compute_angles)
-{
-  //TODO
-  //
-#if defined(CAM_FIXED_FOR_FPV_IN_AUTO1) && CAM_FIXED_FOR_FPV_IN_AUTO1 == 1
-  //Position the camera for straight view.
-  if (autopilot_get_mode() == AP_MODE_AUTO2) {
-#endif
-    switch (cam_mode) {
-      case CAM_MODE_OFF:
-        cam_pan_c = RadOfDeg(CAM_PAN0);
-        cam_tilt_c = RadOfDeg(CAM_TILT0);
-        cam_angles();
-        break;
-      case CAM_MODE_ANGLES:
-        cam_angles();
-        break;
-      case CAM_MODE_NADIR:
-        cam_nadir();
-        break;
-      case CAM_MODE_XY_TARGET:
-        cam_target();
-        break;
-      case CAM_MODE_WP_TARGET:
-        cam_waypoint_target();
-        break;
-      case CAM_MODE_AC_TARGET:
-        cam_ac_target();
-        break;
-        // In this mode the target coordinates are calculated continuously from the pan and tilt radio channels.
-        // The "TARGET" waypoint coordinates are not used.
-        // If the "-DSHOW_CAM_COORDINATES" is defined then the coordinates of where the camera is looking are calculated.
-      case CAM_MODE_STABILIZED:
-        cam_waypoint_target();
-        break;
-        // In this mode the angles come from the pan and tilt radio channels.
-        // The "TARGET" waypoint coordinates are not used but i need to call the "cam_waypoint_target()" function
-        // in order to calculate the coordinates of where the camera is looking.
-      case CAM_MODE_RC:
-        cam_waypoint_target();
-        break;
-      default:
-        break;
-    }
-#if defined(CAM_FIXED_FOR_FPV_IN_AUTO1) && CAM_FIXED_FOR_FPV_IN_AUTO1 == 1
-  } else if (autopilot_get_mode() == AP_MODE_AUTO1) {
-    //Position the camera for straight view.
-
-#if defined(CAM_TILT_POSITION_FOR_FPV)
-    cam_tilt_c = RadOfDeg(CAM_TILT_POSITION_FOR_FPV);
-#else
-    cam_tilt_c = RadOfDeg(90);
-#endif
-#if defined(CAM_PAN_POSITION_FOR_FPV)
-    cam_pan_c = RadOfDeg(CAM_PAN_POSITION_FOR_FPV);
-#else
-    cam_pan_c = RadOfDeg(0);
-#endif
-    cam_angles();
-#ifdef SHOW_CAM_COORDINATES
-    cam_point_lon = 0;
-    cam_point_lat = 0;
-    cam_point_distance_from_home = 0;
-#endif
-  }
-#endif
-
-
-}
-
-/** Computes the servo values from cam_pan_c and cam_tilt_c */
-void cam_angles(void)
-{
-  float cam_pan = 0;
-  float cam_tilt = 0;
-  if (cam_pan_c > RadOfDeg(CAM_PAN_MAX)) {
-    cam_pan_c = RadOfDeg(CAM_PAN_MAX);
-  } else {
-    if (cam_pan_c < RadOfDeg(CAM_PAN_MIN)) {
-      cam_pan_c = RadOfDeg(CAM_PAN_MIN);
-    }
-  }
-
-  if (cam_tilt_c > RadOfDeg(CAM_TILT_MAX)) {
-    cam_tilt_c = RadOfDeg(CAM_TILT_MAX);
-  } else {
-    if (cam_tilt_c < RadOfDeg(CAM_TILT_MIN)) {
-      cam_tilt_c = RadOfDeg(CAM_TILT_MIN);
-    }
-  }
-
-#ifdef CAM_PAN_NEUTRAL
-  float pan_diff = cam_pan_c - RadOfDeg(CAM_PAN_NEUTRAL);
-  if (pan_diff > 0) {
-    cam_pan = MAX_PPRZ * (pan_diff / (RadOfDeg(CAM_PAN_MAX - CAM_PAN_NEUTRAL)));
-  } else {
-    cam_pan = MIN_PPRZ * (pan_diff / (RadOfDeg(CAM_PAN_MIN - CAM_PAN_NEUTRAL)));
-  }
-#else
-  cam_pan = ((float)RadOfDeg(cam_pan_c - CAM_PAN_MIN)) * ((float)MAX_PPRZ / (float)RadOfDeg(CAM_PAN_MAX - CAM_PAN_MIN));
-#endif
-
-#ifdef CAM_TILT_NEUTRAL
-  float tilt_diff = cam_tilt_c - RadOfDeg(CAM_TILT_NEUTRAL);
-  if (tilt_diff > 0) {
-    cam_tilt = MAX_PPRZ * (tilt_diff / (RadOfDeg(CAM_TILT_MAX - CAM_TILT_NEUTRAL)));
-  } else {
-    cam_tilt = MIN_PPRZ * (tilt_diff / (RadOfDeg(CAM_TILT_MIN - CAM_TILT_NEUTRAL)));
-  }
-#else
-  cam_tilt = ((float)RadOfDeg(cam_tilt_c - CAM_TILT_MIN))  * ((float)MAX_PPRZ / (float)RadOfDeg(
-               CAM_TILT_MAX - CAM_TILT_MIN));
-#endif
-
-  cam_pan = TRIM_PPRZ(cam_pan);
-  cam_tilt = TRIM_PPRZ(cam_tilt);
-
-  cam_phi_c = cam_pan_c;
-  cam_theta_c = cam_tilt_c;
-
+  // update command if possible
 #ifdef COMMAND_CAM_PAN
-  command_set(COMMAND_CAM_PAN, cam_pan);
+  command_set(COMMAND_CAM_PAN, cam_control.pan_cmd);
 #endif
 #ifdef COMMAND_CAM_TILT
-  command_set(COMMAND_CAM_TILT, cam_tilt);
+  command_set(COMMAND_CAM_TILT, cam_control.tilt_cmd);
 #endif
 }
 
-/** Computes the right angles from target_x, target_y, target_alt */
-void cam_target(void)
-{
-#ifdef TEST_CAM
-  vPoint(test_cam_estimator_x, test_cam_estimator_y, test_cam_estimator_z,
-         test_cam_estimator_phi, test_cam_estimator_theta, test_cam_estimator_hspeed_dir,
-         cam_target_x, cam_target_y, cam_target_alt,
-         &cam_pan_c, &cam_tilt_c);
-#else
-  struct EnuCoor_f *pos = stateGetPositionEnu_f();
-  struct FloatEulers *att = stateGetNedToBodyEulers_f();
-  vPoint(pos->x, pos->y, stateGetPositionUtm_f()->alt,
-         att->phi, att->theta, stateGetHorizontalSpeedDir_f(),
-         cam_target_x, cam_target_y, cam_target_alt,
-         &cam_pan_c, &cam_tilt_c);
-#endif
-  cam_angles();
-}
-
-/** Point straight down */
-void cam_nadir(void)
-{
-  struct EnuCoor_f *pos = stateGetPositionEnu_f();
-#ifdef TEST_CAM
-  cam_target_x = test_cam_estimator_x;
-  cam_target_y = test_cam_estimator_y;
-#else
-  cam_target_x = pos->x;
-  cam_target_y = pos->y;
-#endif
-  cam_target_alt = -10;
-  cam_target();
-}
-
-
-void cam_waypoint_target(void)
-{
-  if (cam_target_wp < nb_waypoint) {
-    cam_target_x = WaypointX(cam_target_wp);
-    cam_target_y = WaypointY(cam_target_wp);
-  }
-  cam_target_alt = ground_alt;
-  cam_target();
-}
-
-#ifdef TRAFFIC_INFO
-#include "modules/multi/traffic_info.h"
-
-void cam_ac_target(void)
-{
-  struct EnuCoor_f ac_pos *ac = acInfoGetPositionEnu_f(cam_target_ac);
-  cam_target_x = ac->x;
-  cam_target_y = ac->y;
-  cam_target_alt = acInfoGetPositionUtm_f()->alt;
-  cam_target();
-}
-#else
-void cam_ac_target(void) {}
-#endif // TRAFFIC_INFO

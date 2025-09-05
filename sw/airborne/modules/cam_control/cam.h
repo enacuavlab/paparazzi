@@ -35,7 +35,7 @@
 #define CAM_MODE_OFF        0  // Do nothing
 #define CAM_MODE_ANGLES     1  // Input: servo angles
 #define CAM_MODE_NADIR      2  // Input: look down
-#define CAM_MODE_XY_TARGET  3  // Input: target_x, target_y
+#define CAM_MODE_TARGET     3  // Input: target position
 #define CAM_MODE_WP_TARGET  4  // Input: waypoint no
 #define CAM_MODE_AC_TARGET  5  // Input: ac id
 #define CAM_MODE_STABILIZED 6  // Stabilized mode, input: camera angles from the pan and tilt radio channels, output pointing coordinates.
@@ -63,8 +63,10 @@ struct CamControl {
   float pan_min;                ///< pan angle at minimum command
   float tilt_max;               ///< tilt angle at maximum command
   float tilt_min;               ///< tilt angle at minimum command
-  struct FloatRMat gimbal_to_body;  ///< rotation matrix from gimbal to body frame
-  struct FloatVect3 gimbal_pos;     ///< position of the gimbal in body NED frame [m]
+
+  struct FloatRMat gimbal_to_body;    ///< rotation matrix from gimbal to body frame
+  struct FloatVect3 gimbal_pos;       ///< position of the gimbal in body NED frame [m]
+  cam_angles_from_dir compute_angles; ///< cam angles from looking direction callback
 
   float pan_angle;              ///< pan angle [rad]
   float tilt_angle;             ///< tilt angle [rad]
@@ -84,14 +86,15 @@ extern void cam_setup(struct CamControl *cam,
     float tilt_max, float tilt_min,
     struct FloatEulers gimbal_to_body,
     struct FloatVect3 gimbal_pos);
-extern void cam_run(struct CamControl *cam, cam_angles_from_dir compute_angles);
+extern void cam_set_angles_callback(struct CamControl *cam, cam_angles_from_dir compute_angles);
+extern void cam_run(struct CamControl *cam);
 extern void cam_set_mode(struct CamControl *cam, uint8_t mode);
 extern void cam_set_lock(struct CamControl *cam, bool lock);
 extern void cam_set_pan_command(struct CamControl *cam, int16_t pan);
-extern void cam_set_tilt_command(struct CamControl *cam, int16_t pan);
+extern void cam_set_tilt_command(struct CamControl *cam, int16_t tilt);
 extern void cam_set_angles_rad(struct CamControl *cam, float pan, float tilt);
 extern void cam_set_angles_deg(struct CamControl *cam, float pan, float tilt);
-extern void cam_set_target_pos(struct CamControl *cam, struct NedCoor_f target);
+extern void cam_set_target_pos(struct CamControl *cam, struct EnuCoor_f target);
 extern void cam_set_wp_id(struct CamControl *cam, uint8_t wp_id);
 extern void cam_set_ac_id(struct CamControl *cam, uint8_t ac_id);
 
