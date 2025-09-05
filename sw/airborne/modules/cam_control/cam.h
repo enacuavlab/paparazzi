@@ -40,6 +40,7 @@
 #define CAM_MODE_AC_TARGET  5  // Input: ac id
 #define CAM_MODE_STABILIZED 6  // Stabilized mode, input: camera angles from the pan and tilt radio channels, output pointing coordinates.
 #define CAM_MODE_RC         7  // Manual mode, input: camera angles from the pan and tilt radio channels, output servo positions.
+#define CAM_MODE_NB         8  // number of modes
 
 /** Function pointer to return cam angle from a specified direction
  *

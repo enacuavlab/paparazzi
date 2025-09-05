@@ -92,12 +92,15 @@ static void send_cam(struct transport_tx *trans, struct link_device *dev)
   pprz_msg_send_CAM(trans, dev, AC_ID, &phi, &theta, &x, &y);
 }
 
-#ifdef SHOW_CAM_COORDINATES
+#if CAM_SHOW_COORDINATES
 static void send_cam_point(struct transport_tx *trans, struct link_device *dev)
 {
-  // TODO target enu to lla
-  //pprz_msg_send_CAM_POINT(trans, dev, AC_ID,
-  //                        &cam_point_distance_from_home, &cam_point_lat, &cam_point_lon);
+  struct LlaCoor_f target_lla;
+  struct EcefCoor_f target_ecef;
+  ecef_of_enu_point_f(&target_ecef, stateGetNedOrigin_f(), cam_control.target_pos);
+  lla_of_ecef_f(&target_lla, &target_ecef);
+  uint16_t dist_from_home = 0;
+  pprz_msg_send_CAM_POINT(trans, dev, AC_ID, &dist_from_home, &target_lla.lat, &target_lla.lon);
 }
 #endif
 
@@ -118,9 +121,11 @@ static void cam_angles(struct CamControl *cam)
   Bound(cam->pan_angle, cam->pan_min, cam->pan_max);
   Bound(cam->tilt_angle, cam->tilt_min, cam->tilt_max);
 
-  float delta = cam->pan_max - cam->pan_min;
-  cam->pan_cmd = (int16_t) MAX_PPRZ * (cam->pan_angle - cam->pan_min) / delta;
-  cam->tilt_cmd = (int16_t) MAX_PPRZ * (cam->tilt_angle - cam->tilt_min) / delta;
+  if (!cam->lock) {
+    float delta = cam->pan_max - cam->pan_min;
+    cam->pan_cmd = (int16_t) MAX_PPRZ * (cam->pan_angle - cam->pan_min) / delta;
+    cam->tilt_cmd = (int16_t) MAX_PPRZ * (cam->tilt_angle - cam->tilt_min) / delta;
+  }
 }
 
 /** Computes the right angles from target position */
@@ -205,18 +210,68 @@ void cam_setup(struct CamControl *cam,
   cam->gimbal_pos = gimbal_pos;
 }
 
-// TODO
-void cam_set_angles_callback(struct CamControl *cam, cam_angles_from_dir compute_angles);
-void cam_run(struct CamControl *cam);
-void cam_set_mode(struct CamControl *cam, uint8_t mode);
-void cam_set_lock(struct CamControl *cam, bool lock);
-void cam_set_pan_command(struct CamControl *cam, int16_t pan);
-void cam_set_tilt_command(struct CamControl *cam, int16_t tilt);
-void cam_set_angles_rad(struct CamControl *cam, float pan, float tilt);
-void cam_set_angles_deg(struct CamControl *cam, float pan, float tilt);
-void cam_set_target_pos(struct CamControl *cam, struct EnuCoor_f target);
-void cam_set_wp_id(struct CamControl *cam, uint8_t wp_id);
-void cam_set_ac_id(struct CamControl *cam, uint8_t ac_id);
+void cam_set_angles_callback(struct CamControl *cam, cam_angles_from_dir compute_angles)
+{
+  cam->compute_angles = compute_angles;
+}
+
+void cam_set_mode(struct CamControl *cam, uint8_t mode)
+{
+  if (mode < CAM_MODE_NB) {
+    cam->mode = mode;
+  } else {
+    cam->mode = CAM_MODE_OFF;
+  }
+}
+
+void cam_set_lock(struct CamControl *cam, bool lock)
+{
+  cam->lock = lock;
+}
+
+void cam_set_pan_command(struct CamControl *cam, int16_t pan)
+{
+  cam->pan_cmd = TRIM_PPRZ(pan);
+}
+
+void cam_set_tilt_command(struct CamControl *cam, int16_t tilt)
+{
+  cam->tilt_cmd = TRIM_PPRZ(tilt);
+}
+
+void cam_set_angles_rad(struct CamControl *cam, float pan, float tilt)
+{
+  cam->pan_angle = pan;
+  cam->tilt_angle = tilt;
+  Bound(cam->pan_angle, cam->pan_min, cam->pan_max);
+  Bound(cam->tilt_angle, cam->tilt_min, cam->tilt_max);
+}
+
+void cam_set_angles_deg(struct CamControl *cam, float pan, float tilt)
+{
+  cam->pan_angle = RadOfDeg(pan);
+  cam->tilt_angle = RadOfDeg(tilt);
+  Bound(cam->pan_angle, cam->pan_min, cam->pan_max);
+  Bound(cam->tilt_angle, cam->tilt_min, cam->tilt_max);
+}
+
+void cam_set_target_pos(struct CamControl *cam, struct EnuCoor_f target)
+{
+  cam->target_pos = target;
+}
+
+void cam_set_wp_id(struct CamControl *cam, uint8_t wp_id)
+{
+  if (wp_id < nb_waypoint) {
+    cam->target_wp_id = wp_id;
+  }
+}
+
+void cam_set_ac_id(struct CamControl *cam, uint8_t ac_id)
+{
+  cam->target_ac_id = ac_id;
+}
+
 
 /** Run camera control
  */
@@ -251,11 +306,6 @@ void cam_run(struct CamControl *cam)
     default:
       break;
   }
-#ifdef SHOW_CAM_COORDINATES
-  cam_point_lon = 0;
-  cam_point_lat = 0;
-  cam_point_distance_from_home = 0;
-#endif
 }
 
 /** Init module
@@ -280,7 +330,7 @@ void cam_init(void)
   cam_set_angles_callback(&cam_control, default_compute_angles);
 
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CAM, send_cam);
-#ifdef SHOW_CAM_COORDINATES
+#ifdef CAM_SHOW_COORDINATES
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CAM_POINT, send_cam_point);
 #endif
 }
