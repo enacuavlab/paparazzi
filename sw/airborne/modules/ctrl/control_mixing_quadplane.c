@@ -237,7 +237,7 @@ void control_mixing_quadplane_nav_run(void)
     if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
       stabilization_attitude_plane_pid_run(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
       struct ThrustSetpoint hover_th_sp = guidance_v_run(autopilot_in_flight());
-      struct FloatEulers eulers_sp = { .phi = 0.f , .theta = 0.f, .psi = stateGetNedToBodyEulers_f()->psi };
+      struct FloatEulers eulers_sp = { .phi = 0.f , .theta = 0.f, .psi = guidance_plane.course_setpoint };
       struct StabilizationSetpoint hover_stab_sp = stab_sp_from_eulers_f(&eulers_sp);
       stabilization_run(autopilot_in_flight(), &hover_stab_sp, &hover_th_sp, stabilization.cmd); // will overwrite COMMAND_THRUST
     } else {
