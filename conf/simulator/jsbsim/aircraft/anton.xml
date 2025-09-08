@@ -408,8 +408,8 @@
         </product>
       </function>
       <location unit="M">
-        <x>0</x>
-        <y>-0.25</y>
+        <x>-0.15</x>
+        <y>-0.15</y>
         <z>0</z>
       </location>
       <direction>

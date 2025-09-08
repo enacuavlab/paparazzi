@@ -1,0 +1,24 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="control_mixing_quadplane" dir="ctrl" task="control">
+  <doc>
+    <description>
+      Control mixing for a quadplane.
+
+      Four static motors in X configuration and a pusher motor for forward flight.
+      Two control surfaces (elevons) for plane attitude control.
+    </description>
+  </doc>
+  <header>
+    <file name="control_mixing_quadplane.h"/>
+  </header>
+  <init fun="control_mixing_quadplane_init()"/>
+  <makefile>
+    <file name="control_mixing_quadplane.c"/>
+    <test firmware="rotorcraft">
+      <define name="INDI_OUTPUTS" value="4"/>
+      <define name="INDI_NUM_ACT" value="4"/>
+      <define name="ACTUATORS_NB" value="4"/>
+      <define name="PERIODIC_FREQUENCY" value="500"/>
+    </test>
+  </makefile>
+</module>
