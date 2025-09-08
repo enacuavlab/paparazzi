@@ -42,6 +42,7 @@
     </mode>
 
     <mode name="ppm">
+      <message name="ACTUATORS"                period="0.1"/>
       <message name="DL_VALUE"                 period="0.5"/>
       <message name="ALIVE"                    period="2.1"/>
       <message name="ROTORCRAFT_CMD"           period=".05"/>
@@ -63,6 +64,7 @@
       <message name="IMU_MAG_CURRENT_CALIBRATION" period=".05"/>
       <message name="ARDRONE_NAVDATA"             period=".05"/>
       <message name="AIRSPEED_RAW"                period="0.1"/>
+      <message name="ACTUATORS_RAW"               period="0.1"/>
     </mode>
 
     <mode name="scaled_sensors">
