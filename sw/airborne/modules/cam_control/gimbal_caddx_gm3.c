@@ -23,68 +23,68 @@
  * caddx gm3 gimbal control sbus
  */
 
-#include "modules/cam_control/gimbal_ctrl.h"
+#include "modules/cam_control/gimbal_caddx_gm3.h"
+#include "modules/cam_control/cam.h"
 #include "modules/actuators/actuators.h"
 #include "generated/airframe.h"
 #include "modules/datalink/datalink.h"
 #include "pprzlink/dl_protocol.h"   // datalink messages
 
+// mechanical characteristics
+#define GIMBAL_CADDX_PAN_MAX  RadOfDeg(160.f)
+#define GIMBAL_CADDX_TILT_MAX RadOfDeg(120.f)
+#define GIMBAL_CADDX_ROLL_MAX RadOfDeg(60.f)
+#define GIMBAL_CADDX_TILT_OFFSET RadOfDeg(10.f)
+
+
+float gimbal_caddx_gm3_roll;
+
+/** Compute pan and tilt angle for the 3-axis gimbal CaddX GM3
+ *
+ * The rotations from gimbal to camera frame are: pan (z), roll (x), tilt (y)
+ * In addition, an extra mechanical offset exists along the tilt axis between the pan and roll
+ * rotations. Considering the wide angle camera and the pain to inverse the resulting equation,
+ * this angle is neglected.
+ * Therefore, we have:
+ * ->  sin(tilt) = uz / cos(roll)
+ * ->  tan(pan) = (uy / ux) + sin(roll)*tan(tilt)
+ */
+static void gimbal_caddx_compute_angles(struct FloatVect3 dir, float *pan, float *tilt)
+{
+  float roll = gimbal_caddx_gm3_roll;
+  BoundAbs(roll, GIMBAL_CADDX_ROLL_MAX);
+  *tilt = asinf(dir.z / cosf(roll));
+  *pan = atan2f(dir.y + sinf(roll)*tanf(*tilt)*dir.x, dir.x);
+}
+
 void gimbal_caddx_gm3_init(void)
 {
-  ActuatorSet(CAM_MODE, MIN_PPRZ);
-  ActuatorSet(CAM_ROLL, 0);
-  ActuatorSet(CAM_PITCH, 0);
-  ActuatorSet(CAM_YAW, 0);
-  ActuatorSet(CAM_SENS, 0);
+  // Set the cam control with the specific parameter of CaddX GM3 gimble
+  cam_setup_angles(&cam_control,
+      GIMBAL_CADDX_PAN_MAX, -GIMBAL_CADDX_PAN_MAX,
+      GIMBAL_CADDX_TILT_MAX, -GIMBAL_CADDX_TILT_MAX);
+  cam_set_angles_callback(&cam_control, gimbal_caddx_compute_angles);
+
+  // Set mode
+#ifdef GIMBAL_CADDX_MODE
+  ActuatorSet(GIMBAL_CADDX_MODE, MIN_PPRZ);
+#endif
+#ifdef GIMBAL_CADDX_SENS
+  ActuatorSet(GIMBAL_CADDX_SENS, 0);
+#endif
+
+  gimbal_caddx_gm3_roll = 0.f;
+#ifdef GIMBAL_CADDX_ROLL
+  // GM2 model can be used as a GM3 without roll
+  ActuatorSet(GIMBAL_CADDX_ROLL, 0);
+#endif
 }
 
 void gimbal_caddx_gm3_periodic(void)
 {
-  /*
-  static int yaw = 0;
-  static bool up = true;
-
-  if(up && yaw >= MAX_PPRZ/4) {
-    up = false;
-  }
-  else if(!up && yaw <= MIN_PPRZ/4) {
-    up = true;
-  }
-
-  if(up) {
-    yaw += 200;
-  } else {
-    yaw -= 200;
-  }
-  ActuatorSet(CAM_YAW, yaw);
-  */
+#ifdef GIMBAL_CADDX_ROLL
+  float roll_cmd = gimbal_caddx_gm3_roll * MAX_PPRZ / GIMBAL_CADDX_ROLL_MAX;
+  ActuatorSet(GIMBAL_CADDX_ROLL, roll_cmd);
+#endif
 }
-
-int16_t convert_to_CAM_boundary(int8_t channel, int8_t coef)
-{
-  return (int16_t) (((channel * coef / (127.0f * 127.0f)) + (10.0f / 127.0f)) * MAX_PPRZ);
-}
-
-void gimbal_caddx_gm3_datalink(uint8_t* buf)
-{
-  //uint8_t ac_id = pprzlink_get_DL_RC_UP_ac_id(buf);  
-  uint8_t lenght = pprzlink_get_RC_UP_channels_length(buf);
-  int8_t* channels = pprzlink_get_DL_RC_UP_channels(buf);
-
-  static int16_t roll = 0; 
-  static int16_t pitch = 0;
-  static int16_t yaw = 0;
-
-  if (lenght < 3) return;
-
-  roll = convert_to_CAM_boundary(channels[0], 32.0f);
-  pitch = convert_to_CAM_boundary(channels[1], 50.0f);
-  yaw = convert_to_CAM_boundary(channels[2], 100.0f);
-
-  ActuatorSet(CAM_ROLL, roll);
-  ActuatorSet(CAM_PITCH, pitch);
-  ActuatorSet(CAM_YAW, yaw);
-
-}
-
 

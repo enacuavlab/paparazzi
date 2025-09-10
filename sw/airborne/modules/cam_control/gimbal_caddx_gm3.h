@@ -27,11 +27,12 @@
 #ifndef GIMBAL_CADDX_GM3_H
 #define GIMBAL_CADDX_GM3_H
 
-#include "stdint.h"
+#include "std.h"
 
-extern void gimbal_ctrl_init(void);
-extern void gimbal_ctrl_periodic(void);
-extern void gimbal_ctrl_datalink(uint8_t* buf);
+extern float gimbal_caddx_gm3_roll;
+
+extern void gimbal_cadxx_gm3_init(void);
+extern void gimbal_cadxx_gm3_periodic(void);
 
 #endif  // GIMBAL_CADDX_GM3_H
 

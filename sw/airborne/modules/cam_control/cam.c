@@ -35,6 +35,7 @@
 #include "generated/airframe.h"
 #include "modules/core/commands.h"
 #include "state.h"
+#include "modules/core/abi.h"
 #include "modules/datalink/telemetry.h"
 
 // Default idle command
@@ -83,6 +84,17 @@
 // Global cam structure
 struct CamControl cam_control;
 
+// ABI message bind
+static abi_event joystick_ev;
+
+static void joystick_cb(uint8_t sender_id UNUSED, int16_t roll, int16_t pitch, int16_t yaw UNUSED, int16_t throttle UNUSED)
+{
+  if (cam_control.mode == CAM_MODE_JOYSTICK) {
+    cam_control.pan_cmd = roll;
+    cam_control.tilt_cmd = pitch;
+  }
+}
+
 static void send_cam(struct transport_tx *trans, struct link_device *dev)
 {
   int16_t x = cam_control.target_pos.x;
@@ -106,13 +118,17 @@ static void send_cam_point(struct transport_tx *trans, struct link_device *dev)
 
 /** Default callback function to compute gimbal pan/tilt angle
  *  from a looking direction (unit vector in gimbal frame)
+ *
+ *  The default gimbal mounting is a pan angle turning around the gimbal z axis,
+ *  then a tilt angle around the gimbal y axis.
+ *  Therefor we have:
+ *  ->  tan(pan) = uy/ux
+ *  ->  sin(tilt) = uz
  */
 static void default_compute_angles(struct FloatVect3 dir, float *pan, float *tilt)
 {
-  // TODO some default conf
-  (void)dir;
-  *pan = 0.f;
-  *tilt = 0.f;
+  *pan = atan2f(dir.y, dir.x);
+  *tilt = asinf(dir.z);
 }
 
 /** Computes the servo values from pan and tilt angles */
@@ -191,21 +207,25 @@ static void cam_stabilized(struct CamControl *cam UNUSED)
   // TODO
 }
 
-static void cam_rc(struct CamControl *cam UNUSED)
+static void cam_joystick(struct CamControl *cam UNUSED)
 {
   // TODO
 }
 
-void cam_setup(struct CamControl *cam,
+void cam_setup_angles(struct CamControl *cam,
     float pan_max, float pan_min,
-    float tilt_max, float tilt_min,
-    struct FloatEulers gimbal_to_body_eulers,
-    struct FloatVect3 gimbal_pos)
+    float tilt_max, float tilt_min)
 {
   cam->pan_max = pan_max;
   cam->pan_min = pan_min;
   cam->tilt_max = tilt_max;
   cam->tilt_min = tilt_min;
+}
+
+void cam_setup_mounting(struct CamControl *cam,
+    struct FloatEulers gimbal_to_body_eulers,
+    struct FloatVect3 gimbal_pos)
+{
   float_rmat_of_eulers(&cam->gimbal_to_body, &gimbal_to_body_eulers);
   cam->gimbal_pos = gimbal_pos;
 }
@@ -300,8 +320,8 @@ void cam_run(struct CamControl *cam)
     case CAM_MODE_STABILIZED:
       cam_stabilized(cam);
       break;
-    case CAM_MODE_RC:
-      cam_rc(cam);
+    case CAM_MODE_JOYSTICK:
+      cam_joystick(cam);
       break;
     default:
       break;
@@ -323,11 +343,11 @@ void cam_init(void)
     CAM_GIMBAL_POS_Y,
     CAM_GIMBAL_POS_Z
   };
-  cam_setup(&cam_control,
-      CAM_PAN_MAX, CAM_PAN_MIN,
-      CAM_TILT_MAX, CAM_TILT_MIN,
-      gimbal_to_body, gimbal_pos);
+  cam_setup_angles(&cam_control, CAM_PAN_MAX, CAM_PAN_MIN, CAM_TILT_MAX, CAM_TILT_MIN);
+  cam_setup_mounting(&cam_control, gimbal_to_body, gimbal_pos);
   cam_set_angles_callback(&cam_control, default_compute_angles);
+
+  AbiBindMsgJOYSTICK(ABI_BROADCAST, &joystick_ev, joystick_cb);
 
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CAM, send_cam);
 #ifdef CAM_SHOW_COORDINATES

@@ -8,7 +8,7 @@
   </doc>
   <settings>
     <dl_settings NAME="cam control">
-      <dl_setting MAX="7" MIN="0" STEP="1" module="cam_control/cam" VAR="cam_control.mode" values="OFF|ANGLES|NADIR|TARGET|WP_TARGET|AC_TARGET|STABILIZED|RC" handler="SetMode">
+      <dl_setting MAX="7" MIN="0" STEP="1" module="cam_control/cam" VAR="cam_control.mode" values="OFF|ANGLES|NADIR|TARGET|WP_TARGET|AC_TARGET|STABILIZED|JOYSTICK" handler="SetMode">
         <strip_button name="CAM_OFF" value="0"/>
       </dl_setting>
       <dl_setting MAX="90" MIN="-90" STEP="1" module="cam_control/cam" var="cam_control.tilt_angle" shortname="tilt" unit="rad" alt_unit="deg"/>
@@ -17,6 +17,9 @@
       <dl_setting min="1" max="255" step="1" module="cam_control/cam" var="cam_control.target_ac_id" shortname="ac id"/>
     </dl_settings>
   </settings>
+  <dep>
+    <recommends>joystick</recommends>
+  </dep>
   <header>
     <file name="cam.h"/>
   </header>

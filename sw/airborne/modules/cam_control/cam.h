@@ -39,7 +39,7 @@
 #define CAM_MODE_WP_TARGET  4  // Input: waypoint no
 #define CAM_MODE_AC_TARGET  5  // Input: ac id
 #define CAM_MODE_STABILIZED 6  // Stabilized mode, input: camera angles from the pan and tilt radio channels, output pointing coordinates.
-#define CAM_MODE_RC         7  // Manual mode, input: camera angles from the pan and tilt radio channels, output servo positions.
+#define CAM_MODE_JOYSTICK   7  // Manual mode, input: camera angles from the pan and tilt radio channels, output servo positions.
 #define CAM_MODE_NB         8  // number of modes
 
 /** Function pointer to return cam angle from a specified direction
@@ -82,9 +82,10 @@ extern void cam_init(void);
 extern void cam_periodic(void);
 
 // API for internal and external use
-extern void cam_setup(struct CamControl *cam,
+extern void cam_setup_angles(struct CamControl *cam,
     float pan_max, float pan_min,
-    float tilt_max, float tilt_min,
+    float tilt_max, float tilt_min);
+extern void cam_setup_mounting(struct CamControl *cam,
     struct FloatEulers gimbal_to_body,
     struct FloatVect3 gimbal_pos);
 extern void cam_set_angles_callback(struct CamControl *cam, cam_angles_from_dir compute_angles);
