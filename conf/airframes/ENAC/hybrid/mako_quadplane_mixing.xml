@@ -50,18 +50,18 @@
     
     <!-- EXTERNAL INSTRUMENT -->
     <!--Extern magneto-->    
-    <!--module name="mag" type="rm3100">
+    <module name="mag" type="rm3100">
       <configure name="MAG_RM3100_I2C_DEV" value="i2c2"/>
       <define name="MODULE_RM3100_UPDATE_AHRS" value="TRUE"/>
       <define name="RM3100_CHAN_X" value="1"/>
       <define name="RM3100_CHAN_Y" value="0"/>
-      <define name="RM3100_CHAN_Y_SIGN" value="-"/>
-    </module-->
+      <define name="RM3100_CHAN_X_SIGN" value="-"/>
+    </module>
     
     <!--Airspeed sensor : get the measured airspeed in the messages-->
     <module name="airspeed" type="sdp3x">
       <define name="SDP3X_i2C_DEV" value="i2c2"/>
-      <define name="SDP3X_PRESSURE_SCALE" value="16.0"/>
+      <define name="SDP3X_PRESSURE_SCALE" value="9.0"/>
       <define name="SDP3X_PRESSURE_OFFSET" value="-0.1"/>
       <define name="USE_AIRSPEED_SDP3X" value="TRUE"/>
     </module>
@@ -75,8 +75,10 @@
       <configure name="GPS_BAUD" value="B115200"/>
       <define name="GPS_FIX_TIMEOUT" value="0.5"/>
     </module>
+     <!-- INS TYPE : EKF2 -->
     <module name="ins" type="ekf2">
-    </module>    
+      <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
+    </module>   
     
     <module name="stabilization" type="indi">
       <configure name="INDI_NUM_ACT" value="4"/> <!-- only quadcopter part -->
@@ -151,8 +153,8 @@
           <field name="scale_f"     value="true"/>
           <field name="rotation"  value="true"/>
         </field>
-        <field name="neutral" value="-17,-8,-30" type="int[]"/>
-        <field name="scale_f" value="{ 2.4480, 2.4523, 2.4596 }"/>
+		<field name="neutral" value="-17,-20,-47" type="int[]"/>
+		<field name="scale_f" value="{ 2.4490, 2.4520, 2.4550 }"/>		
         <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
@@ -168,26 +170,26 @@
       </field>
     </define>
     <define name="MAG_CALIB"      type="array">
-      <field type="struct">
+      <!--field type="struct">
         <field name="abi_id"      value="3"/>
         <field name="calibrated"  type="struct">
           <field name="neutral"   value="true"/>
           <field name="scale_f"     value="true"/>
           <field name="rotation"  value="true"/>
         </field>
-        <field name="neutral" value="-1111,1642,-1081" type="int[]"/>
-        <field name="scale_f" value="{ 0.6598, 0.6614, 0.6754 }"/>
+		<field name="neutral" value="-468,688,424" type="int[]"/>
+		<field name="scale_f" value="{ 0.6534, 0.6266, 0.6739 }"/>
         <field value="TAWAKIV2_MAG_ROT"/>
-      </field>
-      <!--field type="struct">
+      </field-->
+      <field type="struct">
         <field name="abi_id" value="5"/>
         <field name="calibrated" type="struct">
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
         </field>
-        <field name="neutral" value="161,238,94" type="int[]"/>
-        <field name="scale_f" value="{ 0.6535, 0.6338, 0.6369 }"/>
-      </field-->
+		<field name="neutral" value="122,-378,284" type="int[]"/>
+		<field name="scale_f" value="{ 0.6352, 0.6222, 0.6406 }"/>
+      </field>
     </define>
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
@@ -300,7 +302,7 @@
     <define name="CRITIC_BAT_LEVEL" value="9.4" unit="V"/>
     <define name="LOW_BAT_LEVEL" value="10." unit="V"/>
     <define name="MAX_BAT_LEVEL" value="12.4" unit="V"/>
-    <define name="BAT_NB_CELLS" value="3"/>
+    <define name="BAT_NB_CELLS" value="4"/>
   </section>
 
   <section name="AUTOPILOT">

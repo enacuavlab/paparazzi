@@ -184,7 +184,15 @@ void control_mixing_quadplane_attitude_plane(void)
   commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
   commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
   commands[COMMAND_YAW] = 0;
-  commands[COMMAND_MOTOR_PUSHER] = command_from_transition(Min(CMQ_MOTOR_IDLE, stabilization.cmd[COMMAND_THRUST]), stabilization.cmd[COMMAND_THRUST]); // blend from idle, unless thrust is lower
+  if (autopilot_get_motors_on()) {
+	if (transition_ratio < 0.90f) {
+	  commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, MAX_PPRZ); // blend from idle, unless thrust is lower
+	} else {
+	  commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
+	}
+  } else {
+	commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
+  }
   commands[COMMAND_THRUST] = commands[COMMAND_MOTOR_PUSHER];
   if (autopilot_in_flight()) {
     if (transition_ratio < CMQ_TRANSITION_CUTOFF) {

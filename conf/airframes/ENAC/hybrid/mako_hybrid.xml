@@ -1,6 +1,6 @@
 <!DOCTYPE airframe SYSTEM "../../airframe.dtd">
 
-<airframe name="Makobrid">
+<airframe name="Mako_hybrid">
 
   <description>
     * Autopilot:   TawakiV2
@@ -62,13 +62,13 @@
     
     <!-- EXTERNAL INSTRUMENT -->
     <!--Extern magneto-->    
-    <!--module name="mag" type="rm3100">
+    <module name="mag" type="rm3100">
       <configure name="MAG_RM3100_I2C_DEV" value="i2c2"/>
       <define name="MODULE_RM3100_UPDATE_AHRS"    value="TRUE"/>
       <define name="RM3100_CHAN_X" value="1"/>
       <define name="RM3100_CHAN_Y" value="0"/>
       <define name="RM3100_CHAN_Y_SIGN" value="-"/>
-    </module-->
+    </module>
     
     <!--Airspeed sensor : get the measured airspeed in the messages-->
     <module name="airspeed" type="sdp3x">
@@ -89,7 +89,7 @@
     </module>
      <!-- INS TYPE : EKF2 -->
     <module name="ins" type="ekf2">
-      <!--define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/-->
+      <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
     </module>    
     
 	<!-- *** MODE OPTITRACK *** -->    
@@ -438,7 +438,11 @@
   
   <!-- *** BATTERY - AUTOPILOT - TAG_TRACKING - GCS - SIMULATOR  SECTIONS *** -->   
   <section name="BAT">
-    <define name="CRITIC_BAT_LEVEL" value="9.3" unit="V"/>
+    <define name="CATASTROPHIC_BAT_LEVEL" value="9.2" unit="V"/>
+    <define name="CRITIC_BAT_LEVEL" value="9.4" unit="V"/>
+    <define name="LOW_BAT_LEVEL" value="10." unit="V"/>
+    <define name="MAX_BAT_LEVEL" value="12.4" unit="V"/>
+    <define name="BAT_NB_CELLS" value="4"/>
   </section>
 
   <section name="AUTOPILOT">
