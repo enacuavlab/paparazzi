@@ -214,8 +214,6 @@
       <message name="STAB_ATTITUDE"            period=".01"/>
       <message name="RC"                       period="0.01"/>
       <message name="ROTORCRAFT_RADIO_CONTROL" period="0.01"/>
-      <message name="WLS_U" period="0.01"/>
-      <message name="WLS_V" period="0.01"/>
       <message name="ACTUATORS"                 period="0.01"/>    
     </mode>
   </process>
