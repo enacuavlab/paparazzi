@@ -37,7 +37,7 @@
     
     <!-- ACTUATORS IN DSHOT : 4 MOTORS FOR HOOVERING -->
     <module name="actuators" type="dshot">
-      <configure name="DSHOT_BIDIR" value="TRUE"/>
+      <configure name="DSHOT_BIDIR" value="FALSE"/>
     </module>
 
     <!-- ACTUATORS IN PWM : FORWARD MOTOR + AILERONS -->
@@ -214,28 +214,28 @@
     <define name="REF_RATE_R"   value="6"/>
     <define name="MAX_R"        value="60" unit="deg/s"/>
 
-    <!-- second order filter parameters -->
-    <define name="FILT_CUTOFF"  value="4.0"/>
-    <define name="FILT_CUTOFF_R" value="4.0"/>
-
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
     <define name="ESTIMATION_FILT_CUTOFF"   value="4.0"/>
     <define name="ADAPTIVE_MU"  value="0.0001"/>
 
     <!-- Full INDI -->
-    <!--COLUMNS: FR BR BL FL -->
     <!-- control effectiveness All value are divided by INDI_G_SCALING (=1000)-->
     <define name="G1" type="matrix">
-      <field name="ROLL"     value="{-2.8,  -2.8,   2.8,   2.8}"/> <!-- MX - ROLL  -->
-      <field name="PITCH"    value="{ 6.4,  -6.4,  -6.4,   6.4}"/> <!-- MY - PITCH -->
-      <field name="YAW"      value="{ 1.4,  -1.4,   1.4,  -1.4}"/> <!-- MZ - YAW   -->
-      <field name="THRUST"   value="{-0.46, -0.46, -0.46, -0.46}"/> <!-- FZ         -->
-    </define>
+      <!--COLUMNS:                     FR    BR      BL     FL -->
+      <field name="ROLL"     value="{-8.8,  -6.9,   6.9,   8.8}"/>  <!-- MX - ROLL  -->
+      <field name="PITCH"    value="{ 11.7,-12.1, -12.1,  11.7}"/>  <!-- MY - PITCH -->
+      <field name="YAW"      value="{ 2.9,  -3.0,   3.0,  -2.9}"/>  <!-- MZ - YAW   -->
+      <field name="THRUST"   value="{-0.32,-1.36, -1.36, -0.32}"/>  <!-- FZ         -->
+    </define>    
+    <define name="G2"             value="{11.87, -6.53, 6.53, -11.87}"/>
+
+    <!-- second order filter parameters -->
+    <define name="ACT_FREQ"       value="{26., 26., 26., 26.}"/>       
+    <define name="FILT_CUTOFF"  value="4.0"/>
+    <define name="FILT_CUTOFF_R" value="4.0"/>     
     
-    <define name="G2"             value="{20, -20, 20, -20}"/>
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
-    <define name="ACT_FREQ"       value="{27., 27., 27., 27.}"/>
     <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600}"/>
     <define name="ACT_IS_SERVO"   value="{0, 0, 0, 0}"/>
   </section>
