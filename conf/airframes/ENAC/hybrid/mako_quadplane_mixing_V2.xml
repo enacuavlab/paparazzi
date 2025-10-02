@@ -114,8 +114,8 @@
   </servos>
 
   <servos driver="Pwm">  
-    <servo name="AILEVON_RIGHT" no="1" max="1280"  neutral="1580" min="1880"/>
-    <servo name="AILEVON_LEFT"  no="2" max="1150"  neutral="1450" min="1750"/>
+    <servo name="AILEVON_RIGHT" no="1" max="1080"  neutral="1490" min="1900"/>
+    <servo name="AILEVON_LEFT"  no="2" max="1090"  neutral="1500" min="1910"/>
     <servo name="MOTOR_PUSHER"  no="3" min="1000" neutral="1000" max="2000"/>
   </servos>
   
@@ -150,8 +150,8 @@
           <field name="scale_f"     value="true"/>
           <field name="rotation"  value="true"/>
         </field>
-		<field name="neutral" value="7,-8,-32" type="int[]"/>
-		<field name="scale_f" value="{ 2.4513, 2.4519, 2.4488 }"/>	
+		  <field name="neutral" value="0,-5,-38" type="int[]"/>
+		  <field name="scale_f" value="{ 2.4510, 2.4513, 2.4518 }"/>
         <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
@@ -184,12 +184,12 @@
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
         </field>
-		<field name="neutral" value="-102,868,-700" type="int[]"/>
-		<field name="scale_f" value="{ 0.6263, 0.6229, 0.5668 }"/>
+		  <field name="neutral" value="-381,709,-772" type="int[]"/>
+		  <field name="scale_f" value="{ 0.6168, 0.6184, 0.6128 }"/>
       </field>
     </define>
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
-    <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
+    <define name="BODY_TO_IMU_THETA" value="4.44" unit="deg"/> <!-- Adapt theta angle to get plane right default pitch in flight -->
     <define name="BODY_TO_IMU_PSI"   value="0." unit="deg"/>
     
   </section>
