@@ -58,7 +58,7 @@
     <!--Airspeed sensor : get the measured airspeed in the messages-->
     <module name="airspeed" type="sdp3x">
       <define name="SDP3X_i2C_DEV" value="i2c2"/>
-      <define name="SDP3X_PRESSURE_SCALE" value="60.0"/>
+      <define name="SDP3X_PRESSURE_SCALE" value="45.0"/>
       <define name="SDP3X_PRESSURE_OFFSET" value="-0.1"/>
       <define name="USE_AIRSPEED_SDP3X" value="TRUE"/>
     </module>
