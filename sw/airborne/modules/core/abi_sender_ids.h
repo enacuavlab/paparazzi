@@ -201,6 +201,10 @@
 #define AGL_UAVCAN_ID 16
 #endif
 
+#ifndef AGL_SONAR_I2C_ID
+#define AGL_SONAR_I2C_ID 17
+#endif
+
 /*
  * IDs of magnetometer sensors (including IMUs with mag)
  */
@@ -227,6 +231,10 @@
 
 #ifndef MAG_QMC5883L_SENDER_ID
 #define MAG_QMC5883L_SENDER_ID 7
+#endif
+
+#ifndef MAG_UAVCAN_SENDER_ID
+#define MAG_UAVCAN_SENDER_ID 8
 #endif
 
 #ifndef IMU_MAG_PITOT_ID
@@ -298,6 +306,10 @@
 
 #ifndef GPS_UBX2_ID
 #define GPS_UBX2_ID 16
+#endif
+
+#ifndef GPS_UAVCAN_ID
+#define GPS_UAVCAN_ID 17
 #endif
 
 /*
