@@ -228,6 +228,7 @@ struct FloatRates angular_rate_ref = {0., 0., 0.};
 float angular_acceleration[3] = {0., 0., 0.};
 float actuator_state[INDI_NUM_ACT];
 float indi_u[INDI_NUM_ACT];
+struct FloatVect3 stab_thrust_filt = { 0.f, 0.f, 0.f };
 
 float q_filt = 0.0;
 float r_filt = 0.0;
@@ -260,7 +261,6 @@ static struct Int32Quat   stab_att_sp_quat;
 
 // Register actuator feedback if we rely on RPM information
 #if STABILIZATION_INDI_RPM_FEEDBACK
-//#pragma message "RPM FROM ESC IS ON : "
 #ifndef STABILIZATION_INDI_ACT_FEEDBACK_ID
 #define STABILIZATION_INDI_ACT_FEEDBACK_ID ABI_BROADCAST
 #endif
@@ -288,10 +288,6 @@ float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
                                         STABILIZATION_INDI_G1_THRUST,
                                         STABILIZATION_INDI_G1_THRUST_X,STABILIZATION_INDI_G1_THRUST_Y
                                        };
-    /* float g_thrust[3][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_THRUST_X,
-                                  STABILIZATION_INDI_G1_THRUST_Y,
-                                  STABILIZATION_INDI_G1_THRUST}; */
-// struct FloatVect3 Thrust_filtered;
 #else
 float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
                                         STABILIZATION_INDI_G1_PITCH, STABILIZATION_INDI_G1_YAW, STABILIZATION_INDI_G1_THRUST
@@ -320,7 +316,7 @@ static struct FirstOrderLowPass rates_filt_fo[3];
 struct FloatVect3 body_accel_f;
 
 static void init_filters(void);
-static struct FloatRates filter_rates(struct FloatRates rates);
+static struct FloatRates filter_rates(struct FloatRates *rates);
 static void sum_g1_g2(void);
 
 #if PERIODIC_TELEMETRY
@@ -661,19 +657,19 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     v_thrust.z = th_sp_to_incr_f(thrust, 0, THRUST_AXIS_Z);
 
     // Compute estimated thrust
-    struct FloatVect3 thrust_filt = { 0.f, 0.f, 0.f };
+    FLOAT_VECT3_ZERO(stab_thrust_filt);
     for (i = 0; i < INDI_NUM_ACT; i++) {
-      thrust_filt.z += Bwls[3][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_z[i];
+      stab_thrust_filt.z += Bwls[3][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_z[i];
 #if INDI_OUTPUTS == 5
-      thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
+      stab_thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
 #endif
 #if INDI_OUTPUTS == 6
-      thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
-      thrust_filt.y += Bwls[5][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_y[i];
+      stab_thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
+      stab_thrust_filt.y += Bwls[5][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_y[i];
 #endif
     }
     // Add the current estimated thrust to the increment
-    VECT3_ADD(v_thrust, thrust_filt);
+    VECT3_ADD(v_thrust, stab_thrust_filt);
   } else {
     // build incremental thrust
     float th_cmd_z = (float)th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
@@ -685,16 +681,17 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
       v_thrust.x += cmd[COMMAND_THRUST_X] * Bwls[4][i];
 #endif
     }
-    v_thrust.y = 0.f;
+
+    stab_thrust_filt.z = v_thrust.z;
     // TODO use RC inputs ?
 //#if INDI_OUTPUTS == 6
-//    struct FloatVect3 thrust_filt = { 0.f, 0.f, 0.f };
+//    struct FloatVect3 stab_thrust_filt = { 0.f, 0.f, 0.f };
 //    for (i = 0; i < INDI_NUM_ACT; i++) {
-//      thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
-//      thrust_filt.y += Bwls[5][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_y[i];
+//      stab_thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
+//      stab_thrust_filt.y += Bwls[5][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_y[i];
 //    }
-//    Thrust_filtered[0] = thrust_filt.x;
-//    Thrust_filtered[1] = thrust_filt.y;
+//    Thrust_filtered[0] = stab_thrust_filt.x;
+//    Thrust_filtered[1] = stab_thrust_filt.y;
 //    Thrust_filtered[2] = v_thrust.z;
 //#endif
   }
@@ -810,7 +807,7 @@ struct FloatRates WEAK stabilization_indi_attitude_controller(struct FloatQuat a
 {
   /* attitude error */
   struct FloatQuat att_err;
-  float_quat_inv_comp_norm_shortest(&att_err, &att, &sp);
+  float_quat_inv_comp_norm_shortest(&att_err, &att, &att_sp);
 
   struct FloatVect3 att_fb;
 #if TILT_TWIST_CTRL
@@ -846,7 +843,7 @@ struct FloatRates WEAK stabilization_indi_rate_controller(struct FloatRates rate
   accel_ref.p = (sp.p - rates.p) * indi_gains.rate.p;
   accel_ref.q = (sp.q - rates.q) * indi_gains.rate.q;
   accel_ref.r = (sp.r - rates.r) * indi_gains.rate.r;
-  return accel_ref
+  return accel_ref;
 }
 
 
@@ -1093,7 +1090,7 @@ void calc_g1g2_pseudo_inv(void)
 static void act_feedback_cb(uint8_t sender_id UNUSED, struct act_feedback_t *feedback, uint8_t num_act)
 {
   int8_t i;
-  for (i = 0; i < INDI_NUM_ACT; i++) {
+  for (i = 0; i < num_act; i++) {
     // Sanity check that index is valid
     if (feedback[i].idx < INDI_NUM_ACT && feedback[i].set.rpm) {
       int8_t idx = feedback[i].idx;
