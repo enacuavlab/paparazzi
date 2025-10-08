@@ -67,6 +67,11 @@ extern void stabilization_indi_attitude_run(bool in_flight, struct Stabilization
 extern void stabilization_indi_set_wls_settings(void);
 extern void stabilization_indi_update_filt_freq(float freq); // setting handler
 
+// outer-loop indi controller, a simple PD by default
+// but can be redefined elsewhere
+extern struct FloatRates stabilization_indi_attitude_controller(struct FloatQuat att, struct FloatQuat att_sp, struct FloatRates rates_ff);
+extern struct FloatRates stabilization_indi_rate_controller(struct FloatRates rates, struct FloatRates sp);
+
 #if !STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE
 #include "math/wls/wls_alloc.h"
 extern struct WLS_t wls_stab_p;
