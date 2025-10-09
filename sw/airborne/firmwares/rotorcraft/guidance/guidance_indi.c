@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (C) 2015 Ewoud Smeur <ewoud.smeur@gmail.com>
  *
  * This file is part of paparazzi.
@@ -14,9 +14,8 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with paparazzi; see the file COPYING.  If not, write to
- * the Free Software Foundation, 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -332,102 +331,12 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   return stab_sp_from_quat_f(&q_sp);
 }
 
-struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight UNUSED, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndi_HMode h_mode, enum GuidanceIndi_VMode v_mode)
+struct FloatVect3 WEAK guidance_indi_controller(bool in_flight UNUSED, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndi_HMode h_mode, enum GuidanceIndi_VMode v_mode)
 {
   struct FloatVect3 pos_err = { 0 };
   struct FloatVect3 accel_sp = { 0 };
 
   struct FloatVect3 speed_fb;
-  
-  struct FloatVect3 speed_err = {0};
-  // Matrices for Kp
-  float Ap,Bp,Cp,Dp,xk1px,xk1py;  // xkpx and xkpy should be defined as global variable (should be intialized as zeros)
-  float Ad,Bd,Cd,Dd,xk1dx,xk1dy;  // xkdx and xkdy should be defined as global variables ( should be intialized as zeros) 
-  float Apz,Bpz,Cpz,Dpz,xk1pz;
-  float Adz,Bdz,Cdz,Ddz,xk1dz;
-
-  static float xkpx = 0.0f;
-  static float xkpy = 0.0f;
-  static float xkpz = 0.0f;
-  static float xkdx = 0.0f;
-  static float xkdy = 0.0f;
-  static float xkdz = 0.0f;
-  // Kpxy
-  Ap =     0.9985;//0.9986;//0.997;//0.9992;
-  Bp =     0.04362;//-0.0009647;//-0.003251;//-0.002109;
-  Cp =     0.009739;//-0.4403;//-0.5215;//-0.01485;
-  Dp =     0.5602;//0.5603;//0.2667;// 0.6843;
-  // Kdxy
-  Ad =      1;//1;//1;//1;
-  Bd =     -0.01418;//-0.003343;//-0.01631;//0.0009014;
-  Cd =     -0.2814;//-1.194;//-0.4905;//2.883;
-  Dd =      2.397;//2.397;//3.605;//3.609;
-  // Kpz
-  Apz =  0.9987;//0.9816;//0.9953;
-  Bpz = -0.0003935;//0.007528;//-0.00106 ;
-  Cpz = -1.052;//-5.243;//-3.451;
-  Dpz =  1.084;//3.58;//-0.0406;
-  // Kdz
-  Adz =  1;//0.9937;// 0.9999;
-  Bdz =  0.003449;//-0.0008827;//-0.004018;
-  Cdz =  1.548;//-3.132;//-7.692;
-  Ddz =  3.357;//1.82;//6.773;
-    if (autopilot_in_flight){
-      // pos_err
-      pos_err.x = POS_FLOAT_OF_BFP(gh->ref.pos.x) - stateGetPositionNed_f()->x;
-      pos_err.y = POS_FLOAT_OF_BFP(gh->ref.pos.y) - stateGetPositionNed_f()->y;
-      pos_err.z = POS_FLOAT_OF_BFP(gv->z_ref) - stateGetPositionNed_f()->z;
-      // vx_sp
-      //printf("pos_err_x = %f and pos_err_y = %f \n",pos_err.x,pos_err.y);
-      xk1px = Apz * xkpx + Bpz * pos_err.x;
-      speed_sp.x = Cpz*xkpx + Dpz * pos_err.x;
-      xkpx = xk1px;
-      // vy_sp
-      xk1py = Apz * xkpy + Bpz * pos_err.y;
-      speed_sp.y = Cpz * xkpy + Dpz * pos_err.y;
-      xkpy = xk1py;
-      // Compute Acc SP
-      speed_err.x = speed_sp.x - stateGetSpeedNed_f()->x;
-      speed_err.y = speed_sp.y - stateGetSpeedNed_f()->y;
-      // acc_spx
-      xk1dx = Ad * xkdx + Bd * speed_err.x;
-      speed_fb.x = Cd * xkdx + Dd * speed_err.x;
-      xkdx = xk1dx;
-      // acc_spy
-      xk1dy = Ad * xkdy + Bd * speed_err.y;
-      speed_fb.y = Cd * xkdy + Dd * speed_err.y;
-      xkdy = xk1dy;
-      //printf("xkdy = %f \n",xkdy);
-      // z
-      // if (autopilot_get_motors_on()) {
-      // vz_sp
-      xk1pz = Apz * xkpz + Bpz * pos_err.z;
-      speed_sp.z = Cpz * xkpz + Dpz * pos_err.z;
-      xkpz = xk1pz;
-      // acc_zsp
-      speed_err.z = speed_sp.z - stateGetSpeedNed_f()->z;
-      xk1dz = Adz * xkdz + Bdz * speed_err.z;
-      speed_fb.z = Cdz * xkdz + Ddz * speed_err.z;
-      xkdz = xk1dz;
-      //printf("xkdz = %f \n",xkdz);
-
-    }
-  accel_sp.x = speed_fb.x;    //; + ACCEL_FLOAT_OF_BFP(gh->ref.accel.x);
-  accel_sp.y = speed_fb.y;  //; + ACCEL_FLOAT_OF_BFP(gh->ref.accel.y);
-  accel_sp.z = speed_fb.z ; //; + ACCEL_FLOAT_OF_BFP(gv->zdd_ref);
-
-
-  return guidance_indi_run(&accel_sp, gh->sp.heading);
-}
-
-/*
-UNUSED struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight UNUSED, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndi_HMode h_mode, enum GuidanceIndi_VMode v_mode)
-{
-  struct FloatVect3 pos_err = { 0 };
-  struct FloatVect3 accel_sp = { 0 };
-
-  struct FloatVect3 speed_fb;
-
 
   if (h_mode == GUIDANCE_INDI_H_ACCEL) {
     // Speed feedback is included in the guidance when running in ACCEL mode
@@ -470,9 +379,16 @@ UNUSED struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight UNUSED
   accel_sp.y = speed_fb.y + ACCEL_FLOAT_OF_BFP(gh->ref.accel.y);
   accel_sp.z = speed_fb.z + ACCEL_FLOAT_OF_BFP(gv->zdd_ref);
 
+  return accel_sp;
+}
+
+struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndi_HMode h_mode, enum GuidanceIndi_VMode v_mode)
+{
+  struct FloatVect3 accel_sp = guidance_indi_controller(in_flight, gh, gv, h_mode, v_mode);
   return guidance_indi_run(&accel_sp, gh->sp.heading);
 }
-*/
+
+
 #ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
 /**
  * Filter the thrust, such that it corresponds to the filtered acceleration
@@ -504,194 +420,6 @@ void guidance_indi_propagate_filters(struct FloatEulers *eulers)
   update_butterworth_2_low_pass(&psi_filt, eulers->psi);
 
 }
-
-/**
- * @param Gmat array to write the matrix to [3x3]
- *
- * Calculate the matrix of partial derivatives of the pitch, roll and thrust.
- * w.r.t. the NED accelerations for YXZ eulers
- * ddx = G*[dtheta,dphi,dT]
- */
- /*UNUSED void guidance_indi_calcG_yxz(struct FloatMat33 *Gmat, struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance)
-{
-
-  float sphi = sinf(euler_yxz->phi);
-  float cphi = cosf(euler_yxz->phi);
-  float stheta = sinf(euler_yxz->theta);
-  float ctheta = cosf(euler_yxz->theta);
-  //minus gravity is a guesstimate of the thrust force, thrust measurement would be better
-  float T; T = Thrust_filtered_Guidance[2];
-
-  RMAT_ELMT(*Gmat, 0, 0) = ctheta * cphi * T;
-  RMAT_ELMT(*Gmat, 1, 0) = 0;
-  RMAT_ELMT(*Gmat, 2, 0) = -stheta * cphi * T;
-  RMAT_ELMT(*Gmat, 0, 1) = -stheta * sphi * T;
-  RMAT_ELMT(*Gmat, 1, 1) = -cphi * T;
-  RMAT_ELMT(*Gmat, 2, 1) = -ctheta * sphi * T;
-  RMAT_ELMT(*Gmat, 0, 2) = stheta * cphi;
-  RMAT_ELMT(*Gmat, 1, 2) = -sphi;
-  RMAT_ELMT(*Gmat, 2, 2) = ctheta * cphi;
-}*/
-// -------------- By MH ----------------------------------// 
-/**
- * @param Ga_FA array to write the matrix to [3x5]
- *
- * Calculate the matrix of partial derivatives of the pitch, roll and thrust.
- * w.r.t. the NED accelerations for YXZ eulers
- * ddx = G*[dtheta,dphi,dTx,dTy,dTz]
- */
-/*UNUSED void guidance_indi_calcG_xyz_FA(float Gmat[NV_MAX][NU_MAX], struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance) // By MH
-{
-  // Euler Angles
-  float sphi = sinf(euler_yxz->phi);
-  float cphi = cosf(euler_yxz->phi);
-  float stheta = sinf(euler_yxz->theta);
-  float ctheta = cosf(euler_yxz->theta);
-  float cpsi  = cosf(euler_yxz->psi);
-  float spsi  = sinf(euler_yxz->psi);
-
-  // Estimated Thrust 
-  float Tx =  0;//Thrust_filtered_Guidance[0];
-  float Ty =  0;//Thrust_filtered_Guidance[1];
-  float Tz =  Thrust_filtered_Guidance[2];
-
-  // dtheta
-   Gmat[0][0]=   Tx * -cpsi * stheta  + Ty * cpsi * ctheta * sphi + Tz * cphi * cpsi * ctheta ;
-   Gmat[1][0]=   Tx * -spsi * stheta  + Ty * spsi * ctheta * sphi + Tz * cphi * ctheta * spsi ;
-   Gmat[2][0]=   Tx * -ctheta - Ty * stheta * sphi - Tz * stheta * cphi ;
-  // dphi 
-  Gmat[0][1] =  Ty * ( cpsi * stheta * cphi + spsi * sphi) + Tz * ( cphi * spsi - cpsi * sphi * stheta );
-  Gmat[1][1] =  Ty * ( spsi * stheta * cphi - cpsi * sphi) + Tz * ( -spsi * stheta * sphi - cpsi * cphi);
-  Gmat[2][1] =  Ty * ctheta * cphi - Tz * ctheta * sphi;
-// dTz 
-  Gmat[0][2] =  sphi * spsi + cphi * cpsi * stheta;
-  Gmat[1][2] =  cphi * spsi * stheta - cpsi * sphi;
-  Gmat[2][2] =  cphi * ctheta;
-  // dTx 
-  Gmat[0][3] =  cpsi * ctheta;
-  Gmat[1][3] =  spsi * ctheta;
-  Gmat[2][3] = -stheta;
-  // dTy 
-  Gmat[0][4] =  cpsi * stheta * cphi + spsi * sphi;
-  Gmat[1][4] =  spsi * stheta * cphi - cpsi * cphi;
-  Gmat[2][4] =  ctheta * cphi;
-}
-*/
-void guidance_indi_calcG_yxz_FA(float Ga_FA[NV_MAX][NU_MAX], struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance) // By MH
-{
-//euler_yxz->phi = roll_filt.o[0];
-//euler_yxz->theta = pitch_filt.o[0];
-//euler_yxz->theta = psi_filt.o[0];
-
-// Euler Angles
-float sphi = sinf(euler_yxz->phi);
-float cphi = cosf(euler_yxz->phi);
-float stheta = sinf(euler_yxz->theta);
-float ctheta = cosf(euler_yxz->theta);
-float cpsi  = cosf(euler_yxz->psi);
-float spsi  = sinf(euler_yxz->psi);
-
-// Estimated Thrust 
-float Tx = Thrust_filtered_Guidance[0];
-float Ty = Thrust_filtered_Guidance[1];
-float Tz = Thrust_filtered_Guidance[2];
-
-// dTheta (Pitch)
-Ga_FA[0][0] = Tx * (-cpsi * stheta - spsi * sphi * ctheta) + Tz * (cpsi * ctheta - spsi * sphi * stheta);
-Ga_FA[1][0] = Tx * (-spsi * stheta + cpsi * sphi * ctheta) + Tz * (spsi * ctheta + cpsi * sphi * stheta);
-Ga_FA[2][0] = Tx * (-cphi * ctheta)                        + Tz * (-cphi * stheta);
-
-// dPhi (Roll)
-Ga_FA[0][1] = Tx * (-spsi * cphi * stheta) + Ty * (spsi * sphi) + Tz * (spsi * cphi * ctheta);
-Ga_FA[1][1] = Tx * (cpsi * cphi * stheta) + Ty * (-cpsi * sphi) + Tz * (-cpsi * cphi * ctheta);
-Ga_FA[2][1] = Tx * (sphi * stheta) + Ty * (cphi) + Tz * (-sphi * ctheta);
-
-// dTz
-Ga_FA[0][2] = cpsi * stheta + spsi * sphi * ctheta;
-Ga_FA[1][2] = spsi * stheta - cpsi * sphi * ctheta;
-Ga_FA[2][2] = cphi * ctheta;
-
-// dTx 
-Ga_FA[0][3]  =  cpsi * ctheta - spsi * sphi * stheta;
-Ga_FA[1][3]  =  spsi * ctheta + cpsi * sphi * stheta;
-Ga_FA[2][3]  = -stheta * cphi;
-
-// dTy
-Ga_FA[0][4] = -spsi * cphi;
-Ga_FA[1][4] =  cpsi * cphi;
-Ga_FA[2][4] =  sphi;
-// dPsi added to add constraints on psi 
-Ga_FA[0][5] = 0;
-Ga_FA[1][5] = 0;
-Ga_FA[2][5] = 0;
-}
-
-void guidance_indi_set_wls_settings(struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance, float m, struct FloatEulers *euler_yxz_ref, float heading_sp) 
-{ 
-//euler_yxz->phi = roll_filt.o[0];
-//euler_yxz->theta = pitch_filt.o[0];
-//euler_yxz->theta = psi_filt.o[0];
-  // float grav = 9.81f;  // gravitational constant
-  // Set lower limits
-  wls_guid_p.u_min[0] =  -0.5  - euler_yxz->theta; //theta
-  wls_guid_p.u_min[1] =  -0.5  - euler_yxz->phi;   //phi
-  wls_guid_p.u_min[2] =  -15   - Thrust_filtered_Guidance[2]; //Tz (MAX_PPRZ  - stabilization.cmd[COMMAND_THRUST])
-  wls_guid_p.u_min[3] =  -1  -  Thrust_filtered_Guidance[0]; //Tx
-  wls_guid_p.u_min[4] =  -1  -  Thrust_filtered_Guidance[1]; //Ty 
-  wls_guid_p.u_min[5] =  -1    -  euler_yxz->psi; //psi
-
-  // Set upper limits limits 
-  wls_guid_p.u_max[0] =   0.5  -  euler_yxz->theta; //theta
-  wls_guid_p.u_max[1] =   0.5  -  euler_yxz->phi; //phi
-  wls_guid_p.u_max[2] =   6.3    -  Thrust_filtered_Guidance[2]; //Tz
-  wls_guid_p.u_max[3] =   1  -  Thrust_filtered_Guidance[0]; //Tx
-  wls_guid_p.u_max[4] =   1  -  Thrust_filtered_Guidance[1]; //Ty
-  wls_guid_p.u_max[5] =   1    -  euler_yxz->psi; //psi
-
-  // Set prefered states
-  wls_guid_p.u_pref[0] =  euler_yxz_ref->theta - euler_yxz->theta;      // prefered delta theta
-  wls_guid_p.u_pref[1] =  euler_yxz_ref->phi - euler_yxz->phi;        // prefered delta phi
-  wls_guid_p.u_pref[2] =  Thrust_filtered_Guidance[2];  //wls_guid_p.u_min[2];                     // prefered Tz
-  wls_guid_p.u_pref[3] =  Thrust_filtered_Guidance[0];  //wls_guid_p.u_max[3];          // prefred Tx
-  wls_guid_p.u_pref[4] =  Thrust_filtered_Guidance[1];  //wls_guid_p.u_max[4];          // prefered Ty
-  wls_guid_p.u_pref[5] =  euler_yxz_ref->psi - euler_yxz->psi ;   //wls_guid_p.u_max[4];          // prefered Ty
-
-  // Set prefered states
-}
-
-// -----------------------------------------------------//
-
-/**
- * @param Gmat array to write the matrix to [3x3]
- *
- * Calculate the matrix of partial derivatives of the roll, pitch and thrust.
- * w.r.t. the NED accelerations for ZYX eulers
- * ddx = G*[dtheta,dphi,dT]
- */
-/*UNUSED void guidance_indi_calcG(struct FloatMat33 *Gmat)
-{
-
-  struct FloatEulers *euler = stateGetNedToBodyEulers_f();
-
-  float sphi = sinf(euler->phi);
-  float cphi = cosf(euler->phi);
-  float stheta = sinf(euler->theta);
-  float ctheta = cosf(euler->theta);
-  float spsi = sinf(euler->psi);
-  float cpsi = cosf(euler->psi);
-  //minus gravity is a guesstimate of the thrust force, thrust measurement would be better
-  float T = -9.81;
-
-  RMAT_ELMT(*Gmat, 0, 0) = (cphi * spsi - sphi * cpsi * stheta) * T;
-  RMAT_ELMT(*Gmat, 1, 0) = (-sphi * spsi * stheta - cpsi * cphi) * T;
-  RMAT_ELMT(*Gmat, 2, 0) = -ctheta * sphi * T;
-  RMAT_ELMT(*Gmat, 0, 1) = (cphi * cpsi * ctheta) * T;
-  RMAT_ELMT(*Gmat, 1, 1) = (cphi * spsi * ctheta) * T;
-  RMAT_ELMT(*Gmat, 2, 1) = -stheta * cphi * T;
-  RMAT_ELMT(*Gmat, 0, 2) = sphi * spsi + cphi * cpsi * stheta;
-  RMAT_ELMT(*Gmat, 1, 2) = cphi * spsi * stheta - cpsi * sphi;
-  RMAT_ELMT(*Gmat, 2, 2) = cphi * ctheta;
-}*/
 
 #if Guidance_INDI_ALLOCATION_PSEUDO_INVERSE
 /**

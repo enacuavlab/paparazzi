@@ -14,9 +14,8 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with paparazzi; see the file COPYING.  If not, write to
- * the Free Software Foundation, 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -33,7 +32,6 @@
 #include "math/pprz_algebra_float.h"
 #include "firmwares/rotorcraft/guidance.h"
 #include "firmwares/rotorcraft/stabilization.h"
-// #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 
 extern void guidance_indi_init(void);
 extern void guidance_indi_enter(void);
@@ -60,8 +58,7 @@ extern float guidance_indi_pos_gain;
 extern float guidance_indi_speed_gain;
 extern float guidance_indi_max_bank;
 
-// extern float Thrust_filtered[3];
+
 extern struct FloatVect3 sp_accel;
-//extern float actuator_state_filt_vect[INDI_NUM_ACT];
-//extern float g_thrust[3][INDI_NUM_ACT];
+
 #endif /* GUIDANCE_INDI_H */
