@@ -65,144 +65,87 @@ static float Bdz = GUIDANCE_INDI_HINF_Bdz
 static float Cdz = GUIDANCE_INDI_HINF_Cdz
 static float Ddz = GUIDANCE_INDI_HINF_Ddz
 
+static struct FloatVect3 pos_state = { 0.f };
+static static FloatVect3 speed_state = { 0.f };
+
 /** Acceleration controller based Hinfinity
  */
 struct FloatVect3 guidance_indi_controller(bool in_flight, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndi_HMode h_mode, enum GuidanceIndi_VMode v_mode)
 {
   struct FloatVect3 pos_err = { 0 };
-  struct FloatVect3 speed_err = {0};
+  struct FloatVect3 speed_err = { 0 };
 
   struct FloatVect3 accel_sp = { 0 };
-  struct FloatVect3 speed_fb;
-  
-  // Matrices for Kp
-  float Ap,Bp,Cp,Dp,xk1px,xk1py;  // xkpx and xkpy should be defined as global variable (should be intialized as zeros)
-  float Ad,Bd,Cd,Dd,xk1dx,xk1dy;  // xkdx and xkdy should be defined as global variables ( should be intialized as zeros) 
-  float Apz,Bpz,Cpz,Dpz,xk1pz;
-  float Adz,Bdz,Cdz,Ddz,xk1dz;
+  struct FloatVect3 speed_fb = { 0 };
 
-  static float xkpx = 0.0f;
-  static float xkpy = 0.0f;
-  static float xkpz = 0.0f;
-  static float xkdx = 0.0f;
-  static float xkdy = 0.0f;
-  static float xkdz = 0.0f;
-    if (in_flight){
-      // pos_err
+  if (!in_flight) {
+    FLOAT_VECT3_ZERO(pos_state);
+    FLOAT_VECT3_ZERO(speed_state);
+    // TODO return with no control ?
+  }
+
+  if (h_mode == GUIDANCE_INDI_H_ACCEL) {
+    // Speed feedback is included in the guidance when running in ACCEL mode
+    speed_fb.x = 0.f;
+    speed_fb.y = 0.f;
+  }
+  else {
+    // Generate speed feedback for acceleration, as it is estimated
+    if (h_mode == GUIDANCE_INDI_H_SPEED) {
+      speed_sp.x = SPEED_FLOAT_OF_BFP(gh->ref.speed.x);
+      speed_sp.y = SPEED_FLOAT_OF_BFP(gh->ref.speed.y);
+    }
+    else {
+      // H_POS
+      // speed setpoint from position error
       pos_err.x = POS_FLOAT_OF_BFP(gh->ref.pos.x) - stateGetPositionNed_f()->x;
       pos_err.y = POS_FLOAT_OF_BFP(gh->ref.pos.y) - stateGetPositionNed_f()->y;
-      pos_err.z = POS_FLOAT_OF_BFP(gv->z_ref) - stateGetPositionNed_f()->z;
-      // vx_sp
-      //printf("pos_err_x = %f and pos_err_y = %f \n",pos_err.x,pos_err.y);
-      xk1px = Apz * xkpx + Bpz * pos_err.x;
-      speed_sp.x = Cpz*xkpx + Dpz * pos_err.x;
-      xkpx = xk1px;
-      // vy_sp
-      xk1py = Apz * xkpy + Bpz * pos_err.y;
-      speed_sp.y = Cpz * xkpy + Dpz * pos_err.y;
-      xkpy = xk1py;
-      // Compute Acc SP
-      speed_err.x = speed_sp.x - stateGetSpeedNed_f()->x;
-      speed_err.y = speed_sp.y - stateGetSpeedNed_f()->y;
-      // acc_spx
-      xk1dx = Ad * xkdx + Bd * speed_err.x;
-      speed_fb.x = Cd * xkdx + Dd * speed_err.x;
-      xkdx = xk1dx;
-      // acc_spy
-      xk1dy = Ad * xkdy + Bd * speed_err.y;
-      speed_fb.y = Cd * xkdy + Dd * speed_err.y;
-      xkdy = xk1dy;
-      //printf("xkdy = %f \n",xkdy);
-      // z
-      // if (autopilot_get_motors_on()) {
-      // vz_sp
-      xk1pz = Apz * xkpz + Bpz * pos_err.z;
-      speed_sp.z = Cpz * xkpz + Dpz * pos_err.z;
-      xkpz = xk1pz;
-      // acc_zsp
-      speed_err.z = speed_sp.z - stateGetSpeedNed_f()->z;
-      xk1dz = Adz * xkdz + Bdz * speed_err.z;
-      speed_fb.z = Cdz * xkdz + Ddz * speed_err.z;
-      xkdz = xk1dz;
-      //printf("xkdz = %f \n",xkdz);
+      speed_sp.x = Cp * pos_state.x + Dp * pos_err.x;
+      speed_sp.y = Cp * pos_state.y + Dp * pos_err.y;
+      pos_state.x = Ap * pos_state.x + Bd * pos_err.x;
+      pos_state.y = Ap * pos_state.y + Bp * pos_err.y;
 
+      // TODO where should we add the feed-forward ref speed ?
+      //speed_sp.x += SPEED_FLOAT_OF_BFP(gh->ref.speed.x);
+      //speed_sp.y += SPEED_FLOAT_OF_BFP(gh->ref.speed.y);
     }
-  accel_sp.x = speed_fb.x;    //; + ACCEL_FLOAT_OF_BFP(gh->ref.accel.x);
-  accel_sp.y = speed_fb.y;  //; + ACCEL_FLOAT_OF_BFP(gh->ref.accel.y);
-  accel_sp.z = speed_fb.z ; //; + ACCEL_FLOAT_OF_BFP(gv->zdd_ref);
-
-
-}
-
-
-/** Angular acceleration controller based on Hinfinity
- *
- * Takes the current rates filtered state and setpoint and compute the desired acceleration.
- */
-struct FloatRates stabilization_indi_rate_controller(struct FloatRates rates, struct FloatRates sp)
-{
-  struct FloatRates rate_error;
-  RATES_DIFF(rate_error, sp, rates);
-
-  struct FloatRates accel_ref;
-  if (autopilot_in_flight()) {
-    accel_ref.p = Cd * rate_state.p + Dd * rate_error.p;
-    rate_state.p = Ad * rate_state.p + Bd * rate_error.p;
-
-    accel_ref.q = Cd * rate_state.q + Dd * rate_error.q;
-    rate_state.q = Ad * rate_state.q + Bd * rate_error.q;
-
-    accel_ref.r = rate_error.r * indi_gains.rate.r;
-  } else {
-    FLOAT_RATES_ZERO(rate_state);
-    FLOAT_RATES_ZERO(accel_ref);
+    speed_err.x = speed_sp.x - stateGetSpeedNed_f()->x;
+    speed_err.y = speed_sp.y - stateGetSpeedNed_f()->y;
+    speed_fb.x = Cd * speed_state.x + Dd * speed_err.x;
+    speed_fb.y = Cd * speed_state.y + Dd * speed_err.y;
+    speed_state.x = Ad * speed_state.x + Bd * speed_err.x;
+    speed_state.y = Ad * speed_state.y + Bd * speed_err.y;
   }
 
-  return accel_ref
-}
-
-/** Angular rate controller based on Hinfinity
- *
- * Takes the current attitude filtered state and setpoint and compute the desired rates.
- * Can be redefined elsewhere to use an other control scheme.
- */
-struct FloatRates WEAK stabilization_indi_attitude_controller(struct FloatQuat att, struct FloatQuat att_sp, struct FloatRates rates_ff)
-{
-  /* attitude error */
-  struct FloatQuat att_err;
-  float_quat_inv_comp_norm_shortest(&att_err, &att, &sp);
-
-  struct FloatVect3 att_fb;
-#if TILT_TWIST_CTRL
-  struct FloatQuat tilt;
-  struct FloatQuat twist;
-  float_quat_tilt_twist(&tilt, &twist, &att_err);
-  att_fb.x = tilt.qx;
-  att_fb.y = tilt.qy;
-  att_fb.z = twist.qz;
-#else
-  att_fb.x = att_err.qx;
-  att_fb.y = att_err.qy;
-  att_fb.z = att_err.qz;
-#endif
-
-  struct FloatRates rate_sp;
-  if (autopilot_in_flight()) {
-    rate_sp.p  = Cp * att_state.p + Dp * att_fb.x;
-    att_state.p = Ap * att_state.p + Bp * att_fb.x;
-
-    rate_sp.q = Cp * att_state.q + Dp * att_fb.y;
-    att_state.q = Ap * att_state.q + Bp * att_fb.y;
-
-    rate_sp.r = indi_gains.att.r * att_fb.z / indi_gains.rate.r;
-
-    // add feed-forward term
-    RATES_ADD(rate_sp, rates_ff);
-  } else {
-    FLOAT_RATES_ZERO(att_state);
-    FLOAT_RATES_ZERO(rate_sp);
+  if (v_mode == GUIDANCE_INDI_V_ACCEL)  {
+    // Speed feedback is included in the guidance when running in ACCEL mode
+    speed_fb.z = 0;
+  }
+  else {
+    // Generate speed feedback for acceleration, as it is estimated
+    if (v_mode == GUIDANCE_INDI_V_SPEED) {
+      speed_sp.z = SPEED_FLOAT_OF_BFP(gv->zd_ref);
+    }
+    else {
+      // V_POS
+      // vertical speed setpoint from altitude error
+      pos_err.z = POS_FLOAT_OF_BFP(gv->z_ref) - stateGetPositionNed_f()->z;
+      speed_sp.z = Cpz * pos_state.z + Dpz * pos_err.z;
+      pos_state.z = Apz * pos_state.z + Bpz * pos_err.z;
+      // TODO add speed feed-forward ?
+      // speed_sp.z += SPEED_FLOAT_OF_BFP(gv->zd_ref);
+    }
+    speed_err.z = speed_sp.z - stateGetPositionNed_f()->z;
+    speed_fb.z = Cdz * speed_state.z + Ddz * speed_err.z;
+    speed_state.z = Adz * speed_state.z + Bdz * speed_err.z;
   }
 
-  return rate_sp;
+  // TODO add accel feed-forward term ?
+  accel_sp.x = speed_fb.x; // + ACCEL_FLOAT_OF_BFP(gh->ref.accel.x);
+  accel_sp.y = speed_fb.y; // + ACCEL_FLOAT_OF_BFP(gh->ref.accel.y);
+  accel_sp.z = speed_fb.z; // + ACCEL_FLOAT_OF_BFP(gv->zdd_ref);
+
+  return accel_sp;
 }
+
 
