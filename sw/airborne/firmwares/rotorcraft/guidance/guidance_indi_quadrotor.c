@@ -36,26 +36,29 @@
  * w.r.t. the NED accelerations for ZYX eulers
  * ddx = G*[dtheta,dphi,dT]
  */
-static void guidance_indi_calcG_zyx(struct FloatMat33 *Gmat, struct FloatEulers *euler_zyx)
+static void guidance_indi_calcG_zyx(float Gmat[3][3])
 {
-  float sphi = sinf(euler_zyx->phi);
-  float cphi = cosf(euler_zyx->phi);
-  float stheta = sinf(euler_zyx->theta);
-  float ctheta = cosf(euler_zyx->theta);
-  float spsi = sinf(euler_zyx->psi);
-  float cpsi = cosf(euler_zyx->psi);
+  struct FloatEulers euler_zyx; // FIXME use filtered data ?
+  float_eulers_of_quat(&euler_zyx, stateGetNedToBodyQuat_f());
+
+  float sphi = sinf(euler_zyx.phi);
+  float cphi = cosf(euler_zyx.phi);
+  float stheta = sinf(euler_zyx.theta);
+  float ctheta = cosf(euler_zyx.theta);
+  float spsi = sinf(euler_zyx.psi);
+  float cpsi = cosf(euler_zyx.psi);
   // minus gravity is a guesstimate of the thrust force, thrust measurement would be better
   float T = -9.81f;
 
-  RMAT_ELMT(*Gmat, 0, 0) = (cphi * spsi - sphi * cpsi * stheta) * T;
-  RMAT_ELMT(*Gmat, 1, 0) = (-sphi * spsi * stheta - cpsi * cphi) * T;
-  RMAT_ELMT(*Gmat, 2, 0) = -ctheta * sphi * T;
-  RMAT_ELMT(*Gmat, 0, 1) = (cphi * cpsi * ctheta) * T;
-  RMAT_ELMT(*Gmat, 1, 1) = (cphi * spsi * ctheta) * T;
-  RMAT_ELMT(*Gmat, 2, 1) = -stheta * cphi * T;
-  RMAT_ELMT(*Gmat, 0, 2) = sphi * spsi + cphi * cpsi * stheta;
-  RMAT_ELMT(*Gmat, 1, 2) = cphi * spsi * stheta - cpsi * sphi;
-  RMAT_ELMT(*Gmat, 2, 2) = cphi * ctheta;
+  Gmat[0][0] = (cphi * spsi - sphi * cpsi * stheta) * T;
+  Gmat[1][0] = (-sphi * spsi * stheta - cpsi * cphi) * T;
+  Gmat[2][0] = -ctheta * sphi * T;
+  Gmat[0][1] = (cphi * cpsi * ctheta) * T;
+  Gmat[1][1] = (cphi * spsi * ctheta) * T;
+  Gmat[2][1] = -stheta * cphi * T;
+  Gmat[0][2] = sphi * spsi + cphi * cpsi * stheta;
+  Gmat[1][2] = cphi * spsi * stheta - cpsi * sphi;
+  Gmat[2][2] = cphi * ctheta;
 }
 
 /**
@@ -65,35 +68,40 @@ static void guidance_indi_calcG_zyx(struct FloatMat33 *Gmat, struct FloatEulers 
  * w.r.t. the NED accelerations for YXZ eulers
  * ddx = G*[dtheta,dphi,dT]
  */
-static void guidance_indi_calcG_yxz(struct FloatMat33 *Gmat, struct FloatEulers *euler_yxz)
+static void guidance_indi_calcG_yxz(float Gmat[3][3])
 {
-  float sphi = sinf(euler_yxz->phi);
-  float cphi = cosf(euler_yxz->phi);
-  float stheta = sinf(euler_yxz->theta);
-  float ctheta = cosf(euler_yxz->theta);
-  // minus gravity is a guesstimate of the thrust force, thrust measurement would be better
-  float T; T = Thrust_filtered_Guidance[2];
+  struct FloatEulers euler_yxz; // FIXME use filtered data ?
+  float_eulers_of_quat_yxz(&euler_yxz, stateGetNedToBodyQuat_f());
 
-  RMAT_ELMT(*Gmat, 0, 0) = ctheta * cphi * T;
-  RMAT_ELMT(*Gmat, 1, 0) = 0;
-  RMAT_ELMT(*Gmat, 2, 0) = -stheta * cphi * T;
-  RMAT_ELMT(*Gmat, 0, 1) = -stheta * sphi * T;
-  RMAT_ELMT(*Gmat, 1, 1) = -cphi * T;
-  RMAT_ELMT(*Gmat, 2, 1) = -ctheta * sphi * T;
-  RMAT_ELMT(*Gmat, 0, 2) = stheta * cphi;
-  RMAT_ELMT(*Gmat, 1, 2) = -sphi;
-  RMAT_ELMT(*Gmat, 2, 2) = ctheta * cphi;
+  float sphi = sinf(euler_yxz.phi);
+  float cphi = cosf(euler_yxz.phi);
+  float stheta = sinf(euler_yxz.theta);
+  float ctheta = cosf(euler_yxz.theta);
+  // minus gravity is a guesstimate of the thrust force, thrust measurement would be better
+  float T = -9.81f;
+  // TODO if we can really use that
+  //T = stab_thrust_filt.z;
+
+  Gmat[0][0] = ctheta * cphi * T;
+  Gmat[1][0] = 0;
+  Gmat[2][0] = -stheta * cphi * T;
+  Gmat[0][1] = -stheta * sphi * T;
+  Gmat[1][1] = -cphi * T;
+  Gmat[2][1] = -ctheta * sphi * T;
+  Gmat[0][2] = stheta * cphi;
+  Gmat[1][2] = -sphi;
+  Gmat[2][2] = ctheta * cphi;
 }
 
 /** Compute effectiveness matrix for guidance
  *
  * @param Gmat Dynamics matrix
  */
-void guidance_indi_calcG(struct FloatMat33 *Gmat, struct FloatEulers *euler) {
+void guidance_indi_calcG(float Gmat[3][3]) {
 #ifdef GUIDANCE_INDI_CALC_G_ZYX
-  guidance_indi_calcG_zyx(Gmat, euler);
+  guidance_indi_calcG_zyx(Gmat);
 #else
-  guidance_indi_calcG_yxz(Gmat, euler); // default case
+  guidance_indi_calcG_yxz(Gmat); // default case
 #endif
 }
 

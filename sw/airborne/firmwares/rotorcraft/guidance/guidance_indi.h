@@ -51,6 +51,21 @@ enum GuidanceIndi_VMode {
 extern struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accep_sp, float heading_sp);
 extern struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndi_HMode h_mode, enum GuidanceIndi_VMode v_mode);
 
+extern struct FloatVect3 guidance_indi_controller(bool in_flight, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndi_HMode h_mode, enum GuidanceIndi_VMode v_mode);
+
+// Default number of virtual commands (e.g. [dax, day, daz])
+#ifndef GUIDANCE_INDI_NV
+#define GUIDANCE_INDI_NV 3
+#endif
+
+// Default number of outputs (e.g. [dtheta, dphi, dthrust])
+#ifndef GUIDANCE_INDI_NU
+#define GUIDANCE_INDI_NU 3
+#endif
+
+// Function to compute efficiency matrix G
+extern void guidance_indi_calcG(float Gmat[GUIDANCE_INDI_NV][GUIDANCE_INDI_NU]);
+
 extern float guidance_indi_specific_force_gain;
 
 // settings for guidance INDI
