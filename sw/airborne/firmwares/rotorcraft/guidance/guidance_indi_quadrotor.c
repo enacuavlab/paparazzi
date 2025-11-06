@@ -36,7 +36,7 @@
  * w.r.t. the NED accelerations for ZYX eulers
  * ddx = G*[dtheta,dphi,dT]
  */
-static void guidance_indi_calcG_zyx(float Gmat[3][3])
+UNUSED static void guidance_indi_calcG_zyx(float Gmat[3][3])
 {
   struct FloatEulers euler_zyx; // FIXME use filtered data ?
   float_eulers_of_quat(&euler_zyx, stateGetNedToBodyQuat_f());
