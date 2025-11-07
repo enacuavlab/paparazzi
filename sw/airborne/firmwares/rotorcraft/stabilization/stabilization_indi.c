@@ -298,7 +298,6 @@ float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
 #endif
 #endif
 
-float Thrust_filtered[3];
 float g1g2[INDI_OUTPUTS][INDI_NUM_ACT];
 float g1_est[INDI_OUTPUTS][INDI_NUM_ACT];
 float g2_est[INDI_NUM_ACT];
@@ -699,9 +698,6 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
 //      stab_thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
 //      stab_thrust_filt.y += Bwls[5][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_y[i];
 //    }
-//    Thrust_filtered[0] = stab_thrust_filt.x;
-//    Thrust_filtered[1] = stab_thrust_filt.y;
-//    Thrust_filtered[2] = v_thrust.z;
 //#endif
   }
 
