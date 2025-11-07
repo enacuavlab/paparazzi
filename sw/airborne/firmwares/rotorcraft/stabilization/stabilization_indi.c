@@ -204,6 +204,9 @@ bool act_is_servo[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_IS_SERVO;
 
 // [3 x INDI_NUM_ACT] matrix representing the contribution (True/False) of an
 // actuator to the total 3D thrust vector
+#ifdef STABILIZATION_INDI_ACT_THRUST_MAT
+static bool act_thrust_mat[3][INDI_NUM_ACT] = STABILIZATION_INDI_ACT_THRUST_MAT;
+#else // backward compatibility
 static bool act_thrust_mat[3][INDI_NUM_ACT] = {
   STABILIZATION_INDI_ACT_IS_THRUSTER_X,
   STABILIZATION_INDI_ACT_IS_THRUSTER_Y,
@@ -213,6 +216,7 @@ static bool act_thrust_mat[3][INDI_NUM_ACT] = {
   {0}
 #endif
 };
+#endif
 
 #ifdef STABILIZATION_INDI_ACT_DYN
 #warning STABILIZATION_INDI_ACT_DYN is deprecated, use STABILIZATION_INDI_ACT_FREQ instead.
