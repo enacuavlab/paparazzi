@@ -37,15 +37,15 @@ static struct FloatRates rate_state;
 static struct FloatRates att_state;
 
 // proportional control part (attitude)
-static float Ap = STABILIZATION_INDI_HINF_Ap
-static float Bp = STABILIZATION_INDI_HINF_Bp
-static float Cp = STABILIZATION_INDI_HINF_Cp
-static float Dp = STABILIZATION_INDI_HINF_Dp
+static float Ap = STABILIZATION_INDI_HINF_Ap;
+static float Bp = STABILIZATION_INDI_HINF_Bp;
+static float Cp = STABILIZATION_INDI_HINF_Cp;
+static float Dp = STABILIZATION_INDI_HINF_Dp;
 // derivative control part (rates)
-static float Ad = STABILIZATION_INDI_HINF_Ad
-static float Bd = STABILIZATION_INDI_HINF_Bd
-static float Cd = STABILIZATION_INDI_HINF_Cd
-static float Dd = STABILIZATION_INDI_HINF_Dd
+static float Ad = STABILIZATION_INDI_HINF_Ad;
+static float Bd = STABILIZATION_INDI_HINF_Bd;
+static float Cd = STABILIZATION_INDI_HINF_Cd;
+static float Dd = STABILIZATION_INDI_HINF_Dd;
 
 /** Angular acceleration controller based on Hinfinity
  *
@@ -70,7 +70,7 @@ struct FloatRates stabilization_indi_rate_controller(struct FloatRates rates, st
     FLOAT_RATES_ZERO(accel_ref);
   }
 
-  return accel_ref
+  return accel_ref;
 }
 
 /** Angular rate controller based on Hinfinity
@@ -82,7 +82,7 @@ struct FloatRates WEAK stabilization_indi_attitude_controller(struct FloatQuat a
 {
   /* attitude error */
   struct FloatQuat att_err;
-  float_quat_inv_comp_norm_shortest(&att_err, &att, &sp);
+  float_quat_inv_comp_norm_shortest(&att_err, &att, &att_sp);
 
   struct FloatVect3 att_fb;
 #if TILT_TWIST_CTRL
