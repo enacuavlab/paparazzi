@@ -1,23 +1,19 @@
 <!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
 
-<flight_plan alt="147.3" ground_alt="146" lat0="43.5640917" lon0="1.4829201" wp_frame="ltp" max_dist_from_home="5" name="Rotorcraft Basic (Enac)" security_height="0.3">
+<flight_plan alt="152" ground_alt="147" lat0="43 33 50.83" lon0="1 28 52.61" max_dist_from_home="150" name="Rotorcraft Basic (Enac)" security_height="2">
   <header>
 #include "autopilot.h"
   </header>
   <waypoints>
     <waypoint name="HOME" x="0.0" y="0.0"/>
-    <waypoint name="CLIMB" x="0.0" y="1.0"/>
-    <waypoint name="STDBY" x="-1.0" y="0.0"/>
-    <waypoint name="p1" x="-2.0" y="2.0" />
-    <waypoint name="p2" x="-2.0" y="-2.0" />
-    <waypoint name="p3" x="2.0" y="-2.0" />
-    <waypoint name="p4" x="2.0" y="2.0" />
-    <waypoint name="p5" x="2.5" y="0.0" />
-    <waypoint name="p6" x="2" y="3"/>
-    <waypoint name="p7" x="2" y="-3" />
-
-    <waypoint name="CAM" x="0" y="-0" />
-    <waypoint name="TD" x="0" y="-0"/>
+    <waypoint name="CLIMB" x="0.0" y="5.0"/>
+    <waypoint name="STDBY" x="-2.0" y="-5.0"/>
+    <waypoint name="p1" x="3.6" y="-13.9"/>
+    <waypoint name="p2" x="27.5" y="-48.2"/>
+    <waypoint name="p3" x="16.7" y="-19.6"/>
+    <waypoint name="p4" x="13.7" y="-40.7"/>
+    <waypoint name="CAM" x="-20" y="-50" height="2."/>
+    <waypoint name="TD" x="5.6" y="-10.9"/>
   </waypoints>
   <blocks>
     <block name="Wait GPS">
@@ -26,7 +22,7 @@
     </block>
     <block name="Geo init">
       <while cond="LessThan(NavBlockTime(), 10)"/>
-      <!-- <call_once fun="NavSetGroundReferenceHere()"/> -->
+      <call_once fun="NavSetGroundReferenceHere()"/>
       <!--<call_once fun="NavSetAltitudeReferenceHere()"/>-->
     </block>
     <block name="Holding point">
@@ -38,20 +34,15 @@
       <attitude pitch="0" roll="0" throttle="0" vmode="throttle" until="FALSE"/>
     </block>
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
-      <exception cond="stateGetPositionEnu_f() @DEREF z @GT 1.0" deroute="Standby"/>
-      <call_once fun="NavResurrect()"/>
-      <attitude pitch="0" roll="0" throttle="0.1" vmode="throttle" until="stage_time>2"/>
-      <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
-      <stay vmode="climb" climb="nav.climb_vspeed" wp="STDBY"/> 
+      <exception cond="stateGetPositionEnu_f() @DEREF z @GT 2.0" deroute="Standby"/>
+      <call_once fun="NavSetWaypointHere(WP_CLIMB)"/>
+      <stay vmode="climb" climb="nav.climb_vspeed" wp="CLIMB"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
       <stay wp="STDBY"/>
-    </block> 
+    </block>
     <block name="stay_p1">
       <stay wp="p1"/>
-    </block>
-    <block name="stay_p5">
-      <stay wp="p5"/>
     </block>
     <block name="go_p2">
       <call_once fun="nav_set_heading_deg(90)"/>
@@ -69,26 +60,6 @@
       <go from="p3" hmode="route" wp="p4"/>
       <go from="p4" hmode="route" wp="p1"/>
       <deroute block="stay_p1"/>
-    </block>
-    <block name="square_P1_P4">
-      <go wp="p1"/>
-      <stay wp="p1" until="stage_time @GT 5"/>
-      <go wp="p2"/>
-      <stay wp="p2" until="stage_time @GT 5"/>
-      <go wp="p3"/>
-      <stay wp="p3" until="stage_time @GT 5"/>  
-      <go wp="p4"/>
-      <stay wp="p4" until="stage_time @GT 5"/>
-      <stay wp="p1"/>
-    </block>
-    <block name="P6__p7_P1">
-      <go wp="p6"/>
-      <stay wp="p6" until="stage_time @GT 2"/>
-      <go wp="p7"/>
-      <stay wp="p7" until="stage_time @GT 2"/>
-      <go wp="p1"/>
-      <stay wp="p1" until="stage_time @GT 2"/>
-      <stay wp="p6"/>
     </block>
     <block name="Oval">
       <oval p1="p1" p2="p2" radius="-1"/>

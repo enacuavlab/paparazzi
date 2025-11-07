@@ -33,7 +33,7 @@
 #include "math/wls/wls_alloc.h"
 
 #define INDI_NUM_ACT WLS_N_U_MAX
-//#define INDI_OUTPUTS WLS_N_V_MAX
+#define INDI_OUTPUTS WLS_N_V_MAX
 
 void test_overdetermined(void);
 void test_overdetermined2(void);

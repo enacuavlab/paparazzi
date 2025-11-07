@@ -9,17 +9,8 @@
         "editor.tabSize": 4,
     },
     "files.associations": {
-        "Makefile.*": "makefile",
-        "random": "c",
-        "any": "c",
-        "*.tcc": "cpp",
-        "optional": "cpp",
-        "system_error": "cpp",
-        "regex": "cpp",
-        "nps_fdm.h": "c",
-        "sys_time.h": "c"
+        "Makefile.*": "makefile"
     },
     "C_Cpp.dimInactiveRegions": false,
     "esbonio.sphinx.confDir": "",
-    "cmake.sourceDirectory": "/home/hachemmo/paparazzi/sw/ext/TRICAL",
 }

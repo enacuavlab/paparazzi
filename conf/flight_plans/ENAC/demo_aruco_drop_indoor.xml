@@ -100,11 +100,6 @@
       <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
       <stay vmode="climb" climb="nav.climb_vspeed" wp="STDBY"/>
     </block>
-        <block name="Takeoff ATT">
-      <call_once fun="NavResurrect()"/>
-      <attitude pitch="0" roll="0" throttle="0.1" vmode="throttle" until="stage_time @GT 2"/>
-      <attitude pitch="0" roll="0" throttle="0.4" vmode="throttle" until="TRUE"/>
-    </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
       <call_once fun="jevois_stream(false)"/>
       <stay wp="STDBY"/>
