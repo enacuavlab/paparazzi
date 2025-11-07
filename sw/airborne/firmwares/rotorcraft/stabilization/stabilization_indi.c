@@ -199,14 +199,20 @@ bool indi_use_adaptive = STABILIZATION_INDI_USE_ADAPTIVE;
 float act_rate_limit[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_RATE_LIMIT;
 #endif
 
+// Vector of boolean telling is an actuator is a servo
 bool act_is_servo[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_IS_SERVO;
-bool act_is_thruster_x[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_IS_THRUSTER_X;
-bool act_is_thruster_y[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_IS_THRUSTER_Y;
+
+// [3 x INDI_NUM_ACT] matrix representing the contribution (True/False) of an
+// actuator to the total 3D thrust vector
+static bool act_thrust_mat[3][INDI_NUM_ACT] = {
+  STABILIZATION_INDI_ACT_IS_THRUSTER_X,
+  STABILIZATION_INDI_ACT_IS_THRUSTER_Y,
 #ifdef STABILIZATION_INDI_ACT_IS_THRUSTER_Z
-bool act_is_thruster_z[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_IS_THRUSTER_Z;
+  STABILIZATION_INDI_ACT_IS_THRUSTER_Z
 #else
-bool act_is_thruster_z[INDI_NUM_ACT] = {0};
+  {0}
 #endif
+};
 
 #ifdef STABILIZATION_INDI_ACT_DYN
 #warning STABILIZATION_INDI_ACT_DYN is deprecated, use STABILIZATION_INDI_ACT_FREQ instead.
@@ -281,12 +287,6 @@ float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
                                         STABILIZATION_INDI_G1_THRUST, STABILIZATION_INDI_G1_THRUST_X
                                        };
 
-#elif INDI_OUTPUTS == 6
-float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
-                                        STABILIZATION_INDI_G1_PITCH, STABILIZATION_INDI_G1_YAW,
-                                        STABILIZATION_INDI_G1_THRUST,
-                                        STABILIZATION_INDI_G1_THRUST_X,STABILIZATION_INDI_G1_THRUST_Y
-                                       };
 #else
 float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
                                         STABILIZATION_INDI_G1_PITCH, STABILIZATION_INDI_G1_YAW, STABILIZATION_INDI_G1_THRUST
@@ -300,6 +300,9 @@ float g1_est[INDI_OUTPUTS][INDI_NUM_ACT];
 float g2_est[INDI_NUM_ACT];
 float g1_init[INDI_OUTPUTS][INDI_NUM_ACT];
 float g2_init[INDI_NUM_ACT];
+
+// Can be used to directly control each actuator from the control algorithm
+int16_t actuators_pprz[INDI_NUM_ACT+1];
 
 Butterworth2LowPass actuator_lowpass_filters[INDI_NUM_ACT];
 Butterworth2LowPass estimation_input_lowpass_filters[INDI_NUM_ACT];
@@ -434,16 +437,15 @@ void stabilization_indi_init(void)
   float_vect_copy(g1_init[0], g1[0], INDI_OUTPUTS * INDI_NUM_ACT);
   float_vect_copy(g2_init, g2, INDI_NUM_ACT);
 
-  num_thrusters = INDI_NUM_ACT;
+  num_thrusters = 0; // sum of Z thrusters
   for (i = 0; i < INDI_NUM_ACT; i++) {
 #ifndef STABILIZATION_INDI_ACT_IS_THRUSTER_Z
-    // Assume all non-servos and non thrust-x motors are delivering (Z) thrust
-    num_thrusters -= act_is_servo[i];
-    num_thrusters -= act_is_thruster_x[i];
-    act_is_thruster_z[i] = !act_is_servo[i] && !act_is_thruster_x[i];
-#else
-    num_thrusters -= !act_is_thruster_z[i];
+    // Assume all non-servos and non thrust-x/y motors are delivering (Z) thrust
+    act_thrust_mat[2][i] = !act_thrust_mat[0][i] && !act_thrust_mat[1][i] && !act_is_servo[i];
 #endif
+    if (act_thrust_mat[2][i]) {
+      num_thrusters++;
+    }
   }
 
 #if PERIODIC_TELEMETRY
@@ -646,7 +648,7 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
 
   // calculate the virtual control (reference acceleration) based on a controller
   struct FloatRates rates_sp = stab_sp_to_rates_f(sp);
-  angular_accel_ref = stabilization_indi_rate_controller(rates_sp, rates_filt);
+  angular_accel_ref = stabilization_indi_rate_controller(rates_filt, rates_sp);
 
   // compute virtual thrust
   struct FloatVect3 v_thrust = { 0.f, 0.f, 0.f };
@@ -658,13 +660,17 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     // Compute estimated thrust
     FLOAT_VECT3_ZERO(stab_thrust_filt);
     for (i = 0; i < INDI_NUM_ACT; i++) {
-      stab_thrust_filt.z += Bwls[3][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_z[i];
-#if INDI_OUTPUTS == 5
-      stab_thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
+#if INDI_OUTPUTS == 4
+      stab_thrust_filt.z += Bwls[3][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
+#endif
+#if INDI_OUTPUTS == 5 // FIXME change order of Z and X, or better detect that automatically ?
+      stab_thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[0][i];
+      stab_thrust_filt.z += Bwls[3][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
 #endif
 #if INDI_OUTPUTS == 6
-      stab_thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
-      stab_thrust_filt.y += Bwls[5][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_y[i];
+      stab_thrust_filt.x += Bwls[3][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[0][i];
+      stab_thrust_filt.y += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[1][i];
+      stab_thrust_filt.z += Bwls[5][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
 #endif
     }
     // Add the current estimated thrust to the increment
@@ -710,13 +716,17 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
   indi_v[0] = (angular_accel_ref.p - angular_acc_disturbance_estimate[0]);
   indi_v[1] = (angular_accel_ref.q - angular_acc_disturbance_estimate[1]);
   indi_v[2] = (angular_accel_ref.r - angular_acc_disturbance_estimate[2]) + g2_times_u;
+#if INDI_OUTPUTS == 4
   indi_v[3] = v_thrust.z;
-#if INDI_OUTPUTS == 5
+#endif
+#if INDI_OUTPUTS == 5 // FIXME order of Z/X is reversed
+  indi_v[3] = v_thrust.z;
   indi_v[4] = v_thrust.x;
 #endif
 #if INDI_OUTPUTS == 6
-  indi_v[4] = v_thrust.x;
-  indi_v[5] = v_thrust.y;
+  indi_v[3] = v_thrust.x;
+  indi_v[4] = v_thrust.y;
+  indi_v[5] = v_thrust.z;
 #endif
 
 #if STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE
@@ -758,15 +768,15 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     lms_estimation();
   }
 
-  /*Commit the actuator command*/
+  /* Commit the actuator command */
   for (i = 0; i < INDI_NUM_ACT; i++) {
     actuators_pprz[i] = (int16_t) indi_u[i];
   }
 
-  //update thrust command such that the current is correctly estimated
+  // update thrust command such that the current is correctly estimated
   cmd[COMMAND_THRUST] = 0;
   for (i = 0; i < INDI_NUM_ACT; i++) {
-    cmd[COMMAND_THRUST] += actuator_state[i] * (int32_t) act_is_thruster_z[i];
+    cmd[COMMAND_THRUST] += actuator_state[i] * (int32_t) act_thrust_mat[2][i];
   }
   cmd[COMMAND_THRUST] /= num_thrusters;
 

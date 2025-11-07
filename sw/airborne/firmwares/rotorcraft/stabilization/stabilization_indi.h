@@ -34,6 +34,14 @@ extern float g1g2[INDI_OUTPUTS][INDI_NUM_ACT];
 extern float actuator_state_filt_vect[INDI_NUM_ACT];
 extern struct FloatVect3 stab_thrust_filt;
 
+/** PPRZ command to each actuator
+ * Can be used to directly control actuators from the control algorithm
+ * if the command_laws are set up appropriately in the airframe file
+ *
+ * FIXME add an extra slot for specific case (e.g. rotwing in simulation)
+ */
+extern int16_t actuators_pprz[INDI_NUM_ACT+1];
+
 extern bool act_is_servo[INDI_NUM_ACT];
 
 extern bool indi_use_adaptive;
