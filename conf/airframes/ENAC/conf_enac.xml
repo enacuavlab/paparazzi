@@ -131,4 +131,15 @@
    settings_modules="modules/air_data.xml modules/airspeed_sdp3x.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_indi.xml modules/guidance_pid_rotorcraft.xml modules/guidance_plane_pid_rotorcraft.xml modules/guidance_rotorcraft.xml modules/imu_common.xml modules/ins_ekf2.xml modules/logger_sd_chibios.xml modules/nav_hybrid.xml modules/nav_rotorcraft.xml modules/stabilization_indi.xml modules/stabilization_plane_pid.xml"
    gui_color="#6200a000ea00"
   />
+  <aircraft
+   name="Drone_Murat"
+   ac_id="7"
+   airframe="airframes/ENAC/quadrotor/Drone_Murat.xml"
+   radio="radios/FrSky_X-Lite.xml"
+   telemetry="telemetry/default_rotorcraft.xml"
+   flight_plan="flight_plans/ENAC/rotorcraft_square_vto.xml"
+   settings=""
+   settings_modules="modules/electrical.xml modules/gps.xml modules/guidance_indi.xml modules/guidance_rotorcraft.xml modules/imu_common.xml modules/ins_ekf2.xml modules/logger_sd_chibios.xml modules/nav_rotorcraft.xml modules/nav_survey_rectangle_rotorcraft.xml modules/stabilization_indi.xml"
+   gui_color="#dc008a00dd00"
+  />
 </conf>
