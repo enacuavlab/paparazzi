@@ -45,25 +45,25 @@
 //  Ddz =  3.357;//1.82;//6.773;
 
 // proportional control part (horizontal position)
-static float Ap = GUIDANCE_INDI_HINF_Ap
-static float Bp = GUIDANCE_INDI_HINF_Bp
-static float Cp = GUIDANCE_INDI_HINF_Cp
-static float Dp = GUIDANCE_INDI_HINF_Dp
+static float Ap = GUIDANCE_INDI_HINF_Ap;
+static float Bp = GUIDANCE_INDI_HINF_Bp;
+static float Cp = GUIDANCE_INDI_HINF_Cp;
+static float Dp = GUIDANCE_INDI_HINF_Dp;
 // derivative control part (horizontal speed)
-static float Ad = GUIDANCE_INDI_HINF_Ad
-static float Bd = GUIDANCE_INDI_HINF_Bd
-static float Cd = GUIDANCE_INDI_HINF_Cd
-static float Dd = GUIDANCE_INDI_HINF_Dd
+static float Ad = GUIDANCE_INDI_HINF_Ad;
+static float Bd = GUIDANCE_INDI_HINF_Bd;
+static float Cd = GUIDANCE_INDI_HINF_Cd;
+static float Dd = GUIDANCE_INDI_HINF_Dd;
 // proportional control part (vertical position)
-static float Apz = GUIDANCE_INDI_HINF_Apz
-static float Bpz = GUIDANCE_INDI_HINF_Bpz
-static float Cpz = GUIDANCE_INDI_HINF_Cpz
-static float Dpz = GUIDANCE_INDI_HINF_Dpz
+static float Apz = GUIDANCE_INDI_HINF_Apz;
+static float Bpz = GUIDANCE_INDI_HINF_Bpz;
+static float Cpz = GUIDANCE_INDI_HINF_Cpz;
+static float Dpz = GUIDANCE_INDI_HINF_Dpz;
 // derivative control part (vertical speed)
-static float Adz = GUIDANCE_INDI_HINF_Adz
-static float Bdz = GUIDANCE_INDI_HINF_Bdz
-static float Cdz = GUIDANCE_INDI_HINF_Cdz
-static float Ddz = GUIDANCE_INDI_HINF_Ddz
+static float Adz = GUIDANCE_INDI_HINF_Adz;
+static float Bdz = GUIDANCE_INDI_HINF_Bdz;
+static float Cdz = GUIDANCE_INDI_HINF_Cdz;
+static float Ddz = GUIDANCE_INDI_HINF_Ddz;
 
 static struct FloatVect3 pos_state = { 0.f };
 static static FloatVect3 speed_state = { 0.f };
