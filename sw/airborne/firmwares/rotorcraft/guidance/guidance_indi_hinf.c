@@ -19,8 +19,8 @@
  */
 
 #include "firmwares/rotorcraft/guidance/guidance_indi.h"
-
 #include "math/pprz_algebra_float.h"
+#include "state.h"
 
 //
 //  // Kpxy
@@ -65,8 +65,8 @@ static float Bdz = GUIDANCE_INDI_HINF_Bdz;
 static float Cdz = GUIDANCE_INDI_HINF_Cdz;
 static float Ddz = GUIDANCE_INDI_HINF_Ddz;
 
-static struct FloatVect3 pos_state = { 0.f };
-static static FloatVect3 speed_state = { 0.f };
+static struct FloatVect3 pos_state = { 0 };
+static struct FloatVect3 speed_state = { 0 };
 
 /** Acceleration controller based Hinfinity
  */
@@ -76,6 +76,7 @@ struct FloatVect3 guidance_indi_controller(bool in_flight, struct HorizontalGuid
   struct FloatVect3 speed_err = { 0 };
 
   struct FloatVect3 accel_sp = { 0 };
+  struct FloatVect3 speed_sp = { 0 };
   struct FloatVect3 speed_fb = { 0 };
 
   if (!in_flight) {
@@ -135,7 +136,7 @@ struct FloatVect3 guidance_indi_controller(bool in_flight, struct HorizontalGuid
       // TODO add speed feed-forward ?
       // speed_sp.z += SPEED_FLOAT_OF_BFP(gv->zd_ref);
     }
-    speed_err.z = speed_sp.z - stateGetPositionNed_f()->z;
+    speed_err.z = speed_sp.z - stateGetSpeedNed_f()->z;
     speed_fb.z = Cdz * speed_state.z + Ddz * speed_err.z;
     speed_state.z = Adz * speed_state.z + Bdz * speed_err.z;
   }

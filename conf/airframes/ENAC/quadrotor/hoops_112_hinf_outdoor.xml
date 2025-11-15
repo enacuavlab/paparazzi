@@ -46,8 +46,8 @@
       <define name="GPS_FIX_TIMEOUT" value="0.5"/>
     </module>
 
-    <module name="stabilization" type="indi"/>
-    <module name="guidance" type="indi"/>
+    <module name="stabilization" type="indi_hinf"/>
+    <module name="guidance" type="indi_hinf"/>
 
     <module name="ins" type="ekf2"/>
     <!--module name="preflight_checks"/-->
@@ -182,6 +182,25 @@
     <define name="Bd" value="-0.02509"/>
     <define name="Cd" value="91.15"/>
     <define name="Dd" value="44.57"/>
+  </section>
+
+  <section name="GUIDANCE_INDI_HINF" prefix="GUIDANCE_INDI_HINF_">
+    <define name="Ap" value="0.9985"/>
+    <define name="Bp" value="0.04362"/>
+    <define name="Cp" value="0.009739"/>
+    <define name="Dp" value="0.5602"/>
+    <define name="Ad" value=" 1"/>
+    <define name="Bd" value="-0.01418"/>
+    <define name="Cd" value="-0.2814"/>
+    <define name="Dd" value=" 2.397"/>
+    <define name="Apz" value=" 0.9987"/>
+    <define name="Bpz" value="-0.0003935"/>
+    <define name="Cpz" value="-1.052"/>
+    <define name="Dpz" value=" 1.084"/>
+    <define name="Adz" value=" 1"/>
+    <define name="Bdz" value=" 0.003449"/>
+    <define name="Cdz" value=" 1.548"/>
+    <define name="Ddz" value=" 3.357"/>
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
