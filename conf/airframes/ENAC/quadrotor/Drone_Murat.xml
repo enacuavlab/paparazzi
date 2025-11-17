@@ -33,7 +33,16 @@
 
     <module name="actuators" type="dshot">
       <configure name="DSHOT_BIDIR" value="FALSE"/>
+      <define name="DSHOT_SPEED" value="1200"/>
     </module>
+    
+    <!--module name="actuators" type="pwm">
+      <define name="USE_PWM_TIM3" value="TRUE"/>
+      <define name="USE_PWM5" value="TRUE"/>
+      <define name="USE_PWM6" value="TRUE"/>
+      <define name="USE_PWM7" value="TRUE"/>
+      <define name="USE_PWM8" value="TRUE"/>
+    </module-->    
 
     <module name="board" type="tawaki_2.0">
     </module>
@@ -61,7 +70,12 @@
     <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
   </firmware>
 
-
+  <!--servos driver="Pwm">
+    <servo name="FR"    no="5" min="1000" neutral="1100" max="1800"/>
+    <servo name="BR"    no="6" min="1000" neutral="1100" max="1800"/>
+    <servo name="BL"    no="7" min="1000" neutral="1100" max="1800"/>
+    <servo name="FL"    no="8" min="1000" neutral="1100" max="1800"/>
+  </servos-->  
   <servos driver="DShot">
     <servo name="FR" no="1" min="0" neutral="100" max="2000"/>
     <servo name="BR" no="2" min="0" neutral="100" max="2000"/>
@@ -142,13 +156,13 @@
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <define name="NUM_ACT" value="4"/>
     <!-- reference acceleration for attitude control -->
-    <define name="REF_ERR_P" value="120"/>
-    <define name="REF_ERR_Q" value="130"/>
-    <define name="REF_ERR_R" value="80"/>
-    <define name="REF_RATE_P" value="15"/>
-    <define name="REF_RATE_Q" value="15"/>
-    <define name="REF_RATE_R" value="5"/>
-    <define name="MAX_R" value="60" unit="deg/s"/>
+    <define name="REF_ERR_P" value="350"/>
+    <define name="REF_ERR_Q" value="350"/>
+    <define name="REF_ERR_R" value="180"/>
+    <define name="REF_RATE_P" value="35"/>
+    <define name="REF_RATE_Q" value="35"/>
+    <define name="REF_RATE_R" value="18"/>
+    <define name="MAX_R" value="80" unit="deg/s"/>
 
     <!-- second order filter parameters -->
     <define name="FILT_CUTOFF" value="4.0"/>
@@ -161,13 +175,13 @@
     <!-- Full INDI -->
     <!-- control effectiveness -->
     <define name="G1" type="matrix">
-      <field value="{ -20.0,  -20.0,  20.0,  20.0 }"/>
-      <field value="{  20.0,  -20.0, -20.0,  20.0 }"/>
-      <field value="{  3.,   -3.,  3.,  -3. }"/>
+      <field value="{ -12.5,  -12.5,  12.5,  12.5 }"/>
+      <field value="{  12.5,  -12.5, -12.5,  12.5 }"/>
+      <field value="{  2.,   -2.,  2.,  -2. }"/>
       <field value="{ -1., -1., -1., -1.}"/>
     </define>
     <!--Counter torque effect of spinning up a rotor-->
-    <define name="G2"        value="{80, -80, 80, -80.0 }"/>
+    <define name="G2"        value="{50, -50, 50, -50.0 }"/>
     <!-- first order actuator dynamics -->
     <define name="ACT_FREQ" value="{10.10, 10.10, 10.10, 10.10}"/>
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
