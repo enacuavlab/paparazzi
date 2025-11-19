@@ -46,14 +46,6 @@
       <configure name="GPS_BAUD" value="B115200"/>
     </module>
 
-
-    <module name="stabilization" type="indi">
-      <define name="INDI_NUM_ACT" value="4"/>
-      <define name="WLS_N_U_MAX" value="4"/>
-      <define name="WLS_N_V_MAX" value="4"/>
-      <define name="INDI_OUTPUTS" value="4"/>
-    </module>
-
     <module name="stabilization" type="indi">
       <define name="WLS_N_U_MAX" value="4" />
       <define name="WLS_N_V_MAX" value="4" />

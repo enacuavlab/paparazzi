@@ -107,8 +107,8 @@ void nps_fdm_init(double dt)
   init_ltp();
 
   // run a first step to initialize all fdm fields
-  double dummy_commands[] = {0,0,0,0,0,0}; // FIX This to be generalized
-  nps_fdm_run_step(false, dummy_commands, 6); // FIX This to be generalized
+  double dummy_commands[] = {1, 2, 3, 4};
+  nps_fdm_run_step(false, dummy_commands, 4);
 }
 
 void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int commands_nb __attribute__((unused)))

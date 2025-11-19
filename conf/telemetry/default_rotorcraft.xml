@@ -39,8 +39,7 @@
       <message name="AHRS_REF_QUAT"            period="0.5"/>
       <message name="STAB_ATTITUDE"            period=".25"/>
       <message name="EFF_MAT_STAB"             period="2.0"/>
-      <message name="ACTUATORS"                period="0.05"/>  
-      </mode>
+    </mode>
 
     <mode name="ppm">
       <message name="DL_VALUE"                 period="0.5"/>

@@ -32,10 +32,10 @@
 
   <control>
     <indi actuator_nr="4" output_nr="4" />
-    <indi_1 roll="  20.0  20.0 -20.0  -20.0" />
-    <indi_2 pitch="-20.0  20.0  20.0  -20.0" />
-    <indi_3 yaw="   -3.0   3.0  -3.0    3.0" />
-    <indi_4 thrust=" 0.5   0.5   0.5    0.5" />
+    <indi_1 roll="  50.0  50.0 -50.0  -50.0" />
+    <indi_2 pitch="-50.0  50.0  50.0  -50.0" />
+    <indi_3 yaw="   -7.0   7.0  -7.0    7.0" />
+    <indi_4 thrust=" 1.7   1.7   1.7    1.7" />
 
     <indi_guidance_gains>
       <pos kp="1.0" kd="2.2"/>
