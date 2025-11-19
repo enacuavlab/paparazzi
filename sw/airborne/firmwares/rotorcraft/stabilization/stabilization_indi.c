@@ -102,7 +102,7 @@
 #define STABILIZATION_INDI_YAW_DISTURBANCE_LIMIT 99999.f
 #endif
 
-#if INDI_OUTPUTS > 4
+#if INDI_OUTPUTS == 5
 #ifndef STABILIZATION_INDI_G1_THRUST_X
 #error "You must define STABILIZATION_INDI_G1_THRUST_X for your number of INDI_OUTPUTS"
 #endif
@@ -122,8 +122,6 @@
 #ifndef STABILIZATION_INDI_WLS_PRIORITIES
 #if INDI_OUTPUTS == 5
 #define STABILIZATION_INDI_WLS_PRIORITIES {1000, 1000, 1, 100, 100}, // roll, pitch, yaw, thrust_z, thrust_x
-#elif INDI_OUTPUTS == 6
-#define STABILIZATION_INDI_WLS_PRIORITIES {1000, 1000, 1, 1000, 1000, 1000}, // roll, pitch, yaw, thrust_z, thrust_x, thrust_y
 #else
 #define STABILIZATION_INDI_WLS_PRIORITIES {1000, 1000, 1, 100}, // default: roll, pitch, yaw, thrust_z
 #endif
@@ -443,8 +441,8 @@ void stabilization_indi_init(void)
   num_thrusters = 0; // sum of Z thrusters
   for (i = 0; i < INDI_NUM_ACT; i++) {
 #ifndef STABILIZATION_INDI_ACT_IS_THRUSTER_Z
-    // Assume all non-servos and non thrust-x/y motors are delivering (Z) thrust
-    act_thrust_mat[2][i] = !act_thrust_mat[0][i] && !act_thrust_mat[1][i] && !act_is_servo[i];
+    // Assume non-servos and non thrust-x/y motors, not already set to true, are delivering (Z) thrust
+    act_thrust_mat[2][i] = act_thrust_mat[2][i] || (!act_thrust_mat[0][i] && !act_thrust_mat[1][i] && !act_is_servo[i]);
 #endif
     if (act_thrust_mat[2][i]) {
       num_thrusters++;

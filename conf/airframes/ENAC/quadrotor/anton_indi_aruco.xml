@@ -44,7 +44,7 @@
       <define name="GPS_FIX_TIMEOUT" value="0.5"/>
     </module>
 
-    <module name="stabilization" type="indi">
+    <module name="stabilization" type="indi_hinf">
       <define name="WLS_N_U_MAX" value="4" />
       <define name="WLS_N_V_MAX" value="4" />
     </module>
@@ -196,6 +196,17 @@
 
     <!--Priority for each axis (roll, pitch, yaw and thrust)-->
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
+  </section>
+
+  <section name="STABILIZATION_ATTITUDE_INDI_HINF" prefix="STABILIZATION_INDI_HINF_">
+    <define name="Ap" value="1."/>
+    <define name="Bp" value="0.03518"/>
+    <define name="Cp" value="0.0191"/>
+    <define name="Dp" value="7.643"/>
+    <define name="Ad" value="0.9013"/>
+    <define name="Bd" value="-0.02509"/>
+    <define name="Cd" value="91.15"/>
+    <define name="Dd" value="44.57"/>
   </section>
 
   <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">

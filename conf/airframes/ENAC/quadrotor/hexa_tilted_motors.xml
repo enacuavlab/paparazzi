@@ -62,8 +62,9 @@
 
     <module name="stabilization" type="indi">
       <configure name="INDI_NUM_ACT" value="6"/>
+      <configure name="INDI_OUTPUTS" value="6"/>
     </module>
-    <module name="guidance" type="indi_fully_actuated"/>
+    <module name="guidance" type="indi"/>
     
   </firmware>
 
@@ -196,11 +197,9 @@
     </define>
   </section>
 
-  <section name="WLS" >
+  <section name="WLS" prefix="WLS_">
     <define name="N_U_MAX" value="6"/>
     <define name="N_V_MAX" value="6"/>
-    <define name="GUIDANCE_INDI_NU" value="6"/>
-    <define name="GUIDANCE_INDI_MASS" value="0.8"/>
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
@@ -212,6 +211,11 @@
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
     <define name="MAX_BANK" value="20" unit="deg"/>
+  </section>
+
+  <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
+    <define name="NU" value="3"/> <!-- 6 for force alloc, 3 for quadrotor -->
+    <define name="MASS" value="0.8"/>
   </section>
 
   <section name="NAV">
