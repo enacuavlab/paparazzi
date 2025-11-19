@@ -12,7 +12,7 @@
     </section>
   </doc>
   <dep>
-    <depends>guidance_indi</depends>
+    <depends>guidance_indi_base</depends>
   </dep>
   <makefile target="ap|nps" firmware="rotorcraft">
     <file name="guidance_indi_fully_actuated.c" dir="$(SRC_FIRMWARE)/guidance"/>

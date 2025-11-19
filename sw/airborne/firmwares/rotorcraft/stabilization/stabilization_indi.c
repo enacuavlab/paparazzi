@@ -83,6 +83,10 @@
 #define STABILIZATION_INDI_USE_ADAPTIVE false
 #endif
 
+#ifndef STABILIZATION_INDI_ADAPTIVE_MU
+#define STABILIZATION_INDI_ADAPTIVE_MU 0.001f
+#endif
+
 #ifndef STABILIZATION_INDI_ACT_IS_SERVO
 #define STABILIZATION_INDI_ACT_IS_SERVO {0}
 #endif
@@ -121,9 +125,9 @@
 // Weighting of different control objectives in the cost function
 #ifndef STABILIZATION_INDI_WLS_PRIORITIES
 #if INDI_OUTPUTS == 5
-#define STABILIZATION_INDI_WLS_PRIORITIES {1000, 1000, 1, 100, 100}, // roll, pitch, yaw, thrust_z, thrust_x
+#define STABILIZATION_INDI_WLS_PRIORITIES {1000, 1000, 1, 100, 100} // roll, pitch, yaw, thrust_z, thrust_x
 #else
-#define STABILIZATION_INDI_WLS_PRIORITIES {1000, 1000, 1, 100}, // default: roll, pitch, yaw, thrust_z
+#define STABILIZATION_INDI_WLS_PRIORITIES {1000, 1000, 1, 100} // default: roll, pitch, yaw, thrust_z
 #endif
 #endif
 
@@ -310,7 +314,6 @@ Butterworth2LowPass estimation_input_lowpass_filters[INDI_NUM_ACT];
 Butterworth2LowPass measurement_lowpass_filters[3];
 Butterworth2LowPass estimation_output_lowpass_filters[3];
 Butterworth2LowPass acceleration_lowpass_filter;
-Butterworth2LowPass acceleration_body_x_filter;
 #if STABILIZATION_INDI_FILTER_RATES_SECOND_ORDER
 Butterworth2LowPass rates_filt_so[3];
 #else
@@ -512,9 +515,6 @@ static void init_filters(void)
     init_butterworth_2_low_pass(&estimation_input_lowpass_filters[i], tau_est, sample_time, 0.0);
   }
 
-  // Filtering the bodyx acceleration with same cutoff as gyroscope
-  init_butterworth_2_low_pass(&acceleration_body_x_filter, tau, sample_time, 0.0);
-
   // Filtering of the accel body z
   init_butterworth_2_low_pass(&acceleration_lowpass_filter, tau_est, sample_time, 0.0);
 
@@ -617,8 +617,6 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     update_butterworth_2_low_pass(&measurement_lowpass_filters[i], rate_vect[i]);
     update_butterworth_2_low_pass(&estimation_output_lowpass_filters[i], rate_vect[i]);
 
-    update_butterworth_2_low_pass(&acceleration_body_x_filter, body_accel_f.x);
-
     // Calculate the angular acceleration via finite difference
     angular_acceleration[i] = (measurement_lowpass_filters[i].o[0]
                                - measurement_lowpass_filters[i].o[1]) * PERIODIC_FREQUENCY;
@@ -662,41 +660,47 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     FLOAT_VECT3_ZERO(stab_thrust_filt);
     for (i = 0; i < INDI_NUM_ACT; i++) {
 #if INDI_OUTPUTS == 4
-      stab_thrust_filt.z += Bwls[3][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
+      stab_thrust_filt.z += Bwls[3][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
 #endif
 #if INDI_OUTPUTS == 5 // FIXME change order of Z and X, or better detect that automatically ?
-      stab_thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[0][i];
-      stab_thrust_filt.z += Bwls[3][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
+      stab_thrust_filt.x += Bwls[4][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[0][i];
+      stab_thrust_filt.z += Bwls[3][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
 #endif
 #if INDI_OUTPUTS == 6
-      stab_thrust_filt.x += Bwls[3][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[0][i];
-      stab_thrust_filt.y += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[1][i];
-      stab_thrust_filt.z += Bwls[5][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
+      stab_thrust_filt.x += Bwls[3][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[0][i];
+      stab_thrust_filt.y += Bwls[4][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[1][i];
+      stab_thrust_filt.z += Bwls[5][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
 #endif
     }
     // Add the current estimated thrust to the increment
     VECT3_ADD(v_thrust, stab_thrust_filt);
   } else {
     // build incremental thrust
-    float th_cmd_z = (float)th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
+    struct FloatVect3 th_cmd;
+    th_cmd.x = (float)th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_X);
+    th_cmd.y = (float)th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Y);
+    th_cmd.z = (float)th_sp_to_thrust_i(thrust, 0, THRUST_AXIS_Z);
+#if (INDI_OUTPUTS == 5) && (defined RADIO_CONTROL_THRUST_X) && (defined COMMAND_THRUST_X)
+    // TODO set X thrust from RC in the thrust input setpoint
+    cmd[COMMAND_THRUST_X] = radio_control.values[RADIO_CONTROL_THRUST_X];
+    th_cmd.x = (float)cmd[COMMAND_THRUST_X];
+#endif
     for (i = 0; i < INDI_NUM_ACT; i++) {
-      v_thrust.z += th_cmd_z * Bwls[3][i];
-#if INDI_OUTPUTS == 5
-      // TODO set X thrust from RC in the thrust input setpoint
-      cmd[COMMAND_THRUST_X] = radio_control.values[RADIO_CONTROL_THRUST_X];
-      v_thrust.x += cmd[COMMAND_THRUST_X] * Bwls[4][i];
+#if INDI_OUTPUTS == 4
+      v_thrust.z += th_cmd.z * Bwls[3][i] * (int32_t) act_thrust_mat[2][i];
+#endif
+#if INDI_OUTPUTS == 5 // FIXME change order of Z and X, or better detect that automatically ?
+      v_thrust.x += th_cmd.x * Bwls[4][i] * (int32_t) act_thrust_mat[0][i];
+      v_thrust.z += th_cmd.z * Bwls[3][i] * (int32_t) act_thrust_mat[2][i];
+#endif
+#if INDI_OUTPUTS == 6
+      v_thrust.x += th_cmd.x * Bwls[3][i] * (int32_t) act_thrust_mat[0][i];
+      v_thrust.y += th_cmd.y * Bwls[4][i] * (int32_t) act_thrust_mat[1][i];
+      v_thrust.z += th_cmd.z * Bwls[5][i] * (int32_t) act_thrust_mat[2][i];
 #endif
     }
-
-    stab_thrust_filt.z = v_thrust.z;
-    // TODO use RC inputs ?
-//#if INDI_OUTPUTS == 6
-//    struct FloatVect3 stab_thrust_filt = { 0.f, 0.f, 0.f };
-//    for (i = 0; i < INDI_NUM_ACT; i++) {
-//      stab_thrust_filt.x += Bwls[4][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_x[i];
-//      stab_thrust_filt.y += Bwls[5][i]* actuator_lowpass_filters[i].o[0] * (int32_t) act_is_thruster_y[i];
-//    }
-//#endif
+    // store estimated thrust
+    stab_thrust_filt = v_thrust;
   }
 
   // This term compensates for the spinup torque in the yaw axis
@@ -744,12 +748,19 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
   }
   wls_alloc(&wls_stab_p, Bwls, 0, 0, 10);
   for (i = 0; i < INDI_NUM_ACT; i++) {
-    indi_u [i] = wls_stab_p.u[i];
+    indi_u[i] = wls_stab_p.u[i];
   }
 #endif
 
-  // Bound the inputs to the actuators
+  // Use online effectiveness estimation only when flying
+  if (in_flight && indi_use_adaptive) {
+    lms_estimation();
+  }
+
+  // update actuators and thrust commands
+  cmd[COMMAND_THRUST] = 0;
   for (i = 0; i < INDI_NUM_ACT; i++) {
+    // bound actuator command
     if (act_is_servo[i]) {
       BoundAbs(indi_u[i], MAX_PPRZ);
     } else {
@@ -759,25 +770,14 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
         indi_u[i] = -MAX_PPRZ;
       }
     }
-  }
 
-  // Use online effectiveness estimation only when flying
-  if (in_flight && indi_use_adaptive) {
-    lms_estimation();
-  }
-
-  /* Commit the actuator command */
-  for (i = 0; i < INDI_NUM_ACT; i++) {
+    // commit actuator command
     actuators_pprz[i] = (int16_t) indi_u[i];
-  }
 
-  // update thrust command such that the current is correctly estimated
-  cmd[COMMAND_THRUST] = 0;
-  for (i = 0; i < INDI_NUM_ACT; i++) {
+    // update thrust command such that the current is correctly estimated
     cmd[COMMAND_THRUST] += actuator_state[i] * (int32_t) act_thrust_mat[2][i];
   }
   cmd[COMMAND_THRUST] /= num_thrusters;
-
 }
 
 /**
@@ -964,17 +964,9 @@ void lms_estimation(void)
   float indi_accel_d = (acceleration_lowpass_filter.o[0]
                         - acceleration_lowpass_filter.o[1]) * PERIODIC_FREQUENCY;
 
-  // Use xml setting for adaptive mu for lms
-  // Set default value if not defined
-#ifndef STABILIZATION_INDI_ADAPTIVE_MU
-  float adaptive_mu_lr = 0.001;
-#else
-  float adaptive_mu_lr = STABILIZATION_INDI_ADAPTIVE_MU;
-#endif
-
   // scale the inputs to avoid numerical errors
-  float_vect_smul(du_estimation, actuator_state_filt_vectd, adaptive_mu_lr, INDI_NUM_ACT);
-  float_vect_smul(ddu_estimation, actuator_state_filt_vectdd, adaptive_mu_lr / PERIODIC_FREQUENCY, INDI_NUM_ACT);
+  float_vect_smul(du_estimation, actuator_state_filt_vectd, STABILIZATION_INDI_ADAPTIVE_MU, INDI_NUM_ACT);
+  float_vect_smul(ddu_estimation, actuator_state_filt_vectdd, STABILIZATION_INDI_ADAPTIVE_MU / PERIODIC_FREQUENCY, INDI_NUM_ACT);
 
   float ddx_estimation[INDI_OUTPUTS] = {estimation_rate_dd[0], estimation_rate_dd[1], estimation_rate_dd[2], indi_accel_d};
 

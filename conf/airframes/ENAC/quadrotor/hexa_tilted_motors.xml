@@ -64,7 +64,7 @@
       <configure name="INDI_NUM_ACT" value="6"/>
       <configure name="INDI_OUTPUTS" value="6"/>
     </module>
-    <module name="guidance" type="indi"/>
+    <module name="guidance" type="indi_fully_actuated"/>
     
   </firmware>
 
@@ -170,17 +170,24 @@
 
     <!-- control effectiveness Hexa Form-->
     <define name="G1" type="matrix">
-      <field name="ROLL"     value="{ -20.0,  -35,  -20,  20.0,  35,   20 }"/>
+      <!--field name="ROLL"     value="{ -20.0,  -35,  -20,  20.0,  35,   20 }"/>
       <field name="PITCH"    value="{  35,   0,   -35,   -35,    0,  35 }"/>
       <field name="YAW"      value="{  2,   -2,    2,   -2,    2,   -2 }"/>
       <field name="THRUST_X" value="{ -0.1, 0.2, -0.1, -0.1, 0.2, -0.1}"/>
       <field name="THRUST_Y" value="{ 0.2,  0,   -0.2,  0.2,  0 , -0.2 }"/>
-      <field name="THRUST_Z" value="{ -0.35, -0.35, -0.35, -0.35, -0.35, -0.35}"/> 
+      <field name="THRUST_Z" value="{ -0.35, -0.35, -0.35, -0.35, -0.35, -0.35}"/-->
+      <field name="NPS_ROLL"   value="{  -19.0,  -37,  -19,  19.0,  37,   19 }"/>
+      <field name="NPS_PITCH"  value="{  30,   0,   -30,   -30,    0,  30 }"/>
+      <field name="NPS_YAW"    value="{   2,   -2,    2,   -2,    2,   -2 }"/>
+      <field name="NPS_THRUST_X" value="{-0.05, 0.1, -0.05, -0.05, 0.1, -0.05}"/>
+      <field name="NPS_THRUST_Y" value="{0.1,  0,   -0.1,  0.1,  0 , -0.1 }"/>
+      <field name="NPS_THRUST_Z" value="{-0.4, -0.4, -0.4, -0.4, -0.4, -0.4}"/>
     </define>
     <define name="G2"        value="{0.0, -0, 0, -0.0 , 0.0 , -0.0}"/>
 
     <!-- first order actuator dynamics -->
-    <define name="ACT_FREQ" value="{25.6, 25.6, 25.6, 25.6, 25.6, 25.6}"/>
+    <!--define name="ACT_FREQ" value="{25.6, 25.6, 25.6, 25.6, 25.6, 25.6}"/-->
+    <define name="ACT_FREQ" value="{10.10, 10.10, 10.10, 10.10, 10.10, 10.10}"/>
 
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
 
@@ -214,8 +221,10 @@
   </section>
 
   <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
-    <define name="NU" value="3"/> <!-- 6 for force alloc, 3 for quadrotor -->
+    <define name="NU" value="6"/> <!-- 6 for force alloc, 3 for quadrotor -->
     <define name="MASS" value="0.8"/>
+    <define name="POS_GAIN" value="0.1"/>
+    <define name="SPEED_GAIN" value="0.4"/>
   </section>
 
   <section name="NAV">
