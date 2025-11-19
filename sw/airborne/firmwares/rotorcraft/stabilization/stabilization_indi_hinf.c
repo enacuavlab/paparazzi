@@ -19,19 +19,7 @@
  */
 
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
-
 #include "math/pprz_algebra_float.h"
-
-//  Ap =           1; //1;
-//  Bp =           0.03518; //0.0003262;
-//  Cp =           0.0191; //20.21;
-//  Dp =           7.643; //7.533;
-//
-//  Ad =    0.9013; //  0.9066;
-//  Bd =   -0.02509; //  -0.02944;
-//  Cd =    91.15; //   61.81;
-//  Dd =    44.57; //   39.22;
-//
 
 static struct FloatRates rate_state;
 static struct FloatRates att_state;

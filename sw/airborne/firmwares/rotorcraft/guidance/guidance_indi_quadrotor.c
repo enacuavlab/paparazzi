@@ -38,9 +38,6 @@
  */
 UNUSED static void guidance_indi_calcG_zyx(float Gmat[3][3], struct FloatEulers euler_zyx)
 {
-  //struct FloatEulers euler_zyx; // FIXME use filtered data ?
-  //float_eulers_of_quat(&euler_zyx, stateGetNedToBodyQuat_f());
-
   float sphi = sinf(euler_zyx.phi);
   float cphi = cosf(euler_zyx.phi);
   float stheta = sinf(euler_zyx.theta);
@@ -70,17 +67,12 @@ UNUSED static void guidance_indi_calcG_zyx(float Gmat[3][3], struct FloatEulers 
  */
 static void guidance_indi_calcG_yxz(float Gmat[3][3], struct FloatEulers euler_yxz)
 {
-  //struct FloatEulers euler_yxz; // FIXME use filtered data ?
-  //float_eulers_of_quat_yxz(&euler_yxz, stateGetNedToBodyQuat_f());
-
   float sphi = sinf(euler_yxz.phi);
   float cphi = cosf(euler_yxz.phi);
   float stheta = sinf(euler_yxz.theta);
   float ctheta = cosf(euler_yxz.theta);
   // minus gravity is a guesstimate of the thrust force, thrust measurement would be better
   float T = -9.81f;
-  // TODO if we can really use that
-  //T = stab_thrust_filt.z;
 
   Gmat[0][0] = ctheta * cphi * T;
   Gmat[1][0] = 0;
