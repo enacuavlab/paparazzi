@@ -119,8 +119,6 @@ static float Gmat[GUIDANCE_INDI_NV][GUIDANCE_INDI_NU];
 static float du_guidance[GUIDANCE_INDI_NU];
 static float *Bwls_gi[GUIDANCE_INDI_NV];
 
-static void guidance_indi_set_wls_settings(struct FloatEulers *euler_yxz, float *Thrust_filtered_Guidance, struct FloatEulers *euler_yxz_ref, float heading_sp);
-
 static struct WLS_t wls_guid_p = {
   .nu        = GUIDANCE_INDI_NU,
   .nv        = GUIDANCE_INDI_NV,
@@ -273,8 +271,8 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   wls_guid_p.v[1] = m*a_diff.y;
   wls_guid_p.v[2] = m*a_diff.z;
 
-  guidance_indi_set_wls_settings(&euler_yxz, heading_sp);
-  guidance_indi_calcG(Gmat, &euler_yxz);
+  guidance_indi_set_wls_settings(&wls_guid_p, &euler_yxz, heading_sp);
+  guidance_indi_calcG(Gmat, euler_yxz);
   for (int i = 0; i < GUIDANCE_INDI_NV; i++) {
     Bwls_gi[i] = Gmat[i];
   }
@@ -294,7 +292,7 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
 #else // !USE_WLS
 
   // Calculate matrix of partial derivatives
-  guidance_indi_calcG(Gmat);
+  guidance_indi_calcG(Gmat, euler_yxz);
 
   RMAT_ELMT(Ga, 0, 0) = Gmat[0][0];
   RMAT_ELMT(Ga, 1, 0) = Gmat[1][0];

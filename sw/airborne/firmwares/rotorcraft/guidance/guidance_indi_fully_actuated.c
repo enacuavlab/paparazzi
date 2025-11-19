@@ -52,15 +52,15 @@ float guidance_indi_max_v_thrust = GUIDANCE_INDI_MAX_V_THRUST;
  * w.r.t. the NED accelerations for YXZ eulers
  * ddx = G*[dphi,dtheta,dpsi,dTx,dTy,dTz]
  */
-static void guidance_indi_calcG_yxz(float Gmat[3][6], struct FloatEulers *euler_yxz)
+static void guidance_indi_calcG_yxz(float Gmat[3][6], struct FloatEulers euler_yxz)
 {
   // Euler Angles
-  float sphi = sinf(euler_yxz->phi);
-  float cphi = cosf(euler_yxz->phi);
-  float stheta = sinf(euler_yxz->theta);
-  float ctheta = cosf(euler_yxz->theta);
-  float cpsi  = cosf(euler_yxz->psi);
-  float spsi  = sinf(euler_yxz->psi);
+  float sphi = sinf(euler_yxz.phi);
+  float cphi = cosf(euler_yxz.phi);
+  float stheta = sinf(euler_yxz.theta);
+  float ctheta = cosf(euler_yxz.theta);
+  float cpsi  = cosf(euler_yxz.psi);
+  float spsi  = sinf(euler_yxz.psi);
 
   // Estimated Thrust
   float Tx = stab_thrust_filt.x;
@@ -102,11 +102,11 @@ static void guidance_indi_calcG_yxz(float Gmat[3][6], struct FloatEulers *euler_
  *
  * @param Gmat Dynamics matrix
  */
-void guidance_indi_calcG(float Gmat[3][6], struct FloatEulers *euler) {
+void guidance_indi_calcG(float Gmat[3][6], struct FloatEulers euler) {
   guidance_indi_calcG_yxz(Gmat, euler);
 }
 
-void guidance_indi_set_wls_settings(struct FloatEulers *euler_yxz, float heading_sp)
+void guidance_indi_set_wls_settings(struct WLS_t *wls, struct FloatEulers *euler_yxz, float heading_sp UNUSED)
 {
   struct FloatEulers euler_yxz_ref = { 0 };
 #if GUIDANCE_INDI_RC_SWITCH_EULER
@@ -116,27 +116,27 @@ void guidance_indi_set_wls_settings(struct FloatEulers *euler_yxz, float heading
 #endif
 
   // Set lower limits
-  wls_guid_p.u_min[0] = -guidance_indi_max_bank - euler_yxz->phi;          //phi
-  wls_guid_p.u_min[1] = -guidance_indi_max_bank - euler_yxz->theta;        //theta
-  wls_guid_p.u_min[2] = -M_PI - euler_yxz->psi;                            //psi FIXME M_PI or a lower bound ? (was 1 in initial code)
-  wls_guid_p.u_min[3] = -guidance_indi_max_h_thrust - stab_thrust_filt.x;  //Tx
-  wls_guid_p.u_min[4] = -guidance_indi_max_h_thrust - stab_thrust_filt.y;  //Ty
-  wls_guid_p.u_min[5] = -guidance_indi_max_v_thrust - stab_thrust_filt.z;  //Tz (MAX_PPRZ  - stabilization.cmd[COMMAND_THRUST])
+  wls->u_min[0] = -guidance_indi_max_bank - euler_yxz->phi;          //phi
+  wls->u_min[1] = -guidance_indi_max_bank - euler_yxz->theta;        //theta
+  wls->u_min[2] = -M_PI - euler_yxz->psi;                            //psi FIXME M_PI or a lower bound ? (was 1 in initial code)
+  wls->u_min[3] = -guidance_indi_max_h_thrust - stab_thrust_filt.x;  //Tx
+  wls->u_min[4] = -guidance_indi_max_h_thrust - stab_thrust_filt.y;  //Ty
+  wls->u_min[5] = -guidance_indi_max_v_thrust - stab_thrust_filt.z;  //Tz (MAX_PPRZ  - stabilization.cmd[COMMAND_THRUST])
 
-  // Set upper limits limits
-  wls_guid_p.u_max[0] = guidance_indi_max_bank - euler_yxz->phi;          //phi
-  wls_guid_p.u_max[1] = guidance_indi_max_bank - euler_yxz->theta;        //theta
-  wls_guid_p.u_max[2] = M_PI - euler_yxz->psi;                            //psi
-  wls_guid_p.u_max[3] = guidance_indi_max_h_thrust - stab_thrust_filt.x;  //Tx
-  wls_guid_p.u_max[4] = guidance_indi_max_h_thrust - stab_thrust_filt.y;  //Ty
-  wls_guid_p.u_max[5] = 9.81f * GUIDANCE_INDI_MASS - stab_thrust_filt.z;  //Tz
+  // ->r limits limits
+  wls->u_max[0] = guidance_indi_max_bank - euler_yxz->phi;          //phi
+  wls->u_max[1] = guidance_indi_max_bank - euler_yxz->theta;        //theta
+  wls->u_max[2] = M_PI - euler_yxz->psi;                            //psi
+  wls->u_max[3] = guidance_indi_max_h_thrust - stab_thrust_filt.x;  //Tx
+  wls->u_max[4] = guidance_indi_max_h_thrust - stab_thrust_filt.y;  //Ty
+  wls->u_max[5] = 9.81f * GUIDANCE_INDI_MASS - stab_thrust_filt.z;  //Tz
 
-  // Set prefered states
-  wls_guid_p.u_pref[0] = euler_yxz_ref->phi - euler_yxz->phi;     // prefered delta phi
-  wls_guid_p.u_pref[1] = euler_yxz_ref->theta - euler_yxz->theta; // prefered delta theta
-  wls_guid_p.u_pref[2] = euler_yxz_ref->psi - euler_yxz->psi;     // prefered Ty
-  wls_guid_p.u_pref[3] = stab_thrust_filt.x;                      // prefred Tx
-  wls_guid_p.u_pref[4] = stab_thrust_filt.y;                      // prefered Ty
-  wls_guid_p.u_pref[5] = stab_thrust_filt.z;                      // prefered Tz
+  // ->ered states
+  wls->u_pref[0] = euler_yxz_ref.phi - euler_yxz->phi;     // prefered delta phi
+  wls->u_pref[1] = euler_yxz_ref.theta - euler_yxz->theta; // prefered delta theta
+  wls->u_pref[2] = euler_yxz_ref.psi - euler_yxz->psi;     // prefered Ty
+  wls->u_pref[3] = stab_thrust_filt.x;                      // prefred Tx
+  wls->u_pref[4] = stab_thrust_filt.y;                      // prefered Ty
+  wls->u_pref[5] = stab_thrust_filt.z;                      // prefered Tz
 }
 

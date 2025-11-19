@@ -36,10 +36,10 @@
  * w.r.t. the NED accelerations for ZYX eulers
  * ddx = G*[dtheta,dphi,dT]
  */
-UNUSED static void guidance_indi_calcG_zyx(float Gmat[3][3])
+UNUSED static void guidance_indi_calcG_zyx(float Gmat[3][3], struct FloatEulers euler_zyx)
 {
-  struct FloatEulers euler_zyx; // FIXME use filtered data ?
-  float_eulers_of_quat(&euler_zyx, stateGetNedToBodyQuat_f());
+  //struct FloatEulers euler_zyx; // FIXME use filtered data ?
+  //float_eulers_of_quat(&euler_zyx, stateGetNedToBodyQuat_f());
 
   float sphi = sinf(euler_zyx.phi);
   float cphi = cosf(euler_zyx.phi);
@@ -68,10 +68,10 @@ UNUSED static void guidance_indi_calcG_zyx(float Gmat[3][3])
  * w.r.t. the NED accelerations for YXZ eulers
  * ddx = G*[dtheta,dphi,dT]
  */
-static void guidance_indi_calcG_yxz(float Gmat[3][3])
+static void guidance_indi_calcG_yxz(float Gmat[3][3], struct FloatEulers euler_yxz)
 {
-  struct FloatEulers euler_yxz; // FIXME use filtered data ?
-  float_eulers_of_quat_yxz(&euler_yxz, stateGetNedToBodyQuat_f());
+  //struct FloatEulers euler_yxz; // FIXME use filtered data ?
+  //float_eulers_of_quat_yxz(&euler_yxz, stateGetNedToBodyQuat_f());
 
   float sphi = sinf(euler_yxz.phi);
   float cphi = cosf(euler_yxz.phi);
@@ -97,11 +97,11 @@ static void guidance_indi_calcG_yxz(float Gmat[3][3])
  *
  * @param Gmat Dynamics matrix
  */
-void guidance_indi_calcG(float Gmat[3][3]) {
+void guidance_indi_calcG(float Gmat[3][3], struct FloatEulers att) {
 #ifdef GUIDANCE_INDI_CALC_G_ZYX
-  guidance_indi_calcG_zyx(Gmat);
+  guidance_indi_calcG_zyx(Gmat, att);
 #else
-  guidance_indi_calcG_yxz(Gmat); // default case
+  guidance_indi_calcG_yxz(Gmat, att); // default case
 #endif
 }
 
