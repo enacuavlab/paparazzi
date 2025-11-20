@@ -39,7 +39,7 @@
 
 // Motor idle position
 #ifndef CMQ_MOTOR_IDLE
-#define CMQ_MOTOR_IDLE 800
+#define CMQ_MOTOR_IDLE 0
 #endif
 
 // Time for forward transition
