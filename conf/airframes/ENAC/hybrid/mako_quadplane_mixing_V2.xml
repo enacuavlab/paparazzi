@@ -68,11 +68,15 @@
       <define name="USE_AIRSPEED" value="TRUE"/>
     </module>
 
+     <!-- TODO -->
+    <!--module name="gps" type="optitrack"/-->  
     <module name="gps" type="ublox">
       <configure name="GPS_BAUD" value="B115200"/>
       <define name="GPS_FIX_TIMEOUT" value="0.5"/>
     </module>
      <!-- INS TYPE : EKF2 -->
+     <!-- TODO -->
+    <!--module name="ins" type="ext_pose"/-->
     <module name="ins" type="ekf2">
       <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
     </module>   
