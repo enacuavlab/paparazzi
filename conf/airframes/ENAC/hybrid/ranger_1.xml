@@ -340,6 +340,8 @@
     <define name="CARROT" value="3.0"/>
 
     <define name="POWER_SWITCH_GPIO" value="GPIOA,GPIO3"/>
+
+    <define name="CMQ_MOTOR_IDLE" value="800"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_"> <!-- no model yet -->
