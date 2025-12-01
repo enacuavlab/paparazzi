@@ -100,9 +100,9 @@
       <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="FALSE"/>
     </module>
 
-    <!--module name="lidar_sf30d">
+    <module name="lidar_sf30d">
       <configure name="LIDAR_SF30D_I2C_DEV" value="I2C2"/>
-    </module-->
+    </module>
         
     <!--module name="trisonica">
       <configure name="TRISONICA_UART" value="UART3"/>
