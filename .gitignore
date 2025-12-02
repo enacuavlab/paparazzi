@@ -54,6 +54,8 @@ paparazzi.sublime-workspace
 
 # VSCode IDE
 .vscode/ipch/
+.vscode/
+
 
 # Vagrant VM files
 /.vagrant
