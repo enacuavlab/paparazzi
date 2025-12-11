@@ -1,0 +1,29 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="gps_nmea_send" dir="gps">
+  <doc>
+    <description>
+      Module send GPS data through UART using NMEA Protocol
+    </description>
+    <configure name="NMEA_SEND_UART" value="UART3" description="UART on which NMEA listener is connected to"/>
+    <configure name="NMEA_SEND_BAUD" value="B115200" description="UART Baudrate, default to 115200"/>
+  </doc>
+  <dep>
+    <depends>uart</depends>
+  </dep>
+  <header>
+    <file name="gps_nmea_send.h"/>
+  </header>
+  <init fun="gps_nmea_send_init()"/>
+  <periodic fun="gps_nmea_send_periodic()" freq="5" autorun="TRUE"/>
+  <makefile>
+    <configure name="NMEA_SEND_UART" default="uart3" case="upper|lower"/>
+    <configure name="NMEA_SEND_BAUD" default="B115200"/>
+    <file name="gps_nmea_send.c"/>
+    <define name="USE_$(NMEA_SEND_UART_UPPER)"/>
+    <define name="NMEA_SEND_UART" value="$(NMEA_SEND_UART_LOWER)"/>
+    <define name="$(NMEA_SEND_UART_UPPER)_BAUD" value="$(NMEA_SEND_BAUD)"/>
+  </makefile>
+</module>
+
+
