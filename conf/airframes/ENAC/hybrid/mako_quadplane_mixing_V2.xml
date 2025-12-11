@@ -23,7 +23,7 @@
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
       <define name="RADIO_CONTROL_THRUST_X"   value="RADIO_GAIN2"/>   <!-- TODO -->
-      <!--define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/-->
+      <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
     </target>
     
     <target name="nps" board="pc">
@@ -78,7 +78,6 @@
      <!-- TODO -->
     <!--module name="ins" type="ext_pose"/-->
     <module name="ins" type="ekf2">
-      <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
     </module>   
     
     <module name="stabilization" type="indi">
@@ -100,9 +99,9 @@
       <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="FALSE"/>
     </module>
 
-    <module name="lidar_sf30d">
+    <!--module name="lidar_sf30d">
       <configure name="LIDAR_SF30D_I2C_DEV" value="I2C2"/>
-    </module>
+    </module-->
         
     <!--module name="trisonica">
       <configure name="TRISONICA_UART" value="UART3"/>

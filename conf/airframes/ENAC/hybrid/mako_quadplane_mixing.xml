@@ -24,11 +24,12 @@
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
       <define name="RADIO_CONTROL_THRUST_X"   value="RADIO_GAIN2"/>   <!-- TODO -->
       <!--define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/-->
+      <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
     </target>
     
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
-      <module name="radio_control" type="ppm"/>
+      <module name="radio_control" type="datalink"/>
       <define name="TAWAKIV2_IMU_ROT" value=""/>
       <define name="TAWAKIV2_MAG_ROT" value=""/>
     </target>
@@ -77,7 +78,6 @@
     </module>
      <!-- INS TYPE : EKF2 -->
     <module name="ins" type="ekf2">
-      <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
     </module>   
     
     <module name="stabilization" type="indi">

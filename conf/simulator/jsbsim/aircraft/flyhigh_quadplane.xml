@@ -167,7 +167,8 @@
         <c1> fcs/motor_lag </c1>
         <output> fcs/motor_pusher_lag</output>
       </lag_filter>
-      <lag_filter name="ailevon_right_lag">
+
+      <!--lag_filter name="ailevon_right_lag">
         <input> fcs/AILEVON_RIGHT </input>
         <c1> fcs/servo_lag </c1>
         <output> fcs/ailevon_right_lag</output>
@@ -197,7 +198,17 @@
           </product>
         </function>
         <output> fcs/elevator_lag </output>
-      </fcs_function>
+      </fcs_function-->
+      <lag_filter name="aileron_lag">
+        <input> fcs/ROLL </input>
+        <c1> fcs/servo_lag </c1>
+        <output> fcs/aileron_lag</output>
+      </lag_filter>
+      <lag_filter name="elevator_lag">
+        <input> fcs/PITCH </input>
+        <c1> fcs/servo_lag </c1>
+        <output> fcs/elevator_lag</output>
+      </lag_filter>
     </channel>
 
   </flight_control>
@@ -219,12 +230,13 @@
     <property>fcs/motor_front_left_lag</property>
     <property>fcs/motor_back_right_lag</property>
     <property>fcs/motor_back_left_lag</property>
+    <property>fcs/motor_pusher_lag</property>
     <property>fcs/ailevon_right_lag</property>
     <property>fcs/ailevon_left_lag</property>
 
     <property value="5.7">fcs/motor_max_thrust</property> <!-- 0.768 kg hovering at 33% throttle with 4 motors -->
     <!--property value="0.00001">fcs/motor_max_torque</property-->
-    <property value="0.">fcs/motor_max_torque</property>
+    <property value="0.001">fcs/motor_max_torque</property>
 
     <!-- First the lift forces produced by each propeller -->
 
@@ -318,7 +330,7 @@
         <z> 0 </z>
       </location>
       <direction>
-        <x> -1 </x>
+        <x> 1 </x>
         <y> 0 </y>
         <z> 0 </z>
       </direction>
@@ -584,7 +596,7 @@
           <sin>
             <property>aero/beta-rad</property>
           </sin>
-          <value>0.05</value>
+          <value>0.12</value>
         </product>
       </function>
       <function name="aero/moment/Yaw_damp">

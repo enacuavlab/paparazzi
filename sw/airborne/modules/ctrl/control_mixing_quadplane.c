@@ -257,6 +257,11 @@ void control_mixing_quadplane_nav_run(void)
     commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
     commands[COMMAND_YAW] = 0;
     if (autopilot_get_motors_on()) {
+      if (transition_ratio < 0.90f) {
+        commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, MAX_PPRZ); // blend from idle, unless thrust is lower
+      } else {
+        commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
+      }
       if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
         // hover stabilization
         commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
@@ -277,7 +282,6 @@ void control_mixing_quadplane_nav_run(void)
           commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
         }
       }
-      commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, stabilization.cmd[COMMAND_THRUST]); // blend from idle
       commands[COMMAND_THRUST] = commands[COMMAND_MOTOR_PUSHER];
     } else {
       commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
