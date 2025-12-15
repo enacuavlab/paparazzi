@@ -110,9 +110,9 @@
    gui_color="#dc008a00dd00"
   />
   <aircraft
-   name="Mako_hybrid"
+   name="Mako_hybrid_FAU"
    ac_id="37"
-   airframe="airframes/ENAC/hybrid/mako_quadplane_mixing.xml"
+   airframe="airframes/ENAC/hybrid/mako_quadplane_mixing_FAU.xml"
    radio="radios/T10CG_SBUS.xml"
    telemetry="telemetry/default_rotorcraft_flyhigh.xml"
    flight_plan="flight_plans/ENAC/test_falcon_Muret.xml"
@@ -121,9 +121,9 @@
    gui_color="#6200a000ea00"
   />
   <aircraft
-   name="Mako_hybrid_V2"
+   name="Mako_hybrid_ENAC"
    ac_id="5"
-   airframe="airframes/ENAC/hybrid/mako_quadplane_mixing_V2.xml"
+   airframe="airframes/ENAC/hybrid/mako_quadplane_mixing_ENAC.xml"
    radio="radios/T10CG_SBUS.xml"
    telemetry="telemetry/default_rotorcraft_flyhigh.xml"
    flight_plan="flight_plans/ENAC/test_falcon_Muret.xml"
