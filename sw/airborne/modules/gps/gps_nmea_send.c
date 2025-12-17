@@ -39,7 +39,6 @@
 #include "std.h"
 #include <math.h>
 #include <inttypes.h>
-#include <time.h>
 
 // ** Declaration ** // 
 struct Gps_Nmea_Send gps_nmea_send;
@@ -53,16 +52,13 @@ void gps_nmea_send_init(void) {
 	gps_nmea_send.error_init = false;
 	gps_nmea_send.initialized = false;
 	
-	gps_nmea_send.msg.now_ts = 0;
 	gps_nmea_send.msg.lat = 0;
 	gps_nmea_send.msg.lon = 0;
-	gps_nmea_send.msg.alt = 0;			
-	gps_nmea_send.msg.phi = 0;
-	gps_nmea_send.msg.theta = 0;
-	gps_nmea_send.msg.psi = 0;
-	gps_nmea_send.msg.vground = 0;		
-	gps_nmea_send.msg.course = 0;
-	gps_nmea_send.msg.groundalt = 0;	   
+	gps_nmea_send.msg.num_sv = 0;			
+	gps_nmea_send.msg.pdop = 0;		
+	gps_nmea_send.msg.hmsl = 0;
+	gps_nmea_send.msg.vground = 0;	 
+    gps_nmea_send.msg.course = 0;	  
         	
 	gps_nmea_send.initialized = true;
 }
@@ -89,16 +85,13 @@ void gps_nmea_send_periodic(void) {
  */
 void recover_gps_data(void) {	
 	
-	  gps_nmea_send.msg.now_ts = get_sys_time_usec(); // current timestamp
-      gps_nmea_send.msg.lat = stateGetPositionLla_f()->lat;
-      gps_nmea_send.msg.lon = stateGetPositionLla_f()->lon;
-      //gps_nmea_send.msg.alt = stateGetPositionLla_f()->alt;
-      gps_nmea_send.msg.phi = stateGetNedToBodyEulers_f()->phi;
-      gps_nmea_send.msg.theta = stateGetNedToBodyEulers_f()->theta;
-      gps_nmea_send.msg.psi = stateGetNedToBodyEulers_f()->psi;
-      gps_nmea_send.msg.vground = stateGetHorizontalSpeedNorm_f();
-      gps_nmea_send.msg.course = DegOfRad(stateGetHorizontalSpeedDir_f());
-      gps_nmea_send.msg.groundalt = POS_BFP_OF_REAL(state.alt_agl_f);		
+      gps_nmea_send.msg.lat = (double)gps.lla_pos.lat / 1e7;
+      gps_nmea_send.msg.lon = (double)gps.lla_pos.lon / 1e7;
+      gps_nmea_send.msg.num_sv = gps.num_sv;
+      gps_nmea_send.msg.pdop = gps.pdop;
+      gps_nmea_send.msg.hmsl = (float)gps.hmsl / 1000.0; //in meters
+      gps_nmea_send.msg.vground = (float)stateGetHorizontalSpeedNorm_f();
+      gps_nmea_send.msg.course = (float)DegOfRad(gps.course/1e7);
 }
 
 /**
@@ -109,7 +102,7 @@ void build_nmea_sentence(void) {
 
 
     // Latitude and Longitude
-    char lat_buf[16], lon_buf[16],time_nmea [16], gga[120], rmc[120], date_sys[6];
+    char lat_buf[16], lon_buf[16],gga[120], rmc[120], date_sys[6], time_sys[6];
     int len_gga = 0;
     int len_rmc = 0;
     uint8_t cs;
@@ -117,19 +110,20 @@ void build_nmea_sentence(void) {
     nmea_convert_deg_to_DDMM(gps_nmea_send.msg.lon, lon_buf, 0);
     char lat_hemi = (gps_nmea_send.msg.lat >= 0) ? 'N' : 'S';
     char lon_hemi = (gps_nmea_send.msg.lon >= 0) ? 'E' : 'W';
-    nmea_time_from_timestamp(gps_nmea_send.msg.now_ts, time_nmea);
+
+    for (int i=0; i<120; i++) {gga[i] = '\0';rmc[i] = '\0';}
+
+    if(gps.fix >= GPS_FIX_3D ) {
+
+    get_system_date_str(date_sys, sizeof(date_sys)+1, time_sys, sizeof(time_sys)+1);
 
 
     // -------------------------------
     //  GPGGA Frame
     // -------------------------------
-    for (int i=0; i<120; i++) {gga[i] = '\0';}
-
-    if(gps.fix >= GPS_FIX_3D ) {
-
     sprintf( gga,
             "$GPGGA,%s,%s,%c,%s,%c,1,%02u,%04u,%09.3f,M,0,M,,",
-            time_nmea, lat_buf, lat_hemi, lon_buf, lon_hemi, gps.num_sv, gps.pdop, (float)gps.hmsl/1000);
+            time_sys, lat_buf, lat_hemi, lon_buf, lon_hemi, gps_nmea_send.msg.num_sv, gps_nmea_send.msg.pdop, gps_nmea_send.msg.hmsl);
     len_gga = 7;   // $GPGGA, = 7
     len_gga += 7;  // time_nmea, = 7 
     len_gga += 10; // lat_buf = 9 + comma 
@@ -149,26 +143,15 @@ void build_nmea_sentence(void) {
     sprintf(gga + len_gga, "*%02X\r\n", cs);
     len_gga += 5;  // * + Checksum + \r\n = *4F\r\n
 
-    nmea_send(gga, len_gga);   
+    nmea_send(gga, len_gga);  
     
-    } else {
-        //If no fix, empty GGA
-        sprintf( gga,"$GPGGA,,,,,,0,00,99.99,,,,,,*68");
-        nmea_send(gga, 31);
-    }
 
     // -------------------------------
     //  GPRMC Frame
     // -------------------------------
-    for (int i=0; i<120; i++) {rmc[i] = '\0';}
-
-    if(gps.fix >= GPS_FIX_3D ) {
-
-            
-    get_system_date_str(date_sys, sizeof(date_sys));
-    sprintf( rmc,
+     sprintf( rmc,
             "$GPRMC,%s,A,%s,%c,%s,%c,%05.1f,%05.1f,%s,000.0,W",
-            time_nmea, lat_buf, lat_hemi, lon_buf, lon_hemi, (float)gps_nmea_send.msg.vground, gps_nmea_send.msg.course, date_sys);
+            time_sys, lat_buf, lat_hemi, lon_buf, lon_hemi, gps_nmea_send.msg.vground, gps_nmea_send.msg.course, date_sys);
     len_rmc = 7;   // $GPRMC, = 7
     len_rmc += 7;  // time_nmea, = 7 
     len_rmc += 2;  // Status A=active or V=void = A,
@@ -185,17 +168,22 @@ void build_nmea_sentence(void) {
     sprintf(rmc + len_rmc, "*%02X\r\n", cs);
     len_rmc += 5;  // * + Checksum + \r\n = *4F\r\n
 
-    nmea_send(rmc, len_rmc);   
+    nmea_send(rmc, len_rmc);     
+
+
     
     } else {
+        //If no fix, empty GGA
+        sprintf( gga,"$GPGGA,,,,,,0,00,99.99,,,,,,*68");
+        nmea_send(gga, 31);
+
         //If no fix, empty RMC
         sprintf( rmc,"$GPRMC,,V,,,,,,,,,,*53");
         nmea_send(rmc, 22);
     }
+
+
 }
-
-
-
 
 
 
@@ -226,22 +214,11 @@ void nmea_convert_deg_to_DDMM(double deg, char *buf, int is_lat) {
         sprintf(buf, "%03d%07.4f", d, minutes); // 3 integers for degrees 0 to 180 without sign => %023 | 2 integers for minutes, 1 for point, 4 for minutes decimals 
 }
 
-/**
- * Function to convert timestamp to NMEA time
- */
-void nmea_time_from_timestamp(uint32_t ts, char *buf)
-{
-    uint32_t s = ts % 60;
-    uint32_t m = (ts / 60) % 60;
-    uint32_t h = (ts / 3600) % 24;
-
-    sprintf(buf, "%02" PRIu32 "%02" PRIu32 "%02" PRIu32, h, m, s);
-}
 
 /**
  * Get Date from system 
  */
-void get_system_date_str(char *buf, size_t buf_size) {
+void get_system_date_str(char *buf_date, size_t buf_date_size, char *buf_time, size_t buf_time_size) {
 
 
     const int64_t gps_epoch_days = 3657; //day frm 1970-01-01
@@ -258,12 +235,25 @@ void get_system_date_str(char *buf, size_t buf_size) {
     uint64_t mp = (5*doy + 2)/153; // Month part: day-of-year into a month index in a calendar where March = 0 and February = 11
     uint64_t d = doy - (153*mp+2)/5 + 1; // Compute the day-of-month
     uint64_t m = mp + (mp < 10 ? 3 : -9); // Convert shifted month index back to standard month  0-12   
+    y += (m <= 2);
 
-    // Format : YYMMDD
-    snprintf(buf, buf_size, "%02d%02d%02d",
-             (uint8_t)(y + (m <= 2))%100,
+    // Hours / minutes / secondes
+    uint32_t sec_of_day = gps_sec % 86400;
+    uint8_t hour = sec_of_day / 3600;
+    uint8_t min  = (sec_of_day % 3600) / 60;
+    uint8_t sec  = sec_of_day % 60;
+
+    // Format : DDMMYY
+    snprintf(buf_date, buf_date_size, "%02d%02d%02d",
+             (uint8_t)d,
              (uint8_t)m,
-             (uint8_t)d);
+             (uint8_t)(y % 100));
+
+    // Format : HHMMSS
+    snprintf(buf_time, buf_time_size, "%02d%02d%02d",
+             hour,
+             min,
+             sec);             
 }
 
 

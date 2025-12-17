@@ -32,16 +32,13 @@
 
 
 struct gps_nmea_send_msg_t {
-	  uint32_t now_ts;
-	  int32_t lat;
-    int32_t lon;
-    int32_t alt;
-    int32_t phi;
-    int32_t theta;
-    int32_t psi;
-    int32_t vground;
-    float course;
-    int32_t groundalt;
+	  double lat;            ///< Latitude
+    double lon;            ///< Longiitude
+    uint8_t num_sv;        ///< number of sat in fix
+    uint16_t pdop;         ///< position dilution of precision scaled by 100
+    float hmsl;            ///< Orthometric height (MSL reference)
+    float vground;         ///< Speed over ground in m/s
+    float course;        ///< GPS course over ground in rad*1e7, [0, 2*Pi]*1e7 (CW/north)
 };
 
 
@@ -58,8 +55,7 @@ void recover_gps_data(void);
 void build_nmea_sentence(void);
 uint8_t nmea_checksum(const char *sentence, int length);
 void nmea_convert_deg_to_DDMM(double deg, char *buf, int is_lat);
-void nmea_time_from_timestamp(uint32_t ts, char *buf);
-void get_system_date_str(char *buf, size_t buf_size);
+void get_system_date_str(char *buf_date, size_t buf_date_size, char *buf_time, size_t buf_time_size);
 void nmea_send(const char *payload, int payload_length);
 
 
