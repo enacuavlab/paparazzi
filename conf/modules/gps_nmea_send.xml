@@ -3,7 +3,8 @@
 <module name="gps_nmea_send" dir="gps">
   <doc>
     <description>
-      Module send GPS data through UART using NMEA Protocol
+      module used to send GPS data over a Tawaki UART for extern instrument using NMEA protocol
+      Exemple of use : MAPIR camera stores GPS data in metadata on each frame 
     </description>
     <configure name="NMEA_SEND_UART" value="UART3" description="UART on which NMEA listener is connected to"/>
     <configure name="NMEA_SEND_BAUD" value="B115200" description="UART Baudrate, default to 115200"/>

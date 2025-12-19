@@ -174,12 +174,12 @@ void build_nmea_sentence(void) {
     
     } else {
         //If no fix, empty GGA
-        sprintf( gga,"$GPGGA,,,,,,0,00,99.99,,,,,,*68");
-        nmea_send(gga, 31);
+        sprintf( gga,"$GPGGA,,,,,,0,00,99.99,,,,,,*68\r\n");
+        nmea_send(gga, 33);
 
         //If no fix, empty RMC
-        sprintf( rmc,"$GPRMC,,V,,,,,,,,,,*53");
-        nmea_send(rmc, 22);
+        sprintf( rmc,"$GPRMC,,V,,,,,,,,,,*53\r\n");
+        nmea_send(rmc, 24); 
     }
 
 

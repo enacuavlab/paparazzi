@@ -1,0 +1,41 @@
+<!DOCTYPE module SYSTEM "./module.dtd">
+
+<module name="trigger_camera_pwm" dir="sensors/cameras">
+  <doc>
+    <description>
+      Trigger using pwm cameras like MAPIR (https://www.mapir.camera/en-gb) 
+      or ThermalCapture 2.0 from TeAx (https://thermalcapture.com/thermalcapture-2-0/)
+      
+      The quickest the 2000us command should be sent is about once every 1.5s as the camera cannot 
+      capture JPG images more quickly than 1.5s. For RAW+JPG mode we recommend a 2.5-3.0s wait time.
+    </description>
+    <section name="TRIGGER_CAM">
+      <define name="USE_PWM11" description="mandatory, pwm to control shutter"/>
+      <define name="TC_SHUTTER_DELAY" value="0.01" description="how long to push shutter in seconds"/>
+      <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ" value="1.5" description="Period of image capturation"/>
+      <define name="TRIGGER_CAMERA_PERIODIC_FREQ" value="10." description="Frequency of the periodic function"/>
+      <define name="TRIGGER_CAMERA_ON_VALUE" value="MAX_PPRZ" description="ON value of trigger Camera to capture"/>
+      <define name="TRIGGER_CAMERA_OFF_VALUE" value="MIN_PPRZ" description="OFF value of trigger Camera"/>           
+    </section>
+  </doc>
+  <dep>
+    <depends></depends>
+    <conflicts></conflicts>
+  </dep>
+  <header>
+    <file name="trigger_camera_pwm.h"/>
+  </header>
+  <init fun="trigger_camera_pwm_init()"/>
+  <periodic fun="trigger_camera_pwm_periodic()" freq="10" autorun="TRUE"/>
+  <makefile>
+    <file name="trigger_camera_pwm.c"/>
+    <test arch="chibios">
+      <define name="USE_PWM11"/>
+      <define name="TC_SHUTTER_DELAY" value="0.01"/>
+      <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ" value="1.5"/>
+      <define name="TRIGGER_CAMERA_PERIODIC_FREQ" value="10."/>
+      <define name="TRIGGER_CAMERA_ON_VALUE" value="MAX_PPRZ"/>
+      <define name="TRIGGER_CAMERA_OFF_VALUE" value="MIN_PPRZ"/>      
+    </test>
+  </makefile>
+</module>
