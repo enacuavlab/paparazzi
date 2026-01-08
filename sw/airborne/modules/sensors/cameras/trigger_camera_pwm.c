@@ -26,6 +26,8 @@
  * The quickest the 2000us command should be sent is about once every 1.5s as the camera cannot 
  * capture JPG images more quickly than 1.5s. For RAW+JPG mode we recommend a 2.5-3.0s wait time.
  * 
+ * RAW images are used for capturing data for reflectance measurements, otherwise the pixels in the JPG are not usable.
+ * 
  * TIME            ────────────────────────────────────────────────────────────>
  * 
  *     PWM             1000us         2000us         1000us         2000us
@@ -81,11 +83,6 @@
 #define TRIGGER_CAMERA_SERVO TRIGGER_CAMERA
 #endif
 
-/** One level of macro stack to allow redefinition of the default servo */
-#define _SwitchServo(_n, _v) ActuatorSet(_n, _v)
-#define SwitchServo(_n, _v) _SwitchServo(_n, _v)
-
-
 /**
  * Timer used for Shutter delay control and Image Capture Frequency
  */
@@ -99,7 +96,7 @@ void trigger_camera_pwm_init(void) {
 
   shutter_timer = 0;
   im_freq_timer = TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ * TRIGGER_CAMERA_PERIODIC_FREQ;;
-  SwitchServo(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_OFF_VALUE);
+  ActuatorSet(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_OFF_VALUE);
 }
 
 
@@ -112,7 +109,7 @@ void trigger_camera_pwm_periodic(void) {
   if (im_freq_timer>0) {
     im_freq_timer--;
   } else {
-    SwitchServo(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_ON_VALUE);
+    ActuatorSet(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_ON_VALUE);
     shutter_timer = TC_SHUTTER_DELAY * TRIGGER_CAMERA_PERIODIC_FREQ;
     im_freq_timer = TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ * TRIGGER_CAMERA_PERIODIC_FREQ;
   }
@@ -121,7 +118,7 @@ void trigger_camera_pwm_periodic(void) {
   if (shutter_timer>0) {
     shutter_timer--;
   } else {
-    SwitchServo(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_OFF_VALUE);
+    ActuatorSet(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_OFF_VALUE);
     shutter_timer = 0;
   }
 }

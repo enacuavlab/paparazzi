@@ -9,8 +9,12 @@
         "editor.tabSize": 4,
     },
     "files.associations": {
-        "Makefile.*": "makefile"
+        "Makefile.*": "makefile",
+        "tensor": "cpp",
+        "cstdint": "cpp",
+        "compare": "c"
     },
     "C_Cpp.dimInactiveRegions": false,
     "esbonio.sphinx.confDir": "",
+    "cmake.sourceDirectory": "/home/jbforestier/Documents/Git/enacuavlab/paparazzi/sw/ext/TRICAL",
 }

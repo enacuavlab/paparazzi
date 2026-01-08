@@ -26,6 +26,8 @@
  * The quickest the 2000us command should be sent is about once every 1.5s as the camera cannot 
  * capture JPG images more quickly than 1.5s. For RAW+JPG mode we recommend a 2.5-3.0s wait time.
  * 
+ * RAW images are used for capturing data for reflectance measurements, otherwise the pixels in the JPG are not usable.
+ * 
  * TIME            ────────────────────────────────────────────────────────────>
  * 
  *     PWM             1000us         2000us         1000us         2000us
