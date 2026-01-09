@@ -11,15 +11,18 @@
       
       RAW images are used for capturing data for reflectance measurements, otherwise the pixels in the JPG are not usable.
       
-      im_freq_timer should therefore be greater 1.5s (TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ = 1.5 seconds).
+      im_freq_timer should therefore be greater 1.5s (TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD = 1.5 seconds).
+      
+      Telemetry ROTORCRAFT_CAM used : 
+      - arg1 : image capture period in seconds
+      - arg2 : image counter
     </description>
     <section name="TRIGGER_CAM">
       <define name="USE_PWM12" description="mandatory, pwm to control shutter"/>
-      <define name="TC_SHUTTER_DELAY" value="0.01" description="how long to push shutter in seconds"/>
-      <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ" value="1.5" description="Period of image capturation"/>
-      <define name="TRIGGER_CAMERA_PERIODIC_FREQ" value="10." description="Frequency of the periodic function"/>
-      <define name="TRIGGER_CAMERA_ON_VALUE" value="MAX_PPRZ" description="ON value of trigger Camera to capture"/>
-      <define name="TRIGGER_CAMERA_OFF_VALUE" value="MIN_PPRZ" description="OFF value of trigger Camera"/>           
+      <define name="USE_PWM_TIM4" value="TRUE" description="mandatory, pwm to control shutter"/> 
+      <define name="STM32_PWM_USE_TIM4" value="TRUE" description="mandatory, pwm to control shutter"/>
+      <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD" description="Period of image capturation"/> 
+      <define name="TRIGGER_CAMERA_SHUTTER_DELAY" description="how long to push shutter in seconds"/>    
     </section>
   </doc>
   <dep>
@@ -34,12 +37,10 @@
   <makefile>
     <file name="trigger_camera_pwm.c"/>
     <test arch="chibios">
-      <define name="USE_PWM12"/>
-      <define name="TC_SHUTTER_DELAY" value="0.01"/>
-      <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ" value="1.5"/>
-      <define name="TRIGGER_CAMERA_PERIODIC_FREQ" value="10."/>
-      <define name="TRIGGER_CAMERA_ON_VALUE" value="MAX_PPRZ"/>
-      <define name="TRIGGER_CAMERA_OFF_VALUE" value="MIN_PPRZ"/>      
+      <define name="USE_PWM13" value="TRUE"/> 
+      <define name="USE_PWM_TIM4" value="TRUE"/> 
+      <define name="STM32_PWM_USE_TIM4" value="TRUE"/>
+      <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD" value="3"/> 
     </test>
   </makefile>
 </module>

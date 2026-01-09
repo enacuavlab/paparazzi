@@ -40,7 +40,11 @@
  *                                     ↑                             ↑
  *                                  Picture 1                     Picture 2
  * 
- * im_freq_timer should therefore be > 1.5s (=>TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ = 1.5 seconds)
+ * im_freq_timer should therefore be > 1.5s (=>TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD = 1.5 seconds)
+ * 
+ *  Telemetry ROTORCRAFT_CAM used : 
+ *    - arg1 : image capture period in seconds
+ *    - arg2 : image counter 
  */
 
 
@@ -51,19 +55,20 @@
 #include "generated/airframe.h"
 #include "generated/modules.h"
 #include "modules/actuators/actuators.h"
+#include "pprzlink/messages.h"
 
 
 /** how long to push shutter in seconds */
-#ifndef TC_SHUTTER_DELAY
-#define TC_SHUTTER_DELAY 0.5
+#ifndef TRIGGER_CAMERA_SHUTTER_DELAY
+#define TRIGGER_CAMERA_SHUTTER_DELAY 0.5
 #endif
 
-/** Frequency of image capture */
-#ifndef TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ
-#define TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ 1.5
+/** Period of image capture in seconds */
+#ifndef TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD
+#define TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD 3.0
 #endif
 
-/** Periodic function call frequency */
+/** Periodic function call frequency : needs to be set at the same frequency as the periodic call in xml */
 #ifndef TRIGGER_CAMERA_PERIODIC_FREQ
 #define TRIGGER_CAMERA_PERIODIC_FREQ 10.0
 #endif
@@ -83,11 +88,14 @@
 #define TRIGGER_CAMERA_SERVO TRIGGER_CAMERA
 #endif
 
+#define ActSet(chan, val) ActuatorSet(chan, val)
+
 /**
- * Timer used for Shutter delay control and Image Capture Frequency
+ * Timer used for Shutter delay control and Image Capture Frequency + image counter
  */
 uint8_t shutter_timer;
 uint8_t im_freq_timer;
+uint8_t im_counter;
 
 /**
  * Initialization function
@@ -95,8 +103,9 @@ uint8_t im_freq_timer;
 void trigger_camera_pwm_init(void) {
 
   shutter_timer = 0;
-  im_freq_timer = TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ * TRIGGER_CAMERA_PERIODIC_FREQ;;
-  ActuatorSet(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_OFF_VALUE);
+  im_counter = 0;
+  im_freq_timer = TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD * TRIGGER_CAMERA_PERIODIC_FREQ;;
+  ActSet(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_OFF_VALUE);
 }
 
 
@@ -105,20 +114,30 @@ void trigger_camera_pwm_init(void) {
  */
 void trigger_camera_pwm_periodic(void) {
 
-  //Manage the image capturation each TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ seconds
+  //Manage the image capturation each TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD seconds
   if (im_freq_timer>0) {
     im_freq_timer--;
   } else {
-    ActuatorSet(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_ON_VALUE);
-    shutter_timer = TC_SHUTTER_DELAY * TRIGGER_CAMERA_PERIODIC_FREQ;
-    im_freq_timer = TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ * TRIGGER_CAMERA_PERIODIC_FREQ;
+    ActSet(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_ON_VALUE);
+    im_counter++;
+    shutter_timer = TRIGGER_CAMERA_SHUTTER_DELAY * TRIGGER_CAMERA_PERIODIC_FREQ;
+    im_freq_timer = TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD * TRIGGER_CAMERA_PERIODIC_FREQ;
   }
 
-  //Manage the shutter opening time each TC_SHUTTER_DELAY seconds
+  //Manage the shutter opening time each TRIGGER_CAMERA_SHUTTER_DELAY seconds
   if (shutter_timer>0) {
     shutter_timer--;
   } else {
-    ActuatorSet(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_OFF_VALUE);
+    ActSet(TRIGGER_CAMERA_SERVO, TRIGGER_CAMERA_OFF_VALUE);
     shutter_timer = 0;
   }
+
+  //Send telemetry with image counter and image perdiod
+  int16_t arg1 = (int16_t)TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD;
+	int16_t arg2  = (int16_t)im_counter;
+
+  DOWNLINK_SEND_ROTORCRAFT_CAM(DefaultChannel, DefaultDevice,
+    &arg1,
+    &arg2
+     );
 }

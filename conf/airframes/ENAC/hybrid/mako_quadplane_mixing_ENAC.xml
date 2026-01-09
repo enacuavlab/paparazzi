@@ -99,22 +99,23 @@
       <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="FALSE"/>
     </module>
 
-    <!--module name="lidar_sf30d">
+	<!-- Use LIDAR telemetry-->
+    <module name="lidar_sf30d">
       <configure name="LIDAR_SF30D_I2C_DEV" value="I2C2"/>
-    </module-->
+    </module>
         
-    <!--module name="trisonica">
+    <!-- Use AEROPROBE telemetry-->    
+    <!--module name="trisonica">  
       <configure name="TRISONICA_UART" value="UART3"/>
-    </module-->
+    </module--> 
 
-
+    <!-- Use ROTORCRAFT_CAM telemetry-->    
     <module name="trigger_camera_pwm">
-      <define name="USE_PWM13" value="TRUE"/> 
-      <define name="USE_PWM_TIM4" value="TRUE"/> 
-      <define name="STM32_PWM_USE_TIM4" value="TRUE"/>
-      <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ" value="3"/> 
-      <define name="TRIGGER_CAMERA_ON_VALUE" value="MAX_PPRZ"/>
-      <define name="TRIGGER_CAMERA_OFF_VALUE" value="MIN_PPRZ"/>     
+      <define name="USE_PWM12" value="TRUE"/> 
+      <define name="USE_PWM_TIM2" value="TRUE"/> 
+      <define name="STM32_PWM_USE_TIM2" value="TRUE"/>
+      <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD" value="3"/> 
+      <define name="TRIGGER_CAMERA_SHUTTER_DELAY" value="0.2"/> 
     </module> 
     
     <module name="gps_nmea_send">
@@ -135,7 +136,7 @@
     <servo name="AILEVON_RIGHT" no="1" max="1080"  neutral="1490" min="1900"/>
     <servo name="AILEVON_LEFT"  no="2" max="1090"  neutral="1500" min="1910"/>
     <servo name="MOTOR_PUSHER"  no="3" min="1000" neutral="1000" max="2000"/>
-    <servo name="TRIGGER_CAMERA"  no="13" min="1000" neutral="1000" max="2000"/>
+    <servo name="TRIGGER_CAMERA"  no="12" min="1000" neutral="1000" max="2000"/>
   </servos>
   
   <commands>

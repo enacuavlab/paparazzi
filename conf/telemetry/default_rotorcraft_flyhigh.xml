@@ -15,7 +15,7 @@
       <message name="INS_REF"                  period="5.1"/>
       <message name="ROTORCRAFT_NAV_STATUS"    period="1.6"/>
       <message name="WP_MOVED"                 period="1.3"/>
-      <message name="ROTORCRAFT_CAM"           period="1."/>
+      <message name="ROTORCRAFT_CAM"           period="0.5"/>  <!-- Used for Trigger Camera PWM-->
       <message name="GPS_INT"                  period=".25"/>
       <message name="INS"                      period=".25"/>
       <message name="I2C_ERRORS"               period="4.1"/>
@@ -43,7 +43,7 @@
       <!--message name="EFF_MAT_STAB"             period="2.0"/-->
       <!--message name="WLS_U"                    period="0.1"/>
       <message name="WLS_V"                    period="0.1"/-->
-      <message name="AEROPROBE"                period="0.1"/>
+      <message name="AEROPROBE"                period="0.1"/> <!-- Used for Trisonica-->
       <message name="PAYLOAD_FLOAT"            period="0.1"/>
     </mode>
 

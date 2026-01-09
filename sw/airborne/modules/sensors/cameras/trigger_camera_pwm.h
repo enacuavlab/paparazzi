@@ -40,7 +40,11 @@
  *                                     ↑                             ↑
  *                                  Picture 1                     Picture 2
  * 
- * im_freq_timer should therefore be > 1.5s (=>TRIGGER_CAMERA_CAPTURE_IMAGE_FREQ = 1.5 seconds)
+ * im_freq_timer should therefore be > 1.5s (=>TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD = 1.5 seconds)
+ * 
+ *  Telemetry ROTORCRAFT_CAM used : 
+ *    - arg1 : image capture period in seconds
+ *    - arg2 : image counter
  */
 
 
