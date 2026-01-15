@@ -124,8 +124,8 @@
   </servos>
 
   <servos driver="Pwm">  
-    <servo name="AILEVON_RIGHT" no="1" min="1280"  neutral="1580" max="1880"/>
-    <servo name="AILEVON_LEFT"  no="2" min="1150"  neutral="1450" max="1750"/>
+    <servo name="AILEVON_RIGHT" no="1" min="1180"  neutral="1580" max="1980"/>
+    <servo name="AILEVON_LEFT"  no="2" min="1050"  neutral="1450" max="1850"/>
     <servo name="MOTOR_PUSHER"  no="3" min="1000" neutral="1000" max="2000"/>
   </servos>
   
@@ -141,13 +141,21 @@
     <axis name="THRUST"             group="VIRTUAL" failsafe_value="0"/>  
   </commands>
   
+  <section name="MIXER">
+    <define name="AILEVON_AILERON_RATE" value="1"/>
+    <define name="AILEVON_ELEVATOR_RATE" value="1"/>	  
+    <define name="AILERON_DIFF" value="0.5"/>
+  </section>
+    
   <command_laws>
+    <let var="aileron"          value="@ROLL  * AILEVON_AILERON_RATE"/>  <!--Max Roll-->
+    <let var="elevator"         value="@PITCH * AILEVON_ELEVATOR_RATE"/> <!--Max Pitch-->	  
     <set servo="MOTOR_FR"       value="@MOTOR_FRONT_RIGHT"/>
     <set servo="MOTOR_BR"       value="@MOTOR_BACK_RIGHT"/>
     <set servo="MOTOR_BL"       value="@MOTOR_BACK_LEFT"/>
     <set servo="MOTOR_FL"       value="@MOTOR_FRONT_LEFT"/>
-    <set servo="AILEVON_RIGHT"  value="@ROLL + @PITCH"/>
-    <set servo="AILEVON_LEFT"   value="@ROLL - @PITCH"/>
+    <set servo="AILEVON_RIGHT"  value="$elevator + ($aileron > 0 ? 1 : AILERON_DIFF) * $aileron"/> <!-- Adverse yaw-->
+    <set servo="AILEVON_LEFT"   value="- $elevator + ($aileron > 0 ? AILERON_DIFF : 1) * $aileron"/> <!-- Adverse yaw-->
     <set servo="MOTOR_PUSHER"   value="@MOTOR_PUSHER"/>
   </command_laws>
 
@@ -199,7 +207,7 @@
       </field>
     </define>
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
-    <define name="BODY_TO_IMU_THETA" value="4.44" unit="deg"/> <!-- Adapt theta angle to get plane right default pitch in flight -->
+    <define name="BODY_TO_IMU_THETA" value="-5" unit="deg"/> <!-- Adapt theta angle to get plane right default pitch in flight -->
     <define name="BODY_TO_IMU_PSI"   value="0." unit="deg"/>
     
   </section>
