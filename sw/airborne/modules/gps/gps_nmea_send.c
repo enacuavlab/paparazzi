@@ -211,7 +211,7 @@ void nmea_convert_deg_to_DDMM(double deg, char *buf, int is_lat) {
     if (is_lat)
         sprintf(buf, "%02d%07.4f", d, minutes); // 2 integers for degrees 0 to 90 without sign => %02d | 2 integers for minutes, 1 for point, 4 for minutes decimals 
     else
-        sprintf(buf, "%03d%07.4f", d, minutes); // 3 integers for degrees 0 to 180 without sign => %023 | 2 integers for minutes, 1 for point, 4 for minutes decimals 
+        sprintf(buf, "%03d%07.4f", d, minutes); // 3 integers for degrees 0 to 180 without sign => %03d | 2 integers for minutes, 1 for point, 4 for minutes decimals 
 }
 
 

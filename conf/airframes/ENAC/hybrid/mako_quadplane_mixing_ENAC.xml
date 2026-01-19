@@ -154,7 +154,7 @@
   <section name="MIXER">
     <define name="AILEVON_AILERON_RATE" value="1"/>
     <define name="AILEVON_ELEVATOR_RATE" value="1"/>	  
-    <define name="AILERON_DIFF" value="0.5"/>
+    <define name="AILERON_DIFF" value="0.9"/>
   </section>
     
   <command_laws>

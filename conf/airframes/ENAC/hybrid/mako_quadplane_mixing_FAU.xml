@@ -144,7 +144,7 @@
   <section name="MIXER">
     <define name="AILEVON_AILERON_RATE" value="1"/>
     <define name="AILEVON_ELEVATOR_RATE" value="1"/>	  
-    <define name="AILERON_DIFF" value="0.5"/>
+    <define name="AILERON_DIFF" value="0.9"/>
   </section>
     
   <command_laws>
@@ -202,8 +202,8 @@
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
         </field>
-		<field name="neutral" value="122,-378,284" type="int[]"/>
-		<field name="scale_f" value="{ 0.6352, 0.6222, 0.6406 }"/>
+		 <field name="neutral" value="541,-656,418" type="int[]"/>
+		 <field name="scale_f" value="{ 0.5807, 0.5596, 0.5783 }"/>
       </field>
     </define>
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
@@ -262,8 +262,8 @@
     <define name="PHI_PGAIN" value="10000"/>
     <define name="PHI_IGAIN" value="1200"/>
     <define name="PHI_DGAIN" value="1300"/>
-    <define name="THETA_PGAIN" value="8000"/>
-    <define name="THETA_IGAIN" value="1300"/>
+    <define name="THETA_PGAIN" value="5000"/>
+    <define name="THETA_IGAIN" value="1000"/>
     <define name="THETA_DGAIN" value="1300"/>
   </section>
 
