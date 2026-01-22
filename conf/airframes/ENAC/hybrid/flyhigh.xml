@@ -264,6 +264,11 @@
     <define name="THETA_DGAIN" value="1300"/>
   </section>
 
+  <section name="HYBRID_TRANSITION">
+    <define name="CMQ_TRANSITION_AIRSPEED" value="15."/>
+    <define name="CMQ_TRANSITION_TIME" value="4."/>
+  </section>  
+
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_"> 
     <define name="REF_MIN_ZDD" value="-0.4*9.81"/>
     <define name="REF_MAX_ZDD" value=" 0.4*9.81"/>
@@ -298,8 +303,8 @@
     <define name="THROTTLE_KP" value="0.1"/>
     <define name="THROTTLE_KD" value="0.1"/>
     <define name="THROTTLE_KI" value="0."/>
-    <define name="NOMINAL_THROTTLE" value="0.4"/>
-    <define name="PITCH_TRIM" value="2." unit="deg"/>  <!-- TODO : check this value -->  
+    <define name="NOMINAL_THROTTLE" value="0.5"/>
+    <define name="PITCH_TRIM" value="0." unit="deg"/>  <!-- TODO : check this value -->  
   </section>  
 
   <section name="NAV">
