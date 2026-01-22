@@ -69,6 +69,20 @@ struct lidar_sf30d_msg_t {
   uint32_t now_ts;
 };
 
+struct gps_lidar_data {
+    char lat_buf[16]; 
+    char lon_buf[16];
+    char lat_hemi;
+    char lon_hemi;
+	  double lat;            ///< Latitude
+    double lon;            ///< Longiitude
+    uint8_t num_sv;        ///< number of sat in fix
+    uint16_t pdop;         ///< position dilution of precision scaled by 100
+    float hmsl;            ///< Orthometric height (MSL reference)
+    float vground;         ///< Speed over ground in m/s
+    float course;        ///< GPS course over ground in rad*1e7, [0, 2*Pi]*1e7 (CW/north)
+};
+
 /** config status states */
 enum LidarSF30DConfStatus {
   LIDAR_CONF_UNINIT,
@@ -88,6 +102,7 @@ struct LidarSF30D
   bool initialized;
   bool error_init; // Flag to indicate if there was an error during initialization
   struct lidar_sf30d_msg_t msg;
+  struct gps_lidar_data gps_data;
 };
 
 
@@ -95,6 +110,9 @@ void lidar_sf30d_send_config(void);
 void lidar_sf30d_start_configure(void);
 void lidar_sf30d_read(void);
 void lidar_sf30d_log_data(void);
+void lidar_recover_gps_data(void);
+void lidar_get_system_date_str(char *buf_date, size_t buf_date_size, char *buf_time, size_t buf_time_size);
+void lidar_convert_deg_to_DDMM(double deg, char *buf, int is_lat);
 
 extern void lidar_sf30d_init(void);
 extern void lidar_sf30d_event(void);
