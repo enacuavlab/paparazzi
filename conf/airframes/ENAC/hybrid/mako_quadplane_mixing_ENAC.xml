@@ -22,7 +22,7 @@
       <module name="radio_control" type="sbus"/>
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
-      <define name="RADIO_CONTROL_THRUST_X"   value="RADIO_GAIN2"/>   <!-- TODO -->
+      <define name="RADIO_CONTROL_THRUST_X"   value="RADIO_GAIN2"/>   
       <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
     </target>
     
@@ -79,7 +79,9 @@
     <!--module name="ins" type="ext_pose"/-->
     <module name="ins" type="ekf2">
     </module>   
-    
+    <define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_HEADING"/> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
+
+
     <module name="stabilization" type="indi">
       <configure name="INDI_NUM_ACT" value="4"/> <!-- only quadcopter part -->
       <configure name="INDI_OUTPUTS" value="4"/>
@@ -195,6 +197,8 @@
       </field>
     </define>
     <define name="MAG_CALIB"      type="array">
+     <!-- Number 3 is the intern magneto -> We don't use it -->
+     <!-- Number 5 is the extern magneto -> We use it -->		
       <!--field type="struct">
         <field name="abi_id"      value="3"/>
         <field name="calibrated"  type="struct">
@@ -212,8 +216,8 @@
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
         </field>
-		  <field name="neutral" value="-381,709,-772" type="int[]"/>
-		  <field name="scale_f" value="{ 0.6168, 0.6184, 0.6128 }"/>
+		  <field name="neutral" value="-376,719,-751" type="int[]"/>
+          <field name="scale_f" value="{ 0.6085, 0.6106, 0.6011 }"/>
       </field>
     </define>
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
@@ -278,8 +282,9 @@
   </section>
 
   <section name="HYBRID_TRANSITION">
-    <define name="CMQ_TRANSITION_AIRSPEED" value="13."/>
-    <define name="CMQ_TRANSITION_TIME" value="4."/>
+    <define name="CMQ_TRANSITION_AIRSPEED" value="13."/> <!-- Transition speed in m/s when we cut the 4 motors to go in plane mode -->
+    <define name="CMQ_TRANSITION_TIME" value="4."/> <!-- Transition time -->
+    <define name="CMQ_TRANSITION_PITCH" value="-0.09"/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->
   </section>  
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_"> 
@@ -310,21 +315,23 @@
     <define name="COURSE_KP" value="1.0"/>
     <define name="COURSE_KD" value="0.1"/>
     <define name="CLIMB_KP" value="0.1"/>
-    <define name="PITCH_KP" value="0.5"/>
-    <define name="PITCH_KD" value="0.1"/>
+    <define name="CLIMB_KP" value="0.1"/>
+    <define name="PITCH_KP" value="0.1"/>
+    <define name="PITCH_KD" value="0.05"/>
     <define name="PITCH_KI" value="0."/>
-    <define name="THROTTLE_KP" value="0.1"/>
-    <define name="THROTTLE_KD" value="0.1"/>
+    <define name="THROTTLE_KP" value="0.05"/>
+    <define name="THROTTLE_KD" value="0.05"/>
     <define name="THROTTLE_KI" value="0."/>
-    <define name="NOMINAL_THROTTLE" value="0.6"/>
-    <define name="PITCH_TRIM" value="0." unit="deg"/>  <!-- TODO : check this value -->  
+    <define name="NOMINAL_THROTTLE" value="0.5"/> <!-- Throttle % in plane mode on rear motor -->
+    <define name="PITCH_TRIM" value="0." unit="deg"/> 
+    <define name="PITCH_OF_VZ" value="2." unit="deg"/>
   </section>  
 
   <section name="NAV">
     <define name="ARRIVED_AT_WAYPOINT" value="2."/>
-    <define name="NAV_CLIMB_VSPEED" value="1.5"/>
-    <define name="NAV_DESCEND_VSPEED" value="-1."/>
-    <define name="DEFAULT_CIRCLE_RADIUS" value="50"/>
+    <define name="NAV_CLIMB_VSPEED" value="1.5"/> <!-- Climb speed in m/s -->
+    <define name="NAV_DESCEND_VSPEED" value="-1.5"/> <!-- Descend speed in m/s -->
+    <define name="DEFAULT_CIRCLE_RADIUS" value="50"/>  <!-- Circle radius in navigation mode around a point -->
   </section>
   
   <section name="BAT">
@@ -332,7 +339,7 @@
     <define name="CRITIC_BAT_LEVEL" value="9.4" unit="V"/>
     <define name="LOW_BAT_LEVEL" value="10." unit="V"/>
     <define name="MAX_BAT_LEVEL" value="12.4" unit="V"/>
-    <define name="BAT_NB_CELLS" value="4"/>
+    <define name="BAT_NB_CELLS" value="4"/> 
   </section>
 
   <section name="AUTOPILOT">

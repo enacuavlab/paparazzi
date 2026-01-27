@@ -57,6 +57,11 @@
 #define CMQ_TRANSITION_CUTOFF 0.8f
 #endif
 
+// Pitch angle during transition
+#ifndef CMQ_TRANSITION_PITCH
+#define CMQ_TRANSITION_PITCH 0.0f
+#endif
+
 #define TRANSITION_TO_HOVER false
 #define TRANSITION_TO_FORWARD true
 
@@ -66,13 +71,14 @@ static const float transition_increment = 1.f / (CMQ_TRANSITION_TIME * PERIODIC_
 static void transition_run(bool to_forward) {
   if (to_forward && transition_ratio < 1.f) {
     if (stateIsAirspeedValid()) {
-      if ((stateGetAirspeed_f() < CMQ_TRANSITION_AIRSPEED && transition_ratio < CMQ_TRANSITION_CUTOFF-0.1)
+      if ((stateGetAirspeed_f() < CMQ_TRANSITION_AIRSPEED && transition_ratio < CMQ_TRANSITION_CUTOFF)
           || stateGetAirspeed_f() >= CMQ_TRANSITION_AIRSPEED) {
         transition_ratio += transition_increment;
       }
     }
   } else if (!to_forward && transition_ratio > 0.f) {
-    transition_ratio = 0.f; // immediately switch back to hover
+    transition_ratio -= transition_increment;
+    //transition_ratio = 0.f; // immediately switch back to hover
   }
   Bound(transition_ratio, 0.f, 1.f);
 }
@@ -245,7 +251,7 @@ void control_mixing_quadplane_nav_run(void)
     if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
       stabilization_attitude_plane_pid_run(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
       struct ThrustSetpoint hover_th_sp = guidance_v_run(autopilot_in_flight());
-      struct FloatEulers eulers_sp = { .phi = 0.f , .theta = 0.f, .psi = guidance_plane.course_setpoint };
+      struct FloatEulers eulers_sp = { .phi = 0.f , .theta = CMQ_TRANSITION_PITCH, .psi = guidance_plane.course_setpoint };
       struct StabilizationSetpoint hover_stab_sp = stab_sp_from_eulers_f(&eulers_sp);
       stabilization_run(autopilot_in_flight(), &hover_stab_sp, &hover_th_sp, stabilization.cmd); // will overwrite COMMAND_THRUST
     } else {
@@ -303,12 +309,21 @@ void control_mixing_quadplane_nav_run(void)
     stabilization_run(autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
 
     if (autopilot_get_motors_on()) {
-      commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
-      commands[COMMAND_MOTOR_BACK_RIGHT]  = actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT];
-      commands[COMMAND_MOTOR_BACK_LEFT]   = actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT];
-      commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
-      commands[COMMAND_MOTOR_PUSHER]      = MIN_PPRZ;
-      commands[COMMAND_THRUST]            = stabilization.cmd[COMMAND_THRUST];
+      if(stateGetAirspeed_f() >= CMQ_TRANSITION_AIRSPEED && stateIsAirspeedValid()) {
+        commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(0, actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT]);
+        commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(0, actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT]);
+        commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(0, actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT]);
+        commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(0, actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT]);
+        commands[COMMAND_MOTOR_PUSHER]      = command_from_transition(stabilization.cmd[COMMAND_THRUST], MIN_PPRZ);
+        commands[COMMAND_THRUST]            = stabilization.cmd[COMMAND_THRUST];
+      } else {
+        commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
+        commands[COMMAND_MOTOR_BACK_RIGHT]  = actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT];
+        commands[COMMAND_MOTOR_BACK_LEFT]   = actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT];
+        commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
+        commands[COMMAND_MOTOR_PUSHER]      = MIN_PPRZ;
+        commands[COMMAND_THRUST]            = stabilization.cmd[COMMAND_THRUST];
+      }
     } else {
       commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
       commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
