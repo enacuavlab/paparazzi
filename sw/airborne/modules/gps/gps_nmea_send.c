@@ -115,7 +115,7 @@ void build_nmea_sentence(void) {
 
     if(gps.fix >= GPS_FIX_3D ) {
 
-    get_system_date_str(date_sys, sizeof(date_sys)+1, time_sys, sizeof(time_sys)+1);
+    gps_nmea_get_system_date_str(date_sys, sizeof(date_sys)+1, time_sys, sizeof(time_sys)+1);
 
 
     // -------------------------------
@@ -218,7 +218,7 @@ void nmea_convert_deg_to_DDMM(double deg, char *buf, int is_lat) {
 /**
  * Get Date from system 
  */
-void get_system_date_str(char *buf_date, size_t buf_date_size, char *buf_time, size_t buf_time_size) {
+void gps_nmea_get_system_date_str(char *buf_date, size_t buf_date_size, char *buf_time, size_t buf_time_size) {
 
 
     const int64_t gps_epoch_days = 3657; //day frm 1970-01-01

@@ -38,6 +38,7 @@
  * TODO @USER in Lightware Studio :
  * - Set the Output type (legacy) to = Full communication mode
  * - Set the Exposure time to 1600 us (625 /sec)
+ * - Set the I2C address in Lidar Software to 102
  */
 
 #ifndef LIDAR_SF30D_H

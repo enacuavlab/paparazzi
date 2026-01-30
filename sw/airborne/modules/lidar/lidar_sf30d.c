@@ -38,6 +38,7 @@
  * TODO @USER in Lightware Studio :
  * - Set the Output type (legacy) to = Full communication mode
  * - Set the Exposure time to 1600 us (625 /sec)
+ * - Set the I2C address in Lidar Software to 102
  */
  
 //TODO 
@@ -193,7 +194,7 @@ void lidar_sf30d_event(void) {
 
       //Get system date and time if GPS + GPS 
       if(gps.fix >= GPS_FIX_3D ) {
-        get_system_date_str(date_sys_lidar, sizeof(date_sys_lidar)+1, time_sys_lidar, sizeof(time_sys_lidar)+1);
+        lidar_get_system_date_str(date_sys_lidar, sizeof(date_sys_lidar)+1, time_sys_lidar, sizeof(time_sys_lidar)+1);
         lidar_recover_gps_data();
         lidar_convert_deg_to_DDMM(lidar_sf30d.gps_data.lat, lidar_sf30d.gps_data.lat_buf, 1);
         lidar_convert_deg_to_DDMM(lidar_sf30d.gps_data.lon, lidar_sf30d.gps_data.lon_buf, 0);

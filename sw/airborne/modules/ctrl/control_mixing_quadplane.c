@@ -57,7 +57,7 @@
 #define CMQ_TRANSITION_CUTOFF 0.8f
 #endif
 
-// Pitch angle during transition
+// Pitch angle during transition (in radians)
 #ifndef CMQ_TRANSITION_PITCH
 #define CMQ_TRANSITION_PITCH 0.0f
 #endif

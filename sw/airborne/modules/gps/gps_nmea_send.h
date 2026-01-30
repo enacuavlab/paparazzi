@@ -55,7 +55,7 @@ void recover_gps_data(void);
 void build_nmea_sentence(void);
 uint8_t nmea_checksum(const char *sentence, int length);
 void nmea_convert_deg_to_DDMM(double deg, char *buf, int is_lat);
-void get_system_date_str(char *buf_date, size_t buf_date_size, char *buf_time, size_t buf_time_size);
+void gps_nmea_get_system_date_str(char *buf_date, size_t buf_date_size, char *buf_time, size_t buf_time_size);
 void nmea_send(const char *payload, int payload_length);
 
 

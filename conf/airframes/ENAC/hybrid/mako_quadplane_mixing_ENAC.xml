@@ -79,7 +79,7 @@
     <!--module name="ins" type="ext_pose"/-->
     <module name="ins" type="ekf2">
     </module>   
-    <define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_HEADING"/> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
+    <!--define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_HEADING"/--> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
 
 
     <module name="stabilization" type="indi">
@@ -116,7 +116,7 @@
       <define name="USE_PWM12" value="TRUE"/> 
       <define name="USE_PWM_TIM2" value="TRUE"/> 
       <define name="STM32_PWM_USE_TIM2" value="TRUE"/>
-      <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD" value="3"/> 
+      <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD" value="1.5"/> 
       <define name="TRIGGER_CAMERA_SHUTTER_DELAY" value="0.2"/> 
     </module> 
     
