@@ -107,7 +107,7 @@ void nps_fdm_init(double dt)
   init_ltp();
 
   // run a first step to initialize all fdm fields
-  double dummy_commands[] = {1, 2, 3, 4};
+  double dummy_commands[] = {0., 0., 0., 0.};
   nps_fdm_run_step(false, dummy_commands, 4);
 }
 
@@ -132,7 +132,7 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
   PyObject* ppos = PyDict_GetItemString(ret, "pos");
   PyObject* pvel = PyDict_GetItemString(ret, "vel");
   PyObject* pacc = PyDict_GetItemString(ret, "accel");
-  
+
   PyObject* pquat = PyDict_GetItemString(ret, "quat");
   PyObject* pang_v = PyDict_GetItemString(ret, "ang_v");
   PyObject* pang_acc = PyDict_GetItemString(ret, "ang_accel");
@@ -198,7 +198,7 @@ static void get_acc(PyObject* pacc) {
   VECT3_NED_OF_ENU(fdm.ltpprz_ecef_accel, enu_accel)
 /** acceleration in LTP frame, wrt ECEF frame */
   VECT3_COPY(fdm.ltp_ecef_accel, fdm.ltpprz_ecef_accel)
-  
+
   /** acceleration in ECEF frame, wrt ECEF frame */
   ecef_of_enu_vect_d(&fdm.ecef_ecef_accel, &ltpdef, &enu_accel);
 
@@ -356,11 +356,11 @@ static void python_init(double dt) {
 
   PyObject* bullet_fdm_class = PyObject_GetAttrString(fdm_module, "BulletFDM");
   py_check(true, __LINE__);
-  
+
   PyObject* fdm_ctor_args = Py_BuildValue("(d)", dt);
   PyObject* fdm_ctor_kwargs = Py_BuildValue("{siss}", "GUI", PYBULLET_GUI, "urdf", NPS_PYBULLET_URDF);
   bullet_fdm = PyObject_Call(bullet_fdm_class, fdm_ctor_args, fdm_ctor_kwargs);
-  
+
   py_check(true, __LINE__);
   Py_DECREF(fdm_ctor_args);
   Py_DECREF(bullet_fdm_class);
