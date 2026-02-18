@@ -27,8 +27,9 @@
 
 #ifndef PYTHON_EXEC
 #define PYTHON_EXEC "python3"
-#endif
+#else
 MESSAGE("PyBullet using" VALUE(PYTHON_EXEC))
+#endif
 
 #ifndef PYBULLET_GUI
 #define PYBULLET_GUI TRUE
@@ -58,7 +59,8 @@ struct NpsFdm fdm;
 // Reference point
 static struct LtpDef_d ltpdef;
 
-//rotation from pybullet to pprz
+// rotation from pybullet to pprz
+// due to ENU body_x and NED body_x having a rotatio of 90° around z
 struct DoubleQuat quat_to_pprz = {
   1/sqrt(2),
   0,
@@ -107,7 +109,7 @@ void nps_fdm_init(double dt)
   init_ltp();
 
   // run a first step to initialize all fdm fields
-  double dummy_commands[] = {0.1, 0., 0., 1.};
+  double dummy_commands[] = {0., 0., 0., 0.};
   nps_fdm_run_step(false, dummy_commands, 4);
 }
 
@@ -136,7 +138,6 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
   PyObject* pquat = PyDict_GetItemString(ret, "quat");
   PyObject* pang_v = PyDict_GetItemString(ret, "ang_v");
   PyObject* pang_acc = PyDict_GetItemString(ret, "ang_accel");
-  //PyObject* prpy = PyDict_GetItemString(ret, "rpy");
   py_check(true, __LINE__);
 
 
@@ -215,22 +216,19 @@ static void get_acc(PyObject* pacc) {
   // /** acceleration in body frame, wrt ECI inertial frame */
   // fdm.body_inertial_accel;
 
-
 }
 
 static void get_orient(PyObject* pquat) {
-    // /* attitude */
 
+  // convert ENU to NED world frames for quaternion
   struct DoubleQuat enu_quat = {
     PyFloat_AsDouble(PyTuple_GetItem(pquat, 3)),
-    //PyFloat_AsDouble(PyTuple_GetItem(pquat, 0)),
-    //PyFloat_AsDouble(PyTuple_GetItem(pquat, 1)),
-    //PyFloat_AsDouble(PyTuple_GetItem(pquat, 2)),
     PyFloat_AsDouble(PyTuple_GetItem(pquat, 1)),
     PyFloat_AsDouble(PyTuple_GetItem(pquat, 0)),
     -PyFloat_AsDouble(PyTuple_GetItem(pquat, 2)),
   };
 
+  // extra rotation to 90° yaw rotation (due to ENU/NED body frames x axis)
   double_quat_comp(&fdm.ltpprz_to_body_quat, &enu_quat, &quat_to_pprz);
   double_eulers_of_quat(&fdm.ltpprz_to_body_eulers, &fdm.ltpprz_to_body_quat);
   QUAT_COPY(fdm.ltp_to_body_quat, fdm.ltpprz_to_body_quat);
@@ -239,33 +237,31 @@ static void get_orient(PyObject* pquat) {
 
 static void get_ang_vel(PyObject* pang_vel) {
 
-  struct DoubleVect3 sim_rates, pprz_rates;
-  sim_rates.x = PyFloat_AsDouble(PyTuple_GetItem(pang_vel, 1));
-  sim_rates.y = PyFloat_AsDouble(PyTuple_GetItem(pang_vel, 0));
-  sim_rates.z = -PyFloat_AsDouble(PyTuple_GetItem(pang_vel, 2));
+  // convert ENU to NED body frames (with x front)
+  struct DoubleVect3 body_rates = {
+    .x = PyFloat_AsDouble(PyTuple_GetItem(pang_vel, 0)),
+    .y = -PyFloat_AsDouble(PyTuple_GetItem(pang_vel, 1)),
+    .z = -PyFloat_AsDouble(PyTuple_GetItem(pang_vel, 2)),
+  };
 
-  double_quat_vmult(&pprz_rates, &fdm.ltp_to_body_quat, &sim_rates);
-
-  fdm.body_inertial_rotvel.p = pprz_rates.x;
-  fdm.body_inertial_rotvel.q = pprz_rates.y;
-  fdm.body_inertial_rotvel.r = pprz_rates.z;
+  fdm.body_inertial_rotvel.p = body_rates.x;
+  fdm.body_inertial_rotvel.q = body_rates.y;
+  fdm.body_inertial_rotvel.r = body_rates.z;
   fdm.body_ecef_rotvel = fdm.body_inertial_rotvel;
-
-  //printf("rates %f %f %f | %f %f %f\n", sim_rates.x, sim_rates.y, sim_rates.z, pprz_rates.x, pprz_rates.y, pprz_rates.z);
 }
 
 static void get_ang_acc(PyObject* pang_acc) {
 
-  struct DoubleVect3 sim_rotaccel, pprz_rotaccel;
-  sim_rotaccel.x = PyFloat_AsDouble(PyTuple_GetItem(pang_acc, 1));
-  sim_rotaccel.y = PyFloat_AsDouble(PyTuple_GetItem(pang_acc, 0));
-  sim_rotaccel.z = -PyFloat_AsDouble(PyTuple_GetItem(pang_acc, 2));
+  // convert ENU to NED body frames (with x front)
+  struct DoubleVect3 body_rotaccel = {
+    .x = PyFloat_AsDouble(PyTuple_GetItem(pang_acc, 0)),
+    .y = -PyFloat_AsDouble(PyTuple_GetItem(pang_acc, 1)),
+    .z = -PyFloat_AsDouble(PyTuple_GetItem(pang_acc, 2)),
+  };
 
-  double_quat_vmult(&pprz_rotaccel, &fdm.ltp_to_body_quat, &sim_rotaccel);
-
-  fdm.body_inertial_rotaccel.p = pprz_rotaccel.x;
-  fdm.body_inertial_rotaccel.q = pprz_rotaccel.y;
-  fdm.body_inertial_rotaccel.r = pprz_rotaccel.z;
+  fdm.body_inertial_rotaccel.p = body_rotaccel.x;
+  fdm.body_inertial_rotaccel.q = body_rotaccel.y;
+  fdm.body_inertial_rotaccel.r = body_rotaccel.z;
   fdm.body_ecef_rotaccel = fdm.body_inertial_rotaccel;
 }
 
@@ -289,7 +285,6 @@ static void init_ltp(void)
 
   ltp_def_from_ecef_d(&ltpdef, &ecef_nav0);
   fdm.ecef_pos = ecef_nav0;
-
 
 // TODO vérifier tout ça
   fdm.ltp_g.x = 0.;
