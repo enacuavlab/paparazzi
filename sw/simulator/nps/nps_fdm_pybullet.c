@@ -107,7 +107,7 @@ void nps_fdm_init(double dt)
   init_ltp();
 
   // run a first step to initialize all fdm fields
-  double dummy_commands[] = {0., 0., 0., 0.};
+  double dummy_commands[] = {0.1, 0., 0., 1.};
   nps_fdm_run_step(false, dummy_commands, 4);
 }
 
@@ -116,12 +116,12 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
   // TODO create a np.array instead ?
   PyObject* pcmd = PyList_New(commands_nb);
 
-  for(int i=0; i<commands_nb; i++) {
+  for (int i=0; i<commands_nb; i++) {
     int j = actuators_order[i];
     PyList_SetItem(pcmd, i, PyFloat_FromDouble(commands[j]));
   }
 
-  if(commands[0] < 0) {
+  if (commands[0] < 0) {
     return;
   }
 
@@ -152,7 +152,7 @@ void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int
 }
 
 static void get_pos(PyObject* ppos) {
-    // get position from pybullet, in ENU, in the local frame
+  // get position from pybullet, in ENU, in the local frame
   struct EnuCoor_d enu_pos;
   enu_pos.x = PyFloat_AsDouble(PyTuple_GetItem(ppos, 0));
   enu_pos.y = PyFloat_AsDouble(PyTuple_GetItem(ppos, 1));
@@ -177,7 +177,7 @@ static void get_vel(PyObject* pvel) {
 
     /***********     velocities     *************/
   /** velocity in LTP frame, wrt ECEF frame (NedCoor_d) */
-  VECT3_NED_OF_ENU(fdm.ltp_ecef_vel, enu_vel)
+  VECT3_NED_OF_ENU(fdm.ltp_ecef_vel, enu_vel);
   /** velocity in ECEF frame, wrt ECEF frame */
   ecef_of_enu_vect_d(&fdm.ecef_ecef_vel, &ltpdef, &enu_vel);
   // /** velocity in body frame, wrt ECEF frame */
@@ -195,9 +195,9 @@ static void get_acc(PyObject* pacc) {
   };
 
   /** accel in ltppprz frame, wrt ECEF frame */
-  VECT3_NED_OF_ENU(fdm.ltpprz_ecef_accel, enu_accel)
-/** acceleration in LTP frame, wrt ECEF frame */
-  VECT3_COPY(fdm.ltp_ecef_accel, fdm.ltpprz_ecef_accel)
+  VECT3_NED_OF_ENU(fdm.ltpprz_ecef_accel, enu_accel);
+  /** acceleration in LTP frame, wrt ECEF frame */
+  VECT3_COPY(fdm.ltp_ecef_accel, fdm.ltpprz_ecef_accel);
 
   /** acceleration in ECEF frame, wrt ECEF frame */
   ecef_of_enu_vect_d(&fdm.ecef_ecef_accel, &ltpdef, &enu_accel);
@@ -206,7 +206,7 @@ static void get_acc(PyObject* pacc) {
   struct DoubleVect3 tmp = {
     fdm.ltp_ecef_accel.x,
     fdm.ltp_ecef_accel.y,
-    fdm.ltp_ecef_accel.z - 10,
+    fdm.ltp_ecef_accel.z - 9.81,
   };
   double_quat_vmult(&fdm.body_accel, &fdm.ltp_to_body_quat, &tmp);
 
@@ -223,6 +223,9 @@ static void get_orient(PyObject* pquat) {
 
   struct DoubleQuat enu_quat = {
     PyFloat_AsDouble(PyTuple_GetItem(pquat, 3)),
+    //PyFloat_AsDouble(PyTuple_GetItem(pquat, 0)),
+    //PyFloat_AsDouble(PyTuple_GetItem(pquat, 1)),
+    //PyFloat_AsDouble(PyTuple_GetItem(pquat, 2)),
     PyFloat_AsDouble(PyTuple_GetItem(pquat, 1)),
     PyFloat_AsDouble(PyTuple_GetItem(pquat, 0)),
     -PyFloat_AsDouble(PyTuple_GetItem(pquat, 2)),
@@ -236,7 +239,6 @@ static void get_orient(PyObject* pquat) {
 
 static void get_ang_vel(PyObject* pang_vel) {
 
-
   struct DoubleVect3 sim_rates, pprz_rates;
   sim_rates.x = PyFloat_AsDouble(PyTuple_GetItem(pang_vel, 1));
   sim_rates.y = PyFloat_AsDouble(PyTuple_GetItem(pang_vel, 0));
@@ -249,7 +251,7 @@ static void get_ang_vel(PyObject* pang_vel) {
   fdm.body_inertial_rotvel.r = pprz_rates.z;
   fdm.body_ecef_rotvel = fdm.body_inertial_rotvel;
 
-
+  //printf("rates %f %f %f | %f %f %f\n", sim_rates.x, sim_rates.y, sim_rates.z, pprz_rates.x, pprz_rates.y, pprz_rates.z);
 }
 
 static void get_ang_acc(PyObject* pang_acc) {
@@ -300,9 +302,9 @@ static void init_ltp(void)
   fdm.ltp_h.z = AHRS_H_Z;
   PRINT_CONFIG_MSG("Using magnetic field as defined in airframe file.")
 #else
-  fdm.ltp_h.x = 0.4912;
-  fdm.ltp_h.y = 0.1225;
-  fdm.ltp_h.z = 0.8624;
+  fdm.ltp_h.x = 1.;
+  fdm.ltp_h.y = 0.;
+  fdm.ltp_h.z = 0.;
 #endif
 
 }
