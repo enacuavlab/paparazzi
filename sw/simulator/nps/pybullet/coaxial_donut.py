@@ -135,7 +135,6 @@ class BulletFDM():
                             'accel':tuple(self.accel),
                             'ang_accel':tuple(body_ang_accel)
         }
-
         return self.observation
 
     def reset(self):
