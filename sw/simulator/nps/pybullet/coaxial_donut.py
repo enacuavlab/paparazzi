@@ -10,8 +10,8 @@ PYBULLET_CONF_PATH = os.path.join(PPRZ_HOME, "conf/simulator/pybullet")
 
 
 class BulletFDM():
-    def __init__(self, dt=0.02, GUI=True, debug=False, urdf="coaxial_donut.urdf"):
-        print(f"Hello from PyBullet ! dt={dt}, GUI={GUI} debug={debug}")
+    def __init__(self, dt=0.02, GUI=True, urdf="coaxial_donut.urdf"):
+        print(f"Hello from PyBullet ! dt={dt}, GUI={GUI}")
 
         pprz_src = os.getenv("PAPARAZZI_SRC")
         print(f"pprz_src = {pprz_src}")
@@ -32,7 +32,7 @@ class BulletFDM():
         self.textureId = p.loadTexture("checker_grid.jpg")
 
         self.vehicle_start_pos = [0, 0, 0.2]
-        self.vehicle_start_orientation = p.getQuaternionFromEuler([0.0, 0.0, 0.0])
+        self.vehicle_start_orientation = p.getQuaternionFromEuler([0, 0, np.pi/2.])
 
         vehicule_urdf = os.path.join(PYBULLET_CONF_PATH, urdf)
         self.vehicle = p.loadURDF(vehicule_urdf, self.vehicle_start_pos, self.vehicle_start_orientation)
@@ -45,10 +45,10 @@ class BulletFDM():
         p.setTimeStep(self.dt, physicsClientId=self.physicsClient)
         # Orient the camera if needed
         p.resetDebugVisualizerCamera(cameraDistance=3.5, cameraYaw=-80, cameraPitch=-40, cameraTargetPosition=[0.0, 0.0, 0.0])
-        # Vehicle properties
+        # Vehicle properties TODO use URDF data
         self.pwm2rpm_scale = [20000., 20000.]
         self.KF = 1.60e-7  # 0.01
-        self.KM = 2.7e-9 # 0.001
+        self.KM = 1.7e-10 # 0.001
         # Initialte velocity and acceleration vectors
         self.vel = np.zeros(3)
         self.accel = np.zeros(3)
@@ -58,13 +58,6 @@ class BulletFDM():
 
         # State
         self.observation = {}
-
-        # For debug purposes
-        if debug:
-            p.setGravity(0, 0, 0,  physicsClientId=self.physicsClient)
-            self.roll_Id = p.addUserDebugParameter("roll_cmd", -0.01, 0.01, 0)
-            self.pitch_Id = p.addUserDebugParameter("pitch_cmd", -0.01, 0.01, 0)
-            self.yaw_Id = p.addUserDebugParameter("yaw_cmd", -0.01, 0.01, 0)
 
     def apply_force_and_moments(self, motors, servos, use_noise=False):
         ''' rpm = [ coaxial prop rpms ]'''
@@ -83,12 +76,13 @@ class BulletFDM():
         forces  += f_noise
         torques += m_noise
 
+        s_servos = [1., -1.]
         for i, cmd in enumerate(servos):
-            deflection = cmd * np.deg2rad(20.0)  # cmd is in -1/+1 for radians
+            deflection = s_servos[i] * cmd * np.deg2rad(15.0)  # cmd is in -1/+1 for radians
             p.resetJointState(self.vehicle, i, deflection)
             #print(f' {i}- deflection : {np.rad2deg(deflection)}')
 
-        s = [-1, 1]
+        s_motors = [1., -1.]
         for i in range(2):
             #print(f' {i}- force : {forces[i]}, torque : {s[i] * torques[i]}')
             p.applyExternalForce(self.vehicle,
@@ -100,7 +94,7 @@ class BulletFDM():
                     )
             p.applyExternalTorque(self.vehicle,
                     i + 1, # link 1: prop up, link 2: prop down
-                    torqueObj=[m_noise[0], m_noise[1], s[i] * torques[i]],
+                    torqueObj=[m_noise[0], m_noise[1], s_motors[i] * torques[i]],
                     flags=p.LINK_FRAME,
                     physicsClientId=self.physicsClient
                     )
@@ -129,16 +123,19 @@ class BulletFDM():
         self.vel = np.array(v_vel)
         self.ang_accel = (np.array(v_ang_v) - self.ang_vel)/self.dt
         self.ang_vel = np.array(v_ang_v)
-        #print(self.ang_vel)
+        R = np.array(p.getMatrixFromQuaternion(v_quat)).reshape(3, 3)
+        body_ang_vel = R.T.dot(self.ang_vel)
+        body_ang_accel = R.T.dot(self.ang_accel)
 
         self.observation = {'pos':v_pos,
                             'quat':v_quat,
                             'rpy':v_rpy,
                             'vel':tuple(self.vel),
-                            'ang_v':tuple(self.ang_vel),
+                            'ang_v':tuple(body_ang_vel),
                             'accel':tuple(self.accel),
-                            'ang_accel':tuple(self.ang_accel)
+                            'ang_accel':tuple(body_ang_accel)
         }
+
         return self.observation
 
     def reset(self):
@@ -153,8 +150,7 @@ class BulletFDM():
 
 if __name__ == "__main__":
     from time import sleep
-    debug = True
-    m = BulletFDM(GUI=True, debug=debug)
+    m = BulletFDM(GUI=True)
 
     # An example simulation loop with random commands generation
     while 1:
