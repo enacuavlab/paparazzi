@@ -173,7 +173,6 @@ void nps_autopilot_run_step(double time)
   main_ap_periodic();
 
   /* scale final motor commands to 0-1 for feeding the fdm */
-  //printf("NPS commands ");
   for (uint8_t i = 0; i < NPS_COMMANDS_NB; i++) {
 #if NPS_NO_MOTOR_MIXING
     #if NPS_USE_COMMANDS
@@ -182,13 +181,11 @@ void nps_autopilot_run_step(double time)
     #else
     actuators_pprz[i] = autopilot_get_motors_on() ? actuators_pprz[i] : 0;
     nps_autopilot.commands[i] = (double)actuators_pprz[i] / MAX_PPRZ;
-    //printf("%f (%d) |", nps_autopilot.commands[i], actuators_pprz[i]);
     #endif
 #else
     nps_autopilot.commands[i] = (double)motor_mixing.commands[i] / MAX_PPRZ;
 #endif
   }
-  //printf("\n");
 }
 
 
