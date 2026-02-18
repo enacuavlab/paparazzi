@@ -24,6 +24,7 @@ class BulletFDM():
             self.physicsClient = p.connect(p.GUI)
         else:
             self.physicsClient = p.connect(p.DIRECT)
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI,0) # remove useless graphical elements from GUI
 
         # Add path for pybullet assests e.g : plane and grid...
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
