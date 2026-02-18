@@ -32,7 +32,7 @@ class BulletFDM():
         self.textureId = p.loadTexture("checker_grid.jpg")
 
         self.vehicle_start_pos = [0, 0, 0.2]
-        self.vehicle_start_orientation = p.getQuaternionFromEuler([0, 0, 0])
+        self.vehicle_start_orientation = p.getQuaternionFromEuler([0.0, 0.0, 0.0])
 
         vehicule_urdf = os.path.join(PYBULLET_CONF_PATH, urdf)
         self.vehicle = p.loadURDF(vehicule_urdf, self.vehicle_start_pos, self.vehicle_start_orientation)
@@ -66,7 +66,7 @@ class BulletFDM():
             self.pitch_Id = p.addUserDebugParameter("pitch_cmd", -0.01, 0.01, 0)
             self.yaw_Id = p.addUserDebugParameter("yaw_cmd", -0.01, 0.01, 0)
 
-    def apply_force_and_moments(self, motors, servos, use_noise=True):
+    def apply_force_and_moments(self, motors, servos, use_noise=False):
         ''' rpm = [ coaxial prop rpms ]'''
         rpm = self.pwm2rpm_scale * motors
         #print(f' commands {motors} -> {rpm} | {servos}')
@@ -77,14 +77,14 @@ class BulletFDM():
             f_noise = np.random.normal(0, 0.01, len(rpm))
             m_noise = np.random.normal(0, 0.001,len(rpm))
         else:
-            f_noise = np.zeros(4)
-            m_noise = np.zeros(4)
+            f_noise = np.zeros(2)
+            m_noise = np.zeros(2)
 
         forces  += f_noise
         torques += m_noise
 
         for i, cmd in enumerate(servos):
-            deflection = cmd * np.deg2rad(10.0)  # cmd is in -1/+1 for radians
+            deflection = cmd * np.deg2rad(20.0)  # cmd is in -1/+1 for radians
             p.resetJointState(self.vehicle, i, deflection)
             #print(f' {i}- deflection : {np.rad2deg(deflection)}')
 
@@ -110,13 +110,10 @@ class BulletFDM():
         if not isinstance(commands, np.ndarray):
           commands = np.array(commands)
         
-        # little hack to scale commands. It should probably be in the URDF file.
-        #commands *= 30
         #print(commands)
         if commands[0] == 0 and commands[1] == 0:
             return self.get_observation() # hack for not in flight
 
-        #print(commands)
         # commands: motor up, motor down, tilt up x, tilt up y
         self.apply_force_and_moments(commands[0:2], commands[2:4])
         p.stepSimulation(physicsClientId=self.physicsClient)
@@ -132,6 +129,7 @@ class BulletFDM():
         self.vel = np.array(v_vel)
         self.ang_accel = (np.array(v_ang_v) - self.ang_vel)/self.dt
         self.ang_vel = np.array(v_ang_v)
+        #print(self.ang_vel)
 
         self.observation = {'pos':v_pos,
                             'quat':v_quat,
