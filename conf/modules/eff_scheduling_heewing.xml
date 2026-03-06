@@ -1,0 +1,23 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="eff_scheduling_heewing" dir="ctrl">
+  <doc>
+    <description>T
+      The control effectiveness scheduler for the Heewing T1 Ranger VTOL
+    </description>
+  </doc>
+  <settings>
+    <dl_settings>
+      <dl_settings NAME="WLS_WEIGHTS">
+        <dl_setting var="T1.wls_min_mt"     min="0" step="100" max="8700" param="ESH_WLS_MIN_MT" persistent="true"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+  <header>
+    <file name="eff_scheduling_heewing.h"/>
+  </header>
+  <init fun="eff_scheduling_heewing_init()"/>
+  <periodic fun="eff_scheduling_heewing_periodic()"/>
+  <makefile>
+    <file name="eff_scheduling_heewing.c"/>
+  </makefile>
+</module>

@@ -1,0 +1,27 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="guidance_indi_hybrid_tiltrotor" dir="guidance" task="control">
+  <doc>
+    <description>
+      Guidance controller for hybrid tiltrotor vehicles
+    </description>
+  </doc>
+  <dep>
+    <depends>guidance_indi_hybrid</depends>
+    <conflicts>guidance_indi_hybrid_tailsitter,guidance_indi_hybrid_quadplane</conflicts>
+    <provides>guidance,attitude_command</provides>
+  </dep>
+  <header>
+    <file name="guidance_indi_hybrid_tiltrotor.h"/>
+  </header>
+  <init fun="guidance_indi_tiltrotor_init()"/>
+  <periodic fun="guidance_indi_tiltrotor_propagate_filters()" freq="PERIODIC_FREQUENCY" autorun="TRUE"/>
+  <makefile target="ap|nps" firmware="rotorcraft">
+    <define name="GUIDANCE_INDI_HYBRID_USE_WLS" value="1"/>
+    <!-- Guidance actuators: (roll, pitch, lift, thrust) for hybrids  -->
+    <define name="GUIDANCE_INDI_HYBRID_U" value="4"/>
+    <!-- Guidance control objectives: ax, ay, az for hybrids -->
+    <define name="GUIDANCE_INDI_HYBRID_V" value="3"/>
+    <file name="guidance_indi_hybrid_tiltrotor.c" dir="$(SRC_FIRMWARE)/guidance"/>
+  </makefile>
+</module>
