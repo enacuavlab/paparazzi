@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+<flight_plan alt="417" ground_alt="357" lat0="49.4076163994" lon0="10.9538135952" max_dist_from_home="400" name="Wolfshoehe Survey Test" security_height="1" wp_frame="ltp">
+  <header>
+    #if DIGITAL_CAM
+    #define LINE_START_FUNCTION dc_Survey(20);
+    #define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
+    #endif  
+  </header>
+  <waypoints>
+    <waypoint name="HOME" x="105.669" y="73.531"/>
+    <waypoint name="CLIMB" x="-28.0" y="29.0"/>
+    <waypoint name="STDBY" x="16.018" y="-7.044"/>
+    <waypoint name="wp00" x="-38.795" y="10.055"/>
+    <waypoint name="wp01" x="-37.872" y="94.055"/>
+    <waypoint name="wp02" x="30.347" y="98.732"/>
+    <waypoint name="wp03" x="36.077" y="-97.981"/>
+    <waypoint name="wp04" x="91.852" y="-101.384"/>
+    <waypoint name="wp05" x="72.108" y="98.844"/>
+    <waypoint name="wp06" x="-1.221" y="95.974"/>
+    <waypoint name="wp07" x="8.884" y="-98.685"/>
+    <waypoint name="wp08" x="-53.114" y="-99.321"/>
+    <waypoint name="TD" x="117.583" y="77.719"/>
+    
+    <waypoint name="_FLY1" x="159.199" y="-77.564"/>
+    <waypoint name="_FLY2" x="139.405" y="177.196"/>
+    <waypoint name="_FLY3" x="-159.653" y="127.841"/>
+    <waypoint name="_FLY4" x="-153.869" y="-85.56"/>
+    <waypoint name="_KILL1" x="192.752" y="-92.375"/>
+    <waypoint name="_KILL2" x="162.546" y="197.1"/>
+    <waypoint name="_KILL3" x="-191.885" y="145.08"/>
+    <waypoint name="_KILL4" x="-176.839" y="-98.908"/>   
+    
+  </waypoints>
+  <!--sectors>
+    <sector color="lime" name="Flight_Area">
+      <corner name="_FLY1"/>
+      <corner name="_FLY2"/>
+      <corner name="_FLY3"/>
+      <corner name="_FLY4"/>
+    </sector>
+    <sector color="red" name="Kill">
+      <corner name="_KILL1"/>
+      <corner name="_KILL2"/>
+      <corner name="_KILL3"/>
+      <corner name="_KILL4"/>
+    </sector>
+  </sectors-->
+  <modules>
+    <module name="nav" type="takeoff_and_landing"/>
+  </modules>
+  <exceptions>
+    <!--exception cond="Or(!InsideFlight_Area(GetPosX(), GetPosY()), GetPosAlt() &gt; GetAltRef() + 50) @AND (nav_block &gt;= IndexOfBlock('Takeoff')) @AND !(nav_block == IndexOfBlock('Kill landed'))" deroute="Standby"/-->
+  </exceptions>
+  <blocks>
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 10)"/>
+      <call_once fun="NavSetAltitudeReferenceHere()"/>
+    </block>
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Start Engine">
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
+      <exception cond="GetPosHeight() @GT 10.0" deroute="Standby"/>
+      <call_once fun="NavSetWaypointHere(WP_CLIMB)"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 1" vmode="throttle"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="CLIMB"/>
+    </block>
+    <block name="Takeoff (module)" strip_button="Takeoff (module)" group="module">
+      <call fun="nav_takeoff_from_here(-1.)"/>
+      <deroute block="Standby"/>
+    </block>
+    <!--block name="Standby" pre_call="if(!InsideKill(GetPosX(), GetPosY())) NavKillThrottle();" strip_button="Standby" strip_icon="home.png"-->
+    <block name="Standby" strip_button="Standby" strip_icon="home.png">
+      <stay wp="STDBY"/>
+    </block>
+
+    <block name="Survey">
+      <!--Survey will start flying from STBY to wp00, ned to be sent to STBY after passing wp07 for the second time-->
+      <path wpts="wp00,wp08,wp07,wp06,wp05,wp04,wp03,wp02,wp01,wp08,wp07,wp06"/>
+    </block>
+ 
+ 
+    <block name="Land (module)" strip_button="Land (module)" group="module">
+      <call fun="nav_land_at_wp(WP_TD, WP_TD, 0.)"/>
+      <deroute block="Kill landed"/>
+    </block>
+    <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
+      <call_once fun="NavSetWaypointHere(WP_TD)"/>
+    </block>
+    <block name="land">
+      <go wp="TD"/>
+    </block>
+    <block name="flare">
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="TD"/>
+    </block>
+    <block name="Kill landed">
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+  </blocks>
+</flight_plan>

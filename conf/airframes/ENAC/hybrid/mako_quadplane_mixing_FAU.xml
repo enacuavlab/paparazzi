@@ -78,7 +78,6 @@
       <define name="GPS_FIX_TIMEOUT" value="0.5"/>
     </module>
      <!-- INS TYPE : EKF2 -->
-     <!-- TODO -->
     <!--module name="ins" type="ext_pose"/-->
     <module name="ins" type="ekf2">
     </module> 
@@ -104,9 +103,9 @@
     </module>
 
 	<!-- Use LIDAR telemetry-->
-    <module name="lidar_sf30d">
+    <!--module name="lidar_sf30d">
       <configure name="LIDAR_SF30D_I2C_DEV" value="I2C2"/>
-    </module>
+    </module-->
         
     <!-- Use AEROPROBE telemetry-->    
     <!--module name="trisonica">  
@@ -309,7 +308,7 @@
     <define name="REF_MAX_ZDD" value=" 0.4*9.81"/>
     <define name="REF_MIN_ZD" value="-2."/>
     <define name="REF_MAX_ZD" value=" 2."/>
-    <define name="NOMINAL_HOVER_THROTTLE" value="0.35"/> 
+    <define name="NOMINAL_HOVER_THROTTLE" value="0.35"/>
     <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
   </section>
 

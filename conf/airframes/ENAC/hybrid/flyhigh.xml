@@ -22,7 +22,7 @@
       <module name="radio_control" type="sbus"/>
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
-      <define name="RADIO_CONTROL_THRUST_X"   value="RADIO_GAIN2"/>   <!-- TODO -->
+      <define name="RADIO_CONTROL_THRUST_X"   value="RADIO_GAIN2"/>   
       <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
     </target>
     
@@ -75,10 +75,12 @@
       <define name="GPS_FIX_TIMEOUT" value="0.5"/>
     </module>
      <!-- INS TYPE : EKF2 -->
-     <!-- TODO -->
     <!--module name="ins" type="ext_pose"/-->
     <module name="ins" type="ekf2">
-    </module>   
+    </module> 
+    <!--define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_HEADING"/--> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
+    <define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_NONE"/> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
+
     
     <module name="stabilization" type="indi">
       <configure name="INDI_NUM_ACT" value="4"/> <!-- only quadcopter part -->
@@ -99,16 +101,33 @@
       <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="FALSE"/>
     </module>
 
+	<!-- Use LIDAR telemetry-->
     <!--module name="lidar_sf30d">
       <configure name="LIDAR_SF30D_I2C_DEV" value="I2C2"/>
     </module-->
         
-    <!--module name="trisonica">
+    <!-- Use AEROPROBE telemetry-->    
+    <!--module name="trisonica">  
       <configure name="TRISONICA_UART" value="UART3"/>
-    </module-->
+    </module--> 
 
-    <!--module name="gps_nmea_send">
-      <configure name="NMEA_SEND_UART" value="UART3"/>
+    <!-- FOR MAPIR - Use ROTORCRAFT_CAM telemetry-->    
+    <!--module name="trigger_camera_pwm">
+      <define name="USE_PWM12" value="TRUE"/> 
+      <define name="USE_PWM_TIM2" value="TRUE"/> 
+      <define name="STM32_PWM_USE_TIM2" value="TRUE"/>
+      <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD" value="2"/> 
+      <define name="TRIGGER_CAMERA_SHUTTER_DELAY" value="1"/> 
+    </module--> 
+   
+    <!-- For Thermal Camera single capture image -->      
+      <!--module name="digital_cam" type="gpio">
+      <define name="DC_SHUTTER_GPIO" value="GPIOA,GPIO3"/>
+      <define name="DC_PUSH" value="gpio_clear"/>
+      <define name="DC_RELEASE" value="gpio_set"/>
+      <define name="DC_SHUTTER_DELAY" value="0.2"/>
+      <define name="DC_AUTOSHOOT_PERIOD" value="1.0"/>
+      <define name="DC_SHOT_SYNC_SEND" value="TRUE"/>
     </module-->
     
   </firmware>
@@ -124,6 +143,7 @@
     <servo name="AILEVON_RIGHT" no="1" max="1200"  neutral="1600" min="2000"/><!--max="1080"  neutral="1490" min="1900"/-->
     <servo name="AILEVON_LEFT"  no="2" max="1150"  neutral="1550" min="1950"/> <!--max="1090"  neutral="1500" min="1910"/-->
     <servo name="MOTOR_PUSHER"  no="3" min="1000" neutral="1000" max="2000"/>
+    <!--servo name="TRIGGER_CAMERA"  no="12" min="1000" neutral="1000" max="2000"/-->
   </servos>
   
   <commands>
@@ -165,8 +185,8 @@
           <field name="scale_f"     value="true"/>
           <field name="rotation"  value="true"/>
         </field>
-    		<field name="neutral" value="0,-6,36" type="int[]"/>
-    		<field name="scale_f" value="{ 2.4520, 2.4511, 2.4556 }"/>
+          <field name="neutral" value="6,-15,42" type="int[]"/>
+          <field name="scale_f" value="{ 2.4531, 2.4557, 2.4520 }"/>
         <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
@@ -182,6 +202,8 @@
       </field>
     </define>
     <define name="MAG_CALIB"      type="array">
+     <!-- Number 3 is the intern magneto -> We don't use it -->
+     <!-- Number 5 is the extern magneto -> We use it -->
       <!--field type="struct">
         <field name="abi_id"      value="3"/>
         <field name="calibrated"  type="struct">
@@ -199,12 +221,12 @@
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
         </field>
-		<field name="neutral" value="-27,306,100" type="int[]"/>
-    		<field name="scale_f" value="{ 0.6326, 0.6494, 0.6314 }"/>
+	   <field name="neutral" value="-55,153,29" type="int[]"/>
+	   <field name="scale_f" value="{ 0.6333, 0.6517, 0.6427 }"/>
       </field>
     </define>
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
-    <define name="BODY_TO_IMU_THETA" value="4.44" unit="deg"/> <!-- Adapt theta angle to get plane right default pitch in flight -->
+    <define name="BODY_TO_IMU_THETA" value="2.44" unit="deg"/> <!-- Adapt theta angle to get plane right default pitch in flight -->
     <define name="BODY_TO_IMU_PSI"   value="0." unit="deg"/>
     
   </section>
@@ -238,15 +260,15 @@
     <!-- control effectiveness All value are divided by INDI_G_SCALING (=1000)-->
     <define name="G1" type="matrix">
       <!--COLUMNS:                     FR    BR      BL     FL -->
-      <field name="ROLL"     value="{-8.8,  -6.9,   6.9,   8.8}"/>  <!-- MX - ROLL  -->
-      <field name="PITCH"    value="{ 11.7,-12.1, -12.1,  11.7}"/>  <!-- MY - PITCH -->
-      <field name="YAW"      value="{ 2.9,  -3.0,   3.0,  -2.9}"/>  <!-- MZ - YAW   -->
-      <field name="THRUST"   value="{-0.32,-1.36, -1.36, -0.32}"/>  <!-- FZ         -->
+      <field name="ROLL"     value="{-6.2,  -6.2,   6.2,   6.2}"/>  <!-- MX - ROLL  -->
+      <field name="PITCH"    value="{ 9.0,-14.8, -14.8,  9.0}"/>  <!-- MY - PITCH -->
+      <field name="YAW"      value="{ 1.8,  -1.8,   1.8,  -1.8}"/>  <!-- MZ - YAW   -->
+      <field name="THRUST"   value="{-1.8, -0.7, -0.7, -1.8}"/>  <!-- FZ         -->
     </define>    
-    <define name="G2"             value="{11.87, -6.53, 6.53, -11.87}"/>
+    <define name="G2"             value="{1.0, -1.0, 1.0, -1.0}"/>
 
     <!-- second order filter parameters -->
-    <define name="ACT_FREQ"       value="{26., 26., 26., 26.}"/>       
+    <define name="ACT_FREQ"       value="{27.4, 27.4, 27.4, 27.4}"/>       
     <define name="FILT_CUTOFF"  value="4.0"/>
     <define name="FILT_CUTOFF_R" value="4.0"/>     
     
@@ -265,8 +287,9 @@
   </section>
 
   <section name="HYBRID_TRANSITION">
-    <define name="CMQ_TRANSITION_AIRSPEED" value="15."/>
-    <define name="CMQ_TRANSITION_TIME" value="4."/>
+    <define name="CMQ_TRANSITION_AIRSPEED" value="15."/> <!-- Transition speed in m/s when we cut the 4 motors to go in plane mode -->
+    <define name="CMQ_TRANSITION_TIME" value="4."/> <!-- Transition time -->
+    <define name="CMQ_TRANSITION_PITCH" value="-0.09"/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->
   </section>  
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_"> 
@@ -297,21 +320,23 @@
     <define name="COURSE_KP" value="1.0"/>
     <define name="COURSE_KD" value="0.1"/>
     <define name="CLIMB_KP" value="0.1"/>
-    <define name="PITCH_KP" value="0.5"/>
-    <define name="PITCH_KD" value="0.1"/>
+    <define name="CLIMB_KP" value="0.1"/>
+    <define name="PITCH_KP" value="0.1"/>
+    <define name="PITCH_KD" value="0.05"/>
     <define name="PITCH_KI" value="0."/>
-    <define name="THROTTLE_KP" value="0.1"/>
-    <define name="THROTTLE_KD" value="0.1"/>
+    <define name="THROTTLE_KP" value="0.05"/>
+    <define name="THROTTLE_KD" value="0.05"/>
     <define name="THROTTLE_KI" value="0."/>
-    <define name="NOMINAL_THROTTLE" value="0.5"/>
-    <define name="PITCH_TRIM" value="0." unit="deg"/>  <!-- TODO : check this value -->  
+    <define name="NOMINAL_THROTTLE" value="0.36"/>  <!-- Throttle % in plane mode on rear motor -->
+    <define name="PITCH_TRIM" value="0." unit="deg"/> 
+    <define name="PITCH_OF_VZ" value="2." unit="deg"/>
   </section>  
 
   <section name="NAV">
     <define name="ARRIVED_AT_WAYPOINT" value="2."/>
-    <define name="NAV_CLIMB_VSPEED" value="1.5"/>
-    <define name="NAV_DESCEND_VSPEED" value="-1."/>
-    <define name="DEFAULT_CIRCLE_RADIUS" value="50"/>
+    <define name="NAV_CLIMB_VSPEED" value="1.5"/> <!-- Climb speed in m/s -->
+    <define name="NAV_DESCEND_VSPEED" value="-1.5"/> <!-- Descend speed in m/s -->
+    <define name="DEFAULT_CIRCLE_RADIUS" value="50"/>  <!-- Circle radius in navigation mode around a point -->
   </section>
   
   <section name="BAT">
@@ -319,7 +344,7 @@
     <define name="CRITIC_BAT_LEVEL" value="9.4" unit="V"/>
     <define name="LOW_BAT_LEVEL" value="10." unit="V"/>
     <define name="MAX_BAT_LEVEL" value="12.4" unit="V"/>
-    <define name="BAT_NB_CELLS" value="4"/>
+    <define name="BAT_NB_CELLS" value="4"/> 
   </section>
 
   <section name="AUTOPILOT">
