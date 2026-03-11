@@ -84,6 +84,11 @@ void gvf_low_level_control_3D(float heading_rate, float climbing_rate)
     v_ctl_mode = V_CTL_MODE_AUTO_CLIMB;
     v_ctl_speed_mode = V_CTL_SPEED_THROTTLE;
 
+    // Incase AIRSPEED is being controlled
+    if (USE_AIRSPEED){
+      v_ctl_speed_mode = V_CTL_SPEED_AIRSPEED;
+    }
+
     v_ctl_climb_setpoint = gvf_c_params.k_climb * climbing_rate; // Setting point for vertical speed
 
     // Lateral XY coordinates

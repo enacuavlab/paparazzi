@@ -24,7 +24,7 @@
  */
 
 #include "modules/autonomous_soaring/autonomous_soaring.h"
-#include "subsystems/datalink/telemetry.h"
+#include "modules/datalink/telemetry.h"
 
 #if FLIGHTRECORDER_SDLOG
 #include "modules/loggers/pprzlog_tp.h"
@@ -32,11 +32,11 @@
 #endif
 
 // #include "modules/datalink/extra_pprz_dl.h"
-// #include "subsystems/datalink/telemetry.h"
+// #include "modules/datalink/telemetry.h"
 #include <string.h>
 #include "generated/airframe.h"
-#include "subsystems/datalink/datalink.h"
-#include "subsystems/datalink/downlink.h"
+#include "modules/datalink/datalink.h"
+#include "modules/datalink/downlink.h"
 
 // State interface
 #include "state.h"
@@ -44,7 +44,7 @@
 // Time and uint32_t 
 #include "mcu_periph/sys_time.h"
 
-#include "subsystems/imu.h"
+#include "modules/imu/imu.h"
 
 // local variables
 static uint32_t last_periodic_time;     // last periodic time

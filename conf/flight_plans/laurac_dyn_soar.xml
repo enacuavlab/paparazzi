@@ -2,7 +2,7 @@
 
 <flight_plan alt="420" ground_alt="370" lat0="43.226666" lon0="1.964444" max_dist_from_home="1500" name="Basic" security_height="25">
   <header>
-#include "subsystems/datalink/datalink.h"
+#include "modules/datalink/datalink.h"
 </header>
   <waypoints>
     <waypoint name="HOME" x="0" y="0"/>
@@ -29,8 +29,7 @@
     <variable var="pitch_ampl" min="0." max="30." step="1." init="20."/>
   </variables>
 
-  <modules> 
-    <module name="gvf_module"/>
+  <modules>
     <module name="gvf_parametric"/>
   </modules>
 
@@ -68,7 +67,7 @@
       <circle radius="nav_radius" wp="STDBY" alt="circle_alt + inclination_height*sinf(RadOfDeg(inclination_start_angle + NavCircleQdr()))"/>
     </block>
     <block name="GVF_3D_ellipse">
-      <call fun="gvf_parametric_3D_ellipse_wp_delta(WP_STDBY,gvf_parametric_3d_ellipse_par.r,flight_altitude-ground_alt,ell_delta,gvf_parametric_3d_ellipse_par.alpha)"/>
+      <call fun="nav_gvf_parametric_3D_ellipse_wp_delta(WP_STDBY,gvf_parametric_3d_ellipse_par.r,flight_altitude-ground_alt,ell_delta,gvf_parametric_3d_ellipse_par.alpha)"/>
     </block>
     <block name="Oval 1-2" strip_button="Oval (wp 1-2)" strip_icon="oval.png" group="base_pattern">
       <oval p1="1" p2="2" radius="nav_radius"/>
