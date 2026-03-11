@@ -370,7 +370,7 @@ static void thd_startlog(void *arg)
         // Chibios date struct
         RTCDateTime date;
         rtcConvertStructTmToDateTime(&time_tm, 0, &date);
-        rtcSetTime(&RTCD1, &date);
+        // rtcSetTime(&RTCD1, &date);
       }
     }
 #endif
