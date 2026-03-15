@@ -90,8 +90,6 @@ static void get_ang_acc(PyObject* pang_acc);
 
 void nps_fdm_init(double dt)
 {
-  python_init(dt);
-
   fdm.init_dt = dt; // (1 / simulation freq)
   fdm.curr_dt = dt;
   fdm.time = dt;
@@ -107,13 +105,18 @@ void nps_fdm_init(double dt)
 
   fdm.ltpprz_to_body_eulers.psi = 0.0;
   init_ltp();
+}
+
+void nps_fdm_run_init_step(void)
+{
+  python_init(fdm.init_dt);
 
   // run a first step to initialize all fdm fields
   double dummy_commands[] = {0., 0., 0., 0.};
   nps_fdm_run_step(false, dummy_commands, 4);
 }
 
-void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int commands_nb __attribute__((unused)))
+void nps_fdm_run_step(bool launch __attribute__((unused)), double *commands, int commands_nb)
 {
   // TODO create a np.array instead ?
   PyObject* pcmd = PyList_New(commands_nb);
