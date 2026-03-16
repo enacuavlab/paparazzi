@@ -25,18 +25,18 @@
 #define _WIDEN(x)  L ## x
 #define WIDEN(x)   _WIDEN(x)
 
-#ifndef PYTHON_EXEC
-#define PYTHON_EXEC "python3"
+#ifndef NPS_PYTHON_EXEC
+#define NPS_PYTHON_EXEC "python3"
 #else
-MESSAGE("PyBullet using" VALUE(PYTHON_EXEC))
+MESSAGE("PyBullet using" VALUE(NPS_PYTHON_EXEC))
 #endif
 
-#ifndef PYBULLET_GUI
-#define PYBULLET_GUI TRUE
+#ifndef NPS_PYBULLET_GUI
+#define NPS_PYBULLET_GUI TRUE
 #endif
 
-#ifdef NPS_ACTUATORS_ORDER
-  int actuators_order[ACTUATORS_NB] = NPS_ACTUATORS_ORDER;
+#ifdef NPS_PYBULLET_ACTUATORS_ORDER
+  int actuators_order[ACTUATORS_NB] = NPS_PYBULLET_ACTUATORS_ORDER;
 #else
   #error "[PyBullet] missing NPS_ACTUATORS_ORDER define!"
 #endif
@@ -340,7 +340,7 @@ static void python_init(double dt) {
   config.configure_c_stdio = 1;
   config.buffered_stdio = 0;
 
-  status = PyConfig_SetString(&config, &config.program_name, WIDEN(PYTHON_EXEC));
+  status = PyConfig_SetString(&config, &config.program_name, WIDEN(NPS_PYTHON_EXEC));
   py_check_status(&config, &status);
   status = Py_InitializeFromConfig(&config);
   py_check_status(&config, &status);
@@ -358,7 +358,7 @@ static void python_init(double dt) {
   py_check(true, __LINE__);
 
   PyObject* fdm_ctor_args = Py_BuildValue("(d)", dt);
-  PyObject* fdm_ctor_kwargs = Py_BuildValue("{siss}", "GUI", PYBULLET_GUI, "urdf", NPS_PYBULLET_URDF);
+  PyObject* fdm_ctor_kwargs = Py_BuildValue("{siss}", "GUI", NPS_PYBULLET_GUI, "urdf", NPS_PYBULLET_URDF);
   bullet_fdm = PyObject_Call(bullet_fdm_class, fdm_ctor_args, fdm_ctor_kwargs);
 
   py_check(true, __LINE__);
