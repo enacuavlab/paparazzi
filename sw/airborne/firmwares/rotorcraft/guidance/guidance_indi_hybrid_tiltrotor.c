@@ -14,9 +14,8 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with paparazzi; see the file COPYING.  If not, write to
- * the Free Software Foundation, 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -25,7 +24,6 @@
  */
 
 #include "firmwares/rotorcraft/guidance/guidance_indi_hybrid_tiltrotor.h"
-
 #include "firmwares/rotorcraft/guidance/guidance_indi_hybrid.h"
 
 #ifndef GUIDANCE_INDI_PITCH_EFF_SCALING
@@ -40,20 +38,17 @@ float bodyz_filter_cutoff = 0.2;
 Butterworth2LowPass accel_bodyx_filt;
 Butterworth2LowPass accel_bodyz_filt;
 
-inline void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angle, float pitch_angle);
+void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angle, float pitch_angle);
 
 /**
- *
  * Call upon entering indi guidance
  */
 void guidance_indi_tiltrotor_init(void) {
-  float tau_bodyx = 1.0/(2.0*M_PI*bodyx_filter_cutoff);
-  float tau_bodyz = 1.0/(2.0*M_PI*bodyz_filter_cutoff);
-  float sample_time = 1.0 / PERIODIC_FREQUENCY;
-  init_butterworth_2_low_pass(&accel_bodyx_filt, tau_bodyx, sample_time, 0.0);
-  init_butterworth_2_low_pass(&accel_bodyz_filt, tau_bodyz, sample_time, 9.81);
-
-
+  float tau_bodyx = 1.f/(2.f*M_PI*bodyx_filter_cutoff);
+  float tau_bodyz = 1.f/(2.f*M_PI*bodyz_filter_cutoff);
+  float sample_time = 1.f / PERIODIC_FREQUENCY;
+  init_butterworth_2_low_pass(&accel_bodyx_filt, tau_bodyx, sample_time, 0.0f);
+  init_butterworth_2_low_pass(&accel_bodyz_filt, tau_bodyz, sample_time, 9.81f);
 }
 
 /**
@@ -78,24 +73,23 @@ void guidance_indi_tiltrotor_propagate_filters(void) {
  * @param body_v 3D vector to write the control objective v
  */
 void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_HYBRID_U], struct FloatVect3 a_diff, float body_v[GUIDANCE_INDI_HYBRID_V]) {
-  // Get attitude
-  struct FloatEulers eulers_zxy;
-  float_eulers_of_quat_zxy(&eulers_zxy, stateGetNedToBodyQuat_f());
+  /* Pre-calculate sines and cosines from filtered angles */
+  const float phi_f = get_butterworth_2_low_pass(&roll_filt);
+  const float theta_f = get_butterworth_2_low_pass(&pitch_filt);
+  const float psi_f = get_butterworth_2_low_pass(&yaw_filt);
+  const float sphi = sinf(phi_f);
+  const float cphi = cosf(phi_f);
+  const float stheta = sinf(theta_f);
+  const float ctheta = cosf(theta_f);
+  const float spsi = sinf(psi_f);
+  const float cpsi = cosf(psi_f);
 
-  /*Pre-calculate sines and cosines*/
-  float sphi = sinf(eulers_zxy.phi);
-  float cphi = cosf(eulers_zxy.phi);
-  float stheta = sinf(eulers_zxy.theta);
-  float ctheta = cosf(eulers_zxy.theta);
-  float spsi = sinf(eulers_zxy.psi);
-  float cpsi = cosf(eulers_zxy.psi);
-
-  /*Force resultants*/
-  float fx = MASS * accel_bodyx_filt.o[0];
-  float fz = MASS * accel_bodyz_filt.o[0];
+  /* Force resultants */
+  float fx = GUIDANCE_INDI_MASS * get_butterworth_2_low_pass(&accel_bodyx_filt);
+  float fz = GUIDANCE_INDI_MASS * get_butterworth_2_low_pass(&accel_bodyz_filt);
 
   // get the derivative of the lift wrt to theta
-  float dfz = guidance_indi_get_liftd(stateGetAirspeed_f(), eulers_zxy.theta);
+  float dfz = guidance_indi_get_liftd(stateGetAirspeed_f(), theta_f);
 
   // dPhi (Roll)
   Gmat[GIHT_X][GIHT_CMD_ROLL] = fx * (-spsi * cphi * stheta) + fz * (spsi * cphi * ctheta);
@@ -103,13 +97,22 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
   Gmat[GIHT_Z][GIHT_CMD_ROLL] = fx * (sphi * stheta)         + fz * (-sphi * ctheta);
 
   // dTheta (Pitch)
-  Gmat[GIHT_X][GIHT_CMD_PITCH] = fx * (-cpsi * stheta - spsi * sphi * ctheta) + fz * (cpsi * ctheta - spsi * sphi * stheta) * gi_pitch_eff_scaling + (cpsi * stheta + spsi * sphi * ctheta) * dfz;
-  Gmat[GIHT_Y][GIHT_CMD_PITCH] = fx * (-spsi * stheta + cpsi * sphi * ctheta) + fz * (spsi * ctheta + cpsi * sphi * stheta) * gi_pitch_eff_scaling + (spsi * stheta - cpsi * sphi * ctheta) * dfz;
-  Gmat[GIHT_Z][GIHT_CMD_PITCH] = fx * (-cphi * ctheta)                        + fz * (-cphi * stheta) * gi_pitch_eff_scaling                       + cphi * ctheta * dfz;
+  Gmat[GIHT_X][GIHT_CMD_PITCH] =
+    fx * (-cpsi * stheta - spsi * sphi * ctheta) +
+    fz * (cpsi * ctheta - spsi * sphi * stheta) * gi_pitch_eff_scaling +
+    dfz * (cpsi * stheta + spsi * sphi * ctheta);
+  Gmat[GIHT_Y][GIHT_CMD_PITCH] =
+    fx * (-spsi * stheta + cpsi * sphi * ctheta) +
+    fz * (spsi * ctheta + cpsi * sphi * stheta) * gi_pitch_eff_scaling +
+    dfz * (spsi * stheta - cpsi * sphi * ctheta);
+  Gmat[GIHT_Z][GIHT_CMD_PITCH] =
+    fx * (-cphi * ctheta) +
+    fz * (-cphi * stheta) * gi_pitch_eff_scaling +
+    dfz * cphi * ctheta;
 
   // dfz
   Gmat[GIHT_X][GIHT_CMD_FZ] = (cpsi * stheta + spsi * sphi * ctheta);
-  Gmat[GIHT_Y][GIHT_CMD_FZ] = (spsi * stheta - cpsi * sphi * ctheta); 
+  Gmat[GIHT_Y][GIHT_CMD_FZ] = (spsi * stheta - cpsi * sphi * ctheta);
   Gmat[GIHT_Z][GIHT_CMD_FZ] = cphi * ctheta;
 
   // dfx
@@ -120,34 +123,38 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
   body_v[GIHT_X] =  a_diff.x;
   body_v[GIHT_Y] =  a_diff.y;
   body_v[GIHT_Z] =  a_diff.z;
-      
 }
 
-void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angle, float pitch_angle)
+void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_angle, float pitch_angle)
 {
-  // Weights evolution
-  float Wu_original[GUIDANCE_INDI_HYBRID_U] = GUIDANCE_INDI_WLS_WU;
-  float Wv_original[GUIDANCE_INDI_HYBRID_V] = GUIDANCE_INDI_WLS_PRIORITIES;
+  const float max_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MAX_PITCH);
+  const float min_pitch_limit_rad = RadOfDeg(guidance_indi_min_pitch);
 
-  wls_guid_p.Wu[ESH_CMD_PITCH] = Wu_original[ESH_CMD_PITCH] + 5 * T1.as;
-  wls_guid_p.Wu[ESH_CMD_FX] = Wu_original[ESH_CMD_FX] + 300 * (1 - pow(M_E, (T1.as / 4.0)));
+  // Weights evolution
+  const float Wu_original[GUIDANCE_INDI_HYBRID_U] = GUIDANCE_INDI_WLS_WU;
+  const float Wv_original[GUIDANCE_INDI_HYBRID_V] = GUIDANCE_INDI_WLS_PRIORITIES;
+
+  // FIXME improve this part
+  wls_guid_p.Wu[GIHT_CMD_PITCH] = Wu_original[GIHT_CMD_PITCH] + 5 * T1.as;
+  wls_guid_p.Wu[GIHT_CMD_FX] = Wu_original[GIHT_CMD_FX] + 300 * (1 - expf(T1.as / 4.0));
   wls_guid_p.Wv[0] = Wv_original[0] + 3 * T1.as; //maybe could evolute with tilt angle
- 
+
   // Set lower limits
-  wls_guid_p.u_min[ESH_CMD_ROLL]  = -RadOfDeg(40) - roll_angle;
-  wls_guid_p.u_min[ESH_CMD_PITCH] = -RadOfDeg(40) - pitch_angle;
-  wls_guid_p.u_min[ESH_CMD_FZ]    = -20 - MASS * accel_bodyz_filt.o[0];
-  wls_guid_p.u_min[ESH_CMD_FX]    = 0 - MASS * accel_bodyx_filt.o[0];
+  wls_guid_p.u_min[GIHT_CMD_ROLL]  = -guidance_indi_max_bank - roll_angle;
+  wls_guid_p.u_min[GIHT_CMD_PITCH] = min_pitch_limit_rad - pitch_angle;
+  wls_guid_p.u_min[GIHT_CMD_FZ]    = -20 - GUIDANCE_INDI_MASS * accel_bodyz_filt.o[0];
+  wls_guid_p.u_min[GIHT_CMD_FX]    = 0 - GUIDANCE_INDI_MASS * accel_bodyx_filt.o[0];
 
   // Set upper limits
-  wls_guid_p.u_max[ESH_CMD_ROLL]  = RadOfDeg(40) - roll_angle;
-  wls_guid_p.u_max[ESH_CMD_PITCH] = RadOfDeg(40) - pitch_angle;
-  wls_guid_p.u_max[ESH_CMD_FZ]    = 0 - MASS * accel_bodyz_filt.o[0];
-  wls_guid_p.u_max[ESH_CMD_FX]    = 20 - MASS * accel_bodyx_filt.o[0];
+  wls_guid_p.u_max[GIHT_CMD_ROLL]  = guidance_indi_max_bank - roll_angle;
+  wls_guid_p.u_max[GIHT_CMD_PITCH] = max_pitch_limit_rad - pitch_angle;
+  wls_guid_p.u_max[GIHT_CMD_FZ]    = 0 - GUIDANCE_INDI_MASS * accel_bodyz_filt.o[0];
+  wls_guid_p.u_max[GIHT_CMD_FX]    = 20 - GUIDANCE_INDI_MASS * accel_bodyx_filt.o[0];
 
   // Set prefered states
-  wls_guid_p.u_pref[ESH_CMD_ROLL]  = -roll_angle; // prefered delta roll angle
-  wls_guid_p.u_pref[ESH_CMD_PITCH] = -pitch_angle; // prefered delta pitch angle
-  wls_guid_p.u_pref[ESH_CMD_FZ]    =  MASS * accel_bodyz_filt.o[0];
-  wls_guid_p.u_pref[ESH_CMD_FX]    =  MASS * accel_bodyx_filt.o[0];
+  wls_guid_p.u_pref[GIHT_CMD_ROLL]  = -roll_angle; // prefered delta roll angle
+  wls_guid_p.u_pref[GIHT_CMD_PITCH] = -pitch_angle; // prefered delta pitch angle
+  wls_guid_p.u_pref[GIHT_CMD_FZ]    =  GUIDANCE_INDI_MASS * accel_bodyz_filt.o[0];
+  wls_guid_p.u_pref[GIHT_CMD_FX]    =  GUIDANCE_INDI_MASS * accel_bodyx_filt.o[0];
 }
+

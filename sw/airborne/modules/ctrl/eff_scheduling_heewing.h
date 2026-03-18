@@ -42,8 +42,8 @@ struct T1_attitude {
 
 struct T1_tilt {
   float rad;  // Tilt angle in radians
-  float cosr; // cosine of motor tilt angle
-  float sinr; // sine of motor tilt angle
+  float cost; // cosine of motor tilt angle
+  float sint; // sine of motor tilt angle
 };
 
 struct T1_motor {
@@ -53,8 +53,6 @@ struct T1_motor {
 };
 
 struct T1_Model {
-  float wls_min_mt;
-
   float I_XX;
   float I_YY;
   float I_ZZ;

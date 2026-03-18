@@ -46,11 +46,17 @@
 // gains can be higher, depending on the speed of the inner loop.
 #ifndef GUIDANCE_INDI_SPEED_GAIN
 #define GUIDANCE_INDI_SPEED_GAIN 1.8
+#endif
+
+#ifndef GUIDANCE_INDI_SPEED_GAINZ
 #define GUIDANCE_INDI_SPEED_GAINZ 1.8
 #endif
 
 #ifndef GUIDANCE_INDI_POS_GAIN
 #define GUIDANCE_INDI_POS_GAIN 0.5
+#endif
+
+#ifndef GUIDANCE_INDI_POS_GAINZ
 #define GUIDANCE_INDI_POS_GAINZ 0.5
 #endif
 
@@ -616,8 +622,9 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   float thrust_vect[3];
 #if GUIDANCE_INDI_HYBRID_U > 3
   thrust_vect[0] = du_gih[3];
-  if (thrust_vect[0] > GUIDANCE_INDI_MAX_PUSHER_INCREMENT*g1g2[4][GUIDANCE_INDI_PUSHER_INDEX]) {
-    thrust_vect[0] = GUIDANCE_INDI_MAX_PUSHER_INCREMENT*g1g2[4][GUIDANCE_INDI_PUSHER_INDEX];
+  float max_pusher_incr = guidance_indi_max_pusher_incr();
+  if (thrust_vect[0] > max_pusher_incr) {
+    thrust_vect[0] = max_pusher_incr;
   }
 #else
   thrust_vect[0] = 0;
@@ -890,6 +897,18 @@ void guidance_indi_propagate_filters(void)
   update_butterworth_2_low_pass(&guidance_indi_airspeed_filt, airspeed);
 }
 
+/**
+ * get pusher thrust max increment
+ */
+#if GUIDANCE_INDI_HYBRID_U > 3
+float WEAK guidance_indi_max_pusher_incr(void) {
+#ifdef GUIDANCE_INDI_PUSHER_INDEX
+  return GUIDANCE_INDI_MAX_PUSHER_INCREMENT*g1g2[4][GUIDANCE_INDI_PUSHER_INDEX];
+#else
+  return 0.f;
+#endif
+}
+#endif
 
 /**
  * @brief Get the derivative of lift w.r.t. pitch.

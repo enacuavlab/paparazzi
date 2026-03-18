@@ -111,15 +111,14 @@
   </servos>
 
   <commands>
-    <axis name="MOTOR_RIGHT"    group="REAL"    failsafe_value="MOTOR_STOP"/>
-    <axis name="MOTOR_LEFT"     group="REAL"    failsafe_value="MOTOR_STOP"/>
-    <axis name="MOTOR_TAIL"     group="REAL"    failsafe_value="MOTOR_STOP"/>
-    <axis name="ROLL"           group="VIRTUAL" failsafe_value="0"/>
-    <axis name="PITCH"          group="VIRTUAL" failsafe_value="0"/>
-    <axis name="YAW"            group="VIRTUAL" failsafe_value="0"/>
-    <axis name="THRUST"         group="VIRTUAL" failsafe_value="0"/>
-    <axis name="MEAN_TILT"      group="VIRTUAL" failsafe_value="0"/>
-    <axis name="DELTA_TILT"     group="VIRTUAL" failsafe_value="0"/>
+    <axis name="MOTOR_RIGHT"    failsafe_value="MOTOR_STOP"/>
+    <axis name="MOTOR_LEFT"     failsafe_value="MOTOR_STOP"/>
+    <axis name="MOTOR_TAIL"     failsafe_value="MOTOR_STOP"/>
+    <axis name="ROLL"           failsafe_value="0"/>
+    <axis name="PITCH"          failsafe_value="0"/>
+    <axis name="TILT_RIGHT"     failsafe_value="0"/>
+    <axis name="TILT_LEFT"      failsafe_value="0"/>
+    <axis name="THRUST"         failsafe_value="0"/>
   </commands>
 
   <command_laws>
@@ -136,8 +135,8 @@
     <set servo="AILERON_RIGHT"  value="@ROLL"/>
     <set servo="AILERON_LEFT"   value="@ROLL"/>
     <set servo="ELEVATOR"       value="@PITCH"/>
-    <set servo="TILT_RIGHT"     value="@MEAN_TILT + @DELTA_TILT"/>
-    <set servo="TILT_LEFT"      value="@MEAN_TILT - @DELTA_TILT"/>
+    <set servo="TILT_RIGHT"     value="@TILT_RIGHT"/>
+    <set servo="TILT_LEFT"      value="@TILT_LEFT"/>
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
@@ -224,6 +223,16 @@
   </section>
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
+    <!-- reference acceleration for attitude control -->
+    <define name="REF_ERR_P" value="41.089"/>
+    <define name="REF_ERR_Q" value="85.1472"/>
+    <define name="REF_ERR_R" value="90.0"/>
+    <define name="REF_RATE_P" value="10.0"/> 
+    <define name="REF_RATE_Q" value="18.0"/>
+    <define name="REF_RATE_R" value="20.0"/>
+
+    <define name="FILT_CUTOFF" value="4.0"/>
+
     <!--ROWS:    MX MY MZ FX FZ -->
     <!--COLUMNS: MR ML MB MEAN_TILT DELTA_TILT DA DM -->
     <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
@@ -238,16 +247,8 @@
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{0., 0., 0., 0., 0., 0., 0.}"/>
 
-    <!-- reference acceleration for attitude control -->
-    <define name="REF_ERR_P" value="41.089"/>
-    <define name="REF_ERR_Q" value="85.1472"/>
-    <define name="REF_ERR_R" value="90.0"/>
-    <define name="REF_RATE_P" value="10.0"/> 
-    <define name="REF_RATE_Q" value="18.0"/>
-    <define name="REF_RATE_R" value="20.0"/>
-
-    <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
-    <define name="FILT_CUTOFF" value="5.0"/>
+    <define name="WLS_PRIORITIES" value="{1000, 1000, 10, 200, 100}"/> <!-- Roll, Pitch, Yaw, Lift, Thrust -->
+    <define name="WLS_WU"         value="{1.3, 1.3, 1.3, 2.0, 1.0, 1.0, 1.0}"/> <!-- Left Thrust, Right Thrust, Tail Thrust, Mean Tilt, Tilt Diff, Ailerons, Elevator -->
 
     <!-- first order actuator dynamics -->
     <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 25.6, 25.6, 25.6, 25.6}"/>
@@ -259,34 +260,22 @@
       <field name="THRUST_Z" value="{1,1,1,1,0,0,0}"/>
     </define>
 
-    <define name="COMMANDS" value="{COMMAND_MOTOR_RIGHT, COMMAND_MOTOR_LEFT, COMMAND_MOTOR_TAIL, COMMAND_MEAN_TILT, COMMAND_DELTA_TILT, COMMAND_ROLL, COMMAND_PITCH}"/>
+    <define name="COMMANDS" value="{COMMAND_MOTOR_RIGHT, COMMAND_MOTOR_LEFT, COMMAND_MOTOR_TAIL, COMMAND_TILT_RIGHT, COMMAND_TILT_LEFT, COMMAND_ROLL, COMMAND_PITCH}"/>
 
     <!-- Adaptive Learning Rate -->
     <define name="USE_ADAPTIVE" value="FALSE"/>
     <define name="ADAPTIVE_MU" value="0.0001"/>
+    <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
   </section>
 
-  <section name ="EFF_SCHEDULING">
-    <define name="I_XX_0TILT"                        value="0.005"/> <!-- X-AXIS MOMENT OF INERTIA AT TILT = 0 -->
-    <define name="I_YY_0TILT"                        value="0.005"/> <!-- Y-AXIS MOMENT OF INERTIA AT TILT = 0 -->
-    <define name="I_ZZ_0TILT"                        value="0.015"/> <!-- Z-AXIS MOMENT OF INERTIA AT TILT = 0 -->
-    <define name="MASS"                              value="0.67"/>
-    <define name="PITCH_D2_ELEVATOR"                 value="-1.1"/> <!-- -1.1 from simulator, -0.64 from theory -->
-    <define name="ROLL_D2_AILERONS"                  value="-0.17"/>
-    <define name="YAW_D2_AILERONS"                   value="-0.01"/>
-    <define name="LIFT_D2_ALPHA"                     value="4.68"/> <!-- from simulator linear zone from 0 to 20 degrees-->
-    <define name="STABILIZATION_INDI_WLS_PRIORITIES" value="{1000, 1000, 10, 200, 100}"/> <!-- Roll, Pitch, Yaw, Lift, Thrust -->
-    <define name="STABILIZATION_INDI_WLS_WU"         value="{1.3, 1.3, 1.3, 2.0, 1.0, 1.0, 1.0}"/> <!-- Left Thrust, Right Thrust, Tail Thrust, Mean Tilt, Tilt Diff, Ailerons, Elevator -->
-    <define name="GUIDANCE_INDI_HYBRID_USE_WLS"      value="1"/>
-    <define name="GUIDANCE_INDI_WLS_PRIORITIES"      value="{1000, 1000, 1000}"/> <!-- X, Y, Z Accelerations -->
-    <define name="GUIDANCE_INDI_WLS_WU"              value="{1000, 1000, 200, 100}"/> <!-- Roll, Pitch, Lift, Thrust -->
-    <!--define name="GUIDANCE_INDI_PUSHER_INDEX"            value="1"/>
-    <define name="STABILIZATION_INDI_G1_THRUST_X"        value="4"/>
-    <define name="STABILIZATION_INDI_ACT_IS_THRUSTER_X"      value="{1, 1, 0, 1, 0, 0, 0}"/>
-    <define name="STABILIZATION_INDI_ACT_IS_THRUSTER_Z"      value="{1, 1, 1, 1, 0, 0, 0}"/>
-    <define name="STABILIZATION_INDI_NUM_THRUSTERS"          value="3"/>
-    <define name="STABILIZATION_INDI_NUM_THRUSTERS_X"        value="2"/-->
-    <define name="NAV_HYBRID_EXT_VISION_SETPOINT_MODE" value="FALSE"/> <!--only for more precise hovering when using optitrack-->
+  <section name ="EFF_SCHEDULING" prefix="ESH_">
+    <define name="I_XX"       value="0.005"/> <!-- X-AXIS MOMENT OF INERTIA AT TILT = 0 -->
+    <define name="I_YY"       value="0.005"/> <!-- Y-AXIS MOMENT OF INERTIA AT TILT = 0 -->
+    <define name="I_ZZ"       value="0.015"/> <!-- Z-AXIS MOMENT OF INERTIA AT TILT = 0 -->
+    <define name="MASS"       value="0.67"/>
+    <define name="PITCH_EFF"  value="-1.1"/> <!-- -1.1 from simulator, -0.64 from theory -->
+    <define name="ROLL_EFF"   value="-0.17"/>
+    <define name="LIFT_EFF"   value="4.68"/> <!-- from simulator linear zone from 0 to 20 degrees-->
   </section>
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
@@ -317,12 +306,10 @@
     <define name="GUIDANCE_INDI_FILTER_CUTOFF" value="5"/>
     <define name="GUIDANCE_INDI_LINE_GAIN" value="0.7"/>
     <define name="FWD_SIDESLIP_GAIN" value="0.20"/>
-    <define name="GUIDANCE_ESH_LIFT_EFF" value="1.0"/>
-    <!--Flap effectiveness on lift-->
-    <define name="FE_LIFT_A_PITCH" value="0.00018"/>
-    <define name="FE_LIFT_B_PITCH" value="0.00072"/>
-    <define name="FE_LIFT_A_AS" value="0.0008"/>
-    <define name="FE_LIFT_B_AS" value="0.00009"/>
+    <define name="GUIDANCE_INDI_HYBRID_USE_WLS"      value="1"/>
+    <define name="GUIDANCE_INDI_WLS_PRIORITIES"      value="{1000, 1000, 1000}"/> <!-- X, Y, Z Accelerations -->
+    <define name="GUIDANCE_INDI_WLS_WU"              value="{1000, 1000, 200, 100}"/> <!-- Roll, Pitch, Lift, Thrust -->
+    <define name="GUIDANCE_INDI_MASS" value="ESH_MASS"/>
   </section>
 
   <section name="NAV">
@@ -335,6 +322,7 @@
     <define name="SURVEY_HYBRID_MAX_SWEEP_BACK" value="1"/>
     <define name="MISSION_ALT_PROXIMITY" value="4."/>
     <define name="NAV_HYBRID_LINE_GAIN" value="0.8"/>
+    <define name="NAV_HYBRID_EXT_VISION_SETPOINT_MODE" value="FALSE"/> <!--only for more precise hovering when using optitrack-->
   </section>
 
   <include href="conf/mag/toulouse_muret.xml"/>
@@ -355,7 +343,7 @@
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">
-    <define name="JSBSIM_MODEL" value="ranger_t1" type="string"/>
+    <define name="JSBSIM_MODEL" value="ranger_t1_indi" type="string"/>
     <define name="USE_COMMANDS" value="TRUE"/>
   </section>
   

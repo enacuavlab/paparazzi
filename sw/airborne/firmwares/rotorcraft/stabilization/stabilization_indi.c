@@ -106,12 +106,6 @@
 #define STABILIZATION_INDI_YAW_DISTURBANCE_LIMIT 99999.f
 #endif
 
-#if INDI_OUTPUTS == 5
-#ifndef STABILIZATION_INDI_G1_THRUST_X
-#error "You must define STABILIZATION_INDI_G1_THRUST_X for your number of INDI_OUTPUTS"
-#endif
-#endif
-
 #ifdef SetCommandsFromRC
 #warning SetCommandsFromRC not used: STAB_INDI writes actuators directly
 #endif
@@ -292,6 +286,9 @@ float g2[INDI_NUM_ACT] = STABILIZATION_INDI_G2; //scaled by INDI_G_SCALING
 float g1[INDI_OUTPUTS][INDI_NUM_ACT] = STABILIZATION_INDI_G1;
 #else // old defines TODO remove
 #if INDI_OUTPUTS == 5
+#ifndef STABILIZATION_INDI_G1_THRUST_X
+#error "You must define STABILIZATION_INDI_G1_THRUST_X for your number of INDI_OUTPUTS"
+#endif
 float g1[INDI_OUTPUTS][INDI_NUM_ACT] = {STABILIZATION_INDI_G1_ROLL,
                                         STABILIZATION_INDI_G1_PITCH, STABILIZATION_INDI_G1_YAW,
                                         STABILIZATION_INDI_G1_THRUST, STABILIZATION_INDI_G1_THRUST_X
