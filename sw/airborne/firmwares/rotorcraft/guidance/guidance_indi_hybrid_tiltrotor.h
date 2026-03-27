@@ -21,14 +21,6 @@
 #ifndef GUIDANCE_INDI_HYBRID_TILTROTOR
 #define GUIDANCE_INDI_HYBRID_TILTROTOR
 
-#define GIHT_X 0
-#define GIHT_Y 1
-#define GIHT_Z 2
-#define GIHT_CMD_ROLL   0
-#define GIHT_CMD_PITCH  1
-#define GIHT_CMD_FZ     2
-#define GIHT_CMD_FX     3
-
 extern void guidance_indi_tiltrotor_init(void);
 extern void guidance_indi_tiltrotor_propagate_filters(void);
 

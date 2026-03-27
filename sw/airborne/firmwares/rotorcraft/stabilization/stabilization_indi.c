@@ -944,6 +944,35 @@ void set_rotorcraft_commands(pprz_t *cmd_out, int32_t *cmd_in, bool in_flight __
 }
 #endif
 
+/** Return estimated thrust for a given command along a specific axis
+ *
+ * Based on the efficiency matrix and the actuator/thrust matrix
+ * Axis: X=0, Y=1, Z=2
+ */
+float stabilitzation_indi_get_thrust(float cmd, uint8_t axis)
+{
+  float thrust = 0.f;
+  if (axis > 2) { return thrust; } // out of range
+
+  for (i = 0; i < INDI_NUM_ACT; i++) {
+#if INDI_OUTPUTS == 4
+    if (axis == 2) {
+      thrust += Bwls[3][i] * cmd * (int32_t) act_thrust_mat[2][i];
+    }
+#endif
+#if INDI_OUTPUTS == 5 // FIXME change order of Z and X, or better detect that automatically ?
+    if (axis == 0) {
+      thrust += Bwls[4][i] * cmd * (int32_t) act_thrust_mat[0][i];
+    } else if (axis == 2) {
+      thrust += Bwls[3][i] * cmd * (int32_t) act_thrust_mat[2][i];
+    }
+#endif
+#if INDI_OUTPUTS == 6
+    thrust += Bwls[3+axis][i] * cmd * (int32_t) act_thrust_mat[axis][i];
+#endif
+  }
+}
+
 /**
  * @param ddx_error error in output change
  * @param i row of the matrix element
