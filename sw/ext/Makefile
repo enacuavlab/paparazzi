@@ -72,6 +72,8 @@ fatfs: fatfs.sync fatfs.update
 
 ecl: ecl.update
 
+gsl: gsl.update gsl.build
+
 matrix: matrix.update
 
 mavlink: mavlink.update mavlink.build
