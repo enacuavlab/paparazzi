@@ -79,7 +79,7 @@
     <module name="ins" type="ekf2">
     </module> 
     <!--define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_HEADING"/--> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
-    <define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_NONE"/> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
+    <!--define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_NONE"/--> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
 
     
     <module name="stabilization" type="indi">
@@ -289,7 +289,7 @@
   <section name="HYBRID_TRANSITION">
     <define name="CMQ_TRANSITION_AIRSPEED" value="15."/> <!-- Transition speed in m/s when we cut the 4 motors to go in plane mode -->
     <define name="CMQ_TRANSITION_TIME" value="4."/> <!-- Transition time -->
-    <define name="CMQ_TRANSITION_PITCH" value="-0.09"/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->
+    <define name="CMQ_TRANSITION_PITCH" value="0."/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->
   </section>  
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_"> 

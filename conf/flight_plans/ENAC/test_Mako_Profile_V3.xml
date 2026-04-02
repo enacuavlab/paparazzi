@@ -1,0 +1,136 @@
+<!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
+
+<flight_plan alt="377" ground_alt="357" lat0="49.4076163994" lon0="10.9538135952" max_dist_from_home="300" name="Wolfshoehe_Profile" security_height="50">
+
+<header>
+</header>
+  
+  <waypoints>
+    <waypoint name="HOME" x="0" y="0"/>
+    <waypoint name="Profile" x="0" y="0" alt="477"/>
+    <waypoint name="TD" x="100" y="75"/>
+    <waypoint name="STDBY" x="50" y="100"/>
+    <waypoint name="Trans" x="-100" y="100"/>
+    <waypoint name="CLIMB" x="0" y="0"/>
+    <waypoint name="_HERE" x="-10" y="-10"/>
+  </waypoints>
+  
+  <variables>
+    <variable init="25." max="90." min ="0." step="1." var="climb_pitch"/>
+    <variable init="0.85" max="1.0" min ="0." step="0.05" var="climb_throttle"/>
+    <variable init="0." max="20." min ="-10." step="1." var="descent_pitch"/>
+    <variable init="0.6" max="1.0" min ="0." step="0.05" var="descent_throttle"/> <!-- FIXME Probably too big !!!! -->
+    <variable init="-0.5" max="10." min ="-10." step="0.1" var="sink_rate"/>
+    <variable init="-100" max="120" min ="-120" step="5" var="circle_radius"/>
+    
+    <variable init="120." var="profile_height" min="5." max="160." step="1.0"/>
+
+    <variable init="120." var="mapping_height" min="5." max="160." step="1.0"/>
+    <!--variable init="80." var="mapping_sweep" min="25." max="150." step="0.1"/>
+    <variable init="-1." var="mapping_radius" min="-1." max="100." step="1.0"/-->
+
+  </variables>
+
+
+  <!--exceptions>
+    <exception cond="10.5 @LT PowerVoltage()" deroute="Standby"/>
+  </exceptions-->
+
+  <blocks>
+    
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 10)"/>
+      <call_once fun="NavSetAltitudeReferenceHere()"/>
+    </block>
+
+    <!--block name="Waiting for Remote Control">
+      <while cond="RCLost()"/>
+    </block-->
+
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+
+    <block name="Start Engine">
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+
+    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
+      <exception cond="GetPosHeight() @GT 20" deroute="Standby"/> 
+      <call_once fun="NavSetWaypointHere(WP_CLIMB)"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 1" vmode="throttle"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="CLIMB"/>
+    </block>
+
+    <block name="Standby" strip_button="Standby" strip_icon="home.png">
+      <stay wp="STDBY"/>
+    </block>
+
+    <block name="transition to climb">
+      <stay wp="STDBY" until="stage_time @GT 1"/>
+      <go wp="Trans" from="STDBY" hmode="route"/>
+      <deroute block="Climb"/>
+    </block>
+    
+    <block name="Climb">
+      <circle pitch="climb_pitch" radius="circle_radius" throttle="climb_throttle" until="GetPosAlt() > GetAltRef()+mapping_height" vmode="throttle" wp="Profile"/>
+      <deroute block="Circle"/>
+    </block>
+
+    <block name="Circle">
+      <exception cond="GetPosAlt() @GT GetAltRef() + mapping_height + 50" deroute="Spiral to Standby"/>
+      <circle radius="circle_radius" wp="Profile" until="stage_time>30" height="mapping_height" />
+      <deroute block="Descent2"/>
+    </block> 
+
+    <block name="Descent1">
+      <exception cond="GetPosAlt() @GT GetAltRef() + 140" deroute="Spiral to Standby"/>
+      <circle pitch="descent_pitch" radius="circle_radius" throttle="descent_throttle" until="GetPosAlt() @LT GetAltRef() + 25" vmode="throttle" wp="Profile"/>
+      <deroute block="Return to Standby"/>
+    </block>
+
+    <block name="Descent2">
+      <exception cond="GetPosAlt() @GT GetAltRef() + 140" deroute="Spiral to Standby"/>
+      <circle climb="sink_rate" radius="circle_radius" until="GetPosAlt() @LT GetAltRef() + 25" vmode="climb" wp="Profile"/>
+      <deroute block="Return to Standby"/>
+    </block>
+
+    <block name="Down">
+      <circle pitch="-10" radius="circle_radius" throttle="0.60" until="GetPosAlt()+50 @GT GetAltRef()" vmode="throttle" wp="Profile"/>
+      <deroute block="Standby"/>
+    </block>
+
+    <block name="Spiral to Standby">
+      <circle wp="STDBY" radius="circle_radius" until="GetPosHeight() @LT WaypointAlt(WP_STDBY) + 5"/>
+      <deroute block="Return to Standby"/>
+    </block>
+    <block name="Return to Standby">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="STDBY" from="_HERE" hmode="route" approaching_time="3"/>
+      <deroute block="Standby"/>
+    </block>
+
+    <block name="land">
+      <go wp="TD"/>
+    </block>
+
+    <block name="flare">
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="TD"/>
+    </block>
+    
+    <block name="Kill landed">
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+
+  </blocks>
+
+</flight_plan>
