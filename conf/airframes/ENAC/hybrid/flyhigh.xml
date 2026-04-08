@@ -55,11 +55,11 @@
       <define name="MODULE_RM3100_UPDATE_AHRS" value="TRUE"/>
     </module>
     
-    <!--Airspeed sensor : get the measured airspeed in the messages-->
+    <!--Airspeed sensor : get the measured airspeed in the messages 45 and -0.1-->
     <module name="airspeed" type="sdp3x">
       <define name="SDP3X_i2C_DEV" value="i2c2"/>
-      <define name="SDP3X_PRESSURE_SCALE" value="45.0"/>
-      <define name="SDP3X_PRESSURE_OFFSET" value="-0.1"/>
+      <define name="SDP3X_PRESSURE_SCALE" value="24.8"/>
+      <define name="SDP3X_PRESSURE_OFFSET" value="-2.5"/>
       <define name="USE_AIRSPEED_SDP3X" value="TRUE"/>
     </module>
     <!--Don't know why but it's needed for getting the airspeed in the state-->
@@ -133,15 +133,15 @@
   </firmware>
 
   <servos driver="DShot">
-    <servo name="MOTOR_FR" no="2" min="0" neutral="100" max="2000"/>
-    <servo name="MOTOR_BR" no="1" min="0" neutral="100" max="2000"/>
-    <servo name="MOTOR_BL" no="3" min="0" neutral="100" max="2000"/>
-    <servo name="MOTOR_FL" no="4" min="0" neutral="100" max="2000"/>
+    <servo name="MOTOR_FR" no="1" min="0" neutral="100" max="2000"/>
+    <servo name="MOTOR_BR" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="MOTOR_BL" no="4" min="0" neutral="100" max="2000"/>
+    <servo name="MOTOR_FL" no="3" min="0" neutral="100" max="2000"/>
   </servos>
 
   <servos driver="Pwm">  
-    <servo name="AILEVON_RIGHT" no="1" max="1200"  neutral="1600" min="2000"/><!--max="1080"  neutral="1490" min="1900"/-->
-    <servo name="AILEVON_LEFT"  no="2" max="1150"  neutral="1550" min="1950"/> <!--max="1090"  neutral="1500" min="1910"/-->
+    <servo name="AILEVON_RIGHT" no="1" max="1200"  neutral="1600" min="2150"/> <!--min="2000"/--> <!--max == Aileron down || min == Aileron up   /--> 
+    <servo name="AILEVON_LEFT"  no="2" max="1000"  neutral="1550" min="1950"/> <!--max="1150"/--> <!--max == Aileron up   || min == Aileron down /--> 
     <servo name="MOTOR_PUSHER"  no="3" min="1000" neutral="1000" max="2000"/>
     <!--servo name="TRIGGER_CAMERA"  no="12" min="1000" neutral="1000" max="2000"/-->
   </servos>
@@ -185,8 +185,8 @@
           <field name="scale_f"     value="true"/>
           <field name="rotation"  value="true"/>
         </field>
-          <field name="neutral" value="6,-15,42" type="int[]"/>
-          <field name="scale_f" value="{ 2.4531, 2.4557, 2.4520 }"/>
+          <field name="neutral" value="0,-2,43" type="int[]"/>
+          <field name="scale_f" value="{ 2.4518, 2.4519, 2.4504 }"/>
         <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
@@ -221,8 +221,8 @@
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
         </field>
-	   <field name="neutral" value="-55,153,29" type="int[]"/>
-	   <field name="scale_f" value="{ 0.6333, 0.6517, 0.6427 }"/>
+	   <field name="neutral" value="-695,398,-1399" type="int[]"/>
+	   <field name="scale_f" value="{ 0.6381, 0.6308, 0.6806 }"/>
       </field>
     </define>
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>

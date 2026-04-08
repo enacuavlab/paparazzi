@@ -11,6 +11,7 @@
     <waypoint name="HOME" x="-13.625" y="43.6"/>
     <waypoint name="CLIMB" x="3.465" y="60.047"/>
     <waypoint name="STDBY" x="-5.223" y="52.808"/>
+    <waypoint name="_HERE" x="40.209" y="42.714"/>    
     <waypoint name="p1" x="-20.609" y="70.983"/>
     <waypoint name="p2" x="83.442" y="26.029"/>
     <waypoint name="p3" x="114.811" y="129.022"/>
@@ -96,6 +97,11 @@
     <block name="oval">
       <oval p1="p4" p2="p3" radius="nav.radius"/>
     </block>
+    <block name="Return to Standby">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="STDBY" from="_HERE" hmode="route" approaching_time="3"/>
+      <deroute block="Standby"/>
+    </block>    
     <block name="Land (module)" strip_button="Land (module)" group="module">
       <call fun="nav_land_at_wp(WP_TD, WP_TD, 0.)"/>
       <deroute block="Kill landed"/>
