@@ -83,9 +83,12 @@ static void transition_run(bool to_forward) {
   Bound(transition_ratio, 0.f, 1.f);
 }
 
-static int32_t command_from_transition(int32_t hover_cmd, int32_t forward_cmd) {
-  Bound(transition_ratio, 0.f, 1.f);
-  return (int32_t) (hover_cmd + transition_ratio * (forward_cmd - hover_cmd));
+static int32_t command_from_transition(int32_t hover_cmd, int32_t forward_cmd, float start_ratio, float end_ratio) {
+  Bound(start_ratio, 0.f, 1.f);
+  Bound(end_ratio, 0.f, 1.f);
+  float ratio = (transition_ratio - start_ratio) / (end_ratio - start_ratio);
+  Bound(ratio, 0.f, 1.f);
+  return (int32_t) (hover_cmd + ratio * (forward_cmd - hover_cmd));
 }
 
 void control_mixing_quadplane_init(void)
@@ -191,11 +194,11 @@ void control_mixing_quadplane_attitude_plane(void)
   commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
   commands[COMMAND_YAW] = 0;
   if (autopilot_get_motors_on()) {
-	if (transition_ratio < 0.90f) {
-	  commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, MAX_PPRZ); // blend from idle, unless thrust is lower
-	} else {
-	  commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
-	}
+    if (transition_ratio < 0.90f) {
+      commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, MAX_PPRZ, 0.f, 1.f); // blend from idle, unless thrust is lower
+    } else {
+      commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
+    }
   } else {
 	commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
   }
@@ -210,10 +213,10 @@ void control_mixing_quadplane_attitude_plane(void)
     } else {
       // blend to idle and stop
       if (transition_ratio < 0.99f) {
-        commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0);
-        commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0);
-        commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0);
-        commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0);
+        commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
+        commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
+        commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
+        commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
       } else {
         commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
         commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
@@ -264,7 +267,7 @@ void control_mixing_quadplane_nav_run(void)
     commands[COMMAND_YAW] = 0;
     if (autopilot_get_motors_on()) {
       if (transition_ratio < 0.90f) {
-        commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, MAX_PPRZ); // blend from idle, unless thrust is lower
+        commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, MAX_PPRZ, 0.f, 1.f); // blend from idle, unless thrust is lower
       } else {
         commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
       }
@@ -277,10 +280,10 @@ void control_mixing_quadplane_nav_run(void)
       } else {
         // blend to idle and stop
         if (transition_ratio < 0.99f) {
-          commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0);
-          commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0);
-          commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0);
-          commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0);
+          commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
+          commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
+          commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
+          commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
         } else {
           commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
           commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
@@ -310,11 +313,11 @@ void control_mixing_quadplane_nav_run(void)
 
     if (autopilot_get_motors_on()) {
       if(stateGetAirspeed_f() >= CMQ_TRANSITION_AIRSPEED && stateIsAirspeedValid()) {
-        commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(0, actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT]);
-        commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(0, actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT]);
-        commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(0, actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT]);
-        commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(0, actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT]);
-        commands[COMMAND_MOTOR_PUSHER]      = command_from_transition(stabilization.cmd[COMMAND_THRUST], MIN_PPRZ);
+        commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0, 0.f, 1.f);
+        commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0, 0.f, 1.f);
+        commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0, 0.f, 1.f);
+        commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0, 0.f, 1.f);
+        commands[COMMAND_MOTOR_PUSHER]      = command_from_transition(MIN_PPRZ, stabilization.cmd[COMMAND_THRUST], 0.6f, 1.f);
         commands[COMMAND_THRUST]            = stabilization.cmd[COMMAND_THRUST];
       } else {
         commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
