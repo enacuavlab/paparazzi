@@ -119,7 +119,7 @@
       </lag_filter>
     </channel>
 
-    <channel name="tilt">
+    <channel name="tilt_up">
       <lag_filter name="tilt_up_x_lag">
         <input> fcs/TILT_UP_X </input>
         <c1> fcs/servo_lag </c1>
@@ -204,6 +204,91 @@
       </fcs_function>
     </channel>
 
+    <channel name="tilt_down">
+      <lag_filter name="tilt_down_x_lag">
+        <input> fcs/TILT_DOWN_X </input>
+        <c1> fcs/servo_lag </c1>
+        <output> fcs/tilt_down_x_lag</output>
+      </lag_filter>
+      <aerosurface_scale name="tilt_down_x_scale">
+        <input> fcs/tilt_down_x_lag </input>
+        <zero_centered> false </zero_centered>
+        <domain>
+          <min> -1. </min>
+          <max> 1. </max>
+        </domain>
+        <range>
+          <min> -0.261799 </min>
+          <max> 0.261799 </max>
+        </range>
+        <output> fcs/tilt_down_x_rad </output>
+      </aerosurface_scale>
+      <lag_filter name="tilt_down_y_lag">
+        <input> fcs/TILT_DOWN_Y </input>
+        <c1> fcs/servo_lag </c1>
+        <output> fcs/tilt_down_y_lag</output>
+      </lag_filter>
+      <aerosurface_scale name="tilt_down_y_scale">
+        <input> fcs/tilt_down_y_lag </input>
+        <zero_centered> false </zero_centered>
+        <domain>
+          <min> -1. </min>
+          <max> 1. </max>
+        </domain>
+        <range>
+          <min> -0.261799 </min>
+          <max> 0.261799 </max>
+        </range>
+        <output> fcs/tilt_down_y_rad </output>
+      </aerosurface_scale>
+
+      <fcs_function name="motor_down_dir_x">
+        <function>
+          <sin><property> -fcs/tilt_down_y_rad </property></sin>
+        </function>
+        <output> external_reactions/motor_down/x </output>
+      </fcs_function>
+      <fcs_function name="motor_down_dir_y">
+        <function>
+          <sin><property> fcs/tilt_down_x_rad </property></sin>
+        </function>
+        <output> external_reactions/motor_down/y </output>
+      </fcs_function>
+      <fcs_function name="motor_down_dir_z">
+        <function>
+          <product>
+            <value> -1 </value>
+            <cos><property> fcs/tilt_down_x_rad </property></cos>
+            <cos><property> fcs/tilt_down_y_rad </property></cos>
+          </product>
+        </function>
+        <output> external_reactions/motor_down/z </output>
+      </fcs_function>
+
+      <fcs_function name="torque_down_dir_x">
+        <function>
+          <sin><property> -fcs/tilt_down_y_rad </property></sin>
+        </function>
+        <output> external_reactions/motor_down_torque/l </output>
+      </fcs_function>
+      <fcs_function name="torque_down_dir_y">
+        <function>
+          <sin><property> fcs/tilt_down_x_rad </property></sin>
+        </function>
+        <output> external_reactions/motor_down_torque/m </output>
+      </fcs_function>
+      <fcs_function name="torque_down_dir_z">
+        <function>
+          <product>
+            <value> 1 </value> <!-- change sign for direction -->
+            <cos><property> fcs/tilt_down_x_lag </property></cos>
+            <cos><property> fcs/tilt_down_y_rad </property></cos>
+          </product>
+        </function>
+        <output> external_reactions/motor_down_torque/n </output>
+      </fcs_function>
+    </channel>
+
   </flight_control>
 
   <external_reactions>
@@ -218,7 +303,7 @@
     <property>fcs/motor_up_lag</property>
     <property>fcs/motor_down_lag</property>
 
-    <property value="4.">fcs/motor_max_thrust</property>
+    <property value="8.">fcs/motor_max_thrust</property>
     <property value="0.2">fcs/motor_max_torque</property>
 
     <!-- First the lift forces produced by each propeller -->
