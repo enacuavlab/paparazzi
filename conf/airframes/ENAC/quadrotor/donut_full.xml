@@ -46,8 +46,8 @@
       <configure name="INDI_NUM_ACT" value="6"/>
     </module>
 
-    <module name="guidance" type="indi"/>
-    <!--module name="guidance" type="indi_fully_actuated"/-->
+    <!--module name="guidance" type="indi"/-->
+    <module name="guidance" type="indi_fully_actuated"/>
 
     <module name="ins" type="ext_pose"/>
     <module name="air_data"/>
@@ -150,10 +150,10 @@
     <define name="G1" type="matrix">
       <field value="{  0.0,  0.0, 10.0, 0.0, -10.0, 0.0}"/>
       <field value="{  0.0,  0.0, 0.0, 10.0, 0.0, -10.0}"/>
-      <field value="{ -3.0,  3.0,  0.0,  0.0, 0.0, 0.0}"/>
-      <field value="{  0.0,  0.0, 10.0, 0.0, 10.0, 0.0}"/>
-      <field value="{  0.0,  0.0, 0.0, 10.0, 0.0, 10.0}"/>
-      <field value="{ -1.7,  -1.7,  0.0,  0.0, 0.0, 0.0}"/>
+      <field value="{ -8.0,  8.0,  0.0,  0.0, 0.0, 0.0}"/>
+      <field value="{  0.0,  0.0, 0.0, -1.0, 0.0, -1.0}"/>
+      <field value="{  0.0,  0.0, 1.0, 0.0, 1.0, 0.0}"/>
+      <field value="{ -0.84,  -.84,  0.0,  0.0, 0.0, 0.0}"/>
     </define>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}"/>
@@ -161,9 +161,10 @@
     <!-- first order actuator dynamics -->
     <define name="ACT_FREQ" value="{12., 12., 25., 25. , 25., 25.}"/>
     <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 9600, 9600}"/>
+    <define name="ACT_IS_SERVO" value="{0, 0, 1, 1, 1, 1}"/>
     <define name="ACT_THRUST_MAT" type="matrix">
-      <field name="THRUST_X" value="{0,0,1,0,1,0}"/>
-      <field name="THRUST_Y" value="{0,0,0,1,0,1}"/>
+      <field name="THRUST_X" value="{0,0,0,1,0,1}"/>
+      <field name="THRUST_Y" value="{0,0,1,0,1,0}"/>
       <field name="THRUST_Z" value="{1,1,0,0,0,0}"/>
     </define>
 
