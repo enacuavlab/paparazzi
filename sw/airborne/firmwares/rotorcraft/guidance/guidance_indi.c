@@ -121,7 +121,7 @@ static float Gmat[GUIDANCE_INDI_NV][GUIDANCE_INDI_NU];
 
 // weighting of prefered control outputs (phi, theta, psi, Tx, Ty, Tz)
 #ifndef GUIDANCE_INDI_WLS_WU
-#define GUIDANCE_INDI_WLS_WU {1000.f,1000.f,10.f,0.f,0.f,0.f}
+#define GUIDANCE_INDI_WLS_WU {1000.f,1000.f,10.f,1.f,1.f,1.f}
 #endif
 
 #define NU_MAX 6    // Example constant value // [dtheta, dphi, dthrust, dtx , dty]
