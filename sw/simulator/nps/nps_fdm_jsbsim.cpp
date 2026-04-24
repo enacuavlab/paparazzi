@@ -38,6 +38,7 @@
 #include <FGJSBBase.h>
 #include <initialization/FGInitialCondition.h>
 #include <models/FGPropulsion.h>
+#include <models/FGExternalReactions.h>
 #include <models/FGGroundReactions.h>
 #include <models/FGAccelerations.h>
 #include <models/FGAuxiliary.h>
@@ -330,7 +331,18 @@ static void feed_jsbsim(double *commands, int commands_nb __attribute__((unused)
     sprintf(buf, "fcs/%s", names[i]);
     property = string(buf);
     FDMExec->GetPropertyManager()->GetNode(property)->SetDouble("", commands[i]);
+    //cout << commands[i] << " ";
   }
+  //cout << " || ";
+  //auto extReac = FDMExec->GetExternalReactions();
+  //auto forces = extReac->GetForces();
+  //auto moments = extReac->GetMoments();
+  //cout << forces << " | " << moments << " || ";
+  //cout << DegOfRad(fdm.ltpprz_to_body_eulers.phi) << " " << DegOfRad(fdm.ltpprz_to_body_eulers.theta) << " " << DegOfRad(fdm.ltpprz_to_body_eulers.psi) << endl;
+  //auto propm = FDMExec->GetPropertyManager();
+  //cout << propm->GetNode("fcs/PITCH")->getDoubleValue() << " " << DegOfRad(propm->GetNode("fcs/elevator_lag")->getDoubleValue()) << " | ";
+  //cout << propm->GetNode("fcs/ROLL")->getDoubleValue() << " " << DegOfRad(propm->GetNode("fcs/aileron_lag")->getDoubleValue()) << " | ";
+  //cout << DegOfRad(propm->GetNode("aero/alpha-rad")->getDoubleValue()) << " " << DegOfRad(propm->GetNode("aero/beta-rad")->getDoubleValue()) << " " << fdm.airspeed << endl;
 #else /*Use manually defined commands*/
   // get FGFCS instance
   FGFCS *FCS = FDMExec->GetFCS();

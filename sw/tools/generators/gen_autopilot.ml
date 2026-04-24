@@ -390,7 +390,12 @@ let parse_and_gen_modes xml_file ap_name main_freq h_dir sm =
     let modes = get_modes sm in
     let ctrl_block = get_ap_control_block sm in
     (* Print mode names and variable *)
+    (* Print default mode if not defined by MODE_STARTUP *)
     print_modes modes name_up out_h;
+    let default_mode = find_default_mode modes in
+    fprintf out_h "\n#ifndef MODE_STARTUP\n";
+    fprintf out_h "#define MODE_STARTUP %s\n" (print_mode_name name_up default_mode);
+    fprintf out_h "#endif\n";
     fprintf out_h "\nEXTERN_%s uint8_t autopilot_mode_%s;\n" name_up name;
     fprintf out_h "\n#ifdef AUTOPILOT_CORE_%s_C\n\n" name_up;
     (* Print includes and private variables *)
