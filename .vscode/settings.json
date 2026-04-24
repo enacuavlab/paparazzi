@@ -13,4 +13,7 @@
     },
     "C_Cpp.dimInactiveRegions": false,
     "esbonio.sphinx.confDir": "",
+    "python.analysis.extraPaths": [
+        "./sw/lib/python"
+    ],
 }
