@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+<!DOCTYPE flight_plan SYSTEM "../../flight_plan.dtd">
+<flight_plan alt="120" ground_alt="80" lat0="48.8652734" lon0="1.8928199" max_dist_from_home="700" name="COHOMA3" security_height="20" qfu="90" home_mode_height="40">
+  <header>
+    static inline bool delay_test_rc(bool test, int delay) {
+      static int nb = 0;
+        if (test) {
+        nb++;
+        if (nb == delay) {
+          nb = 0;
+          return true;
+        }
+        return false;
+      } else {
+        nb = 0;
+        return false;
+      }
+    }
+
+    static inline bool delay_test_gf(bool test, int delay) {
+      static int nb = 0;
+      if (test) {
+        nb++;
+        if (nb == delay) {
+          nb = 0;
+          return true;
+        }
+        return false;
+      } else {
+        nb = 0;
+        return false;
+      }
+    }
+
+  </header>
+  <waypoints>
+    <waypoint name="HOME" lat="48.8655" lon="1.89287"/>
+    <waypoint name="STDBY" lat="48.8657" lon="1.89281"/>
+    <waypoint name="LANDPAD" lat="48.8655" lon="1.89285" height="0"/>
+    <waypoint x="-18.653" y="-180.496" name="_HERE"/>
+    <waypoint name="_KILL1" lat="48.863" lon="1.90063"/>
+    <waypoint name="_KILL2" lat="48.8624" lon="1.89422"/>
+    <waypoint name="_KILL3" lat="48.8614" lon="1.88612"/>
+    <waypoint name="_KILL4" lat="48.8662" lon="1.8839"/>
+    <waypoint name="_KILL5" lat="48.8683" lon="1.88652"/>
+    <waypoint name="_KILL6" lat="48.8661" lon="1.90121"/>
+    <waypoint name="P1" lat="48.8653" lon="1.89503"/>
+    <waypoint name="P2" lat="48.8654" lon="1.89621"/>
+    <waypoint name="P3" lat="48.8651" lon="1.89862"/>
+    <waypoint name="_FLY1" lat="48.8633" lon="1.90001"/>
+    <waypoint name="_FLY2" lat="48.8619" lon="1.88643"/>
+    <waypoint name="_FLY3" lat="48.8661" lon="1.88444"/>
+    <waypoint name="_FLY4" lat="48.8679" lon="1.88679"/>
+    <waypoint name="_FLY5" lat="48.8657" lon="1.9004"/>
+  </waypoints>
+  <sectors>
+    <sector name="KillZone" color="red">
+      <corner name="_KILL1"/>
+      <corner name="_KILL2"/>
+      <corner name="_KILL3"/>
+      <corner name="_KILL4"/>
+      <corner name="_KILL5"/>
+      <corner name="_KILL6"/>
+    </sector>
+    <sector name="FlyZone" color="yellow">
+      <corner name="_FLY1"/>
+      <corner name="_FLY2"/>
+      <corner name="_FLY3"/>
+      <corner name="_FLY4"/>
+      <corner name="_FLY5"/>
+    </sector>
+  </sectors>
+  <variables>
+    <variable var="fp_max_height" type="float" init="100." min="10." max="150." step="1."/>
+    <variable var="fp_height" init="40." type="float" min="10." max="100." step="1."/>
+    <variable var="fp_turns" init="4" type="int" min="1" max="10" step="1"/>
+  </variables>
+  <modules>
+    <module name="mission" type="rotorcraft">
+      <define name="MISSION_WAIT_TIMEOUT" value="240"/>
+    </module>
+    <module name="nav" type="takeoff_and_landing"/>
+    <module name="nav" type="poles_rotorcraft"/>
+    <module name="power_switch"/>
+  </modules>
+  <exceptions>
+    <!-- RC-Loss + datalink loss -->
+    <exception cond="(delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 10) @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="EmergencyLanding"/>
+
+    <!-- Datalink loss -->
+    <exception cond="(datalink_time @GT 10 @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="Standby"/>
+
+    <!-- Geofence -->
+    <exception cond="((!InsideFlyZone(GetPosX(), GetPosY()) @OR GetPosHeight() @GT fp_max_height) @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="Standby"/>
+    <exception cond="((delay_test_gf(!InsideKillZone(GetPosX(), GetPosY()),10) @OR GetPosHeight() @GT fp_max_height+10) @AND       !(IndexOfBlock('Takeoff') @GT nav_block) @AND       !(nav_block @GEQ IndexOfBlock('Kill landed')) @AND       (autopilot_in_flight() == true) )" deroute="Kill landed"/>
+  </exceptions>
+  <blocks>
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 3)"/>
+    </block>
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Takeoff" strip_button="Takeoff (Here)" group="takeoff">
+      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+      <call fun="nav_takeoff_from_here(40.)"/>
+      <deroute block="Standby"/>
+    </block>
+    <block name="Standby" strip_button="Standby" strip_icon="home.png">
+      <stay wp="STDBY"/>
+    </block>
+    <block name="Mission" strip_button="Mission" on_enter="power_switch_set(true)" on_exit="power_switch_set(false)">
+      <call fun="mission_run()"/>
+      <deroute block="Standby"/>
+    </block>
+    <block name="Path">
+      <call_once fun="power_switch_set(true)"/>
+      <path wpts="LANDPAD,P3" height="fp_height"/>
+    </block>
+    <block name="Poles">
+      <call_once fun="nav_poles_setup_wp(WP_P3, WP_P2, fp_height, nav.radius, 1., fp_turns)"/>
+      <call fun="nav_poles_run()"/>
+    </block>
+    <block name="Path back">
+      <path wpts="P3,LANDPAD" height="fp_height"/>
+      <call_once fun="power_switch_set(false)"/>
+    </block>
+    <block name="Land (WP)" strip_button="Land (WP)" group="land">
+      <call fun="nav_land_at_wp(WP_LANDPAD, WP_LANDPAD, 0.)"/>
+      <deroute block="Kill landed"/>
+    </block>
+    <block name="Land here" strip_button="Land here" strip_icon="land-right.png" group="land">
+      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+    </block>
+    <block name="Land" strip_button="Land on pad" group="land">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="LANDPAD" from="_HERE" hmode="route"/>
+    </block>
+    <block name="Flare">
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
+    </block>
+    <block name="Kill landed">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="EmergencyLanding">
+      <stay wp="HOME" vmode="throttle" throttle="0."/>
+    </block>
+  </blocks>
+</flight_plan>

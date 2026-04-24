@@ -36,6 +36,12 @@ class AC_PP_Problem:
     dt:float=0.     # Time difference with respect to the previous aircraft
     timeslots:list[float] = dataclasses.field(default_factory=list)
     
+    def __post_init__(self):
+        if isinstance(self.start,np.ndarray):
+            self.start = Pose3D.from_array(self.start)
+        if isinstance(self.end,np.ndarray):
+            self.end = Pose3D.from_array(self.end)
+    
     @staticmethod
     def from_nparrays(stats:ACStats,start:np.ndarray,end:np.ndarray,dt:float=0.,timeslots:list[float]=[]):
         return AC_PP_Problem(stats,Pose3D.from_array(start),Pose3D.from_array(end),dt,timeslots)

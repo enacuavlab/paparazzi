@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../../flight_plan.dtd">
-<flight_plan alt="120" ground_alt="80" lat0="48.8652734" lon0="1.8928199" max_dist_from_home="700" name="COHOMA3" security_height="20" qfu="90" home_mode_height="40">
+<flight_plan alt="120" ground_alt="80" lat0="48.8642734" lon0="1.8928199" max_dist_from_home="700" name="COHOMA3" security_height="20" qfu="90" home_mode_height="40">
   <header>
     static inline bool delay_test_rc(bool test, int delay) {
       static int nb = 0;
@@ -34,9 +34,9 @@
 
   </header>
   <waypoints>
-    <waypoint name="HOME" lat="48.8653" lon="1.89287"/>
-    <waypoint name="STDBY" lat="48.8654" lon="1.89281"/>
-    <waypoint name="LANDPAD" lat="48.8652" lon="1.89285" height="0"/>
+    <waypoint name="HOME" lat="48.8643" lon="1.89286"/>
+    <waypoint name="STDBY" lat="48.8645" lon="1.89280"/>
+    <waypoint name="LANDPAD" lat="48.8643" lon="1.89284" height="0"/>
     <waypoint x="-18.653" y="-180.496" name="_HERE"/>
     <waypoint name="_KILL1" lat="48.863" lon="1.90063"/>
     <waypoint name="_KILL2" lat="48.8624" lon="1.89422"/>

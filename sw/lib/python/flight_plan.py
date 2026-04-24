@@ -26,6 +26,9 @@ import sys
 from xml_utils import get_attrib, get_attrib_default
 import urllib.request
 
+from typing import Optional
+from dataclasses import dataclass
+
 class FlightPlan:
 
     def __init__(self):
@@ -84,7 +87,7 @@ class FlightPlan:
             lon = get_attrib_default(way_e, "lon", None)
             alt = get_attrib_default(way_e, "alt", None, float)
             height = get_attrib_default(way_e, "height", None, float)
-            waypoint = Waypoint(name, x, y, lat, lon, alt, height, w_no)
+            waypoint = Waypoint(name, w_no, x, y, lat, lon, alt, height)
             waypoints.append(waypoint)
             w_no += 1
         return waypoints
@@ -147,17 +150,31 @@ class FlightPlan:
         return list(filter(lambda block: get_attrib_default(block.xml, "group", None) == groupname, self.blocks))
 
 
+@dataclass
 class Waypoint:
-    def __init__(self, name, x, y, lat, lon, alt, height, no):
-        self.name = name
-        self.x = x
-        self.y = y
-        self.lat = lat
-        self.lon = lon
-        self.alt = alt
-        self.height = height
-        self.no = no
-
+    name:str
+    no:int
+    x:Optional[float] = None
+    y:Optional[float] = None
+    lat:Optional[float] = None
+    lon:Optional[float] = None
+    alt:Optional[float] = None
+    height:Optional[float] = None
+    
+    def __post_init__(self):
+        if self.x is not None:
+            self.x = float(self.x)
+        if self.y is not None:
+            self.y = float(self.y)
+        if self.lat is not None:
+            self.lat = float(self.lat)
+        if self.lon is not None:
+            self.lon = float(self.lon)
+        if self.alt is not None:
+            self.alt = float(self.alt)
+        if self.height is not None:
+            self.height = float(self.height)
+    
 
 class Block:
     def __init__(self, name:str, no:int, xml):

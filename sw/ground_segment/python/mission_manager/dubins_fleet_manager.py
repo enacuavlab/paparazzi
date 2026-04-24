@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import typing
+from typing import Optional
 import pathlib
 import subprocess
 import dataclasses
@@ -12,15 +12,14 @@ import pyproj
 from pyproj.enums import TransformDirection
 import numpy as np
 
-from Dubins import Pose3D,ACStats,FleetPlan,DubinsMove,BasicPath,Path
+from Dubins import Pose3D,ACStats,FleetPlan,DubinsMove,BasicPath,Path,min_XY_dist
 from ioUtils import AC_PP_Problem, write_pathplanning_problem_to_CSV, parse_pathplanning_problem_from_CSV,parse_trajectories_from_JSON
 from Formation import Formation,chevron_formation
 from FleetPath import FleetKeyframes,formation_oval
 
 from mission_manager import UAVData,MissionManager,MissionInsert
 
-from pprzlink.message import PprzMessage
-from pprz_connect import PprzConnect, PprzConfig
+from pprzlink.ivy import IvyMessagesInterface
 
 def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
                    separation:float, wind:tuple[float,float],threads:int,
@@ -79,6 +78,7 @@ class FleetManager:
                  fleet_frames:FleetKeyframes,
                  solver_path:str|pathlib.Path,
                  separation:float,
+                 flight_alt:float,
                  threads:int=0,
                  transformer:pyproj.Transformer=pyproj.Transformer.from_crs('WGS84','EPSG:9794'), # Default to WGS84 to Lambert93
                  ignore_wind:bool=True,
@@ -94,13 +94,14 @@ class FleetManager:
             transformer (_type_, optional): Transformation from WGS84 (GPS coordinates) to a flat coordinates system such that x is easting (in meters) and y is northing (in meters).
                 Defaults to pyproj.Transformer.from_crs('WGS84','EPSG:9794'), i.e. GPS to Lambert93
         """
+        ivy_interface = IvyMessagesInterface("PprzConnect")
+        
         self.fleet_frames = fleet_frames
         self.__fleet_frame_id:int = 0
         self.end_strategy = end_strategy
         
-        self.__takeoff_done:bool = True
-        self.__takeoff_alt:float = 0.
-        
+        self.flight_alt:float = flight_alt
+
         self.solver_path = pathlib.Path(solver_path)
         self.separation:float = separation
         self.threads:int = threads
@@ -113,7 +114,7 @@ class FleetManager:
             self.acs[s.id] = s
         self.managers:dict[int,MissionManager] = dict()
         for id in self.ac_ids:
-            self.managers[id] = MissionManager(id,verbose)
+            self.managers[id] = MissionManager(id,verbose,ivy_interface=ivy_interface)
         self.verbose = verbose
             
         self.ignore_wind:bool = ignore_wind
@@ -144,11 +145,28 @@ class FleetManager:
                 is_ready[id] = ready
                 all_ready = all_ready and ready
     
-    def takeoff(self,altitude:float):
+    def takeoff(self,height:float):
         for mng in self.managers.values():
-            mng.add_mission_takeoff(self.mission_counter, altitude, insert_mode=MissionInsert.REPLACE_ALL)
-        self.__takeoff_alt = altitude
+            mng.add_mission_takeoff(self.mission_counter, height=height, insert_mode=MissionInsert.REPLACE_ALL)
+        self.__takeoff_height = height
         self.__takeoff_done = False
+        self.mission_counter += 1
+        
+    def go_home_straight(self,insert_mode:MissionInsert=MissionInsert.REPLACE_ALL):
+        for mng in self.managers.values():
+            mng.go_home(self.mission_counter, insert=insert_mode)
+        self.mission_counter += 1
+        
+    def circle_home(self,radii:Optional[list[float]]=None, insert_mode:MissionInsert=MissionInsert.REPLACE_ALL):
+        if radii is not None:
+            assert len(radii) == len(self.ac_ids)
+        else:
+            radii = [self.acs[id].turn_radius for id in self.ac_ids]
+        
+        for i,id in enumerate(self.ac_ids):
+            radius = radii[i]
+            mng = self.managers[id]
+            mng.circle_home(self.mission_counter, radius, insert=insert_mode)
         self.mission_counter += 1
             
     def land(self,landpads:list[tuple[float,float,float]],insert_mode:MissionInsert=MissionInsert.REPLACE_ALL):
@@ -186,21 +204,18 @@ class FleetManager:
         while True:
             self.__update_wind()
             poses = self.get_poses()
-            
-            if not(self.__takeoff_done):
-                takeoff_done = True
-                for p in poses:
-                    if p.z < self.__takeoff_alt * 0.95:
-                        takeoff_done = False
-                        break
-                self.__takeoff_done = takeoff_done
-                if self.verbose and takeoff_done:
-                    print("Takeoff done!")
-            else:
+            if self.verbose:
+                val,id1,id2 = min_XY_dist(poses)
+                print(f"Minimal current dist is {val}, measured between {self.ac_ids[id1]} and {self.ac_ids[id2]}")
+                print(f"(Minimal required is {self.separation})")
+            try:
                 pb = self.fleet_frames.generate_pb_to(self.__fleet_frame_id,poses)
                 sol = self.__solve_pp_problem(pb)
                 self.__send_fleet_mission(sol)
-            time.sleep(5)
+                input("Waiting user input for next reschedule...")
+            except FileNotFoundError:
+                print("WARNING: Solver did not find a solution")
+                time.sleep(5)
             
         
     def __update_wind(self):
@@ -297,15 +312,17 @@ class FleetManager:
     def __make_path_mission(self,ac_id:int,p:Path) -> int:
         manager = self.managers[ac_id]
         speed = manager.uav_data.groundspeed_sp if self.ignore_wind else manager.uav_data.airspeed_sp
+        if speed == 0.:
+            speed = 15
         first = True
         for i,s in enumerate(p.sections):
             this_mission_id = self.mission_counter + i
             if first:
-                first = False
                 if s.type == DubinsMove.STRAIGHT:
                     end = s.end()
                     lat,lon = self.transformer.transform(end.x,end.y,direction=TransformDirection.INVERSE)
-                    manager.add_mission_point(lat,lon,end.z,this_mission_id,s.length/speed,insert=MissionInsert.REPLACE_ALL)
+                    manager.add_mission_point(lat,lon,self.flight_alt,this_mission_id,s.length/speed,insert_mode=MissionInsert.REPLACE_ALL)
+                    first = False
                     continue
                 
             if s.type == DubinsMove.STRAIGHT:
@@ -315,16 +332,19 @@ class FleetManager:
                 elat,elon = self.transformer.transform(end.x,end.y,direction=TransformDirection.INVERSE)
                 manager.add_mission_path(this_mission_id,
                                          [(slat,slon),(elat,elon)],
-                                         end.z,s.length/speed,
+                                         self.flight_alt,s.length/speed,
                                          MissionInsert.REPLACE_ALL if first else MissionInsert.APPEND)
             else:
                 lat,lon = self.transformer.transform(s.x,s.y,direction=TransformDirection.INVERSE)
                 radius = (1 if s.type == DubinsMove.RIGHT else -1) * s.radius() # Radius is positive if turning clockwise, negative otherwise
                 manager.add_mission_circle(this_mission_id,
-                                           lat,lon,s.z,
+                                           lat,lon,self.flight_alt,
                                            radius,
                                            s.length/speed,
                                            MissionInsert.REPLACE_ALL if first else MissionInsert.APPEND)
+            
+            if first:
+                first = False
         return len(p.sections)
             
 
@@ -332,20 +352,22 @@ if __name__ == '__main__':
     import argparse
     
     stat_list = [ACStats(i,15,10/60,40) for i in [2,3,4]]
-    separation = 80
+    separation = 30
     formation = chevron_formation(len(stat_list),separation*1.2)
     
     transformer = pyproj.Transformer.from_crs('WGS84','EPSG:9794') # Default to WGS84 to Lambert93
     home_lat = 48.8652734
     home_lon = 1.8928199
-    home_alt = 40
+    home_height = 40
+    home_alt = 120
     home_x,home_y = transformer.transform(home_lat,home_lon)
     
-    start = Pose3D(home_x,home_y,home_alt,0.)
+    start = Pose3D(home_x,home_y,home_height,0.)
     fleet_plan = formation_oval(stat_list,start,400,100,formation)
     
     parser = argparse.ArgumentParser()
     parser.add_argument('dubins_solver',help='Path to Dubins Fleet Planner')
+    parser.add_argument('-v',action='store_true',help='Verbose',default=False)
     
     args = parser.parse_args()
     
@@ -353,14 +375,18 @@ if __name__ == '__main__':
         fleet_plan,
         args.dubins_solver,
         separation,
+        home_alt,
         transformer=transformer,
-        end_strategy=FleetManagerEnd.NOTHING
+        end_strategy=FleetManagerEnd.NOTHING,
+        verbose=args.v
     )
     
     try:
         manager.wait_ready()
-        manager.takeoff(home_alt)
+        manager.takeoff(home_height)
+        manager.circle_home(insert_mode=MissionInsert.APPEND)
         manager.start_mission()
+        input("Press any key to start fleet path planning...")
         manager.main_loop()
     except(KeyboardInterrupt,SystemExit):
         print("Intettupted!")

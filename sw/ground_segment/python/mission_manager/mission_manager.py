@@ -40,7 +40,7 @@ sys.path.append(PPRZ_HOME + "/var/lib/python") # pprzlink
 
 from pprzlink.message import PprzMessage
 from pprz_connect import PprzConnect, PprzConfig
-from flight_plan import FlightPlan, Block
+from flight_plan import FlightPlan, Block, Waypoint
 
 
 MAX_RETRY = 3
@@ -80,6 +80,10 @@ class UAVData:
     wind_north:Optional[float] = None
     wind_up:Optional[float] = None
     
+    @property
+    def height(self) -> float:
+        return self.alt - self.ref_alt
+    
     
 
 class MissionInsert(Enum):
@@ -95,7 +99,7 @@ class MissionManager():
     and start mission mode from flight plan
     Bind to state messages and update UAV data
     '''
-    def __init__(self, ac_id=None, verbose=False):
+    def __init__(self, ac_id=None, verbose=False, ivy_interface=None):
         self.verbose = verbose
 
         self.uav_data = UAVData(ac_id,str(ac_id))
@@ -104,7 +108,7 @@ class MissionManager():
         self.events: Dict[int, Event] = {0:Event()}
 
         ''' create connect object, it will start Ivy interface '''
-        self.connect = PprzConnect(notify=self.connect_cb)
+        self.connect = PprzConnect(notify=self.connect_cb, ivy=ivy_interface)
         assert self.connect.ivy is not None
 
         ''' bind to messages '''
@@ -224,7 +228,7 @@ class MissionManager():
 
     def send_mission_element(forge_mission_msg):
         @functools.wraps(forge_mission_msg)
-        def wrapper(self:'MissionManager', mission_id: int, **kwargs):
+        def wrapper(self:'MissionManager', mission_id: int, *args, **kwargs):
             if self.uav_data is None:
                 raise Exception("No UAV!")
 
@@ -232,7 +236,7 @@ class MissionManager():
             mission_id = (mission_id-1)%255 + 1
 
             for _ in range(MAX_RETRY):
-                msg = forge_mission_msg(self, mission_id=mission_id, **kwargs)
+                msg = forge_mission_msg(self, mission_id, *args, **kwargs)
                 self.connect.ivy.send(msg)
                 if self.verbose:
                     print(msg)
@@ -257,11 +261,59 @@ class MissionManager():
         if self.verbose:
             print(msg)
 
+    def __get_home(self) -> Optional[Waypoint]:
+        if self.uav_data.flight_plan is None:
+            print("WARNING: Flight plan is not available")
+            return None
+        
+        home_wp = None
+        for wp in self.uav_data.flight_plan.waypoints:
+            if wp.name.lower() == "home":
+                home_wp = wp
+                break
+        if home_wp is None:
+            print("WARNING: Could not find 'HOME' waypoint")
+            return None
+        
+        if home_wp.lat is None or home_wp.lon is None:
+            print("WARNING: Latitude or longitude of HOME is not defined")
+            return None
+        
+        if home_wp.alt is None:
+            home_wp.alt = float(self.uav_data.flight_plan.alt)
+        
+        return home_wp
+
+
+    def go_home(self, mission_id:int, insert:MissionInsert = MissionInsert.REPLACE_CURRENT) -> bool:
+        if self.uav_data.flight_plan is not None:
+            home_wp = self.__get_home()
+            if home_wp is None:
+                return False
+            else:
+                self.add_mission_point(mission_id, lat=home_wp.lat,lon=home_wp.lon,alt=home_wp.alt,insert_mode=insert)
+                return True            
+        else:
+            return False
+        
+    def circle_home(self, mission_id:int, radius:float, insert:MissionInsert = MissionInsert.REPLACE_CURRENT) -> bool:
+        if self.uav_data.flight_plan is not None:
+            home_wp = self.__get_home()
+            if home_wp is None:
+                return False
+            else:
+                self.add_mission_circle(mission_id, lat=home_wp.lat,lon=home_wp.lon,alt=home_wp.alt, radius=radius, insert_mode=insert)
+                return True            
+        else:
+            return False
+        
+            
+
     @send_mission_element
-    def add_mission_point(self, lat: float, lon: float, alt: float, mission_id: int, duration:float = -1., insert:MissionInsert = MissionInsert.APPEND):
+    def add_mission_point(self, mission_id: int, lat: float, lon: float, alt: float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
         msg = PprzMessage("datalink", "MISSION_GOTO_WP_LLA")
         msg['ac_id'] = self.ac_id
-        msg['insert'] = insert.value
+        msg['insert'] = insert_mode.value
         msg['duration'] = duration
         msg['index'] = mission_id
         msg['wp_lat'] = int(lat * 1e7)
@@ -377,10 +429,10 @@ if __name__ == '__main__':
         mission.add_mission_path(2, path=[LANDPAD, P2], alt=120)
         mission.add_mission_poles(3, lat1=P2[0], lon1=P2[1], lat2=P3[0], lon2=P3[1], height=40., radius=60., nb_laps=2)
         mission.add_mission_path(4, path=[P2, LANDPAD] , alt=120)
-        #mission.add_mission_point(2, lat=48.866, lon=1.899, alt=150.)
+        mission.add_mission_point(5, lat=48.866, lon=1.899, alt=150.)
         #mission.add_mission_path(3, path=[(48.865, 1.899),(48.865, 1.898),(48.866, 1.898),(48.866, 1.897),(48.865, 1.897)], alt=150.)
         #mission.add_mission_circle(4, lat=48.865, lon=1.898, alt=150, radius=-80, duration=20)
-        mission.add_mission_land(5, lat=LANDPAD[0], lon=LANDPAD[1], height=0.)
+        mission.add_mission_land(6, lat=LANDPAD[0], lon=LANDPAD[1], height=0.)
         mission.start_mission()
         print('UAV:',mission.uav_data.name)
 
