@@ -5,7 +5,7 @@ import pathlib
 import subprocess
 import dataclasses
 import tempfile
-import datetime
+import datetime,time
 import enum
 
 import pyproj
@@ -66,11 +66,13 @@ class FleetManagerEnd(enum.Enum):
     - CIRCLE: add the same circle for every aircraft at the end
     - END_MISSION: send an END_MISSION message to every aircraft, let the flight plan take over
     - NOTHING: do nothing special
+    - LAND: send a LAND command
     """
     LOOP        = 0
     CIRCLE      = 1
     END_MISSION = 2
     NOTHING     = 3
+    LAND        = 4
 
 class FleetManager:
     def __init__(self,
@@ -93,8 +95,11 @@ class FleetManager:
                 Defaults to pyproj.Transformer.from_crs('WGS84','EPSG:9794'), i.e. GPS to Lambert93
         """
         self.fleet_frames = fleet_frames
-        self.__fleet_frame_id = 0
+        self.__fleet_frame_id:int = 0
         self.end_strategy = end_strategy
+        
+        self.__takeoff_done:bool = True
+        self.__takeoff_alt:float = 0.
         
         self.solver_path = pathlib.Path(solver_path)
         self.separation:float = separation
@@ -109,6 +114,7 @@ class FleetManager:
         self.managers:dict[int,MissionManager] = dict()
         for id in self.ac_ids:
             self.managers[id] = MissionManager(id,verbose)
+        self.verbose = verbose
             
         self.ignore_wind:bool = ignore_wind
         self.wind_x:float = 0.
@@ -117,14 +123,85 @@ class FleetManager:
         self.mission_counter:int = 1
         
         assert self.fleet_frames.ac_num == len(self.ac_ids)
+    
+    def wait_ready(self,timeout:float=1):
+        """Wait for all aircraft to be ready
+
+        Args:
+            timeout (float, optional): Timeout in seconds when waiting for READY message of each aircraft. Defaults to 1s.
+        """
+        is_ready:dict[int,bool] = dict()
+        for id in self.ac_ids:
+            is_ready[id] = False
         
+        all_ready = False
+        while not(all_ready):
+            all_ready = True
+            for id in self.ac_ids:
+                if is_ready[id]: continue
+                manager = self.managers[id]
+                ready = manager.wait_ready(timeout)
+                is_ready[id] = ready
+                all_ready = all_ready and ready
+    
+    def takeoff(self,altitude:float):
+        for mng in self.managers.values():
+            mng.add_mission_takeoff(self.mission_counter, altitude, insert_mode=MissionInsert.REPLACE_ALL)
+        self.__takeoff_alt = altitude
+        self.__takeoff_done = False
+        self.mission_counter += 1
+            
+    def land(self,landpads:list[tuple[float,float,float]],insert_mode:MissionInsert=MissionInsert.REPLACE_ALL):
+        assert len(self.ac_ids) == len(landpads)
+        
+        for i in range(len(self.ac_ids)):
+            lat,lon,h = landpads[i]
+            id = self.ac_ids[i]
+            
+            self.managers[id].add_mission_land(self.mission_counter,lat,lon,h,insert_mode=insert_mode)
+        self.mission_counter += 1
+        
+    def land_here(self,ground_alt:float):
+        """ Every aircraft land at their current location
+        """
+        for mng in self.managers.values():
+            lat = mng.uav_data.lat
+            lon = mng.uav_data.lon
+            mng.add_mission_land(self.mission_counter,lat,lon,ground_alt,insert_mode=MissionInsert.REPLACE_ALL)
+        self.mission_counter += 1
+    
+    def start_mission(self):
+        """Go to mission block for every aircraft
+        """
+        for mng in self.managers.values():
+            mng.start_mission()
+            
+    def closing(self):
+        """Close Ivy for all mission managers
+        """
+        for mng in self.managers.values():
+            mng.closing()
+    
     def main_loop(self):
         while True:
             self.__update_wind()
             poses = self.get_poses()
-            pb = self.fleet_frames.generate_pb_to(self.__fleet_frame_id,poses)
-            sol = self.__solve_pp_problem(pb)
-            self.__send_fleet_mission(sol)
+            
+            if not(self.__takeoff_done):
+                takeoff_done = True
+                for p in poses:
+                    if p.z < self.__takeoff_alt * 0.95:
+                        takeoff_done = False
+                        break
+                self.__takeoff_done = takeoff_done
+                if self.verbose and takeoff_done:
+                    print("Takeoff done!")
+            else:
+                pb = self.fleet_frames.generate_pb_to(self.__fleet_frame_id,poses)
+                sol = self.__solve_pp_problem(pb)
+                self.__send_fleet_mission(sol)
+            time.sleep(5)
+            
         
     def __update_wind(self):
         if self.ignore_wind:
@@ -252,7 +329,43 @@ class FleetManager:
             
 
 if __name__ == '__main__':
+    import argparse
+    
     stat_list = [ACStats(i,15,10/60,40) for i in [2,3,4]]
     separation = 80
     formation = chevron_formation(len(stat_list),separation*1.2)
-    fleet_plan = formation_oval(stat_list,)
+    
+    transformer = pyproj.Transformer.from_crs('WGS84','EPSG:9794') # Default to WGS84 to Lambert93
+    home_lat = 48.8652734
+    home_lon = 1.8928199
+    home_alt = 40
+    home_x,home_y = transformer.transform(home_lat,home_lon)
+    
+    start = Pose3D(home_x,home_y,home_alt,0.)
+    fleet_plan = formation_oval(stat_list,start,400,100,formation)
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('dubins_solver',help='Path to Dubins Fleet Planner')
+    
+    args = parser.parse_args()
+    
+    manager = FleetManager(
+        fleet_plan,
+        args.dubins_solver,
+        separation,
+        transformer=transformer,
+        end_strategy=FleetManagerEnd.NOTHING
+    )
+    
+    try:
+        manager.wait_ready()
+        manager.takeoff(home_alt)
+        manager.start_mission()
+        manager.main_loop()
+    except(KeyboardInterrupt,SystemExit):
+        print("Intettupted!")
+        manager.closing()
+    finally:
+        print("Closing")
+        manager.closing()
+    

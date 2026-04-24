@@ -18,7 +18,7 @@ class FleetKeyframes:
     def keyposes_num(self) -> int:
         return len(self.keyposes)
     
-    def generate_pb_to(self,key_index:int,starts:np.ndarray) -> list[AC_PP_Problem]:
+    def generate_pb_to(self,key_index:int,starts:list[Pose3D]) -> list[AC_PP_Problem]:
         return [AC_PP_Problem(self.ac_stats[i],starts[i],self.keyposes[key_index][i]) for i in range(self.ac_num)]
     
     def generate_pb_between(self,start_key:int,end_key:typing.Optional[int]=None) -> list[AC_PP_Problem]:
