@@ -29,7 +29,12 @@
 #ifndef NAV_EXTENDED_DUBINS_H
 #define NAV_EXTENDED_DUBINS_H
 
-typedef enum DubinsType
+#include "std.h"
+
+#define FIRST_INVALID_DUBINS_TYPE (4*8)
+
+// Different possible types of Dubins paths as sequence of manoeuvres, where S means Straight, L for Left turn and R for Right turn
+typedef enum
 {
   RSR = 0,
   LSL = 1,
@@ -66,12 +71,48 @@ typedef enum DubinsType
   S_LRL_S = 3*8+5,
   S_SLS_S = 3*8+6,
   S_SRS_S = 3*8+7,
-};
 
+  NONE = FIRST_INVALID_DUBINS_TYPE
+} DubinsType;
+
+bool HasStartExtension(DubinsType t);
+bool HasEndExtension(DubinsType t);
 bool NotExtendedDubins(DubinsType t);
 bool StartExtendedDubins(DubinsType t);
 bool EndExtendedDubins(DubinsType t);
 bool BothExtendedDubins(DubinsType t);
+DubinsType BaseDubinsType(DubinsType t);
+bool ValidExtendedDubins(DubinsType t);
 
+typedef struct
+{
+  float x,y,theta;
+} Pose2D_t;
+
+// Data recovered from CUSTOM_MISSION of type DUBIN
+typedef struct
+{
+  Pose2D_t start_p, end_p;      // Endpoint poses
+  float start_time, end_time;   // Start and end times of the trajectory, with respect to flight time clock
+  float target_alt;             // Target final altitude
+  DubinsType type;              // Type of Dubins path to generate
+  float radius;                 // Radius of the target Dubins path
+  float extra;                  // Extra parameter if needed (extended Dubins path)
+} DubinsPb_t;
+
+typedef struct
+{
+  Pose2D_t init_point;  // Initial point of the element
+  float radius;         // Radius; if 0, it is a straight; if positive, it is a left turn, if negative a right turn
+  float length;         // Element length
+}  DubinsElement_t;
+
+
+extern static DubinsPb_t ref_problem;
+extern static DubinsElement_t path_elements[5];
+extern static int curr_path_element = 0;
+
+bool nav_extended_dubins_init(void);
+bool nav_extended_dubins_track(void);
 
 #endif // NAV_EXTENDED_DUBINS_H

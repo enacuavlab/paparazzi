@@ -1,0 +1,17 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="extended_dubins" dir="nav" task="control">
+  <doc>
+    <description>Use navigation primitives to follow Extended Dubins path, that is Dubins paths which may start or end with an extra segment.</description>
+  </doc>
+  <dep>
+    <depends>@navigation</depends>
+  </dep>
+  <header>
+    <file name="nav_extended_dubins.h"/>
+  </header>
+  <init fun="nav_extended_dubins_init()"/>
+  <makefile>
+    <file name="nav_extended_dubins.c"/>
+    <test/>
+  </makefile>
+</module>
