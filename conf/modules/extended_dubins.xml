@@ -1,10 +1,32 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 <module name="extended_dubins" dir="nav" task="control">
   <doc>
-    <description>Use navigation primitives to follow Extended Dubins path, that is Dubins paths which may start or end with an extra segment.</description>
+    <description>Use navigation primitives to follow Extended Dubins path, that is Dubins paths which may start or end with an extra segment.
+
+      If Mission mode is used, this module registers a mission called "DUBIN" using all 12 parameters as follows:
+      ```
+        ref_problem.start_p.x     = params[0];
+        ref_problem.start_p.y     = params[1];
+        ref_problem.start_p.theta = params[2];
+
+        ref_problem.end_p.x       = params[3];
+        ref_problem.end_p.y       = params[4];
+        ref_problem.end_p.theta   = params[5];
+
+        ref_problem.target_alt    = params[6];
+
+        ref_problem.start_time    = params[7];
+        ref_problem.end_time      = params[8];
+
+        ref_problem.type          = (int)params[9];
+        ref_problem.radius        = params[10];
+        ref_problem.extra         = params[11];
+      ```
+    </description>
   </doc>
   <dep>
     <depends>@navigation</depends>
+    <recommends>@mission</recommends>
   </dep>
   <header>
     <file name="nav_extended_dubins.h"/>

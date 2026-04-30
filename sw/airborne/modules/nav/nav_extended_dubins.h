@@ -93,7 +93,7 @@ typedef struct
 typedef struct
 {
   Pose2D_t start_p, end_p;      // Endpoint poses
-  float start_time, end_time;   // Start and end times of the trajectory, with respect to flight time clock
+  float start_time, end_time;   // Start and end times of the trajectory, with respect to flight time clock (TODO: Unused for now)
   float target_alt;             // Target final altitude
   DubinsType type;              // Type of Dubins path to generate
   float radius;                 // Radius of the target Dubins path
@@ -107,10 +107,12 @@ typedef struct
   float length;         // Element length
 }  DubinsElement_t;
 
-
-extern static DubinsPb_t ref_problem;
-extern static DubinsElement_t path_elements[5];
-extern static int curr_path_element = 0;
+void extended_dubins_set_start(float x, float y, float theta_deg);
+void extended_dubins_set_start_wp(uint8_t wp, float theta_deg);
+void extended_dubins_set_end(float x, float y, float a, float theta_deg);
+void extended_dubins_set_end_wp(uint8_t wp, float theta_deg);
+void extended_dubins_set_radius(float radius);
+void extended_dubins_set_pathtype(DubinsType type, float extra);
 
 bool nav_extended_dubins_init(void);
 bool nav_extended_dubins_track(void);
