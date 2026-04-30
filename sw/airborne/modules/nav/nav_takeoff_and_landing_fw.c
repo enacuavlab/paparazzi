@@ -74,7 +74,7 @@ float nav_takeoff_direction;
 #if USE_MISSION
 #include "modules/mission/mission_common.h"
 
-static bool nav_takeoff_mission(uint8_t nb UNUSED, float *params UNUSED, enum MissionRunFlag flag)
+static bool nav_takeoff_mission(uint8_t nb, float *params, enum MissionRunFlag flag)
 {
   if (flag == MissionInit && nb == 1) {
     float height = params[0];
