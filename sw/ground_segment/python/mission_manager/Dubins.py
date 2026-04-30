@@ -461,6 +461,12 @@ class Path:
         else:
             return self.sections[-1].duration()
         
+    def max_turn_radius(self) -> float:
+        output = 0.
+        for s in self.sections:
+            output = max(abs(s.radius()),output)
+        return output
+        
     def shift(self,dx:float,dy:float,dz:float=0.):
         self.start.x += dx
         self.start.y += dy
@@ -559,6 +565,34 @@ class Path:
         
     def abbr(self) -> str:
         return ''.join(s.type.abbr() for s in self.sections)
+    
+    def extra_length(self) -> float:
+        """ Return the 'extra length' used by straight-extended paths
+        """
+        abbr = self.abbr()
+        if len(abbr) <= 3:
+            return 0.
+        else:
+            if len(abbr) > 5:
+                raise AttributeError("Cannot handle path with that many sections!!: "+abbr)
+            
+            if len(abbr) == 5:
+                return self.sections[0].length + self.sections[4].length
+            else: #len(abbr) == 4
+                if abbr[0] == 'S' and abbr[-1] == 'S': # Straight extended + SCS
+                    if abbr[1] == 'S':
+                        return self.sections[0].length
+                    else:
+                        return self.sections[-1].length
+                else: # Straight extended + classic Dubins
+                    if abbr[0] == 'S':
+                        return self.sections[0].length
+                    elif abbr[-1] == 'S':
+                        return self.sections[-1].length
+                    else:
+                        raise AttributeError("Unknown straight extended path: "+abbr)
+                
+        
             
     
     def follow_for(self,t:float) -> typing.Optional[Path]:
