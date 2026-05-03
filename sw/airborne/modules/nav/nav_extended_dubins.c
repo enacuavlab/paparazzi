@@ -4,6 +4,9 @@
 #include "math.h"
 
 #include "firmwares/fixedwing/nav.h"
+#include "firmwares/fixedwing/guidance/guidance_v.h"
+#include "modules/gps/gps.h"
+
 
 #define DEBUG 1
 
@@ -725,20 +728,26 @@ static bool nav_dubins_mission(uint8_t nb, float *params, enum MissionRunFlag fl
 
 // ******************** Dubins navigation ******************** //
 
-static bool track_dubins_element(DubinsElement_t* el)
+static bool track_dubins_element(DubinsElement_t* el, float* remaining_length)
 {
   if(el->radius == 0)
   {
     // STRAIGHT
     Pose2D_t endpoint = move_forward(&el->init_point,el->length);
     nav_route_xy(el->init_point.x, el->init_point.y, endpoint.x, endpoint.y);
+
+    /** distance to waypoint **/
+    float pw_x = endpoint.x - stateGetPositionEnu_f()->x;
+    float pw_y = endpoint.y - stateGetPositionEnu_f()->y;
+    *remaining_length = sqrtf(pw_x*pw_x + pw_y*pw_y);
+
     return (! nav_approaching_xy(endpoint.x, endpoint.y, el->init_point.x, el->init_point.y, CARROT));
   }
   else
   {
     // TURN
-    double c = cos(el->init_point.theta);
-    double s = sin(el->init_point.theta);
+    float c = cos(el->init_point.theta);
+    float s = sin(el->init_point.theta);
 
     float midx = el->init_point.x - el->radius*s;
     float midy = el->init_point.y + el->radius*c;
@@ -746,7 +755,10 @@ static bool track_dubins_element(DubinsElement_t* el)
     nav_circle_XY(midx, midy, -el->radius);
     // return (! CloseRadAngles(el->length/el->radius, nav_circle_radians)); // Measure based on travelled angle
 
-    double end_angle =  - (el->init_point.theta + el->length/el->radius);
+    float end_angle =  - (el->init_point.theta + el->length/el->radius);
+    float curr_angle = RadOfDeg(NavCircleQdr());
+
+    *remaining_length = (end_angle - curr_angle)*el->radius;
     return (! NavQdrCloseTo(DegOfRad(end_angle)));
   }
 }
@@ -837,9 +849,10 @@ bool nav_extended_dubins_track(void)
     return nav_extended_dubins_track();
   }
 
-  bool tracking = track_dubins_element(&path_elements[curr_path_element]);
+  float remaining_el_distance;
+  bool tracking = track_dubins_element(&path_elements[curr_path_element],&remaining_el_distance);
 
-  // If current element is done, skip to the next
+  // If current element is (almost) done, skip to the next
   if (!tracking)
   {
     #ifdef DEBUG
@@ -847,6 +860,18 @@ bool nav_extended_dubins_track(void)
     #endif
     curr_path_element++;
     nav_circle_radians = 0.;
+  }
+  else
+  {
+    float remaining_distance = remaining_el_distance;
+    for(int i = curr_path_element+1; i <= 4; i++)
+    {
+      remaining_distance += path_elements[i].length;
+    }
+
+    float f_tow = gps.tow / 1000;
+    float dt = ref_problem.end_time - f_tow;
+    v_ctl_auto_groundspeed_setpoint = (remaining_distance/dt);
   }
 
   return true;
