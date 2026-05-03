@@ -44,7 +44,7 @@ from flight_plan import FlightPlan, Block, Waypoint
 
 
 MAX_RETRY = 3
-ACK_TIME = 1
+ACK_TIME = 3
 
 @dataclass
 class UAVData:
@@ -248,7 +248,7 @@ class MissionManager():
                     del self.events[mission_id]
                     return
             del self.events[mission_id]
-            raise Exception(f"Mission element no {mission_id} not ACKed in {MAX_RETRY*ACK_TIME:.1f}s!")
+            raise Exception(f"Mission element no {mission_id} not ACKed in {MAX_RETRY*ACK_TIME:.1f}s by {self.uav_data.ac_id}!")
 
         return wrapper
     
@@ -261,7 +261,7 @@ class MissionManager():
         if self.verbose:
             print(msg)
 
-    def __get_home(self) -> Optional[Waypoint]:
+    def get_home(self) -> Optional[Waypoint]:
         if self.uav_data.flight_plan is None:
             print("WARNING: Flight plan is not available")
             return None
@@ -287,7 +287,7 @@ class MissionManager():
 
     def go_home(self, mission_id:int, insert:MissionInsert = MissionInsert.REPLACE_CURRENT) -> bool:
         if self.uav_data.flight_plan is not None:
-            home_wp = self.__get_home()
+            home_wp = self.get_home()
             if home_wp is None:
                 return False
             else:
@@ -298,7 +298,7 @@ class MissionManager():
         
     def circle_home(self, mission_id:int, radius:float, insert:MissionInsert = MissionInsert.REPLACE_CURRENT) -> bool:
         if self.uav_data.flight_plan is not None:
-            home_wp = self.__get_home()
+            home_wp = self.get_home()
             if home_wp is None:
                 return False
             else:
@@ -396,6 +396,19 @@ class MissionManager():
         msg['index'] = mission_id
         msg['type'] = 'LAND'
         msg['params'] = [float(height), float(lat), float(lon), 0., 0.]
+        return msg
+    
+    @send_mission_element
+    def add_mission_custom(self,mission_id:int, name:str, params:list[float], duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+        assert len(name) <= 5
+        assert len(params) <= 12
+        msg = PprzMessage("datalink", "MISSION_CUSTOM")
+        msg['ac_id'] = self.ac_id
+        msg['insert'] = insert_mode.value
+        msg['duration'] = duration
+        msg['index'] = mission_id
+        msg['type'] = name
+        msg['params'] = params.copy()
         return msg
     
     def next_mission(self):
