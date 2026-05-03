@@ -21,6 +21,44 @@ from mission_manager import UAVData,MissionManager,MissionInsert
 
 from pprzlink.ivy import IvyMessagesInterface
 
+PPRZ_DUBINS_TYPE_MAP = {
+    'RSR' : 0,
+    'LSL' : 1,
+    'RSL' : 2,
+    'LSR' : 3,
+    'RLR' : 4,
+    'LRL' : 5,
+    'SLS' : 6,
+    'SRS' : 7,
+
+    'SRSR' : 8+0,
+    'SLSL' : 8+1,
+    'SRSL' : 8+2,
+    'SLSR' : 8+3,
+    'SRLR' : 8+4,
+    'SLRL' : 8+5,
+    'SSLS' : 8+6,
+    'SSRS' : 8+7,
+
+    'RSRS' : 2*8+0,
+    'LSLS' : 2*8+1,
+    'RSLS' : 2*8+2,
+    'LSRS' : 2*8+3,
+    'RLRS' : 2*8+4,
+    'LRLS' : 2*8+5,
+    'SLSS' : 2*8+6,
+    'SRSS' : 2*8+7,
+
+    'SRSRS' : 3*8+0,
+    'SLSLS' : 3*8+1,
+    'SRSLS' : 3*8+2,
+    'SLSRS' : 3*8+3,
+    'SRLRS' : 3*8+4,
+    'SLRLS' : 3*8+5,
+    'SSLSS' : 3*8+6,
+    'SSRSS' : 3*8+7,
+}
+
 def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
                    separation:float, wind:tuple[float,float],threads:int,
                    **kwargs) -> subprocess.CompletedProcess[bytes]:
@@ -203,7 +241,7 @@ class FleetManager:
     def main_loop(self):
         while True:
             self.__update_wind()
-            poses = self.get_poses()
+            poses,times = self.get_poses()
             if self.verbose:
                 val,id1,id2 = min_XY_dist(poses)
                 print(f"Minimal current dist is {val}, measured between {self.ac_ids[id1]} and {self.ac_ids[id2]}")
@@ -211,7 +249,7 @@ class FleetManager:
             try:
                 pb = self.fleet_frames.generate_pb_to(self.__fleet_frame_id,poses)
                 sol = self.__solve_pp_problem(pb)
-                self.__send_fleet_mission(sol)
+                self.__send_fleet_mission(sol,times)
                 input("Waiting user input for next reschedule...")
             except FileNotFoundError:
                 print("WARNING: Solver did not find a solution")
@@ -257,14 +295,22 @@ class FleetManager:
         for id in self.ac_ids:
             self.update_stats(id)
     
-    def get_poses(self) -> list[Pose3D]:
-        output = []
+    def get_poses(self) -> tuple[list[Pose3D],dict[int,float]]:
+        """Return the list of currently known aircraft poses, with their associated onboard timestamps
+
+        Returns:
+            tuple[list[Pose3D],dict[int,float]]: First list contain the poses, the second the senders' timestamp (GPS ToW, in seconds) indexed by ac_id
+        """
+        output_poses = []
+        output_times = dict()
         for id in self.ac_ids:
-            data = self.uav_data(id)
+            mng = self.managers[id]
+            data = mng.uav_data
             xx, yy = self.transformer.transform(data.lat,data.lon)
             pose = Pose3D(xx,yy,data.alt,data.heading)
-            output.append(pose)
-        return output
+            output_poses.append(pose)
+            output_times[id] = data.gps_tow
+        return output_poses,output_times
     
     def __make_pp_problems(self,poses:list[Pose3D],dests:list[Pose3D]) -> list[AC_PP_Problem]:
         assert len(dests) == len(self.ac_ids)
@@ -302,68 +348,69 @@ class FleetManager:
             print(f"EXCEPTION: {e}")
             raise e
         
-    def __send_fleet_mission(self,plan:FleetPlan):
+    def __send_fleet_mission(self,plan:FleetPlan,times:dict[int,float]):
         mission_id_incr = 0
         for stats,path in plan.trajectories:
-            incr = self.__make_path_mission(stats.id,path)
+            incr = self.__make_path_mission(stats.id,path,times[stats.id])
             mission_id_incr = max(mission_id_incr,incr)
         self.mission_counter += mission_id_incr
         
-    def __make_path_mission(self,ac_id:int,p:Path) -> int:
+    def __make_path_mission(self,ac_id:int,p:Path,start_time:float) -> int:
         manager = self.managers[ac_id]
         speed = manager.uav_data.groundspeed_sp if self.ignore_wind else manager.uav_data.airspeed_sp
-        if speed == 0.:
-            speed = 15
-        first = True
-        for i,s in enumerate(p.sections):
-            this_mission_id = self.mission_counter + i
-            if first:
-                if s.type == DubinsMove.STRAIGHT:
-                    end = s.end()
-                    lat,lon = self.transformer.transform(end.x,end.y,direction=TransformDirection.INVERSE)
-                    manager.add_mission_point(lat,lon,self.flight_alt,this_mission_id,s.length/speed,insert_mode=MissionInsert.REPLACE_ALL)
-                    first = False
-                    continue
-                
-            if s.type == DubinsMove.STRAIGHT:
-                start = s.start()
-                slat,slon = self.transformer.transform(start.x,start.y,direction=TransformDirection.INVERSE)
-                end = s.end()
-                elat,elon = self.transformer.transform(end.x,end.y,direction=TransformDirection.INVERSE)
-                manager.add_mission_path(this_mission_id,
-                                         [(slat,slon),(elat,elon)],
-                                         self.flight_alt,s.length/speed,
-                                         MissionInsert.REPLACE_ALL if first else MissionInsert.APPEND)
-            else:
-                lat,lon = self.transformer.transform(s.x,s.y,direction=TransformDirection.INVERSE)
-                radius = (1 if s.type == DubinsMove.RIGHT else -1) * s.radius() # Radius is positive if turning clockwise, negative otherwise
-                manager.add_mission_circle(this_mission_id,
-                                           lat,lon,self.flight_alt,
-                                           radius,
-                                           s.length/speed,
-                                           MissionInsert.REPLACE_ALL if first else MissionInsert.APPEND)
-            
-            if first:
-                first = False
-        return len(p.sections)
+        if speed == 0.: # Speed set point is not known
+            for e in self.fleet_frames.ac_stats:
+                if e.id == ac_id:
+                    speed = e.airspeed
+            assert speed != 0.
+        
+        home = manager.get_home()
+        assert home is not None
+        xhome,yhome = self.transformer.transform(home.lat,home.lon)
+        
+        params = [
+            p.start.x-xhome,
+            p.start.y-yhome,
+            p.start.theta,
+            p.end.x-xhome,
+            p.end.y-yhome,
+            p.end.theta,
+            p.end.z,
+            start_time,
+            start_time+p.total_length/speed,
+            float(PPRZ_DUBINS_TYPE_MAP[p.abbr()]),
+            p.max_turn_radius(),
+            p.extra_length()
+        ]
+        
+        print(f"{ac_id} : params: {params}")
+        
+        manager.add_mission_custom(
+            self.mission_counter,
+            'DUBIN',
+            params,
+            insert_mode=MissionInsert.REPLACE_CURRENT
+        )
+
+        return 1
             
 
 if __name__ == '__main__':
     import argparse
     
-    stat_list = [ACStats(i,15,10/60,40) for i in [2,3,4]]
-    separation = 30
+    stat_list = [ACStats(i,15,10/60,100) for i in [8,9,10]]
+    separation = 40
     formation = chevron_formation(len(stat_list),separation*1.2)
     
     transformer = pyproj.Transformer.from_crs('WGS84','EPSG:9794') # Default to WGS84 to Lambert93
-    home_lat = 48.8652734
-    home_lon = 1.8928199
-    home_height = 40
-    home_alt = 120
+    home_lat = 43.46223
+    home_lon = 1.27289
+    home_height = 260-185
+    home_alt = 260
     home_x,home_y = transformer.transform(home_lat,home_lon)
     
     start = Pose3D(home_x,home_y,home_height,0.)
-    fleet_plan = formation_oval(stat_list,start,400,100,formation)
+    fleet_plan = formation_oval(stat_list,start,800,200,formation)
     
     parser = argparse.ArgumentParser()
     parser.add_argument('dubins_solver',help='Path to Dubins Fleet Planner')
