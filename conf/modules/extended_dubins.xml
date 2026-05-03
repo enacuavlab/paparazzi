@@ -15,7 +15,7 @@
 
         ref_problem.target_alt    = params[6];
 
-        ref_problem.start_time    = params[7];
+        ref_problem.start_time    = params[7]; (time is in seconds, from GPS ToW)
         ref_problem.end_time      = params[8];
 
         ref_problem.type          = (int)params[9];
@@ -25,7 +25,7 @@
     </description>
   </doc>
   <dep>
-    <depends>@navigation</depends>
+    <depends>@navigation,gps</depends>
     <recommends>@mission</recommends>
   </dep>
   <header>

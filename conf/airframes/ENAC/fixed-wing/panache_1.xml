@@ -17,15 +17,30 @@
       <module name="radio_control" type="sbus"/>
       <define name="USE_PWM5"/>
       <define name="USE_PWM_TIM4"/>
+      
+      <!--TODO: Add airspeed definition for real flight -->
     </target>
     <target name="nps" board="pc">
       <module name="radio_control" type="ppm"/>
       <module name="fdm" type="jsbsim"/>
+      
+      <!-- Airspeed definitions (taken from disco_energy) -->
+      <define name="AIRSPEED_ADC_SCALE" value="1"/>
+      <define name="AIRSPEED_ADC_BIAS" value="1"/>
+      <module name="airspeed" type="adc"/>
 
       <!-- to use real panache board in simulation, remove target="ap" from extra_dl.xml -->
       <module name="uart"/>
       <define name="UART6_DEV" value="/dev/ttyUSB0"/>
     </target>
+    
+    <!-- Airspeed definitions (taken from disco_energy) -->
+    <define name="USE_AIRSPEED" value="1"/>
+    <define name="STALL_AIRSPEED" value="8"/>
+    
+    <module name="air_data"/>
+    
+    
     <module name="telemetry" type="xbee_api"/> 
     <module name="board" type="tawaki"/>
     <module name="ahrs" type="float_dcm"/> <!--Attitude and heading reference system-->
@@ -127,7 +142,7 @@
   </section>
 
   <section name="MISC">
-    <define name="NOMINAL_AIRSPEED" value="18." unit="m/s"/>
+    <define name="NOMINAL_AIRSPEED" value="15." unit="m/s"/>
     <define name="CARROT" value="5." unit="s"/>
     <define name="DEFAULT_CIRCLE_RADIUS" value="100."/>
   </section>
@@ -151,6 +166,22 @@
     <define name="AUTO_PITCH_MAX_PITCH" value="20" unit="deg"/>
     <define name="AUTO_PITCH_MIN_PITCH" value="-20" unit="deg"/>
     <define name="PITCH_TRIM" value="-0.4" unit="deg"/>
+    
+    <!-- airspeed control -->
+    <define name="AUTO_AIRSPEED_SETPOINT" value="15."/>
+    <define name="AUTO_AIRSPEED_THROTTLE_PGAIN" value="0.1"/>
+    <define name="AUTO_AIRSPEED_THROTTLE_DGAIN" value="0.12"/>
+    <define name="AUTO_AIRSPEED_THROTTLE_IGAIN" value="0.0"/>
+    <define name="AUTO_AIRSPEED_PITCH_PGAIN" value="0.06"/>
+    <define name="AUTO_AIRSPEED_PITCH_DGAIN" value="0.0"/>
+    <define name="AUTO_AIRSPEED_PITCH_IGAIN" value="0.042"/>
+    <define name="AIRSPEED_MAX" value="30"/>
+    <define name="AIRSPEED_MIN" value="10"/>
+    
+    <!-- groundspeed control -->
+    <define name="AUTO_GROUNDSPEED_SETPOINT" value="15"/>
+    <define name="AUTO_GROUNDSPEED_PGAIN" value="1."/>
+    <define name="AUTO_GROUNDSPEED_IGAIN" value="0."/>
   </section>
 
   <section name="HORIZONTAL CONTROL" prefix="H_CTL_">
