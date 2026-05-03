@@ -13,6 +13,8 @@
     <configure name="PERIODIC_FREQUENCY" value="500"/>
     <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/>
 
+    <autopilot name="rotorcraft_fully_actuated"/>
+
     <target name="ap" board="tawaki_1.1">
       <module name="radio_control" type="sbus"/>
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>

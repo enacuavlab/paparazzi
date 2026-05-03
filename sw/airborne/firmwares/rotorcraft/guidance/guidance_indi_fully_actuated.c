@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2025 Gautier Hattenberger <gautier.hattenberger@enac.fr>
- *               20025 Mohamad Hachem
+ *               2025 Mohamad Hachem
  *
  * This file is part of paparazzi.
  *
@@ -110,8 +110,8 @@ void guidance_indi_set_wls_settings(struct WLS_t *wls, struct FloatEulers *euler
 {
   struct FloatEulers euler_yxz_ref = { 0 };
 #if GUIDANCE_INDI_RC_SWITCH_EULER
-  euler_yxz_ref.phi = (radio_control_get(RADIO_PITCH) / MAX_PPRZ) * guidance_indi_max_bank;
-  euler_yxz_ref.theta = (radio_control_get(RADIO_ROLL) / MAX_PPRZ) * guidance_indi_max_bank;
+  euler_yxz_ref.phi = (radio_control_get(RADIO_ROLL) / MAX_PPRZ) * guidance_indi_max_bank;
+  euler_yxz_ref.theta = (radio_control_get(RADIO_PITCH) / MAX_PPRZ) * guidance_indi_max_bank;
 #endif
   euler_yxz_ref.psi = heading_sp;
 
@@ -138,5 +138,22 @@ void guidance_indi_set_wls_settings(struct WLS_t *wls, struct FloatEulers *euler
   wls->u_pref[3] = stab_thrust_filt.x;                     // prefered delta Tx
   wls->u_pref[4] = stab_thrust_filt.y;                     // prefered delta Ty
   wls->u_pref[5] = stab_thrust_filt.z;                     // prefered delta Tz
+}
+
+struct ThrustSetpoint guidance_set_rc_h_thrust(struct ThrustSetpoint *v_sp)
+{
+  float thrust[3];
+  thrust[0] = -guidance_indi_max_h_thrust * radio_control_get(RADIO_PITCH) / MAX_PPRZ;
+  thrust[1] = guidance_indi_max_h_thrust * radio_control_get(RADIO_ROLL) / MAX_PPRZ;
+  thrust[2] = th_sp_to_thrust_f(v_sp, 0, THRUST_AXIS_Z);
+  return th_sp_from_thrust_vect_f(thrust);
+}
+
+struct StabilizationSetpoint guidance_set_rc_h_att(struct StabilizationSetpoint *a_sp)
+{
+  struct FloatEulers eulers = stab_sp_to_eulers_f(a_sp);
+  eulers.phi = 0.f;
+  eulers.theta = 0.f;
+  return stab_sp_from_eulers_f(&eulers);
 }
 
