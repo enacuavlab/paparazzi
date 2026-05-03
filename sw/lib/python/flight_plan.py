@@ -67,6 +67,12 @@ class FlightPlan:
 
         ways_elt = fp_element.find("waypoints")
         fp.waypoints = FlightPlan.parse_waypoints(ways_elt)
+        
+        for wp in fp.waypoints:
+            if wp.lat is None and wp.lon is None \
+                and wp.x is not None and wp.y is not None:
+                wp.lat = float(fp.lat0) + float(wp.x)
+                wp.lon = float(fp.lon0) + float(wp.y)
 
         blocks_elt = fp_element.find("blocks")
         fp.blocks = FlightPlan.parse_blocks(blocks_elt)
