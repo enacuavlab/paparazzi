@@ -494,13 +494,6 @@
 #endif
 
 /*
- * IDs of RSSI measurements (message 13)
- */
-#ifndef RSSI_BLUEGIGA_ID
-#define RSSI_BLUEGIGA_ID 1
-#endif
-
-/*
  * IDs of ACT_FEEDBACK sensors (message 15)
  */
 #ifndef ACT_FEEDBACK_BOARD_ID
@@ -662,6 +655,10 @@
 
 #ifndef RADIO_CONTROL_INTERMCU_ID
 #define RADIO_CONTROL_INTERMCU_ID 9
+#endif
+
+#ifndef RADIO_CONTROL_UAVCAN_ID
+#define RADIO_CONTROL_UAVCAN_ID 10
 #endif
 
 /*
