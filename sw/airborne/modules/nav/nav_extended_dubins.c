@@ -811,9 +811,12 @@ bool nav_extended_dubins_init()
   mission_register(nav_dubins_mission,"DUBIN");
   #endif
 
-  // TODO: Handle verticality
-  // NavVerticalAutoThrottleMode(0); /* No pitch */
-  // NavVerticalAltitudeMode(wp_cd.a, 0.);
+  // Airspeed mode
+  v_ctl_speed_mode = V_CTL_SPEED_AIRSPEED;
+
+  // Handle verticality
+  NavVerticalAutoThrottleMode(0); /* No pitch */
+  NavVerticalAltitudeMode(ref_problem.target_alt, 0.);
 
   ExtendedDubins_t sol = fit_dubins(&ref_problem);
   curr_path_element = (NotExtendedDubins(ref_problem.type)) ? 1 : 0;
@@ -821,7 +824,13 @@ bool nav_extended_dubins_init()
   {
     path_elements[i] = sol.elements[i];
     #ifdef DEBUG
-    IPRINTF("Element %d : Length %.3f\n",i,sol.elements[i].length);
+    IPRINTF("Element %d : Length %.3f ; Radius %.3f ; Start (%.3f , %.3f , %.3f)\n",
+        i,
+        sol.elements[i].length,
+        sol.elements[i].radius,
+        sol.elements[i].init_point.x,
+        sol.elements[i].init_point.y,
+        sol.elements[i].init_point.theta);
     #endif
   }
   return nav_extended_dubins_track();
@@ -846,7 +855,7 @@ bool nav_extended_dubins_track(void)
     #endif
     curr_path_element++;
     nav_circle_radians = 0.;
-    return nav_extended_dubins_track();
+    return true;
   }
 
   float remaining_el_distance;
@@ -871,7 +880,8 @@ bool nav_extended_dubins_track(void)
 
     float f_tow = gps.tow / 1000;
     float dt = ref_problem.end_time - f_tow;
-    v_ctl_auto_groundspeed_setpoint = (remaining_distance/dt);
+    // v_ctl_auto_groundspeed_setpoint = (remaining_distance/dt);
+    v_ctl_auto_airspeed_setpoint = (remaining_distance/dt);
   }
 
   return true;
