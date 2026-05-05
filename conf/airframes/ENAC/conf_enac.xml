@@ -91,7 +91,7 @@
    name="Flyhigh"
    ac_id="36"
    airframe="airframes/ENAC/hybrid/flyhigh.xml"
-   radio="radios/T10CG_SBUS.xml"
+   radio="radios/Radiomaster_pocket_SBUS.xml"
    telemetry="telemetry/default_rotorcraft_flyhigh.xml"
    flight_plan="flight_plans/ENAC/test_falcon_Muret.xml"
    settings="settings/rotorcraft_basic.xml"
