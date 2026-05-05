@@ -21,42 +21,30 @@
  * @file "modules/gps/gps_nmea_send.h"
  * @author Jean-Baptiste FORESTIER
  * @brief module used to send GPS data over a Tawaki UART for extern instrument using NMEA protocol
- * Exemple of use : MAPIR camera stores GPS data in metadata on each frame 
+ * Exemple of use : MAPIR camera stores GPS data in metadata on each frame
  */
-
 
 #ifndef GPS_NMEA_SEND_H
 #define GPS_NMEA_SEND_H
 
 #include "std.h"
 
-
 struct gps_nmea_send_msg_t {
-	  double lat;            ///< Latitude
-    double lon;            ///< Longiitude
-    uint8_t num_sv;        ///< number of sat in fix
-    uint16_t pdop;         ///< position dilution of precision scaled by 100
-    float hmsl;            ///< Orthometric height (MSL reference)
-    float vground;         ///< Speed over ground in m/s
-    float course;        ///< GPS course over ground in rad*1e7, [0, 2*Pi]*1e7 (CW/north)
+  double lat;         ///< Latitude
+  double lon;         ///< Longiitude
+  uint8_t num_sv;     ///< number of sat in fix
+  uint16_t pdop;      ///< position dilution of precision scaled by 100
+  float hmsl;         ///< Orthometric height (MSL reference)
+  float vground;      ///< Speed over ground in m/s
+  float course;       ///< GPS course over ground in rad*1e7, [0, 2*Pi]*1e7 (CW/north)
 };
 
-
-struct Gps_Nmea_Send
-{
-  bool initialized;
-  bool error_init; // Flag to indicate if there was an error during initialization
+struct Gps_Nmea_Send {
+  bool error_init;    // Flag to indicate if there was an error during initialization
   struct gps_nmea_send_msg_t msg;
 };
 
-void gps_nmea_send_init(void);
-void gps_nmea_send_periodic(void);
-void recover_gps_data(void);
-void build_nmea_sentence(void);
-uint8_t nmea_checksum(const char *sentence, int length);
-void nmea_convert_deg_to_DDMM(double deg, char *buf, int is_lat);
-void gps_nmea_get_system_date_str(char *buf_date, size_t buf_date_size, char *buf_time, size_t buf_time_size);
-void nmea_send(const char *payload, int payload_length);
-
+extern void gps_nmea_send_init(void);
+extern void gps_nmea_send_periodic(void);
 
 #endif

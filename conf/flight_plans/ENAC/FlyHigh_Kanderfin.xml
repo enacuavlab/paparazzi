@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+<flight_plan alt="2800" ground_alt="2750" lat0="46.483879" lon0="7.8104227" max_dist_from_home="4000" name="Kanderfin" security_height="10">
+
+  <header>
+  </header>
+  
+  <waypoints>
+    <waypoint name="HOME" x="0" y="0"/>
+    <waypoint name="TD" x="-34.131" y="101.983"/>
+    <waypoint name="STDBY" x="26.827" y="37.95"/>
+    <waypoint name="CLIMB" x="60.671" y="-45.611" alt="2900"/>
+    <waypoint name="_HERE" x="86.47" y="14.673"/>
+    <waypoint name="P1" x="-98.698" y="-98.146" alt="2900"/>
+    <waypoint name="P2" x="-965.16" y="-391.575" alt="2800"/>
+    <waypoint name="_BASELEG" x="-3.927" y="-188.272"/>
+  </waypoints>
+  
+  <variables>
+    <variable init="100" max="120" min="-120" step="5" var="circle_radius"/>
+  </variables>
+
+  <!--exceptions>
+    <exception cond="10.5 @LT PowerVoltage()" deroute="Standby"/>
+  </exceptions-->
+
+  <blocks>
+    
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 10)"/>
+      <call_once fun="NavSetAltitudeReferenceHere()"/>
+    </block>
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Start Engine">
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+
+    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
+      <exception cond="GetPosHeight() @GT 20" deroute="Standby"/> 
+      <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 1" vmode="throttle"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="STDBY"/>
+    </block>
+    <block name="Standby" strip_button="Standby" strip_icon="home.png">
+      <stay wp="STDBY"/>
+    </block>
+
+    <block name="Return to Standby">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="STDBY" from="_HERE" hmode="route" approaching_time="3"/>
+      <deroute block="Standby"/>
+    </block>
+
+    <block name="Start leg 1">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="CLIMB" from="_HERE" hmode="route"/>
+      <circle radius="circle_radius" until="GetPosHeight() @GT WaypointAlt(WP_P1) - 10" wp="CLIMB"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="P1" from="_HERE" hmode="route"/>
+    </block>
+    <block name="Leg 1">
+      <go wp="P2" from="P1" hmode="route" vmode="glide"/>
+    </block>
+    <block name="End leg 1">
+      <circle wp="P2" radius="circle_radius" height="WaypointAlt(WP_P2)-50"/>
+    </block>
+    <block name="Land leg 1">
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="P2" from="_HERE" hmode="route" approaching_time="3" height="WaypointAlt(WP_P2)-50"/>
+      <go wp="P2" height="WaypointAlt(WP_P2)-50"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="P2"/>
+    </block>
+
+    <block name="Kill landed">
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+
+  </blocks>
+
+</flight_plan>

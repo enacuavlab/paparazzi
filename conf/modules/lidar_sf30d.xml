@@ -23,7 +23,7 @@
   <periodic fun="lidar_sf30d_downlink()" freq="10" autorun="TRUE"/> <!-- for debug -->
   <periodic fun="lidar_sf30d_periodic()" freq="500"/> <!-- Frequency use for logging -->
   <event fun="lidar_sf30d_event()"/>
-  <makefile>
+  <makefile target="ap">
     <configure name="LIDAR_SF30D_I2C_DEV" default="i2c2" case="lower|upper"/>
     <configure name="LIDAR_SF30D_I2C_ADDRESS" default="0x66"/>
     <configure name="USE_LIDAR_SF30D_AGL" default="0"/>
@@ -34,9 +34,6 @@
     <define name="USE_LIDAR_SF30D_AGL" value="$(USE_LIDAR_SF30D_AGL)"/>
     <define name="LIDAR_SF30D_COMPENSATE_ROTATION" value="$(LIDAR_SF30D_COMPENSATE_ROTATION)"/>
     <file name="lidar_sf30d.c"/>
-  </makefile>
-  <makefile target="nps">
-    <define name="USE_SONAR" value="1"/><!-- in NPS use a virtual sonar to simulate lidar measurements -->
   </makefile>
 </module>
 
