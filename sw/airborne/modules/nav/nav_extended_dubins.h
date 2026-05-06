@@ -84,6 +84,8 @@ bool BothExtendedDubins(DubinsType t);
 DubinsType BaseDubinsType(DubinsType t);
 bool ValidExtendedDubins(DubinsType t);
 
+extern bool draw_dubins;
+
 typedef struct
 {
   float x,y,theta;

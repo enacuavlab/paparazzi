@@ -24,6 +24,13 @@
       ```
     </description>
   </doc>
+  <settings>
+    <dl_settings>
+      <dl_settings name="Extended Dubins">
+        <dl_setting var="draw_dubins" min="0" max="1" step="1" shortname="Draw"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
   <dep>
     <depends>@navigation,gps</depends>
     <recommends>@mission</recommends>

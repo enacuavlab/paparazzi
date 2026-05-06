@@ -8,12 +8,19 @@
 #include "modules/gps/gps.h"
 
 
+
 #define DEBUG 1
 
 #ifdef DEBUG
 #include <stdio.h>
 
+bool draw_dubins = true;
+
 #define IPRINTF(...) printf("%d : ",AC_ID) ; printf(__VA_ARGS__)
+
+#else
+
+bool draw_dubins = false;
 #endif
 
 bool HasStartExtension(DubinsType t)
@@ -727,6 +734,11 @@ static bool nav_dubins_mission(uint8_t nb, float *params, enum MissionRunFlag fl
 #endif
 
 // ******************** Dubins navigation ******************** //
+
+static void draw_dubins_element(DubinsElement_t* el, uint8_t id, uint8_t color)
+{
+
+}
 
 static bool track_dubins_element(DubinsElement_t* el, float* remaining_length)
 {
