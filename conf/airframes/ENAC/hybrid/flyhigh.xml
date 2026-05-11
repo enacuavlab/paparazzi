@@ -100,6 +100,11 @@
       <define name="LOGGER_CONTROL_EFFECTIVENESS_SPEED" value="FALSE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="FALSE"/>
     </module>
+
+    <!-- Use to monitor current consumption with external hall effect sensor -->
+    <module name="current_sensor">
+      <configure name="ADC_CURRENT_SENSOR" value="ADC_4"/>
+    </module>      
      
 	<!-- Use LIDAR telemetry-->
     <!--module name="lidar_sf30d">
@@ -327,7 +332,7 @@
     <define name="THROTTLE_KP" value="0.05"/>
     <define name="THROTTLE_KD" value="0.05"/>
     <define name="THROTTLE_KI" value="0."/>
-    <define name="NOMINAL_THROTTLE" value="0.57"/>  <!-- Throttle % in plane mode on rear motor -->
+    <define name="NOMINAL_THROTTLE" value="0.50"/>  <!-- Throttle % in plane mode on rear motor -->
     <define name="PITCH_TRIM" value="0." unit="deg"/> 
     <define name="PITCH_OF_VZ" value="2." unit="deg"/>
   </section>  
@@ -340,6 +345,7 @@
   </section>
   
   <section name="BAT">
+    <define name="MilliAmpereOfAdc(_adc)" value="(1.2975*_adc-9970)"/>
     <define name="CATASTROPHIC_BAT_LEVEL" value="9.2" unit="V"/>
     <define name="CRITIC_BAT_LEVEL" value="9.4" unit="V"/>
     <define name="LOW_BAT_LEVEL" value="10." unit="V"/>
