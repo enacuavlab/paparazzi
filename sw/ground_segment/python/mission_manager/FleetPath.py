@@ -26,16 +26,16 @@ class FleetKeyframes:
             end_key = start_key+1
         return [AC_PP_Problem(self.ac_stats[i],self.keyposes[start_key][i],self.keyposes[end_key][i]) for i in range(self.ac_num)]
     
-def formation_oval(ac_stats:list[ACStats],start:Pose3D,length:float,width:float,formation:Formation) -> FleetKeyframes:
+def formation_oval(ac_stats:list[ACStats],start:Pose3D,length:float,width:float,formation:Formation, half_points:bool=False) -> FleetKeyframes:
     """Given a formation, make a flat oval sequence from it
     
     |--- [1] <--- length --- start <-|
     |                                |
     |                                |
-    |                              width
+   [2]                              [5]  width
     |                                |
     |                                |
-    |--> [2] ---------------> [3] ---|
+    |--> [3] ---------------> [4] ---|
 
     Args:
         ac_stats (list[ACStats]): Aircraft statistics
@@ -55,23 +55,67 @@ def formation_oval(ac_stats:list[ACStats],start:Pose3D,length:float,width:float,
     formation.orientation = start.theta
     formation.to_barycentric_coords()
     
-    keyposes = [formation.get_abs_positions()]
+    # Start
+    keyposes = [formation.get_abs_positions().copy()]
     
+    # First long
     formation.center[0] += np.cos(start.theta)*length
     formation.center[1] += np.sin(start.theta)*length
     
-    keyposes.append(formation.get_abs_positions())
+    keyposes.append(formation.get_abs_positions().copy())
     
-    theta = start.theta + np.pi/2
-    formation.center[0] += np.cos(start.theta)*width
-    formation.center[1] += np.sin(start.theta)*width
-    theta += np.pi/2
+    if half_points:
+        # First half turn
+        theta = start.theta + np.pi/4
+        formation.center[0] += np.cos(theta)*width/np.sqrt(2)
+        formation.center[1] += np.sin(theta)*width/np.sqrt(2)
+        formation.orientation += np.pi/2
+        
+        keyposes.append(formation.get_abs_positions().copy())
+        
+        # End of of first turn
+        theta += np.pi/2
+        formation.center[0] += np.cos(theta)*width/np.sqrt(2)
+        formation.center[1] += np.sin(theta)*width/np.sqrt(2)
+        formation.orientation += np.pi/2
+        
+        keyposes.append(formation.get_abs_positions().copy())
+    else:
+        # End of of first turn
+        theta = start.theta + np.pi/2
+        formation.center[0] += np.cos(theta)*width
+        formation.center[1] += np.sin(theta)*width
+        formation.orientation += np.pi
+        
+        keyposes.append(formation.get_abs_positions().copy())
     
-    keyposes.append(formation.get_abs_positions())
+    # End of second long
+    if half_points:
+        theta += np.pi/4
+    else:
+        theta += np.pi/2
+    formation.center[0] += np.cos(theta)*length
+    formation.center[1] += np.sin(theta)*length
     
-    formation.center[0] += np.cos(start.theta)*length
-    formation.center[1] += np.sin(start.theta)*length
+    keyposes.append(formation.get_abs_positions().copy())
     
-    keyposes.append(formation.get_abs_positions())
+    if half_points:
+        # Second halg turn
+        theta += np.pi/4
+        formation.center[0] += np.cos(theta)*width/np.sqrt(2)
+        formation.center[1] += np.sin(theta)*width/np.sqrt(2)
+        formation.orientation += np.pi/2
+        
+        keyposes.append(formation.get_abs_positions().copy())
+    
+    # import matplotlib.pyplot as plt
+    
+    # colormap = ['r','g','b','y','k','purple']
+    
+    # for i,el in enumerate(keyposes):
+    #     plt.scatter(el[:,0],el[:,1],color=colormap[i])
+        
+    # plt.gca().set_aspect('equal')
+    # plt.show()
     
     return FleetKeyframes(ac_stats,keyposes)

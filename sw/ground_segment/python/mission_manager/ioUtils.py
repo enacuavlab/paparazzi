@@ -18,7 +18,7 @@
 import json,csv,dataclasses,pathlib,typing,copy
 import numpy as np
 
-from Dubins import Pose3D,ACStats,Path,BasicPath,FleetPlan,ListOfTimedPoses,TimedPosesLine,DictOfPoseTrajectories
+from Dubins import Pose3D,ACStats,Path,BasicPath,FleetPlan,ListOfTimedPoses,TimedPosesLine,DictOfPoseTrajectories,mod2pi,central_angle
 
 
 ######################################## Dubins problem writing and parsing ########################################
@@ -77,6 +77,26 @@ class AC_PP_Problem:
         end     = Pose3D(end_x,end_y,end_z,end_theta)
         
         return AC_PP_Problem(stats,start,end,dt,timeslots)
+
+def straight_pp_problems(l:list[AC_PP_Problem],tol:float=1e-6) -> bool:
+    """ Returns True if all individual path planning problems can be solved by the same translation, False otherwise"""
+    # Check if a rotation is needed    
+    for p in l:
+        if abs(central_angle(p.start.theta - p.end.theta)) > tol:
+            return False
+        
+    # No rotation: compute a translation and check if it works for the others
+    pb0 = l[0]
+    tr_x = pb0.end.x - pb0.start.x
+    tr_y = pb0.end.y - pb0.start.y
+    
+    for p in l[1:]:
+        dest_x = p.start.x + tr_x
+        dest_y = p.start.y + tr_y
+        if (dest_x-p.end.x)**2 + (dest_y-p.end.y)**2 > tol*tol:
+            return False
+        
+    return True
 
 def write_pathplanning_problem_to_CSV(file,data:typing.Sequence[AC_PP_Problem],overwrite:bool=False):
     max_timeslots = max(len(d.timeslots) for d in data)

@@ -24,9 +24,7 @@ from os import path, getenv
 import math
 from typing import Dict,Optional
 import numpy as np
-from dataclasses import dataclass
 from enum import Enum
-import time
 import functools
 from threading import Event
 
@@ -46,46 +44,8 @@ from flight_plan import FlightPlan, Block, Waypoint
 MAX_RETRY = 3
 ACK_TIME = 3
 
-@dataclass
-class UAVData:
-    '''
-    Store UAV information
-    '''
-    ac_id: str
-    name: str
-    lat: float = 0.
-    lon: float = 0.
-    alt: float = 0.
-    agl: float = 0.
-    heading: float = 0.
-    vnorth: float = 0.
-    veast: float = 0.
-    vup: float = 0.
-    ref_alt: float = 0.
-    bat_voltage: float = 0.
-    bat_charge: float = 0.
-    gps_tow: int = 0
-    flight_time: int = 0
-    AP_mode: str = 'none'
-    FP_block: str = 'none'
-    mission_status: list[int] = None
-    datalink_lost_time: int = 0
-    time_since_last_msg: float = 0.
-    flight_plan: Optional[FlightPlan] = None
-    start_mission_fp_block: Optional[Block] = None
-    airspeed: float = 0.
-    airspeed_sp: float = 0.
-    groundspeed_sp: float = 0.
-    wind_east:Optional[float] = None
-    wind_north:Optional[float] = None
-    wind_up:Optional[float] = None
+from uav_data import UAVData
     
-    @property
-    def height(self) -> float:
-        return self.alt - self.ref_alt
-    
-    
-
 class MissionInsert(Enum):
     APPEND = 0
     PREPEND = 1
@@ -320,12 +280,26 @@ class MissionManager():
         msg['wp_lon'] = int(lon * 1e7)
         msg['wp_alt'] = int(alt * 1e3)
         return msg
+    
+    @send_mission_element
+    def add_mission_local_point(self, mission_id: int, east: float, north: float, alt: float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+        msg = PprzMessage("datalink", "MISSION_GOTO_WP")
+        msg['ac_id'] = self.ac_id
+        msg['insert'] = insert_mode.value
+        msg['duration'] = duration
+        msg['index'] = mission_id
+        msg['wp_east'] = east
+        msg['wp_north'] = north
+        msg['wp_alt'] = alt
+        return msg
+
 
     @send_mission_element
     def add_mission_path(self, mission_id:int, path:list[tuple[float,float]], alt:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
         ''' send MISSION_PATH_LLA message to a specified uav or all if None
-            path is described by a list of points in (lat (deg), lon (deg)) + alt amsl (m) format
+            path is described by a list of at most 5 points in (lat (deg), lon (deg)) + alt amsl (m) format
         '''
+        assert len(path) <= 5
         msg = PprzMessage("datalink", "MISSION_PATH_LLA")
         msg['ac_id'] = self.ac_id
         msg['insert'] = insert_mode.value
@@ -338,6 +312,26 @@ class MissionManager():
             lat, lon = path[i]
             msg['point_lat_'+str(i+1)] = int(lat * 1e7)
             msg['point_lon_'+str(i+1)] = int(lon * 1e7)
+        return msg
+    
+    @send_mission_element
+    def add_mission_local_path(self, mission_id:int, path:list[tuple[float,float]], alt:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+        ''' send MISSION_PATH message to a specified uav or all if None
+            path is described by a list of at most 5 points in (east (m), north (m)) + alt amsl (m) format with respect to HOME
+        '''
+        assert len(path) <= 5
+        msg = PprzMessage("datalink", "MISSION_PATH")
+        msg['ac_id'] = self.ac_id
+        msg['insert'] = insert_mode.value
+        msg['duration'] = duration
+        msg['nb'] = min(len(path), 5)
+        print(path, len(path),msg['nb'])
+        msg['index'] = mission_id
+        msg['path_alt'] = alt
+        for i in range(msg['nb']):
+            east, north = path[i]
+            msg['point_east_'+str(i+1)] = east
+            msg['point_north_'+str(i+1)] = north
         return msg
 
     @send_mission_element
