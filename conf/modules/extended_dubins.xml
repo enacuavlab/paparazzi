@@ -27,7 +27,7 @@
   <settings>
     <dl_settings>
       <dl_settings name="Extended Dubins">
-        <dl_setting var="draw_dubins" min="0" max="1" step="1" shortname="Draw"/>
+        <dl_setting var="dubins_draw" min="0" max="1" step="1" shortname="Draw Dubins"/>
       </dl_settings>
     </dl_settings>
   </settings>
@@ -38,7 +38,7 @@
   <header>
     <file name="nav_extended_dubins.h"/>
   </header>
-  <init fun="nav_extended_dubins_init()"/>
+  <init fun="dubins_setup()"/>
   <makefile>
     <file name="nav_extended_dubins.c"/>
     <test/>

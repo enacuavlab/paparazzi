@@ -84,7 +84,7 @@ bool BothExtendedDubins(DubinsType t);
 DubinsType BaseDubinsType(DubinsType t);
 bool ValidExtendedDubins(DubinsType t);
 
-extern bool draw_dubins;
+extern bool dubins_draw;
 
 typedef struct
 {
@@ -95,7 +95,8 @@ typedef struct
 typedef struct
 {
   Pose2D_t start_p, end_p;      // Endpoint poses
-  float start_time, end_time;   // Start and end times of the trajectory, with respect to flight time clock (TODO: Unused for now)
+  float start_time;   // Start and end times of the trajectory, with respect to GPS ToW. If end time is non-positive, speed is not tuned.
+  float end_time;
   float target_alt;             // Target final altitude
   DubinsType type;              // Type of Dubins path to generate
   float radius;                 // Radius of the target Dubins path
@@ -116,6 +117,7 @@ void extended_dubins_set_end_wp(uint8_t wp, float theta_deg);
 void extended_dubins_set_radius(float radius);
 void extended_dubins_set_pathtype(DubinsType type, float extra);
 
+void dubins_setup(void);
 bool nav_extended_dubins_init(void);
 bool nav_extended_dubins_track(void);
 
