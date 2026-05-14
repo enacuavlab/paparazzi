@@ -32,10 +32,10 @@ def formation_oval(ac_stats:list[ACStats],start:Pose3D,length:float,width:float,
     |--- [1] <--- length --- start <-|
     |                                |
     |                                |
-   [2]                              [5]  width
+  [1.5]                            [3.5]  width
     |                                |
     |                                |
-    |--> [3] ---------------> [4] ---|
+    |--> [2] ---------------> [3] ---|
 
     Args:
         ac_stats (list[ACStats]): Aircraft statistics
@@ -108,14 +108,69 @@ def formation_oval(ac_stats:list[ACStats],start:Pose3D,length:float,width:float,
         
         keyposes.append(formation.get_abs_positions().copy())
     
-    # import matplotlib.pyplot as plt
+    return FleetKeyframes(ac_stats,keyposes)
+
+def formation_rectangle(ac_stats:list[ACStats],start:Pose3D,length:float,width:float,formation:Formation) -> FleetKeyframes:
+    """Given a formation, make a rectangle sequence from it
     
-    # colormap = ['r','g','b','y','k','purple']
+    |<------ [2] <------|
+    |                   |
+   [3]                 [1] width
+    |                   |
+    |-----> start ----->|
+           length
+
+    Args:
+        ac_stats (list[ACStats]): Aircraft statistics
+        start (Pose3D): Reference pose for the initial formation location and orientation
+        length (float): Long arm length of the rectangle
+        width (float): Distance between the rectangle sides
+        formation (Formation): Reference formation to use
+
+    Returns:
+        FleetKeyframes
+    """
+    assert len(ac_stats) == formation.agent_num
     
-    # for i,el in enumerate(keyposes):
-    #     plt.scatter(el[:,0],el[:,1],color=colormap[i])
-        
-    # plt.gca().set_aspect('equal')
-    # plt.show()
+    formation.center[0] = start.x
+    formation.center[1] = start.y
+    formation.center[2] = start.z
+    formation.orientation = start.theta
+    formation.to_barycentric_coords()
+    
+    # Start (middle of first long side)
+    keyposes = [formation.get_abs_positions().copy()]
+    
+    # Middle of first short side
+    formation.center[0] += np.cos(start.theta)*length/2 + np.cos(start.theta+np.pi/2)*width/2
+    formation.center[1] += np.sin(start.theta)*length/2 + np.sin(start.theta+np.pi/2)*width/2
+    formation.orientation += np.pi/2
+    theta = start.theta + np.pi/2
+    
+    keyposes.append(formation.get_abs_positions().copy())
+    
+    # Middle of second long side
+    formation.center[0] += np.cos(theta)*width/2 + np.cos(theta+np.pi/2)*length/2
+    formation.center[1] += np.sin(theta)*width/2 + np.sin(theta+np.pi/2)*length/2
+    formation.orientation += np.pi/2
+    theta += np.pi/2
+    
+    keyposes.append(formation.get_abs_positions().copy())
+    
+    # Middle of second short side
+    formation.center[0] += np.cos(theta)*length/2 + np.cos(theta+np.pi/2)*width/2
+    formation.center[1] += np.sin(theta)*length/2 + np.sin(theta+np.pi/2)*width/2
+    formation.orientation += np.pi/2
+
+    keyposes.append(formation.get_abs_positions().copy())
     
     return FleetKeyframes(ac_stats,keyposes)
+
+def plot_keyframes(keyframes:FleetKeyframes,ax,colorlist:list,**kwargs):
+    pts = []
+    
+    for i in range(keyframes.keyposes_num):
+        k = keyframes.keyposes[i]
+        pts.append(ax.scatter(k[:,0],k[:,1],c=colorlist[i],**kwargs,label=f"Keyframe {i}"))
+        
+    return pts

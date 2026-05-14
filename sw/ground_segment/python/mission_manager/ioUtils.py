@@ -18,7 +18,7 @@
 import json,csv,dataclasses,pathlib,typing,copy
 import numpy as np
 
-from Dubins import Pose3D,ACStats,Path,BasicPath,FleetPlan,ListOfTimedPoses,TimedPosesLine,DictOfPoseTrajectories,mod2pi,central_angle
+from Dubins import Pose3D,ACStats,Path,BasicPath,FleetPlan,ListOfTimedPoses,TimedPosesLine,DictOfPoseTrajectories,DubinsMove,mod2pi,central_angle
 
 
 ######################################## Dubins problem writing and parsing ########################################
@@ -155,13 +155,41 @@ def parse_section_from_dict(d:dict) -> BasicPath:
         pass
     return BasicPath(**d)
 
-def parse_trajectory_from_dict(d:dict) -> tuple[ACStats,Path]:
+def straight_sections_compression(paths:list[BasicPath]) -> list[BasicPath]:
+    """ If two straight basic paths follow one another, merge them into one. Return a (deep)copy of the list after this transformation.
+    THIS DOES NOT CHECK IF THE FOLLOWING STRAIGHTS ARE ACTUALLY COLLINEAR.
+
+    Args:
+        paths (list[BasicPath])
+
+    Returns:
+        list[Path]
+    """
+    output = []
+    i = 0
+    n = len(paths)
+    while i < n:
+        output.append(copy.deepcopy(paths[i]))
+        j = i+1
+        if paths[i].type == DubinsMove.STRAIGHT:
+            while j < n and paths[j].type == DubinsMove.STRAIGHT:
+                j += 1
+            output[-1].length += sum(p.length for p in paths[i+1:j])
+            i = j
+        else:
+            i += 1
+    return output
+
+def parse_trajectory_from_dict(d:dict, straights_compression:bool=False) -> tuple[ACStats,Path]:
     stats_dict  = d["stats"]
     stats = ACStats(**stats_dict)
     
     path_dict   = d["path"]
     sections = [parse_section_from_dict(t) for t in path_dict["sections"]]
     
+    if straights_compression:
+        sections = straight_sections_compression(sections)
+
     path = Path(
         path_dict["total_length"],
         Pose3D(**path_dict["start"]),
@@ -171,11 +199,11 @@ def parse_trajectory_from_dict(d:dict) -> tuple[ACStats,Path]:
     
     return stats,path
 
-def parse_trajectories_from_JSON(file) -> FleetPlan:
+def parse_trajectories_from_JSON(file, straights_compression:bool=False) -> FleetPlan:
     with open(file) as jsonfile:
         raw_data = json.load(jsonfile)
         
-        paths = [parse_trajectory_from_dict(t) for t in raw_data["trajectories"]]
+        paths = [parse_trajectory_from_dict(t, straights_compression) for t in raw_data["trajectories"]]
         output = FleetPlan(
             raw_data["separation"],
             raw_data["z_alpha"],

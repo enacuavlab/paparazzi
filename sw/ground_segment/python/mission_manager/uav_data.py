@@ -1,5 +1,5 @@
 from dataclasses import dataclass,field
-from typing import Optional
+from typing import Optional,Callable
 
 import sys
 from os import path, getenv
@@ -11,7 +11,8 @@ sys.path.append(PPRZ_SRC + "/sw/lib/python")
 sys.path.append(PPRZ_HOME + "/var/lib/python") # pprzlink
 
 from flight_plan import FlightPlan, Block, Waypoint
-from Dubins import Pose3D,poses_XY_dist,min_XY_dist
+from Dubins import Pose3D,poses_XY_dist,min_XY_dist,ACStats
+from FleetPath import FleetKeyframes
 from plotting import DictOfPoseTrajectories
 
 import numpy as np
@@ -88,9 +89,18 @@ class TrackingLogs:
     '''
     Store tracking logs for multiple UAVs
     '''
+    keyframes: FleetKeyframes
+    tracking_error_threshold: float
+    separation_threshold: float
     logs: dict[int, list[TrackingData]] = field(default_factory=dict)
+    replanning_timestamps: list[int|float] = field(default_factory=list)
     _tpose_lists: dict[int, np.ndarray] = field(default_factory=dict)
+    _trefs_lists: dict[int, np.ndarray] = field(default_factory=dict)
     _sorted: set[int] = field(default_factory=set)
+    
+    @property
+    def ac_stats(self) -> list[ACStats]:
+        return self.keyframes.ac_stats
     
     def add_tracking_data(self, data: TrackingData):
         if data.ac_id not in self.logs:
@@ -101,7 +111,8 @@ class TrackingLogs:
             self._sorted.remove(data.ac_id)
         
         self._tpose_lists.pop(data.ac_id, None)
-            
+        self._trefs_lists.pop(data.ac_id, None)
+        
     def get_ids(self) -> set[int]:
         return set(self.logs.keys())
     
@@ -127,8 +138,6 @@ class TrackingLogs:
     def get_poses_at_timestamp(self, timestamp: int|float) -> dict[int, Pose3D]:
         output = {}
         self.sort_logs()
-        
-        
         
         for ac_id, log in self.logs.items():
             try:
@@ -169,7 +178,61 @@ class TrackingLogs:
         for ac_id, log in self.logs.items():
             trajectories[ac_id] = [data.to_timed_pose() for data in log]
         return trajectories
-
+    
+    def traj_interpolator(self, ac_id:int) -> Callable[[int|float],Pose3D]:
+        log = self.logs[ac_id]
+        try:
+            poses = self._tpose_lists[ac_id]
+        except KeyError:
+            poses = []
+            for d in log:
+                p = np.zeros(5,dtype=float)
+                p[0] = d.pose.x
+                p[1] = d.pose.y
+                p[2] = d.pose.z
+                p[3] = d.pose.theta
+                p[4] = d.timestamp
+                poses.append(p)
+            poses = np.array(poses)
+            self._tpose_lists[ac_id] = poses
+            
+            
+        def interpolator(timestamp:int|float) -> Pose3D:
+            x = np.interp(timestamp, poses[:, -1], poses[:, 0])
+            y = np.interp(timestamp, poses[:, -1], poses[:, 1])
+            z = np.interp(timestamp, poses[:, -1], poses[:, 2])
+            heading =np.interp(timestamp, poses[:, -1], poses[:, 3])
+            return Pose3D(x, y, z, heading)
+        return interpolator
+    
+    def ref_interpolator(self, ac_id:int) -> Callable[[int|float],Pose3D]:
+        log = self.logs[ac_id]
+        try:
+            poses = self._trefs_lists[ac_id]
+        except KeyError:
+            poses = []
+            for d in log:
+                if d.expected_pose is None:
+                    continue
+                p = np.zeros(5,dtype=float)
+                p[0] = d.expected_pose.x
+                p[1] = d.expected_pose.y
+                p[2] = d.expected_pose.z
+                p[3] = d.expected_pose.theta
+                p[4] = d.timestamp
+                poses.append(p)
+            poses = np.array(poses)
+            self._trefs_lists[ac_id] = poses
+            
+            
+        def interpolator(timestamp:int|float) -> Pose3D:
+            x = np.interp(timestamp, poses[:, -1], poses[:, 0])
+            y = np.interp(timestamp, poses[:, -1], poses[:, 1])
+            z = np.interp(timestamp, poses[:, -1], poses[:, 2])
+            heading =np.interp(timestamp, poses[:, -1], poses[:, 3])
+            return Pose3D(x, y, z, heading)
+        return interpolator
+    
     def ref_trajectories(self) -> DictOfPoseTrajectories:
         trajectories = DictOfPoseTrajectories()
         for ac_id, log in self.logs.items():

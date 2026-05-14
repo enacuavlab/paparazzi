@@ -3,7 +3,8 @@
 from typing import Optional
 import pathlib
 import subprocess
-import dataclasses
+import os
+import pickle
 import tempfile
 import datetime,time
 import enum
@@ -18,14 +19,13 @@ from matplotlib.axes import Axes
 from Dubins import Pose3D,ACStats,FleetPlan,DubinsMove,BasicPath,Path,min_XY_dist,poses_XY_dist
 from ioUtils import AC_PP_Problem, write_pathplanning_problem_to_CSV, straight_pp_problems,parse_trajectories_from_JSON
 from Formation import Formation,chevron_formation
-from FleetPath import FleetKeyframes,formation_oval
+from FleetPath import FleetKeyframes,plot_keyframes,formation_oval,formation_rectangle
 
 from uav_data import UAVData,TrackingData,TrackingLogs
 from mission_manager import MissionManager,MissionInsert
+from tracking_logs_analyser import plot_trackingdata
 
 from pprzlink.ivy import IvyMessagesInterface
-
-from plotting import plot_several_pose2d_sequences,DictOfPoseTrajectories
 
 
 PPRZ_DUBINS_TYPE_MAP = {
@@ -68,6 +68,8 @@ PPRZ_DUBINS_TYPE_MAP = {
 
 def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
                    separation:float, wind:tuple[float,float],threads:int,
+                   start_extensions:list[float] = [],
+                   end_extensions:list[float] = [],
                    **kwargs) -> subprocess.CompletedProcess[bytes]:
     """ Call the Dubins fleet path planner with the given arguments
 
@@ -78,6 +80,8 @@ def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
         separation (float): Minimal required separation between aircraft
         wind (tuple[float,float]): Wind speed
         threads (int): Number of threads to use for solving
+        start_extensions (list[float], optional): List of start extensions. Defaults to [].
+        end_extensions (list[float], optional): List of end extensions. Defaults to [].
 
     Returns:
         subprocess.CompletedProcess[bytes]: 
@@ -97,6 +101,19 @@ def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
     cmd.append('-r')
     cmd.append(str(10))
     
+    cmd.append('-l')
+    
+    if len(start_extensions) > 0:
+        cmd.append('--straights-only')
+        cmd.append('--extend-start')
+        for e in start_extensions:
+            cmd.append(str(e))
+    
+    if len(end_extensions) > 0:
+        cmd.append('--extend-end')
+        for e in end_extensions:
+            cmd.append(str(e))
+    
     for k,v in kwargs.items():
         cmd.append(k)
         
@@ -105,7 +122,7 @@ def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
         
         cmd.append(str(v))
     
-    return subprocess.run(cmd)
+    return subprocess.run(cmd,stdout=subprocess.DEVNULL)
 
 class FleetManagerEnd(enum.Enum):
     """ Possible final commands when the last keyposes are done:
@@ -132,7 +149,8 @@ class FleetManager:
                  ignore_wind:bool=True,
                  end_strategy:FleetManagerEnd=FleetManagerEnd.NOTHING,
                  speed_ctl:bool = False,
-                 verbose:bool=False) -> None:
+                 full_dubins:bool = False,
+                 verbosity:int=0) -> None:
         """_summary_
 
         Args:
@@ -143,18 +161,20 @@ class FleetManager:
             transformer (_type_, optional): Transformation from WGS84 (GPS coordinates) to a flat coordinates system such that x is easting (in meters) and y is northing (in meters).
                 Defaults to pyproj.Transformer.from_crs('WGS84','EPSG:9794'), i.e. GPS to Lambert93
         """
-        ivy_interface = IvyMessagesInterface("PprzConnect")
+        self.ivy_interface = IvyMessagesInterface("PprzConnect")
         
         self.fleet_frames = fleet_frames
         self.__fleet_frame_id:int = 0
         self.__current_plan:Optional[FleetPlan] = None
         self.__current_plan_date:Optional[int|float] = None
-        self.__next_plan_sent:bool = False
-        self.__tracking_logs:TrackingLogs = TrackingLogs()
+        # self.__next_plan:Optional[FleetPlan] = None
         self.__last_schedule_time:float = 0.
-        self.__reschedule_dt:float = 1. # In seconds
-        self.__relative_improvement_threshold:float = 0.15 # Minimum improvement in the plan duration to trigger a reschedule (in percentage of the current plan duration)
+        self.end_of_plan_carrot:float = 2. # In seconds, how much time before the end of the current plan to send the next one
+        self.reschedule_dt:float = 15. # In seconds
+        self.relative_improvement_threshold:float = 0.9 # Minimum improvement in the plan duration to trigger a reschedule (in percentage of the current plan duration)
+        self.tracking_err_threshold:float = 20. # In meters, if the tracking error is above this threshold, consider the plan as not followed and trigger a reschedule
         self.end_strategy = end_strategy
+        self.full_dubins = full_dubins
         
         self.flight_alt:float = flight_alt
         self.speed_ctl = speed_ctl
@@ -171,8 +191,8 @@ class FleetManager:
             self.acs[s.id] = s
         self.managers:dict[int,MissionManager] = dict()
         for id in self.ac_ids:
-            self.managers[id] = MissionManager(id,verbose,ivy_interface=ivy_interface)
-        self.verbose = verbose
+            self.managers[id] = MissionManager(id,verbosity>1,ivy_interface=self.ivy_interface)
+        self.verbosity = verbosity
             
         self.ignore_wind:bool = ignore_wind
         self.wind_x:float = 0.
@@ -181,6 +201,12 @@ class FleetManager:
         self.mission_counter:int = 1
         
         assert self.fleet_frames.ac_num == len(self.ac_ids)
+        
+        self.__tracking_logs:TrackingLogs = TrackingLogs(
+            fleet_frames,
+            tracking_error_threshold=self.tracking_err_threshold,
+            separation_threshold=self.separation)
+
     
     def get_logs(self) -> TrackingLogs:
         return self.__tracking_logs
@@ -267,26 +293,49 @@ class FleetManager:
             min_time = min(times.values())
             max_time = max(times.values())
             
+            tracking_error_reschedule = False
+            tracking_error_value = 0.
+            tracking_error_id = 0
+            
             if self.__current_plan is not None and self.__current_plan_date is not None:
                 
-                if self.__current_plan.duration < 3.:
+                if self.__current_plan.duration < self.end_of_plan_carrot:
                     self.__current_plan = None
                     self.__fleet_frame_id += 1
                 else:
                     try:
-                        self.__current_plan = self.__current_plan.follow_for(max_time-self.__current_plan_date)
-                        self.__current_plan_date = max_time
                         for i,id in enumerate(self.ac_ids):
                             _,p = self.__current_plan.get_path(id)
-                            t_data = TrackingData(id, times[id], poses[i],p.start)
+                            ref_pose = p.pose_at(times[id]-self.__current_plan_date)
+                            t_data = TrackingData(id, times[id], poses[i],ref_pose)
                             self.__tracking_logs.add_tracking_data(t_data)
+                            dist = poses_XY_dist(poses[i],ref_pose)
+                            if dist > tracking_error_value:
+                                tracking_error_value = dist
+                                tracking_error_id = id
+                            
+                        tracking_error_reschedule = tracking_error_value > self.tracking_err_threshold
+                        
+                        current_poses = self.__current_plan.poses_at(max_time-self.__current_plan_date)
+                        
+                        self.__current_plan = self.__current_plan.follow_for(max_time-self.__current_plan_date)
+                        
+                        current_poses_bis = self.__current_plan.poses_at(0.)
+                        for k in current_poses.keys():
+                            dist = poses_XY_dist(current_poses[k],current_poses_bis[k])
+                            assert dist < 1e-3, f"Plan is not consistent with itself (dist is {dist:.2f} m for ac {k})"
+                        
+                        self.__current_plan_date = max_time
                     except KeyError:
+                        for i,id in enumerate(self.ac_ids):
+                            t_data = TrackingData(id, times[id], poses[i])
+                            self.__tracking_logs.add_tracking_data(t_data)
                         self.__current_plan = None
                         self.__fleet_frame_id += 1
                         pass
                 
             
-            if self.verbose:
+            if self.verbosity > 1:
                 val,id1,id2 = min_XY_dist(poses)
                 print(f"Minimal current dist is {val}, measured between {self.ac_ids[id1]} and {self.ac_ids[id2]}")
                 print(f"(Minimal required is {self.separation})")
@@ -311,24 +360,36 @@ class FleetManager:
                     return 
             
             try:
-                if (max_time - self.__last_schedule_time) > self.__reschedule_dt or self.__current_plan is None:
+                if self.verbosity > 0:
+                    if (max_time - self.__last_schedule_time) > self.reschedule_dt:
+                        print("Time is up for rescheduling")
+                    if self.__current_plan is None:
+                        print("No current plan, scheduling")
+                        
+                if (max_time - self.__last_schedule_time) > self.reschedule_dt or self.__current_plan is None:
                     impr_threshold = None 
-                    if self.__current_plan is not None:
-                        impr_threshold = self.__current_plan.duration * self.__relative_improvement_threshold
-                    self.__schedule(poses, max_time, improvement_threshold=impr_threshold)
-                    self.__last_schedule_time = max_time
+                    if self.__current_plan is not None and not(tracking_error_reschedule):
+                        impr_threshold = self.__current_plan.duration * self.relative_improvement_threshold
+                    if self.verbosity > 0 and tracking_error_reschedule is not None:
+                        print(f"Tracking error detected for {tracking_error_id}: {tracking_error_value:.2f}")
+                    if self.__schedule(poses, max_time, improvement_threshold=impr_threshold):
+                        self.__tracking_logs.replanning_timestamps.append(max_time)
+                        self.__last_schedule_time = max_time
             except FileNotFoundError:
                 print("WARNING: Solver did not find a solution")
                 
             time.sleep(0.1)
 
-    def __schedule(self, current_poses:list[Pose3D], current_time:float, improvement_threshold:Optional[float]=None):
+    def __schedule(self, current_poses:list[Pose3D], current_time:float, improvement_threshold:Optional[float]=None) -> bool:
         pb = self.fleet_frames.generate_pb_to(self.__fleet_frame_id,current_poses)
         sol = self.__solve_pp_problem(pb)
         
+        if improvement_threshold is not None and self.verbosity > 0:
+            print(f"New plan duration is {sol.duration:.2f} s (threshold is {improvement_threshold:.2f} s)")
+        
         if improvement_threshold is not None and improvement_threshold < sol.duration:
             # If the threshold is not met, do not apply new plan
-            return
+            return False
         
         self.mission_counter = 1
         self.__send_fleet_mission(sol,current_time,insert_mode=MissionInsert.REPLACE_ALL)
@@ -337,27 +398,26 @@ class FleetManager:
         end_tow = current_time + sol.duration
         
         
-        if not(self.__next_plan_sent):
-            j = self.__fleet_frame_id + 1
-            j_plus_one = j+1
-            if self.end_strategy is FleetManagerEnd.LOOP:
-                j = j % self.fleet_frames.keyposes_num
-                j_plus_one = j_plus_one % self.fleet_frames.keyposes_num
-            else:
-                if j_plus_one >= self.fleet_frames.keyposes_num:
-                    self.__next_plan_sent = True
-                    return
+        # if self.__next_plan is None:
+        #     j = self.__fleet_frame_id + 1
+        #     j_plus_one = j+1
+        #     if self.end_strategy is FleetManagerEnd.LOOP:
+        #         j = j % self.fleet_frames.keyposes_num
+        #         j_plus_one = j_plus_one % self.fleet_frames.keyposes_num
+        #     else:
+        #         if j_plus_one >= self.fleet_frames.keyposes_num:
+        #             self.__next_plan = None
+        #             return True
                     
-            pb = self.fleet_frames.generate_pb_between(j,j_plus_one)
-            if straight_pp_problems(pb,1e-3):
-                self.__send_direct_path_missions(pb,MissionInsert.APPEND)
-                end_tow += poses_XY_dist(pb[0].start,pb[0].end)/pb[0].stats.airspeed
-                self.__next_plan_sent = True
-            else:
-                sol = self.__solve_pp_problem(pb)
-                self.__send_fleet_mission(sol,end_tow,MissionInsert.APPEND)
-                end_tow += sol.duration
-                self.__next_plan_sent = True
+        #     self.verbosity -= 1
+        #     pb = self.fleet_frames.generate_pb_between(j,j_plus_one)
+        #     sol = self.__solve_pp_problem(pb)
+        #     self.__send_fleet_mission(sol,end_tow,MissionInsert.APPEND)
+        #     end_tow += sol.duration
+        #     self.__next_plan = sol
+        #     self.verbosity += 1
+        
+        return True
     
         
     def __update_wind(self):
@@ -495,9 +555,59 @@ class FleetManager:
         mission_id_incr = 0
         for stats,path in plan.trajectories:
             t = times[stats.id] if isinstance(times,dict) else times
-            incr = self.__make_path_mission(stats.id,path,t,insert_mode)
+            if self.full_dubins:
+                incr = self.__make_path_mission(stats.id,path,t,insert_mode)
+            else:
+                incr = 0
+                first = True
+                for i,e in enumerate(path.sections):
+                    if e.length < 1e-3:
+                        continue
+                    incr += self.__make_dubel_mission(stats.id,i,e,insert_mode if first else MissionInsert.APPEND)
+                    first = False
             mission_id_incr = max(mission_id_incr,incr)
         self.mission_counter += mission_id_incr
+        
+    def __make_dubel_mission(self,ac_id:int, el_id:int, e:BasicPath, insert_mode:MissionInsert) -> int:
+        manager = self.managers[ac_id]
+        
+        home = manager.get_home()
+        assert home is not None
+        xhome,yhome = self.transformer.transform(home.lat,home.lon)
+        
+        start = e.start()
+        px = start.x
+        py = start.y
+        pz = e.end().z
+        ptheta = start.theta
+        radius = e.radius()
+        if e.type == DubinsMove.STRAIGHT:
+            radius = 0.
+        elif e.type == DubinsMove.LEFT:
+            radius = abs(radius)
+        elif e.type == DubinsMove.RIGHT:
+            radius = -abs(radius)
+        else:
+            raise ValueError(f"Unknown Dubins move type {e.type}")
+
+
+        params = [
+            px - xhome,
+            py - yhome,
+            ptheta,
+            radius,
+            e.length,
+            pz,
+            ]
+                
+        manager.add_mission_custom(
+            self.mission_counter+el_id,
+            'DUBEL',
+            params,
+            insert_mode=insert_mode
+        )
+        
+        return 1
         
     def __make_path_mission(self,ac_id:int,p:Path,start_time:float,insert_mode:MissionInsert) -> int:
         manager = self.managers[ac_id]
@@ -527,7 +637,11 @@ class FleetManager:
             p.extra_length()
         ]
         
-        print(f"{ac_id} : params: {params}")
+        if self.verbosity > 0:
+            print(f"{ac_id} : Path type : {p.abbr()}")
+            for i,el in enumerate(p.sections):
+                print(f"{ac_id} : Element {i} : Length {el.length:.3f} ; Radius {el.radius():.3f} ; Start ({el.start().x-xhome:.3f},{el.start().y-yhome:.3f},{el.start().theta:.3f})")
+            print('')
         
         manager.add_mission_custom(
             self.mission_counter,
@@ -545,10 +659,10 @@ if __name__ == '__main__':
     color_dict = {
         17 : 'red',
         18 : 'green',
-        19 : 'yellow'
+        20 : 'blue'
     }
     
-    stat_list = [ACStats(i,15,10/60,50) for i in [17,18,19]]
+    stat_list = [ACStats(i,15,10/60,50) for i in [17,18,20]]
     separation = 30
     formation = chevron_formation(len(stat_list),separation*1.2)
     
@@ -560,13 +674,22 @@ if __name__ == '__main__':
     home_x,home_y = transformer.transform(home_lat,home_lon)
     
     start = Pose3D(home_x,home_y,home_alt,0.)
-    fleet_plan = formation_oval(stat_list,start,250,200,formation)
+    # fleet_plan = formation_oval(stat_list,start,250,200,formation)
+    fleet_plan = formation_rectangle(stat_list,start,250,200,formation)
+    
+    # fig,ax = plt.subplots()
+    # plot_keyframes(fleet_plan,ax,['red','green','blue','yellow','cyan','magenta'])
+    # ax.set_aspect('equal')
+    # plt.show()
     
     parser = argparse.ArgumentParser()
     parser.add_argument('dubins_solver',help='Path to Dubins Fleet Planner')
-    parser.add_argument('-v',action='store_true',help='Verbose',default=False)
+    parser.add_argument('--verbose', '-v', action='count', default=0)
     parser.add_argument('-t','--takeoff',action='store_true',help='Send take off mission order first')
     parser.add_argument('--speed-ctl',action='store_true',dest='speed_ctl',help='If set, enable speed control for aircraft')
+    parser.add_argument('--full-dubins',action='store_true',dest='full_dubins',help='If set, send the full Dubins path as a custom mission instead of using the DUBEL simplified version')
+    parser.add_argument('--autostart',type=float,help='If set, automatically launch the main after the given value (in seconds). Otherwise, wait for user input to start the main loop',
+                        default=None)
     
     args = parser.parse_args()
     
@@ -578,7 +701,8 @@ if __name__ == '__main__':
         transformer=transformer,
         end_strategy=FleetManagerEnd.LOOP,
         speed_ctl=args.speed_ctl,
-        verbose=args.v
+        verbosity=args.verbose,
+        full_dubins=args.full_dubins
     )
     
     try:
@@ -588,38 +712,31 @@ if __name__ == '__main__':
             manager.takeoff(home_height)
         manager.circle_home(insert_mode=MissionInsert.APPEND)
         manager.start_mission()
-        input("Press any key to start fleet path planning...")
+        if args.autostart is not None:
+            print(f"Wait for {args.autostart} seconds before starting main loop...",end=' ',flush=True)
+            time.sleep(args.autostart)
+            print("Starting now!")
+        else:
+            input("Press any key to start fleet path planning...")
         manager.main_loop()
     except(KeyboardInterrupt,SystemExit):
         print("Intettupted!")
+    except Exception as e:
+        print(f"EXCEPTION: {e}")
     finally:
         print("Closing")
         manager.closing()
-        trajs = manager.get_logs().as_trajectories()
-        refs = manager.get_logs().ref_trajectories()
-        errs = manager.get_logs().get_all_min_sep()
+        print("Saving logs")
+        
+    logs = manager.get_logs()
     
-    fig,axes = plt.subplots(2,1)
-    
-    ax = axes[0]
-    ax.set_aspect('equal')
-    plot_several_pose2d_sequences(ax,trajs,color_dict,
-        label=True,endpoints=True)
-    _,d = plot_several_pose2d_sequences(ax,refs,color_dict,
-        label=True,endpoints=True,linestyle='dashed')
-    for e in d.values():
-        l = e.get_label()
-        e.set_label(l + " (ref)")
-    
-    ax.legend()
-    
-    err_ax:Axes = axes[1]
-    ts = [t[0] for t in errs]
-    vals = [t[1] for t in errs]
-    err_ax.plot(ts,vals,label=f"{id}")
-    err_ax.set_xlabel("Time")
-    err_ax.set_ylabel("Minimum Separation")
-    err_ax.hlines(separation,ts[0],ts[-1],colors='k',linestyles='dashed',label='Required Separation')
-    err_ax.legend()
+    os.makedirs("logs",exist_ok=True)
+    now_str = datetime.datetime.fromtimestamp(time.time()).strftime('%y-%m-%d_%H:%M:%S')
+    with open(f"logs/logs_{now_str}.pkl","wb") as f:
+        pickle.dump(logs, f)
+            
+    fig,traj_ax,tracking_ax,sep_ax = plot_trackingdata(logs,color_dict)
+    fig.set_size_inches(16,9)
+    fig.tight_layout()
     plt.show()
     
