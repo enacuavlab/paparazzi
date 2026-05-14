@@ -22,12 +22,25 @@
         ref_problem.radius        = params[10];
         ref_problem.extra         = params[11];
       ```
+      This recomputes the full Dubins path from the given elements then follows it.
+
+      It also registers a mission called "DUBEL" (for "Dubins Element") using the following parameters:
+      ```
+        solo_element.init_point.x = params[0];
+        solo_element.init_point.y = params[1];
+        solo_element.init_point.theta = params[2];
+        solo_element.radius = params[3];
+        solo_element.length = params[4];
+        altitude = params[5];
+      ```
+      Only the given element is tracked, without any path recomputation.
     </description>
   </doc>
   <settings>
     <dl_settings>
       <dl_settings name="Extended Dubins">
         <dl_setting var="dubins_draw" min="0" max="1" step="1" shortname="Draw Dubins"/>
+        <dl_setting var="dubins_draw_samples" min="0" max="10" step="1" shortname="Draw samples"/>
       </dl_settings>
     </dl_settings>
   </settings>

@@ -26,6 +26,8 @@ bool dubins_draw = false;
 #define IPRINTF(...)
 #endif
 
+int dubins_draw_samples = 10;
+
 bool HasStartExtension(DubinsType t)
 {
   return (8 & t);
@@ -587,11 +589,14 @@ typedef struct
 static ExtendedDubins_t fit_basic_dubins(DubinsType type, Pose2D_t start, Pose2D_t end, float radius)
 {
   ExtendedDubins_t output;
+  for(int i = 0; i < 5; i++)
+  {
+    output.elements[i].length = 0.;
+    output.elements[i].radius = 0.;
+  }
   output.type = type;
   output.radius = radius;
-  output.elements[0].length = 0.;
   output.elements[1].init_point = start;
-  output.elements[4].length = 0.;
 
   NormalizedDubins_t norm_pb = normalize_poses(start,end);
 
@@ -723,6 +728,13 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
 {
   assert(ValidExtendedDubins(pb->type));
 
+  ExtendedDubins_t result;
+  for(int i = 0; i < 5; i++)
+  {
+    result.elements[i].length = 0.;
+    result.elements[i].radius = 0.;
+  }
+
   if (NotExtendedDubins(pb->type))
   {
     return fit_basic_dubins(pb->type,pb->start_p,pb->end_p,pb->radius);
@@ -732,7 +744,7 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
     if (StartExtendedDubins(pb->type))
     {
       Pose2D_t shifted_start = move_forward(&pb->start_p,pb->extra);
-      ExtendedDubins_t result = fit_basic_dubins(BaseDubinsType(pb->type),shifted_start,pb->end_p,pb->radius);
+      result = fit_basic_dubins(BaseDubinsType(pb->type),shifted_start,pb->end_p,pb->radius);
       result.elements[0].init_point = pb->start_p;
       result.elements[0].radius = 0.;
       result.elements[0].length = pb->extra;
@@ -741,7 +753,7 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
     else if (EndExtendedDubins(pb->type))
     {
       Pose2D_t shifted_end = move_forward(&pb->end_p,-pb->extra);
-      ExtendedDubins_t result = fit_basic_dubins(BaseDubinsType(pb->type),pb->start_p,shifted_end,pb->radius);
+      result = fit_basic_dubins(BaseDubinsType(pb->type),pb->start_p,shifted_end,pb->radius);
       result.elements[4].radius = 0.;
       result.elements[4].length = pb->extra;
       return result;
@@ -751,7 +763,7 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
       Pose2D_t shifted_start = move_forward(&pb->start_p,pb->extra/2);
       Pose2D_t shifted_end = move_forward(&pb->end_p,-pb->extra/2);
 
-      ExtendedDubins_t result = fit_basic_dubins(BaseDubinsType(pb->type),shifted_start,shifted_end,pb->radius);
+      result = fit_basic_dubins(BaseDubinsType(pb->type),shifted_start,shifted_end,pb->radius);
       result.elements[0].init_point = pb->start_p;
       result.elements[0].radius = 0.;
       result.elements[0].length = pb->extra/2;
@@ -764,55 +776,12 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
 
 }
 
-// ******************** Mission mode ******************** //
+// ******************** Dubins navigation ******************** //
 
 static DubinsPb_t ref_problem;
 static DubinsElement_t path_elements[5];
 static int curr_path_element = 0;
 static float initial_nav_rad_angle = NAN;
-
-#if USE_MISSION
-#include "modules/mission/mission_common.h"
-
-static bool nav_dubins_mission(uint8_t nb, float *params, enum MissionRunFlag flag)
-{
-  if (flag == MissionInit && nb == 12)
-  {
-    IPRINTF("Mission init : %d params\n",nb);
-
-    ref_problem.start_p.x     = params[0];
-    ref_problem.start_p.y     = params[1];
-    ref_problem.start_p.theta = params[2];
-
-    ref_problem.end_p.x       = params[3];
-    ref_problem.end_p.y       = params[4];
-    ref_problem.end_p.theta   = params[5];
-
-    ref_problem.target_alt    = params[6];
-
-    ref_problem.start_time    = params[7];
-    ref_problem.end_time      = params[8];
-
-    ref_problem.type          = (int)params[9];
-    ref_problem.radius        = params[10];
-    ref_problem.extra         = params[11];
-
-    return nav_extended_dubins_init();
-  }
-  else if (flag == MissionRun)
-  {
-    return nav_extended_dubins_track();
-  }
-  
-
-  // not a valid case
-  return false;
-  //TODO: Add update, with the possibility of changing the end_time
-}
-
-#endif
-
-// ******************** Dubins navigation ******************** //
 
 static struct LlaCoor_i lla_i_from_enu_xyz_f(float x, float y, float z)
 {
@@ -1039,7 +1008,7 @@ static bool track_dubins_element(DubinsElement_t* el, float* remaining_length)
       at_least_half_turn = (turning_done_rad > turn_amount_rad/2);
     }
 
-    return !(NavQdrCloseTo(DegOfRad(end_rad_qdr)) && at_least_half_turn) ;
+    return !(NavQdrCloseTo(DegOfRad(end_rad_qdr)) && at_least_half_turn);
   }
 }
 
@@ -1085,15 +1054,6 @@ void extended_dubins_set_pathtype(DubinsType type, float extra)
 }
 
 
-void dubins_setup()
-{
-  #if USE_MISSION
-  mission_register(nav_dubins_mission,"DUBIN");
-  #endif
-
-  ref_problem.end_time = 0.;
-}
-
 bool nav_extended_dubins_init()
 {
   // Airspeed mode
@@ -1118,13 +1078,22 @@ bool nav_extended_dubins_init()
         sol.elements[i].init_point.y,
         sol.elements[i].init_point.theta);
 
-        
-    if (dubins_draw && sol.elements[i].length > 1e-6)
+    #if DEBUG
+    assert(sol.elements[i].length >= 0.);
+    assert(!isnan(sol.elements[i].length));
+    #endif
+    
+    if (dubins_draw)
     {
       uint8_t id = make_draw_id(i);
       uint8_t color = DRAW_make_line(AC_ID);
 
-      draw_dubins_element(&path_elements[i],id,color,6);
+      remove_drawn(id);
+
+      if (sol.elements[i].length > 1e-6)
+      {
+        draw_dubins_element(&path_elements[i],id,color,dubins_draw_samples);
+      }
     }
 
   }
@@ -1184,5 +1153,89 @@ bool nav_extended_dubins_track(void)
   }
 
   return true;
+}
+
+// ******************** Mission mode ******************** //
+
+#if USE_MISSION
+#include "modules/mission/mission_common.h"
+
+static bool nav_dubins_mission(uint8_t nb, float *params, enum MissionRunFlag flag)
+{
+  if (flag == MissionInit && nb == 12)
+  {
+    ref_problem.start_p.x     = params[0];
+    ref_problem.start_p.y     = params[1];
+    ref_problem.start_p.theta = params[2];
+
+    ref_problem.end_p.x       = params[3];
+    ref_problem.end_p.y       = params[4];
+    ref_problem.end_p.theta   = params[5];
+
+    ref_problem.target_alt    = params[6];
+
+    ref_problem.start_time    = params[7];
+    ref_problem.end_time      = params[8];
+
+    ref_problem.type          = (int)params[9];
+    ref_problem.radius        = params[10];
+    ref_problem.extra         = params[11];
+
+    return nav_extended_dubins_init();
+  }
+  else if (flag == MissionRun)
+  {
+    return nav_extended_dubins_track();
+  }
+  
+
+  // not a valid case
+  return false;
+  //TODO: Add update, with the possibility of changing the end_time
+}
+
+static DubinsElement_t solo_element;
+
+static bool nav_dubins_element_mission(uint8_t nb, float *params, enum MissionRunFlag flag)
+{
+  float remaining_length;
+  if (flag == MissionInit && nb == 6)
+  {
+    solo_element.init_point.x = params[0];
+    solo_element.init_point.y = params[1];
+    solo_element.init_point.theta = params[2];
+    solo_element.radius = params[3];
+    solo_element.length = params[4];
+    float altitude = params[5];
+    // Airspeed mode
+    v_ctl_speed_mode = V_CTL_SPEED_AIRSPEED;
+
+    // Handle verticality
+    NavVerticalAutoThrottleMode(0); /* No pitch */
+    NavVerticalAltitudeMode(altitude, 0.);
+
+    // draw_dubins_element(&solo_element,make_draw_id(mission.current_idx),DRAW_make_line(AC_ID),dubins_draw_samples);
+    initial_nav_rad_angle = NAN;
+    return track_dubins_element(&solo_element,&remaining_length);
+  }
+  else if (flag == MissionRun)
+  {
+    return track_dubins_element(&solo_element,&remaining_length);
+  }
+
+  // not a valid case
+  return false;
+}
+
+#endif
+
+void dubins_setup()
+{
+  #if USE_MISSION
+  mission_register(nav_dubins_mission,"DUBIN");
+  mission_register(nav_dubins_element_mission,"DUBEL");
+  #endif
+
+  ref_problem.end_time = 0.;
 }
 

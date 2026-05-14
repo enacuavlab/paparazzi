@@ -85,6 +85,7 @@ DubinsType BaseDubinsType(DubinsType t);
 bool ValidExtendedDubins(DubinsType t);
 
 extern bool dubins_draw;
+extern int dubins_draw_samples;
 
 typedef struct
 {
