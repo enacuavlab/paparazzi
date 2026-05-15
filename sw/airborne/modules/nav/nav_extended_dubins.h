@@ -96,8 +96,8 @@ typedef struct
 typedef struct
 {
   Pose2D_t start_p, end_p;      // Endpoint poses
-  float start_time;   // Start and end times of the trajectory, with respect to GPS ToW. If end time is non-positive, speed is not tuned.
-  float end_time;
+  float length;                 // Length of the path to follow. Used as an hint to fix some Dubins turns.  
+  float end_time;               // End times of the trajectory, with respect to GPS ToW. If non-positive, speed is not tuned.
   float target_alt;             // Target final altitude
   DubinsType type;              // Type of Dubins path to generate
   float radius;                 // Radius of the target Dubins path

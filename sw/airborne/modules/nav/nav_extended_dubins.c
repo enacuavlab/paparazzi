@@ -586,7 +586,7 @@ typedef struct
   DubinsElement_t elements[5];
 } ExtendedDubins_t;
 
-static ExtendedDubins_t fit_basic_dubins(DubinsType type, Pose2D_t start, Pose2D_t end, float radius)
+static ExtendedDubins_t fit_basic_dubins(DubinsType type, Pose2D_t start, Pose2D_t end, float radius, float length_hint)
 {
   ExtendedDubins_t output;
   for(int i = 0; i < 5; i++)
@@ -721,6 +721,52 @@ static ExtendedDubins_t fit_basic_dubins(DubinsType type, Pose2D_t start, Pose2D
     break;
   }
 
+  // Apply hint fixing
+  if (length_hint > 0)
+  {
+    float total_length = output.elements[1].length + output.elements[2].length + output.elements[3].length;
+    float length_error = total_length - length_hint;
+
+    // A "significant" error
+    if (ABS(length_error) > 1e-2)
+    {
+      // Try fixing by replacing full circles by nothing or vice-versa
+      for(int i = 1; i <= 3; i++)
+      {
+        // Skip straights
+        if (output.elements[i].radius != 0)
+        {
+          if (length_error > 0)
+          {
+            // Try replacing by nothing if it is a full circle
+            if (ABS(output.elements[i].length - ABS(2*M_PI*output.elements[i].radius)) < 1e-2)
+            {
+              float new_error = length_error - 2*M_PI*ABS(output.elements[i].radius);
+              if (ABS(new_error) < ABS(length_error))
+              {
+                length_error = new_error;
+                output.elements[i].length = 0.;
+              }
+            }
+          }
+          else
+          {
+            // Try replacing by a full circle if it is nothing
+            if (ABS(output.elements[i].length) < 1e-2)
+            {
+              float new_error = length_error + 2*M_PI*ABS(output.elements[i].radius);
+              if (ABS(new_error) < ABS(length_error))
+              {
+                length_error = new_error;
+                output.elements[i].length = 2*M_PI*ABS(output.elements[i].radius);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   return output;
 }
 
@@ -737,14 +783,14 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
 
   if (NotExtendedDubins(pb->type))
   {
-    return fit_basic_dubins(pb->type,pb->start_p,pb->end_p,pb->radius);
+    return fit_basic_dubins(pb->type,pb->start_p,pb->end_p,pb->radius, pb->length);
   }
   else
   {
     if (StartExtendedDubins(pb->type))
     {
       Pose2D_t shifted_start = move_forward(&pb->start_p,pb->extra);
-      result = fit_basic_dubins(BaseDubinsType(pb->type),shifted_start,pb->end_p,pb->radius);
+      result = fit_basic_dubins(BaseDubinsType(pb->type),shifted_start,pb->end_p,pb->radius, pb->length - pb->extra);
       result.elements[0].init_point = pb->start_p;
       result.elements[0].radius = 0.;
       result.elements[0].length = pb->extra;
@@ -753,7 +799,7 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
     else if (EndExtendedDubins(pb->type))
     {
       Pose2D_t shifted_end = move_forward(&pb->end_p,-pb->extra);
-      result = fit_basic_dubins(BaseDubinsType(pb->type),pb->start_p,shifted_end,pb->radius);
+      result = fit_basic_dubins(BaseDubinsType(pb->type),pb->start_p,shifted_end,pb->radius, pb->length - pb->extra);
       result.elements[4].radius = 0.;
       result.elements[4].length = pb->extra;
       return result;
@@ -763,7 +809,7 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
       Pose2D_t shifted_start = move_forward(&pb->start_p,pb->extra/2);
       Pose2D_t shifted_end = move_forward(&pb->end_p,-pb->extra/2);
 
-      result = fit_basic_dubins(BaseDubinsType(pb->type),shifted_start,shifted_end,pb->radius);
+      result = fit_basic_dubins(BaseDubinsType(pb->type),shifted_start,shifted_end,pb->radius, pb->length - pb->extra);
       result.elements[0].init_point = pb->start_p;
       result.elements[0].radius = 0.;
       result.elements[0].length = pb->extra/2;
@@ -1174,7 +1220,7 @@ static bool nav_dubins_mission(uint8_t nb, float *params, enum MissionRunFlag fl
 
     ref_problem.target_alt    = params[6];
 
-    ref_problem.start_time    = params[7];
+    ref_problem.length        = params[7];
     ref_problem.end_time      = params[8];
 
     ref_problem.type          = (int)params[9];
