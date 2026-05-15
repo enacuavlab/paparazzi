@@ -662,7 +662,7 @@ if __name__ == '__main__':
         20 : 'blue'
     }
     
-    stat_list = [ACStats(i,15,10/60,50) for i in [17,18,20]]
+    stat_list = [ACStats(i,15,10/60,60) for i in [17,18,20]]
     separation = 30
     formation = chevron_formation(len(stat_list),separation*1.2)
     
@@ -674,8 +674,8 @@ if __name__ == '__main__':
     home_x,home_y = transformer.transform(home_lat,home_lon)
     
     start = Pose3D(home_x,home_y,home_alt,0.)
-    # fleet_plan = formation_oval(stat_list,start,250,200,formation)
-    fleet_plan = formation_rectangle(stat_list,start,250,200,formation)
+    fleet_plan = formation_oval(stat_list,start,250,200,formation)
+    # fleet_plan = formation_rectangle(stat_list,start,250,200,formation)
     
     # fig,ax = plt.subplots()
     # plot_keyframes(fleet_plan,ax,['red','green','blue','yellow','cyan','magenta'])
@@ -735,7 +735,7 @@ if __name__ == '__main__':
     with open(f"logs/logs_{now_str}.pkl","wb") as f:
         pickle.dump(logs, f)
             
-    fig,traj_ax,tracking_ax,sep_ax = plot_trackingdata(logs,color_dict)
+    fig,traj_ax,tracking_ax,sep_ax,s1,s2 = plot_trackingdata(logs,color_dict)
     fig.set_size_inches(16,9)
     fig.tight_layout()
     plt.show()

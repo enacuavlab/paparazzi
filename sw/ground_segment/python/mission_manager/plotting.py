@@ -34,7 +34,8 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
 from matplotlib.animation import FuncAnimation
-from matplotlib.text import Text
+from matplotlib.collections import PathCollection
+from matplotlib.quiver import Quiver
 from matplotlib import transforms,colormaps
 
 
@@ -45,12 +46,16 @@ ARROWS_SCALING = {
     'width' : 0.03
 }
 
-def plot_pose2d_sequence(ax:Axes,poses:list[Pose3D],endpoints:bool=False,endarrows:bool=False,**plot_kwargs) -> tuple[Axes,list[Line2D]]:
+def plot_pose2d_sequence(ax:Axes,poses:list[Pose3D],endpoints:bool=False,endarrows:bool=False,**plot_kwargs)\
+    -> tuple[Axes,list[Line2D],list[PathCollection],list[Quiver]]:
     xs = np.asarray([p.x for p in poses])
     ys = np.asarray([p.y for p in poses])
     angles = np.asarray([p.theta for p in poses])
     
+    
     lines = ax.plot(xs,ys,**plot_kwargs)
+    scatters = []
+    quivers = []
     
     # Avoid repeating the name in the legend
     plot_kwargs.pop('label',None)
@@ -61,20 +66,25 @@ def plot_pose2d_sequence(ax:Axes,poses:list[Pose3D],endpoints:bool=False,endarro
         color = plot_kwargs['color']
     except KeyError:
         color = None
+        
+    try:
+        alpha = plot_kwargs['alpha']
+    except KeyError:
+        alpha = 1.
     
     if (endpoints):
-        ax.scatter(xs[0],ys[0],marker='o',color=color)
-        ax.scatter(xs[-1],ys[-1],marker='X',color=color)
+        scatters.append(ax.scatter(xs[0],ys[0],marker='o',color=color,alpha=alpha))
+        scatters.append(ax.scatter(xs[-1],ys[-1],marker='X',color=color,alpha=alpha))
     
     
     if (endarrows):
-        ax.quiver([xs[0]],[ys[0]],[np.cos(angles[0])],[np.sin(angles[0])],angles='xy',color='k')
-        ax.quiver([xs[-1]],[ys[-1]],[np.cos(angles[-1])],[np.sin(angles[-1])],angles='xy',color='k')
+        quivers.append(ax.quiver([xs[0]],[ys[0]],[np.cos(angles[0])],[np.sin(angles[0])],angles='xy',color='k',alpha=alpha))
+        quivers.append(ax.quiver([xs[-1]],[ys[-1]],[np.cos(angles[-1])],[np.sin(angles[-1])],angles='xy',color='k',alpha=alpha))
     
-    return ax,lines
+    return ax,lines,scatters,quivers
 
 def plot_several_pose2d_sequences(ax:Axes,poses_dict:DictOfPoseTrajectories,colors_dict:typing.Optional[dict[int,ColorType]]=None,
-                                  endpoints:bool=False,endarrows:bool=False,label:bool=False,alpha:float=1.,**plot_kwargs) -> tuple[Axes,dict[int,Line2D]]:
+                                  endpoints:bool=False,endarrows:bool=False,label:bool=False,alpha:float=1.,**plot_kwargs) -> tuple[Axes,dict[int,tuple[Line2D,list[PathCollection],list[Quiver]]]]:
     i = 0
     
     output = dict()
@@ -82,18 +92,18 @@ def plot_several_pose2d_sequences(ax:Axes,poses_dict:DictOfPoseTrajectories,colo
         pose_seq = [v[1] for v in values]
         c = colors_dict[key] if colors_dict is not None else my_cmap[i % len(my_cmap)]
         if label:
-            ax,l = plot_pose2d_sequence(ax,pose_seq,endpoints,endarrows,
+            ax,l,s,q = plot_pose2d_sequence(ax,pose_seq,endpoints,endarrows,
                                     color=c,
                                     label=f"AC: {key}",
                                     alpha=alpha,
                                     **plot_kwargs)
         else:
-            ax,l = plot_pose2d_sequence(ax,pose_seq,endpoints,endarrows,
+            ax,l,s,q = plot_pose2d_sequence(ax,pose_seq,endpoints,endarrows,
                                     color=c,
                                     alpha=alpha,
                                     **plot_kwargs)
             
-        output[key] = l[0]
+        output[key] = (l[0],s,q)
         
         i += 1
         
@@ -129,7 +139,7 @@ def snapshot_several_pose2d_sequences(poses_list:ListOfTimedPoses,snapshots:int,
             i += 1
     
     # Plot background lines
-    ax,_ = plot_several_pose2d_sequences(ax,poses_dict,color_dict,False,False,False,0.3)
+    plot_several_pose2d_sequences(ax,poses_dict,color_dict,False,False,False,0.3)
     
     # Plot min dist location
     mdist = np.inf
@@ -252,7 +262,7 @@ def animate_several_pose2d_sequences(poses_list:ListOfTimedPoses,fps:int=30,
             i += 1
     
     # Plot background lines
-    ax,_ = plot_several_pose2d_sequences(ax,poses_dict,color_dict,False,False,False,0.2)
+    plot_several_pose2d_sequences(ax,poses_dict,color_dict,False,False,False,0.2)
     
     # Setup artists for animation
     keys = list(poses_list[0][1].keys())
