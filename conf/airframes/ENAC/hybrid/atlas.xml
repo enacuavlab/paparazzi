@@ -91,11 +91,11 @@
             <define name="ATLAS_EFF_K_TILT_DEFLECT"             value="{0.7854,8.18e-5}"/>
             <define name="ATLAS_EFF_K_LIFT"                     value="0.311"/>
             <define name="ATLAS_EFF_V_WING"                     value="10.0"/>
-            <define name="ATLAS_MOTOR_HOVER"                    value="3500"/>
+            <define name="ATLAS_MOTOR_HOVER"                    value="4000"/>
             <define name="ATLAS_MOTOR_IDLE"                     value="1000"/>
         </module>
         <module name="guidance" type="indi_hybrid_tiltrotor">
-            <define name="GUIDANCE_INDI_PUSHER_INDEX"            value="4"/>
+            <define name="GUIDANCE_INDI_PUSHER_INDEX"           value="4"/>
             <define name="GUIDANCE_INDI_MASS"                   value="0.75"/>
             <define name="GUIDANCE_INDI_WING_AREA"              value="0.5"/>
             <define name="GUIDANCE_INDI_CL_0"                   value="0.1"/>

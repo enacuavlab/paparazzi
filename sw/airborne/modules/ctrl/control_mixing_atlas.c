@@ -104,12 +104,21 @@ void control_mixing_atlas_quad_enter(void)
 
 void control_mixing_atlas_quad(void)
 {
-  struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
-  stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
+  int16_t throttle = radio_control_get(RADIO_THROTTLE);
+
+  commands[COMMAND_MOTOR_FR] = throttle;
+  commands[COMMAND_MOTOR_BR] = throttle;
+  commands[COMMAND_MOTOR_BL] = throttle;
+  commands[COMMAND_MOTOR_FL] = throttle;
+
+  commands[COMMAND_ROLL]    = radio_control_get(RADIO_ROLL);
+  commands[COMMAND_PITCH]   = radio_control_get(RADIO_PITCH);
+  commands[COMMAND_YAW]     = radio_control_get(RADIO_YAW);
+  commands[COMMAND_THRUST]  = throttle;
+  commands[COMMAND_THRUST_X] = 0;
   actuators_pprz[CMA_ACT_TILT_R] = -MAX_PPRZ;
   actuators_pprz[CMA_ACT_TILT_L] = -MAX_PPRZ;
-  SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
-  autopilot.throttle = stabilization.cmd[COMMAND_THRUST];
+  autopilot.throttle = throttle;
 }
 
 // void control_mixing_atlas_nav_enter(void)
