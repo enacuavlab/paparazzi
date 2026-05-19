@@ -53,8 +53,8 @@
 #ifndef ATLAS_EFF_IZZ
 #error "ATLAS_EFF_IZZ [float] not defined in airframe file"
 #endif
-#ifndef ATLAS_EFF_MASS
-#error "ATLAS_EFF_MASS [float] not defined in airframe file"
+#ifndef GUIDANCE_INDI_MASS
+#error "GUIDANCE_INDI_MASS [float] not defined in airframe file"
 #endif
 
 #ifndef ATLAS_EFF_RX
@@ -102,6 +102,9 @@
 #ifndef ATLAS_MOTOR_HOVER
 #error "ATLAS_MOTOR_HOVER [float] not defined in airframe file"
 #endif
+#ifndef ATLAS_MOTOR_IDLE
+#error "ATLAS_MOTOR_IDLE [float] not defined in airframe file"
+#endif
 
 // Tilt Range
 #ifndef ATLAS_TILT_ALPHA_MIN
@@ -116,7 +119,7 @@ struct atlas_eff_sched_param_t atlas_eff_sched_p = {
  .Ixx = ATLAS_EFF_IXX,
  .Iyy = ATLAS_EFF_IYY,
  .Izz = ATLAS_EFF_IZZ,
- .m = ATLAS_EFF_MASS,
+ .m = GUIDANCE_INDI_MASS,
  .r_x = ATLAS_EFF_RX,
  .r_y = ATLAS_EFF_RY,
  .r_z = ATLAS_EFF_RZ,
@@ -134,13 +137,11 @@ struct atlas_eff_sched_param_t atlas_eff_sched_p = {
 
 struct atlas_eff_sched_var_t atlas_eff_sched_v;
 
-float const grav = 9.81f;                     // Gravitational Acceleration [m/s^2]
-float atlas_eff_periodic_freq = 500.f;        // Module Frequency [Hz]    FIXME: retrieve stabilization module frequency instead
+float const grav = 9.81f;                           // Gravitational Acceleration [m/s^2]
+float atlas_eff_periodic_freq = EFF_SCHEDULING_ATLAS_PERIODIC_FREQ; // Module Frequency [Hz]
 
 float atlas_eff_liftd = 0.0f;                 // Change in Lift wrt change in pitch (dLift/dpitch) [N/rad]
 float atlas_eff_tilt_traverse_time = 1.5f;    // Time to traverse tilt range [s]
-
-static const float Wu_gih_original[GUIDANCE_INDI_HYBRID_U] = GUIDANCE_INDI_WLS_WU;
 
 /** Helper Function:
  * Bounds or zeros values to improve WLS optimization
@@ -177,8 +178,6 @@ static inline void atlas_schedule_liftd(void);
 
 float guidance_indi_get_liftd(float airspeed UNUSED, float theta UNUSED);
 void stabilization_indi_set_wls_settings(void);
-void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll, float pitch);
-
 void eff_scheduling_atlas_init(void)
 {
   // Checks for positive and non-zeros coefficients
@@ -196,7 +195,7 @@ void eff_scheduling_atlas_init(void)
    * The change in tilt angle due to a change in pprz is given by: alpha = b0 + b1 * pprz
    * if b1 is zero the tilt cannot be commanded
   */
-  while (1) { // trap }
+    while (1) { /* trap */ }
   }
 
   // Tilt angles initialization
@@ -208,7 +207,7 @@ void eff_scheduling_atlas_init(void)
   for (int i = 0; i < 4; i++)
   {
   atlas_eff_sched_v.cmd_motor[i] = ATLAS_MOTOR_HOVER;
-  atlas_eff_sched_v.T[i] = ATLAS_EFF_MASS*grav/4.f;
+  atlas_eff_sched_v.T[i] = atlas_eff_sched_p.m*grav/4.f;
   atlas_eff_sched_v.dT_dpprz[i] = atlas_eff_sched_p.k_dT_dpprz[0];
   }
   atlas_eff_sched_v.airspeed = 0.f;
@@ -252,8 +251,8 @@ static inline void atlas_update_tilt_cache(void)
 static inline void atlas_update_cmd_cache(void)
 {
   atlas_eff_sched_v.cmd_motor[0] = actuator_state_filt_vect[ATLAS_ACT_MOTOR_FR];
-  atlas_eff_sched_v.cmd_motor[1] = actuator_state_filt_vect[ATLAS_ACT_MOTOR_RR];
-  atlas_eff_sched_v.cmd_motor[2] = actuator_state_filt_vect[ATLAS_ACT_MOTOR_RL];
+  atlas_eff_sched_v.cmd_motor[1] = actuator_state_filt_vect[ATLAS_ACT_MOTOR_BR];
+  atlas_eff_sched_v.cmd_motor[2] = actuator_state_filt_vect[ATLAS_ACT_MOTOR_BL];
   atlas_eff_sched_v.cmd_motor[3] = actuator_state_filt_vect[ATLAS_ACT_MOTOR_FL];
   // atlas_eff_sched_v.cmd_elevon_r = actuator_state_filt_vect[ATLAS_ACT_ELEVON_R];
   // atlas_eff_sched_v.cmd_elevon_l = actuator_state_filt_vect[ATLAS_ACT_ELEVON_L];
@@ -406,7 +405,7 @@ static inline void atlas_update_tilt_effectiveness(void)
 void stabilization_indi_set_wls_settings(void)
 {
   for (uint8_t i = 0; i < INDI_NUM_ACT; i++) {
-    wls_stab_p.u_min[i]  = -MAX_PPRZ * act_is_servo[i];
+    wls_stab_p.u_min[i] = act_is_servo[i] ? -MAX_PPRZ : ATLAS_MOTOR_IDLE;
     wls_stab_p.u_max[i]  =  MAX_PPRZ;
     wls_stab_p.u_pref[i] =  act_pref[i];
   }
@@ -468,84 +467,4 @@ static inline void atlas_schedule_liftd(void)
 
 float guidance_indi_get_liftd(float pitch UNUSED, float theta UNUSED) {
   return atlas_eff_liftd;
-}
-
-/* --------------------------------------------------------------------- */
-/* Outer-loop WLS settings (virtual-control weights & attitude limits).   */
-/* Regime is parameterised by the *average* tilt angle, in [0, pi/2].     */
-/* --------------------------------------------------------------------- */
-void guidance_indi_hybrid_set_wls_settings(float body_v[3],
-                                           float roll_angle,
-                                           float pitch_angle)
-{
-  const float alpha_mean = 0.5f * (atlas_eff_sched_v.alpha_r_rad + atlas_eff_sched_v.alpha_l_rad);
-  float fwd_mix = alpha_mean / (0.5f * M_PI); /* 0 = hover, 1 = full forward */
-  Bound(fwd_mix, 0.f, 1.f);
-
-#define AIRSPEED_IMPORTANCE_IN_FORWARD_WEIGHT 16.f
-
-  float Wv_original[GUIDANCE_INDI_HYBRID_V] = GUIDANCE_INDI_WLS_PRIORITIES;
-
-  /* As we tilt forward, the forward-acceleration channel becomes
-   * increasingly important because vertical thrust is shrinking. */
-  wls_guid_p.Wv[0] = Wv_original[0] *
-                     (1.0f + fwd_mix * AIRSPEED_IMPORTANCE_IN_FORWARD_WEIGHT);
-
-  /* Attitude limits morph with tilt: tighter in hover, opened in cruise */
-  const float roll_lim_rad = guidance_indi_max_bank;
-  const float pitch_lim_hover_rad = RadOfDeg(5.0f);
-  const float pitch_lim_fwd_rad   = RadOfDeg(GUIDANCE_INDI_MAX_PITCH);
-  float pitch_lim_max = pitch_lim_hover_rad +
-                        fwd_mix * (pitch_lim_fwd_rad - pitch_lim_hover_rad);
-  const float pitch_lim_min = RadOfDeg(GUIDANCE_INDI_MIN_PITCH);
-
-  /* Roll limits (unchanged by tilt) */
-  wls_guid_p.u_min[0] = -roll_lim_rad - roll_angle;
-  wls_guid_p.u_max[0] =  roll_lim_rad - roll_angle;
-
-  /* Pitch limits */
-  wls_guid_p.u_min[1] = pitch_lim_min  - pitch_angle;
-  wls_guid_p.u_max[1] = pitch_lim_max  - pitch_angle;
-
-  /* Vertical-thrust budget: remaining headroom of the four motors,
-   * projected onto -z_body via cos(alpha).
-   * NOTE: this assumes your virtual control [2] is "up-accel" (-z_body).  */
-  float du_min_thrust_z = 0.f, du_max_thrust_z = 0.f;
-  for (int i = 0; i < 4; i++) {
-    float ca = (i < 2) ? atlas_eff_sched_v.cos_ar : atlas_eff_sched_v.cos_al;
-    float head_up   = (MAX_PPRZ - actuator_state_filt_vect[i]) *
-                      atlas_eff_sched_v.dT_dpprz[i] * ca / atlas_eff_sched_p.m;
-    float head_down = (-actuator_state_filt_vect[i]) *
-                      atlas_eff_sched_v.dT_dpprz[i] * ca / atlas_eff_sched_p.m;
-    du_min_thrust_z += head_down; /* negative */
-    du_max_thrust_z += head_up;   /* positive */
-  }
-  Bound(du_min_thrust_z, -50.f, 0.f);
-  Bound(du_max_thrust_z,   0.f, 50.f);
-
-  wls_guid_p.u_min[2] = du_min_thrust_z;
-  wls_guid_p.u_max[2] = du_max_thrust_z;
-
-  /* Forward-thrust budget: same motors, projected onto +x_body via sin(a).
-   * Only useful if the outer loop exposes Fx as a virtual control (index 3). */
-  float du_min_thrust_x = 0.f, du_max_thrust_x = 0.f;
-  for (int i = 0; i < 4; i++) {
-    float sa = (i < 2) ? atlas_eff_sched_v.sin_ar : atlas_eff_sched_v.sin_al;
-    float head_fwd = (MAX_PPRZ - actuator_state_filt_vect[i]) *
-                     atlas_eff_sched_v.dT_dpprz[i] * sa / atlas_eff_sched_p.m;
-    float head_back = (-actuator_state_filt_vect[i]) *
-                      atlas_eff_sched_v.dT_dpprz[i] * sa / atlas_eff_sched_p.m;
-    du_max_thrust_x += head_fwd;
-    du_min_thrust_x += head_back;
-  }
-  Bound(du_min_thrust_x, -30.f, 0.f);
-  Bound(du_max_thrust_x,   0.f, 30.f);
-  wls_guid_p.u_min[3] = du_min_thrust_x;
-  wls_guid_p.u_max[3] = du_max_thrust_x;
-
-  /* Preferences */
-  wls_guid_p.u_pref[0] = 0.f;                         /* roll */
-  wls_guid_p.u_pref[1] = -pitch_angle;                /* pitch: stay level */
-  wls_guid_p.u_pref[2] = wls_guid_p.u_max[2];         /* prefer high thrust headroom */
-  wls_guid_p.u_pref[3] = 0;
 }

@@ -31,8 +31,8 @@
 
 /* Actuator indices for INDI vector (INDI_NUM_ACT = 6/8)*/
 #define ATLAS_ACT_MOTOR_FR   0          // Motor Front-Right (FR)
-#define ATLAS_ACT_MOTOR_RR   1          // Motor Rear-Right (RR)
-#define ATLAS_ACT_MOTOR_RL   2          // Motor Rear-Left (RL)
+#define ATLAS_ACT_MOTOR_BR   1          // Motor Back-Right (BR)
+#define ATLAS_ACT_MOTOR_BL   2          // Motor Back-Left (BL)
 #define ATLAS_ACT_MOTOR_FL   3          // Motor Front-Left (FL)
 #define ATLAS_ACT_TILT_R     4          // Tilt Servo Right (TILT_R), 0 = vertical, pi/2 = forward
 #define ATLAS_ACT_TILT_L     5          // Tilt Servo Left (TILT_L), 0 = vertical, pi/2 = forward
@@ -43,8 +43,8 @@
 #define ATLAS_VC_MX    0                // Angular Acceleration along body x-axis (roll)
 #define ATLAS_VC_MY    1                // Angular Acceleration along body y-axis (pitch)
 #define ATLAS_VC_MZ    2                // Angular Acceleration along body z-axis (yaw)
-#define ATLAS_VC_AX    3                // Linear Acceleration along body x-axis (forward)
-#define ATLAS_VC_AZ    4                // Linear Acceleration along body z-axis (vertical)
+#define ATLAS_VC_AZ    3                // Linear Acceleration along body z-axis (vertical)
+#define ATLAS_VC_AX    4                // Linear Acceleration along body x-axis (forward)
 
 
 struct atlas_eff_sched_param_t {
@@ -55,7 +55,7 @@ struct atlas_eff_sched_param_t {
     float m;                            // mass [kg]
 
     /* Rotor Geometry in body frame [m]
-    Order follows rotor convention (FR, RR, RL, FL) */
+    Order follows rotor convention (FR, BR, BL, FL) */
     float r_x[4];                       // Longitudinal Offset from CG (positive = forward)
     float r_y[4];                       // Lateral Offset from CG (positive = right)
     float r_z[4];                       // Vertical Offset from CG (positive = down)
@@ -71,7 +71,7 @@ struct atlas_eff_sched_param_t {
 
     // Tilt Coefficients
     float k_tilt_deflect[2];            // Mapping tilt-servo command [pprz] -> tilt angle [rad],
-                                        // alpha = b0 + b1 * pprz, (k_tilt_deflect = [b1, b2]
+                                        // alpha = b0 + b1 * pprz, (k_tilt_deflect = [b0, b1]
 
     // Wing Coefficients
     float k_lift;                       // Wing Lift Coefficient: L = k_lift * V^2 / m
@@ -110,6 +110,7 @@ extern struct atlas_eff_sched_param_t atlas_eff_sched_p;
 extern struct atlas_eff_sched_var_t atlas_eff_sched_v;
 
 extern float atlas_eff_liftd;
+extern float atlas_eff_tilt_traverse_time;
 
 extern void eff_scheduling_atlas_init(void);
 extern void eff_scheduling_atlas_periodic(void);

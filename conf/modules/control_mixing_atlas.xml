@@ -1,0 +1,24 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="control_mixing_atlas" dir="ctrl" task="control">
+  <doc>
+    <description>Control mixing specific to the ATLAS tilt-rotor</description>
+  </doc>
+  <header>
+    <file name="control_mixing_atlas.h"/>
+  </header>
+  <init fun="control_mixing_atlas_init()"/>
+  <makefile>
+    <file name="control_mixing_atlas.c"/>
+    <test firmware="rotorcraft">
+      <define name="PERIODIC_FREQUENCY" value="500"/>
+
+      <!-- Radio Command Idx -->
+      <define name="COMMAND_MOTOR_FR" value="0"/>
+      <define name="COMMAND_MOTOR_RR" value="1"/>
+      <define name="COMMAND_MOTOR_RL" value="2"/>
+      <define name="COMMAND_MOTOR_FL" value="3"/>
+      <define name="COMMAND_TILT_R" value="4"/>
+      <define name="COMMAND_TILT_L" value="5"/>
+    </test>
+  </makefile>
+</module>

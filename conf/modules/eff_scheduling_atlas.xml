@@ -1,0 +1,66 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="eff_scheduling_atlas" dir="ctrl">
+    <doc>
+        <description>
+            Control effectiveness scheduler for the Atlas tiltrotor with two tilt banks (right/left), each carrying 2 rotors in a quad-X layout.
+
+            Body axes: x forward, y right, z down. Tilt angle alpha = 0 for vertical rotors (hover), alpha = pi/2 for forward-pointing rotors (cruise).
+
+            Requires the following actuators (indices defined in eff_scheduling_atlas.h):
+            - 4 motors: FR (0), RR (1), RL (2), FL (3)
+            - 2 tilt servos: TILT_R (4), TILT_L (5)
+        </description>
+
+        <section name="ATLAS_EFF" prefix="ATLAS_EFF_">
+            <!-- Mass defined in GUIDANCE_INDI_MASS -->
+            <define name="IXX"             value="0"                description="MMOI about longitudinal (x) axis [kg.m^2]"/>
+            <define name="IYY"             value="0"                description="MMOI about lateral (y) axis [kg.m^2]"/>
+            <define name="IZZ"             value="0"                description="MMOI about vertical (z) axis [kg.m^2]"/>
+            <define name="RX"              value="{0,0,0,0}"        description="Rotor x positions [m], order: FR, RR, RL, FL"/>
+            <define name="RY"              value="{0,0,0,0}"        description="Rotor y positions [m], order: FR, RR, RL, FL"/>
+            <define name="RZ"              value="{0,0,0,0}"        description="Rotor z positions [m], order: FR, RR, RL, FL"/>
+            <define name="SPIN_DIR"        value="{1,-1,1,-1}"      description="Rotor spin direction (+1 for CW. -1 for CCW), order: FR, RR, RL, FL"/>
+            <define name="K_DT_DPPRZ"      value="{0,0}"            description="Quadratic thrust model coefficients: T = a0*u + a1*u^2, value = {a0, a1}"/>
+            <define name="KAPPA"           value="0"                description="Drag-torque to thrust ratio (kappa = k_m/k_t) [m]"/>
+            <define name="K_TILT_DEFLECT"  value="{0,0}"            description="Tilt mapping: alpha[rad] = b0 + b1*u, value = {b0, b1}"/>
+            <define name="K_LIFT"          value="0"                description="Wing lift derivative: dL/d(alpha) = k_lift * V^2 [N/rad]"/>
+            <define name="V_WING"          value="10.0"             description="Airspeed at which wing lift derivative is applied [m/s]"/>
+        </section>
+
+        <section name="ATLAS_MOTOR" prefix="ATLAS_MOTOR_">
+            <define name="HOVER"           value="0"                description="Motor command in hover [pprz]"/>
+            <define name="IDLE"            value="0"                description="Motor command in idle [pprz]"/>
+        </section>
+
+        <section name="ATLAS_TILT" prefix="ATLAS_TILT_">
+            <define name="ALPHA_MIN"       value="-0.1"             description="Minimum tilt angle [rad] (default -0.1)"/>
+            <define name="ALPHA_MAX"       value="1.5708"           description="Maximum tilt angle [rad] (default pi/2)"/>
+        </section>
+    </doc>
+
+    <settings>
+        <dl_settings>
+            <dl_settings name="eff_sched_atlas">
+                <dl_setting var="atlas_eff_tilt_traverse_time" min="0.002" step="0.01"    max="5.0"   shortname="tilt_traverse_time"/>
+                <dl_setting var="atlas_eff_sched_p.m"          min="0"     step="0.01"    max="20"    shortname="mass"/>
+                <dl_setting var="atlas_eff_sched_p.Ixx"        min="0"     step="0.0001"  max="1.0"   shortname="Ixx"/>
+                <dl_setting var="atlas_eff_sched_p.Iyy"        min="0"     step="0.0001"  max="1.0"   shortname="Iyy"/>
+                <dl_setting var="atlas_eff_sched_p.Izz"        min="0"     step="0.0001"  max="1.0"   shortname="Izz"/>
+                <dl_setting var="atlas_eff_sched_p.kappa"      min="0"     step="0.001"   max="1.0"   shortname="kappa"/>
+                <dl_setting var="atlas_eff_sched_p.k_lift"     min="0"     step="0.001"   max="5.0"   shortname="k_lift"/>
+                <dl_setting var="atlas_eff_sched_p.v_wing"     min="0"     step="0.1"     max="30.0"  shortname="v_wing"/>
+            </dl_settings>
+        </dl_settings>
+    </settings>
+
+    <header>
+        <file name="eff_scheduling_atlas.h"/>
+    </header>
+
+    <init fun="eff_scheduling_atlas_init()"/>
+    <periodic fun="eff_scheduling_atlas_periodic()" freq="500"/>
+
+    <makefile>
+        <file name="eff_scheduling_atlas.c"/>
+    </makefile>
+</module>

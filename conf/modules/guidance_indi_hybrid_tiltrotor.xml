@@ -1,0 +1,42 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="guidance_indi_hybrid_tiltrotor" dir="guidance" task="control">
+    <doc>
+        <description>
+            Guidance controller for hybrid tilt-rotors
+        </description>
+
+        <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
+            <define name="PUSHER_INDEX"         value="4"            description="Stabilization actuator index with non-zero Ax effectiveness, used to bound forward thrust increment [-]"/>
+            <define name="MASS"                 value="0.75"         description="Vehicle mass [kg]"/>
+            <define name="WING_AREA"            value="0.5"          description="Wing reference area [m^2]"/>
+            <define name="CL_0"                 value="0.1"          description="Zero-alpha lift coefficient [-]"/>
+            <define name="CL_ALPHA"             value="5.0"          description="Lift slope [1/rad]"/>
+            <define name="MAX_ACC_BODY_X"       value="2.0"          description="Max longitudinal body acceleration [m/s^2]"/>
+            <define name="MAX_ACC_BODY_Z"       value="3.0"          description="Max vertical body acceleration [m/s^2]"/>
+            <define name="WLS_PRIORITIES"       value="{1.,1.,1.}"    description="WLS cost weights for ax, ay, az [-]"/>
+            <define name="MIN_PITCH"            value="-40."         description="Min pitch attitude setpoint [deg]"/>
+            <define name="MAX_PITCH"            value="40."          description="Max pitch attitude setpoint [deg]"/>
+            <define name="PITCH_PREF_DEG"       value="0.0"          description="Preferred pitch angle for WLS [deg]"/>
+            <define name="AIRSPEED_IMPORTANCE"  value="2.0"          description="Forward-velocity weight boost factor in cruise [-]"/>
+            <define name="WU_PITCH_SCALE"       value="1.0"          description="Pitch command cost scale in cruise [-]"/>
+            <define name="WU_TX_SCALE"          value="1.0"          description="Forward-thrust command cost scale in hover [-]"/>
+        </section>
+    </doc>
+    <dep>
+        <depends>guidance_indi_hybrid,eff_scheduling_atlas</depends>
+        <conflicts>guidance_indi_hybrid_tailsitter, guidance_indi_hybrid_quadplane</conflicts>
+        <provides>guidance,attitude_command</provides>
+    </dep>
+    <header>
+        <file name="guidance_indi_hybrid_tiltrotor.h"/>
+    </header>
+    <makefile target="ap|nps" firmware="rotorcraft">
+        <define name="GUIDANCE_INDI_HYBRID_USE_WLS" value="1"/>
+        <!-- Guidance actuators: (roll, pitch, thrust_z, thrust_x) for tiltrotors  -->
+        <define name="GUIDANCE_INDI_HYBRID_U" value="4"/>
+        <!-- Guidance control objectives: ax, ay, az for tiltrotors -->
+        <define name="GUIDANCE_INDI_HYBRID_V" value="3"/>
+        <file name="guidance_indi_hybrid_tiltrotor.c" dir="$(SRC_FIRMWARE)/guidance"/>
+    </makefile>
+</module>
