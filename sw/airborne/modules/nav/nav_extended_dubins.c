@@ -27,6 +27,8 @@ bool dubins_draw = false;
 #endif
 
 int dubins_draw_samples = 10;
+float extra_straight_length = 120;
+bool mission_init_straight_flag = false;
 
 bool HasStartExtension(DubinsType t)
 {
@@ -779,6 +781,9 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
   {
     result.elements[i].length = 0.;
     result.elements[i].radius = 0.;
+    result.elements[i].init_point.x     = 0.;
+    result.elements[i].init_point.y     = 0.;
+    result.elements[i].init_point.theta = 0.;
   }
 
   if (NotExtendedDubins(pb->type))
@@ -794,6 +799,7 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
       result.elements[0].init_point = pb->start_p;
       result.elements[0].radius = 0.;
       result.elements[0].length = pb->extra;
+      result.type = pb->type;
       return result;
     }
     else if (EndExtendedDubins(pb->type))
@@ -802,6 +808,7 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
       result = fit_basic_dubins(BaseDubinsType(pb->type),pb->start_p,shifted_end,pb->radius, pb->length - pb->extra);
       result.elements[4].radius = 0.;
       result.elements[4].length = pb->extra;
+      result.type = pb->type;
       return result;
     }
     else // BothExtendedDubins(pb->type)
@@ -816,6 +823,7 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
 
       result.elements[4].radius = 0.;
       result.elements[4].length = pb->extra/2;
+      result.type = pb->type;
       return result;
     }
   }
@@ -824,8 +832,10 @@ static ExtendedDubins_t fit_dubins(DubinsPb_t* pb)
 
 // ******************** Dubins navigation ******************** //
 
+#define EXTENDED_DUBINS_PATH_ELEMENTS_N 7
+
 static DubinsPb_t ref_problem;
-static DubinsElement_t path_elements[5];
+static DubinsElement_t path_elements[EXTENDED_DUBINS_PATH_ELEMENTS_N];
 static int curr_path_element = 0;
 static float initial_nav_rad_angle = NAN;
 
@@ -875,10 +885,10 @@ static struct LlaCoor_i lla_i_from_enu_xyz_f(float x, float y, float z)
   return lla_coords_i;
 }
 
-static struct LlaCoor_i lla_i_from_enu_f(struct EnuCoor_f coords)
-{
-  return lla_i_from_enu_xyz_f(coords.x,coords.y,coords.z);
-}
+// static struct LlaCoor_i lla_i_from_enu_f(struct EnuCoor_f coords)
+// {
+//   return lla_i_from_enu_xyz_f(coords.x,coords.y,coords.z);
+// }
 
 /**
  * @brief Send a DRAW message to draw the given Dubins shape
@@ -1058,6 +1068,9 @@ static bool track_dubins_element(DubinsElement_t* el, float* remaining_length)
   }
 }
 void extended_dubins_set_start(float x, float y, float theta)
+{
+  ref_problem.start_p.x     = x;
+  ref_problem.start_p.y     = y;
   ref_problem.start_p.theta = RadOfDeg(theta);
 }
 
@@ -1095,58 +1108,102 @@ void extended_dubins_set_pathtype(DubinsType type, float extra)
   ref_problem.extra = extra;
 }
 
-
-void dubins_setup()
+bool nav_extended_dubins_init()
 {
   // Airspeed mode
   v_ctl_speed_mode = V_CTL_SPEED_AIRSPEED;
+  v_ctl_auto_airspeed_setpoint = 15; // m/s
 
   // Handle verticality
   NavVerticalAutoThrottleMode(0); /* No pitch */
   NavVerticalAltitudeMode(ref_problem.target_alt, 0.);
 
+  curr_path_element = 0;
+
+  // Extra initial straight at mission start 
+  if (mission_init_straight_flag)
+  {
+    path_elements[0].init_point  = ref_problem.start_p;
+    path_elements[0].radius      = 0.;
+    path_elements[0].length      = extra_straight_length;
+
+    ref_problem.start_p.x += extra_straight_length * cosf(ref_problem.start_p.theta);
+    ref_problem.start_p.y += extra_straight_length * sinf(ref_problem.start_p.theta);
+
+    ref_problem.end_p.x   -= extra_straight_length * cosf(ref_problem.end_p.theta);
+    ref_problem.end_p.y   -= extra_straight_length * sinf(ref_problem.end_p.theta);
+
+    path_elements[EXTENDED_DUBINS_PATH_ELEMENTS_N-1].init_point  = ref_problem.end_p;
+    path_elements[EXTENDED_DUBINS_PATH_ELEMENTS_N-1].radius      = 0.;
+    path_elements[EXTENDED_DUBINS_PATH_ELEMENTS_N-1].length      = extra_straight_length*2; // Include the end and 'pre-plan' the starting straight of the next plan
+    
+    ref_problem.end_time += extra_straight_length/NOMINAL_AIRSPEED;
+  }
+  else
+  {
+    path_elements[0].radius = 0.;
+    path_elements[0].length = 0.;
+
+    path_elements[EXTENDED_DUBINS_PATH_ELEMENTS_N-1].radius = 0.;
+    path_elements[EXTENDED_DUBINS_PATH_ELEMENTS_N-1].length = 0.;
+  }
+
   ExtendedDubins_t sol = fit_dubins(&ref_problem);
-  curr_path_element = (NotExtendedDubins(ref_problem.type)) ? 1 : 0;
-  IPRINTF("Path type: %s\n",dubinsTypeStr(sol.type));
+  
+  if (mission_init_straight_flag)
+  {
+    IPRINTF("Path type: S%s\n",dubinsTypeStr(sol.type));
+  }
+  else
+  {
+    IPRINTF("Path type: %s\n",dubinsTypeStr(sol.type));
+  }
+  
   for(int i = 0; i < 5; i++)
   {
-    path_elements[i] = sol.elements[i];
+    path_elements[1+i] = sol.elements[i];
+  }
 
+  for(int j = 0; j < EXTENDED_DUBINS_PATH_ELEMENTS_N; j++)
+  {
     IPRINTF("Element %d : Length %.3f ; Radius %.3f ; Start (%.3f , %.3f , %.3f)\n",
-        i,
-        sol.elements[i].length,
-        sol.elements[i].radius,
-        sol.elements[i].init_point.x,
-        sol.elements[i].init_point.y,
-        sol.elements[i].init_point.theta);
+        j,
+        path_elements[j].length,
+        path_elements[j].radius,
+        path_elements[j].init_point.x,
+        path_elements[j].init_point.y,
+        path_elements[j].init_point.theta);
 
     #if DEBUG
-    assert(sol.elements[i].length >= 0.);
-    assert(!isnan(sol.elements[i].length));
+    assert(path_elements[j].length >= 0.);
+    assert(!isnan(path_elements[j].length));
     #endif
     
     if (dubins_draw)
     {
-      uint8_t id = make_draw_id(i);
+      uint8_t id = make_draw_id(j);
       uint8_t color = DRAW_make_line(AC_ID);
 
       remove_drawn(id);
 
-      if (sol.elements[i].length > 1e-6)
+      if (path_elements[j].length > 1e-6)
       {
-        draw_dubins_element(&path_elements[i],id,color,dubins_draw_samples);
+        draw_dubins_element(&path_elements[j],id,color,dubins_draw_samples);
       }
     }
-
   }
+
+  mission_init_straight_flag = false; // Reset for ulterior utilisation
   initial_nav_rad_angle = NAN;
   return true;
 }
 
 bool nav_extended_dubins_track(void)
 {
+  float remaining_el_distance;
+
   // All elements done, return false to finish
-  if (curr_path_element > 4)
+  if (curr_path_element >= EXTENDED_DUBINS_PATH_ELEMENTS_N)
   {
     IPRINTF("Dubins done!\n");
     return false;
@@ -1164,7 +1221,6 @@ bool nav_extended_dubins_track(void)
     return true;
   }
 
-  float remaining_el_distance;
   bool tracking = track_dubins_element(&path_elements[curr_path_element],&remaining_el_distance);
 
   // If current element is (almost) done, skip to the next
@@ -1182,15 +1238,27 @@ bool nav_extended_dubins_track(void)
     if (ref_problem.end_time > 0.)
     {
       float remaining_distance = remaining_el_distance;
-      for(int i = curr_path_element+1; i <= 4; i++)
+      for(int i = curr_path_element+1; i < EXTENDED_DUBINS_PATH_ELEMENTS_N; i++)
       {
         remaining_distance += path_elements[i].length;
       }
 
       float f_tow = gps.tow / 1000;
       float dt = ref_problem.end_time - f_tow;
-      // v_ctl_auto_groundspeed_setpoint = (remaining_distance/dt);
-      v_ctl_auto_airspeed_setpoint = (remaining_distance/dt);
+      float current_dt = remaining_distance/v_ctl_auto_airspeed_setpoint;
+
+      if (ABS(current_dt - dt) < 0.5)
+      {
+        v_ctl_auto_airspeed_setpoint = NOMINAL_AIRSPEED;
+      }
+      else
+      {
+        v_ctl_auto_airspeed_setpoint = remaining_distance/dt;
+        Bound(v_ctl_auto_airspeed_setpoint, 0.9 * NOMINAL_AIRSPEED, 1.1 * NOMINAL_AIRSPEED);
+      }
+
+      IPRINTF("Time delta (current - expected): %.2f (s)\n",current_dt - dt);
+
     }
   }
 
@@ -1222,6 +1290,8 @@ static bool nav_dubins_mission(uint8_t nb, float *params, enum MissionRunFlag fl
     ref_problem.type          = (int)params[9];
     ref_problem.radius        = params[10];
     ref_problem.extra         = params[11];
+
+    mission_init_straight_flag = (extra_straight_length > 0);
 
     return nav_extended_dubins_init();
   }
@@ -1280,4 +1350,3 @@ void dubins_setup()
 
   ref_problem.end_time = 0.;
 }
-

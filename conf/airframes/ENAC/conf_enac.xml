@@ -111,7 +111,7 @@
   />
   <aircraft
    name="PANACHE_D1"
-   ac_id="8"
+   ac_id="17"
    airframe="airframes/ENAC/fixed-wing/panache_1.xml"
    radio="radios/T10CG_SBUS.xml"
    telemetry="telemetry/fixedwing_flight_recorder.xml"
@@ -122,7 +122,7 @@
   />
   <aircraft
    name="PANACHE_D2"
-   ac_id="9"
+   ac_id="18"
    airframe="airframes/ENAC/fixed-wing/panache_1.xml"
    radio="radios/T10CG_SBUS.xml"
    telemetry="telemetry/fixedwing_flight_recorder.xml"
@@ -133,7 +133,7 @@
   />
   <aircraft
    name="PANACHE_D3"
-   ac_id="10"
+   ac_id="20"
    airframe="airframes/ENAC/fixed-wing/panache_1.xml"
    radio="radios/T10CG_SBUS.xml"
    telemetry="telemetry/fixedwing_flight_recorder.xml"

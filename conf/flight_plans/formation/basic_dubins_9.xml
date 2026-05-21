@@ -3,13 +3,11 @@
 <flight_plan alt="260" ground_alt="185" lat0="43.46223" lon0="1.27289" max_dist_from_home="1500" name="Basic" security_height="25">
   <header>
 #include "modules/datalink/datalink.h"
+#define MISSION_CHECK_UNIQUE_ID 0
 </header>
   <waypoints>
     <waypoint name="HOME" x="0" y="0"/>
     <waypoint name="STDBY" x="49.5" y="100.1"/>
-    <waypoint name="1" x="10.1" y="189.9"/>
-    <waypoint name="2" x="132.3" y="139.1"/>
-    <waypoint name="MOB" x="137.0" y="-11.6"/>
     <waypoint name="S1" x="-119.2" y="69.6"/>
     <waypoint name="S2" x="274.4" y="209.5"/>
     <waypoint alt="215.0" name="AF" x="177.4" y="45.1"/>
@@ -47,25 +45,6 @@
     </block>
     <block key="Ctrl+a" name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
       <circle radius="nav_radius" wp="STDBY"/>
-    </block>
-    <block key="F8" name="Figure 8 around wp 1" strip_button="Figure 8 (wp 1-2)" strip_icon="eight.png" group="base_pattern">
-      <eight center="1" radius="nav_radius" turn_around="2"/>
-    </block>
-    <block name="Oval 1-2" strip_button="Oval (wp 1-2)" strip_icon="oval.png" group="base_pattern">
-      <oval p1="1" p2="2" radius="nav_radius"/>
-    </block>
-    <block name="MOB" strip_button="Circle around here" strip_icon="mob.png" group="base_pattern">
-      <call_once fun="NavSetWaypointHere(WP_MOB)"/>
-      <set value="DEFAULT_CIRCLE_RADIUS" var="nav_radius"/>
-      <circle radius="nav_radius" wp="MOB"/>
-    </block>
-    <block name="Survey S1-S2" strip_button="Survey (wp S1-S2)" strip_icon="survey.png" group="extra_pattern">
-      <survey_rectangle grid="150" wp1="S1" wp2="S2"/>
-    </block>
-    <block name="Path 1,2,S1,S2,STDBY" strip_button="Path (1,2,S1,S2,STDBY)" strip_icon="path.png" group="extra_pattern">
-      <path wpts="1,2 S1"/>
-      <path wpts="S1, S2 STDBY" approaching_time="1" pitch="auto" throttle="0.4"/>
-      <deroute block="Standby"/>
     </block>
     <block name="Mission" strip_button="Mission">
       <call fun="mission_run()"/>

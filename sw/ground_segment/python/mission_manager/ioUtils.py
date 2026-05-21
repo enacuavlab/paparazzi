@@ -18,11 +18,7 @@
 import json,csv,dataclasses,pathlib,typing,copy
 import numpy as np
 
-<<<<<<< Updated upstream
 from Dubins import Pose3D,ACStats,Path,BasicPath,FleetPlan,ListOfTimedPoses,TimedPosesLine,DictOfPoseTrajectories,DubinsMove,mod2pi,central_angle
-=======
-from Dubins import Pose3D,ACStats,Path,BasicPath,FleetPlan,ListOfTimedPoses,TimedPosesLine,DictOfPoseTrajectories,mod2pi,central_angle
->>>>>>> Stashed changes
 
 
 ######################################## Dubins problem writing and parsing ########################################

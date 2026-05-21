@@ -143,7 +143,7 @@
 
   <section name="MISC">
     <define name="NOMINAL_AIRSPEED" value="15." unit="m/s"/>
-    <define name="CARROT" value="5." unit="s"/>
+    <define name="CARROT" value="3." unit="s"/>
     <define name="DEFAULT_CIRCLE_RADIUS" value="100."/>
   </section>
 
@@ -185,17 +185,20 @@
   </section>
 
   <section name="HORIZONTAL CONTROL" prefix="H_CTL_">
+    <define name="COURSE_PRE_BANK_CORRECTION" value="1.05"/>
     <define name="COURSE_PGAIN" value="0.4"/>
     <define name="PITCH_MAX_SETPOINT" value="30." unit="deg"/>
     <define name="PITCH_MIN_SETPOINT" value="-30." unit="deg"/>
     <define name="PITCH_PGAIN" value="10210"/>
     <define name="PITCH_IGAIN" value="322"/>
     <define name="PITCH_DGAIN" value="1485"/>
+    
 
     <define name="ROLL_RATE_GAIN" value="1000"/>
 
     <define name="ROLL_MAX_SETPOINT" value="40" unit="deg"/>
     <define name="ROLL_ATTITUDE_GAIN" value="11770"/>
+    <define name="ROLL_IGAIN" value="200."/>
   </section>
 
   <section name="CATAPULT" prefix="NAV_CATAPULT_">

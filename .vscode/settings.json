@@ -16,4 +16,5 @@
     "python.analysis.extraPaths": [
         "./sw/lib/python"
     ],
+    "cmake.sourceDirectory": "/home/mael/paparazzi/sw/ext/eigen/demos",
 }

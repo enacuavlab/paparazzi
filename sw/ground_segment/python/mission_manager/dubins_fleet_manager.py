@@ -4,7 +4,7 @@ from typing import Optional
 import pathlib
 import subprocess
 import os
-import pickle
+import pickle,copy
 import tempfile
 import datetime,time
 import enum
@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
-from Dubins import Pose3D,ACStats,FleetPlan,DubinsMove,BasicPath,Path,min_XY_dist,poses_XY_dist
+from Dubins import Pose3D,ACStats,FleetPlan,DubinsMove,BasicPath,Path,min_XY_dist,poses_XY_dist,path_extra_length
 from ioUtils import AC_PP_Problem, write_pathplanning_problem_to_CSV, straight_pp_problems,parse_trajectories_from_JSON
 from Formation import Formation,chevron_formation
 from FleetPath import FleetKeyframes,plot_keyframes,formation_oval,formation_rectangle
@@ -66,6 +66,48 @@ PPRZ_DUBINS_TYPE_MAP = {
     'SSRSS' : 3*8+7,
 }
 
+def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
+                   separation:float, wind:tuple[float,float],threads:int,
+                   start_extensions:list[float] = [],
+                   end_extensions:list[float] = [],
+                   **kwargs) -> list[str]:
+    cmd = []
+    cmd.append(str(solver.resolve()))
+    cmd.append(str(pb_loc.resolve()))
+    cmd.append(str(sol_loc.resolve()))
+    cmd.append(str(separation))
+    
+    cmd.append(str(wind[0]))
+    cmd.append(str(wind[1]))
+    
+    cmd.append('-t')
+    cmd.append(str(threads))
+    
+    cmd.append('-r')
+    cmd.append(str(10))
+    
+    cmd.append('-l')
+    
+    if len(start_extensions) > 0:
+        cmd.append('--straights-only')
+        cmd.append('--extend-start')
+        for e in start_extensions:
+            cmd.append(str(e))
+    
+    if len(end_extensions) > 0:
+        cmd.append('--extend-end')
+        for e in end_extensions:
+            cmd.append(str(e))
+    
+    for k,v in kwargs.items():
+        cmd.append(k)
+        
+        if v is None:
+            continue
+        
+        cmd.append(str(v))
+    return cmd
+
 def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
                    separation:float, wind:tuple[float,float],threads:int,
                    start_extensions:list[float] = [],
@@ -86,46 +128,19 @@ def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
     Returns:
         subprocess.CompletedProcess[bytes]: 
     """
-    cmd = []
-    cmd.append(str(solver.resolve()))
-    cmd.append(str(pb_loc.resolve()))
-    cmd.append(str(sol_loc.resolve()))
-    cmd.append(str(separation))
-    
-    cmd.append(str(wind[0]))
-    cmd.append(str(wind[1]))
-    
-    cmd.append('-t')
-    cmd.append(str(threads))
-    
-    cmd.append('-r')
-    cmd.append(str(10))
-    
-<<<<<<< Updated upstream
-    cmd.append('-l')
-    
-    if len(start_extensions) > 0:
-        cmd.append('--straights-only')
-        cmd.append('--extend-start')
-        for e in start_extensions:
-            cmd.append(str(e))
-    
-    if len(end_extensions) > 0:
-        cmd.append('--extend-end')
-        for e in end_extensions:
-            cmd.append(str(e))
-    
-=======
->>>>>>> Stashed changes
-    for k,v in kwargs.items():
-        cmd.append(k)
-        
-        if v is None:
-            continue
-        
-        cmd.append(str(v))
+    cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads, start_extensions, end_extensions, **kwargs)
     
     return subprocess.run(cmd,stdout=subprocess.DEVNULL)
+
+def async_solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
+                   separation:float, wind:tuple[float,float],threads:int,
+                   start_extensions:list[float] = [],
+                   end_extensions:list[float] = [],
+                   **kwargs) -> subprocess.Popen:
+    
+    cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads, start_extensions, end_extensions, **kwargs)
+    
+    return subprocess.Popen(cmd,stdout=subprocess.DEVNULL)
 
 class FleetManagerEnd(enum.Enum):
     """ Possible final commands when the last keyposes are done:
@@ -172,7 +187,7 @@ class FleetManager:
         self.__current_plan_date:Optional[int|float] = None
         # self.__next_plan:Optional[FleetPlan] = None
         self.__last_schedule_time:float = 0.
-        self.end_of_plan_carrot:float = 2. # In seconds, how much time before the end of the current plan to send the next one
+        self.end_of_plan_carrot:float = 10. # In seconds, how much time before the end of the current plan to send the next one
         self.reschedule_dt:float = 15. # In seconds
         self.relative_improvement_threshold:float = 0.9 # Minimum improvement in the plan duration to trigger a reschedule (in percentage of the current plan duration)
         self.tracking_err_threshold:float = 20. # In meters, if the tracking error is above this threshold, consider the plan as not followed and trigger a reschedule
@@ -181,11 +196,14 @@ class FleetManager:
         
         self.flight_alt:float = flight_alt
         self.speed_ctl = speed_ctl
+        self.extra_straight_length = 120 # In meters #TODO: Synchronize with matching DL_SETTING
 
         self.solver_path = pathlib.Path(solver_path)
         self.separation:float = separation
         self.threads:int = threads
         self.transformer:pyproj.Transformer = transformer
+        self.solver_instance:Optional[subprocess.Popen] = None
+
         
         self.ac_ids:list[int] = [s.id for s in self.fleet_frames.ac_stats]
         self.ac_ids.sort()
@@ -300,6 +318,9 @@ class FleetManager:
             tracking_error_value = 0.
             tracking_error_id = 0
             
+            # if self.solver_instance is not None:
+                # self.solver_instance.poll()
+            
             if self.__current_plan is not None and self.__current_plan_date is not None:
                 
                 if self.__current_plan.duration < self.end_of_plan_carrot:
@@ -317,7 +338,7 @@ class FleetManager:
                                 tracking_error_value = dist
                                 tracking_error_id = id
                             
-                        tracking_error_reschedule = tracking_error_value > self.tracking_err_threshold
+                        tracking_error_reschedule = (tracking_error_value > self.tracking_err_threshold) and (self.__current_plan.duration > self.end_of_plan_carrot*2)
                         
                         current_poses = self.__current_plan.poses_at(max_time-self.__current_plan_date)
                         
@@ -399,26 +420,6 @@ class FleetManager:
         self.__current_plan = sol
         self.__current_plan_date = current_time
         end_tow = current_time + sol.duration
-        
-        
-        # if self.__next_plan is None:
-        #     j = self.__fleet_frame_id + 1
-        #     j_plus_one = j+1
-        #     if self.end_strategy is FleetManagerEnd.LOOP:
-        #         j = j % self.fleet_frames.keyposes_num
-        #         j_plus_one = j_plus_one % self.fleet_frames.keyposes_num
-        #     else:
-        #         if j_plus_one >= self.fleet_frames.keyposes_num:
-        #             self.__next_plan = None
-        #             return True
-                    
-        #     self.verbosity -= 1
-        #     pb = self.fleet_frames.generate_pb_between(j,j_plus_one)
-        #     sol = self.__solve_pp_problem(pb)
-        #     self.__send_fleet_mission(sol,end_tow,MissionInsert.APPEND)
-        #     end_tow += sol.duration
-        #     self.__next_plan = sol
-        #     self.verbosity += 1
         
         return True
     
@@ -513,6 +514,8 @@ class FleetManager:
                 self.separation,
                 (0.,0.) if self.ignore_wind else (self.wind_x,self.wind_y),
                 self.threads,
+                [self.extra_straight_length] if self.extra_straight_length > 0 else [],
+                [self.extra_straight_length] if self.extra_straight_length > 0 else []
             )
                 
             ## Parse the result and merge
@@ -625,26 +628,48 @@ class FleetManager:
         assert home is not None
         xhome,yhome = self.transformer.transform(home.lat,home.lon)
         
-        params = [
-            p.start.x-xhome,
-            p.start.y-yhome,
-            p.start.theta,
-            p.end.x-xhome,
-            p.end.y-yhome,
-            p.end.theta,
-            p.end.z,
-            start_time,
-            start_time+p.total_length/speed if self.speed_ctl else 0,
-            float(PPRZ_DUBINS_TYPE_MAP[p.abbr()]),
-            p.max_turn_radius(),
-            p.extra_length()
-        ]
-        
         if self.verbosity > 0:
             print(f"{ac_id} : Path type : {p.abbr()}")
             for i,el in enumerate(p.sections):
                 print(f"{ac_id} : Element {i} : Length {el.length:.3f} ; Radius {el.radius():.3f} ; Start ({el.start().x-xhome:.3f},{el.start().y-yhome:.3f},{el.start().theta:.3f})")
             print('')
+        
+        
+        if self.extra_straight_length > 0:
+            shifted_path = copy.deepcopy(p)
+            shifted_path = shifted_path.follow_for(shifted_path.sections[0].duration() + 1e-9)
+            assert shifted_path is not None
+            
+            params = [
+                p.start.x-xhome,
+                p.start.y-yhome,
+                p.start.theta,
+                p.end.x-xhome,
+                p.end.y-yhome,
+                p.end.theta,
+                p.end.z,
+                p.total_length - 2*self.extra_straight_length,
+                start_time+p.total_length/speed if self.speed_ctl else 0,
+                float(PPRZ_DUBINS_TYPE_MAP[shifted_path.abbr()[:-1]]),
+                shifted_path.max_turn_radius(),
+                path_extra_length(p.sections[1:-1])
+            ]
+        
+        else:
+            params = [
+                p.start.x-xhome,
+                p.start.y-yhome,
+                p.start.theta,
+                p.end.x-xhome,
+                p.end.y-yhome,
+                p.end.theta,
+                p.end.z,
+                p.total_length,
+                start_time+p.total_length/speed if self.speed_ctl else 0,
+                float(PPRZ_DUBINS_TYPE_MAP[p.abbr()]),
+                p.max_turn_radius(),
+                path_extra_length(p)
+            ]
         
         manager.add_mission_custom(
             self.mission_counter,
@@ -665,7 +690,7 @@ if __name__ == '__main__':
         20 : 'blue'
     }
     
-    stat_list = [ACStats(i,15,10/60,60) for i in [17,18,20]]
+    stat_list = [ACStats(i,13.5,10/60,60) for i in [17,18,20]]
     separation = 30
     formation = chevron_formation(len(stat_list),separation*1.2)
     
@@ -677,8 +702,8 @@ if __name__ == '__main__':
     home_x,home_y = transformer.transform(home_lat,home_lon)
     
     start = Pose3D(home_x,home_y,home_alt,0.)
-    fleet_plan = formation_oval(stat_list,start,250,200,formation)
-    # fleet_plan = formation_rectangle(stat_list,start,250,200,formation)
+    # fleet_plan = formation_oval(stat_list,start,250,200,formation)
+    fleet_plan = formation_rectangle(stat_list,start,250,200,formation)
     
     # fig,ax = plt.subplots()
     # plot_keyframes(fleet_plan,ax,['red','green','blue','yellow','cyan','magenta'])
@@ -690,9 +715,11 @@ if __name__ == '__main__':
     parser.add_argument('--verbose', '-v', action='count', default=0)
     parser.add_argument('-t','--takeoff',action='store_true',help='Send take off mission order first')
     parser.add_argument('--speed-ctl',action='store_true',dest='speed_ctl',help='If set, enable speed control for aircraft')
-    parser.add_argument('--full-dubins',action='store_true',dest='full_dubins',help='If set, send the full Dubins path as a custom mission instead of using the DUBEL simplified version')
+    parser.add_argument('--dubins-el',action='store_true',dest='dubins_el',help='If set, send Dubins elements (DUBEK mission) instead of full Dubins path (DUBIN mission)')
     parser.add_argument('--autostart',type=float,help='If set, automatically launch the main after the given value (in seconds). Otherwise, wait for user input to start the main loop',
                         default=None)
+    parser.add_argument('--carrot',type=float, help='Anticipation time (in seconds) for declaring the current plan end. Default to 5s',
+                        default=5)
     
     args = parser.parse_args()
     
@@ -705,8 +732,13 @@ if __name__ == '__main__':
         end_strategy=FleetManagerEnd.LOOP,
         speed_ctl=args.speed_ctl,
         verbosity=args.verbose,
-        full_dubins=args.full_dubins
+        full_dubins=not(args.dubins_el)
     )
+    
+    if args.carrot < 0.:
+        raise ValueError(f"--carrot argument must be non-negative! Current value is: {args.carrot}")
+    manager.end_of_plan_carrot = args.carrot
+    manager.tracking_err_threshold = 16
     
     try:
         manager.wait_ready()

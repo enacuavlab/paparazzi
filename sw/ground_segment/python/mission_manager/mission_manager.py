@@ -131,7 +131,7 @@ class MissionManager():
             self.uav_data.veast = speed * math.sin(course)
             self.uav_data.vup = float(msg['climb'])
             self.uav_data.gps_tow = int(msg['itow']) / 1000 # FIXME s or ms ?
-
+            
     def ap_status_cb(self, ac_id, msg):
         if int(ac_id) == self.ac_id:
             self.uav_data.AP_mode = msg['ap_mode']

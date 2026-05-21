@@ -32,11 +32,7 @@ def formation_oval(ac_stats:list[ACStats],start:Pose3D,length:float,width:float,
     |--- [1] <--- length --- start <-|
     |                                |
     |                                |
-<<<<<<< Updated upstream
   [1.5]                            [3.5]  width
-=======
-   [2]                              [5]  width
->>>>>>> Stashed changes
     |                                |
     |                                |
     |--> [3] ---------------> [4] ---|
@@ -111,19 +107,6 @@ def formation_oval(ac_stats:list[ACStats],start:Pose3D,length:float,width:float,
         formation.orientation += np.pi/2
         
         keyposes.append(formation.get_abs_positions().copy())
-<<<<<<< Updated upstream
-=======
-    
-    # import matplotlib.pyplot as plt
-    
-    # colormap = ['r','g','b','y','k','purple']
-    
-    # for i,el in enumerate(keyposes):
-    #     plt.scatter(el[:,0],el[:,1],color=colormap[i])
-        
-    # plt.gca().set_aspect('equal')
-    # plt.show()
->>>>>>> Stashed changes
     
     return FleetKeyframes(ac_stats,keyposes)
 
