@@ -1057,11 +1057,7 @@ static bool track_dubins_element(DubinsElement_t* el, float* remaining_length)
     return !(NavQdrCloseTo(DegOfRad(end_rad_qdr)) && at_least_half_turn);
   }
 }
-
 void extended_dubins_set_start(float x, float y, float theta)
-{
-  ref_problem.start_p.x = x;
-  ref_problem.start_p.y = y;
   ref_problem.start_p.theta = RadOfDeg(theta);
 }
 
@@ -1100,7 +1096,7 @@ void extended_dubins_set_pathtype(DubinsType type, float extra)
 }
 
 
-bool nav_extended_dubins_init()
+void dubins_setup()
 {
   // Airspeed mode
   v_ctl_speed_mode = V_CTL_SPEED_AIRSPEED;

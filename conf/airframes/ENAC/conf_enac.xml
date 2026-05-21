@@ -84,7 +84,7 @@
    telemetry="telemetry/fixedwing_flight_recorder.xml"
    flight_plan="flight_plans/basic.xml"
    settings="settings/fixedwing_basic.xml"
-   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/e_identification_fr.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/imu_common.xml modules/logger_sd_chibios.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
+   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/airspeed_adc.xml modules/e_identification_fr.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/imu_common.xml modules/logger_sd_chibios.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
    gui_color="#ffff7d7d0000"
   />
   <aircraft
@@ -117,7 +117,7 @@
    telemetry="telemetry/fixedwing_flight_recorder.xml"
    flight_plan="flight_plans/formation/basic_dubins_8.xml"
    settings="settings/fixedwing_basic.xml"
-   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/airspeed_adc.xml modules/e_identification_fr.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/imu_common.xml modules/logger_sd_chibios.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
+   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/airspeed_adc.xml modules/e_identification_fr.xml modules/electrical.xml modules/extended_dubins.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/imu_common.xml modules/logger_sd_chibios.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
    gui_color="#91004100ac00"
   />
   <aircraft
@@ -128,7 +128,7 @@
    telemetry="telemetry/fixedwing_flight_recorder.xml"
    flight_plan="flight_plans/formation/basic_dubins_9.xml"
    settings="settings/fixedwing_basic.xml"
-   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/airspeed_adc.xml modules/e_identification_fr.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/imu_common.xml modules/logger_sd_chibios.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
+   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/airspeed_adc.xml modules/e_identification_fr.xml modules/electrical.xml modules/extended_dubins.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/imu_common.xml modules/logger_sd_chibios.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
    gui_color="#ff0078000000"
   />
   <aircraft
@@ -139,7 +139,7 @@
    telemetry="telemetry/fixedwing_flight_recorder.xml"
    flight_plan="flight_plans/formation/basic_dubins_10.xml"
    settings="settings/fixedwing_basic.xml"
-   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/airspeed_adc.xml modules/e_identification_fr.xml modules/electrical.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/imu_common.xml modules/logger_sd_chibios.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
+   settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/airspeed_adc.xml modules/e_identification_fr.xml modules/electrical.xml modules/extended_dubins.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/imu_common.xml modules/logger_sd_chibios.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
    gui_color="#3300d1007a00"
   />
 </conf>

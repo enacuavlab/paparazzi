@@ -101,6 +101,7 @@ def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
     cmd.append('-r')
     cmd.append(str(10))
     
+<<<<<<< Updated upstream
     cmd.append('-l')
     
     if len(start_extensions) > 0:
@@ -114,6 +115,8 @@ def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
         for e in end_extensions:
             cmd.append(str(e))
     
+=======
+>>>>>>> Stashed changes
     for k,v in kwargs.items():
         cmd.append(k)
         

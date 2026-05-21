@@ -18,9 +18,9 @@
     <waypoint name="CLIMB" x="-114.5" y="162.3"/>
   </waypoints>
   <modules>
-  	<module name="extended_dubins"/>
   	<module name="mission_fw"/>
   	<module name="nav" type="takeoff_and_landing"/>
+  	<module name="extended_dubins"/>
   </modules>
   <exceptions>
     <!--exception cond="datalink_time @GT 22" deroute="Standby"/-->
