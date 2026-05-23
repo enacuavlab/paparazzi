@@ -27,7 +27,7 @@ import numpy as np
 from enum import Enum
 import functools
 from threading import Event
-
+import asyncio
 
 # if PAPARAZZI_SRC or PAPARAZZI_HOME not set, then assume the tree containing this
 # file is a reasonable substitute
@@ -41,8 +41,8 @@ from pprz_connect import PprzConnect, PprzConfig
 from flight_plan import FlightPlan, Block, Waypoint
 
 
-MAX_RETRY = 3
-ACK_TIME = 3
+MAX_RETRY = 5
+ACK_TIME = 2
 
 from uav_data import UAVData
     
@@ -186,31 +186,89 @@ class MissionManager():
         if int(ac_id) == self.ac_id:
             self.uav_data.ref_alt = int(msg['hmsl0'])/1000
 
-    def send_mission_element(forge_mission_msg):
-        @functools.wraps(forge_mission_msg)
-        def wrapper(self:'MissionManager', mission_id: int, *args, **kwargs):
-            if self.uav_data is None:
-                raise Exception("No UAV!")
+    def send_message_and_wait(self,msg:PprzMessage, retry:int=MAX_RETRY, ack_time:float=ACK_TIME):
+        if self.uav_data is None:
+            raise Exception("No UAV!")
+        
+        assert self.connect.ivy is not None, "No Ivy interface available!"
+        
+        # keep mission_id in the range [1;255]
+        msg['index'] = (msg['index']-1)%255+1
+        mission_id = msg['index']
+        
+        self.connect.ivy.send(msg)
+        # event to be notified as soon as the element is ACK
+        e = self.events.setdefault(mission_id, Event())
+        if self.verbose:
+            print(msg)
+        if e.wait(ack_time):
+            del self.events[mission_id]
+            return
 
-            # keep mission_id in the range [1;255]
-            mission_id = (mission_id-1)%255 + 1
+        for _ in range(retry-1):
+            self.connect.ivy.send(msg)
+            if self.verbose:
+                print(msg)
+            # wait a bit to receive the ACK
+            if e.wait(ack_time):
+                del self.events[mission_id]
+                return
+            
+        del self.events[mission_id]
+        raise Exception(f"Mission element no {mission_id} not ACKed in {retry*ack_time:.1f}s by {self.uav_data.ac_id}!")
+    
+    def send_message(self,msg:PprzMessage):
+        if self.uav_data is None:
+            raise Exception("No UAV!")
+        
+        assert self.connect.ivy is not None, "No Ivy interface available!"
+        
+        # keep mission_id in the range [1;255]
+        msg['index'] = (msg['index']-1)%255+1
+        mission_id = msg['index']
+        
+        self.connect.ivy.send(msg)
+        # event to be notified as soon as the element is ACK
+        self.events.setdefault(mission_id, Event())
+        
+        if self.verbose:
+            print(msg)
 
-            for _ in range(MAX_RETRY):
-                msg = forge_mission_msg(self, mission_id, *args, **kwargs)
+        
+    def check_message(self,msg:PprzMessage|int) -> bool:
+        if isinstance(msg,PprzMessage):
+            mission_id = msg['index']
+        else:
+            mission_id = msg
+            
+        mission_id = (mission_id-1)%255+1
+        
+        return self.events[mission_id].is_set()
+    
+    def message_check_and_retry(self,msg:PprzMessage, retry:int=MAX_RETRY, ack_time:float=ACK_TIME) -> bool:
+        if self.uav_data is None:
+            raise Exception("No UAV!")
+        
+        assert self.connect.ivy is not None, "No Ivy interface available!"
+        
+        # keep mission_id in the range [1;255]
+        msg['index'] = (msg['index']-1)%255+1
+        mission_id = msg['index']
+        
+        for _ in range(retry):
+            if self.events[mission_id].wait(ack_time):
+                del self.events[mission_id]
+                return True
+            else:
                 self.connect.ivy.send(msg)
                 if self.verbose:
                     print(msg)
-                # event to be notified as soon as the element is ACK
-                e = self.events.setdefault(mission_id, Event())
-                e.clear()
-                # wait a bit to receive the ACK
-                if e.wait(ACK_TIME):
-                    del self.events[mission_id]
-                    return
+                    
+        if self.events[mission_id].wait(ack_time):
             del self.events[mission_id]
-            raise Exception(f"Mission element no {mission_id} not ACKed in {MAX_RETRY*ACK_TIME:.1f}s by {self.uav_data.ac_id}!")
-
-        return wrapper
+            return True
+        else:
+            return False
     
     def start_mission(self):
         ''' enter Mission flight block for selected UAV or all if None'''
@@ -251,7 +309,8 @@ class MissionManager():
             if home_wp is None:
                 return False
             else:
-                self.add_mission_point(mission_id, lat=home_wp.lat,lon=home_wp.lon,alt=home_wp.alt,insert_mode=insert)
+                msg = self.make_mission_point(mission_id, lat=home_wp.lat,lon=home_wp.lon,alt=home_wp.alt,insert_mode=insert)
+                self.send_message_and_wait(msg)
                 return True            
         else:
             return False
@@ -262,15 +321,14 @@ class MissionManager():
             if home_wp is None:
                 return False
             else:
-                self.add_mission_circle(mission_id, lat=home_wp.lat,lon=home_wp.lon,alt=home_wp.alt, radius=radius, insert_mode=insert)
+                msg = self.make_mission_circle(mission_id, lat=home_wp.lat,lon=home_wp.lon,alt=home_wp.alt, radius=radius, insert_mode=insert)
+                self.send_message_and_wait(msg)
                 return True            
         else:
             return False
         
             
-
-    @send_mission_element
-    def add_mission_point(self, mission_id: int, lat: float, lon: float, alt: float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+    def make_mission_point(self, mission_id: int, lat: float, lon: float, alt: float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND) -> PprzMessage:
         msg = PprzMessage("datalink", "MISSION_GOTO_WP_LLA")
         msg['ac_id'] = self.ac_id
         msg['insert'] = insert_mode.value
@@ -281,8 +339,7 @@ class MissionManager():
         msg['wp_alt'] = int(alt * 1e3)
         return msg
     
-    @send_mission_element
-    def add_mission_local_point(self, mission_id: int, east: float, north: float, alt: float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+    def make_mission_local_point(self, mission_id: int, east: float, north: float, alt: float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND) -> PprzMessage:
         msg = PprzMessage("datalink", "MISSION_GOTO_WP")
         msg['ac_id'] = self.ac_id
         msg['insert'] = insert_mode.value
@@ -294,8 +351,7 @@ class MissionManager():
         return msg
 
 
-    @send_mission_element
-    def add_mission_path(self, mission_id:int, path:list[tuple[float,float]], alt:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+    def make_mission_path(self, mission_id:int, path:list[tuple[float,float]], alt:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND) -> PprzMessage:
         ''' send MISSION_PATH_LLA message to a specified uav or all if None
             path is described by a list of at most 5 points in (lat (deg), lon (deg)) + alt amsl (m) format
         '''
@@ -314,8 +370,7 @@ class MissionManager():
             msg['point_lon_'+str(i+1)] = int(lon * 1e7)
         return msg
     
-    @send_mission_element
-    def add_mission_local_path(self, mission_id:int, path:list[tuple[float,float]], alt:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+    def make_mission_local_path(self, mission_id:int, path:list[tuple[float,float]], alt:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND) -> PprzMessage:
         ''' send MISSION_PATH message to a specified uav or all if None
             path is described by a list of at most 5 points in (east (m), north (m)) + alt amsl (m) format with respect to HOME
         '''
@@ -334,8 +389,7 @@ class MissionManager():
             msg['point_north_'+str(i+1)] = north
         return msg
 
-    @send_mission_element
-    def add_mission_circle(self, mission_id:int, lat:float, lon:float, alt:float, radius:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+    def make_mission_circle(self, mission_id:int, lat:float, lon:float, alt:float, radius:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND) -> PprzMessage:
         ''' send MISSION_CIRCLE_LLA message to a specified uav or all if None
             circle is described by a lat (m), lon (m), alt amsl (m) format and radius (m)
         '''
@@ -350,8 +404,7 @@ class MissionManager():
         msg['radius'] = radius
         return msg
 
-    @send_mission_element
-    def add_mission_poles(self, mission_id:int, lat1:float, lon1:float, lat2:float, lon2:float, height:float, radius:float, duration:float = -1., nb_laps:int = -1, insert_mode:MissionInsert = MissionInsert.APPEND):
+    def make_mission_poles(self, mission_id:int, lat1:float, lon1:float, lat2:float, lon2:float, height:float, radius:float, duration:float = -1., nb_laps:int = -1, insert_mode:MissionInsert = MissionInsert.APPEND) -> PprzMessage:
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the navigation between two poles at position lat (deg), lon (deg), height above ref point (m) and radius (m) format
         '''
@@ -364,8 +417,7 @@ class MissionManager():
         msg['params'] = [float(lat1), float(lon1), float(lat2), float(lon2), float(height), float(radius), 1., float(nb_laps)] # fixed margin of 1.
         return msg
 
-    @send_mission_element
-    def add_mission_takeoff(self, mission_id:int, height:float = -1., duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+    def make_mission_takeoff(self, mission_id:int, height:float = -1., duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND) -> PprzMessage:
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the takeoff mission at the current position
         '''
@@ -378,8 +430,7 @@ class MissionManager():
         msg['params'] = [height]
         return msg
 
-    @send_mission_element
-    def add_mission_land(self, mission_id:int, lat:float, lon:float, height:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+    def make_mission_land(self, mission_id:int, lat:float, lon:float, height:float, duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND) -> PprzMessage:
         ''' send MISSION_CUSTOM message to a specified uav or all if None
             for the landing mission at the position in lat (deg), lon (deg), height above ref point (m) format
         '''
@@ -392,8 +443,7 @@ class MissionManager():
         msg['params'] = [float(height), float(lat), float(lon), 0., 0.]
         return msg
     
-    @send_mission_element
-    def add_mission_custom(self,mission_id:int, name:str, params:list[float], duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND):
+    def make_mission_custom(self,mission_id:int, name:str, params:list[float], duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND) -> PprzMessage:
         assert len(name) <= 5
         assert len(params) <= 12
         msg = PprzMessage("datalink", "MISSION_CUSTOM")
@@ -419,6 +469,40 @@ class MissionManager():
         if self.verbose:
             print(msg)
 
+async def send_and_ack_msg(mng:MissionManager, msg:PprzMessage, retry:int=MAX_RETRY, ack_time:float=ACK_TIME):
+    if mng.uav_data is None:
+        raise Exception("No UAV!")
+    
+    assert mng.connect.ivy is not None, "No Ivy interface available!"
+    
+    # keep mission_id in the range [1;255]
+    msg['index'] = (msg['index']-1)%255+1
+    mission_id = msg['index']
+        
+    mng.connect.ivy.send(msg)
+    # event to be notified as soon as the element is ACK
+    e = mng.events.setdefault(mission_id, Event())
+    if mng.verbose:
+        print(msg)
+    await asyncio.sleep(ack_time)
+    if e.is_set():
+        del mng.events[mission_id]
+        return
+
+    for _ in range(retry-1):
+        mng.connect.ivy.send(msg)
+        if mng.verbose:
+            print(msg)
+        # wait a bit to receive the ACK
+        await asyncio.sleep(ack_time)
+        if e.is_set():
+            del mng.events[mission_id]
+            return
+            
+    del mng.events[mission_id]
+    raise Exception(f"Mission element no {mission_id} not ACKed in {retry*ack_time:.1f}s by {mng.uav_data.ac_id}!")
+    
+
 if __name__ == '__main__':
     # run test
     from time import sleep
@@ -428,18 +512,18 @@ if __name__ == '__main__':
     P2 = (48.8651, 1.89862)
     P3 = (48.8654, 1.89621)
 
+    mission = MissionManager(verbose=True)
     try:
-        mission = MissionManager(verbose=True)
         print("cohoma_bridge test started")
         mission.wait_ready()
-        mission.add_mission_takeoff(1, height=40., insert_mode=MissionInsert.REPLACE_ALL)
-        mission.add_mission_path(2, path=[LANDPAD, P2], alt=120)
-        mission.add_mission_poles(3, lat1=P2[0], lon1=P2[1], lat2=P3[0], lon2=P3[1], height=40., radius=60., nb_laps=2)
-        mission.add_mission_path(4, path=[P2, LANDPAD] , alt=120)
-        mission.add_mission_point(5, lat=48.866, lon=1.899, alt=150.)
-        #mission.add_mission_path(3, path=[(48.865, 1.899),(48.865, 1.898),(48.866, 1.898),(48.866, 1.897),(48.865, 1.897)], alt=150.)
-        #mission.add_mission_circle(4, lat=48.865, lon=1.898, alt=150, radius=-80, duration=20)
-        mission.add_mission_land(6, lat=LANDPAD[0], lon=LANDPAD[1], height=0.)
+        mission.send_message_and_wait(mission.make_mission_takeoff(1, height=40., insert_mode=MissionInsert.REPLACE_ALL))
+        mission.send_message_and_wait(mission.make_mission_path(2, path=[LANDPAD, P2], alt=120))
+        mission.send_message_and_wait(mission.make_mission_poles(3, lat1=P2[0], lon1=P2[1], lat2=P3[0], lon2=P3[1], height=40., radius=60., nb_laps=2))
+        mission.send_message_and_wait(mission.make_mission_path(4, path=[P2, LANDPAD] , alt=120))
+        mission.send_message_and_wait(mission.make_mission_point(5, lat=48.866, lon=1.899, alt=150.))
+        mission.send_message_and_wait(mission.make_mission_path(3, path=[(48.865, 1.899),(48.865, 1.898),(48.866, 1.898),(48.866, 1.897),(48.865, 1.897)], alt=150.))
+        mission.send_message_and_wait(mission.make_mission_circle(4, lat=48.865, lon=1.898, alt=150, radius=-80, duration=20))
+        mission.send_message_and_wait(mission.make_mission_land(6, lat=LANDPAD[0], lon=LANDPAD[1], height=0.))
         mission.start_mission()
         print('UAV:',mission.uav_data.name)
 

@@ -7,7 +7,8 @@ import os
 import pickle,copy
 import tempfile
 import datetime,time
-import enum
+import enum,dataclasses
+import asyncio
 
 import pyproj
 from pyproj.enums import TransformDirection
@@ -22,7 +23,7 @@ from Formation import Formation,chevron_formation
 from FleetPath import FleetKeyframes,plot_keyframes,formation_oval,formation_rectangle
 
 from uav_data import UAVData,TrackingData,TrackingLogs
-from mission_manager import MissionManager,MissionInsert
+from mission_manager import MissionManager,MissionInsert,send_and_ack_msg,PprzMessage
 from tracking_logs_analyser import plot_trackingdata
 
 from pprzlink.ivy import IvyMessagesInterface
@@ -142,6 +143,13 @@ def async_solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.
     
     return subprocess.Popen(cmd,stdout=subprocess.DEVNULL)
 
+@dataclasses.dataclass
+class SolverInstance:
+    process:subprocess.Popen
+    start_time:float
+    improvement:float
+    result_loc:pathlib.Path
+    
 class FleetManagerEnd(enum.Enum):
     """ Possible final commands when the last keyposes are done:
     - LOOP: go back to first keyposes and loop forever
@@ -168,6 +176,7 @@ class FleetManager:
                  end_strategy:FleetManagerEnd=FleetManagerEnd.NOTHING,
                  speed_ctl:bool = False,
                  full_dubins:bool = False,
+                 tracking_error:float = 20,
                  verbosity:int=0) -> None:
         """_summary_
 
@@ -185,14 +194,16 @@ class FleetManager:
         self.__fleet_frame_id:int = 0
         self.__current_plan:Optional[FleetPlan] = None
         self.__current_plan_date:Optional[int|float] = None
-        # self.__next_plan:Optional[FleetPlan] = None
         self.__last_schedule_time:float = 0.
         self.end_of_plan_carrot:float = 10. # In seconds, how much time before the end of the current plan to send the next one
         self.reschedule_dt:float = 15. # In seconds
         self.relative_improvement_threshold:float = 0.9 # Minimum improvement in the plan duration to trigger a reschedule (in percentage of the current plan duration)
-        self.tracking_err_threshold:float = 20. # In meters, if the tracking error is above this threshold, consider the plan as not followed and trigger a reschedule
+        self.__tracking_err_threshold:float = tracking_error # In meters, if the tracking error is above this threshold, consider the plan as not followed and trigger a reschedule
         self.end_strategy = end_strategy
         self.full_dubins = full_dubins
+        
+        self.msg_retry:int      = 5
+        self.msg_ack_time:float = 1
         
         self.flight_alt:float = flight_alt
         self.speed_ctl = speed_ctl
@@ -202,7 +213,7 @@ class FleetManager:
         self.separation:float = separation
         self.threads:int = threads
         self.transformer:pyproj.Transformer = transformer
-        self.solver_instance:Optional[subprocess.Popen] = None
+        self.__solver_instance:Optional[SolverInstance] = None
 
         
         self.ac_ids:list[int] = [s.id for s in self.fleet_frames.ac_stats]
@@ -225,7 +236,7 @@ class FleetManager:
         
         self.__tracking_logs:TrackingLogs = TrackingLogs(
             fleet_frames,
-            tracking_error_threshold=self.tracking_err_threshold,
+            tracking_error_threshold=self.__tracking_err_threshold,
             separation_threshold=self.separation)
 
     
@@ -252,9 +263,19 @@ class FleetManager:
                 is_ready[id] = ready
                 all_ready = all_ready and ready
     
+    def __send_managers_messages_with_ack(self,mng_msg:list[tuple[MissionManager,PprzMessage]],retry:int,ack_time:float):
+        async def taskrunner():
+            for el in mng_msg:
+                await send_and_ack_msg(*el,retry=retry,ack_time=ack_time)
+        asyncio.run(taskrunner(),debug=True)
+    
     def takeoff(self,height:float):
+        mng_msg = []
         for mng in self.managers.values():
-            mng.add_mission_takeoff(self.mission_counter, height=height, insert_mode=MissionInsert.REPLACE_ALL)
+            mng_msg.append((mng,mng.make_mission_takeoff(self.mission_counter, height=height, insert_mode=MissionInsert.REPLACE_ALL)))
+
+        self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
+                
         self.__takeoff_height = height
         self.__takeoff_done = False
         self.mission_counter += 1
@@ -278,22 +299,33 @@ class FleetManager:
             
     def land(self,landpads:list[tuple[float,float,float]],insert_mode:MissionInsert=MissionInsert.REPLACE_ALL):
         assert len(self.ac_ids) == len(landpads)
+
+        mng_msg = []
         
         for i in range(len(self.ac_ids)):
             lat,lon,h = landpads[i]
             id = self.ac_ids[i]
             
-            self.managers[id].add_mission_land(self.mission_counter,lat,lon,h,insert_mode=insert_mode)
+            msg = self.managers[id].make_mission_land(self.mission_counter,lat,lon,h,insert_mode=insert_mode)
+            mng_msg.append((self.managers[id],msg))
         self.mission_counter += 1
+
+        self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
+        
         
     def land_here(self,ground_alt:float):
         """ Every aircraft land at their current location
         """
+
+        mng_msg = []
         for mng in self.managers.values():
             lat = mng.uav_data.lat
             lon = mng.uav_data.lon
-            mng.add_mission_land(self.mission_counter,lat,lon,ground_alt,insert_mode=MissionInsert.REPLACE_ALL)
+            msg = mng.make_mission_land(self.mission_counter,lat,lon,ground_alt,insert_mode=MissionInsert.REPLACE_ALL)
+            mng_msg.append((mng,msg))
         self.mission_counter += 1
+
+        self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
     
     def start_mission(self):
         """Go to mission block for every aircraft
@@ -308,71 +340,28 @@ class FleetManager:
             mng.closing()
     
     def main_loop(self):
+        prev_loop = 0
         while True:
+            while time.time() - prev_loop < 0.2: # 5Hz Loop:
+                time.sleep(0.01)
+            prev_loop = time.time()
+            
             self.__update_wind()
-            poses,times = self.get_poses()
-            min_time = min(times.values())
-            max_time = max(times.values())
+            timed_poses = self.get_timed_poses()
+            max_time = max(t[0] for t in timed_poses.values())
             
-            tracking_error_reschedule = False
-            tracking_error_value = 0.
-            tracking_error_id = 0
-            
-            # if self.solver_instance is not None:
-                # self.solver_instance.poll()
-            
-            if self.__current_plan is not None and self.__current_plan_date is not None:
-                
-                if self.__current_plan.duration < self.end_of_plan_carrot:
-                    self.__current_plan = None
-                    self.__fleet_frame_id += 1
-                else:
-                    try:
-                        for i,id in enumerate(self.ac_ids):
-                            _,p = self.__current_plan.get_path(id)
-                            ref_pose = p.pose_at(times[id]-self.__current_plan_date)
-                            t_data = TrackingData(id, times[id], poses[i],ref_pose)
-                            self.__tracking_logs.add_tracking_data(t_data)
-                            dist = poses_XY_dist(poses[i],ref_pose)
-                            if dist > tracking_error_value:
-                                tracking_error_value = dist
-                                tracking_error_id = id
-                            
-                        tracking_error_reschedule = (tracking_error_value > self.tracking_err_threshold) and (self.__current_plan.duration > self.end_of_plan_carrot*2)
+            if self.__current_plan is not None:
+                tracking_error_reschedule = self.check_tracking(max_time)
+            else:
+                tracking_error_reschedule = True
                         
-                        current_poses = self.__current_plan.poses_at(max_time-self.__current_plan_date)
-                        
-                        self.__current_plan = self.__current_plan.follow_for(max_time-self.__current_plan_date)
-                        
-                        current_poses_bis = self.__current_plan.poses_at(0.)
-                        for k in current_poses.keys():
-                            dist = poses_XY_dist(current_poses[k],current_poses_bis[k])
-                            assert dist < 1e-3, f"Plan is not consistent with itself (dist is {dist:.2f} m for ac {k})"
-                        
-                        self.__current_plan_date = max_time
-                    except KeyError:
-                        for i,id in enumerate(self.ac_ids):
-                            t_data = TrackingData(id, times[id], poses[i])
-                            self.__tracking_logs.add_tracking_data(t_data)
-                        self.__current_plan = None
-                        self.__fleet_frame_id += 1
-                        pass
-                
+            poses = self.interpolate_poses(max_time)
+            l_poses = [poses[id] for id in self.ac_ids]
             
             if self.verbosity > 1:
-                val,id1,id2 = min_XY_dist(poses)
-                print(f"Minimal current dist is {val}, measured between {self.ac_ids[id1]} and {self.ac_ids[id2]}")
+                val,i1,i2 = min_XY_dist(l_poses)
+                print(f"Minimal current dist is {val}, measured between {self.ac_ids[i1]} and {self.ac_ids[i2]}")
                 print(f"(Minimal required is {self.separation})")
-                print(f"Max time difference between aircraft is {max_time - min_time} seconds")
-                
-            # current_missions = self.get_current_mission_ids()
-            # try:
-            #     current_max_mission_id = max(ids[0] for ids in current_missions.values())
-            #     mission_diff_index = current_max_mission_id - 1
-            #     self.__fleet_frame_id += mission_diff_index
-            # except IndexError:
-            #     self.__fleet_frame_id += 1
-            
 
             if self.end_strategy is FleetManagerEnd.LOOP:
                 self.__fleet_frame_id = self.__fleet_frame_id % self.fleet_frames.keyposes_num
@@ -384,45 +373,134 @@ class FleetManager:
                     return 
             
             try:
+                if self.verbosity > 1:
+                    print(f"Now: {max_time} ; Last schedule: {self.__last_schedule_time} ; Required dt: {self.reschedule_dt}")
                 if self.verbosity > 0:
-                    if (max_time - self.__last_schedule_time) > self.reschedule_dt:
-                        print("Time is up for rescheduling")
                     if self.__current_plan is None:
-                        print("No current plan, scheduling")
+                        print("No current plan...",end=' ')
+                    elif (max_time - self.__last_schedule_time) > self.reschedule_dt:
+                        print("Time is up for rescheduling...",end=' ')
                         
-                if (max_time - self.__last_schedule_time) > self.reschedule_dt or self.__current_plan is None:
-                    impr_threshold = None 
+                    if self.__solver_instance is not None:
+                        print("Solver is running")
+                        
+                
+                if self.__solver_instance is not None:
+                    self.__check_solver()
+                elif (max_time - self.__last_schedule_time) > self.reschedule_dt or self.__current_plan is None:
+                    if self.verbosity > 0:
+                        print("Starting solver")
+                        
+                    impr_threshold = np.inf 
                     if self.__current_plan is not None and not(tracking_error_reschedule):
                         impr_threshold = self.__current_plan.duration * self.relative_improvement_threshold
-                    if self.verbosity > 0 and tracking_error_reschedule is not None:
-                        print(f"Tracking error detected for {tracking_error_id}: {tracking_error_value:.2f}")
-                    if self.__schedule(poses, max_time, improvement_threshold=impr_threshold):
-                        self.__tracking_logs.replanning_timestamps.append(max_time)
-                        self.__last_schedule_time = max_time
+                    self.__launch_solver(l_poses, max_time,impr_threshold)
+
             except FileNotFoundError:
                 print("WARNING: Solver did not find a solution")
-                
-            time.sleep(0.1)
 
-    def __schedule(self, current_poses:list[Pose3D], current_time:float, improvement_threshold:Optional[float]=None) -> bool:
+    def check_tracking(self, current_time:float) -> bool:
+        tracking_error_value = 0.
+        tracking_error_id = None
+        tracking_error_reschedule = False
+                
+        assert self.__current_plan is not None and self.__current_plan_date is not None
+        
+        if self.__current_plan.duration < self.end_of_plan_carrot:
+            self.__current_plan = None
+            self.__current_plan_date = None
+            self.__fleet_frame_id += 1
+        else:
+            try:
+                for id,mng in self.managers.items():
+                    _,p = self.__current_plan.get_path(id)
+                    pose = self.__uavdata_to_pose(mng.uav_data)
+                    t = mng.uav_data.gps_tow
+                    ref_pose = p.pose_at(t-self.__current_plan_date)
+                    expected_speed = self.acs[id].airspeed
+                    tracking_data = TrackingData(id, t, pose, mng.uav_data.airspeed, ref_pose, expected_speed)
+                    self.__tracking_logs.add_tracking_data(tracking_data)
+                    dist = poses_XY_dist(pose,ref_pose)
+                    if dist > tracking_error_value:
+                        tracking_error_value = dist
+                        tracking_error_id = id
+                    
+                # Reschedule only if the error is above the given threshold AND we are not nearing the plan end.
+                tracking_error_reschedule = (tracking_error_value > self.__tracking_err_threshold) and (self.__current_plan.duration > self.end_of_plan_carrot*2)
+                        
+                self.__current_plan = self.__current_plan.follow_for(current_time-self.__current_plan_date)
+                self.__current_plan_date = current_time
+                        
+                if self.verbosity > 0:
+                    if self.__current_plan is not None:
+                        print(f"Tracking error detected for {tracking_error_id}: {tracking_error_value:.2f} (rescheduling: {tracking_error_reschedule})")
+                    if self.verbosity > 1 and self.__current_plan is not None:
+                        print(f"Plan duration: {self.__current_plan.duration:.2f} ; Plan's carrot: {self.end_of_plan_carrot}")
+            
+            # The plan is not equal for everyone... Collect what we can and mark it done
+            except KeyError:
+                for id,mng in self.managers.items():
+                    _,p = self.__current_plan.get_path(id)
+                    pose = self.__uavdata_to_pose(mng.uav_data)
+                    t = mng.uav_data.gps_tow
+                    expected_speed = self.acs[id].airspeed
+                    tracking_data = TrackingData(id, t, pose, mng.uav_data.airspeed, None, expected_speed)
+                    self.__tracking_logs.add_tracking_data(tracking_data)
+                self.__current_plan = None
+                self.__fleet_frame_id += 1
+        return tracking_error_reschedule
+    
+    def __launch_solver(self, current_poses:list[Pose3D], current_time:float, improvement_threshold:float):
         pb = self.fleet_frames.generate_pb_to(self.__fleet_frame_id,current_poses)
-        sol = self.__solve_pp_problem(pb)
+        tempdir = tempfile.gettempdir()
+        now = datetime.datetime.now()
+        input_file = pathlib.Path(tempdir) / f"{now.strftime('%y-%m-%d_%H:%M:%S.%f')}_input.csv"
+        output_file = pathlib.Path(tempdir) / f"{now.strftime('%y-%m-%d_%H:%M:%S.%f')}_output.json"
+        write_pathplanning_problem_to_CSV(input_file,pb)
         
-        if improvement_threshold is not None and self.verbosity > 0:
-            print(f"New plan duration is {sol.duration:.2f} s (threshold is {improvement_threshold:.2f} s)")
+        self.__solver_instance = SolverInstance(async_solve_problem(self.solver_path,
+                input_file,
+                output_file,
+                self.separation,
+                (0.,0.) if self.ignore_wind else (self.wind_x,self.wind_y),
+                self.threads,
+                [self.extra_straight_length] if self.extra_straight_length > 0 else [],
+                [self.extra_straight_length] if self.extra_straight_length > 0 else []),
+                    current_time,improvement_threshold,output_file)
+    
+    def __check_solver(self) -> bool:
+        assert self.__solver_instance is not None, "No solver running!"
+        o = self.__solver_instance.process.poll()
         
-        if improvement_threshold is not None and improvement_threshold < sol.duration:
-            # If the threshold is not met, do not apply new plan
+        # Solver is not done
+        if o is None:
             return False
         
-        self.mission_counter = 1
-        self.__send_fleet_mission(sol,current_time,insert_mode=MissionInsert.REPLACE_ALL)
-        self.__current_plan = sol
-        self.__current_plan_date = current_time
-        end_tow = current_time + sol.duration
+        # Success!
+        if o == 0:
+            sol = parse_trajectories_from_JSON(self.__solver_instance.result_loc)
+            if self.verbosity > 0:
+                print(f"New plan duration is {sol.duration:.2f} s (threshold is {self.__solver_instance.improvement:.2f} s)")
+            
+            if self.__solver_instance.improvement < sol.duration:
+                # If the threshold is not met, do not apply new plan
+                self.__solver_instance = None
+                return False
+            
+            self.__send_fleet_mission(sol,self.__solver_instance.start_time,insert_mode=MissionInsert.REPLACE_ALL)
+            self.__current_plan = sol
+            self.__current_plan_date  = self.__solver_instance.start_time
+            self.__last_schedule_time = self.__solver_instance.start_time
+            self.__tracking_logs.replanning_timestamps.append(self.__solver_instance.start_time)
+            self.__solver_instance = None
+            
+            return True
+        else:
+            print(f"Solver error! Code: {o}")
+            self.__solver_instance = None
+            return False
         
-        return True
-    
+        
         
     def __update_wind(self):
         if self.ignore_wind:
@@ -463,22 +541,58 @@ class FleetManager:
         for id in self.ac_ids:
             self.update_stats(id)
     
-    def get_poses(self) -> tuple[list[Pose3D],dict[int,float]]:
+    def get_timed_poses(self) -> dict[int,tuple[float,Pose3D]]:
         """Return the list of currently known aircraft poses, with their associated onboard timestamps
 
         Returns:
             tuple[list[Pose3D],dict[int,float]]: First list contain the poses, the second the senders' timestamp (GPS ToW, in seconds) indexed by ac_id
         """
-        output_poses = []
-        output_times = dict()
+        output = dict()
+        for id in self.ac_ids:
+            mng = self.managers[id]
+            data = mng.uav_data
+            pose = self.__uavdata_to_pose(data)
+            output[id] = (data.gps_tow,pose)
+        return output
+    
+    def __latlon_to_pose(self,lat:float,lon:float,alt:float,heading_deg:float) -> Pose3D:
+        """ Convert from latlon heading to projected coordinates using register transform
+
+        Args:
+            lat (float): Latitude
+            lon (float): Longitude
+            alt (float): Altitude above MSL (meters)
+            heading_deg (float): Heading in degrees, such that 0° is headed North, 90° is East
+
+        Returns:
+            Pose3D: Pose in the local frame
+        """
+        xx, yy = self.transformer.transform(lat,lon)
+        pose = Pose3D(xx,yy,alt,np.pi/2-np.deg2rad(heading_deg))
+        return pose
+    
+    def __uavdata_to_pose(self,data:UAVData) -> Pose3D:
+        return self.__latlon_to_pose(data.lat,data.lon,data.alt,data.heading)
+    
+    def interpolate_poses(self,at:float) -> dict[int,Pose3D]:
+        """Return the interpolated positions of the tracked aircraft based on a simple linear interpolation (assume constant heading)
+
+        Args:
+            at (int): Time (as GPS ToW, in seconds)
+
+        Returns:
+            dict[int,Pose3D]: Estimated aircraft positions
+        """
+        output = dict()
         for id in self.ac_ids:
             mng = self.managers[id]
             data = mng.uav_data
             xx, yy = self.transformer.transform(data.lat,data.lon)
-            pose = Pose3D(xx,yy,data.alt,np.pi/2-np.deg2rad(data.heading))
-            output_poses.append(pose)
-            output_times[id] = data.gps_tow
-        return output_poses,output_times
+            tref = data.gps_tow
+            dt = at - tref
+            pose = Pose3D(xx+data.veast*dt,yy+data.vnorth,data.alt+data.vup,np.pi/2-np.deg2rad(data.heading))
+            output[id] = pose
+        return output
     
     def get_current_mission_ids(self) -> dict[int,list[int]]:
         output_mission_ids = dict()
@@ -526,6 +640,8 @@ class FleetManager:
             raise e
     
     def __send_direct_path_missions(self,pbs:list[AC_PP_Problem],insert_mode:MissionInsert):
+        mng_msg = []
+        
         for pb in pbs:
             stats = pb.stats
             id = stats.id
@@ -540,11 +656,16 @@ class FleetManager:
             xend = pb.end.x - xhome
             yend = pb.end.y - yhome
             
-            manager.add_mission_local_path(self.mission_counter,[(xstart,ystart),(xend,yend)],pb.end.z,insert_mode=insert_mode)
+            msg = manager.make_mission_local_path(self.mission_counter,[(xstart,ystart),(xend,yend)],pb.end.z,insert_mode=insert_mode)
+            mng_msg.append((manager,msg))
         self.mission_counter += 1
+        
+        self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
             
     
     def __send_goto_missions(self,dests:dict[int,Pose3D],insert_mode:MissionInsert):
+        mng_msg = []
+        
         for k,v in dests.items():
             manager = self.managers[k]
             
@@ -554,27 +675,35 @@ class FleetManager:
             xdest = v.x - xhome
             ydest = v.y - yhome
             
-            manager.add_mission_local_point(self.mission_counter,xdest,ydest,v.z,insert_mode=insert_mode)
+            msg = manager.make_mission_local_point(self.mission_counter,xdest,ydest,v.z,insert_mode=insert_mode)
+            mng_msg.append((manager,msg))
         self.mission_counter += 1
+        
+        self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
     
     def __send_fleet_mission(self,plan:FleetPlan,times:dict[int,float]|float,insert_mode:MissionInsert):
+        mng_msg = []
         mission_id_incr = 0
         for stats,path in plan.trajectories:
             t = times[stats.id] if isinstance(times,dict) else times
             if self.full_dubins:
-                incr = self.__make_path_mission(stats.id,path,t,insert_mode)
+                mng_msg.append(self.__make_path_mission(stats.id,path,t,insert_mode))
+                incr = 1
             else:
                 incr = 0
                 first = True
                 for i,e in enumerate(path.sections):
                     if e.length < 1e-3:
                         continue
-                    incr += self.__make_dubel_mission(stats.id,i,e,insert_mode if first else MissionInsert.APPEND)
+                    mng_msg.append(self.__make_dubel_mission(stats.id,i,e,insert_mode if first else MissionInsert.APPEND))
+                    incr += 1
                     first = False
             mission_id_incr = max(mission_id_incr,incr)
         self.mission_counter += mission_id_incr
+        self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
+
         
-    def __make_dubel_mission(self,ac_id:int, el_id:int, e:BasicPath, insert_mode:MissionInsert) -> int:
+    def __make_dubel_mission(self,ac_id:int, el_id:int, e:BasicPath, insert_mode:MissionInsert) -> tuple[MissionManager,PprzMessage]:
         manager = self.managers[ac_id]
         
         home = manager.get_home()
@@ -605,17 +734,15 @@ class FleetManager:
             e.length,
             pz,
             ]
-                
-        manager.add_mission_custom(
+        
+        return manager,manager.make_mission_custom(
             self.mission_counter+el_id,
             'DUBEL',
             params,
             insert_mode=insert_mode
         )
         
-        return 1
-        
-    def __make_path_mission(self,ac_id:int,p:Path,start_time:float,insert_mode:MissionInsert) -> int:
+    def __make_path_mission(self,ac_id:int,p:Path,start_time:float,insert_mode:MissionInsert) -> tuple[MissionManager,PprzMessage]:
         manager = self.managers[ac_id]
         speed = manager.uav_data.groundspeed_sp if self.ignore_wind else manager.uav_data.airspeed_sp
         if speed == 0.: # Speed set point is not known
@@ -671,14 +798,12 @@ class FleetManager:
                 path_extra_length(p)
             ]
         
-        manager.add_mission_custom(
+        return manager,manager.make_mission_custom(
             self.mission_counter,
             'DUBIN',
             params,
             insert_mode=insert_mode
         )
-
-        return 1
             
 
 if __name__ == '__main__':
@@ -690,7 +815,7 @@ if __name__ == '__main__':
         20 : 'blue'
     }
     
-    stat_list = [ACStats(i,13.5,10/60,60) for i in [17,18,20]]
+    stat_list = [ACStats(i,15.1,10/60,60) for i in [17,18,20]]
     separation = 30
     formation = chevron_formation(len(stat_list),separation*1.2)
     
@@ -723,6 +848,10 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
+    if args.carrot < 0.:
+        raise ValueError(f"--carrot argument must be non-negative! Current value is: {args.carrot}")
+
+    
     manager = FleetManager(
         fleet_plan,
         args.dubins_solver,
@@ -732,13 +861,11 @@ if __name__ == '__main__':
         end_strategy=FleetManagerEnd.LOOP,
         speed_ctl=args.speed_ctl,
         verbosity=args.verbose,
-        full_dubins=not(args.dubins_el)
+        full_dubins=not(args.dubins_el),
+        tracking_error=16
     )
     
-    if args.carrot < 0.:
-        raise ValueError(f"--carrot argument must be non-negative! Current value is: {args.carrot}")
     manager.end_of_plan_carrot = args.carrot
-    manager.tracking_err_threshold = 16
     
     try:
         manager.wait_ready()
@@ -758,6 +885,7 @@ if __name__ == '__main__':
         print("Intettupted!")
     except Exception as e:
         print(f"EXCEPTION: {e}")
+        raise e
     finally:
         print("Closing")
         manager.closing()
@@ -770,7 +898,7 @@ if __name__ == '__main__':
     with open(f"logs/logs_{now_str}.pkl","wb") as f:
         pickle.dump(logs, f)
             
-    fig,traj_ax,tracking_ax,sep_ax,s1,s2 = plot_trackingdata(logs,color_dict)
+    fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict)
     fig.set_size_inches(16,9)
     fig.tight_layout()
     plt.show()
