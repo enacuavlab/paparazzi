@@ -1039,14 +1039,22 @@ static bool track_dubins_element(DubinsElement_t* el, float* remaining_length)
 
     float dtheta = end_rad_qdr - curr_rad_qdr;
     NormCourseRad(dtheta);
+    // IPRINTF("Current QDR: %.1f ; Target QDR: %.1f ; Delta (normalized): %.1f ; ",
+      // DegOfRad(curr_rad_qdr),
+      // DegOfRad(end_rad_qdr),
+      // DegOfRad(dtheta));
+
     if (el->radius > 0)
     {
-      *remaining_length = dtheta*el->radius;
+      *remaining_length = (2*M_PI - dtheta)*el->radius;
+      // IPRINTF("Remaining length (going positive): %.2f\n",*remaining_length);
     }
     else
     {
-      *remaining_length = -(2*M_PI - dtheta)*el->radius;
+      *remaining_length = -(dtheta)*el->radius;
+      // IPRINTF("Remaining length (going negative): %.2f\n",*remaining_length);
     }
+    
 
     // IPRINTF("Expected turning: %.2f ° ; Current turning : %.2f °\n",
     //   DegOfRad(el->length/el->radius),
@@ -1137,7 +1145,10 @@ bool nav_extended_dubins_init()
     path_elements[EXTENDED_DUBINS_PATH_ELEMENTS_N-1].radius      = 0.;
     path_elements[EXTENDED_DUBINS_PATH_ELEMENTS_N-1].length      = extra_straight_length*2; // Include the end and 'pre-plan' the starting straight of the next plan
     
-    ref_problem.end_time += extra_straight_length/NOMINAL_AIRSPEED;
+    if (ref_problem.end_time > 0)
+    {      
+      ref_problem.end_time += extra_straight_length/NOMINAL_AIRSPEED;
+    }
   }
   else
   {
@@ -1164,6 +1175,10 @@ bool nav_extended_dubins_init()
     path_elements[1+i] = sol.elements[i];
   }
 
+  #if DEBUG
+  float total_length = 0.;
+  #endif
+
   for(int j = 0; j < EXTENDED_DUBINS_PATH_ELEMENTS_N; j++)
   {
     IPRINTF("Element %d : Length %.3f ; Radius %.3f ; Start (%.3f , %.3f , %.3f)\n",
@@ -1177,6 +1192,8 @@ bool nav_extended_dubins_init()
     #if DEBUG
     assert(path_elements[j].length >= 0.);
     assert(!isnan(path_elements[j].length));
+
+    total_length += path_elements[j].length;
     #endif
     
     if (dubins_draw)
@@ -1192,6 +1209,9 @@ bool nav_extended_dubins_init()
       }
     }
   }
+  // #if DEBUG
+  // IPRINTF("Expected time: %.2f  ;  Got: %.2f\n",ref_problem.end_time - ((float)gps.tow)/1e3,total_length/NOMINAL_AIRSPEED);
+  // #endif
 
   mission_init_straight_flag = false; // Reset for ulterior utilisation
   initial_nav_rad_angle = NAN;
@@ -1243,21 +1263,17 @@ bool nav_extended_dubins_track(void)
         remaining_distance += path_elements[i].length;
       }
 
-      float f_tow = gps.tow / 1000;
+      float f_tow = ((float)gps.tow) / 1000.f;
       float dt = ref_problem.end_time - f_tow;
       float current_dt = remaining_distance/v_ctl_auto_airspeed_setpoint;
 
-      if (ABS(current_dt - dt) < 0.5)
-      {
-        v_ctl_auto_airspeed_setpoint = NOMINAL_AIRSPEED;
-      }
-      else
+      if (ABS(current_dt - dt) > 0.5)
       {
         v_ctl_auto_airspeed_setpoint = remaining_distance/dt;
-        Bound(v_ctl_auto_airspeed_setpoint, 0.9 * NOMINAL_AIRSPEED, 1.1 * NOMINAL_AIRSPEED);
+        Bound(v_ctl_auto_airspeed_setpoint, 0.8 * NOMINAL_AIRSPEED, 1.2 * NOMINAL_AIRSPEED);
       }
 
-      IPRINTF("Time delta (current - expected): %.2f (s)\n",current_dt - dt);
+      // IPRINTF("Time delta (current - expected): %.2f (s) ; Speed setpoint: %.1f (m/s)\n",current_dt - dt,v_ctl_auto_airspeed_setpoint);
 
     }
   }
