@@ -63,7 +63,9 @@ class TrackingData:
     ac_id: int
     timestamp: int|float
     pose: Pose3D
+    hspeed: float 
     expected_pose: Optional[Pose3D] = None
+    expected_speed: Optional[float] = None
     
     def XY_dist(self) -> Optional[float]:
         assert self.expected_pose is not None, "Expected pose is not set"
@@ -129,6 +131,14 @@ class TrackingLogs:
             errors[ac_id] = [(data.timestamp, data.XY_dist()) for data in log if data.expected_pose is not None]
         return errors
     
+    def get_speeds(self) -> dict[int,list[tuple[float,float,float]]]:
+        """Dictionnary of datalist, indexed by AC ID. Each list contains tuples with (timestamp,measured hspeed, expected hspeed)
+        """
+        speeds = {}
+        for ac_id, log in self.logs.items():
+            speeds[ac_id] = [(data.timestamp, data.hspeed, data.expected_speed) for data in log if data.expected_speed is not None]
+        return speeds
+    
     def sort_logs(self):
         for ac_id, log in self.logs.items():
             if ac_id not in self._sorted:
@@ -158,9 +168,9 @@ class TrackingLogs:
             x = np.interp(timestamp, poses[:, -1], poses[:, 0])
             y = np.interp(timestamp, poses[:, -1], poses[:, 1])
             z = np.interp(timestamp, poses[:, -1], poses[:, 2])
-            heading =np.interp(timestamp, poses[:, -1], poses[:, 3])
+            heading = np.interp(timestamp, poses[:, -1], poses[:, 3])
             output[ac_id] = Pose3D(x, y, z, heading)
-        return output
+        return output        
     
     def get_min_sep_at_timestamp(self, timestamp: int|float) -> tuple[float,int,int]:
         poses = self.get_poses_at_timestamp(timestamp)
@@ -168,7 +178,7 @@ class TrackingLogs:
         p_list = [poses[id] for id in ids_list]
         min_sep,i1,i2 = min_XY_dist(p_list)
         return min_sep, ids_list[i1], ids_list[i2]
-    
+        
     def get_all_min_sep(self) -> list[tuple[float|int,float,int,int]]:
         timestamps = sorted(self.get_all_timestamps())
         return [(t,*self.get_min_sep_at_timestamp(t)) for t in timestamps]
@@ -179,33 +189,35 @@ class TrackingLogs:
             trajectories[ac_id] = [data.to_timed_pose() for data in log]
         return trajectories
     
-    def traj_interpolator(self, ac_id:int) -> Callable[[int|float],Pose3D]:
+    def traj_interpolator(self, ac_id:int) -> Callable[[int|float],tuple[Pose3D,float]]:
         log = self.logs[ac_id]
         try:
             poses = self._tpose_lists[ac_id]
         except KeyError:
             poses = []
             for d in log:
-                p = np.zeros(5,dtype=float)
+                p = np.zeros(6,dtype=float)
                 p[0] = d.pose.x
                 p[1] = d.pose.y
                 p[2] = d.pose.z
                 p[3] = d.pose.theta
-                p[4] = d.timestamp
+                p[4] = d.hspeed
+                p[5] = d.timestamp
                 poses.append(p)
             poses = np.array(poses)
             self._tpose_lists[ac_id] = poses
             
             
-        def interpolator(timestamp:int|float) -> Pose3D:
+        def interpolator(timestamp:int|float) -> tuple[Pose3D,float]:
             x = np.interp(timestamp, poses[:, -1], poses[:, 0])
             y = np.interp(timestamp, poses[:, -1], poses[:, 1])
             z = np.interp(timestamp, poses[:, -1], poses[:, 2])
-            heading =np.interp(timestamp, poses[:, -1], poses[:, 3])
-            return Pose3D(x, y, z, heading)
+            heading = np.interp(timestamp, poses[:, -1], poses[:, 3])
+            hspeed = np.interp(timestamp, poses[:, -1], poses[:, 4])
+            return Pose3D(x, y, z, heading),hspeed
         return interpolator
     
-    def ref_interpolator(self, ac_id:int) -> Callable[[int|float],Pose3D]:
+    def ref_interpolator(self, ac_id:int) -> Callable[[int|float],tuple[Pose3D,float]]:
         log = self.logs[ac_id]
         try:
             poses = self._trefs_lists[ac_id]
@@ -214,23 +226,25 @@ class TrackingLogs:
             for d in log:
                 if d.expected_pose is None:
                     continue
-                p = np.zeros(5,dtype=float)
+                p = np.zeros(6,dtype=float)
                 p[0] = d.expected_pose.x
                 p[1] = d.expected_pose.y
                 p[2] = d.expected_pose.z
                 p[3] = d.expected_pose.theta
-                p[4] = d.timestamp
+                p[4] = d.expected_speed if d.expected_speed is not None else np.nan
+                p[5] = d.timestamp
                 poses.append(p)
             poses = np.array(poses)
             self._trefs_lists[ac_id] = poses
             
             
-        def interpolator(timestamp:int|float) -> Pose3D:
+        def interpolator(timestamp:int|float) -> tuple[Pose3D,float]:
             x = np.interp(timestamp, poses[:, -1], poses[:, 0])
             y = np.interp(timestamp, poses[:, -1], poses[:, 1])
             z = np.interp(timestamp, poses[:, -1], poses[:, 2])
-            heading =np.interp(timestamp, poses[:, -1], poses[:, 3])
-            return Pose3D(x, y, z, heading)
+            heading = np.interp(timestamp, poses[:, -1], poses[:, 3])
+            hspeed = np.interp(timestamp, poses[:, -1], poses[:, 4])
+            return Pose3D(x, y, z, heading),hspeed
         return interpolator
     
     def ref_trajectories(self) -> DictOfPoseTrajectories:

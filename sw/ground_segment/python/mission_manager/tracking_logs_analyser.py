@@ -23,9 +23,9 @@ from uav_data import UAVData, TrackingLogs
 def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str], 
                       hide_refs:bool=False, 
                       hide_reschedules:bool=False,
-                      hide_keyframes:bool=False) -> tuple[Figure,Axes,Axes,Axes,SpanSelector,SpanSelector]:
+                      hide_keyframes:bool=False) -> tuple[Figure,Axes,list[Axes],list[SpanSelector]]:
     ## Plotting
-    fig,axes = plt.subplots(2,2,
+    fig,axes = plt.subplots(3,2,
                             sharex=True,sharey=False,
                             width_ratios=[2,1],)
     
@@ -33,6 +33,7 @@ def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str],
     gs = axes[0,0].get_gridspec()
     axes[0,0].remove()
     axes[1,0].remove()
+    axes[2,0].remove()
     
     traj_ax = fig.add_subplot(gs[:,0])
     
@@ -45,9 +46,10 @@ def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str],
     tracking_ax:Axes = axes[0,1]
     _plot_tracking(tracking_ax, logs, color_dict)
     
+    speed_ax:Axes = axes[1,1]
+    _plot_speed(speed_ax,logs,color_dict)
     
-    
-    sep_ax:Axes = axes[1,1]
+    sep_ax:Axes = axes[2,1]
     _plot_separation(sep_ax, logs)
     
     time_lims = sep_ax.get_xlim()
@@ -55,16 +57,24 @@ def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str],
     track_l_rect:Optional[Rectangle] = None
     track_r_rect:Optional[Rectangle] = None
     
+    speed_l_rect:Optional[Rectangle] = None
+    speed_r_rect:Optional[Rectangle] = None
+    
     sep_l_rect:Optional[Rectangle] = None
     sep_r_rect:Optional[Rectangle] = None
     
     def onselect(tmin,tmax):
-        nonlocal track_l_rect, track_r_rect, sep_l_rect, sep_r_rect, cover_lines
+        nonlocal track_l_rect, track_r_rect, speed_l_rect, speed_r_rect, sep_l_rect, sep_r_rect, cover_lines
         
         if track_l_rect is not None:
             track_l_rect.remove()
         if track_r_rect is not None:
             track_r_rect.remove()
+            
+        if speed_l_rect is not None:
+            speed_l_rect.remove()
+        if speed_r_rect is not None:
+            speed_r_rect.remove()
             
         if sep_l_rect is not None:
             sep_l_rect.remove()
@@ -74,6 +84,10 @@ def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str],
         track_l_rect = tracking_ax.axvspan(time_lims[0],tmin,color='grey',alpha=0.3)
         track_r_rect = tracking_ax.axvspan(tmax,time_lims[1],color='grey',alpha=0.3)
         tracking_ax.set_xlim(time_lims)
+        
+        speed_l_rect = speed_ax.axvspan(time_lims[0],tmin,color='grey',alpha=0.3)
+        speed_r_rect = speed_ax.axvspan(tmax,time_lims[1],color='grey',alpha=0.3)
+        speed_ax.set_xlim(time_lims)
         
         sep_l_rect = sep_ax.axvspan(time_lims[0],tmin,color='grey',alpha=0.3)
         sep_r_rect = sep_ax.axvspan(tmax,time_lims[1],color='grey',alpha=0.3)
@@ -91,9 +105,11 @@ def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str],
         
         fig.canvas.draw_idle()
         
-    span_track = SpanSelector(tracking_ax,onselect,'horizontal',useblit=True,drag_from_anywhere=True)    
+    span_track = SpanSelector(tracking_ax,onselect,'horizontal',useblit=True,drag_from_anywhere=True)
+    span_speed = SpanSelector(speed_ax,onselect,'horizontal',useblit=True,drag_from_anywhere=True)
     span_sep   = SpanSelector(sep_ax,onselect,'horizontal',useblit=True,drag_from_anywhere=True)    
-    return fig,traj_ax,tracking_ax,sep_ax,span_track,span_sep
+    
+    return fig,traj_ax,[tracking_ax,speed_ax,sep_ax],[span_track,span_speed,span_sep]
 
 def _plot_trajs(traj_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str], 
                 hide_refs:bool, hide_reschedules:bool, hide_keyframes:bool,
@@ -154,8 +170,8 @@ def _plot_trajs(traj_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str],
             r_poses = []
             a_poses = []
             for t in replanning_timestamps:
-                r_poses.append((t,r_interp(t)))
-                a_poses.append((t,a_interp(t)))
+                r_poses.append((t,r_interp(t)[0]))
+                a_poses.append((t,a_interp(t)[0]))
             actual_replanning_poses[id] = a_poses
             ref_replanning_poses[id] = r_poses
 
@@ -202,12 +218,41 @@ def _plot_separation(sep_ax:Axes, logs:TrackingLogs):
     sep_ax.plot(ts,vals)
     sep_ax.set_ylim(0.,100)
     sep_ax.hlines(logs.separation_threshold,ts[0],ts[-1],colors='k',linestyles='dashed',label=f'Required Separation: {logs.separation_threshold:.1f} m')
-    sep_ax.vlines(replanning_timestamps,0.,max(vals),colors='grey',linestyles='dotted',label='Effective replanning')
+    sep_ax.vlines(replanning_timestamps,0.,100,colors='grey',linestyles='dotted',label='Effective replanning')
     sep_ax.set_xlabel("Time since takeoff (s)")
     sep_ax.set_ylabel("Minimum Separation (m)")
     sep_ax.grid(True,'both','y')
     sep_ax.legend()
-
+    
+def _plot_speed(speed_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str]):
+    
+    speeds = logs.get_speeds()
+    replanning_timestamps = logs.replanning_timestamps
+    
+    min_t = np.inf
+    max_t = -np.inf
+    max_val = -np.inf
+    
+    for id,data in speeds.items():
+        ts = [t[0] for t in data]
+        min_t = min(min_t,min(ts))
+        max_t = max(max_t,max(ts))
+        vals = [t[1] for t in data]
+        expected = [t[2] for t in data]
+        max_val = max(max_val,max(vals))
+        speed_ax.plot(ts,vals,label=f"{id}",color=color_dict[id],linestyle='-')
+        speed_ax.plot(ts,expected,label=f"{id} ref",color=color_dict[id],linestyle=':')
+        
+    
+    speed_ax.set_ymargin(0.05)
+    ymin,ymax = speed_ax.get_ylim()
+    speed_ax.vlines(replanning_timestamps,ymin,ymax,colors='grey',linestyles='dotted',label='Effective replanning')
+    # tracking_ax.set_xlabel("Time (s)")
+    speed_ax.set_ylabel("Airspeed (m/s)")
+    speed_ax.set_xticks(replanning_timestamps)
+    speed_ax.grid(True,'both','y')
+    # speed_ax.legend() 
+    
 def _plot_tracking(tracking_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str]):
     
     errs = logs.get_errors()
@@ -229,22 +274,23 @@ def _plot_tracking(tracking_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str]
     
     avg_err /= len(errs)
     tracking_ax.hlines(logs.tracking_error_threshold,min_t,max_t,colors='k',linestyles='dashed',label=f'Tracking error threshold: {logs.tracking_error_threshold:.1f} m')
-    tracking_ax.vlines(replanning_timestamps,0.,max_val,colors='grey',linestyles='dotted',label='Effective replanning')
+    tracking_ax.set_ymargin(0.05)
+    ymin,ymax = tracking_ax.get_ylim()
+    tracking_ax.vlines(replanning_timestamps,ymin,ymax,colors='grey',linestyles='dotted',label='Effective replanning')
     # tracking_ax.set_xlabel("Time (s)")
     tracking_ax.set_ylabel("Tracking error (m)")
-    tracking_ax.set_ylim(0.)
     tracking_ax.set_title(f"Tracking error (avg: {avg_err:.1f} m)")
     tracking_ax.set_xticks(replanning_timestamps)
     tracking_ax.grid(True,'both','y')
-    tracking_ax.legend()
+    tracking_ax.legend()    
     
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyse tracking logs")
     parser.add_argument("logfile",type=pathlib.Path,help="Path to the log file to analyse")
-    parser.add_argument("--refs",action='store_true',help="Show the reference trajectories in the plot (useful when they are too cluttered)")
-    parser.add_argument("--reschedules",action='store_true',help="Show the rescheduling points in the plot")
-    parser.add_argument("--keyframes",action='store_true',help="Show the keyframe poses in the plot")
+    parser.add_argument("--no-refs",dest='no_refs',action='store_true',help="Hide the reference trajectories in the plot (useful when they are too cluttered)")
+    parser.add_argument("--no-reschedules",dest='no_reschedules',action='store_true',help="Hide the rescheduling points in the plot")
+    parser.add_argument("--no-keyframes",dest='no_keyframes',action='store_true',help="Hide the keyframe poses in the plot")
     args = parser.parse_args()
     
     with open(args.logfile,"rb") as f:
@@ -256,10 +302,10 @@ if __name__ == "__main__":
     for i,stat in enumerate(logs.ac_stats):
         color_dict[stat.id] = colorlist[i%len(colorlist)]
         
-    fig,traj_ax,tracking_ax,sep_ax,s1,s2 = plot_trackingdata(logs,color_dict,
-                                                       not(args.refs),
-                                                       not(args.reschedules),
-                                                       not(args.keyframes))
+    fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict,
+                                                       args.no_refs,
+                                                       args.no_reschedules,
+                                                       args.no_keyframes)
     
     fig.set_size_inches(16,9)
     fig.tight_layout()
