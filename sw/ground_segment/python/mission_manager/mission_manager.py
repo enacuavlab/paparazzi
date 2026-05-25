@@ -484,6 +484,7 @@ async def send_and_ack_msg(mng:MissionManager, msg:PprzMessage, retry:int=MAX_RE
     e = mng.events.setdefault(mission_id, Event())
     if mng.verbose:
         print(msg)
+        
     await asyncio.sleep(ack_time)
     if e.is_set():
         del mng.events[mission_id]
@@ -500,7 +501,7 @@ async def send_and_ack_msg(mng:MissionManager, msg:PprzMessage, retry:int=MAX_RE
             return
             
     del mng.events[mission_id]
-    raise Exception(f"Mission element no {mission_id} not ACKed in {retry*ack_time:.1f}s by {mng.uav_data.ac_id}!")
+    raise TimeoutError(f"Mission element no {mission_id} not ACKed in {retry*ack_time:.1f}s by {mng.uav_data.ac_id}!")
     
 
 if __name__ == '__main__':
