@@ -13,17 +13,17 @@
 
         <target name="ap" board="tawaki_2.0">
             <module name="radio_control" type="sbus">
-                <define name="RADIO_TILT" value="RADIO_AUX4"/>
-                <define name="RADIO_KILL_SWITCH" value="RADIO_AUX3"/>
+                <define name="RADIO_TILT" value="RADIO_AUX1"/>
+                <define name="RADIO_KILL_SWITCH" value="RADIO_KILL"/>
             </module>
-            <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/> <!-- EKF Magnetometer -->
+            <!--define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/--> <!-- EKF Magnetometer -->
             <define name="INDI_FUNCTIONS_RC_CHANNEL" value="6"/> <!-- tilt-rotor INDI RC Channel -->
         </target>
 
         <target name="nps" board="pc">
             <module name="fdm" type="jsbsim"/>
             <module name="radio_control" type="ppm">
-                <define name="RADIO_TILT" value="RADIO_AUX4"/>
+                <define name="RADIO_TILT" value="RADIO_AUX1"/>
             </module>
             <define name="TAWAKIV2_IMU_ROT" value=""/>
             <define name="TAWAKIV2_MAG_ROT" value=""/>
@@ -45,7 +45,11 @@
             <configure name="DSHOT_BIDIR" value="FALSE"/>
         </module>
         <!-- ACTUATORS IN PWM : TILT SERVOS -->
-        <module name="actuators" type="pwm"/>
+        <module name="actuators" type="pwm">
+<!--            <define name="USE_PWM_TIM3" value="TRUE"/>-->
+<!--            <define name="USE_PWM5" value="TRUE"/>-->
+<!--            <define name="USE_PWM6" value="TRUE"/>-->
+        </module>
 
         <module name="board" type="tawaki_2.0"/>
 
@@ -77,23 +81,7 @@
             <define name="WLS_N_U_MAX" value = "8"/>
             <define name="WLS_N_V_MAX" value = "6"/>
         </module>
-        <module name="eff_scheduling_atlas">
-            <define name="ACTUATORS_NB"                         value="6"/>
-            <define name="ATLAS_EFF_IXX"                        value="0.00372"/>
-            <define name="ATLAS_EFF_IYY"                        value="0.00389"/>
-            <define name="ATLAS_EFF_IZZ"                        value="0.01300"/>
-            <define name="ATLAS_EFF_RX"                         value="{0.085,-0.085,-0.085,0.085}"/>
-            <define name="ATLAS_EFF_RY"                         value="{0.085,0.085,-0.085,-0.085}"/>
-            <define name="ATLAS_EFF_RZ"                         value="{0.0,0.0,0.0,0.0}"/>
-            <define name="ATLAS_EFF_SPIN_DIR"                   value="{1.0,-1.0,1.0,-1.0}"/>
-            <define name="ATLAS_EFF_K_DT_DPPRZ"                 value="{1.5e-4,5.0e-8}"/>
-            <define name="ATLAS_EFF_KAPPA"                      value="0.0483"/>
-            <define name="ATLAS_EFF_K_TILT_DEFLECT"             value="{0.7854,8.18e-5}"/>
-            <define name="ATLAS_EFF_K_LIFT"                     value="0.311"/>
-            <define name="ATLAS_EFF_V_WING"                     value="10.0"/>
-            <define name="ATLAS_MOTOR_HOVER"                    value="4000"/>
-            <define name="ATLAS_MOTOR_IDLE"                     value="1000"/>
-        </module>
+        <module name="eff_scheduling_atlas"/>
         <module name="guidance" type="indi_hybrid_tiltrotor">
             <define name="GUIDANCE_INDI_PUSHER_INDEX"           value="4"/>
             <define name="GUIDANCE_INDI_MASS"                   value="0.75"/>
@@ -115,22 +103,24 @@
     </firmware>
 
     <servos driver="DShot">
-        <servo name="MOTOR_FR"    no="1" min="1000" neutral="1100" max="1800"/>
-        <servo name="MOTOR_BR"    no="2" min="1000" neutral="1100" max="1800"/>
-        <servo name="MOTOR_BL"    no="3" min="1000" neutral="1100" max="1800"/>
-        <servo name="MOTOR_FL"    no="4" min="1000" neutral="1100" max="1800"/>
+        <servo name="MOTOR_FR"    no="1" min="0" neutral="100" max="2000"/>
+        <servo name="MOTOR_BR"    no="2" min="0" neutral="100" max="2000"/>
+        <servo name="MOTOR_BL"    no="3" min="0" neutral="100" max="2000"/>
+        <servo name="MOTOR_FL"    no="4" min="0" neutral="100" max="2000"/>
     </servos>
 
     <servos driver="Pwm">
-        <servo name="TILT_RIGHT"    no="5" min="900" neutral="900" max="2000"/>
-        <servo name="TILT_LEFT"     no="6" min="2000" neutral="2000" max="000"/>
+        <servo name="TILT_RIGHT"    no="1" min="1080" neutral="1140" max="1514"/>
+        <servo name="TILT_LEFT"     no="2" min="1590" neutral="1530" max="1150"/>
     </servos>
 
     <commands>
-        <axis name="MOTOR_FR"       group="REAL"    failsafe_value="-9600"/>
-        <axis name="MOTOR_BR"       group="REAL"    failsafe_value="-9600"/>
-        <axis name="MOTOR_BL"       group="REAL"    failsafe_value="-9600"/>
-        <axis name="MOTOR_FL"       group="REAL"    failsafe_value="-9600"/>
+        <axis name="MOTOR_FR"       group="REAL"    failsafe_value="MOTOR_STOP"/>
+        <axis name="MOTOR_BR"       group="REAL"    failsafe_value="MOTOR_STOP"/>
+        <axis name="MOTOR_BL"       group="REAL"    failsafe_value="MOTOR_STOP"/>
+        <axis name="MOTOR_FL"       group="REAL"    failsafe_value="MOTOR_STOP"/>
+        <axis name="TILT_RIGHT"     group="REAL"    failsafe_value="1140"/>
+        <axis name="TILT_LEFT"      group="REAL"    failsafe_value="1530"/>
 
         <axis name="PITCH"          group="VIRTUAL" failsafe_value="0"/>
         <axis name="ROLL"           group="VIRTUAL" failsafe_value="0"/>
@@ -140,12 +130,12 @@
     </commands>
 
     <command_laws>
-        <set servo="MOTOR_FR"       value="autopilot.motors_on ? actuators_pprz[0] : -MAX_PPRZ"/>
-        <set servo="MOTOR_BR"       value="autopilot.motors_on ? actuators_pprz[1] : -MAX_PPRZ"/>
-        <set servo="MOTOR_BL"       value="autopilot.motors_on ? actuators_pprz[2] : -MAX_PPRZ"/>
-        <set servo="MOTOR_FL"       value="autopilot.motors_on ? actuators_pprz[3] : -MAX_PPRZ"/>
-        <set servo="TILT_RIGHT"     value="autopilot.motors_on ? actuators_pprz[4] : 0"/>
-        <set servo="TILT_LEFT"      value="autopilot.motors_on ? actuators_pprz[5] : 0"/>
+        <set servo="MOTOR_FR"       value="@MOTOR_FR"/>
+        <set servo="MOTOR_BR"       value="@MOTOR_BR"/>
+        <set servo="MOTOR_BL"       value="@MOTOR_BL"/>
+        <set servo="MOTOR_FL"       value="@MOTOR_FL"/>
+        <set servo="TILT_RIGHT"     value="@TILT_RIGHT"/>
+        <set servo="TILT_LEFT"      value="@TILT_LEFT"/>
     </command_laws>
 
     <section name="IMU" prefix="IMU_">
@@ -165,11 +155,25 @@
                 <field name="abi_id" value="24"/>
                 <field name="calibrated" type="struct">
                     <field name="neutral" value="true"/>
-                    <field name="scale" value="true"/>
+                    <field name="scale_f" value="true"/>
                     <field name="rotation" value="true"/>
                 </field>
-                <field name="neutral" value="-15,-2,55" type="int[]"/>
-                <field name="scale" value="{{6605,5456,56432},{2691,2225,22965}}"/>
+                <field name="neutral" value="-3,-14,22" type="int[]"/>
+                <field name="scale_f" value="{ 2.4525, 2.4520, 2.4547 }"/>
+                <field value="TAWAKIV2_IMU_ROT"/>
+            </field>
+        </define>
+
+        <define name="MAG_CALIB" type="array">
+            <field type="struct">
+                <field name="abi_id" value="3"/>
+                <field name="calibrated" type="struct">
+                    <field name="neutral" value="true"/>
+                    <field name="scale_f" value="true"/>
+                    <field name="rotation" value="true"/>
+                </field>
+                <field name="neutral" value="-1918,92,-438" type="int[]"/>
+                <field name="scale_f" value="{ 0.7096, 0.6857, 0.7606 }"/>
                 <field value="TAWAKIV2_IMU_ROT"/>
             </field>
         </define>
@@ -240,6 +244,9 @@
         <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 12.66, 25.6, 25.6}"/>
         <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 170, 170}"/>
         <define name="ACT_IS_SERVO" value="{0, 0, 0, 0, 1, 1}"/>
+
+        <!-- INDI outputs to commands association -->
+        <define name="COMMANDS" value="{COMMAND_MOTOR_FR, COMMAND_MOTOR_BR, COMMAND_MOTOR_BL, COMMAND_MOTOR_FL, COMMAND_TILT_RIGHT, COMMAND_TILT_LEFT}"/>
 
         <!-- Adaptive Learning Rate -->
         <define name="USE_ADAPTIVE" value="FALSE"/>

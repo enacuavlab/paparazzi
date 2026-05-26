@@ -4,9 +4,9 @@
  <channel function="PITCH" min="1000" neutral="1500" max="2000" average="0" reverse="1"/>
  <channel function="THROTTLE" min="1000" neutral="1000" max="2000" average="0"/>
  <channel function="YAW" min="1000" neutral="1500" max="2000" average="0"/>
+ <channel function="MODE" min="1000" neutral="1500" max="2000" average="0"/>
+ <channel function="KILL" max="2000" neutral="1500" min="1000" average="0"/>
  <channel function="AUX1" min="1000" neutral="1500" max="2000" average="0"/>
- <channel function="MODE" max="2000" neutral="1500" min="1000" average="1" reverse="1"/>
  <channel function="AUX2" min="1000" neutral="1500" max="2000" average="0"/>
  <channel function="AUX3" min="1000" neutral="1500" max="2000" average="0"/>
- <channel function="AUX4" min="1000" neutral="1500" max="2000" average="0"/>
 </radio>

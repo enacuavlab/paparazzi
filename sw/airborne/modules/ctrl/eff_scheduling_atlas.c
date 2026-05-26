@@ -142,6 +142,7 @@ float atlas_eff_periodic_freq = EFF_SCHEDULING_ATLAS_PERIODIC_FREQ; // Module Fr
 
 float atlas_eff_liftd = 0.0f;                 // Change in Lift wrt change in pitch (dLift/dpitch) [N/rad]
 float atlas_eff_tilt_traverse_time = 1.5f;    // Time to traverse tilt range [s]
+bool  atlas_eff_disable_tilt = false;         // Debug: freeze tilts at hover (alpha=0)
 
 /** Helper Function:
  * Bounds or zeros values to improve WLS optimization
@@ -232,6 +233,14 @@ void eff_scheduling_atlas_periodic(void)
 
 static inline void atlas_update_tilt_cache(void)
 {
+  if (atlas_eff_disable_tilt) {
+    atlas_eff_sched_v.alpha_r_rad = 0.f;
+    atlas_eff_sched_v.alpha_l_rad = 0.f;
+    atlas_eff_sched_v.cos_ar = 1.f; atlas_eff_sched_v.cos_al = 1.f;
+    atlas_eff_sched_v.sin_ar = 0.f; atlas_eff_sched_v.sin_al = 0.f;
+    return;
+  }
+
   const float c0 = atlas_eff_sched_p.k_tilt_deflect[0];
   const float c1 = atlas_eff_sched_p.k_tilt_deflect[1];
 
@@ -332,6 +341,20 @@ static inline void atlas_update_motor_effectiveness(void)
  */
 static inline void atlas_update_tilt_effectiveness(void)
 {
+  if (atlas_eff_disable_tilt) {
+    g1g2[ATLAS_VC_MX][ATLAS_ACT_TILT_R] = 0.f;
+    g1g2[ATLAS_VC_MY][ATLAS_ACT_TILT_R] = 0.f;
+    g1g2[ATLAS_VC_MZ][ATLAS_ACT_TILT_R] = 0.f;
+    g1g2[ATLAS_VC_AX][ATLAS_ACT_TILT_R] = 0.f;
+    g1g2[ATLAS_VC_AZ][ATLAS_ACT_TILT_R] = 0.f;
+    g1g2[ATLAS_VC_MX][ATLAS_ACT_TILT_L] = 0.f;
+    g1g2[ATLAS_VC_MY][ATLAS_ACT_TILT_L] = 0.f;
+    g1g2[ATLAS_VC_MZ][ATLAS_ACT_TILT_L] = 0.f;
+    g1g2[ATLAS_VC_AX][ATLAS_ACT_TILT_L] = 0.f;
+    g1g2[ATLAS_VC_AZ][ATLAS_ACT_TILT_L] = 0.f;
+    return;
+  }
+
   const float da = atlas_eff_sched_p.k_tilt_deflect[1]; /* rad per pprz */
   const float kappa   = atlas_eff_sched_p.kappa;
 
@@ -416,32 +439,41 @@ void stabilization_indi_set_wls_settings(void)
   const float c0 = atlas_eff_sched_p.k_tilt_deflect[0];
   const float c1 = atlas_eff_sched_p.k_tilt_deflect[1];
   if (c1 != 0.f) {
-    const float pprz_a = (ATLAS_TILT_ALPHA_MIN - c0) / c1;
-    const float pprz_b = (ATLAS_TILT_ALPHA_MAX - c0) / c1;
-    const float tilt_pprz_min = (pprz_a < pprz_b) ? pprz_a : pprz_b;
-    const float tilt_pprz_max = (pprz_a < pprz_b) ? pprz_b : pprz_a;
+    if (atlas_eff_disable_tilt) {
+      /* Lock tilts at hover position (alpha = 0) */
+      const float pprz_hover = 0.0f;
+      for (int s = ATLAS_ACT_TILT_R; s <= ATLAS_ACT_TILT_L; s++) {
+        wls_stab_p.u_min[s] = pprz_hover;
+        wls_stab_p.u_max[s] = pprz_hover;
+      }
+    } else {
+      const float pprz_a = (ATLAS_TILT_ALPHA_MIN - c0) / c1;
+      const float pprz_b = (ATLAS_TILT_ALPHA_MAX - c0) / c1;
+      const float tilt_pprz_min = (pprz_a < pprz_b) ? pprz_a : pprz_b;
+      const float tilt_pprz_max = (pprz_a < pprz_b) ? pprz_b : pprz_a;
 
-    // Tilt servos (rate-limit and range-limit)
-    // Rate-limit per step
-    Bound(atlas_eff_tilt_traverse_time, 0.002f, 5.0f);
-    const float tilt_incr_max = (tilt_pprz_max - tilt_pprz_min) / (atlas_eff_tilt_traverse_time * atlas_eff_periodic_freq);
+      // Tilt servos (rate-limit and range-limit)
+      // Rate-limit per step
+      Bound(atlas_eff_tilt_traverse_time, 0.002f, 5.0f);
+      const float tilt_incr_max = (tilt_pprz_max - tilt_pprz_min) / (atlas_eff_tilt_traverse_time * atlas_eff_periodic_freq);
 
-    for (int s = ATLAS_ACT_TILT_R; s <= ATLAS_ACT_TILT_L; s++) {
-      float u_min = actuators_pprz[s] - tilt_incr_max;
-      float u_max = actuators_pprz[s] + tilt_incr_max;
+      for (int s = ATLAS_ACT_TILT_R; s <= ATLAS_ACT_TILT_L; s++) {
+        float u_min = actuators_pprz[s] - tilt_incr_max;
+        float u_max = actuators_pprz[s] + tilt_incr_max;
 
-      /* Intersect with absolute mechanical range */
-      if (u_min < tilt_pprz_min) u_min = tilt_pprz_min;
-      if (u_max > tilt_pprz_max) u_max = tilt_pprz_max;
+        /* Intersect with absolute mechanical range */
+        if (u_min < tilt_pprz_min) u_min = tilt_pprz_min;
+        if (u_max > tilt_pprz_max) u_max = tilt_pprz_max;
 
-      /* Clip to ensure within servo limits */
-      Bound(u_min, -MAX_PPRZ, MAX_PPRZ);
-      Bound(u_max, -MAX_PPRZ, MAX_PPRZ);
+        /* Clip to ensure within servo limits */
+        Bound(u_min, -MAX_PPRZ, MAX_PPRZ);
+        Bound(u_max, -MAX_PPRZ, MAX_PPRZ);
 
-      wls_stab_p.u_min[s] = u_min;
-      wls_stab_p.u_max[s] = u_max;
+        wls_stab_p.u_min[s] = u_min;
+        wls_stab_p.u_max[s] = u_max;
       }
     }
+  }
 
   // // Elevons
   // for (int e = TW_ACT_ELEVON_R; e <= TW_ACT_ELEVON_L; e++) {

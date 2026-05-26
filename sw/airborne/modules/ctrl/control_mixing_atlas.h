@@ -25,13 +25,13 @@
 #ifndef CONTROL_MIXING_ATLAS_H
 #define CONTROL_MIXING_ATLAS_H
 
-// INDI actuators output indexes
-#define CMA_ACT_MOTOR_FR   0          // Motor Front-Right (FR)
-#define CMA_ACT_MOTOR_BR   1          // Motor Back-Right (RR)
-#define CMA_ACT_MOTOR_BL   2          // Motor Back-Left (RL)
-#define CMA_ACT_MOTOR_FL   3          // Motor Front-Left (FL)
-#define CMA_ACT_TILT_R     4          // Tilt Servo Right (TILT_R), 0 = vertical, pi/2 = forward
-#define CMA_ACT_TILT_L     5          // Tilt Servo Left (TILT_L), 0 = vertical, pi/2 = forward
+// // INDI actuators output indexes
+// #define CMA_ACT_MOTOR_FR   0          // Motor Front-Right (FR)
+// #define CMA_ACT_MOTOR_BR   1          // Motor Back-Right (RR)
+// #define CMA_ACT_MOTOR_BL   2          // Motor Back-Left (RL)
+// #define CMA_ACT_MOTOR_FL   3          // Motor Front-Left (FL)
+// #define CMA_ACT_TILT_R     4          // Tilt Servo Right (TILT_R), 0 = vertical, pi/2 = forward
+// #define CMA_ACT_TILT_L     5          // Tilt Servo Left (TILT_L), 0 = vertical, pi/2 = forward
 
 extern void control_mixing_atlas_init(void);
 extern void control_mixing_atlas_manual(void);

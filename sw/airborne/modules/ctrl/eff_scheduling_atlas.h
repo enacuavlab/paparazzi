@@ -111,6 +111,7 @@ extern struct atlas_eff_sched_var_t atlas_eff_sched_v;
 
 extern float atlas_eff_liftd;
 extern float atlas_eff_tilt_traverse_time;
+extern bool  atlas_eff_disable_tilt;       // Debug: freeze tilts at hover (alpha=0)
 
 extern void eff_scheduling_atlas_init(void);
 extern void eff_scheduling_atlas_periodic(void);

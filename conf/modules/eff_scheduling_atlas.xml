@@ -61,6 +61,21 @@
     <periodic fun="eff_scheduling_atlas_periodic()" freq="500"/>
 
     <makefile>
+        <define name="ACTUATORS_NB"             value="6"/>
+        <define name="ATLAS_EFF_IXX"            value="0.00372"/>
+        <define name="ATLAS_EFF_IYY"            value="0.00389"/>
+        <define name="ATLAS_EFF_IZZ"            value="0.01300"/>
+        <define name="ATLAS_EFF_RX"             value="{0.085,-0.085,-0.085,0.085}"/>
+        <define name="ATLAS_EFF_RY"             value="{0.085,0.085,-0.085,-0.085}"/>
+        <define name="ATLAS_EFF_RZ"             value="{0.0,0.0,0.0,0.0}"/>
+        <define name="ATLAS_EFF_SPIN_DIR"       value="{-1.0,1.0,-1.0,1.0}"/>
+        <define name="ATLAS_EFF_K_DT_DPPRZ"     value="{1.5e-4,5.0e-8}"/>
+        <define name="ATLAS_EFF_KAPPA"          value="0.0483"/>
+        <define name="ATLAS_EFF_K_TILT_DEFLECT" value="{0.7854,8.18e-5}"/>
+        <define name="ATLAS_EFF_K_LIFT"         value="0.311"/>
+        <define name="ATLAS_EFF_V_WING"         value="10.0"/>
+        <define name="ATLAS_MOTOR_HOVER"        value="3000"/>
+        <define name="ATLAS_MOTOR_IDLE"         value="1000"/>
         <file name="eff_scheduling_atlas.c"/>
     </makefile>
 </module>

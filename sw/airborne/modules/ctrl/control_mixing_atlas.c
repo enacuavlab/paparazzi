@@ -62,11 +62,15 @@ void control_mixing_atlas_init(void)
 void control_mixing_atlas_manual(void)
 {
   int16_t throttle = radio_control_get(RADIO_THROTTLE);
+  int16_t tilt = radio_control_get(RADIO_TILT);
 
   commands[COMMAND_MOTOR_FR] = throttle;
   commands[COMMAND_MOTOR_BR] = throttle;
   commands[COMMAND_MOTOR_BL] = throttle;
   commands[COMMAND_MOTOR_FL] = throttle;
+
+  commands[COMMAND_TILT_RIGHT] = tilt;
+  commands[COMMAND_TILT_LEFT] = tilt;
 
   commands[COMMAND_ROLL]  = radio_control_get(RADIO_ROLL);
   commands[COMMAND_PITCH] = radio_control_get(RADIO_PITCH);
@@ -86,10 +90,21 @@ void control_mixing_atlas_attitude_enter(void)
 
 void control_mixing_atlas_attitude(void)
 {
+  // struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
+  // stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
+  // SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
+  // autopilot.throttle = stabilization.cmd[COMMAND_THRUST];
+
   struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
   stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
-  SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
-  autopilot.throttle = stabilization.cmd[COMMAND_THRUST];
+  commands[COMMAND_MOTOR_FR]   = stabilization.cmd[COMMAND_MOTOR_FR];
+  commands[COMMAND_MOTOR_BR]   = stabilization.cmd[COMMAND_MOTOR_BR];
+  commands[COMMAND_MOTOR_BL]   = stabilization.cmd[COMMAND_MOTOR_BL];
+  commands[COMMAND_MOTOR_FL]   = stabilization.cmd[COMMAND_MOTOR_FL];
+  commands[COMMAND_TILT_RIGHT] = stabilization.cmd[COMMAND_TILT_RIGHT];
+  commands[COMMAND_TILT_LEFT]  = stabilization.cmd[COMMAND_TILT_LEFT];
+  commands[COMMAND_THRUST]     = stabilization.cmd[COMMAND_THRUST];
+  autopilot.throttle           = stabilization.cmd[COMMAND_THRUST];
 }
 
 void control_mixing_atlas_quad_enter(void)
@@ -98,8 +113,8 @@ void control_mixing_atlas_quad_enter(void)
   guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
   stabilization_mode_changed(STABILIZATION_MODE_NONE, STABILIZATION_ATT_SUBMODE_HEADING);
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
-  actuators_pprz[CMA_ACT_TILT_R] = -MAX_PPRZ;
-  actuators_pprz[CMA_ACT_TILT_L] = -MAX_PPRZ;
+  actuators_pprz[COMMAND_TILT_RIGHT] = -MAX_PPRZ;
+  actuators_pprz[COMMAND_TILT_LEFT] = -MAX_PPRZ;
 }
 
 void control_mixing_atlas_quad(void)
@@ -116,8 +131,8 @@ void control_mixing_atlas_quad(void)
   commands[COMMAND_YAW]     = radio_control_get(RADIO_YAW);
   commands[COMMAND_THRUST]  = throttle;
   commands[COMMAND_THRUST_X] = 0;
-  actuators_pprz[CMA_ACT_TILT_R] = -MAX_PPRZ;
-  actuators_pprz[CMA_ACT_TILT_L] = -MAX_PPRZ;
+  actuators_pprz[COMMAND_TILT_RIGHT] = -MAX_PPRZ;
+  actuators_pprz[COMMAND_TILT_LEFT] = -MAX_PPRZ;
   autopilot.throttle = throttle;
 }
 
