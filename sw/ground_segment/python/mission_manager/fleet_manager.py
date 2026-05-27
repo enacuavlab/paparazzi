@@ -518,16 +518,19 @@ class FleetManager:
             expected_speed = self.acs[id].airspeed
             
             # Reference position logging
-            if current_plan is None or current_plan_date is None:
-                tracking_data = TrackingData(id, t, pose, mng.uav_data.airspeed, None, expected_speed)
-            else:
-                _,p = current_plan.get_path(id)
-                ref_pose = p.pose_at(t-current_plan_date)
-                tracking_data = TrackingData(id, t, pose, mng.uav_data.airspeed, ref_pose, expected_speed)
-                dist = poses_XY_dist(pose,ref_pose)
-                if dist > max_tracking_error_val:
-                    max_tracking_error_val = dist
-                    max_tracking_error_id = id
+            tracking_data = TrackingData(id, t, pose, mng.uav_data.airspeed, None, expected_speed)
+            if current_plan is not None and current_plan_date is not None:
+                try:
+                    _,p = current_plan.get_path(id)
+                    ref_pose = p.pose_at(t-current_plan_date)
+                    tracking_data.expected_pose = ref_pose
+                    dist = poses_XY_dist(pose,ref_pose)
+                    if dist > max_tracking_error_val:
+                        max_tracking_error_val = dist
+                        max_tracking_error_id = id
+                except KeyError:
+                    print("End of plan...")
+                    self.__current_timestamp_plan = None
 
             self.__tracking_logs.add_tracking_data(tracking_data)
             
@@ -599,8 +602,13 @@ class FleetManager:
                 # If the threshold is not met, do not apply new plan
                 return False
             
-            await self.__send_fleet_mission(sol,current_time,insert_mode=MissionInsert.REPLACE_ALL)
-            self.__tracking_logs.replanning_timestamps.append(current_time)
+            try:
+                self.__tracking_logs.replanning_timestamps.append(current_time)
+                await self.__send_fleet_mission(sol,current_time,insert_mode=MissionInsert.REPLACE_ALL)
+            except TimeoutError as e:
+                # Plan was not acknowledged in time
+                print("WARNING: Missing acknowlege: ",e)
+                return False
             self.__schedule_time = time.time()
             self.__current_timestamp_plan = (sol,current_time)
             
@@ -796,6 +804,8 @@ if __name__ == '__main__':
     
     manager.end_of_plan_carrot = args.carrot
     
+    main_loop_exception = None
+    
     try:
         manager.wait_ready()
         if args.takeoff:
@@ -812,6 +822,9 @@ if __name__ == '__main__':
         asyncio.run(manager.main(),debug=DEBUG)
     except(KeyboardInterrupt,SystemExit):
         print("Intettupted!")
+    except Exception as e:
+        print("Some exception interrupted the main loop...")
+        main_loop_exception = e
     finally:
         print("Closing")
         manager.closing()
@@ -821,11 +834,20 @@ if __name__ == '__main__':
     
     os.makedirs("logs",exist_ok=True)
     now_str = datetime.datetime.fromtimestamp(time.time()).strftime('%y-%m-%d_%H:%M:%S')
-    with open(f"logs/logs_{now_str}.pkl","wb") as f:
+    filename = f"logs/logs_{now_str}.pkl"
+    with open(filename,"wb") as f:
         pickle.dump(logs, f)
-            
-    fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict)
-    fig.set_size_inches(16,9)
-    fig.tight_layout()
-    plt.show()
+    
+    try:
+        fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict)
+        fig.set_size_inches(16,9)
+        fig.tight_layout()
+        plt.show()
+    except KeyError:
+        # If there is a key error, the log is incomplete, so delete it
+        os.remove(f"logs/logs_{now_str}.pkl")
+        
+    if main_loop_exception is not None:
+        raise main_loop_exception
+    
     
