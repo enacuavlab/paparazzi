@@ -118,7 +118,7 @@
    flight_plan="flight_plans/formation/basic_dubins_8.xml"
    settings="settings/fixedwing_basic.xml"
    settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/airspeed_adc.xml modules/e_identification_fr.xml modules/electrical.xml modules/extended_dubins.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/imu_common.xml modules/logger_sd_chibios.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
-   gui_color="#91004100ac00"
+   gui_color="#e0001b002400"
   />
   <aircraft
    name="PANACHE_D2"
@@ -129,7 +129,7 @@
    flight_plan="flight_plans/formation/basic_dubins_9.xml"
    settings="settings/fixedwing_basic.xml"
    settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/airspeed_adc.xml modules/e_identification_fr.xml modules/electrical.xml modules/extended_dubins.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/imu_common.xml modules/logger_sd_chibios.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
-   gui_color="#ff0078000000"
+   gui_color="#3300d1007a00"
   />
   <aircraft
    name="PANACHE_D3"
@@ -140,6 +140,6 @@
    flight_plan="flight_plans/formation/basic_dubins_10.xml"
    settings="settings/fixedwing_basic.xml"
    settings_modules="modules/ahrs_float_dcm.xml modules/air_data.xml modules/airspeed_adc.xml modules/e_identification_fr.xml modules/electrical.xml modules/extended_dubins.xml modules/gps.xml modules/gps_ublox.xml modules/guidance_full_pid_fw.xml modules/imu_common.xml modules/logger_sd_chibios.xml modules/nav_basic_fw.xml modules/stabilization_adaptive_fw.xml"
-   gui_color="#3300d1007a00"
+   gui_color="#35008400e400"
   />
 </conf>
