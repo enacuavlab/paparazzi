@@ -61,17 +61,20 @@ struct atlas_eff_sched_param_t {
     float r_z[4];                       // Vertical Offset from CG (positive = down)
 
     /* Rotor Coefficients
-    * Quadratic Thrust Model per motor:  T(pprz) = a0 + a1 * pprz + a2 * pprz^2
-    * Linearized: dT/dpprz = a0 + 2 * a1 * pprz
+    * Quadratic Thrust Model per motor:  T(pprz) = a + b * pprz + c * pprz^2
+    * Derivative:                        dT/dpprz = b + 2 * c * pprz
     */
-    float k_dT_dpprz[2];                // Mapping motor command [pprz] -> thrust [N],
-                                        // dT/dpprz = a0 + 2 * a1 * pprz, (k_dT_dpprz = [a0, a1])
+    float k_T_pprz[3];                  // Quadratic thrust coefficients:
+                                        //   [0]: a — idle thrust at pprz = 0 [N]
+                                        //   [1]: b — linear term [N/pprz]
+                                        //   [2]: c — quadratic term [N/pprz^2]
     float kappa;                        // Propeller torque coefficient: M = κ * T [m]
     float spin_dir[4];                  // Rotor spin direction (+1 for CW. -1 for CCW)
 
     // Tilt Coefficients
-    float k_tilt_deflect[2];            // Mapping tilt-servo command [pprz] -> tilt angle [rad],
-                                        // alpha = b0 + b1 * pprz, (k_tilt_deflect = [b0, b1]
+    float k_tilt_pprz[2];               // Piecewise slopes: alpha = k_tilt_pprz * pprz  (tilt=0 (hover) at pprz=0)
+                                        // [0]: ALPHA_MIN / (-MAX_PPRZ)  — slope for pprz < 0
+                                        // [1]: ALPHA_MAX /   MAX_PPRZ   — slope for pprz >= 0
 
     // Wing Coefficients
     float k_lift;                       // Wing Lift Coefficient: L = k_lift * V^2 / m
@@ -110,7 +113,7 @@ extern struct atlas_eff_sched_param_t atlas_eff_sched_p;
 extern struct atlas_eff_sched_var_t atlas_eff_sched_v;
 
 extern float atlas_eff_liftd;
-extern float atlas_eff_tilt_traverse_time;
+extern float atlas_eff_tilt_rate_max;        // Maximum tilt rate [deg/s]
 extern bool  atlas_eff_disable_tilt;       // Debug: freeze tilts at hover (alpha=0)
 
 extern void eff_scheduling_atlas_init(void);

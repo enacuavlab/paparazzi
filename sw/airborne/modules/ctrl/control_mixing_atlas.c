@@ -34,6 +34,20 @@
 #include "firmwares/rotorcraft/guidance.h"
 #include "firmwares/rotorcraft/navigation.h"
 
+#ifndef GUIDANCE_INDI_MAX_H_THRUST
+#define GUIDANCE_INDI_MAX_H_THRUST 0.5f
+#endif
+
+
+struct ThrustSetpoint guidance_set_rc_h_thrust(struct ThrustSetpoint *v_sp)
+{
+  float thrust[3];
+  thrust[0] = GUIDANCE_INDI_MAX_H_THRUST * radio_control_get(RADIO_TILT) / MAX_PPRZ;
+  thrust[1] = 0.f;
+  thrust[2] = th_sp_to_thrust_f(v_sp, 0, THRUST_AXIS_Z);
+  return th_sp_from_thrust_vect_f(thrust);
+}
+
 // /* Motor idle command [pprz] */
 // #ifndef CMA_MOTOR_IDLE
 // #define CMA_MOTOR_IDLE 800
@@ -95,7 +109,9 @@ void control_mixing_atlas_attitude(void)
   // SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
   // autopilot.throttle = stabilization.cmd[COMMAND_THRUST];
 
-  struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
+  struct ThrustSetpoint v_sp = guidance_v_run(autopilot_in_flight());
+  struct ThrustSetpoint th_sp = guidance_set_rc_h_thrust(&v_sp);
+  commands[COMMAND_THRUST_X] = radio_control_get(RADIO_TILT);
   stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
   commands[COMMAND_MOTOR_FR]   = stabilization.cmd[COMMAND_MOTOR_FR];
   commands[COMMAND_MOTOR_BR]   = stabilization.cmd[COMMAND_MOTOR_BR];
@@ -113,8 +129,8 @@ void control_mixing_atlas_quad_enter(void)
   guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
   stabilization_mode_changed(STABILIZATION_MODE_NONE, STABILIZATION_ATT_SUBMODE_HEADING);
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
-  actuators_pprz[COMMAND_TILT_RIGHT] = -MAX_PPRZ;
-  actuators_pprz[COMMAND_TILT_LEFT] = -MAX_PPRZ;
+  actuators_pprz[COMMAND_TILT_RIGHT] = 0.f;
+  actuators_pprz[COMMAND_TILT_LEFT] = 0.f;
 }
 
 void control_mixing_atlas_quad(void)
@@ -131,8 +147,8 @@ void control_mixing_atlas_quad(void)
   commands[COMMAND_YAW]     = radio_control_get(RADIO_YAW);
   commands[COMMAND_THRUST]  = throttle;
   commands[COMMAND_THRUST_X] = 0;
-  actuators_pprz[COMMAND_TILT_RIGHT] = -MAX_PPRZ;
-  actuators_pprz[COMMAND_TILT_LEFT] = -MAX_PPRZ;
+  actuators_pprz[COMMAND_TILT_RIGHT] = 0.f;
+  actuators_pprz[COMMAND_TILT_LEFT] = 0.f;
   autopilot.throttle = throttle;
 }
 

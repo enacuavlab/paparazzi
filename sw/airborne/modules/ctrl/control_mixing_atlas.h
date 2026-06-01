@@ -45,4 +45,6 @@ extern void control_mixing_atlas_quad(void);
 // extern void control_mixing_atlas_nav_enter(void);
 // extern void control_mixing_atlas_nav_run(void);
 
+extern struct ThrustSetpoint guidance_set_rc_h_thrust(struct ThrustSetpoint *v_sp);
+
 #endif  // CONTROL_MIXING_ATLAS_H

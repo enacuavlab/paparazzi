@@ -66,17 +66,14 @@
 #ifndef ATLAS_EFF_RZ
 #error "ATLAS_EFF_RZ [4x1 float] not defined in airframe file"
 #endif
-#ifndef ATLAS_EFF_K_DT_DPPRZ
-#error "ATLAS_EFF_K_DT_DPPRZ [2x1 float] not defined in airframe file"
+#ifndef ATLAS_EFF_K_T_PPRZ
+#error "ATLAS_EFF_K_T_PPRZ [3x1 float] not defined in airframe file — {a [N], b [N/pprz], c [N/pprz^2]}"
 #endif
 #ifndef ATLAS_EFF_KAPPA
 #error "ATLAS_EFF_KAPPA [float] not defined in airframe file"
 #endif
 #ifndef ATLAS_EFF_SPIN_DIR
 #error "ATLAS_EFF_SPIN_DIR [4x1 float] (+/-1) not defined in airframe file"
-#endif
-#ifndef ATLAS_EFF_K_TILT_DEFLECT
-#error "ATLAS_EFF_K_TILT_DEFLECT [2x1 float] not defined in airframe file"
 #endif
 #ifndef ATLAS_EFF_K_LIFT
 #error "ATLAS_EFF_K_LIFT [float] not defined in airframe file"
@@ -107,11 +104,11 @@
 #endif
 
 // Tilt Range
-#ifndef ATLAS_TILT_ALPHA_MIN
-#define ATLAS_TILT_ALPHA_MIN  -0.1f
+#ifndef ATLAS_EFF_ALPHA_MIN
+#define ATLAS_EFF_ALPHA_MIN  0.f
 #endif
-#ifndef ATLAS_TILT_ALPHA_MAX
-#define ATLAS_TILT_ALPHA_MAX  (0.5f * M_PI)
+#ifndef ATLAS_EFF_ALPHA_MAX
+#define ATLAS_EFF_ALPHA_MAX  (0.5f * M_PI)
 #endif
 
 
@@ -123,10 +120,9 @@ struct atlas_eff_sched_param_t atlas_eff_sched_p = {
  .r_x = ATLAS_EFF_RX,
  .r_y = ATLAS_EFF_RY,
  .r_z = ATLAS_EFF_RZ,
- .k_dT_dpprz = ATLAS_EFF_K_DT_DPPRZ,
+ .k_T_pprz = ATLAS_EFF_K_T_PPRZ,
  .kappa = ATLAS_EFF_KAPPA,
  .spin_dir = ATLAS_EFF_SPIN_DIR,
- .k_tilt_deflect = ATLAS_EFF_K_TILT_DEFLECT,
  .k_lift = ATLAS_EFF_K_LIFT,
  .v_wing = ATLAS_EFF_V_WING,
  // .k_elevon_deflect = ATLAS_EFF_K_ELEVON_DEFLECT,
@@ -137,11 +133,12 @@ struct atlas_eff_sched_param_t atlas_eff_sched_p = {
 
 struct atlas_eff_sched_var_t atlas_eff_sched_v;
 
-float const grav = 9.81f;                           // Gravitational Acceleration [m/s^2]
-float atlas_eff_periodic_freq = EFF_SCHEDULING_ATLAS_PERIODIC_FREQ; // Module Frequency [Hz]
+
+float const grav = 9.81f;                                             // Gravitational Acceleration [m/s^2]
+float atlas_eff_periodic_freq = EFF_SCHEDULING_ATLAS_PERIODIC_FREQ;   // Module Frequency [Hz]
 
 float atlas_eff_liftd = 0.0f;                 // Change in Lift wrt change in pitch (dLift/dpitch) [N/rad]
-float atlas_eff_tilt_traverse_time = 1.5f;    // Time to traverse tilt range [s]
+float atlas_eff_tilt_rate_max = 20.0f;        // Maximum tilt rate [deg/s]
 bool  atlas_eff_disable_tilt = false;         // Debug: freeze tilts at hover (alpha=0)
 
 /** Helper Function:
@@ -179,22 +176,27 @@ static inline void atlas_schedule_liftd(void);
 
 float guidance_indi_get_liftd(float airspeed UNUSED, float theta UNUSED);
 void stabilization_indi_set_wls_settings(void);
+
 void eff_scheduling_atlas_init(void)
 {
-  // Checks for positive and non-zeros coefficients
-  const float a1 = atlas_eff_sched_p.k_dT_dpprz[0];
-  const float b1 = atlas_eff_sched_p.k_tilt_deflect[1];
+  // Piecewise tilt slopes: alpha = k_tilt_pprz * pprz
+  atlas_eff_sched_p.k_tilt_pprz[0] = ATLAS_EFF_ALPHA_MIN / -(float)MAX_PPRZ;  // pprz < 0
+  atlas_eff_sched_p.k_tilt_pprz[1] = ATLAS_EFF_ALPHA_MAX /  (float)MAX_PPRZ;  // pprz >= 0
 
-  if (a1 < 0.f || b1 == 0)
+  // Checks for positive and non-zeros coefficients
+  const float a  = atlas_eff_sched_p.k_T_pprz[1];   // linear thrust coefficient
+  const float b = atlas_eff_sched_p.k_tilt_pprz[1];
+
+  if (a < 0.f || b == 0.f)
   {
   /*
-   * Prevent the stabilization module from stating if (1) a1 is negative or (2) b1 is zero:
+   * Prevent the stabilization module from starting if (1) b is negative or (2) b1 is zero:
    * (1):
-   * The change in thrust due to change in pprz is given by: dT/du = a1 + 2*a2*u,
-   * if a1 is negative an increase in pprz results in a decrease in thrust breaking the thrust model
+   * The change in thrust due to change in pprz is given by: dT/du = b + 2*c*u,
+   * if T_pprz[1] is negative an increase in pprz results in a decrease in thrust, breaking the thrust model
    * (2):
-   * The change in tilt angle due to a change in pprz is given by: alpha = b0 + b1 * pprz
-   * if b1 is zero the tilt cannot be commanded
+   * The change in tilt angle due to a change in pprz is given by: alpha = k_tilt_pprz[1] * pprz (positive range)
+   * if k_tilt_pprz[1] is zero, ALPHA_MAX or MAX_PPRZ are zero — tilt cannot be commanded
   */
     while (1) { /* trap */ }
   }
@@ -209,7 +211,7 @@ void eff_scheduling_atlas_init(void)
   {
   atlas_eff_sched_v.cmd_motor[i] = ATLAS_MOTOR_HOVER;
   atlas_eff_sched_v.T[i] = atlas_eff_sched_p.m*grav/4.f;
-  atlas_eff_sched_v.dT_dpprz[i] = atlas_eff_sched_p.k_dT_dpprz[0];
+  atlas_eff_sched_v.dT_dpprz[i] = atlas_eff_sched_p.k_T_pprz[1];
   }
   atlas_eff_sched_v.airspeed = 0.f;
   atlas_eff_sched_v.airspeed_sq = 0.f;
@@ -241,15 +243,17 @@ static inline void atlas_update_tilt_cache(void)
     return;
   }
 
-  const float c0 = atlas_eff_sched_p.k_tilt_deflect[0];
-  const float c1 = atlas_eff_sched_p.k_tilt_deflect[1];
+  const float pprz_r = actuator_state_filt_vect[ATLAS_ACT_TILT_R];
+  const float pprz_l = actuator_state_filt_vect[ATLAS_ACT_TILT_L];
+  const float slope_r = (pprz_r >= 0.f) ? atlas_eff_sched_p.k_tilt_pprz[1] : atlas_eff_sched_p.k_tilt_pprz[0];
+  const float slope_l = (pprz_l >= 0.f) ? atlas_eff_sched_p.k_tilt_pprz[1] : atlas_eff_sched_p.k_tilt_pprz[0];
 
-  atlas_eff_sched_v.alpha_r_rad = c0 + c1 * actuator_state_filt_vect[ATLAS_ACT_TILT_R];
-  atlas_eff_sched_v.alpha_l_rad = c0 + c1 * actuator_state_filt_vect[ATLAS_ACT_TILT_L];
+  atlas_eff_sched_v.alpha_r_rad = slope_r * pprz_r;
+  atlas_eff_sched_v.alpha_l_rad = slope_l * pprz_l;
 
   /* Enforce tilt range bound for limits  */
-  Bound(atlas_eff_sched_v.alpha_r_rad, ATLAS_TILT_ALPHA_MIN, ATLAS_TILT_ALPHA_MAX);
-  Bound(atlas_eff_sched_v.alpha_l_rad, ATLAS_TILT_ALPHA_MIN, ATLAS_TILT_ALPHA_MAX);
+  Bound(atlas_eff_sched_v.alpha_r_rad, ATLAS_EFF_ALPHA_MIN, ATLAS_EFF_ALPHA_MAX);
+  Bound(atlas_eff_sched_v.alpha_l_rad, ATLAS_EFF_ALPHA_MIN, ATLAS_EFF_ALPHA_MAX);
 
   atlas_eff_sched_v.cos_ar = cosf(atlas_eff_sched_v.alpha_r_rad);
   atlas_eff_sched_v.sin_ar = sinf(atlas_eff_sched_v.alpha_r_rad);
@@ -275,20 +279,21 @@ static inline void atlas_update_airspeed_cache(void)
 }
 
 /* Quadratic thrust model:
- *   T(u)      = a + b*u + c*u^2
+ *   T(u)      = a + b*u + c*u^2    (a = idle thrust at pprz = 0)
  *   dT/du(u)  = b + 2*c*u
- * k_dT_dpprz = [b, c].
+ * k_T_pprz = [a, b, c].
  */
 static inline void atlas_update_thrust_model(void)
 {
-  const float b = atlas_eff_sched_p.k_dT_dpprz[0];
-  const float c = atlas_eff_sched_p.k_dT_dpprz[1];
+  const float a = atlas_eff_sched_p.k_T_pprz[0];
+  const float b = atlas_eff_sched_p.k_T_pprz[1];
+  const float c = atlas_eff_sched_p.k_T_pprz[2];
   for (int i = 0; i < 4; i++) {
     float u = atlas_eff_sched_v.cmd_motor[i];
     Bound(u, 0.f, MAX_PPRZ);
-    atlas_eff_sched_v.T[i]       = (b + c * u) * u;
+    atlas_eff_sched_v.T[i]        = a + b * u + c * u * u;
     atlas_eff_sched_v.dT_dpprz[i] = b + 2.f * c * u;
-    Bound(atlas_eff_sched_v.dT_dpprz[i], 0.1f * b, 3.0f * b);
+    Bound(atlas_eff_sched_v.dT_dpprz[i], 0.1f * b, 5.0f * b);
   }
 }
 
@@ -318,7 +323,7 @@ static inline void atlas_update_motor_effectiveness(void)
     float dMx = (-y * dT * ca + spin * kappa * dT * sa);
     float dMy = ( x * dT * ca + z * dT * sa);
     float dMz = (-y * dT * sa - spin * kappa * dT * ca);
-
+    // float dMz = 0.f;
     /* Linear-acceleration effectiveness wrt. motor commands*/
     float dAx =  dT * sa;
     float dAz = -dT * ca;
@@ -335,7 +340,7 @@ static inline void atlas_update_motor_effectiveness(void)
  * Control effectiveness wrt. tilt angle (da = da/du)
  * dMx/du = (y * T * sin(a) + spin * κ * T * cos(a)) * da
  * dMy/du = (z * T * cos(a) - x * T * sin(a)) * da
- * dMz/du - (-y * T * cos(a) + spin * κ * T * sin(a)) * da
+ * dMz/du = (-y * T * cos(a) + spin * κ * T * sin(a)) * da
  * dFx/du = T * cos(a) * da
  * dFz/du = T * sin(a) * da
  */
@@ -355,11 +360,12 @@ static inline void atlas_update_tilt_effectiveness(void)
     return;
   }
 
-  const float da = atlas_eff_sched_p.k_tilt_deflect[1]; /* rad per pprz */
-  const float kappa   = atlas_eff_sched_p.kappa;
+  const float kappa = atlas_eff_sched_p.kappa;
 
   for (int b = 0; b < 2; b++) {
     const int   idx = (b == 0) ? ATLAS_ACT_TILT_R : ATLAS_ACT_TILT_L;
+    const float pprz_tilt = actuator_state_filt_vect[idx];
+    const float da = (pprz_tilt >= 0.f) ? atlas_eff_sched_p.k_tilt_pprz[1] : atlas_eff_sched_p.k_tilt_pprz[0];
     const float ca = (b == 0) ? atlas_eff_sched_v.cos_ar : atlas_eff_sched_v.cos_al;
     const float sa = (b == 0) ? atlas_eff_sched_v.sin_ar : atlas_eff_sched_v.sin_al;
     const int   motor_a = (b == 0) ? 0 : 2; // (FR (0) / BL (2))
@@ -386,8 +392,8 @@ static inline void atlas_update_tilt_effectiveness(void)
     g1g2[ATLAS_VC_MX][idx] = dMx  / atlas_eff_sched_p.Ixx;
     g1g2[ATLAS_VC_MY][idx] = dMy  / atlas_eff_sched_p.Iyy;
     g1g2[ATLAS_VC_MZ][idx] = dMz  / atlas_eff_sched_p.Izz;
-    g1g2[ATLAS_VC_AX][idx] = dAx / atlas_eff_sched_p.m;
-    g1g2[ATLAS_VC_AZ][idx] = dAz / atlas_eff_sched_p.m;
+    g1g2[ATLAS_VC_AX][idx] = dAx  / atlas_eff_sched_p.m;
+    g1g2[ATLAS_VC_AZ][idx] = dAz  / atlas_eff_sched_p.m;
   }
 }
 
@@ -433,45 +439,29 @@ void stabilization_indi_set_wls_settings(void)
     wls_stab_p.u_pref[i] =  act_pref[i];
   }
 
-  // Convert Tilt Range rad to pprz units using:
-  // alpha [rad] = k_tilt_deflect[0] + k_tilt_deflect[1] * pprz [pprz]
-  // (if increasing pprz -> decreases alpha swap min/max ranges)
-  const float c0 = atlas_eff_sched_p.k_tilt_deflect[0];
-  const float c1 = atlas_eff_sched_p.k_tilt_deflect[1];
-  if (c1 != 0.f) {
-    if (atlas_eff_disable_tilt) {
-      /* Lock tilts at hover position (alpha = 0) */
-      const float pprz_hover = 0.0f;
-      for (int s = ATLAS_ACT_TILT_R; s <= ATLAS_ACT_TILT_L; s++) {
-        wls_stab_p.u_min[s] = pprz_hover;
-        wls_stab_p.u_max[s] = pprz_hover;
-      }
-    } else {
-      const float pprz_a = (ATLAS_TILT_ALPHA_MIN - c0) / c1;
-      const float pprz_b = (ATLAS_TILT_ALPHA_MAX - c0) / c1;
-      const float tilt_pprz_min = (pprz_a < pprz_b) ? pprz_a : pprz_b;
-      const float tilt_pprz_max = (pprz_a < pprz_b) ? pprz_b : pprz_a;
+  if (atlas_eff_disable_tilt) {
+    for (int s = ATLAS_ACT_TILT_R; s <= ATLAS_ACT_TILT_L; s++) {
+      wls_stab_p.u_min[s] = 0.f;
+      wls_stab_p.u_max[s] = 0.f;
+    }
+  } else {
+    // Max alpha increment per step [rad]
+    const float dalpha_max = ATLAS_EFF_TILT_RATE_MAX * ((float)M_PI / 180.f) / atlas_eff_periodic_freq;
 
-      // Tilt servos (rate-limit and range-limit)
-      // Rate-limit per step
-      Bound(atlas_eff_tilt_traverse_time, 0.002f, 5.0f);
-      const float tilt_incr_max = (tilt_pprz_max - tilt_pprz_min) / (atlas_eff_tilt_traverse_time * atlas_eff_periodic_freq);
+    for (int s = ATLAS_ACT_TILT_R; s <= ATLAS_ACT_TILT_L; s++) {
+      const float pprz_cmd = actuators_pprz[s];                     // last command: center of rate window
+      const float pprz_cur = actuator_state_filt_vect[s];           // filtered actual: regime selection
+      const float slope = (pprz_cur >= 0.f) ? atlas_eff_sched_p.k_tilt_pprz[1] : atlas_eff_sched_p.k_tilt_pprz[0];
+      const float dpprz_max = dalpha_max / slope;
 
-      for (int s = ATLAS_ACT_TILT_R; s <= ATLAS_ACT_TILT_L; s++) {
-        float u_min = actuators_pprz[s] - tilt_incr_max;
-        float u_max = actuators_pprz[s] + tilt_incr_max;
+      float u_min = pprz_cmd - dpprz_max;
+      float u_max = pprz_cmd + dpprz_max;
 
-        /* Intersect with absolute mechanical range */
-        if (u_min < tilt_pprz_min) u_min = tilt_pprz_min;
-        if (u_max > tilt_pprz_max) u_max = tilt_pprz_max;
+      if (u_min < -(float)MAX_PPRZ) u_min = -(float)MAX_PPRZ;
+      if (u_max >  (float)MAX_PPRZ) u_max =  (float)MAX_PPRZ;
 
-        /* Clip to ensure within servo limits */
-        Bound(u_min, -MAX_PPRZ, MAX_PPRZ);
-        Bound(u_max, -MAX_PPRZ, MAX_PPRZ);
-
-        wls_stab_p.u_min[s] = u_min;
-        wls_stab_p.u_max[s] = u_max;
-      }
+      wls_stab_p.u_min[s] = u_min;
+      wls_stab_p.u_max[s] = u_max;
     }
   }
 

@@ -84,7 +84,7 @@
         <module name="eff_scheduling_atlas"/>
         <module name="guidance" type="indi_hybrid_tiltrotor">
             <define name="GUIDANCE_INDI_PUSHER_INDEX"           value="4"/>
-            <define name="GUIDANCE_INDI_MASS"                   value="0.75"/>
+            <define name="GUIDANCE_INDI_MASS"                   value="0.65"/>
             <define name="GUIDANCE_INDI_WING_AREA"              value="0.5"/>
             <define name="GUIDANCE_INDI_CL_0"                   value="0.1"/>
             <define name="GUIDANCE_INDI_CL_ALPHA"               value="5.0"/>
@@ -111,7 +111,7 @@
 
     <servos driver="Pwm">
         <servo name="TILT_RIGHT"    no="1" min="1080" neutral="1140" max="1514"/>
-        <servo name="TILT_LEFT"     no="2" min="1590" neutral="1530" max="1150"/>
+        <servo name="TILT_LEFT"     no="2" min="1680" neutral="1610" max="1250"/>
     </servos>
 
     <commands>
@@ -174,20 +174,20 @@
                 </field>
                 <field name="neutral" value="-1918,92,-438" type="int[]"/>
                 <field name="scale_f" value="{ 0.7096, 0.6857, 0.7606 }"/>
-                <field value="TAWAKIV2_IMU_ROT"/>
+                <field value="TAWAKIV2_MAG_ROT"/>
             </field>
         </define>
 
         <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
-        <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
+        <define name="BODY_TO_IMU_THETA" value="-10.0" unit="deg"/>
         <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
     </section>
 
     <section name="AUTOPILOT">
         <define name="MODE_MANUAL" value="AP_MODE_MANUAL"/>
-        <define name="MODE_AUTO1" value="AP_MODE_QUAD"/>
-        <define name="MODE_AUTO2" value="AP_MODE_ATTITUDE"/>
-        <define name="MODE_STARTUP" value="AP_MODE_ATTITUDE"/>
+        <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE"/>
+        <define name="MODE_AUTO2" value="AP_MODE_GUIDED"/>
+        <define name="MODE_STARTUP" value="AP_MODE_MANUAL"/>
         <define name="AUTOPILOT_IN_FLIGHT_MIN_THRUST" value="1000"/>
     </section>
 
@@ -204,9 +204,9 @@
         <!-- setpoints -->
         <define name="SP_MAX_PHI" value="40." unit="deg"/>
         <define name="SP_MAX_THETA" value="30." unit="deg"/>
-        <define name="SP_MAX_R" value="90." unit="deg/s"/>
-        <define name="DEADBAND_R" value="250"/>
-        <define name="DEADBAND_A" value="250"/>
+        <define name="SP_MAX_R" value="80." unit="deg/s"/>
+        <define name="DEADBAND_R" value="50"/>  <!-- yaw deadband from radio -->
+        <define name="DEADBAND_A" value="50"/>
         <define name="SP_PSI_DELTA_LIMIT" value="90" unit="deg"/>
     </section>
 
@@ -222,31 +222,33 @@
             <field value="{   0.,     0.,    0.,    0.,    0.85,  0.85 }"/>  <!-- Ax -->
         </define>
         <define name="G1_THRUST_X" value="{0, 0, 0, 0, 0.85, 0.85}"/>
+        <define name="ACT_IS_THRUSTER_X" value="{0, 0, 0, 0, 1, 1}"/>
 
         <!--Counter torque effect of spinning up a rotor-->
         <define name="G2" value="{0, 0, 0, 0, 0, 0}"/>
 
-        <define name="WLS_PRIORITIES" value = "{1000, 1000, 1, 100, 100}"/>
         <define name="ACT_PREF" value="{0, 0, 0, 0, 0, 0}"/>
 
         <!-- reference acceleration for attitude control -->
-        <define name="REF_ERR_P" value="100"/>
-        <define name="REF_ERR_Q" value="80"/>
-        <define name="REF_ERR_R" value="70"/>
-        <define name="REF_RATE_P" value="20."/>
-        <define name="REF_RATE_Q" value="18.0"/>
-        <define name="REF_RATE_R" value="11.0"/>
+        <define name="REF_ERR_P" value="200.0"/> <!-- P angular error in roll axis (P) -->
+        <define name="REF_ERR_Q" value="175.0"/>
+        <define name="REF_ERR_R" value="200.0"/>
+        <define name="REF_RATE_P" value="40.0"/> <!-- P angular rate error in roll axis (P) -->
+        <define name="REF_RATE_Q" value="20.0"/>
+        <define name="REF_RATE_R" value="18.0"/>
 
         <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
         <define name="FILT_CUTOFF" value="5.0"/>
 
         <!-- first order actuator dynamics -->
-        <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 12.66, 25.6, 25.6}"/>
-        <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 170, 170}"/>
+        <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 12.66, 4.00, 4.00}"/>
+        <define name="ACT_RATE_LIMIT" value="{3000, 3000, 3000, 3000, 3000, 3000}"/>
         <define name="ACT_IS_SERVO" value="{0, 0, 0, 0, 1, 1}"/>
 
         <!-- INDI outputs to commands association -->
         <define name="COMMANDS" value="{COMMAND_MOTOR_FR, COMMAND_MOTOR_BR, COMMAND_MOTOR_BL, COMMAND_MOTOR_FL, COMMAND_TILT_RIGHT, COMMAND_TILT_LEFT}"/>
+
+        <define name="WLS_PRIORITIES" value="{10000, 10000, 500, 100, 1000}"/>
 
         <!-- Adaptive Learning Rate -->
         <define name="USE_ADAPTIVE" value="FALSE"/>
