@@ -153,7 +153,7 @@ async def async_subprocess_solve(solver:pathlib.Path,
     cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads, start_extensions, end_extensions, **kwargs)
 
     # Create subprocess (asynchronously)
-    proc = await asyncio.create_subprocess_exec(*cmd,stdout=asyncio.subprocess.DEVNULL)
+    proc = await asyncio.create_subprocess_exec(*cmd)#,stdout=asyncio.subprocess.DEVNULL)
     
     # Wait for it to finish and return the subprocess return code
     retcode = await proc.wait()
@@ -217,6 +217,8 @@ class FleetManager:
         self.end_strategy = end_strategy
         self.full_dubins = full_dubins
         self.__schedule_time = 0
+        self.schedule_lookahead:float = 5. # In seconds, how long in the future the plan should be made, assuming perfect tracking of the current plan
+        self.nps_simulation = True # If True, commands aircraft running using NPS. Otherwise, assume real aircraft
         
         self.msg_retry:int      = 5
         self.msg_ack_time:float = 1
@@ -260,6 +262,13 @@ class FleetManager:
     def get_logs(self) -> TrackingLogs:
         return self.__tracking_logs
     
+    def get_now(self) -> float:
+        """Get current GPS Time of Week
+        """
+        if self.nps_simulation:
+            return time.time() % 604800 # 1 week = 604800 seconds
+        else:
+            raise NotImplemented("No way of giving real GPS Time!!")
     
     def get_timed_poses(self) -> dict[int,tuple[float,Pose3D]]:
         """Return the list of currently known aircraft poses, with their associated onboard timestamps
@@ -485,12 +494,23 @@ class FleetManager:
                             print("Scheduling: try to improve")
             
         
-            
-        poses = self.interpolate_poses(max_time)
-        l_poses = [poses[id] for id in self.ac_ids]
+
         
         if reschule:
-            await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,max_time,impr_threshold)
+            max_time = max(t for t,_ in self.get_timed_poses().values())
+            now = self.get_now()
+            print(f"Max time seen: {max_time} ; Our time: {now}")
+            
+            if self.__current_timestamp_plan is None:
+                poses = self.interpolate_poses(now)
+                l_poses = [poses[id] for id in self.ac_ids]
+                await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,now,impr_threshold)
+            else:
+                plan,timestamp = self.__current_timestamp_plan
+                poses = plan.poses_at(now-timestamp+self.schedule_lookahead)
+                l_poses = [poses[id] for id in self.ac_ids]
+                await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,now+self.schedule_lookahead,impr_threshold)
+                
                 
     ########## Logging ##########
         
@@ -566,7 +586,7 @@ class FleetManager:
     
     ########## Scheduling ##########
     
-    async def schedule_path_planning(self,frame_id:int,current_poses:list[Pose3D], current_time:float, improvement_threshold:float):
+    async def schedule_path_planning(self,frame_id:int,ref_poses:list[Pose3D], realease_time:float, improvement_threshold:float):
         
         if self.end_strategy is FleetManagerEnd.LOOP:
             frame_id = frame_id % self.fleet_frames.keyposes_num
@@ -574,7 +594,7 @@ class FleetManager:
             if frame_id >= self.fleet_frames.keyposes_num:
                 raise StopIteration("No more fleet instruction to perform")
         
-        pb = self.fleet_frames.generate_pb_to(frame_id,current_poses)
+        pb = self.fleet_frames.generate_pb_to(frame_id,ref_poses)
         
         tempdir = tempfile.gettempdir()
         now = datetime.datetime.now()
@@ -603,14 +623,19 @@ class FleetManager:
                 return False
             
             try:
-                self.__tracking_logs.replanning_timestamps.append(current_time)
-                await self.__send_fleet_mission(sol,current_time,insert_mode=MissionInsert.REPLACE_ALL)
+                wait_time = realease_time - self.get_now()
+                if (self.verbosity > 0):
+                    print(f"Plan is ready, waiting for {wait_time:.2f} s")
+                await asyncio.sleep(wait_time)
+                now = self.get_now()
+                self.__tracking_logs.replanning_timestamps.append(now)
+                await self.__send_fleet_mission(sol,now,insert_mode=MissionInsert.REPLACE_ALL)
             except TimeoutError as e:
                 # Plan was not acknowledged in time
                 print("WARNING: Missing acknowlege: ",e)
                 return False
-            self.__schedule_time = time.time()
-            self.__current_timestamp_plan = (sol,current_time)
+            self.__schedule_time = now
+            self.__current_timestamp_plan = (sol,now)
             
             return True
         else:

@@ -10,6 +10,8 @@
 #include "modules/datalink/downlink.h"
 #include "modules/display/draw.h"
 
+#include "filters/low_pass_filter.h"
+
 
 #define DEBUG 1
 
@@ -1116,11 +1118,16 @@ void extended_dubins_set_pathtype(DubinsType type, float extra)
   ref_problem.extra = extra;
 }
 
+
+static struct FirstOrderLowPass speed_sp_filter;
+
 bool nav_extended_dubins_init()
 {
   // Airspeed mode
   v_ctl_speed_mode = V_CTL_SPEED_AIRSPEED;
-  v_ctl_auto_airspeed_setpoint = 15; // m/s
+  v_ctl_auto_airspeed_setpoint = NOMINAL_AIRSPEED; // m/s
+
+  //TODO:  init_first_order_low_pass(&speed_sp_filter, )
 
   // Handle verticality
   NavVerticalAutoThrottleMode(0); /* No pitch */
@@ -1209,14 +1216,16 @@ bool nav_extended_dubins_init()
       }
     }
   }
-  // #if DEBUG
-  // IPRINTF("Expected time: %.2f  ;  Got: %.2f\n",ref_problem.end_time - ((float)gps.tow)/1e3,total_length/NOMINAL_AIRSPEED);
-  // #endif
+  #if DEBUG
+  IPRINTF("Now is: %.2f (s)\n",((float)gps.tow)/1e3);
+  #endif
 
   mission_init_straight_flag = false; // Reset for ulterior utilisation
   initial_nav_rad_angle = NAN;
   return true;
 }
+
+static uint32_t nav_extended_dubins_track_last_call = 0;
 
 bool nav_extended_dubins_track(void)
 {
@@ -1257,24 +1266,38 @@ bool nav_extended_dubins_track(void)
   {
     if (ref_problem.end_time > 0.)
     {
+      // Downscale this function frequency to 5Hz (i.e. period of 200ms)
+      uint32_t now = get_sys_time_msec();
+      if (now - nav_extended_dubins_track_last_call < 200)
+      {
+        return true;
+      }
+      nav_extended_dubins_track_last_call = now;
+
+
       float remaining_distance = remaining_el_distance;
       for(int i = curr_path_element+1; i < EXTENDED_DUBINS_PATH_ELEMENTS_N; i++)
       {
         remaining_distance += path_elements[i].length;
       }
 
-      float f_tow = ((float)gps.tow) / 1000.f;
+      float f_tow = ((float)gps_tow_from_sys_ticks(sys_time.nb_tick)) / 1000.f;
       float dt = ref_problem.end_time - f_tow;
-      float current_dt = remaining_distance/v_ctl_auto_airspeed_setpoint;
-
+      float current_dt = remaining_distance/stateGetAirspeed_f();
+      float new_speed;
       if (ABS(current_dt - dt) > 0.5)
       {
-        v_ctl_auto_airspeed_setpoint = remaining_distance/dt;
-        Bound(v_ctl_auto_airspeed_setpoint, 0.8 * NOMINAL_AIRSPEED, 1.2 * NOMINAL_AIRSPEED);
+        new_speed = remaining_distance/dt;
+      }
+      else
+      {
+        new_speed = NOMINAL_AIRSPEED;
       }
 
-      // IPRINTF("Time delta (current - expected): %.2f (s) ; Speed setpoint: %.1f (m/s)\n",current_dt - dt,v_ctl_auto_airspeed_setpoint);
+      
 
+      v_ctl_auto_airspeed_setpoint = new_speed;
+      // IPRINTF("Current DT: %.2f (s) ; Plan DT: %.2f (s) ; Remaining l: %.2f (m) ; Speed sp: %.2f\n",current_dt,dt,remaining_distance,v_ctl_auto_airspeed_setpoint);
     }
   }
 
