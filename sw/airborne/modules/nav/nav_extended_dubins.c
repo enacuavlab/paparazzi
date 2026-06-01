@@ -1182,9 +1182,7 @@ bool nav_extended_dubins_init()
     path_elements[1+i] = sol.elements[i];
   }
 
-  #if DEBUG
   float total_length = 0.;
-  #endif
 
   for(int j = 0; j < EXTENDED_DUBINS_PATH_ELEMENTS_N; j++)
   {
