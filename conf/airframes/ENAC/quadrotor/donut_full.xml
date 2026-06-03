@@ -15,9 +15,8 @@
 
     <autopilot name="rotorcraft_fully_actuated"/>
 
-    <target name="ap" board="tawaki_1.1">
+    <target name="ap" board="tawaki_2.0">
       <module name="radio_control" type="sbus"/>
-      <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
     </target>
 
@@ -29,14 +28,22 @@
         <define name="NPS_BYPASS_INS" value="TRUE"/>
       </module-->
       <module name="radio_control" type="datalink"/>
+      <define name="TAWAKIV2_IMU_ROT" value=""/>
+      <define name="TAWAKIV2_MAG_ROT" value=""/>
     </target>
 
     <module name="telemetry" type="xbee_api"/>
 
-    <module name="actuators" type="pwm"/>
-    <module name="board" type="tawaki">
+    <module name="actuators" type="pwm">
+      <define name="SERVO_HZ" value="250"/>
+      <define name="USE_PWM_TIM3" value="TRUE"/>
+      <define name="USE_PWM5" value="TRUE"/>
+      <define name="USE_PWM6" value="TRUE"/>
+    </module>
+
+    <module name="board" type="tawaki_2.0">
       <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
-      <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_218HZ"/>
+      <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_44HZ"/>
       <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
     </module>
     <module name="gps" type="optitrack"/>
@@ -51,20 +58,21 @@
     <!--module name="guidance" type="indi"/-->
     <module name="guidance" type="indi_fully_actuated"/>
 
-    <module name="ins" type="ext_pose"/>
+    <!--module name="ins" type="ext_pose"/-->
+    <module name="ins" type="ekf2"/>
     <module name="air_data"/>
 
     <module name="flight_recorder"/>
-    <!--module name="logger" type="control_effectiveness"/-->
+    <module name="logger" type="control_effectiveness"/>
   </firmware>
 <!--modifier les valeurs des servo en fonction de ce qu'on choisira en exp-->
   <servos driver="Pwm">
-    <servo name="MOTOR_UP"      no="1" min="1000" neutral="1100" max="2000"/>
-    <servo name="MOTOR_DOWN"    no="2" min="1000" neutral="1100" max="2000"/>
-    <servo name="TILT_UP_X"     no="3" min="1000" neutral="1500" max="2000"/>
-    <servo name="TILT_UP_Y"     no="4" min="1000" neutral="1500" max="2000"/>
-    <servo name="TILT_DOWN_X"   no="5" min="1000" neutral="1500" max="2000"/>
-    <servo name="TILT_DOWN_Y"   no="6" min="1000" neutral="1500" max="2000"/>
+    <servo name="MOTOR_UP"      no="6" min="1000" neutral="1150" max="2000"/>
+    <servo name="MOTOR_DOWN"    no="5" min="1000" neutral="1150" max="2000"/>
+    <servo name="TILT_UP_X"     no="3" max="1370" neutral="1570" min="1770"/>
+    <servo name="TILT_UP_Y"     no="4" max="1390" neutral="1590" min="1790"/>
+    <servo name="TILT_DOWN_X"   no="1" max="1300" neutral="1500" min="1700"/>
+    <servo name="TILT_DOWN_Y"   no="2" max="1320" neutral="1520" min="1720"/>
   </servos>
 
   <commands>
@@ -77,6 +85,16 @@
     <axis name="THRUST"       failsafe_value="0"/>
   </commands>
 
+  <rc_commands>
+    <set command="MOTOR_UP" value="autopilot_get_motors_on() ? @THROTTLE + @YAW : MIN_PPRZ"/>
+    <set command="MOTOR_DOWN" value="autopilot_get_motors_on() ? @THROTTLE - @YAW : MIN_PPRZ"/>
+    <set command="TILT_UP_X" value="@ROLL"/>
+    <set command="TILT_DOWN_X" value="@ROLL"/>
+    <set command="TILT_UP_Y" value="@PITCH"/>
+    <set command="TILT_DOWN_Y" value="@PITCH"/>
+    <set command="THRUST" value="@THROTTLE"/>
+  </rc_commands>
+
   <command_laws>
     <set servo="MOTOR_UP"     value="@MOTOR_UP"/>
     <set servo="MOTOR_DOWN"   value="@MOTOR_DOWN"/>
@@ -87,33 +105,44 @@
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
-    <define name="GYRO_P_SIGN" value="-1"/>
-    <define name="GYRO_Q_SIGN" value="-1"/>
-    <define name="GYRO_R_SIGN" value="1"/>
-
-    <define name="ACCEL_X_SIGN" value="-1"/>
-    <define name="ACCEL_Y_SIGN" value="-1"/>
-    <define name="ACCEL_Z_SIGN" value="1"/>
-
-    <define name="ACCEL_X_NEUTRAL" value="-52"/>
-    <define name="ACCEL_Y_NEUTRAL" value="63"/>
-    <define name="ACCEL_Z_NEUTRAL" value="78"/>
-    <define name="ACCEL_X_SENS" value="2.5604087853414104" integer="16"/>
-    <define name="ACCEL_Y_SENS" value="2.448144955015108" integer="16"/>
-    <define name="ACCEL_Z_SENS" value="2.4642689651242438" integer="16"/>
-
-    <define name="MAG_X_SIGN" value="-1"/>
-    <define name="MAG_Y_SIGN" value="-1"/>
-    <define name="MAG_Z_SIGN" value="1"/>
-
-    <define name="MAG_X_NEUTRAL" value="-3389"/>
-    <define name="MAG_Y_NEUTRAL" value="-9655"/>
-    <define name="MAG_Z_NEUTRAL" value="1277"/>
-    <define name="MAG_X_SENS" value="0.725111506132357" integer="16"/>
-    <define name="MAG_Y_SENS" value="0.7213630968776462" integer="16"/>
-    <define name="MAG_Z_SENS" value="0.6528914510154457" integer="16"/>
-
-    <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
+    <define name="GYRO_CALIB" type="array">
+      <field type="struct">
+        <field name="abi_id" value="24"/>
+        <field name="calibrated" type="struct">
+          <field name="neutral" value="false"/>
+          <field name="scale" value="false"/>
+          <field name="rotation" value="true"/>
+        </field>
+        <field value="TAWAKIV2_IMU_ROT"/>
+      </field>
+    </define>
+    <define name="ACCEL_CALIB" type="array">
+      <field type="struct">
+        <field name="abi_id" value="24"/>
+        <field name="calibrated" type="struct">
+          <field name="neutral" value="true"/>
+          <field name="scale_f" value="true"/>
+          <field name="rotation" value="true"/>
+        </field>
+        <field name="neutral" value="-1,-12,-29" type="int[]"/>
+        <field name="scale_f" value="{ 2.4479, 2.4519, 2.4539 }"/>
+        <field value="TAWAKIV2_IMU_ROT"/>
+      </field>
+    </define>
+    <define name="MAG_CALIB" type="array">
+      <field type="struct">
+        <field name="abi_id" value="3"/>
+        <field name="calibrated" type="struct">
+          <field name="neutral" value="true"/>
+          <field name="scale" value="true"/>
+          <field name="rotation" value="true"/>
+        </field>
+        <field name="neutral" value="-4692,2081,-3662" type="int[]"/>
+        <field name="scale_f" value="{ 0.6833, 0.7031, 0.6108 }"/>
+        <field value="TAWAKIV2_MAG_ROT"/>
+      </field>
+    </define>
+    <define name="BODY_TO_IMU_PHI" value="90." unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
     <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
   </section>
@@ -214,9 +243,9 @@
 
   <section name="AUTOPILOT">
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
-    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
+    <!--define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
-    <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+    <define name="MODE_AUTO2" value="AP_MODE_NAV"/-->
   </section>
 
   <section name="GCS">
