@@ -28,6 +28,7 @@
 
     <control_block name="set_commands">
       <call fun="SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on())"/>
+      <call fun="autopilot.throttle = commands[COMMAND_THRUST]"/>
     </control_block>
 
     <control_block name="run_attitude_control">
