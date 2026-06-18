@@ -58,8 +58,8 @@
     <!--module name="guidance" type="indi"/-->
     <module name="guidance" type="indi_fully_actuated"/>
 
-    <!--module name="ins" type="ext_pose"/-->
-    <module name="ins" type="ekf2"/>
+    <module name="ins" type="ext_pose"/>
+    <!--module name="ins" type="ekf2"/-->
     <module name="air_data"/>
 
     <module name="flight_recorder"/>
@@ -69,10 +69,10 @@
   <servos driver="Pwm">
     <servo name="MOTOR_UP"      no="6" min="1000" neutral="1150" max="2000"/>
     <servo name="MOTOR_DOWN"    no="5" min="1000" neutral="1150" max="2000"/>
-    <servo name="TILT_UP_X"     no="3" max="1370" neutral="1570" min="1770"/>
-    <servo name="TILT_UP_Y"     no="4" max="1390" neutral="1590" min="1790"/>
-    <servo name="TILT_DOWN_X"   no="1" max="1300" neutral="1500" min="1700"/>
-    <servo name="TILT_DOWN_Y"   no="2" max="1320" neutral="1520" min="1720"/>
+    <servo name="TILT_UP_X"     no="3" max="1270" neutral="1570" min="1870"/>
+    <servo name="TILT_UP_Y"     no="4" max="1290" neutral="1590" min="1890"/>
+    <servo name="TILT_DOWN_X"   no="1" max="1200" neutral="1500" min="1800"/>
+    <servo name="TILT_DOWN_Y"   no="2" max="1220" neutral="1520" min="1820"/>
   </servos>
 
   <commands>
@@ -86,8 +86,8 @@
   </commands>
 
   <rc_commands>
-    <set command="MOTOR_UP" value="autopilot_get_motors_on() ? @THROTTLE + @YAW : MIN_PPRZ"/>
-    <set command="MOTOR_DOWN" value="autopilot_get_motors_on() ? @THROTTLE - @YAW : MIN_PPRZ"/>
+    <set command="MOTOR_UP" value="autopilot_get_motors_on() ? @THROTTLE - 0.2 * @YAW : MIN_PPRZ"/>
+    <set command="MOTOR_DOWN" value="autopilot_get_motors_on() ? @THROTTLE + 0.2 * @YAW : MIN_PPRZ"/>
     <set command="TILT_UP_X" value="@ROLL"/>
     <set command="TILT_DOWN_X" value="@ROLL"/>
     <set command="TILT_UP_Y" value="@PITCH"/>
@@ -180,17 +180,17 @@
     <!-- control effectiveness INITIALISATION -->
     <define name="G1" type="matrix">
       <field value="{  0.0,  0.0, 10.0, 0.0, -10.0, 0.0}"/>
-      <field value="{  0.0,  0.0, 0.0, 10.0, 0.0, -10.0}"/>
-      <field value="{ -8.0,  8.0,  0.0,  0.0, 0.0, 0.0}"/>
+      <field value="{  0.0,  0.0, 0.0, 7.0, 0.0, -7.0}"/>
+      <field value="{ -6.0,  6.0,  0.0,  0.0, 0.0, 0.0}"/>
       <field value="{  0.0,  0.0, 0.0, -1.0, 0.0, -1.0}"/>
       <field value="{  0.0,  0.0, 1.0, 0.0, 1.0, 0.0}"/>
-      <field value="{ -0.84,  -.84,  0.0,  0.0, 0.0, 0.0}"/>
+      <field value="{ -0.71,  -.71,  0.0,  0.0, 0.0, 0.0}"/>
     </define>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}"/>
    
     <!-- first order actuator dynamics -->
-    <define name="ACT_FREQ" value="{12., 12., 25., 25. , 25., 25.}"/>
+    <define name="ACT_FREQ" value="{27.5, 27.5, 18., 18. , 18., 18.}"/>
     <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 9600, 9600}"/>
     <define name="ACT_IS_SERVO" value="{0, 0, 1, 1, 1, 1}"/>
     <define name="ACT_THRUST_MAT" type="matrix">
