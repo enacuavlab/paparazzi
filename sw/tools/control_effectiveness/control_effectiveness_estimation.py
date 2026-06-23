@@ -63,6 +63,15 @@ def process_data(conf, f_name, start, end, freq=None, variables=None, verbose=Fa
         print("Mixing matrix:")
         print(mixing)
 
+    # check virtual command
+    virtual_cmd = None
+    if 'virtual_cmd' in conf:
+        virtual_cmd = np.array(conf['virtual_cmd'])
+        v_nb = virtual_cmd.shape[0]
+        _, S, _ = np.linalg.svd(virtual_cmd)
+        virtual_cmd = virtual_cmd / S.reshape(v_nb, 1)
+        nb_out = virtual_cmd.shape[1]
+
     # Search for time vector
     time = None
     for el in conf['data']:
@@ -93,11 +102,26 @@ def process_data(conf, f_name, start, end, freq=None, variables=None, verbose=Fa
         # Search and filter inputs and outputs
         inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(conf, var, data, nb_in, nb_out, start, end)
 
+        if virtual_cmd is not None:
+            v_nb = virtual_cmd.shape[0]
+            nb_data = commands.shape[0]
+            v_commands = np.zeros((nb_data, v_nb))
+            for i in range(nb_data):
+                v_commands[i,:] = np.matmul(virtual_cmd, commands[i,:])
+            v_inv = np.linalg.pinv(virtual_cmd)
+            commands = v_commands
+        else:
+            v_inv = np.identity(nb_out)
+
         for i in range(nb_in):
             name = ut.get_name_by_index(conf, 'input', i)
             cmd = np.multiply(commands, mixing[[i],:])
+            #print(name, cmd)
             axis_fit = ut.fit_axis(cmd, inputs[:,[i]], name, verbose)
-            output[[i],:] = axis_fit.T
+            output[[i],:] = np.matmul(v_inv, axis_fit).T
+            #print(axis_fit, axis_fit.shape, virtual_cmd.shape)
+            #print('inv',output[[i],:])
+            #print('direct',np.matmul(axis_fit.T,virtual_cmd))
             cmd_fit = np.dot(cmd, axis_fit)
             lin_fit, res = ut.fit_lin(cmd_fit[:,0], inputs[:,[i]][:,0], name, True)
             ut.plot_results(cmd_fit, inputs[:,[i]], raw_inputs[:,[i]], lin_fit, time, freq, name)
@@ -114,12 +138,23 @@ def process_data(conf, f_name, start, end, freq=None, variables=None, verbose=Fa
                 var[e] = v
                 inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(
                         conf, var, data, nb_in, nb_out, start, end)
+                if virtual_cmd is not None:
+                    v_nb = virtual_cmd.shape[0]
+                    nb_data = commands.shape[0]
+                    v_commands = np.zeros((nb_data, v_nb))
+                    for i in range(nb_data):
+                        v_commands[i,:] = np.matmul(virtual_cmd, commands[i,:])
+                    v_inv = np.linalg.pinv(virtual_cmd)
+                    commands = v_commands
+                else:
+                    v_inv = np.identity(nb_out)
+
                 res_total = 0.
                 for i in range(nb_in):
                     name = ut.get_name_by_index(conf, 'input', i)
                     cmd = np.multiply(commands, mixing[[i],:])
                     axis_fit = ut.fit_axis(cmd, inputs[:,[i]], name, verbose)
-                    tmp_output[[i],:] = axis_fit.T
+                    tmp_output[[i],:] = np.matmul(v_inv, axis_fit).T
                     cmd_fit = np.dot(cmd, axis_fit)
                     lin_fit, residual = ut.fit_lin(cmd_fit[:,0], inputs[:,[i]][:,0], name, verbose)
                     res_total += float(residual[0])
