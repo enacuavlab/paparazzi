@@ -114,4 +114,56 @@ void pprz_polyfit_float(float *x, float *y, int n, int p, float *c)
 
 }
 
+void pprz_C2_hermite_polyfit_float(float dx,
+  float y0, float ydot0, float yddot0,
+  float y1, float ydot1, float yddot1,
+  float *c)
+{
+  float dx2 = dx*dx;
+  float dx3 = dx2*dx;
+  float dx4 = dx3*dx;
+  float dx5 = dx4*dx;
 
+  c[0] = y0;
+  c[1] = ydot0;
+  c[2] = yddot0/2;
+  c[3] = (dx2 * (yddot1-3*yddot0) - 4*dx*(3*ydot0+2*ydot1) + 20*(y1-y0))/(2*dx3);
+  c[4] = (dx2 * (3*yddot0 - 2*yddot1) + 2*dx*(8*ydot0 + 7*ydot1) + 30*(y1-y0))/(2*dx4);
+  c[5] = (dx2 * (yddot1 - yddot0) - 6*dx*(ydot1+ydot0) + 12*(y1-y0))/(2*dx5);
+}
+
+float pprz_eval_poly_float(float x, float *c, int d)
+{
+  int i = d;
+  float output = c[i];
+  while(i >= 0)
+  {
+    output = output*x + c[i];
+    i--;
+  }
+  return output;
+}
+
+float pprz_eval_poly_der_float(float x, float *c, int d)
+{
+  int i = d;
+  float output = i*c[i];
+  while(i >= 1)
+  {
+    output = output*x + i*c[i];
+    i--;
+  }
+  return output;
+}
+
+float pprz_eval_poly_dder_float(float x, float *c, int d)
+{
+  int i = d;
+  float output = i*(i-1)*c[i];
+  while(i >= 2)
+  {
+    output = output*x + i*(i-1)*c[i];
+    i--;
+  }
+  return output;
+}

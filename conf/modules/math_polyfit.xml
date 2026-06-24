@@ -1,0 +1,16 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="math_polyfit" task="core">
+  <doc>
+    <description>
+        Utility functions linked to polynomials; with fitting and evaluation
+    </description>
+  </doc>
+  <header>
+    <file name="pprz_polyfit_float.h" dir="math"/>
+  </header>
+  <makefile>
+    <file name="pprz_polyfit_float.c" dir="math"/>
+    <test/>
+  </makefile>
+</module>
