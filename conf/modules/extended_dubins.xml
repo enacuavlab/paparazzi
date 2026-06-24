@@ -1,5 +1,5 @@
 <!DOCTYPE module SYSTEM "module.dtd">
-<module name="extended_dubins" dir="nav" task="control">
+<module name="extended_dubins" dir="nav/extended_dubins" task="control">
   <doc>
     <description>Use navigation primitives to follow Extended Dubins path, that is Dubins paths which may start or end with an extra segment.
 
@@ -42,19 +42,24 @@
         <dl_setting var="dubins_draw" min="0" max="1" step="1" shortname="Draw Dubins"/>
         <dl_setting var="dubins_draw_samples" min="0" max="10" step="1" shortname="Draw samples"/>
         <dl_setting var="extra_straight_length" min="0" max="1000" step="1" shortname="Extra straight lengths" unit="m"/> <!-- Only relevant for DUBIN missions-->
+        <dl_setting var="end_of_straight_time" min="0" max="10" step="0.1" shortname="End of straight time" unit="s"/>
+        <dl_setting var="dubins_use_gvf" min="0" max="1" step="1" shortname="Use GVF"/>
       </dl_settings>
     </dl_settings>
   </settings>
   <dep>
     <depends>@navigation,gps</depends>
-    <recommends>@mission</recommends>
+    <recommends>@mission,math_polyfit,gvf_parametric</recommends>
   </dep>
   <header>
     <file name="nav_extended_dubins.h"/>
+    <file name="dubins_common.h"/>
   </header>
   <init fun="dubins_setup()"/>
   <makefile>
+    <file name="dubins_common.c"/>
     <file name="nav_extended_dubins.c"/>
+    <file name="nav_dubins_gvf.c"/>
     <test/>
   </makefile>
 </module>
