@@ -94,6 +94,7 @@ class TrackingLogs:
     keyframes: FleetKeyframes
     tracking_error_threshold: float
     separation_threshold: float
+    start_time:float
     logs: dict[int, list[TrackingData]] = field(default_factory=dict)
     replanning_timestamps: list[int|float] = field(default_factory=list)
     _tpose_lists: dict[int, np.ndarray] = field(default_factory=dict)
@@ -105,15 +106,24 @@ class TrackingLogs:
         return self.keyframes.ac_stats
     
     def add_tracking_data(self, data: TrackingData):
-        if data.ac_id not in self.logs:
-            self.logs[data.ac_id] = []
-        self.logs[data.ac_id].append(data)
-        
-        if data.ac_id in self._sorted and self.logs[data.ac_id][-1] < self.logs[data.ac_id][-2]:
-            self._sorted.remove(data.ac_id)
-        
         self._tpose_lists.pop(data.ac_id, None)
         self._trefs_lists.pop(data.ac_id, None)
+        
+        if data.ac_id not in self.logs:
+            self.logs[data.ac_id] = [data]
+            self._sorted.add(data.ac_id)
+        else:
+            existing_log = self.logs[data.ac_id]
+            if data.ac_id in self._sorted:
+                if existing_log[-1].timestamp < data.timestamp:
+                    existing_log.append(data)
+                elif existing_log[-1].timestamp > data.timestamp:
+                    existing_log.append(data)
+                    self._sorted.remove(data.ac_id)
+                else:
+                    pass
+            else:
+                existing_log.append(data)
         
     def get_ids(self) -> set[int]:
         return set(self.logs.keys())

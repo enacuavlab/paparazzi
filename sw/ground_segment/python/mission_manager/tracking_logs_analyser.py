@@ -101,7 +101,7 @@ def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str],
                 e.remove()
         cover_lines.clear()
         
-        cover_lines = _plot_trajs(traj_ax, logs, color_dict, hide_refs, hide_reschedules, hide_keyframes,(tmin,tmax))
+        cover_lines = _plot_trajs(traj_ax, logs, color_dict, hide_refs, hide_reschedules, hide_keyframes,(tmin+logs.start_time,tmax+logs.start_time))
         
         fig.canvas.draw_idle()
         
@@ -211,9 +211,9 @@ def _plot_trajs(traj_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str],
 
 def _plot_separation(sep_ax:Axes, logs:TrackingLogs):
     separations = logs.get_all_min_sep()
-    replanning_timestamps = logs.replanning_timestamps
+    replanning_timestamps = [t - logs.start_time for t in logs.replanning_timestamps]
     
-    ts = [t[0] for t in separations]
+    ts = [t[0]-logs.start_time for t in separations]
     vals = [t[1] for t in separations]
     sep_ax.plot(ts,vals)
     sep_ax.set_ylim(0.,100)
@@ -227,14 +227,14 @@ def _plot_separation(sep_ax:Axes, logs:TrackingLogs):
 def _plot_speed(speed_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str]):
     
     speeds = logs.get_speeds()
-    replanning_timestamps = logs.replanning_timestamps
+    replanning_timestamps = [t - logs.start_time for t in logs.replanning_timestamps]
     
     min_t = np.inf
     max_t = -np.inf
     max_val = -np.inf
     
     for id,data in speeds.items():
-        ts = [t[0] for t in data]
+        ts = [t[0]-logs.start_time for t in data]
         min_t = min(min_t,min(ts))
         max_t = max(max_t,max(ts))
         vals = [t[1] for t in data]
@@ -243,6 +243,8 @@ def _plot_speed(speed_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str]):
         speed_ax.plot(ts,vals,label=f"{id}",color=color_dict[id],linestyle='-')
         speed_ax.plot(ts,expected,label=f"{id} ref",color=color_dict[id],linestyle=':')
         
+    for stat in logs.ac_stats:
+        speed_ax.hlines(stat.airspeed,min_t,max_t,colors=color_dict[stat.id],linestyles='dashed',label=f"{stat.id} nominal speed: {stat.airspeed:.1f} m/s")
     
     speed_ax.set_ymargin(0.05)
     ymin,ymax = speed_ax.get_ylim()
@@ -256,7 +258,7 @@ def _plot_speed(speed_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str]):
 def _plot_tracking(tracking_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str]):
     
     errs = logs.get_errors()
-    replanning_timestamps = logs.replanning_timestamps
+    replanning_timestamps = [t - logs.start_time for t in logs.replanning_timestamps]
     
     min_t = np.inf
     max_t = -np.inf
@@ -264,7 +266,7 @@ def _plot_tracking(tracking_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str]
     
     avg_err = 0
     for id,data in errs.items():
-        ts = [t[0] for t in data]
+        ts = [t[0]-logs.start_time for t in data]
         min_t = min(min_t,min(ts))
         max_t = max(max_t,max(ts))
         vals = [t[1] for t in data]

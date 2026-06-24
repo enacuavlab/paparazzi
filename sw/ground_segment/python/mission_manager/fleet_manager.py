@@ -153,7 +153,7 @@ async def async_subprocess_solve(solver:pathlib.Path,
     cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads, start_extensions, end_extensions, **kwargs)
 
     # Create subprocess (asynchronously)
-    proc = await asyncio.create_subprocess_exec(*cmd)#,stdout=asyncio.subprocess.DEVNULL)
+    proc = await asyncio.create_subprocess_exec(*cmd,stdout=asyncio.subprocess.DEVNULL)
     
     # Wait for it to finish and return the subprocess return code
     retcode = await proc.wait()
@@ -210,7 +210,7 @@ class FleetManager:
         self.__fleet_frame_id:int = 0
         self.__current_timestamp_plan:Optional[tuple[FleetPlan,float]] = None
         self.end_of_plan_carrot:float = 10. # In seconds, how much time before the end of the current plan to send the next one
-        self.reschedule_dt:float = 15. # In seconds
+        self.reschedule_dt:float = 10. # In seconds
         self.relative_improvement_threshold:float = 0.9 # Minimum improvement in the plan duration to trigger a reschedule (in percentage of the current plan duration)
         self.__tracking_error:float = 0.    # Current maximal individual tracking error (Try an other metric, like cumulated error accross aircraft?)
         self.__tracking_err_threshold:float = tracking_error # In meters, if the tracking error is above this threshold, consider the plan as not followed and trigger a reschedule
@@ -254,7 +254,9 @@ class FleetManager:
         self.__tracking_logs:TrackingLogs = TrackingLogs(
             fleet_frames,
             tracking_error_threshold=self.__tracking_err_threshold,
-            separation_threshold=self.separation)
+            separation_threshold=self.separation,
+            start_time=self.get_now()
+            )
 
     
     #################### Util methods ####################
@@ -499,17 +501,21 @@ class FleetManager:
         if reschule:
             max_time = max(t for t,_ in self.get_timed_poses().values())
             now = self.get_now()
-            print(f"Max time seen: {max_time} ; Our time: {now}")
+            # print(f"Max time seen: {max_time} ; Our time: {now}")
             
-            if self.__current_timestamp_plan is None:
+            if self.__current_timestamp_plan is None or self.__tracking_error >= 2*self.__tracking_err_threshold:
                 poses = self.interpolate_poses(now)
                 l_poses = [poses[id] for id in self.ac_ids]
                 await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,now,impr_threshold)
             else:
                 plan,timestamp = self.__current_timestamp_plan
                 poses = plan.poses_at(now-timestamp+self.schedule_lookahead)
-                l_poses = [poses[id] for id in self.ac_ids]
-                await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,now+self.schedule_lookahead,impr_threshold)
+                try:
+                    l_poses = [poses[id] for id in self.ac_ids]
+                    await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,now+self.schedule_lookahead,impr_threshold)
+                except KeyError:
+                    self.__current_timestamp_plan = None
+                
                 
                 
     ########## Logging ##########
@@ -535,10 +541,9 @@ class FleetManager:
             # Position logging
             pose = self.__uavdata_to_pose(mng.uav_data)
             t = mng.uav_data.gps_tow
-            expected_speed = self.acs[id].airspeed
             
             # Reference position logging
-            tracking_data = TrackingData(id, t, pose, mng.uav_data.airspeed, None, expected_speed)
+            tracking_data = TrackingData(id, t, pose, mng.uav_data.airspeed, None, mng.uav_data.airspeed_sp)
             if current_plan is not None and current_plan_date is not None:
                 try:
                     _,p = current_plan.get_path(id)
@@ -615,7 +620,7 @@ class FleetManager:
         if r == 0:
             sol = parse_trajectories_from_JSON(output_file)
             
-            if self.verbosity > 0:
+            if self.verbosity > 1:
                 print(f"New plan duration is {sol.duration:.2f} s (threshold is {improvement_threshold:.2f} s)")
             
             if improvement_threshold < sol.duration:
@@ -634,7 +639,7 @@ class FleetManager:
                 # Plan was not acknowledged in time
                 print("WARNING: Missing acknowlege: ",e)
                 return False
-            self.__schedule_time = now
+            self.__schedule_time = time.time() # Use local clock for local computations
             self.__current_timestamp_plan = (sol,now)
             
             return True
@@ -706,12 +711,11 @@ class FleetManager:
         
     def __make_path_mission(self,ac_id:int,p:Path,start_time:float,insert_mode:MissionInsert) -> tuple[MissionManager,PprzMessage]:
         manager = self.managers[ac_id]
-        speed = manager.uav_data.groundspeed_sp if self.ignore_wind else manager.uav_data.airspeed_sp
-        if speed == 0.: # Speed set point is not known
-            for e in self.fleet_frames.ac_stats:
-                if e.id == ac_id:
-                    speed = e.airspeed
-            assert speed != 0.
+        speed = 0
+        for e in self.fleet_frames.ac_stats:
+            if e.id == ac_id:
+                speed = e.airspeed
+        assert speed != 0.
         
         home = manager.get_home()
         assert home is not None
@@ -779,7 +783,7 @@ if __name__ == '__main__':
     
     stat_list = [ACStats(i,15.1,10/60,60) for i in [17,18,20]]
     separation = 30
-    formation = chevron_formation(len(stat_list),separation*1.2)
+    formation = chevron_formation(len(stat_list),separation*4/3)
     
     transformer = pyproj.Transformer.from_crs('WGS84','EPSG:9794') # Default to WGS84 to Lambert93
     home_lat = 43.46223
@@ -824,7 +828,7 @@ if __name__ == '__main__':
         speed_ctl=args.speed_ctl,
         verbosity=args.verbose,
         full_dubins=not(args.dubins_el),
-        tracking_error=16
+        tracking_error=10
     )
     
     manager.end_of_plan_carrot = args.carrot

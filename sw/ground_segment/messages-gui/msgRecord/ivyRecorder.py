@@ -93,7 +93,10 @@ class IvyRecorder(QObject):
             self.new_sender.emit(sender_id)
         
     def __logMessage(self,sender_id:int,msg:PprzMessage):
-        sender_id = int(sender_id)
+        try:
+            sender_id = int(sender_id)
+        except ValueError:
+            sender_id = 0 # This is a ground message
         timed_msg = TimedPprzMessage(msg)
         new_msg = False
         
