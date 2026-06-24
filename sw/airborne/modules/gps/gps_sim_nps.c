@@ -31,9 +31,11 @@ bool gps_has_fix;
 
 void gps_feed_value(void)
 {
-  // FIXME, set proper time instead of hardcoded to May 2014
-  gps_nps.week = 1794;
-  gps_nps.tow = fdm.time * 1000;
+  double offset_time = fdm.time + fdm.init_timestamp;
+
+  uint32_t rounded = round(offset_time);
+  gps_nps.week = rounded / 604800; // 1 week = 604800s
+  gps_nps.tow = round((offset_time - gps_nps.week * 604800) * 1000); // Get remainder, convert in milliseconds and round
 
   gps_nps.ecef_pos.x = sensors.gps.ecef_pos.x * 100.;
   gps_nps.ecef_pos.y = sensors.gps.ecef_pos.y * 100.;

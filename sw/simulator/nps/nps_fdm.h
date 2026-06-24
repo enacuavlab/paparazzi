@@ -44,6 +44,7 @@ extern "C" {
 struct NpsFdm {
 
   double time;
+  double init_timestamp; // Unix timestamp at simulation start (useful for synchronizing different sims)
   double init_dt;
   double curr_dt;
   bool on_ground;

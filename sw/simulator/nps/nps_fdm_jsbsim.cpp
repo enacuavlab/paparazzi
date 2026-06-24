@@ -391,7 +391,8 @@ static void feed_jsbsim(double *commands, int commands_nb __attribute__((unused)
 static void fetch_state(void)
 {
 
-  fdm.time = FDMExec->GetPropertyManager()->GetNode("simulation/sim-time-sec")->getDoubleValue();
+  // HOTFIX: JSBSim starts with 7.5 instead of 0...
+  fdm.time = FDMExec->GetPropertyManager()->GetNode("simulation/sim-time-sec")->getDoubleValue() - 7.5;
 
 #if DEBUG_NPS_JSBSIM
   printf("%f,", fdm.time);

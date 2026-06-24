@@ -113,8 +113,11 @@ void sensors_hitl_parse_HITL_GPS(uint8_t *buf)
     return;
   }
 
-  gps_hitl.week = 1794;
-  gps_hitl.tow = DL_HITL_GPS_time(buf) * 1000;
+  double timestamp = DL_HITL_GPS_time(buf);
+  uint64_t rounded = round(timestamp);
+
+  gps_hitl.week = rounded / 604800; // Number of seconds is a week, UNIX time
+  gps_hitl.tow = round((timestamp - (double)(rounded * 604800)) * 1000); // Remainder, converted to millisec then rounded
 
   gps_hitl.ecef_vel.x = DL_HITL_GPS_ecef_vel_x(buf) * 100.;
   gps_hitl.ecef_vel.y = DL_HITL_GPS_ecef_vel_y(buf) * 100.;

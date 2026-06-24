@@ -105,9 +105,11 @@ int nps_main_init(int argc, char **argv)
   nps_main.scaled_initial_time = time_to_double(&t);
 
   nps_fdm_init(SIM_DT);
+  fdm.init_timestamp = nps_main.real_initial_time;
   nps_atmosphere_init();
   nps_sensors_init(nps_main.sim_time);
   printf("Simulating with dt of %f\n", SIM_DT);
+  printf("Simulation started with timestamp %f (ToW: %ld (ms))\n", nps_main.real_initial_time, (uint64_t)(nps_main.real_initial_time * 1000) % 604800000);
 
   nps_radio_and_autopilot_init();
 
