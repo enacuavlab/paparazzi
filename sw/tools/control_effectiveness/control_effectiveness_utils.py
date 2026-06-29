@@ -24,12 +24,55 @@ Utility functions for control effectiveness estimation
 '''
 
 import sys
+from dataclasses import dataclass
+from typing import Optional
+
 import numpy as np
 import scipy as sp
 from scipy import signal
 from scipy.fftpack import fft
+from scipy.optimize import least_squares,OptimizeResult
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import show
+
+
+@dataclass
+class Configuration:
+    """ Helper structure to store data parsed from the JSON configuration
+    """
+    variables:dict[str,float]
+    ranges:dict[str,tuple[float,float,float]]
+    nb_in:int
+    nb_out:int
+    mixing:np.ndarray
+    data_descr:dict
+        
+    @staticmethod
+    def from_dict(conf_dict:dict,variables_redef:Optional[dict]=None):
+        var = conf_dict.get('variables',{})
+        if variables_redef is not None:
+            for var_name, value in variables_redef:
+                if var_name not in var:
+                    print(f"Variable name '{var_name}' not in list '{var.keys()}'")
+                    break
+                try:
+                    var[var_name] = float(value)
+                except:
+                    print(f"Variable value '{value}' not a float or int")
+        
+        ranges = conf_dict.get('ranges',[])
+        
+        mixing = np.array(conf_dict['mixing'])
+        (nb_in, nb_out) = np.shape(mixing)
+        
+        data_descr = conf_dict['data']
+        
+        return Configuration(var,ranges,nb_in,nb_out,mixing,data_descr)
+    
+
+
+
+########## Baseline functions ##########
 
 #
 # functions for actuators model
@@ -71,11 +114,12 @@ def get_param(param, var):
     get param value as a number or from var if string
     '''
     if isinstance(param, str):
-        if param in var:
-            return var[param]
-        else:
-            print('Unknown variable', param)
-            sys.exit(1)
+        # Use exception-based programming instead of crashing with code 1
+        # if param in var:
+        return var[param]
+        # else:
+            # print('Unknown variable', param)
+            # sys.exit(1)
     else:
         return param
 
@@ -159,31 +203,38 @@ def get_index_from_time(time, start, end):
         end_idx = N
     return (start_idx, end_idx)
 
-def extract_filtered_data(conf, var, data, nb_in, nb_out, start, end):
+def extract_filtered_data(conf:Configuration, data:np.ndarray, start:int, end:int):
+    
+    # Recover values from struct instead of putting them in function argument
+    nb_in = conf.nb_in
+    nb_out = conf.nb_out
+    
     inputs = np.zeros((end-start, nb_in))
     raw_inputs = np.zeros((end-start, nb_in))
     commands = np.zeros((end-start, nb_out))
     raw_commands = np.zeros((end-start, nb_out))
-    for el in conf['data']:
+    for el in conf.data_descr:
         t = el['type']
         idx = el['index']
         col = el['column']
         if t == 'input' and idx >= 0:
             if idx >= nb_in:
-                print("Invalid input index for {}".format(el['name']))
-                exit(1)
+                raise IndexError("Invalid input index for {}".format(el['name'])) # Again, exception rather than exit code 1
             raw_inputs[:, idx] = apply_format(el, data[start:end, col])
             inputs[:, idx] = apply_format(el, data[start:end, col])
             for (filt_name, params) in el['filters']:
-                inputs[:,idx] = apply_filter(filt_name, params, inputs[:, idx].copy(), var)
+                # Useful (?) prints for understanding wrong initial behavior in differentiated signal
+                # print(filt_name)
+                # print(f"Input0 ({idx}) before filtering: ",inputs[0,idx])
+                inputs[:,idx] = apply_filter(filt_name, params, inputs[:, idx].copy(), conf.variables)
+                # print(f"Input0 ({idx}) after filtering: ",inputs[0,idx])
         if t == 'command' and idx >= 0:
             if idx >= nb_out:
-                print("Invalid command index for {}".format(el['name']))
-                exit(1)
+                raise IndexError("Invalid command index for {}".format(el['name'])) # Again, exception rather than exit code 1
             raw_commands[:, idx] = apply_format(el, data[start:end, col])
             commands[:, idx] = apply_format(el, data[start:end, col])
             for (filt_name, params) in el['filters']:
-                commands[:,idx] = apply_filter(filt_name, params, commands[:, idx].copy(), var)
+                commands[:,idx] = apply_filter(filt_name, params, commands[:, idx].copy(), conf.variables)    
     return inputs, raw_inputs, commands, raw_commands
 
 
@@ -194,7 +245,9 @@ def extract_filtered_data(conf, var, data, nb_in, nb_out, start, end):
 
 def plot_results(x, y, y_raw, z, t, freq, label, show=False):
     '''
-    plot two curves for comparison
+    Plot two curves for comparison
+    
+    Use scatter instead of line plot for real data (as data between the points does not exist!)
     '''
     fig = plt.figure(layout='constrained')
     ax_time = plt.subplot2grid((2,3), (0,0), colspan=2, rowspan=2)
@@ -202,17 +255,18 @@ def plot_results(x, y, y_raw, z, t, freq, label, show=False):
     ax_fft = plt.subplot2grid((2,3), (1,2))
 
     # time plot
-    ax_time.plot(t, y)
-    ax_time.plot(t, x)
+    ax_time.plot(t, y, linestyle='',marker='.',markersize=3, label='force')
+    ax_time.plot(t, x, label='cmd')
     ax_time.set_title(label)
     ax_time.set_xlabel('t [s]')
+    ax_time.legend()
 
     # Fit line
-    ax_fit.plot(x, y)
-    p = np.poly1d(z)
+    ax_fit.plot(x, y, linestyle='', marker='.',markersize=3,label='Force from cmd')
+    p = np.poly1d(z[0])
     xp = np.linspace(np.min(x), np.max(x), 2)
-    ax_fit.plot(xp,p(xp),'r')
-    ax_fit.set_title(f'fit error: {abs(1.-z[0]):.3E}')
+    ax_fit.plot(xp,p(xp),label='lin fit')
+    ax_fit.set_title(f'fit error: {z[1][0]:3E}')
     
     # FFT
     N = len(y)
@@ -224,9 +278,12 @@ def plot_results(x, y, y_raw, z, t, freq, label, show=False):
     ax_fft.set_xlabel('Freq (Hz)')
     ax_fft.set_yticks([])
     ax_fft.set_ylabel('FFT Amplitude')
+    ax_fft.legend()
 
     if show:
         plt.show()
+        
+    return fig
 
 def plot_residuals(values, residuals, label, show=False):
     plt.figure()
@@ -291,15 +348,42 @@ def print_results(conf, var, output):
 # Optimization functions
 #
 
-def fit_axis(x, y, name, verbose=False):
+def fit_axis(x, y, name, verbose=True):
     c = np.linalg.lstsq(x, y, rcond=None)
     if verbose:
         print("Fit axis", name)
         print(c[0]*1000)
-    return c[0]
+    res = np.sum(np.square(x @ c[0] - y)) # Recomputed residual manually (not computed when matrix is rank-deficient)
+    return c[0],res
 
 def fit_lin(x, y, name, verbose=False):
     z = np.polyfit(x, y, 1, full=True)
     if verbose:
         print(f'Fit residual {name}: {float(z[1]):.5E}')
     return z[0], z[1]
+
+def fit_weighted_lin_lstsq(X, Y, w) -> tuple[np.ndarray,OptimizeResult]:
+    """ Compute a weighted linear least-squares using scipy.optimize
+    Optimize for A : min_A ||diag(w) * (X @ A - Y)||_2^2 
+
+    Args:
+        X (np.ndarray): Input data, dimensions (N,M)
+        Y (np.ndarray): Target data, dimensions (N)
+        w (np.ndarray): Weights, dimensions (N)
+        verbose (bool): Verbose output
+    Returns:
+        np.ndarray: A vector of dimension (M), solution of the least square problem
+    """
+    
+    def obj(a:np.ndarray):
+        return (X@a - Y) * w
+    
+    def obj_jac(a:np.ndarray):
+        return np.diag(w) @ X
+    
+    # Use the un-weighted solution as startup
+    x0 = np.linalg.lstsq(X,Y)[0]
+    
+    sol:OptimizeResult = least_squares(obj,x0,obj_jac,method='lm')
+    return sol.x,sol
+    

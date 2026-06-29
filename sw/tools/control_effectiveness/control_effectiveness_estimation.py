@@ -24,11 +24,216 @@ import os
 import sys
 import numpy as np
 from numpy import genfromtxt
+from scipy import optimize
 import matplotlib.pyplot as plt
 
 import control_effectiveness_utils as ut
+from control_effectiveness_utils import Configuration
+
+from typing import Optional
+
+
+########## Helper functions ##########
+
+def extract_virtual_cmd(conf_dict:dict) -> np.ndarray:
+    """Get virtual commands from the configuration
+
+    Args:
+        conf_dict (dict): Configuration dictionnary (parsed JSON)
+
+    Returns:
+        np.ndarray: Transformation matrix from standard to virtual commands
+    """
+    virtual_cmd = np.array(conf_dict['virtual_cmd'])
+    v_nb = virtual_cmd.shape[0]
+    _, S, _ = np.linalg.svd(virtual_cmd)
+    virtual_cmd = virtual_cmd / S.reshape(v_nb, 1)
+    # nb_out = virtual_cmd.shape[1]
+    
+    return virtual_cmd
+    
+    
+def get_time_from_conf(conf:dict, start:float, end:float, freq:Optional[float], data):
+    """ Extract time data and frequency from configuration hint, arguments and data
+
+    Args:
+        conf (dict):    Configuration dictionnary (parsed JSON)
+        start (float):  Start time of the considered data 
+        end (float):    End time of the considered data
+        freq (Optional[float]): Data Frequency hint
+        data (_type_): Data source
+
+    Raises:
+        ValueError: Measured a negative period in the signal
+
+    Returns:
+        (float,float,float,float): start,end,freq,time
+    """
+    time = None
+    for el in conf['data']:
+        if el['type'] == 'timestamp':
+            # convert time limits to index in timestamp array
+            (start, end) = ut.get_index_from_time(data[:,el['column']], start, end)
+            # get time vector
+            time = ut.apply_format(el, data[start:end, el['column']])
+            # Auto freq if needed
+            if freq is None:
+                period = np.mean(np.diff(time))
+                if period > 0.:
+                    freq = float(np.round(1. / period))
+                    print("Using auto freq:", freq)
+                else:
+                    raise ValueError("Invalid freq")
+            break
+    return start,end,freq,time
+
+
+def fit_eff_matrix(conf:Configuration, inputs:np.ndarray, commands:np.ndarray, v_inv:np.ndarray, verbose:bool=False, weighting:bool=False):
+    """ Fit the command efficiency using a linear model, yielding a matrix
+
+    Args:
+        conf (Configuration):   Additional configuration data
+        inputs (np.ndarray):    Acceleration and rotation rates
+        commands (np.ndarray):  Commands given
+        v_inv (np.ndarray):     Inversion matrix from virtual to standard commands
+        verbose (bool, optional): Display fitting messages. Defaults to False.
+        weighting (bool, optional): Use a weighted estimation based on command magnitue (low command should imply low effects). Defaults to False.
+
+    Returns:
+        (np.ndarray,np.ndarray): Efficiency matrix and estimation residuals
+    """
+    mixing = np.array(conf.mixing)
+    (nb_in, nb_out) = np.shape(mixing)
+    
+    output = np.zeros((nb_in, nb_out))
+    
+    residuals = []
+    if weighting:
+        for i in range(nb_in):
+            weights = np.linalg.norm(commands,axis=1)            
+            axis_fit,sol = ut.fit_weighted_lin_lstsq(commands,inputs[:,i],weights)
+            output[[i],:] = axis_fit.T
+            # cmd_fit = np.dot(commands, axis_fit)
+            residuals.append(sol.cost)
+    else:
+        for i in range(nb_in):
+            cmd = np.multiply(commands, mixing[[i],:])
+            axis_fit,res = ut.fit_axis(cmd, inputs[:,[i]], str(i), verbose)
+            output[[i],:] = np.matmul(v_inv, axis_fit).T
+            residuals.append(res)
+    
+    return output,np.array(residuals)
+
+def make_virtual_cmd(virtual_cmd:np.ndarray, commands:np.ndarray):
+    """Given the virtual command transformation matrix and somes commands,
+    transform them.
+
+    Args:
+        virtual_cmd (np.ndarray): Conversion matrix from standard command to virtual ones
+        commands (np.ndarray): Array of commands
+
+    Returns:
+        np.ndarray: Converted commands
+    """
+    v_nb = virtual_cmd.shape[0]
+    nb_data = commands.shape[0]
+    v_commands = np.zeros((nb_data, v_nb))
+    for i in range(nb_data):
+        v_commands[i,:] = np.matmul(virtual_cmd, commands[i,:])
+    return v_commands
+
+def find_eff_matrix(conf:Configuration, start:int, end:int, data:np.ndarray, virtual_cmd:Optional[np.ndarray], verbose:bool=False) -> tuple[np.ndarray,np.ndarray]:
+    """ Extract input and command data, then use them for estimating efficency coefficients.
+    If given, convert to virtual commands first.
+
+    Args:
+        conf (Configuration):   Configuration details
+        start (int):            Start time for data extraction
+        end (int):              End time for data extraction
+        data (np.ndarray):      Source data array
+        virtual_cmd (Optional[np.ndarray]): Standard to virtual command conversion matrix
+        verbose (bool, optional): Display detailed estimation info. Defaults to False.
+
+    Returns:
+        (np.ndarray,np.ndarray): Efficiency matrix and estimation residuals
+    """
+    inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(conf, data, start, end)
+    if virtual_cmd is not None:
+        commands = make_virtual_cmd(virtual_cmd, commands)
+        v_inv = np.linalg.pinv(virtual_cmd)
+    else:
+        v_inv = np.identity(conf.nb_out)
+            
+    return fit_eff_matrix(conf, inputs, commands, v_inv, verbose)
+
+def find_eff_matrix_with_meta_opt(conf:Configuration, start:int, end:int, data:np.ndarray, virtual_cmd:Optional[np.ndarray], verbose:bool=False, plot:bool=True):
+    """Extract input and command data, then use them for estimating efficency coefficients.
+    If given, convert to virtual commands first. Also perform a brute-force sweep of some
+    estimation parameters to try improving the final accuracy. This relies on the "ranges" parameter in the configuration file.
+
+    Args:
+        conf (Configuration):   Configuration details
+        start (int):            Start time for data extraction
+        end (int):              End time for data extraction
+        data (np.ndarray):      Source data array
+        virtual_cmd (Optional[np.ndarray]): Standard to virtual command conversion matrix
+        verbose (bool, optional): Display detailed estimation info. Defaults to False.
+
+    Returns:
+        (np.ndarray,np.ndarray): Efficiency matrix and estimation residuals
+    """
+    param_names = [k for k in conf.ranges.keys()]
+    rranges = [slice(conf.ranges[k][0],conf.ranges[k][1]+conf.ranges[k][2],conf.ranges[k][2]) for k in param_names]
+        
+    def obj_fun(xs):
+        for i,x in enumerate(xs):
+            conf.variables[param_names[i]] = x
+                
+        inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(
+                    conf, data, start, end)
+        if virtual_cmd is not None:
+            commands, v_inv = make_virtual_cmd(virtual_cmd, commands)
+        else:
+            v_inv = np.identity(conf.nb_out)
+                
+        _,residuals = fit_eff_matrix(conf, inputs, commands, v_inv, False)
+        return sum(residuals)
+        
+    x,v,grid,fgrid = optimize.brute(obj_fun, rranges, full_output=True,
+                          finish=optimize.fmin)
+    
+    if plot:
+        if len(rranges) == 1:
+            plt.scatter(grid,fgrid)
+            plt.gca().set_xlabel(param_names[0])
+            plt.gca().set_ylabel("Fitness")
+            plt.vlines(x,np.min(fgrid),np.max(fgrid),label=f"Optimum location: {x[0]:.4E}",color='r')
+            plt.legend()
+            plt.show()
+        else:
+            print("WARNING: No plotting available for now with more than 1 parameter optimized...")
+    
+    for i,x in enumerate(x):
+        conf.variables[param_names[i]] = x
+            
+    inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(
+                conf, data, start, end)
+    if virtual_cmd is not None:
+        commands, v_inv = make_virtual_cmd(virtual_cmd, commands)
+    else:
+        v_inv = np.identity(conf.nb_out)
+            
+    return fit_eff_matrix(conf, inputs, commands, v_inv, verbose)
+        
+########## Processing data ##########
 
 def process_data(conf, f_name, start, end, freq=None, variables=None, verbose=False, use_ranges=False, plot=False):
+    
+    # Simplified by using the newly defined helper functions.
+    # Not used anymore in the main, instead a succesion of direct calls to these functions.
+    # Kept for checking conformity.
+    
+    configuration = Configuration.from_dict(conf,variables)
 
     # Read data from log file
     data = genfromtxt(f_name, delimiter=',', skip_header=1)
@@ -66,30 +271,11 @@ def process_data(conf, f_name, start, end, freq=None, variables=None, verbose=Fa
     # check virtual command
     virtual_cmd = None
     if 'virtual_cmd' in conf:
-        virtual_cmd = np.array(conf['virtual_cmd'])
-        v_nb = virtual_cmd.shape[0]
-        _, S, _ = np.linalg.svd(virtual_cmd)
-        virtual_cmd = virtual_cmd / S.reshape(v_nb, 1)
+        virtual_cmd = extract_virtual_cmd(conf)
         nb_out = virtual_cmd.shape[1]
 
     # Search for time vector
-    time = None
-    for el in conf['data']:
-        if el['type'] == 'timestamp':
-            # convert time limits to index in timestamp array
-            (start, end) = ut.get_index_from_time(data[:,el['column']], start, end)
-            # get time vector
-            time = ut.apply_format(el, data[start:end, el['column']])
-            # Auto freq if needed
-            if freq is None:
-                period = np.mean(np.diff(time))
-                if period > 0.:
-                    freq = np.round(1. / period)
-                    print("Using auto freq:", freq)
-                else:
-                    print("Invalid freq")
-                    sys.exit(1)
-            break
+    start, end, freq, time = get_time_from_conf(conf, start, end, freq, data)
     if time is None:
         start = int(start * freq)
         end = int(end * freq)
@@ -100,31 +286,16 @@ def process_data(conf, f_name, start, end, freq=None, variables=None, verbose=Fa
 
     if ranges is None:
         # Search and filter inputs and outputs
-        inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(conf, var, data, nb_in, nb_out, start, end)
+        configuration.variables = var
+        inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(configuration, data, start, end)
 
         if virtual_cmd is not None:
-            v_nb = virtual_cmd.shape[0]
-            nb_data = commands.shape[0]
-            v_commands = np.zeros((nb_data, v_nb))
-            for i in range(nb_data):
-                v_commands[i,:] = np.matmul(virtual_cmd, commands[i,:])
-            v_inv = np.linalg.pinv(virtual_cmd)
-            commands = v_commands
+            commands, v_inv = make_virtual_cmd(virtual_cmd, commands)
+
         else:
             v_inv = np.identity(nb_out)
 
-        for i in range(nb_in):
-            name = ut.get_name_by_index(conf, 'input', i)
-            cmd = np.multiply(commands, mixing[[i],:])
-            #print(name, cmd)
-            axis_fit = ut.fit_axis(cmd, inputs[:,[i]], name, verbose)
-            output[[i],:] = np.matmul(v_inv, axis_fit).T
-            #print(axis_fit, axis_fit.shape, virtual_cmd.shape)
-            #print('inv',output[[i],:])
-            #print('direct',np.matmul(axis_fit.T,virtual_cmd))
-            cmd_fit = np.dot(cmd, axis_fit)
-            lin_fit, res = ut.fit_lin(cmd_fit[:,0], inputs[:,[i]][:,0], name, True)
-            ut.plot_results(cmd_fit, inputs[:,[i]], raw_inputs[:,[i]], lin_fit, time, freq, name)
+            output,residuals = fit_eff_matrix(configuration, inputs, commands, v_inv, verbose)
 
     else:
         for e in ranges:
@@ -136,28 +307,19 @@ def process_data(conf, f_name, start, end, freq=None, variables=None, verbose=Fa
             tmp_output = np.zeros((nb_in, nb_out))
             for j, v in enumerate(lin_var):
                 var[e] = v
+                configuration.variables = var
                 inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(
-                        conf, var, data, nb_in, nb_out, start, end)
+                        configuration, data, start, end)
                 if virtual_cmd is not None:
-                    v_nb = virtual_cmd.shape[0]
-                    nb_data = commands.shape[0]
-                    v_commands = np.zeros((nb_data, v_nb))
-                    for i in range(nb_data):
-                        v_commands[i,:] = np.matmul(virtual_cmd, commands[i,:])
-                    v_inv = np.linalg.pinv(virtual_cmd)
-                    commands = v_commands
+                    commands, v_inv = make_virtual_cmd(virtual_cmd, commands)
                 else:
                     v_inv = np.identity(nb_out)
 
                 res_total = 0.
-                for i in range(nb_in):
-                    name = ut.get_name_by_index(conf, 'input', i)
-                    cmd = np.multiply(commands, mixing[[i],:])
-                    axis_fit = ut.fit_axis(cmd, inputs[:,[i]], name, verbose)
-                    tmp_output[[i],:] = np.matmul(v_inv, axis_fit).T
-                    cmd_fit = np.dot(cmd, axis_fit)
-                    lin_fit, residual = ut.fit_lin(cmd_fit[:,0], inputs[:,[i]][:,0], name, verbose)
-                    res_total += float(residual[0])
+                
+                output,residuals = fit_eff_matrix(configuration, inputs, commands, v_inv, verbose)
+                
+                res_total = sum(residuals)
 
                 if res_total < best:
                     best = res_total
@@ -196,25 +358,69 @@ def main():
     parser.add_argument("-p", "--plot",
                       help="Show resulting plots",
                       action="store_true", dest="plot")
-    parser.add_argument("-r", "--use_ranges",
+    parser.add_argument("-r", "--use-ranges",
                       action="store_true", dest="use_ranges")
     parser.add_argument("-v", "--verbose",
                       action="store_true", dest="verbose")
     args = parser.parse_args()
-
-    if not os.path.isfile(args.config) and not os.path.isfile(args.data):
-        print("Config or data files are not valid")
-        sys.exit(1)
-
+ 
+ 
+    # Display parameters
+    verbose = args.verbose
+    plot = args.plot
+    
+    # Set up time parameters
     start = int(args.start)
     end = int(args.end)
     freq = args.freq
     if freq is not None:
         freq = float(freq)
+        
 
+    # Read data
+    if not os.path.isfile(args.data):
+        raise FileNotFoundError(args.data)
+    data = genfromtxt(args.data, delimiter=',', skip_header=1)
+    
+    # Read configuration
+    if not os.path.isfile(args.config):
+        raise FileNotFoundError(args.config)
     with open(args.config, 'r') as f:
-        conf = json.load(f)
-        process_data(conf, args.data, start, end, freq, args.vars, args.verbose, args.use_ranges, args.plot)
+        conf:dict = json.load(f)
+        
+    configuration = Configuration.from_dict(conf,args.vars)
+    
+    # Create a virtual command
+    virtual_cmd = None
+    if 'virtual_cmd' in conf:
+        virtual_cmd = extract_virtual_cmd(conf)
+        # nb_out = virtual_cmd.shape[1]
+    
+    # Search for time vector in data from presets
+    start, end, freq, time = get_time_from_conf(conf, start, end, freq, data)
+    if time is None:
+        start = int(start * freq)
+        end = int(end * freq)
+        time = np.arange(end-start) / freq # default time vector if not in data
+    configuration.variables['freq'] = freq
+    
+    
+    if len(configuration.ranges) > 0 and args.use_ranges:
+        output,residuals = find_eff_matrix_with_meta_opt(configuration, start, end, data, virtual_cmd, verbose, plot)
+    else:
+        output,residuals = find_eff_matrix(configuration, start, end, data, virtual_cmd, verbose)
+
+    if plot:
+        inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(configuration, data, start, end)
+        for i in range(configuration.nb_in):
+            name = ut.get_name_by_index(conf, 'input', i)
+            estimated_accel = commands @ output[i]
+            lin_fit = ut.fit_lin(estimated_accel, inputs[:,[i]][:,0], name, verbose)
+            fig = ut.plot_results(estimated_accel, inputs[:,[i]], raw_inputs[:,[i]], lin_fit, time, freq, name)
+            fig.suptitle(f"Residual: {residuals[i]}")
+        plt.show()
+        
+    ut.print_results(conf, configuration.variables, output)
 
 
 if __name__ == "__main__":
