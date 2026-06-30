@@ -25,6 +25,8 @@
 #ifndef CONTROL_MIXING_ATLAS_H
 #define CONTROL_MIXING_ATLAS_H
 
+#include "math/pprz_algebra_float.h"  // FloatVect3
+
 // // INDI actuators output indexes
 // #define CMA_ACT_MOTOR_FR   0          // Motor Front-Right (FR)
 // #define CMA_ACT_MOTOR_BR   1          // Motor Back-Right (RR)
@@ -34,16 +36,21 @@
 // #define CMA_ACT_TILT_L     5          // Tilt Servo Left (TILT_L), 0 = vertical, pi/2 = forward
 
 extern void control_mixing_atlas_init(void);
-extern void control_mixing_atlas_manual(void);
-
-extern void control_mixing_atlas_attitude_enter(void);
-extern void control_mixing_atlas_attitude(void);
 
 extern void control_mixing_atlas_quad_enter(void);
 extern void control_mixing_atlas_quad(void);
 
-// extern void control_mixing_atlas_nav_enter(void);
-// extern void control_mixing_atlas_nav_run(void);
+extern void control_mixing_atlas_attitude_enter(void);
+extern void control_mixing_atlas_attitude(void);
+
+extern void control_mixing_atlas_guidance_enter(void);
+extern void control_mixing_atlas_guidance(void);
+
+extern void control_mixing_atlas_failsafe(void);
+
+extern struct FloatVect3 atlas_pos_sp;     // NED position setpoint [m]
+extern struct FloatVect3 atlas_vel_sp;     // NED velocity setpoint [m/s]
+extern float             atlas_heading_sp; // heading setpoint [rad, NED]
 
 extern struct ThrustSetpoint guidance_set_rc_h_thrust(struct ThrustSetpoint *v_sp);
 

@@ -1,0 +1,69 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="circ_trajectory" dir="ctrl">
+  <doc>
+    <description>
+      Circular reference trajectory generator for the INDI hybrid guidance.
+
+      The mode is selected manually from the ground station via the status
+      setting (default: HOVER). All active modes run the full
+      position/velocity/acceleration feedback cascade. HOVER holds the circle
+      center (heading captured on entry), GOTO_START holds the circle start
+      position and aligns the heading to the circle tangent after ALIGN_TIME
+      seconds, START flies the circular trajectory, END holds the circle end
+      position and final heading. The only automatic transition is START to
+      END when a finite duration T_END elapses. STOP deactivates the module
+      and releases the heading back to the guidance.
+    </description>
+    <section name="CIRC_TRAJECTORY" prefix="CIRC_TRAJECTORY_">
+      <define name="RADIUS"            value="1.5"             description="circle radius [m]"/>
+      <define name="V_MAX"             value="2.0"             description="max tangential speed [m/s] (omega = v_max/r)"/>
+      <define name="K"                 value="0.5"             description="exponential wind-up/wind-down factor [1/s]"/>
+      <define name="T_END"             value="60.0"            description="total duration [s]; t_end=0 runs continuously"/>
+      <define name="PLANE_TILT_DEG"    value="0.0"             description="circle-plane tilt [deg] (rotation about local Y)"/>
+      <define name="PLANE_AZIMUTH_DEG" value="0.0"             description="circle-plane azimuth [deg] (rotation about local Z)"/>
+      <define name="CENTER"            value="{0.0,0.0,0.0}"  description="circle center in NED [m] (down negative = up)"/>
+      <define name="MAX_ACCEL"         value="6.0"             description="bound on commanded horizontal acceleration [m/s^2]"/>
+      <define name="MAX_ACCELZ"        value="9.0"             description="bound on commanded vertical acceleration [m/s^2]"/>
+      <define name="ALIGN_TIME"        value="5.0"             description="time in GOTO_START before the heading aligns to the circle tangent [s]"/>
+      <define name="YAW_RATE"          value="20.0"            description="max heading slew rate while aligning in HEADING mode [deg/s]"/>
+    </section>
+  </doc>
+
+  <settings>
+    <dl_settings>
+      <dl_settings name="CircTraj">
+        <dl_setting var="circ_traj.status" min="0" max="5" step="1" shortname="status"
+                    values="STOP|HOVER|HEAD|GOTO_START|START|END"/>
+        <dl_setting var="circ_traj.r" min="0.5" max="20" step="0.1" shortname="radius" unit="m"/>
+        <dl_setting var="circ_traj.v_max" min="0.5" max="15" step="0.1" shortname="v_max" unit="m/s"/>
+        <dl_setting var="circ_traj.k" min="0.05" max="2" step="0.05" shortname="windup_k" unit="1/s"/>
+        <dl_setting var="circ_traj.t_end" min="0" max="600" step="5" shortname="t_end" unit="s"/>
+        <dl_setting var="circ_traj.max_accel" min="0.5" max="10" step="0.5" shortname="max_accel" unit="m/s2"/>
+        <dl_setting var="circ_traj.max_accelz" min="0.5" max="12" step="0.5" shortname="max_accelz" unit="m/s2"/>
+        <dl_setting var="circ_traj.yaw_rate" min="5" max="180" step="5" shortname="yaw_rate" unit="deg/s"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+
+
+  <header>
+    <file name="circ_trajectory.h"/>
+  </header>
+
+  <init fun="circ_trajectory_init()"/>
+  <periodic fun="circ_trajectory_run()" freq="500.0"/>
+
+  <makefile>
+    <file name="circ_trajectory.c"/>
+    <define name="CIRC_TRAJECTORY_V_MAX" value="3.1"/>
+    <define name="CIRC_TRAJECTORY_K" value="0.3"/>
+    <define name="CIRC_TRAJECTORY_RADIUS" value="2.0"/>
+    <define name="CIRC_TRAJECTORY_T_END" value="60.0"/>
+    <define name="CIRC_TRAJECTORY_MAX_ACCEL" value="6.0"/>
+    <define name="CIRC_TRAJECTORY_MAX_ACCELZ" value="9.0"/>
+    <define name="CIRC_TRAJECTORY_CENTER" value="{0.0,0.0,-1.5}"/>
+    <define name="CIRC_TRAJECTORY_YAW_RATE" value="20.0"/>
+  </makefile>
+
+</module>

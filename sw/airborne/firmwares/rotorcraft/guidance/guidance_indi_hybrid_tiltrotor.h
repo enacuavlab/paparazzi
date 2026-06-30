@@ -74,19 +74,15 @@ extern void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_an
 #endif
 
 #ifndef GUIDANCE_INDI_PITCH_PREF_DEG
-#define GUIDANCE_INDI_PITCH_PREF_DEG 0.0f         /* preferred pitch angle [deg] */
+#define GUIDANCE_INDI_PITCH_PREF_DEG 5.0f         /* preferred pitch angle, positive nose up [deg] */
 #endif
 
 #ifndef GUIDANCE_INDI_AIRSPEED_IMPORTANCE
 #define GUIDANCE_INDI_AIRSPEED_IMPORTANCE 2.0f /* forward-velocity weight boost in cruise */
 #endif
 
-#ifndef GUIDANCE_INDI_WU_PITCH_SCALE
-#define GUIDANCE_INDI_WU_PITCH_SCALE 1.0f     /* pitch command cost scale in cruise */
-#endif
-
-#ifndef GUIDANCE_INDI_WU_TX_SCALE
-#define GUIDANCE_INDI_WU_TX_SCALE 1.0f        /* forward-thrust command cost scale in hover */
+#ifndef GUIDANCE_INDI_WU_PITCH
+#define GUIDANCE_INDI_WU_PITCH 100.0f  /* pitch preference weight (vs gamma_sq * Wv = 1e5 on the objectives) */
 #endif
 
 

@@ -22,9 +22,13 @@
             <define name="KAPPA"           value="0"               description="Drag-torque to thrust ratio (kappa = k_m/k_t) [m]"/>
             <define name="K_LIFT"          value="0"               description="Wing lift derivative: dL/d(alpha) = k_lift * V^2 [N/rad]"/>
             <define name="V_WING"          value="10.0"            description="Airspeed at which wing lift derivative is applied [m/s]"/>
-            <define name="tilt_rate_max"   value="0"               description="Maximum tilt rate [deg/s]"/>
-            <define name="ALPHA_MIN"       value="0"               description="Minimum tilt angle [rad] (default -0.1)"/>
+            <define name="ALPHA_MIN"       value="-0.261"            description="Minimum tilt angle [rad] (default -0.1)"/>
             <define name="ALPHA_MAX"       value="M_PI/2"          description="Maximum tilt angle [rad] (default pi/2)"/>
+            <!-- TILT_F / TILT_M version
+            <define name="TILT_F_RATE"     value="20.0"            description="TILT_F (mean tilt) angular rate limit [deg/s]"/>
+            <define name="TILT_M_RATE"     value="15.0"            description="TILT_M (differential, per-side) angular rate limit [deg/s]"/>
+            -->
+            <define name="TILT_RATE"       value="40.0"            description="Tilt servo angular rate limit [deg/s] (per servo)"/>
         </section>
 
         <section name="ATLAS_MOTOR" prefix="ATLAS_MOTOR_">
@@ -43,7 +47,6 @@
                 <dl_setting var="atlas_eff_sched_p.kappa"      min="0.0001" step="0.001"   max="1.0"   shortname="kappa"/>
                 <dl_setting var="atlas_eff_sched_p.k_lift"     min="0"      step="0.001"   max="5.0"   shortname="k_lift"/>
                 <dl_setting var="atlas_eff_sched_p.v_wing"     min="0"      step="0.1"     max="30.0"  shortname="v_wing"/>
-                <dl_setting var="atlas_eff_tilt_rate_max"      min="1"      step="5"       max="90"    shortname="tilt_rate_max"/>
             </dl_settings>
         </dl_settings>
     </settings>
@@ -65,14 +68,18 @@
         <define name="ATLAS_EFF_RZ"             value="{0.0,0.0,0.0,0.0}"/>
         <define name="ATLAS_EFF_SPIN_DIR"       value="{-1.0,1.0,-1.0,1.0}"/>
         <define name="ATLAS_EFF_K_T_PPRZ"       value="{0.35145,2.636e-4,8.7863e-8}"/>
-        <define name="ATLAS_EFF_KAPPA"          value="0.0483"/>
+        <define name="ATLAS_EFF_KAPPA"          value="0.1"/> <!--0.0483-->
         <define name="ATLAS_EFF_K_LIFT"         value="0.311"/>
         <define name="ATLAS_EFF_V_WING"         value="10.0"/>
         <define name="ATLAS_MOTOR_HOVER"        value="3000"/>
         <define name="ATLAS_MOTOR_IDLE"         value="1000"/>
-        <define name="ATLAS_EFF_ALPHA_MIN"      value="-0.3"/>
+        <define name="ATLAS_EFF_ALPHA_MIN"      value="-0.261"/>
         <define name="ATLAS_EFF_ALPHA_MAX"      value="M_PI/2"/>
-        <define name="ATLAS_EFF_TILT_RATE_MAX"  value="40"/>
+        <!-- TILT_F / TILT_M version
+        <define name="ATLAS_EFF_TILT_F_RATE"    value="20.0"/>
+        <define name="ATLAS_EFF_TILT_M_RATE"    value="15.0"/>
+        -->
+        <define name="ATLAS_EFF_TILT_RATE"      value="30.0"/>
         <file name="eff_scheduling_atlas.c"/>
     </makefile>
 </module>

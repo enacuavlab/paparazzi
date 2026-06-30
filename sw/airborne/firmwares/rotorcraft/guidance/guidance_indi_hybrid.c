@@ -128,7 +128,7 @@ struct guidance_indi_hybrid_params gih_params = {
 };
 
 // Quadplanes can hover at various pref pitch
-float guidance_indi_pitch_pref_deg = 0;
+float guidance_indi_pitch_pref_deg = 10.0f;
 
 
 // If using WLS, check that the matrix size is sufficient
@@ -297,7 +297,23 @@ struct FloatVect3 gi_speed_sp = {0.0, 0.0, 0.0};
 abi_event vel_sp_ev;
 static void vel_sp_cb(uint8_t sender_id, struct FloatVect3 *vel_sp);
 struct FloatVect3 indi_vel_sp = {0.0, 0.0, 0.0};
+bool indi_vel_sp_set_3d = false;
 float time_of_vel_sp = 0.0;
+
+#ifndef GUIDANCE_INDI_ACCEL_SP_ID
+#define GUIDANCE_INDI_ACCEL_SP_ID ABI_BROADCAST
+#endif
+abi_event accel_sp_ev;
+static void accel_sp_cb(uint8_t sender_id, uint8_t flag, struct FloatVect3 *accel_sp);
+struct FloatVect3 indi_accel_sp = {0.0, 0.0, 0.0};
+bool indi_accel_sp_set_2d = false;
+bool indi_accel_sp_set_3d = false;
+float time_of_accel_sp_2d = 0.0;
+float time_of_accel_sp_3d = 0.0;
+
+float indi_heading_sp = 0.0;
+bool indi_heading_sp_set = false;
+float time_of_heading_sp = 0.0;
 
 void guidance_indi_propagate_filters(void);
 
@@ -345,7 +361,7 @@ static void send_wls_u_guid(struct transport_tx *trans, struct link_device *dev)
  */
 void guidance_indi_init(void)
 {
-  /*AbiBindMsgACCEL_SP(GUIDANCE_INDI_ACCEL_SP_ID, &accel_sp_ev, accel_sp_cb);*/
+  AbiBindMsgACCEL_SP(GUIDANCE_INDI_ACCEL_SP_ID, &accel_sp_ev, accel_sp_cb);
   AbiBindMsgVEL_SP(GUIDANCE_INDI_VEL_SP_ID, &vel_sp_ev, vel_sp_cb);
 
 #ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
@@ -492,7 +508,9 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   // else ignore the vertical acceleration error
 #ifndef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
 #ifndef STABILIZATION_ATTITUDE_INDI_FULL
+#if !GUIDANCE_INDI_HYBRID_USE_WLS
   a_diff.z = 0.0;
+#endif
 #endif
 #endif
 
@@ -501,8 +519,15 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
 
 #if GUIDANCE_INDI_HYBRID_USE_WLS
 
+  // Speed setpoint rotated into the heading frame (body_v[0] = forward),
+  // used by the WLS preferences (e.g. forward thrust / tilt bias).
+  float body_v[3];
+  body_v[0] =  cosf(yaw_filt) * gi_speed_sp.x + sinf(yaw_filt) * gi_speed_sp.y;
+  body_v[1] = -sinf(yaw_filt) * gi_speed_sp.x + cosf(yaw_filt) * gi_speed_sp.y;
+  body_v[2] = gi_speed_sp.z;
+
   // Calculate the maximum deflections
-  guidance_indi_hybrid_set_wls_settings(v_gih, roll_filt.o[0], pitch_filt.o[0]);
+  guidance_indi_hybrid_set_wls_settings(body_v, roll_filt.o[0], pitch_filt.o[0]);
 
   float du_gih[GUIDANCE_INDI_HYBRID_U]; // = {0.0f, 0.0f, 0.0f};
 
@@ -579,9 +604,20 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   ff_rates.q =  cosf(euler_zyx->theta) * sinf(euler_zyx->phi) * omega;
   ff_rates.r =  cosf(euler_zyx->theta) * cosf(euler_zyx->phi) * omega;
 
+  // External heading setpoint times out if not refreshed by the sender
+  if (indi_heading_sp_set && (get_sys_time_float() - time_of_heading_sp > 0.5f)) {
+    indi_heading_sp_set = false;
+  }
+
   // For a hybrid it is important to reduce the sideslip, which is done by changing the heading.
   // For experiments, it is possible to fix the heading to a different value.
-  if (take_heading_control) {
+  if (indi_heading_sp_set) {
+    // heading commanded by an external module (e.g. a trajectory generator);
+    // track it with the heading integrator for a smooth hand-back
+    guidance_indi_hybrid_heading_sp = indi_heading_sp;
+    guidance_euler_cmd.psi = guidance_indi_hybrid_heading_sp;
+  }
+  else if (take_heading_control) {
     // heading is fixed by nav
     guidance_euler_cmd.psi = heading_sp;
   }
@@ -783,26 +819,89 @@ static float bound_vz_sp(float vz_sp)
 
 struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight UNUSED, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndiHybrid_HMode h_mode, enum GuidanceIndiHybrid_VMode v_mode)
 {
+#ifdef GUIDANCE_INDI_POS_SP_DEBUG
+  (void)gv; (void)h_mode; (void)v_mode;
+  static const struct FloatVect3 debug_pos_sp = { 1.0f, 1.0f, -2.0f }; // NED [m]
+  static const struct FloatVect3 debug_vel_sp = { 0.0f, 0.0f, 0.0f };  // NED [m/s]
+  struct NedCoor_f *pos = stateGetPositionNed_f();
+  struct NedCoor_f *vel = stateGetSpeedNed_f();
+
+  // Cascade: accel_sp = Kv * ((Vref + Kp*(Pref - P)) - V)
+  struct FloatVect3 v_cmd;
+  v_cmd.x = debug_vel_sp.x + gih_params.pos_gain  * (debug_pos_sp.x - pos->x);
+  v_cmd.y = debug_vel_sp.y + gih_params.pos_gain  * (debug_pos_sp.y - pos->y);
+  v_cmd.z = debug_vel_sp.z + gih_params.pos_gainz * (debug_pos_sp.z - pos->z);
+
+  struct FloatVect3 accel_sp;
+  accel_sp.x = (v_cmd.x - vel->x) * gih_params.speed_gain;
+  accel_sp.y = (v_cmd.y - vel->y) * gih_params.speed_gain;
+  accel_sp.z = (v_cmd.z - vel->z) * gih_params.speed_gainz;
+  return guidance_indi_run(&accel_sp, gh->sp.heading);
+#else
   struct FloatVect3 pos_err = { 0 };
   struct FloatVect3 accel_sp = { 0 };
 
-  // First check for velocity setpoint from module // FIXME should be called like this
-  float dt = get_sys_time_float() - time_of_vel_sp;
-  // If the input command is not updated after a timeout, switch back to flight plan control
-  if (dt < 0.5) {
-    gi_speed_sp.x = indi_vel_sp.x;
-    gi_speed_sp.y = indi_vel_sp.y;
-    gi_speed_sp.z = indi_vel_sp.z;
-    accel_sp = compute_accel_from_speed_sp(); // compute accel sp
-    return guidance_indi_run(&accel_sp, gh->sp.heading);
+  // 3D accel setpoint from ABI
+  if (indi_accel_sp_set_3d) {
+    accel_sp = indi_accel_sp;
+    // No speed setpoint is available in this mode: use the current velocity so
+    // speed-based preferences (forward thrust / tilt bias) hold the current speed
+    VECT3_COPY(gi_speed_sp, *stateGetSpeedNed_f());
+    float dt = get_sys_time_float() - time_of_accel_sp_3d;
+    if (dt > 0.5f)
+    {
+      indi_accel_sp_set_3d = false;
+    }
   }
-
-  if (h_mode == GUIDANCE_INDI_HYBRID_H_POS) {
-    //Linear controller to find the acceleration setpoint from position and velocity
-    pos_err.x = POS_FLOAT_OF_BFP(gh->ref.pos.x) - stateGetPositionNed_f()->x;
-    pos_err.y = POS_FLOAT_OF_BFP(gh->ref.pos.y) - stateGetPositionNed_f()->y;
-    gi_speed_sp.x = pos_err.x * gih_params.pos_gain + SPEED_FLOAT_OF_BFP(gh->ref.speed.x);
-    gi_speed_sp.y = pos_err.y * gih_params.pos_gain + SPEED_FLOAT_OF_BFP(gh->ref.speed.y);
+  else if (indi_accel_sp_set_2d) {
+    // 2D acceleration setpoint (Horizontal from ABI / Vertical from flight plan)
+    if (v_mode == GUIDANCE_INDI_HYBRID_V_POS) {
+      pos_err.z = POS_FLOAT_OF_BFP(gv->z_ref) - stateGetPositionNed_f()->z;
+      gi_speed_sp.z = bound_vz_sp(pos_err.z * gih_params.pos_gainz + SPEED_FLOAT_OF_BFP(gv->zd_ref));
+    }
+    else if (v_mode == GUIDANCE_INDI_HYBRID_V_SPEED) {
+      gi_speed_sp.z = SPEED_FLOAT_OF_BFP(gv->zd_ref);
+    }
+    else {
+      gi_speed_sp.z = 0.f;
+    }
+    accel_sp.z = (gi_speed_sp.z - stateGetSpeedNed_f()->z) * gih_params.speed_gainz;
+    if (v_mode == GUIDANCE_INDI_HYBRID_V_ACCEL) {
+      accel_sp.z += ACCEL_FLOAT_OF_BFP(gv->zdd_ref);
+    }
+    accel_sp.x = indi_accel_sp.x;
+    accel_sp.y = indi_accel_sp.y;
+    float dt = get_sys_time_float() - time_of_accel_sp_2d;
+    if (dt > 0.5f)
+    {
+      indi_accel_sp_set_2d = false;
+    }
+  }
+  else if (indi_vel_sp_set_3d) {
+    // 3D velocity setpoint from ABI
+    VECT3_COPY(gi_speed_sp, indi_vel_sp);
+    accel_sp = compute_accel_from_speed_sp();
+    float dt = get_sys_time_float() - time_of_vel_sp;
+    if (dt > 0.5f)
+    {
+      indi_vel_sp_set_3d = false;
+    }
+  } else {
+    // Flight plan guidance modes
+    if (h_mode == GUIDANCE_INDI_HYBRID_H_POS) {
+      pos_err.x = POS_FLOAT_OF_BFP(gh->ref.pos.x) - stateGetPositionNed_f()->x;
+      pos_err.y = POS_FLOAT_OF_BFP(gh->ref.pos.y) - stateGetPositionNed_f()->y;
+      gi_speed_sp.x = pos_err.x * gih_params.pos_gain + SPEED_FLOAT_OF_BFP(gh->ref.speed.x);
+      gi_speed_sp.y = pos_err.y * gih_params.pos_gain + SPEED_FLOAT_OF_BFP(gh->ref.speed.y);
+    }
+    else if (h_mode == GUIDANCE_INDI_HYBRID_H_SPEED) {
+      gi_speed_sp.x = SPEED_FLOAT_OF_BFP(gh->ref.speed.x);
+      gi_speed_sp.y = SPEED_FLOAT_OF_BFP(gh->ref.speed.y);
+    }
+    else { // H_ACCEL
+      gi_speed_sp.x = 0.f;
+      gi_speed_sp.y = 0.f;
+    }
     if (v_mode == GUIDANCE_INDI_HYBRID_V_POS) {
       pos_err.z = POS_FLOAT_OF_BFP(gv->z_ref) - stateGetPositionNed_f()->z;
       gi_speed_sp.z = bound_vz_sp(pos_err.z * gih_params.pos_gainz + SPEED_FLOAT_OF_BFP(gv->zd_ref));
@@ -811,49 +910,17 @@ struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight UNUSED, struc
     } else {
       gi_speed_sp.z = 0.f;
     }
-    accel_sp = compute_accel_from_speed_sp(); // compute accel sp
+    accel_sp = compute_accel_from_speed_sp();
+    if (h_mode == GUIDANCE_INDI_HYBRID_H_ACCEL) {
+      accel_sp.x = (gi_speed_sp.x - stateGetSpeedNed_f()->x) * gih_params.speed_gain + ACCEL_FLOAT_OF_BFP(gh->ref.accel.x);
+      accel_sp.y = (gi_speed_sp.y - stateGetSpeedNed_f()->y) * gih_params.speed_gain + ACCEL_FLOAT_OF_BFP(gh->ref.accel.y);
+    }
     if (v_mode == GUIDANCE_INDI_HYBRID_V_ACCEL) {
-      accel_sp.z = (gi_speed_sp.z - stateGetSpeedNed_f()->z) * gih_params.speed_gainz + ACCEL_FLOAT_OF_BFP(gv->zdd_ref); // overwrite accel
+      accel_sp.z = (gi_speed_sp.z - stateGetSpeedNed_f()->z) * gih_params.speed_gainz + ACCEL_FLOAT_OF_BFP(gv->zdd_ref);
     }
-    return guidance_indi_run(&accel_sp, gh->sp.heading);
   }
-  else if (h_mode == GUIDANCE_INDI_HYBRID_H_SPEED) {
-    gi_speed_sp.x = SPEED_FLOAT_OF_BFP(gh->ref.speed.x);
-    gi_speed_sp.y = SPEED_FLOAT_OF_BFP(gh->ref.speed.y);
-    if (v_mode == GUIDANCE_INDI_HYBRID_V_POS) {
-      pos_err.z = POS_FLOAT_OF_BFP(gv->z_ref) - stateGetPositionNed_f()->z;
-      gi_speed_sp.z = bound_vz_sp(pos_err.z * gih_params.pos_gainz + SPEED_FLOAT_OF_BFP(gv->zd_ref));
-    } else if (v_mode == GUIDANCE_INDI_HYBRID_V_SPEED) {
-      gi_speed_sp.z = SPEED_FLOAT_OF_BFP(gv->zd_ref);
-    } else {
-      gi_speed_sp.z = 0.f;
-    }
-    accel_sp = compute_accel_from_speed_sp(); // compute accel sp
-    if (v_mode == GUIDANCE_INDI_HYBRID_V_ACCEL) {
-      accel_sp.z = (gi_speed_sp.z - stateGetSpeedNed_f()->z) * gih_params.speed_gainz + ACCEL_FLOAT_OF_BFP(gv->zdd_ref); // overwrite accel
-    }
-    return guidance_indi_run(&accel_sp, gh->sp.heading);
-  }
-  else { // H_ACCEL
-    gi_speed_sp.x = 0.f;
-    gi_speed_sp.y = 0.f;
-    if (v_mode == GUIDANCE_INDI_HYBRID_V_POS) {
-      pos_err.z = POS_FLOAT_OF_BFP(gv->z_ref) - stateGetPositionNed_f()->z;
-      gi_speed_sp.z = bound_vz_sp(pos_err.z * gih_params.pos_gainz + SPEED_FLOAT_OF_BFP(gv->zd_ref));
-    } else if (v_mode == GUIDANCE_INDI_HYBRID_V_SPEED) {
-      gi_speed_sp.z = SPEED_FLOAT_OF_BFP(gv->zd_ref);
-    } else {
-      gi_speed_sp.z = 0.f;
-    }
-    accel_sp = compute_accel_from_speed_sp(); // compute accel sp in case z control is required
-    // overwrite accel X and Y
-    accel_sp.x = (gi_speed_sp.x - stateGetSpeedNed_f()->x) * gih_params.speed_gain + ACCEL_FLOAT_OF_BFP(gh->ref.accel.x);
-    accel_sp.y = (gi_speed_sp.y - stateGetSpeedNed_f()->y) * gih_params.speed_gain + ACCEL_FLOAT_OF_BFP(gh->ref.accel.y);
-    if (v_mode == GUIDANCE_INDI_HYBRID_V_ACCEL) {
-      accel_sp.z = (gi_speed_sp.z - stateGetSpeedNed_f()->z) * gih_params.speed_gainz + ACCEL_FLOAT_OF_BFP(gv->zdd_ref); // overwrite accel
-    }
-    return guidance_indi_run(&accel_sp, gh->sp.heading);
-  }
+  return guidance_indi_run(&accel_sp, gh->sp.heading);
+#endif // GUIDANCE_INDI_POS_SP_DEBUG
 }
 
 #ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
@@ -950,7 +1017,41 @@ static void vel_sp_cb(uint8_t sender_id __attribute__((unused)), struct FloatVec
   indi_vel_sp.x = vel_sp->x;
   indi_vel_sp.y = vel_sp->y;
   indi_vel_sp.z = vel_sp->z;
+  indi_vel_sp_set_3d = true;
   time_of_vel_sp = get_sys_time_float();
+}
+
+void guidance_indi_hybrid_set_heading_sp(float heading)
+{
+  FLOAT_ANGLE_NORMALIZE(heading);
+  indi_heading_sp = heading;
+  indi_heading_sp_set = true;
+  time_of_heading_sp = get_sys_time_float();
+}
+
+void guidance_indi_hybrid_release_heading_sp(void)
+{
+  indi_heading_sp_set = false;
+}
+
+/**
+ * ABI callback that obtains the acceleration setpoint from a module
+ * flag=0: 2D (x,y only; z from flight plan), flag=1: 3D (full override)
+ */
+static void accel_sp_cb(uint8_t sender_id __attribute__((unused)), uint8_t flag, struct FloatVect3 *accel_sp)
+{
+  if (flag == 0) {
+    indi_accel_sp.x = accel_sp->x;
+    indi_accel_sp.y = accel_sp->y;
+    indi_accel_sp_set_2d = true;
+    time_of_accel_sp_2d = get_sys_time_float();
+  } else if (flag == 1) {
+    indi_accel_sp.x = accel_sp->x;
+    indi_accel_sp.y = accel_sp->y;
+    indi_accel_sp.z = accel_sp->z;
+    indi_accel_sp_set_3d = true;
+    time_of_accel_sp_3d = get_sys_time_float();
+  }
 }
 
 

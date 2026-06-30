@@ -577,6 +577,9 @@
 #ifndef ACCEL_SP_FCR_ID
 #define ACCEL_SP_FCR_ID 1 // Formation Control Rotorcraft
 #endif
+#ifndef ACCEL_SP_CIRC_ID
+#define ACCEL_SP_CIRC_ID 2 // Circular trajectory generator
+#endif
 
 /*
  * RELATIVE_LOCALIZATION communication (message 24)
@@ -667,6 +670,9 @@
 
 #ifndef VEL_SP_FCR_ID
 #define VEL_SP_FCR_ID 1 // Approach Moving Target
+#endif
+#ifndef VEL_SP_CIRC_ID
+#define VEL_SP_CIRC_ID 2 // Circular trajectory generator
 #endif
 
 

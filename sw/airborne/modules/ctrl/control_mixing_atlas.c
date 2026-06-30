@@ -32,7 +32,9 @@
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 #include "firmwares/rotorcraft/guidance.h"
+#include "firmwares/rotorcraft/guidance/guidance_indi_hybrid.h"
 #include "firmwares/rotorcraft/navigation.h"
+#include "state.h"
 
 #ifndef GUIDANCE_INDI_MAX_H_THRUST
 #define GUIDANCE_INDI_MAX_H_THRUST 0.5f
@@ -69,33 +71,49 @@ struct ThrustSetpoint guidance_set_rc_h_thrust(struct ThrustSetpoint *v_sp)
 //   }
 // }
 
+static inline void copy_indi_commands(void)
+{
+  commands[COMMAND_MOTOR_FR] = stabilization.cmd[COMMAND_MOTOR_FR];
+  commands[COMMAND_MOTOR_BR] = stabilization.cmd[COMMAND_MOTOR_BR];
+  commands[COMMAND_MOTOR_BL] = stabilization.cmd[COMMAND_MOTOR_BL];
+  commands[COMMAND_MOTOR_FL] = stabilization.cmd[COMMAND_MOTOR_FL];
+  // commands[COMMAND_TILT_F]   = stabilization.cmd[COMMAND_TILT_F];
+  // commands[COMMAND_TILT_M]   = stabilization.cmd[COMMAND_TILT_M];
+  commands[COMMAND_TILT_R]   = stabilization.cmd[COMMAND_TILT_R];
+  commands[COMMAND_TILT_L]   = stabilization.cmd[COMMAND_TILT_L];
+  commands[COMMAND_THRUST]   = stabilization.cmd[COMMAND_THRUST];
+  autopilot.throttle         = stabilization.cmd[COMMAND_THRUST];
+}
+
 void control_mixing_atlas_init(void)
 {
 }
 
-void control_mixing_atlas_manual(void)
+void control_mixing_atlas_quad_enter(void)
 {
-  int16_t throttle = radio_control_get(RADIO_THROTTLE);
-  int16_t tilt = radio_control_get(RADIO_TILT);
+  atlas_eff_disable_tilt = true;
+  guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
+  guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
+  stabilization_mode_changed(STABILIZATION_MODE_NONE, STABILIZATION_ATT_SUBMODE_HEADING);
+  stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
+  // actuators_pprz[ATLAS_ACT_TILT_F] = 0.f;   // TILT_F / TILT_M version
+  // actuators_pprz[ATLAS_ACT_TILT_M] = 0.f;
+  actuators_pprz[ATLAS_ACT_TILT_R] = 0.f;
+  actuators_pprz[ATLAS_ACT_TILT_L] = 0.f;
+}
 
-  commands[COMMAND_MOTOR_FR] = throttle;
-  commands[COMMAND_MOTOR_BR] = throttle;
-  commands[COMMAND_MOTOR_BL] = throttle;
-  commands[COMMAND_MOTOR_FL] = throttle;
-
-  commands[COMMAND_TILT_RIGHT] = tilt;
-  commands[COMMAND_TILT_LEFT] = tilt;
-
-  commands[COMMAND_ROLL]  = radio_control_get(RADIO_ROLL);
-  commands[COMMAND_PITCH] = radio_control_get(RADIO_PITCH);
-  commands[COMMAND_YAW]   = radio_control_get(RADIO_YAW);
-  commands[COMMAND_THRUST] = throttle;
-  commands[COMMAND_THRUST_X] = radio_control_get(RADIO_TILT);
-  autopilot.throttle       = throttle;
+void control_mixing_atlas_quad(void)
+{
+  struct ThrustSetpoint v_sp = guidance_v_run(autopilot_in_flight());
+  float thrust_vect[3] = {0.f, 0.f, th_sp_to_thrust_f(&v_sp, 0, THRUST_AXIS_Z)};
+  struct ThrustSetpoint th_sp = th_sp_from_thrust_vect_f(thrust_vect);
+  stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
+  copy_indi_commands();
 }
 
 void control_mixing_atlas_attitude_enter(void)
 {
+  atlas_eff_disable_tilt = false;
   guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
   guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
   stabilization_mode_changed(STABILIZATION_MODE_NONE, STABILIZATION_ATT_SUBMODE_HEADING);
@@ -104,66 +122,46 @@ void control_mixing_atlas_attitude_enter(void)
 
 void control_mixing_atlas_attitude(void)
 {
-  // struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
-  // stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
-  // SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
-  // autopilot.throttle = stabilization.cmd[COMMAND_THRUST];
-
   struct ThrustSetpoint v_sp = guidance_v_run(autopilot_in_flight());
   struct ThrustSetpoint th_sp = guidance_set_rc_h_thrust(&v_sp);
-  commands[COMMAND_THRUST_X] = radio_control_get(RADIO_TILT);
   stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
-  commands[COMMAND_MOTOR_FR]   = stabilization.cmd[COMMAND_MOTOR_FR];
-  commands[COMMAND_MOTOR_BR]   = stabilization.cmd[COMMAND_MOTOR_BR];
-  commands[COMMAND_MOTOR_BL]   = stabilization.cmd[COMMAND_MOTOR_BL];
-  commands[COMMAND_MOTOR_FL]   = stabilization.cmd[COMMAND_MOTOR_FL];
-  commands[COMMAND_TILT_RIGHT] = stabilization.cmd[COMMAND_TILT_RIGHT];
-  commands[COMMAND_TILT_LEFT]  = stabilization.cmd[COMMAND_TILT_LEFT];
-  commands[COMMAND_THRUST]     = stabilization.cmd[COMMAND_THRUST];
-  autopilot.throttle           = stabilization.cmd[COMMAND_THRUST];
+  copy_indi_commands();
 }
 
-void control_mixing_atlas_quad_enter(void)
+
+struct FloatVect3 atlas_pos_sp  = {0.f, 0.f, -1.f};  // NED position setpoint [m]
+struct FloatVect3 atlas_vel_sp  = {0.f, 0.f, 0.f};  // NED velocity setpoint [m/s]
+float             atlas_heading_sp = 0.f;           // heading setpoint [rad, NED]
+
+void control_mixing_atlas_guidance_enter(void)
 {
-  guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
-  guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
-  stabilization_mode_changed(STABILIZATION_MODE_NONE, STABILIZATION_ATT_SUBMODE_HEADING);
+  atlas_eff_disable_tilt = false;
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
-  actuators_pprz[COMMAND_TILT_RIGHT] = 0.f;
-  actuators_pprz[COMMAND_TILT_LEFT] = 0.f;
 }
 
-void control_mixing_atlas_quad(void)
+void control_mixing_atlas_guidance(void)
 {
-  int16_t throttle = radio_control_get(RADIO_THROTTLE);
+  bool in_flight = autopilot_in_flight();
 
-  commands[COMMAND_MOTOR_FR] = throttle;
-  commands[COMMAND_MOTOR_BR] = throttle;
-  commands[COMMAND_MOTOR_BL] = throttle;
-  commands[COMMAND_MOTOR_FL] = throttle;
+  // Heading setpoint for the guidance loop
+  guidance_h.sp.heading = atlas_heading_sp;
 
-  commands[COMMAND_ROLL]    = radio_control_get(RADIO_ROLL);
-  commands[COMMAND_PITCH]   = radio_control_get(RADIO_PITCH);
-  commands[COMMAND_YAW]     = radio_control_get(RADIO_YAW);
-  commands[COMMAND_THRUST]  = throttle;
-  commands[COMMAND_THRUST_X] = 0;
-  actuators_pprz[COMMAND_TILT_RIGHT] = 0.f;
-  actuators_pprz[COMMAND_TILT_LEFT] = 0.f;
-  autopilot.throttle = throttle;
+  struct StabilizationSetpoint stab_sp = guidance_indi_run_mode(
+      in_flight, &guidance_h, &guidance_v,
+      GUIDANCE_INDI_HYBRID_H_POS, GUIDANCE_INDI_HYBRID_V_POS);
+
+  // Retrieve the vertical thrust setpoint computed inside run_mode
+  struct ThrustSetpoint thrust_sp = guidance_v_run_pos(in_flight, &guidance_v);
+
+  stabilization_run(in_flight, &stab_sp, &thrust_sp, stabilization.cmd);
+  copy_indi_commands();
 }
 
-// void control_mixing_atlas_nav_enter(void)
-// {
-//   guidance_h_mode_changed(GUIDANCE_H_MODE_NAV);
-//   guidance_v_mode_changed(GUIDANCE_V_MODE_NAV);
-//   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
-// }
-//
-// void control_mixing_atlas_nav_run(void)
-// {
-//   struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
-//   struct StabilizationSetpoint stab_sp = guidance_h_run(autopilot_in_flight());
-//   stabilization_run(autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
-//   SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
-//   autopilot.throttle = stabilization.cmd[COMMAND_THRUST];
-// }
+
+void control_mixing_atlas_failsafe(void)
+{
+  struct StabilizationSetpoint stab_sp = stabilization_get_failsafe_sp();
+  struct ThrustSetpoint thrust_sp = guidance_v_run(autopilot_in_flight());
+  stabilization_run(autopilot_in_flight(), &stab_sp, &thrust_sp, stabilization.cmd);
+  copy_indi_commands();
+}

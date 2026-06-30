@@ -12,15 +12,13 @@
             <define name="WING_AREA"            value="0.5"          description="Wing reference area [m^2]"/>
             <define name="CL_0"                 value="0.1"          description="Zero-alpha lift coefficient [-]"/>
             <define name="CL_ALPHA"             value="5.0"          description="Lift slope [1/rad]"/>
-            <define name="MAX_ACC_BODY_X"       value="2.0"          description="Max longitudinal body acceleration [m/s^2]"/>
-            <define name="MAX_ACC_BODY_Z"       value="3.0"          description="Max vertical body acceleration [m/s^2]"/>
-            <define name="WLS_PRIORITIES"       value="{1.,1.,1.}"    description="WLS cost weights for ax, ay, az [-]"/>
+            <define name="MAX_ACC_BODY_X"       value="5.0"          description="Max longitudinal body acceleration [m/s^2]"/>
+            <define name="MAX_ACC_BODY_Z"       value="5.0"          description="Max vertical body acceleration [m/s^2]"/>
+            <define name="WLS_PRIORITIES"       value="{2.,2.,1.}"    description="WLS cost weights for ax, ay, az [-]"/>
             <define name="MIN_PITCH"            value="-40."         description="Min pitch attitude setpoint [deg]"/>
             <define name="MAX_PITCH"            value="40."          description="Max pitch attitude setpoint [deg]"/>
-            <define name="PITCH_PREF_DEG"       value="0.0"          description="Preferred pitch angle for WLS [deg]"/>
-            <define name="AIRSPEED_IMPORTANCE"  value="2.0"          description="Forward-velocity weight boost factor in cruise [-]"/>
-            <define name="WU_PITCH_SCALE"       value="1.0"          description="Pitch command cost scale in cruise [-]"/>
-            <define name="WU_TX_SCALE"          value="1.0"          description="Forward-thrust command cost scale in hover [-]"/>
+            <define name="PITCH_PREF_DEG"       value="0.0"          description="Preferred pitch angle for WLS, positive nose up [deg]"/>
+            <define name="WU_PITCH"             value="100.0"        description="Pitch preference weight; objectives carry gamma_sq*Wv = 1e5 [-]"/>
         </section>
     </doc>
     <dep>
@@ -37,6 +35,18 @@
         <define name="GUIDANCE_INDI_HYBRID_U" value="4"/>
         <!-- Guidance control objectives: ax, ay, az for tiltrotors -->
         <define name="GUIDANCE_INDI_HYBRID_V" value="3"/>
+        <define name="GUIDANCE_INDI_PUSHER_INDEX"        value="4"/>
+        <define name="GUIDANCE_INDI_MASS"                value="0.70"/>
+        <define name="GUIDANCE_INDI_WING_AREA"           value="0.5"/>
+        <define name="GUIDANCE_INDI_CL_0"                value="0.1"/>
+        <define name="GUIDANCE_INDI_CL_ALPHA"            value="5.0"/>
+        <define name="GUIDANCE_INDI_MAX_ACC_BODY_X"      value="6.0"/>
+        <define name="GUIDANCE_INDI_MAX_ACC_BODY_Z"      value="8.0"/>
+        <define name="GUIDANCE_INDI_WLS_PRIORITIES"      value="{1.7,1.7,1.}"/>
+        <define name="GUIDANCE_INDI_MIN_PITCH"           value="-40."/>
+        <define name="GUIDANCE_INDI_MAX_PITCH"           value="40."/>
+        <define name="GUIDANCE_INDI_PITCH_PREF_DEG"      value="0.0"/>
+        <define name="GUIDANCE_INDI_WU_PITCH"            value="0.0"/>
         <file name="guidance_indi_hybrid_tiltrotor.c" dir="$(SRC_FIRMWARE)/guidance"/>
     </makefile>
 </module>

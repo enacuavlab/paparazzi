@@ -34,8 +34,11 @@
 #define ATLAS_ACT_MOTOR_BR   1          // Motor Back-Right (BR)
 #define ATLAS_ACT_MOTOR_BL   2          // Motor Back-Left (BL)
 #define ATLAS_ACT_MOTOR_FL   3          // Motor Front-Left (FL)
-#define ATLAS_ACT_TILT_R     4          // Tilt Servo Right (TILT_R), 0 = vertical, pi/2 = forward
-#define ATLAS_ACT_TILT_L     5          // Tilt Servo Left (TILT_L), 0 = vertical, pi/2 = forward
+#define ATLAS_ACT_TILT_R     4          // Right tilt servo (0 = vertical/hover, pi/2 = forward)
+#define ATLAS_ACT_TILT_L     5          // Left tilt servo  (0 = vertical/hover, pi/2 = forward)
+// // --- TILT_F / TILT_M (mean/differential) version ---
+// #define ATLAS_ACT_TILT_F     4          // Mean/forward tilt: TILT_F = (TILT_R + TILT_L)/2 → Ax
+// #define ATLAS_ACT_TILT_M     5          // Differential tilt: TILT_M = (TILT_R - TILT_L)/2 → Mz
 // #define ATLAS_ACT_ELEVON_R   6
 // #define ATLAS_ACT_ELEVON_L   7
 
@@ -75,6 +78,8 @@ struct atlas_eff_sched_param_t {
     float k_tilt_pprz[2];               // Piecewise slopes: alpha = k_tilt_pprz * pprz  (tilt=0 (hover) at pprz=0)
                                         // [0]: ALPHA_MIN / (-MAX_PPRZ)  — slope for pprz < 0
                                         // [1]: ALPHA_MAX /   MAX_PPRZ   — slope for pprz >= 0
+    float alpha_min;                    // Min tilt angle [rad] (0 = vertical, hover)
+    float alpha_max;                    // Max tilt angle [rad] (pi/2 = horizontal, forward)
 
     // Wing Coefficients
     float k_lift;                       // Wing Lift Coefficient: L = k_lift * V^2 / m
@@ -89,7 +94,7 @@ struct atlas_eff_sched_param_t {
 
 struct atlas_eff_sched_var_t
 {
-    // Tilt states, read from ABI callback on tilt-servo feedback
+    // Tilt states, derived from the filtered TILT_R/TILT_L commands (actuator_state_filt_vect)
     float alpha_r_rad;                  // Right tilt angle
     float alpha_l_rad;                  // Left tilt angle
     float sin_ar, cos_ar;
@@ -113,7 +118,9 @@ extern struct atlas_eff_sched_param_t atlas_eff_sched_p;
 extern struct atlas_eff_sched_var_t atlas_eff_sched_v;
 
 extern float atlas_eff_liftd;
-extern float atlas_eff_tilt_rate_max;        // Maximum tilt rate [deg/s]
+// extern float atlas_eff_tilt_f_rate;     // TILT_F (mean) tilt-angle rate [deg/s]
+// extern float atlas_eff_tilt_m_rate;     // TILT_M (per-side) tilt-angle rate [deg/s]
+extern float atlas_eff_tilt_rate;          // Tilt servo angular rate limit [deg/s]
 extern bool  atlas_eff_disable_tilt;       // Debug: freeze tilts at hover (alpha=0)
 
 extern void eff_scheduling_atlas_init(void);

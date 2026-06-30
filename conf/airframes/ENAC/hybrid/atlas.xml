@@ -66,15 +66,23 @@
             <define name="USE_AIRSPEED" value="TRUE"/>
         </module>
 
-        <!--module name="gps" type="optitrack"/-->
-        <module name="gps" type="ublox">
-            <configure name="GPS_BAUD" value="B115200"/>
-            <define name="GPS_FIX_TIMEOUT" value="0.5"/>
-        </module>
-        <!-- INS TYPE : EKF2 -->
-        <!--module name="ins" type="ext_pose"/-->
-        <module name="ins" type="ekf2"> </module>
+        <!-- Optitrack Settings -->
+        <module name="gps" type="optitrack"/>
+        <define name="INS_EKF2_OPTITRACK" value="TRUE"/>
+        <configure name="USE_MAGNETOMETER" value="FALSE"/>
 
+        <!-- GPS Outdoors Settings -->
+<!--        <module name="gps" type="ublox">-->
+<!--            <configure name="GPS_BAUD" value="B115200"/>-->
+<!--            <define name="GPS_FIX_TIMEOUT" value="0.5"/>-->
+<!--        </module>-->
+        <module name="ins" type="ekf2"/>
+        <module name="guidance" type="indi_hybrid_tiltrotor"/>
+        <!--
+        <module name="guidance" type="indi_hybrid_tiltrotor">
+            <define name="GUIDANCE_INDI_POS_SP_DEBUG"/>
+        </module>
+        -->
         <module name="stabilization" type="indi">
             <configure name="INDI_OUTPUTS" value="5"/>
             <configure name="INDI_NUM_ACT" value="6"/>
@@ -82,22 +90,7 @@
             <define name="WLS_N_V_MAX" value = "6"/>
         </module>
         <module name="eff_scheduling_atlas"/>
-        <module name="guidance" type="indi_hybrid_tiltrotor">
-            <define name="GUIDANCE_INDI_PUSHER_INDEX"           value="4"/>
-            <define name="GUIDANCE_INDI_MASS"                   value="0.65"/>
-            <define name="GUIDANCE_INDI_WING_AREA"              value="0.5"/>
-            <define name="GUIDANCE_INDI_CL_0"                   value="0.1"/>
-            <define name="GUIDANCE_INDI_CL_ALPHA"               value="5.0"/>
-            <define name="GUIDANCE_INDI_MAX_ACC_BODY_X"         value="2.0"/>
-            <define name="GUIDANCE_INDI_MAX_ACC_BODY_Z"         value="3.0"/>
-            <define name="GUIDANCE_INDI_WLS_PRIORITIES"         value="{1.,1.,1.}"/>
-            <define name="GUIDANCE_INDI_MIN_PITCH"              value="40."/>
-            <define name="GUIDANCE_INDI_MAX_PITCH"              value="40."/>
-            <define name="GUIDANCE_INDI_PITCH_PREF_DEG"         value="0.0"/>
-            <define name="GUIDANCE_INDI_AIRSPEED_IMPORTANCE"    value="2.0"/>
-            <define name="GUIDANCE_INDI_WU_PITCH_SCALE"         value="1.0"/>
-            <define name="GUIDANCE_INDI_WU_TX_SCALE"            value="1.0"/>
-        </module>
+        <module name="circ_trajectory"/>
         <module name="nav" type="hybrid"/>
         <module name="power_switch"/>
     </firmware>
@@ -110,8 +103,8 @@
     </servos>
 
     <servos driver="Pwm">
-        <servo name="TILT_RIGHT"    no="1" min="1080" neutral="1140" max="1514"/>
-        <servo name="TILT_LEFT"     no="2" min="1680" neutral="1610" max="1250"/>
+        <servo name="TILT_RIGHT"    no="1" min="1080" neutral="1160" max="1500"/>
+        <servo name="TILT_LEFT"     no="2" min="1680" neutral="1600" max="1240"/>
     </servos>
 
     <commands>
@@ -127,6 +120,12 @@
         <axis name="YAW"            group="VIRTUAL" failsafe_value="0"/>
         <axis name="THRUST"         group="VIRTUAL" failsafe_value="0"/>
         <axis name="THRUST_X"       group="VIRTUAL" failsafe_value="0"/>
+        <!-- TILT_F / TILT_M (mean/differential) version
+        <axis name="TILT_F"         group="VIRTUAL" failsafe_value="0"/>
+        <axis name="TILT_M"         group="VIRTUAL" failsafe_value="0"/>
+        -->
+        <axis name="TILT_R"         group="VIRTUAL" failsafe_value="0"/>
+        <axis name="TILT_L"         group="VIRTUAL" failsafe_value="0"/>
     </commands>
 
     <command_laws>
@@ -134,8 +133,12 @@
         <set servo="MOTOR_BR"       value="@MOTOR_BR"/>
         <set servo="MOTOR_BL"       value="@MOTOR_BL"/>
         <set servo="MOTOR_FL"       value="@MOTOR_FL"/>
-        <set servo="TILT_RIGHT"     value="@TILT_RIGHT"/>
-        <set servo="TILT_LEFT"      value="@TILT_LEFT"/>
+        <!-- TILT_F / TILT_M (mean/differential) version
+        <set servo="TILT_RIGHT"     value="@TILT_F + @TILT_M"/>
+        <set servo="TILT_LEFT"      value="@TILT_F - @TILT_M"/>
+        -->
+        <set servo="TILT_RIGHT"     value="@TILT_R"/>
+        <set servo="TILT_LEFT"      value="@TILT_L"/>
     </command_laws>
 
     <section name="IMU" prefix="IMU_">
@@ -179,7 +182,7 @@
         </define>
 
         <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
-        <define name="BODY_TO_IMU_THETA" value="-10.0" unit="deg"/>
+        <define name="BODY_TO_IMU_THETA" value="-6.0" unit="deg"/>
         <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
     </section>
 
@@ -204,24 +207,25 @@
         <!-- setpoints -->
         <define name="SP_MAX_PHI" value="40." unit="deg"/>
         <define name="SP_MAX_THETA" value="30." unit="deg"/>
-        <define name="SP_MAX_R" value="80." unit="deg/s"/>
+        <define name="SP_MAX_R" value="25." unit="deg/s"/>
         <define name="DEADBAND_R" value="50"/>  <!-- yaw deadband from radio -->
         <define name="DEADBAND_A" value="50"/>
-        <define name="SP_PSI_DELTA_LIMIT" value="90" unit="deg"/>
+        <define name="SP_PSI_DELTA_LIMIT" value="40" unit="deg"/>
     </section>
 
     <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
-        <!--  MR ML MT Y -->
         <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
+        <!-- Initial seed only (overwritten each cycle by eff_scheduling_atlas).
+             Converted from TILT_F/TILT_M: Mz -14.6 -> R/L -+7.3 ; Ax 1.50 -> 0.75 each -->
         <define name="G1" type="matrix">
-            <!--             FR     RR     RL     FL     TILT_R  TILT_L  -->
-            <field value="{ -16.,   -16.,   16.,   16.,    0.,    0.   }"/>  <!-- Mx -->
-            <field value="{   8.,    -8.,   -8.,    8.,    0.,    0.   }"/>  <!-- My -->
-            <field value="{   0.,     0.,    0.,    0.,    0.,    0.   }"/>  <!-- Mz -->
-            <field value="{ -0.85,  -0.85, -0.85, -0.85,   0.,    0.   }"/>  <!-- Az -->
-            <field value="{   0.,     0.,    0.,    0.,    0.85,  0.85 }"/>  <!-- Ax -->
+            <!--              FR     BR     BL     FL    TILT_R  TILT_L  -->
+            <field value="{ -16.,   -16.,   16.,   16.,    0.,     0.   }"/>  <!-- Mx -->
+            <field value="{   8.,    -8.,   -8.,    8.,    0.,     0.   }"/>  <!-- My -->
+            <field value="{   0.,     0.,    0.,    0.,   -7.3,    7.3  }"/>  <!-- Mz -->
+            <field value="{ -0.85,  -0.85, -0.85, -0.85,   0.,     0.   }"/>  <!-- Az -->
+            <field value="{   0.,     0.,    0.,    0.,    0.75,   0.75 }"/>  <!-- Ax -->
         </define>
-        <define name="G1_THRUST_X" value="{0, 0, 0, 0, 0.85, 0.85}"/>
+        <define name="G1_THRUST_X" value="{0, 0, 0, 0, 1, 1}"/>
         <define name="ACT_IS_THRUSTER_X" value="{0, 0, 0, 0, 1, 1}"/>
 
         <!--Counter torque effect of spinning up a rotor-->
@@ -229,11 +233,12 @@
 
         <define name="ACT_PREF" value="{0, 0, 0, 0, 0, 0}"/>
 
-        <!-- reference acceleration for attitude control -->
+        <!-- Proportional Gains for Angular Error (P - roll, Q - Pitch, R - Yaw) -->
         <define name="REF_ERR_P" value="200.0"/> <!-- P angular error in roll axis (P) -->
         <define name="REF_ERR_Q" value="175.0"/>
         <define name="REF_ERR_R" value="200.0"/>
-        <define name="REF_RATE_P" value="40.0"/> <!-- P angular rate error in roll axis (P) -->
+        <!-- Proportional Gains for Angular Rate Error (P - roll, Q - Pitch, R - Yaw) -->
+        <define name="REF_RATE_P" value="40.0"/>
         <define name="REF_RATE_Q" value="20.0"/>
         <define name="REF_RATE_R" value="18.0"/>
 
@@ -241,14 +246,21 @@
         <define name="FILT_CUTOFF" value="5.0"/>
 
         <!-- first order actuator dynamics -->
-        <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 12.66, 4.00, 4.00}"/>
+        <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 12.66, 6.00, 6.00}"/>
         <define name="ACT_RATE_LIMIT" value="{3000, 3000, 3000, 3000, 3000, 3000}"/>
         <define name="ACT_IS_SERVO" value="{0, 0, 0, 0, 1, 1}"/>
 
         <!-- INDI outputs to commands association -->
-        <define name="COMMANDS" value="{COMMAND_MOTOR_FR, COMMAND_MOTOR_BR, COMMAND_MOTOR_BL, COMMAND_MOTOR_FL, COMMAND_TILT_RIGHT, COMMAND_TILT_LEFT}"/>
+        <!-- TILT_F / TILT_M version
+        <define name="COMMANDS" value="{COMMAND_MOTOR_FR, COMMAND_MOTOR_BR, COMMAND_MOTOR_BL, COMMAND_MOTOR_FL, COMMAND_TILT_F, COMMAND_TILT_M}"/>
+        -->
+        <define name="COMMANDS" value="{COMMAND_MOTOR_FR, COMMAND_MOTOR_BR, COMMAND_MOTOR_BL, COMMAND_MOTOR_FL, COMMAND_TILT_R, COMMAND_TILT_L}"/>
 
-        <define name="WLS_PRIORITIES" value="{10000, 10000, 500, 100, 1000}"/>
+        <!-- Inner-loop WLS objective priorities (Wv), [MX, MY, MZ, AZ, AX] -->
+        <define name="WLS_PRIORITIES" value="{3000, 3000, 5000, 6000, 1000}"/>
+
+        <!-- Wu: motors FR,BR,BL,FL, tilt_R, tilt_L  (lower = allocator prefers it) -->
+        <define name="WLS_WU" value="{1.0, 1.0, 1.0, 1.0, 0.3, 0.3}"/>
 
         <!-- Adaptive Learning Rate -->
         <define name="USE_ADAPTIVE" value="FALSE"/>
@@ -268,22 +280,20 @@
         <define name="HOVER_KP" value="150"/>
         <define name="HOVER_KD" value="80"/>
         <define name="HOVER_KI" value="20"/>
-        <define name="NOMINAL_HOVER_THROTTLE" value="0.35"/>
+        <define name="NOMINAL_HOVER_THROTTLE" value="0.45"/>
         <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
     </section>
 
     <section name="GUIDANCE_INDI">
-        <define name="GUIDANCE_INDI_RC_DEBUG"         value="FALSE"/>
-        <define name="GUIDANCE_INDI_POS_GAIN"         value="0.2"/>
-        <define name="GUIDANCE_INDI_SPEED_GAIN"       value="0.8"/>
-        <define name="GUIDANCE_INDI_POS_GAINZ"        value="0.6"/>
-        <define name="GUIDANCE_INDI_SPEED_GAINZ"      value="1.5"/>
-        <define name="GUIDANCE_INDI_MIN_THROTTLE"     value="2000"/>
-        <define name="GUIDANCE_INDI_MIN_THROTTLE_FWD" value="1000"/>
-        <define name="GUIDANCE_INDI_MAX_AIRSPEED"     value="16.0"/>
-        <define name="GUIDANCE_INDI_FILTER_CUTOFF"    value="1.5"/>
-        <define name="GUIDANCE_INDI_LINE_GAIN"        value="0.7"/>
+        <define name="GUIDANCE_INDI_POS_GAIN"          value="1.0"/>
+        <define name="GUIDANCE_INDI_SPEED_GAIN"        value="1.5"/>
+        <define name="GUIDANCE_INDI_POS_GAINZ"         value="1.5"/>
+        <define name="GUIDANCE_INDI_SPEED_GAINZ"       value="1.2"/>
+        <define name="GUIDANCE_INDI_MAX_AIRSPEED"      value="16.0"/>
+        <define name="GUIDANCE_INDI_MIN_AIRSPEED"      value="0.0"/>
+        <define name="GUIDANCE_INDI_FILTER_CUTOFF"     value="3.0"/>
         <define name="GUIDANCE_INDI_HEADING_BANK_GAIN" value="10.0"/>
+        <define name="TURN_AIRSPEED_TH"                value="10.0"/>
     </section>
 
     <section name="NAV">
@@ -302,11 +312,9 @@
 
     <section name="MISC">
         <define name="USE_EARTH_BOUND_RC_SETPOINT" value="FALSE"/>
-        <!--define name="TRANSITION_MAX_OFFSET" value="-80.0" unit="deg"/-->
         <define name="COORDINATED_TURN_AIRSPEED" value="18.0"/>
         <define name="MISSION_PATH_SKIP_GOTO" value="TRUE"/>
 
-        <define name="BARO_PERIODIC_FREQUENCY" value="50"/>
         <define name="USE_AIRSPEED" value="TRUE"/>
 
         <define name="ARRIVED_AT_WAYPOINT" value="5.0"/> <!-- For outdoor -->
