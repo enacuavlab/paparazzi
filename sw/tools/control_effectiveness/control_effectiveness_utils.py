@@ -46,9 +46,10 @@ class Configuration:
     nb_out:int
     mixing:np.ndarray
     data_descr:dict
+    virtual_cmd:Optional[np.ndarray] = None
         
     @staticmethod
-    def from_dict(conf_dict:dict,variables_redef:Optional[dict]=None):
+    def from_dict(conf_dict:dict,variables_redef:Optional[dict]=None, no_virtual:bool=False):
         var = conf_dict.get('variables',{})
         if variables_redef is not None:
             for var_name, value in variables_redef:
@@ -67,7 +68,13 @@ class Configuration:
         
         data_descr = conf_dict['data']
         
-        return Configuration(var,ranges,nb_in,nb_out,mixing,data_descr)
+        # check virtual command
+        virtual_cmd = None
+        if 'virtual_cmd' in conf_dict:
+            virtual_cmd = extract_virtual_cmd(conf_dict)
+            nb_out = virtual_cmd.shape[1]
+        
+        return Configuration(var,ranges,nb_in,nb_out,mixing,data_descr,virtual_cmd)
     
 
 
@@ -219,7 +226,7 @@ def extract_filtered_data(conf:Configuration, data:np.ndarray, start:int, end:in
         col = el['column']
         if t == 'input' and idx >= 0:
             if idx >= nb_in:
-                raise IndexError("Invalid input index for {}".format(el['name'])) # Again, exception rather than exit code 1
+                raise IndexError("Invalid input index {} for {} (max is {})".format(idx,el['name'],nb_in)) # Again, exception rather than exit code 1
             raw_inputs[:, idx] = apply_format(el, data[start:end, col])
             inputs[:, idx] = apply_format(el, data[start:end, col])
             for (filt_name, params) in el['filters']:
@@ -230,13 +237,29 @@ def extract_filtered_data(conf:Configuration, data:np.ndarray, start:int, end:in
                 # print(f"Input0 ({idx}) after filtering: ",inputs[0,idx])
         if t == 'command' and idx >= 0:
             if idx >= nb_out:
-                raise IndexError("Invalid command index for {}".format(el['name'])) # Again, exception rather than exit code 1
+                raise IndexError("Invalid command index {} for {} (max is {})".format(idx,el['name'],nb_out)) # Again, exception rather than exit code 1
             raw_commands[:, idx] = apply_format(el, data[start:end, col])
             commands[:, idx] = apply_format(el, data[start:end, col])
             for (filt_name, params) in el['filters']:
                 commands[:,idx] = apply_filter(filt_name, params, commands[:, idx].copy(), conf.variables)    
     return inputs, raw_inputs, commands, raw_commands
 
+def extract_virtual_cmd(conf_dict:dict) -> np.ndarray:
+    """Get virtual commands from the configuration
+
+    Args:
+        conf_dict (dict): Configuration dictionnary (parsed JSON)
+
+    Returns:
+        np.ndarray: Transformation matrix from standard to virtual commands
+    """
+    virtual_cmd = np.array(conf_dict['virtual_cmd'])
+    v_nb = virtual_cmd.shape[0]
+    _, S, _ = np.linalg.svd(virtual_cmd)
+    virtual_cmd = virtual_cmd / S.reshape(v_nb, 1)
+    # nb_out = virtual_cmd.shape[1]
+    
+    return virtual_cmd
 
 
 #
@@ -255,7 +278,7 @@ def plot_results(x, y, y_raw, z, t, freq, label, show=False):
     ax_fft = plt.subplot2grid((2,3), (1,2))
 
     # time plot
-    ax_time.plot(t, y, linestyle='',marker='.',markersize=3, label='force')
+    ax_time.plot(t, y, linestyle='-',linewidth=0.2,marker='.',markersize=3, label='force')
     ax_time.plot(t, x, label='cmd')
     ax_time.set_title(label)
     ax_time.set_xlabel('t [s]')
@@ -266,7 +289,7 @@ def plot_results(x, y, y_raw, z, t, freq, label, show=False):
     p = np.poly1d(z[0])
     xp = np.linspace(np.min(x), np.max(x), 2)
     ax_fit.plot(xp,p(xp),label='lin fit')
-    ax_fit.set_title(f'fit error: {z[1][0]:3E}')
+    ax_fit.set_title(f'RMSE: {z[1][0]:3E}')
     
     # FFT
     N = len(y)
@@ -278,7 +301,7 @@ def plot_results(x, y, y_raw, z, t, freq, label, show=False):
     ax_fft.set_xlabel('Freq (Hz)')
     ax_fft.set_yticks([])
     ax_fft.set_ylabel('FFT Amplitude')
-    ax_fft.legend()
+    # ax_fft.legend()
 
     if show:
         plt.show()
@@ -354,13 +377,13 @@ def fit_axis(x, y, name, verbose=True):
         print("Fit axis", name)
         print(c[0]*1000)
     res = np.sum(np.square(x @ c[0] - y)) # Recomputed residual manually (not computed when matrix is rank-deficient)
-    return c[0],res
+    return c[0],np.sqrt(res)/len(y)
 
 def fit_lin(x, y, name, verbose=False):
     z = np.polyfit(x, y, 1, full=True)
     if verbose:
-        print(f'Fit residual {name}: {float(z[1]):.5E}')
-    return z[0], z[1]
+        print(f'Fit residual {name}: {float(z[1][0]):.5E} ; RMSE: {np.sqrt(z[1][0])/len(x)}')
+    return z[0], np.sqrt(z[1])/len(x)
 
 def fit_weighted_lin_lstsq(X, Y, w) -> tuple[np.ndarray,OptimizeResult]:
     """ Compute a weighted linear least-squares using scipy.optimize

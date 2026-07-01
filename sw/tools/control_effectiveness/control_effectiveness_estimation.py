@@ -33,25 +33,7 @@ from control_effectiveness_utils import Configuration
 from typing import Optional
 
 
-########## Helper functions ##########
-
-def extract_virtual_cmd(conf_dict:dict) -> np.ndarray:
-    """Get virtual commands from the configuration
-
-    Args:
-        conf_dict (dict): Configuration dictionnary (parsed JSON)
-
-    Returns:
-        np.ndarray: Transformation matrix from standard to virtual commands
-    """
-    virtual_cmd = np.array(conf_dict['virtual_cmd'])
-    v_nb = virtual_cmd.shape[0]
-    _, S, _ = np.linalg.svd(virtual_cmd)
-    virtual_cmd = virtual_cmd / S.reshape(v_nb, 1)
-    # nb_out = virtual_cmd.shape[1]
-    
-    return virtual_cmd
-    
+########## Helper functions ##########    
     
 def get_time_from_conf(conf:dict, start:float, end:float, freq:Optional[float], data):
     """ Extract time data and frequency from configuration hint, arguments and data
@@ -102,8 +84,8 @@ def fit_eff_matrix(conf:Configuration, inputs:np.ndarray, commands:np.ndarray, v
     Returns:
         (np.ndarray,np.ndarray): Efficiency matrix and estimation residuals
     """
-    mixing = np.array(conf.mixing)
-    (nb_in, nb_out) = np.shape(mixing)
+    nb_in = conf.nb_in
+    nb_out = conf.nb_out
     
     output = np.zeros((nb_in, nb_out))
     
@@ -117,7 +99,7 @@ def fit_eff_matrix(conf:Configuration, inputs:np.ndarray, commands:np.ndarray, v
             residuals.append(sol.cost)
     else:
         for i in range(nb_in):
-            cmd = np.multiply(commands, mixing[[i],:])
+            cmd = np.multiply(commands, conf.mixing[[i],:])
             axis_fit,res = ut.fit_axis(cmd, inputs[:,[i]], str(i), verbose)
             output[[i],:] = np.matmul(v_inv, axis_fit).T
             residuals.append(res)
@@ -142,7 +124,7 @@ def make_virtual_cmd(virtual_cmd:np.ndarray, commands:np.ndarray):
         v_commands[i,:] = np.matmul(virtual_cmd, commands[i,:])
     return v_commands
 
-def find_eff_matrix(conf:Configuration, start:int, end:int, data:np.ndarray, virtual_cmd:Optional[np.ndarray], verbose:bool=False) -> tuple[np.ndarray,np.ndarray]:
+def find_eff_matrix(conf:Configuration, start:int, end:int, data:np.ndarray, verbose:bool=False) -> tuple[np.ndarray,np.ndarray]:
     """ Extract input and command data, then use them for estimating efficency coefficients.
     If given, convert to virtual commands first.
 
@@ -151,22 +133,22 @@ def find_eff_matrix(conf:Configuration, start:int, end:int, data:np.ndarray, vir
         start (int):            Start time for data extraction
         end (int):              End time for data extraction
         data (np.ndarray):      Source data array
-        virtual_cmd (Optional[np.ndarray]): Standard to virtual command conversion matrix
         verbose (bool, optional): Display detailed estimation info. Defaults to False.
 
     Returns:
         (np.ndarray,np.ndarray): Efficiency matrix and estimation residuals
     """
     inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(conf, data, start, end)
-    if virtual_cmd is not None:
-        commands = make_virtual_cmd(virtual_cmd, commands)
-        v_inv = np.linalg.pinv(virtual_cmd)
+    print(f"Handling {commands.shape} input datapoints...")
+    if conf.virtual_cmd is not None:
+        commands = make_virtual_cmd(conf.virtual_cmd, commands)
+        v_inv = np.linalg.pinv(conf.virtual_cmd)
     else:
         v_inv = np.identity(conf.nb_out)
             
     return fit_eff_matrix(conf, inputs, commands, v_inv, verbose)
 
-def find_eff_matrix_with_meta_opt(conf:Configuration, start:int, end:int, data:np.ndarray, virtual_cmd:Optional[np.ndarray], verbose:bool=False, plot:bool=True):
+def find_eff_matrix_with_meta_opt(conf:Configuration, start:int, end:int, data:np.ndarray, verbose:bool=False):
     """Extract input and command data, then use them for estimating efficency coefficients.
     If given, convert to virtual commands first. Also perform a brute-force sweep of some
     estimation parameters to try improving the final accuracy. This relies on the "ranges" parameter in the configuration file.
@@ -176,7 +158,6 @@ def find_eff_matrix_with_meta_opt(conf:Configuration, start:int, end:int, data:n
         start (int):            Start time for data extraction
         end (int):              End time for data extraction
         data (np.ndarray):      Source data array
-        virtual_cmd (Optional[np.ndarray]): Standard to virtual command conversion matrix
         verbose (bool, optional): Display detailed estimation info. Defaults to False.
 
     Returns:
@@ -184,42 +165,50 @@ def find_eff_matrix_with_meta_opt(conf:Configuration, start:int, end:int, data:n
     """
     param_names = [k for k in conf.ranges.keys()]
     rranges = [slice(conf.ranges[k][0],conf.ranges[k][1]+conf.ranges[k][2],conf.ranges[k][2]) for k in param_names]
-        
+    
+    ## Parse for printing problem size
+    _, _, commands_print, _ = ut.extract_filtered_data(
+                    conf, data, start, end)
+    print(f"Handling {commands_print.shape} input datapoints...")
+    ## End parse
+    
     def obj_fun(xs):
-        for i,x in enumerate(xs):
-            conf.variables[param_names[i]] = x
+        if len(param_names) > 1:
+            for i,x in enumerate(xs):
+                conf.variables[param_names[i]] = x
+        else:
+            conf.variables[param_names[0]] = xs
                 
         inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(
                     conf, data, start, end)
-        if virtual_cmd is not None:
-            commands, v_inv = make_virtual_cmd(virtual_cmd, commands)
+        if conf.virtual_cmd is not None:
+            commands = make_virtual_cmd(conf.virtual_cmd, commands)
+            v_inv = np.linalg.pinv(conf.virtual_cmd)
         else:
             v_inv = np.identity(conf.nb_out)
                 
         _,residuals = fit_eff_matrix(conf, inputs, commands, v_inv, False)
         return sum(residuals)
+    
+    if len(rranges) == 1:
+        pname = param_names[0]
+        res = optimize.minimize_scalar(obj_fun, (conf.ranges[pname][0],conf.ranges[pname][1]),tol=conf.ranges[pname][2]/2,
+                                       options={'disp':3 if verbose else 0})
         
-    x,v,grid,fgrid = optimize.brute(obj_fun, rranges, full_output=True,
+        x = [res.x]
+    else:
+        x,_,_,_ = optimize.brute(obj_fun, rranges, full_output=True,
                           finish=optimize.fmin)
     
-    if plot:
-        if len(rranges) == 1:
-            plt.scatter(grid,fgrid)
-            plt.gca().set_xlabel(param_names[0])
-            plt.gca().set_ylabel("Fitness")
-            plt.vlines(x,np.min(fgrid),np.max(fgrid),label=f"Optimum location: {x[0]:.4E}",color='r')
-            plt.legend()
-            plt.show()
-        else:
-            print("WARNING: No plotting available for now with more than 1 parameter optimized...")
     
     for i,x in enumerate(x):
         conf.variables[param_names[i]] = x
             
     inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(
                 conf, data, start, end)
-    if virtual_cmd is not None:
-        commands, v_inv = make_virtual_cmd(virtual_cmd, commands)
+    if conf.virtual_cmd is not None:
+        commands = make_virtual_cmd(conf.virtual_cmd, commands)
+        v_inv = np.linalg.pinv(conf.virtual_cmd)
     else:
         v_inv = np.identity(conf.nb_out)
             
@@ -271,7 +260,7 @@ def process_data(conf, f_name, start, end, freq=None, variables=None, verbose=Fa
     # check virtual command
     virtual_cmd = None
     if 'virtual_cmd' in conf:
-        virtual_cmd = extract_virtual_cmd(conf)
+        virtual_cmd = ut.extract_virtual_cmd(conf)
         nb_out = virtual_cmd.shape[1]
 
     # Search for time vector
@@ -349,6 +338,8 @@ def main():
     parser.add_argument("-var", "--variable", dest="vars", action='append', nargs=2,
                       metavar=('var_name','value'),
                       help="Set variables by name, 'None' for config file default")
+    parser.add_argument("--no-virtual", help="Ignore use virtual commands",
+                        action='store_true',dest="no_virtual")
     parser.add_argument("-s", "--start",
                       help="Start time",
                       action="store", dest="start", default="0")
@@ -362,6 +353,7 @@ def main():
                       action="store_true", dest="use_ranges")
     parser.add_argument("-v", "--verbose",
                       action="store_true", dest="verbose")
+   
     args = parser.parse_args()
  
  
@@ -388,13 +380,7 @@ def main():
     with open(args.config, 'r') as f:
         conf:dict = json.load(f)
         
-    configuration = Configuration.from_dict(conf,args.vars)
-    
-    # Create a virtual command
-    virtual_cmd = None
-    if 'virtual_cmd' in conf:
-        virtual_cmd = extract_virtual_cmd(conf)
-        # nb_out = virtual_cmd.shape[1]
+    configuration = Configuration.from_dict(conf,args.vars,args.no_virtual)
     
     # Search for time vector in data from presets
     start, end, freq, time = get_time_from_conf(conf, start, end, freq, data)
@@ -406,9 +392,9 @@ def main():
     
     
     if len(configuration.ranges) > 0 and args.use_ranges:
-        output,residuals = find_eff_matrix_with_meta_opt(configuration, start, end, data, virtual_cmd, verbose, plot)
+        output,residuals = find_eff_matrix_with_meta_opt(configuration, start, end, data, verbose)
     else:
-        output,residuals = find_eff_matrix(configuration, start, end, data, virtual_cmd, verbose)
+        output,residuals = find_eff_matrix(configuration, start, end, data, verbose)
 
     if plot:
         inputs, raw_inputs, commands, raw_commands = ut.extract_filtered_data(configuration, data, start, end)
