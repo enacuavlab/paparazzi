@@ -184,7 +184,7 @@
       <field value="{ -6.0,  6.0,  0.0,  0.0, 0.0, 0.0}"/>
       <field value="{  0.0,  0.0, 0.0, -1.0, 0.0, -1.0}"/>
       <field value="{  0.0,  0.0, 1.0, 0.0, 1.0, 0.0}"/>
-      <field value="{ -0.71,  -.71,  0.0,  0.0, 0.0, 0.0}"/>
+      <field value="{ -0.91,  -.91,  0.0,  0.0, 0.0, 0.0}"/>
     </define>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2" value="{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}"/>
