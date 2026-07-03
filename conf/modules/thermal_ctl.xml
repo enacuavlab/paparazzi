@@ -1,0 +1,28 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="thermal_ctl" dir="digital_cam" task="sensors">
+  <doc>
+    <description>Control payload via PAYLOAD_COMMAND messages.</description>
+  </doc>
+  <settings>
+  <dl_settings>
+    <dl_settings NAME="Thermal">
+        <dl_setting MIN="0" MAX="3"  STEP="1" var="thermal_ctl" values="NONE|PWR_OFF|REC|STOP_REC" header="digital_cam/thermal_ctl" handler="thermal_ctl_handler">
+          <strip_button name="PWR_OFF"  value="1" group="speed_mode"/>
+          <strip_button name="REC"      value="2" group="speed_mode"/>
+          <strip_button name="STOP_REC" value="3" group="speed_mode"/>
+        </dl_setting>
+    </dl_settings>
+  </dl_settings>
+</settings>
+  <dep>
+    <depends>extra_dl</depends>
+  </dep>
+  <header>
+    <file name="thermal_ctl.h"/>
+  </header>
+  <datalink fun="thermal_status_cb(buf)" message="PAYLOAD_COMMAND"/>
+  <makefile>
+    <file name="thermal_ctl.c"/>
+    <test/>
+  </makefile>
+</module>
