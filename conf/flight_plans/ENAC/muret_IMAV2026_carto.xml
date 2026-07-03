@@ -5,6 +5,7 @@
   <header>
     #define FP_NONE       0
     #define FP_MAPPING    1
+    #define FP_THERMAL    2
 
     #if DIGITAL_CAM
     //#define SURVEY_START_FUNCTION dc_Survey(mapping_shot_distance);
@@ -58,6 +59,10 @@
     <waypoint name="S2" x="-99.481" y="313.743"/>
     <waypoint name="S3" x="299.384" y="272.486"/>
     <waypoint name="S4" x="249.811" y="-22.215"/>
+    <waypoint name="T1" x="-47.851" y="46.191"/>
+    <waypoint name="T2" x="-30.92" y="100.913"/>
+    <waypoint name="T3" x="10.104" y="89.017"/>
+    <waypoint name="T4" x="-8.997" y="37.755"/>
   </waypoints>
   <sectors>
     <sector color="green" name="Survey">
@@ -65,6 +70,12 @@
       <corner name="S2"/>
       <corner name="S3"/>
       <corner name="S4"/>
+    </sector>
+    <sector color="green" name="yellow">
+      <corner name="T1"/>
+      <corner name="T2"/>
+      <corner name="T3"/>
+      <corner name="T4"/>
     </sector>
   </sectors>
   <variables>
@@ -77,6 +88,9 @@
     <variable init="50." var="mapping_sweep" min="5." max="20." step="0.1"/>
     <variable init="7." var="mapping_speed" min="0.5" max="10." step="0.1"/>
     <variable init="-1." var="mapping_radius" min="-1." max="100." step="1.0"/>
+    <variable init="15." var="thermal_height" min="5." max="80." step="0.1"/>
+    <variable init="6." var="thermal_sweep" min="5." max="20." step="0.1"/>
+    <variable init="4." var="thermal_speed" min="0.5" max="10." step="0.1"/>
     <variable init="50." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
     <variable init="42." var="tag_distance"/>
     <variable init="false" type="bool" var="tag_valid"/>
@@ -124,6 +138,7 @@
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png" group="home">
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_NONE" deroute="Standby"/>
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_MAPPING" deroute="Goto Mapping"/>
+      <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_THERMAL" deroute="Goto Thermal"/>
       <call_once fun="NavSetAltitudeReferenceHere()"/>
       <call_once fun="NavResurrect()"/>
       <attitude pitch="0" roll="0" throttle="0.1" until="stage_time @GT 2" vmode="throttle"/>
@@ -148,6 +163,10 @@
       <set var="mission_nb" value="FP_MAPPING"/>
       <deroute block="Takeoff"/>
     </block>
+    <block group="mission" name="Start Thermal" strip_button="Thermal">
+      <set var="mission_nb" value="FP_THERMAL"/>
+      <deroute block="Takeoff"/>
+    </block>
     <block name="Goto Mapping">
       <set var="mission_nb" value="FP_NONE"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
@@ -162,6 +181,21 @@
     <block name="Run Mapping" on_exit="dc_stop()">
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
       <call_once fun="dc_distance(mapping_shot_distance)"/>
+      <call fun="nav_survey_hybrid_run()"/>
+      <deroute block="Landing"/>
+    </block>
+    <block name="Goto Thermal">
+      <set var="mission_nb" value="FP_NONE"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="jevois_stream(false)"/>
+      <call_once fun="guidance_h_SetMaxSpeed(thermal_speed)"/>
+      <stay wp="_HERE" until="stage_time @GT 3" height="thermal_height"/>
+      <go wp="T1" from="_HERE" hmode="route" height="thermal_height"/>
+      <call_once fun="nav_survey_hybrid_setup_towards(WP_T1, WP_T2, 4, thermal_sweep, mapping_radius, thermal_height)"/>
+      <deroute block="Run Thermal"/>
+    </block>
+    <block name="Run Thermal">
+      <call_once fun="guidance_h_SetMaxSpeed(thermal_speed)"/>
       <call fun="nav_survey_hybrid_run()"/>
       <deroute block="Landing"/>
     </block>
