@@ -6,6 +6,7 @@
     #define FP_NONE       0
     #define FP_THERMAL    1
 
+    #ifdef NAV_C
     static inline bool delay_test_rc(bool test, int delay) {
       static int nb = 0;
         if (test) {
@@ -104,7 +105,7 @@
       <call_once fun="NavResurrect()"/>
       <attitude pitch="0" roll="0" throttle="0.1" until="stage_time @GT 2" vmode="throttle"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <call_once fun="NavSetWaypointHere(WP__LANDPAD)"/>
+      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
       <stay climb="nav.climb_vspeed" vmode="climb" wp="_HERE"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
@@ -123,7 +124,7 @@
       <call_once fun="guidance_h_SetMaxSpeed(thermal_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="thermal_height"/>
       <go wp="T1" from="_HERE" hmode="route" height="thermal_height"/>
-      <call_once fun="nav_survey_hybrid_setup_towards(WP_T1, WP_T2, 4, thermal_sweep, mapping_radius, thermal_height)"/>
+      <call_once fun="nav_survey_hybrid_setup_towards(WP_T1, WP_T2, 4, thermal_sweep, thermal_radius, thermal_height)"/>
       <deroute block="Run Thermal"/>
     </block>
     <block name="Run Thermal">
