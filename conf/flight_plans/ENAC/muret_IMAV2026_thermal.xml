@@ -4,22 +4,7 @@
 
   <header>
     #define FP_NONE       0
-    #define FP_MAPPING    1
-    #define FP_THERMAL    2
-
-    #if DIGITAL_CAM
-    //#define LINE_START_FUNCTION dc_Survey(mapping_shot_distance);
-    //#define LINE_START_FUNCTION dc_distance(mapping_shot_distance);
-    //#define LINE_STOP_FUNCTION dc_stop();
-    #endif
-
-    #ifdef NAV_C
-    #ifndef TAG_TRACKING_COORD_TO_M
-    #define TAG_TRACKING_COORD_TO_M (1.f / 1000.f)
-    #ifdef SITL
-    #define jevois_stream(_x) {}
-    #endif
-    #endif
+    #define FP_THERMAL    1
 
     static inline bool delay_test_rc(bool test, int delay) {
       static int nb = 0;
@@ -70,26 +55,21 @@
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
     <variable init="20." var="goto_height" min="5." max="80." step="0.1"/>
-    <variable init="7." var="goto_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="5." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="5." var="takeoff_height" min="0.5" max="15." step="0.1"/>
     <variable init="2." var="land_speed" min="0.5" max="10." step="0.1"/>
-    <variable init="50." var="mapping_height" min="5." max="80." step="0.1"/>
-    <variable init="30." var="mapping_sweep" min="5." max="20." step="0.1"/>
-    <variable init="7." var="mapping_speed" min="0.5" max="10." step="0.1"/>
-    <variable init="-1." var="mapping_radius" min="-1." max="100." step="1.0"/>
-    <variable init="30." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
+    <variable init="15." var="thermal_height" min="5." max="80." step="0.1"/>
+    <variable init="6." var="thermal_sweep" min="5." max="20." step="0.1"/>
+    <variable init="4." var="thermal_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="-1." var="thermal_radius" min="-1." max="100." step="1.0"/>
   </variables>
   <modules>
     <module name="nav" type="takeoff_and_landing"/>
     <module name="nav" type="survey_hybrid">
       <define name="SURVEY_HYBRID_MAX_SWEEP_BACK" value="1"/>
       <define name="SURVEY_HYBRID_APPROACHING_TIME" value="0"/>
-      <define name="SURVEY_HYBRID_ENTRY_DISTANCE" value="0"/>
+      <define name="SURVEY_HYBRID_ENTRY_DISTANCE" value="1"/>
       <define name="SURVEY_HYBRID_ENTRY_CIRCLE" value="FALSE"/>
-    </module>
-    <module name="tag_tracking">
-      <define name="TAG_TRACKING_WP" value="WP_LANDPAD"/>
-      <define name="TAG_TRACKING_SIM_WP" value="WP_TAG"/>
     </module>
   </modules>
   <!--includes>
@@ -104,7 +84,6 @@
   <blocks>
     <block name="Wait GPS">
       <call_once fun="NavKillThrottle()"/>
-      <call_once fun="jevois_stream(false)"/>
       <while cond="!GpsFixValid()"/>
     </block>
     <block name="Geo init">
@@ -120,12 +99,12 @@
     </block>
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png" group="home">
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_NONE" deroute="Standby"/>
-      <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_MAPPING" deroute="Goto Mapping"/>
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_THERMAL" deroute="Goto Thermal"/>
       <call_once fun="NavSetAltitudeReferenceHere()"/>
       <call_once fun="NavResurrect()"/>
       <attitude pitch="0" roll="0" throttle="0.1" until="stage_time @GT 2" vmode="throttle"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="NavSetWaypointHere(WP__LANDPAD)"/>
       <stay climb="nav.climb_vspeed" vmode="climb" wp="_HERE"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png" group="home">
@@ -133,37 +112,10 @@
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
       <stay wp="STDBY"/>
     </block>
-    <block name="Test images">
-      <go wp="LANDPAD"/>
-      <for var="i" from="0" to="5">
-        <call_once fun="dc_send_command(DC_SHOOT)"/>
-        <stay wp="LANDPAD" until="stage_time @GT 10" height="WaypointAlt(WP_LANDPAD) + $i * 10"/>
-      </for>
-      <deroute block="Standby"/>
-    </block>
 
-    <block group="mission" name="Start Mapping" strip_button="Mapping">
-      <set var="mission_nb" value="FP_MAPPING"/>
-      <deroute block="Takeoff"/>
-    </block>
     <block group="mission" name="Start Thermal" strip_button="Thermal">
       <set var="mission_nb" value="FP_THERMAL"/>
       <deroute block="Takeoff"/>
-    </block>
-    <block name="Goto Mapping">
-      <set var="mission_nb" value="FP_NONE"/>
-      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
-      <stay wp="_HERE" until="stage_time @GT 3" height="mapping_height"/>
-      <go wp="S1" from="_HERE" hmode="route" height="mapping_height"/>
-      <call_once fun="nav_survey_hybrid_setup_towards(WP_S1, WP_S2, 4, mapping_sweep, mapping_radius, mapping_height)"/>
-      <deroute block="Run Mapping"/>
-    </block>
-    <block name="Run Mapping" on_exit="dc_stop()">
-      <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
-      <call_once fun="dc_distance(mapping_shot_distance)"/>
-      <call fun="nav_survey_hybrid_run()"/>
-      <deroute block="Landing"/>
     </block>
     <block name="Goto Thermal">
       <set var="mission_nb" value="FP_NONE"/>
@@ -185,14 +137,13 @@
       <deroute block="Flare"/>
     </block>
     <block name="Landing" strip_button="Land on pad" group="land">
-      <call_once fun="dc_send_command(DC_OFF)"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
       <go wp="STDBY" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
       <go wp="LANDPAD" from="STDBY" hmode="route" height="goto_height"/>
     </block>
-    <block name="Flare" on_enter="jevois_stream(true)" on_exit="jevois_stream(false)">
+    <block name="Flare">
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
       <stay climb="2*nav.descend_vspeed" vmode="climb" wp="LANDPAD" until="GetPosHeight() @LT 10"/>
