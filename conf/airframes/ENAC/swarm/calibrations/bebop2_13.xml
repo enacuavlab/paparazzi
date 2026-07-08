@@ -20,8 +20,8 @@
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
         </field>
-        <field name="neutral" value="113,44,181" type="int[]"/>
-        <field name="scale_f" value="{ 8.6153, 9.1252, 8.7470 }"/>
+        <field name="neutral" value="202,-212,106" type="int[]"/>
+        <field name="scale_f" value="{ 7.1917, 7.4124, 7.2976 }"/>
       </field>
     </define>
   </section>
