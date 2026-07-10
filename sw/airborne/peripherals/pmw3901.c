@@ -97,12 +97,12 @@ static uint8_t readRegister_blocking(struct pmw3901_t *pmw, uint8_t addr) {
   pmw->trans.output_length = 1;
   pmw->trans.input_length = 0;
   pmw->trans.select = SPISelect;
-  spi_blocking_transceive(pmw->periph, &pmw->trans);
+  spi_blocking_transceive(pmw->periph, &pmw->trans, 0.5);
   sys_time_usleep(35);  // See ref firmware and datasheet
   pmw->trans.output_length = 0;
   pmw->trans.input_length = 1;
   pmw->trans.select = SPIUnselect;
-  spi_blocking_transceive(pmw->periph, &pmw->trans);
+  spi_blocking_transceive(pmw->periph, &pmw->trans, 0.5);
   pmw->trans.select = SPISelectUnselect;
   return pmw->trans.input_buf[0];
 }
@@ -112,7 +112,7 @@ static void writeRegister_blocking(struct pmw3901_t *pmw, uint8_t addr, uint8_t 
   pmw->trans.output_buf[1] = data;
   pmw->trans.output_length = 2;
   pmw->trans.input_length = 0;
-  spi_blocking_transceive(pmw->periph, &pmw->trans);
+  spi_blocking_transceive(pmw->periph, &pmw->trans, 0.5);
 }
 
 // For PixArt firmware compatibility:
