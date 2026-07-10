@@ -70,9 +70,9 @@
     </module>
     <module name="guidance" type="indi_fully_actuated" />
 
-    <!-- <module name="pdec">
+    <module name="pdec">
       <configure name="PDEC_UART" value="UART3" />
-    </module> -->
+    </module>
 
     <module name="flight_recorder" />
     <module name="logger" type="control_effectiveness">
