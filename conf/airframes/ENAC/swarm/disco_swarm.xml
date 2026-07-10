@@ -30,7 +30,8 @@
     <module name="ins" type="alt_float"/>
     <module name="airspeed" type="ms45xx_i2c">
       <configure name="MS45XX_I2C_DEV" value="i2c1"/>
-      <define name="MS45XX_PRESSURE_RANVE" value="0.05"/>
+      <define name="MS45XX_PRESSURE_SCALE" value="1.0"/>
+      <define name="MS45XX_PRESSURE_OFFSET" value="0"/>
     </module>
     <module name="air_data"/>
     <module name="actuators" type="disco"/>
@@ -44,8 +45,8 @@
 
   <servos>
     <servo name="MOTOR" no="0" min="1000" neutral="1000" max="12500"/>
-    <servo name="AILEVON_RIGHT" no="6" min="1900" neutral="1500" max="1100"/>
-    <servo name="AILEVON_LEFT" no="1" min="1100" neutral="1500" max="1900"/>
+    <servo name="AILEVON_RIGHT" no="6" min="1900" neutral="1500" max="1100"/> <!--check neutral 1430-->
+    <servo name="AILEVON_LEFT" no="1" min="1100" neutral="1500" max="1900"/> <!--check neutral 1430-->
   </servos>
 
   <commands>
@@ -169,7 +170,7 @@
   <section name="HORIZONTAL CONTROL" prefix="H_CTL_">
     <define name="COURSE_PGAIN" value="0.743"/>
     <define name="COURSE_TAU" value="0.5"/>
-    <define name="ROLL_MAX_SETPOINT" value="30." unit="deg"/>
+    <define name="ROLL_MAX_SETPOINT" value="45." unit="deg"/>
     <define name="PITCH_MAX_SETPOINT" value="30." unit="deg"/>
     <define name="PITCH_MIN_SETPOINT" value="-30." unit="deg"/>
 
