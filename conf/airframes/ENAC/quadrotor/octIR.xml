@@ -34,10 +34,6 @@
     
     <module name="telemetry" type="xbee_api"/>
 
-    <module name="extra_dl">
-      <configure name="EXTRA_DL_PORT" value="UART3"/>
-      <configure name="EXTRA_DL_BAUD" value="B115200"/>
-    </module>
 
     <module name="actuators" type="dshot">
       <configure name="DSHOT_BIDIR" value="FALSE"/>
@@ -56,7 +52,10 @@
     <module name="flight_recorder"/>
     <module name="logger" type="control_effectiveness"/>
 
-    <module name="thermal_ctl"/>
+    <module name="thermal_ctl">
+      <configure name="EXTRA_DL_PORT" value="UART3"/>
+      <configure name="EXTRA_DL_BAUD" value="B115200"/>
+    </module>
 
   </firmware>
 

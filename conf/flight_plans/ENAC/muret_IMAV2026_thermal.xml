@@ -5,7 +5,9 @@
   <header>
     #define FP_NONE       0
     #define FP_THERMAL    1
-
+    #define THERMAL_PWR_OFF  1
+    #define THERMAL_REC      2
+    #define THERMAL_STOP_REC 3
     #ifdef NAV_C
     static inline bool delay_test_rc(bool test, int delay) {
       static int nb = 0;
@@ -89,6 +91,7 @@
     </block>
     <block name="Geo init">
       <while cond="LessThan(NavBlockTime(), 10)"/>
+      <call_once fun="NavSetGroundReferenceHere()"/>
     </block>
     <block name="Holding point" strip_button="H. Point" group="home">
       <call_once fun="NavKillThrottle()"/>
@@ -128,6 +131,7 @@
       <deroute block="Run Thermal"/>
     </block>
     <block name="Run Thermal">
+      <set var="thermal_ctl" value="THERMAL_REC"/>
       <call_once fun="guidance_h_SetMaxSpeed(thermal_speed)"/>
       <call fun="nav_survey_hybrid_run()"/>
       <deroute block="Landing"/>
@@ -140,6 +144,7 @@
     <block name="Landing" strip_button="Land on pad" group="land">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <set var="thermal_ctl" value="THERMAL_STOP_REC"/>
       <go wp="STDBY" from="_HERE" hmode="route" height="goto_height"/>
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
       <go wp="LANDPAD" from="STDBY" hmode="route" height="goto_height"/>
