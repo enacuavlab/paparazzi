@@ -36,6 +36,7 @@
 #include "autopilot.h"
 #include "stdio.h"
 #include "filters/low_pass_filter.h"
+#include "filters/quaternion_filter.h"
 #include "modules/core/abi.h"
 #include "firmwares/rotorcraft/navigation.h"
 
@@ -128,7 +129,7 @@ struct guidance_indi_hybrid_params gih_params = {
 };
 
 // Quadplanes can hover at various pref pitch
-float guidance_indi_pitch_pref_deg = 10.0f;
+float guidance_indi_pitch_pref_deg = 0;
 
 
 // If using WLS, check that the matrix size is sufficient
@@ -234,14 +235,10 @@ struct FloatEulers eulers_zxy;
 float thrust_dyn = 0.f;
 float thrust_act = 0.f;
 Butterworth2LowPass filt_accel_ned[3];
-Butterworth2LowPass roll_filt;
-Butterworth2LowPass pitch_filt;
 Butterworth2LowPass thrust_filt;
 Butterworth2LowPass accely_filt;
 Butterworth2LowPass guidance_indi_airspeed_filt;
-static Butterworth2LowPass yaw_delta_filt;
-static float previous_yaw_raw = 0.0f;
-float yaw_filt = 0.0f;
+QuatButterworthLowPass quat_filt;
 
 struct FloatVect2 desired_airspeed;
 float gi_unbounded_airspeed_sp = 0.f;
@@ -378,11 +375,9 @@ void guidance_indi_init(void)
   for(int8_t i=0; i<3; i++) {
     init_butterworth_2_low_pass(&filt_accel_ned[i], tau, sample_time, 0.0);
   }
-  init_butterworth_2_low_pass(&roll_filt, tau, sample_time, 0.0);
-  init_butterworth_2_low_pass(&pitch_filt, tau, sample_time, 0.0);
-  init_butterworth_2_low_pass(&yaw_delta_filt, tau, sample_time, 0.0);
-  previous_yaw_raw = 0.0f;
-  yaw_filt = 0.0f;
+  struct FloatQuat q0;
+  float_quat_identity(&q0);
+  init_quat_butterworth_low_pass(&quat_filt, filter_cutoff, sample_time, q0);
   init_butterworth_2_low_pass(&thrust_filt, tau, sample_time, 0.0);
   init_butterworth_2_low_pass(&accely_filt, tau, sample_time, 0.0);
 
@@ -425,12 +420,7 @@ void guidance_indi_enter(void)
     init_butterworth_2_low_pass(&filt_accel_ned[i], tau, sample_time, 0.0);
   }
 
-  init_butterworth_2_low_pass(&roll_filt, tau, sample_time, eulers_zxy.phi);
-  init_butterworth_2_low_pass(&pitch_filt, tau, sample_time, eulers_zxy.theta);
-  init_butterworth_2_low_pass(&yaw_delta_filt, tau, sample_time, 0.0);
-  // Initialize yaw tracking variables
-  previous_yaw_raw = eulers_zxy.psi;
-  yaw_filt = eulers_zxy.psi;
+  init_quat_butterworth_low_pass(&quat_filt, filter_cutoff, sample_time, *stateGetNedToBodyQuat_f());
   init_butterworth_2_low_pass(&thrust_filt, tau, sample_time, thrust_in);
   init_butterworth_2_low_pass(&accely_filt, tau, sample_time, 0.0);
 
@@ -471,6 +461,8 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
 
   /* Obtain eulers with zxy rotation order */
   float_eulers_of_quat_zxy(&eulers_zxy, stateGetNedToBodyQuat_f());
+  struct FloatEulers eulers_filtered;
+  float_eulers_of_quat_zxy(&eulers_filtered, &quat_filt.quat);
 
   /* Calculate the transition ratio so that the ctrl_effecitveness scheduling works */
   stabilization.transition_ratio = eulers_zxy.theta / RadOfDeg(-75.0f);
@@ -509,9 +501,7 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   // else ignore the vertical acceleration error
 #ifndef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
 #ifndef STABILIZATION_ATTITUDE_INDI_FULL
-#if !GUIDANCE_INDI_HYBRID_USE_WLS
   a_diff.z = 0.0;
-#endif
 #endif
 #endif
 
@@ -528,7 +518,7 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   body_v[2] = gi_speed_sp.z;
 
   // Calculate the maximum deflections
-  guidance_indi_hybrid_set_wls_settings(body_v, roll_filt.o[0], pitch_filt.o[0]);
+  guidance_indi_hybrid_set_wls_settings(body_v, eulers_filtered.phi, eulers_filtered.theta);
 
   float du_gih[GUIDANCE_INDI_HYBRID_U]; // = {0.0f, 0.0f, 0.0f};
 
@@ -563,8 +553,8 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   // We are dividing by the airspeed, so a lower bound is important
   Bound(airspeed_turn, gih_coordinated_turn_min_airspeed, gih_coordinated_turn_max_airspeed);
 
-  guidance_euler_cmd.phi = roll_filt.o[0] + euler_cmd.x;
-  guidance_euler_cmd.theta = pitch_filt.o[0] + euler_cmd.y;
+  guidance_euler_cmd.phi = eulers_filtered.phi + euler_cmd.x;
+  guidance_euler_cmd.theta = eulers_filtered.theta + euler_cmd.y;
 
   //Bound euler angles to prevent flipping
   Bound(guidance_euler_cmd.phi, -guidance_indi_max_bank, guidance_indi_max_bank);
@@ -596,6 +586,7 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
 #endif
 
   // External heading setpoint times out if not refreshed by the sender
+  // NOTE: there *should* not be any problems possible with Euler singularities here
   if (indi_heading_sp_set && (get_sys_time_float() - time_of_heading_sp > 0.5f)) {
     indi_heading_sp_set = false;
     indi_heading_rate_ff = 0.f;
@@ -823,25 +814,6 @@ static float bound_vz_sp(float vz_sp)
 
 struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight UNUSED, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndiHybrid_HMode h_mode, enum GuidanceIndiHybrid_VMode v_mode)
 {
-#ifdef GUIDANCE_INDI_POS_SP_DEBUG
-  (void)gv; (void)h_mode; (void)v_mode;
-  static const struct FloatVect3 debug_pos_sp = { 1.0f, 1.0f, -2.0f }; // NED [m]
-  static const struct FloatVect3 debug_vel_sp = { 0.0f, 0.0f, 0.0f };  // NED [m/s]
-  struct NedCoor_f *pos = stateGetPositionNed_f();
-  struct NedCoor_f *vel = stateGetSpeedNed_f();
-
-  // Cascade: accel_sp = Kv * ((Vref + Kp*(Pref - P)) - V)
-  struct FloatVect3 v_cmd;
-  v_cmd.x = debug_vel_sp.x + gih_params.pos_gain  * (debug_pos_sp.x - pos->x);
-  v_cmd.y = debug_vel_sp.y + gih_params.pos_gain  * (debug_pos_sp.y - pos->y);
-  v_cmd.z = debug_vel_sp.z + gih_params.pos_gainz * (debug_pos_sp.z - pos->z);
-
-  struct FloatVect3 accel_sp;
-  accel_sp.x = (v_cmd.x - vel->x) * gih_params.speed_gain;
-  accel_sp.y = (v_cmd.y - vel->y) * gih_params.speed_gain;
-  accel_sp.z = (v_cmd.z - vel->z) * gih_params.speed_gainz;
-  return guidance_indi_run(&accel_sp, gh->sp.heading);
-#else
   struct FloatVect3 pos_err = { 0 };
   struct FloatVect3 accel_sp = { 0 };
 
@@ -924,7 +896,6 @@ struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight UNUSED, struc
     }
   }
   return guidance_indi_run(&accel_sp, gh->sp.heading);
-#endif // GUIDANCE_INDI_POS_SP_DEBUG
 }
 
 #ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
@@ -944,8 +915,7 @@ void guidance_indi_filter_thrust(void)
 
 /**
  * Low pass the accelerometer measurements to remove noise from vibrations.
- * The roll and pitch also need to be filtered to synchronize them with the
- * acceleration
+ * The orientation needs to be filtered to synchronize with the acceleration
  * Called as a periodic function with PERIODIC_FREQ
  */
 void guidance_indi_propagate_filters(void)
@@ -955,17 +925,7 @@ void guidance_indi_propagate_filters(void)
   update_butterworth_2_low_pass(&filt_accel_ned[1], accel->y);
   update_butterworth_2_low_pass(&filt_accel_ned[2], accel->z);
 
-  update_butterworth_2_low_pass(&roll_filt, eulers_zxy.phi);
-  update_butterworth_2_low_pass(&pitch_filt, eulers_zxy.theta);
-  
-  // Filter yaw delta instead of raw angle to handle wrapping properly
-  float yaw_delta = eulers_zxy.psi - previous_yaw_raw;
-  FLOAT_ANGLE_NORMALIZE(yaw_delta);  // Normalize to [-pi, pi]
-  update_butterworth_2_low_pass(&yaw_delta_filt, yaw_delta);
-  previous_yaw_raw = eulers_zxy.psi;
-  // Accumulate filtered delta
-  yaw_filt += yaw_delta_filt.o[0];
-  FLOAT_ANGLE_NORMALIZE(yaw_filt);
+  update_quat_butterworth_low_pass(&quat_filt, *stateGetNedToBodyQuat_f());
 
   // Propagate filter for sideslip correction
   float accely = ACCEL_FLOAT_OF_BFP(stateGetAccelBody_i()->y);
