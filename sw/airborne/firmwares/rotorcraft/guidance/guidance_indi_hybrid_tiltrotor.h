@@ -74,7 +74,17 @@ extern void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_an
 #endif
 
 #ifndef GUIDANCE_INDI_PITCH_PREF_DEG
-#define GUIDANCE_INDI_PITCH_PREF_DEG 5.0f         /* preferred pitch angle, positive nose up [deg] */
+#define GUIDANCE_INDI_PITCH_PREF_DEG 0.0f         /* preferred pitch angle, positive nose up [deg] */
+#endif
+
+/* In GUIDED mode the tilt wheel (RADIO_TILT) sets the pitch preference:
+ * wheel min -> RC_MIN, wheel center -> 0 deg, wheel max -> RC_MAX. */
+#ifndef GUIDANCE_INDI_PITCH_PREF_RC_MIN_DEG
+#define GUIDANCE_INDI_PITCH_PREF_RC_MIN_DEG -10.0f
+#endif
+
+#ifndef GUIDANCE_INDI_PITCH_PREF_RC_MAX_DEG
+#define GUIDANCE_INDI_PITCH_PREF_RC_MAX_DEG 20.0f
 #endif
 
 #ifndef GUIDANCE_INDI_AIRSPEED_IMPORTANCE

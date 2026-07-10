@@ -75,6 +75,12 @@ extern struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight, struc
  * Overrides the nav/free heading; falls back if not refreshed within 0.5s.
  */
 extern void guidance_indi_hybrid_set_heading_sp(float heading);
+/** Heading-rate feedforward accompanying the external heading setpoint [rad/s].
+ * Only used while an external heading setpoint is active, where it replaces
+ * the coordinated-turn rate estimate in the feedforward body rates. Cleared
+ * on release/timeout of the external heading setpoint.
+ */
+extern void guidance_indi_hybrid_set_heading_rate_ff(float rate);
 /** Release an external heading setpoint and hand the heading back to the guidance. */
 extern void guidance_indi_hybrid_release_heading_sp(void);
 extern void guidance_set_min_max_airspeed(float min_airspeed, float max_airspeed);

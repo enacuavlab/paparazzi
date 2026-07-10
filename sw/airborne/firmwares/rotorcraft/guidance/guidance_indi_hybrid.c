@@ -314,6 +314,7 @@ float time_of_accel_sp_3d = 0.0;
 float indi_heading_sp = 0.0;
 bool indi_heading_sp_set = false;
 float time_of_heading_sp = 0.0;
+float indi_heading_rate_ff = 0.0;
 
 void guidance_indi_propagate_filters(void);
 
@@ -594,19 +595,10 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   omega -= accely_filt.o[0]*FWD_SIDESLIP_GAIN;
 #endif
 
-  // We can pre-compute the required rates to achieve this turn rate:
-  // NOTE: there *should* not be any problems possible with Euler singularities here
-  struct FloatEulers *euler_zyx = stateGetNedToBodyEulers_f();
-
-  struct FloatRates ff_rates;
-
-  ff_rates.p = -sinf(euler_zyx->theta) * omega;
-  ff_rates.q =  cosf(euler_zyx->theta) * sinf(euler_zyx->phi) * omega;
-  ff_rates.r =  cosf(euler_zyx->theta) * cosf(euler_zyx->phi) * omega;
-
   // External heading setpoint times out if not refreshed by the sender
   if (indi_heading_sp_set && (get_sys_time_float() - time_of_heading_sp > 0.5f)) {
     indi_heading_sp_set = false;
+    indi_heading_rate_ff = 0.f;
   }
 
   // For a hybrid it is important to reduce the sideslip, which is done by changing the heading.
@@ -616,6 +608,9 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
     // track it with the heading integrator for a smooth hand-back
     guidance_indi_hybrid_heading_sp = indi_heading_sp;
     guidance_euler_cmd.psi = guidance_indi_hybrid_heading_sp;
+    // the circular trajectory sender knows the true heading rate,
+    // use it instead of the roll-derived coordinated-turn estimate
+    omega = indi_heading_rate_ff;
   }
   else if (take_heading_control) {
     // heading is fixed by nav
@@ -640,6 +635,15 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
 #endif
     guidance_euler_cmd.psi = guidance_indi_hybrid_heading_sp;
   }
+
+  // Pre-compute the required rates to achieve this turn rate
+  struct FloatEulers *euler_zyx = stateGetNedToBodyEulers_f();
+
+  struct FloatRates ff_rates;
+
+  ff_rates.p = -sinf(euler_zyx->theta) * omega;
+  ff_rates.q =  cosf(euler_zyx->theta) * sinf(euler_zyx->phi) * omega;
+  ff_rates.r =  cosf(euler_zyx->theta) * cosf(euler_zyx->phi) * omega;
 
   // compute required thrust setpoint
 #ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
@@ -1029,9 +1033,15 @@ void guidance_indi_hybrid_set_heading_sp(float heading)
   time_of_heading_sp = get_sys_time_float();
 }
 
+void guidance_indi_hybrid_set_heading_rate_ff(float rate)
+{
+  indi_heading_rate_ff = rate;
+}
+
 void guidance_indi_hybrid_release_heading_sp(void)
 {
   indi_heading_sp_set = false;
+  indi_heading_rate_ff = 0.f;
 }
 
 /**

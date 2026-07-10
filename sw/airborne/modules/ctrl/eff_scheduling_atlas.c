@@ -156,7 +156,7 @@ float atlas_eff_periodic_freq = EFF_SCHEDULING_ATLAS_PERIODIC_FREQ;   // Module 
 float atlas_eff_tilt_rate = ATLAS_EFF_TILT_RATE;                     // Tilt servo angular rate limit [deg/s]
 float atlas_eff_tilt_scale = 1.0f;                                    // Scales the pprz/tilt angle slope
 float atlas_eff_liftd = 0.0f;                                         // Change in Lift wrt change in pitch (dLift/dpitch) [N/rad]
-bool  atlas_eff_disable_tilt = true;                                 // Debug: freeze tilts at hover (alpha=0)
+bool  atlas_eff_disable_tilt = false;                                 // Debug: freeze tilts at hover (alpha=0)
 
 
 /** Helper Function:

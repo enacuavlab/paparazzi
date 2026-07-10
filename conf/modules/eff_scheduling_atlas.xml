@@ -67,11 +67,13 @@
         <define name="ATLAS_EFF_RY"             value="{0.15,0.15,-0.15,-0.15}"/>
         <define name="ATLAS_EFF_RZ"             value="{0.0,0.0,0.0,0.0}"/>
         <define name="ATLAS_EFF_SPIN_DIR"       value="{-1.0,1.0,-1.0,1.0}"/>
-        <define name="ATLAS_EFF_K_T_PPRZ"       value="{0.35145,2.636e-4,8.7863e-8}"/>
-        <define name="ATLAS_EFF_KAPPA"          value="0.1"/> <!--0.0483-->
+        <define name="ATLAS_EFF_K_T_PPRZ"       value="{0.163,1.22e-4,4.08e-8}"/>
+        <define name="ATLAS_EFF_KAPPA"          value="0.018"/> <!-- was 0.06; 0.018 from log-ID: yaw eff kappa*dT/Izz~9.5e-4 with Izz=0.013 -->
+
         <define name="ATLAS_EFF_K_LIFT"         value="0.311"/>
         <define name="ATLAS_EFF_V_WING"         value="10.0"/>
-        <define name="ATLAS_MOTOR_HOVER"        value="3000"/>
+        <define name="ATLAS_MOTOR_HOVER"        value="4640"/> <!-- was 3000; 4640 = measured hover command from flight logs -->
+
         <define name="ATLAS_MOTOR_IDLE"         value="1000"/>
         <define name="ATLAS_EFF_ALPHA_MIN"      value="-0.261"/>
         <define name="ATLAS_EFF_ALPHA_MAX"      value="M_PI/2"/>
@@ -79,7 +81,7 @@
         <define name="ATLAS_EFF_TILT_F_RATE"    value="20.0"/>
         <define name="ATLAS_EFF_TILT_M_RATE"    value="15.0"/>
         -->
-        <define name="ATLAS_EFF_TILT_RATE"      value="30.0"/>
+        <define name="ATLAS_EFF_TILT_RATE"      value="80.0"/>
         <file name="eff_scheduling_atlas.c"/>
     </makefile>
 </module>

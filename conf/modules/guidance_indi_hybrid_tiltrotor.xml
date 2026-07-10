@@ -18,6 +18,8 @@
             <define name="MIN_PITCH"            value="-40."         description="Min pitch attitude setpoint [deg]"/>
             <define name="MAX_PITCH"            value="40."          description="Max pitch attitude setpoint [deg]"/>
             <define name="PITCH_PREF_DEG"       value="0.0"          description="Preferred pitch angle for WLS, positive nose up [deg]"/>
+            <define name="PITCH_PREF_RC_MIN_DEG" value="-10.0"       description="Pitch preference at tilt wheel (RADIO_TILT) minimum in GUIDED mode [deg]"/>
+            <define name="PITCH_PREF_RC_MAX_DEG" value="20.0"        description="Pitch preference at tilt wheel (RADIO_TILT) maximum in GUIDED mode [deg]"/>
             <define name="WU_PITCH"             value="100.0"        description="Pitch preference weight; objectives carry gamma_sq*Wv = 1e5 [-]"/>
         </section>
     </doc>
@@ -36,17 +38,19 @@
         <!-- Guidance control objectives: ax, ay, az for tiltrotors -->
         <define name="GUIDANCE_INDI_HYBRID_V" value="3"/>
         <define name="GUIDANCE_INDI_PUSHER_INDEX"        value="4"/>
-        <define name="GUIDANCE_INDI_MASS"                value="0.70"/>
+        <define name="GUIDANCE_INDI_MASS"                value="0.68"/>
         <define name="GUIDANCE_INDI_WING_AREA"           value="0.5"/>
         <define name="GUIDANCE_INDI_CL_0"                value="0.1"/>
         <define name="GUIDANCE_INDI_CL_ALPHA"            value="5.0"/>
-        <define name="GUIDANCE_INDI_MAX_ACC_BODY_X"      value="6.0"/>
+        <define name="GUIDANCE_INDI_MAX_ACC_BODY_X"      value="10.0"/>
         <define name="GUIDANCE_INDI_MAX_ACC_BODY_Z"      value="8.0"/>
-        <define name="GUIDANCE_INDI_WLS_PRIORITIES"      value="{1.7,1.7,1.}"/>
+        <define name="GUIDANCE_INDI_WLS_PRIORITIES"      value="{2.5,2.5,1.0}"/>
         <define name="GUIDANCE_INDI_MIN_PITCH"           value="-40."/>
         <define name="GUIDANCE_INDI_MAX_PITCH"           value="40."/>
         <define name="GUIDANCE_INDI_PITCH_PREF_DEG"      value="0.0"/>
-        <define name="GUIDANCE_INDI_WU_PITCH"            value="0.0"/>
+        <define name="GUIDANCE_INDI_PITCH_PREF_RC_MIN_DEG" value="-5.0"/>
+        <define name="GUIDANCE_INDI_PITCH_PREF_RC_MAX_DEG" value="15.0"/>
+        <define name="GUIDANCE_INDI_WU_PITCH"            value="0.0"/> <!-- 10000.0 -->
         <file name="guidance_indi_hybrid_tiltrotor.c" dir="$(SRC_FIRMWARE)/guidance"/>
     </makefile>
 </module>

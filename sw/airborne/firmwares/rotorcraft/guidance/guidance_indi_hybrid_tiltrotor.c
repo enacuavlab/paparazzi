@@ -28,6 +28,9 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 #include "math/pprz_isa.h"
 #include "modules/ctrl/eff_scheduling_atlas.h"
+#ifdef RADIO_TILT
+#include "modules/radio_control/radio_control.h"
+#endif
 
 
 static const float wing_area = GUIDANCE_INDI_WING_AREA;
@@ -175,7 +178,21 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
 
   const float max_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MAX_PITCH);
   const float min_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MIN_PITCH);
-  const float pitch_pref_rad      = RadOfDeg(GUIDANCE_INDI_PITCH_PREF_DEG);
+
+  guidance_indi_pitch_pref_deg = GUIDANCE_INDI_PITCH_PREF_DEG;
+#ifdef RADIO_TILT
+  // In GUIDED the tilt wheel sets the pitch preference: wheel min = RC_MIN
+  // (-10 deg), center = 0 deg, wheel max = RC_MAX (+20 deg). Falls back to
+  // the compile-time preference in other modes or when RC is lost.
+  if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED && radio_control.status == RC_OK) {
+    float wheel = (float)radio_control_get(RADIO_TILT) / (float)MAX_PPRZ;
+    BoundAbs(wheel, 1.0f);
+    guidance_indi_pitch_pref_deg = (wheel >= 0.0f)
+        ? wheel * GUIDANCE_INDI_PITCH_PREF_RC_MAX_DEG
+        : -wheel * GUIDANCE_INDI_PITCH_PREF_RC_MIN_DEG;
+  }
+#endif
+  const float pitch_pref_rad      = RadOfDeg(guidance_indi_pitch_pref_deg);
 
   // Roll limits
   wls_guid_p.u_min[GIHT_CMD_ROLL]  = -guidance_indi_max_bank - roll_angle;

@@ -67,6 +67,8 @@ struct CircTraj {
   float max_accel;          ///< bound on the commanded horizontal acceleration [m/s^2]
   float max_accelz;         ///< bound on the commanded vertical acceleration [m/s^2]
   float yaw_rate;           ///< max heading slew rate while aligning (HEADING mode) [deg/s]
+  float yaw_ff;             ///< heading-rate feedforward gain (1 = full trajectory heading rate)
+  float smooth_w;           ///< natural frequency of the critically-damped reference model easing the hold-point setpoint [rad/s]
 
   /* --- runtime state --- */
   enum CircTrajStatus status;

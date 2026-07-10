@@ -45,7 +45,9 @@
  *   a_sp  = A_ref + Kv * (v_cmd - V)        (bounded)
  * using the guidance_indi gains, and publishes a_sp on the ACCEL_SP ABI
  * message (3D) consumed by guidance_indi_hybrid. The heading setpoint is
- * commanded directly with guidance_indi_hybrid_set_heading_sp().
+ * commanded directly with guidance_indi_hybrid_set_heading_sp(), together
+ * with the trajectory heading rate (scaled by yaw_ff) as feedforward via
+ * guidance_indi_hybrid_set_heading_rate_ff().
  */
 
 #include "modules/ctrl/circ_trajectory.h"
@@ -104,6 +106,26 @@
 #define CIRC_TRAJECTORY_YAW_RATE 10.0f
 #endif
 
+/* Heading-rate feedforward gain (1 = feed the full trajectory heading rate) */
+#ifndef CIRC_TRAJECTORY_YAW_FF_GAIN
+#define CIRC_TRAJECTORY_YAW_FF_GAIN 1.0f
+#endif
+
+/* Natural frequency [rad/s] of the critically-damped (zeta = 1) reference model
+ * that eases the hold-point setpoint (HOVER / HEADING / GOTO_START / END) from
+ * the current vehicle state to its target. Lower = smoother/slower approach,
+ * no overshoot. Settling time to ~2% is roughly 5.8 / smooth_w seconds. */
+#ifndef CIRC_TRAJECTORY_SMOOTH_W
+#define CIRC_TRAJECTORY_SMOOTH_W 1.0f
+#endif
+
+/* Lead time [s] applied to the accel feedforward only: a_ref is evaluated at
+ * t + lead so the rotating demand arrives early enough to compensate the
+ * attitude realization lag. Position/velocity feedback stay at t. 0 disables. */
+#ifndef CIRC_TRAJECTORY_ACCEL_LEAD_TIME
+#define CIRC_TRAJECTORY_ACCEL_LEAD_TIME 0.1f
+#endif
+
 struct CircTraj circ_traj = {
   .r                 = CIRC_TRAJECTORY_RADIUS,
   .v_max             = CIRC_TRAJECTORY_V_MAX,
@@ -115,6 +137,8 @@ struct CircTraj circ_traj = {
   .max_accel         = CIRC_TRAJECTORY_MAX_ACCEL,
   .max_accelz        = CIRC_TRAJECTORY_MAX_ACCELZ,
   .yaw_rate          = CIRC_TRAJECTORY_YAW_RATE,
+  .yaw_ff            = CIRC_TRAJECTORY_YAW_FF_GAIN,
+  .smooth_w          = CIRC_TRAJECTORY_SMOOTH_W,
   .status            = CIRC_TRAJ_HOVER,
   .t                 = 0.0f,
 };
@@ -192,10 +216,11 @@ static void circ_compute_theta(float t, float *theta, float *theta_dot, float *t
 
 /**
  * Evaluate the position, velocity, acceleartion setpoints of the
- * circular trajectory in NED frame at trajectory time t.
+ * circular trajectory in NED frame at trajectory time t, together
+ * with the tangent heading and its rate.
  */
 static void circ_eval(float t, struct FloatVect3 *p_ref, struct FloatVect3 *v_ref,
-                      struct FloatVect3 *a_ref, float *yaw_ref)
+                      struct FloatVect3 *a_ref, float *yaw_ref, float *yaw_rate_ref)
 {
   float theta, theta_dot, theta_ddot;
   circ_compute_theta(t, &theta, &theta_dot, &theta_ddot);
@@ -214,8 +239,9 @@ static void circ_eval(float t, struct FloatVect3 *p_ref, struct FloatVect3 *v_re
     -r * (st * wd * wd - ct * wdd),
     0.f
   };
-  // Unit tangent (used for heading)
+  // Unit tangent (used for heading) and its time derivative
   struct FloatVect3 tan_loc = { -st, ct, 0.f };
+  struct FloatVect3 tandot_loc = { -ct * wd, -st * wd, 0.f };
 
   // Rotation into NED
   const float cy = cosf(RadOfDeg(circ_traj.plane_tilt_deg));
@@ -223,17 +249,22 @@ static void circ_eval(float t, struct FloatVect3 *p_ref, struct FloatVect3 *v_re
   const float cz = cosf(RadOfDeg(circ_traj.plane_azimuth_deg));
   const float sz = sinf(RadOfDeg(circ_traj.plane_azimuth_deg));
 
-  struct FloatVect3 p_rot, tan_rot;
+  struct FloatVect3 p_rot, tan_rot, tandot_rot;
   circ_apply_rotation(&p_rot, &p_loc, cy, sy, cz, sz);
   circ_apply_rotation(v_ref, &v_loc, cy, sy, cz, sz);
   circ_apply_rotation(a_ref, &a_loc, cy, sy, cz, sz);
   circ_apply_rotation(&tan_rot, &tan_loc, cy, sy, cz, sz);
+  circ_apply_rotation(&tandot_rot, &tandot_loc, cy, sy, cz, sz);
 
   // Translate position by the (fixed) circle center
   VECT3_SUM(*p_ref, p_rot, circ_traj.center);
 
-  // Heading from the tangent direction in the NED horizontal plane
+  // Heading from the tangent direction in the NED horizontal plane, and its
+  // rate: d/dt atan2(ty, tx) = (tx*ty_dot - ty*tx_dot) / (tx^2 + ty^2)
   *yaw_ref = atan2f(tan_rot.y, tan_rot.x);
+  const float nxy2 = tan_rot.x * tan_rot.x + tan_rot.y * tan_rot.y;
+  *yaw_rate_ref = (nxy2 > 1e-6f) ?
+                  (tan_rot.x * tandot_rot.y - tan_rot.y * tandot_rot.x) / nxy2 : 0.f;
 }
 
 #if PERIODIC_TELEMETRY
@@ -263,6 +294,38 @@ void circ_trajectory_stop(void)
   circ_traj.status = CIRC_TRAJ_STOP;
 }
 
+/**
+ * Advance a critically-damped (zeta = 1) second-order reference model one step
+ * of dt towards a fixed target, in NED. The persistent reference state
+ * (ref_pos, ref_vel) is updated in place and the smoothed position, velocity
+ * and acceleration references are returned. Seeded to the vehicle state on
+ * entry, this turns a step target into a smooth, overshoot-free approach and
+ * provides consistent v/a feedforward for the tracking cascade.
+ *
+ *   a = w^2 * (target - ref_pos) - 2*w * ref_vel      (zeta = 1)
+ */
+static void circ_smooth_step(struct FloatVect3 *ref_pos, struct FloatVect3 *ref_vel,
+                             const struct FloatVect3 *target, float w, float dt,
+                             struct FloatVect3 *p_ref, struct FloatVect3 *v_ref,
+                             struct FloatVect3 *a_ref)
+{
+  const float w2 = w * w;
+  const float two_w = 2.f * w;
+  // model acceleration for this step
+  a_ref->x = w2 * (target->x - ref_pos->x) - two_w * ref_vel->x;
+  a_ref->y = w2 * (target->y - ref_pos->y) - two_w * ref_vel->y;
+  a_ref->z = w2 * (target->z - ref_pos->z) - two_w * ref_vel->z;
+  // semi-implicit Euler integration (unconditionally stable for w*dt << 1)
+  ref_vel->x += a_ref->x * dt;
+  ref_vel->y += a_ref->y * dt;
+  ref_vel->z += a_ref->z * dt;
+  ref_pos->x += ref_vel->x * dt;
+  ref_pos->y += ref_vel->y * dt;
+  ref_pos->z += ref_vel->z * dt;
+  VECT3_COPY(*p_ref, *ref_pos);
+  VECT3_COPY(*v_ref, *ref_vel);
+}
+
 void circ_trajectory_run(void)
 {
   // Forced to an invalid value so the first run triggers the entry action
@@ -270,6 +333,11 @@ void circ_trajectory_run(void)
   static enum CircTrajStatus prev_status = (enum CircTrajStatus) - 1;
   static float hold_heading = 0.f;  // heading captured on HOVER entry [rad]
   static float heading_cmd = 0.f;   // ramped heading setpoint in HEADING mode [rad]
+  // Smoothing reference model state (NED). Seeded to the vehicle whenever the
+  // guidance is not tracking our setpoint, so the approach to any hold point
+  // starts from the current position: no step, no vertical overshoot on capture.
+  static struct FloatVect3 ref_pos = {0.f, 0.f, 0.f};
+  static struct FloatVect3 ref_vel = {0.f, 0.f, 0.f};
 
   const enum CircTrajStatus status = circ_traj.status;
   const bool entered = (status != prev_status);
@@ -290,16 +358,23 @@ void circ_trajectory_run(void)
   struct NedCoor_f *pos = stateGetPositionNed_f();
   struct NedCoor_f *vel = stateGetSpeedNed_f();
 
+  // Guidance consumes our ACCEL_SP only in an autonomous, airborne mode. Until
+  // then the smoothing reference is kept on the vehicle (see below).
+  const uint8_t ap_mode = autopilot_get_mode();
+  const bool guidance_active = autopilot_in_flight() &&
+                               (ap_mode == AP_MODE_GUIDED || ap_mode == AP_MODE_NAV);
+
   struct FloatVect3 p_ref, v_ref, a_ref;
+  struct FloatVect3 target;   // fixed hold point for the smoothed modes [NED]
+  bool hold_mode = true;      // false only for CIRC_TRAJ_START (direct trajectory)
   float yaw_ref;
+  float yaw_rate_ref = 0.f;  // heading-rate feedforward [rad/s], 0 in the hold modes
 
   switch (status) {
 
     case CIRC_TRAJ_HOVER: {
       if (entered || !autopilot_in_flight()) { hold_heading = stateGetNedToBodyEulers_f()->psi; }
-      VECT3_COPY(p_ref, circ_traj.center);
-      FLOAT_VECT3_ZERO(v_ref);
-      FLOAT_VECT3_ZERO(a_ref);
+      VECT3_COPY(target, circ_traj.center);
       yaw_ref = hold_heading;
       break;
     }
@@ -307,11 +382,10 @@ void circ_trajectory_run(void)
     case CIRC_TRAJ_HEADING: {
       // Rotate in place at the circle center, ramping the heading smoothly toward the
       // start tangent at circ_traj.yaw_rate instead of stepping the setpoint.
-      float target_yaw;
-      circ_eval(0.f, &p_ref, &v_ref, &a_ref, &target_yaw);
-      VECT3_COPY(p_ref, circ_traj.center);
-      FLOAT_VECT3_ZERO(v_ref);
-      FLOAT_VECT3_ZERO(a_ref);
+      struct FloatVect3 ps, vs, as;
+      float target_yaw, target_yaw_rate;
+      circ_eval(0.f, &ps, &vs, &as, &target_yaw, &target_yaw_rate);
+      VECT3_COPY(target, circ_traj.center);
 
       // Bound yaw command by yaw_rate * dt per step
       // to prevent abrupt change in heading
@@ -323,21 +397,31 @@ void circ_trajectory_run(void)
       heading_cmd += dpsi;
       FLOAT_ANGLE_NORMALIZE(heading_cmd);
       yaw_ref = heading_cmd;
+      yaw_rate_ref = dpsi / dt;  // rate of the ramp itself
       break;
     }
 
     case CIRC_TRAJ_GOTO_START: {
       // Hold the circle start position (t=0) with the tangent heading.
-      circ_eval(0.f, &p_ref, &v_ref, &a_ref, &yaw_ref);
-      FLOAT_VECT3_ZERO(v_ref);
-      FLOAT_VECT3_ZERO(a_ref);
+      struct FloatVect3 vs, as;
+      float unused_rate;
+      circ_eval(0.f, &target, &vs, &as, &yaw_ref, &unused_rate);
       break;
     }
 
     case CIRC_TRAJ_START: {
-      // Fly the circular trajectory (full P/V/A feedforward + tangent heading)
+      // Fly the circular trajectory (full P/V/A feedforward + tangent heading + heading rate)
+      hold_mode = false;
       if (entered) { circ_traj.t = 0.f; }
-      circ_eval(circ_traj.t, &p_ref, &v_ref, &a_ref, &yaw_ref);
+      circ_eval(circ_traj.t, &p_ref, &v_ref, &a_ref, &yaw_ref, &yaw_rate_ref);
+      // Lead only the accel feedforward: the rotating a_ref is delivered early
+      // to compensate the attitude realization lag (p/v/yaw refs stay at t)
+      if (CIRC_TRAJECTORY_ACCEL_LEAD_TIME > 0.f) {
+        struct FloatVect3 p_lead, v_lead;
+        float yaw_lead, yaw_rate_lead;
+        circ_eval(circ_traj.t + CIRC_TRAJECTORY_ACCEL_LEAD_TIME,
+                  &p_lead, &v_lead, &a_ref, &yaw_lead, &yaw_rate_lead);
+      }
       circ_traj.t += dt;
 
       // Finite trajectory: hold the final pose once t_end elapses
@@ -353,17 +437,34 @@ void circ_trajectory_run(void)
       // mode also works when selected manually from the ground station.
       if (entered) {
         struct FloatVect3 vf, af;
-        circ_eval(circ_traj.t_end, &circ_traj.final_pos, &vf, &af, &circ_traj.final_yaw);
+        float rf;
+        circ_eval(circ_traj.t_end, &circ_traj.final_pos, &vf, &af, &circ_traj.final_yaw, &rf);
       }
-      VECT3_COPY(p_ref, circ_traj.final_pos);
-      FLOAT_VECT3_ZERO(v_ref);
-      FLOAT_VECT3_ZERO(a_ref);
+      VECT3_COPY(target, circ_traj.final_pos);
       yaw_ref = circ_traj.final_yaw;
       break;
     }
 
     default:
       return;
+  }
+
+  // Position/velocity/acceleration reference for the hold-point modes: a
+  // critically-damped, overshoot-free approach to `target` while the guidance
+  // is tracking us. Otherwise the reference shadows the vehicle so the next
+  // capture starts from the current position (no step -> no vertical rise).
+  // CIRC_TRAJ_START fills p/v/a_ref directly and only refreshes the shadow.
+  if (hold_mode && guidance_active) {
+    circ_smooth_step(&ref_pos, &ref_vel, &target, circ_traj.smooth_w, dt,
+                     &p_ref, &v_ref, &a_ref);
+  } else {
+    VECT3_COPY(ref_pos, *pos);
+    VECT3_COPY(ref_vel, *vel);
+    if (hold_mode) {
+      VECT3_COPY(p_ref, *pos);
+      VECT3_COPY(v_ref, *vel);
+      FLOAT_VECT3_ZERO(a_ref);
+    }
   }
 
   // Outer loop velocity setpoint using guidance_indi gains
@@ -385,6 +486,7 @@ void circ_trajectory_run(void)
   BoundAbs(accel_sp.z, circ_traj.max_accelz);
 
   guidance_indi_hybrid_set_heading_sp(yaw_ref);
+  guidance_indi_hybrid_set_heading_rate_ff(circ_traj.yaw_ff * yaw_rate_ref);
 
 
   // Publish the 3D velocity setpoint to guidance_indi_hybrid
