@@ -24,7 +24,10 @@
  *
  * Fully actuated plateform can be achieve with hexa-copter with
  * tilted propellers for example
- * TODO cite Mohamad Hachem
+ *
+ * M. Hachem, C. Roos, T. Miquel and M. Bronz, "Full Pose Tracking via Robust Control for Over-Actuated Multirotors,"
+ * 2025 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), Hangzhou, China, 2025, pp. 5031-5038,
+ * doi: 10.1109/IROS60139.2025.11246553.
  */
 
 #include "firmwares/rotorcraft/guidance/guidance_indi.h"
@@ -140,8 +143,8 @@ void guidance_indi_set_wls_settings(struct WLS_t *wls, const struct FloatQuat *a
 struct ThrustSetpoint guidance_set_rc_h_thrust(struct ThrustSetpoint *v_sp)
 {
   float thrust[3];
-  thrust[0] = -guidance_indi_max_h_thrust * radio_control_get(RADIO_PITCH) / MAX_PPRZ;
-  thrust[1] = guidance_indi_max_h_thrust * radio_control_get(RADIO_ROLL) / MAX_PPRZ;
+  thrust[0] = -radio_control_get(RADIO_PITCH) / MAX_PPRZ;
+  thrust[1] = radio_control_get(RADIO_ROLL) / MAX_PPRZ;
   thrust[2] = th_sp_to_thrust_f(v_sp, 0, THRUST_AXIS_Z);
   return th_sp_from_thrust_vect_f(thrust);
 }
