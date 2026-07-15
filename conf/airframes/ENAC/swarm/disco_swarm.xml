@@ -28,6 +28,7 @@
     <module name="gps" type="ublox"/>
     <module name="gps" type="ubx_ucenter"/>
     <module name="ins" type="alt_float"/>
+    <define name="USE_AIRSPEED" value="TRUE"/>
     <module name="airspeed" type="ms45xx_i2c">
       <configure name="MS45XX_I2C_DEV" value="i2c1"/>
       <define name="MS45XX_PRESSURE_SCALE" value="1.0"/>

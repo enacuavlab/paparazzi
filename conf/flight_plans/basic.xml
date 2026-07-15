@@ -62,15 +62,6 @@
       <path wpts="S1, S2 STDBY" approaching_time="1" pitch="auto" throttle="0.4"/>
       <deroute block="Standby"/>
     </block>
-    <block name="Dubins S1--S2" strip_button="Dubins S1--S2" strip_icon="path.png" group="extra_pattern">
-      <call_once fun="extended_dubins_set_start_wp(WP_S1,85)"/>
-      <call_once fun="extended_dubins_set_end_wp(WP_S2,180)"/>
-      <call_once fun="extended_dubins_set_radius(40)"/>
-      <call_once fun="extended_dubins_set_pathtype(RSR,0.)"/>
-      <call_once fun="nav_extended_dubins_init()"/>
-      <call fun="nav_extended_dubins_track()"/>
-      <deroute block="Standby"/>
-    </block>
     <block name="Land Right AF-TD" strip_button="Land right (wp AF-TD)" strip_icon="land-right.png" group="land">
       <set value="DEFAULT_CIRCLE_RADIUS" var="nav_radius"/>
       <deroute block="land"/>
