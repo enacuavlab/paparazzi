@@ -30,8 +30,6 @@
     <module name="ins" type="alt_float"/>
     <module name="airspeed" type="ms45xx_i2c">
       <configure name="MS45XX_I2C_DEV" value="i2c1"/>
-      <define name="MS45XX_PRESSURE_SCALE" value="1.0"/>
-      <define name="MS45XX_PRESSURE_OFFSET" value="0"/>
     </module>
     <module name="air_data"/>
     <module name="actuators" type="disco"/>
@@ -114,6 +112,9 @@
     <define name="UNLOCKED_HOME_MODE" value="TRUE"/>
 
     <define name="APP_ANGLE" value="8" unit="deg"/>
+
+    <define name="MS45XX_PRESSURE_SCALE" value="0.08"/> <!-- from 3 planes: 0.0831, 0.0721, 0.0807 -->
+    <define name="MS45XX_PRESSURE_OFFSET" value="0.0"/> <!-- must be set before flying -->
   </section>
 
   <section name="VERTICAL CONTROL" prefix="V_CTL_">
