@@ -59,7 +59,7 @@
   <makefile>
     <file name="dubins_common.c"/>
     <file name="nav_extended_dubins.c"/>
-    <file name="nav_dubins_gvf.c"/>
+    <!-- <file name="nav_dubins_gvf.c"/> -->
     <test/>
   </makefile>
 </module>

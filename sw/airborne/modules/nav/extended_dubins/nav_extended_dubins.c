@@ -12,7 +12,7 @@
 
 #include "filters/low_pass_filter.h"
 
-#include "nav_dubins_gvf.h"
+// #include "nav_dubins_gvf.h"
 
 #define DEBUG 1
 
@@ -455,20 +455,20 @@ bool nav_extended_dubins_track(void)
   static float speed_sp = NOMINAL_AIRSPEED;
   float remaining_el_distance;
 
-  if (dubins_use_gvf)
-  {
-    float traveled = dubins_estimate_current_parameter(&ref_problem, NOMINAL_AIRSPEED, ((float)gps_tow_from_sys_ticks(sys_time.nb_tick)) / 1000.f);
-    int elements_num = EXTENDED_DUBINS_PATH_ELEMENTS_N;
-    float w = dubins_find_current_element(path_elements, &elements_num, traveled);
-    if (elements_num >= EXTENDED_DUBINS_PATH_ELEMENTS_N)
-    {
-      return false;
-    }
+  // if (dubins_use_gvf)
+  // {
+  //   float traveled = dubins_estimate_current_parameter(&ref_problem, NOMINAL_AIRSPEED, ((float)gps_tow_from_sys_ticks(sys_time.nb_tick)) / 1000.f);
+  //   int elements_num = EXTENDED_DUBINS_PATH_ELEMENTS_N;
+  //   float w = dubins_find_current_element(path_elements, &elements_num, traveled);
+  //   if (elements_num >= EXTENDED_DUBINS_PATH_ELEMENTS_N)
+  //   {
+  //     return false;
+  //   }
     
-    nav_dubins_gvf_track(path_elements, elements_num, w, NOMINAL_AIRSPEED);
-  }
-  else
-  {
+  //   nav_dubins_gvf_track(path_elements, elements_num, w, NOMINAL_AIRSPEED);
+  // }
+  // else
+  // {
     // All elements done, return false to finish
     if (curr_path_element >= EXTENDED_DUBINS_PATH_ELEMENTS_N)
     {
@@ -500,7 +500,7 @@ bool nav_extended_dubins_track(void)
       curr_path_element++;
       initial_nav_rad_angle = NAN;
     }
-  }
+  // }
 
   // Speed control
   if (ref_problem.end_time > 0.)
