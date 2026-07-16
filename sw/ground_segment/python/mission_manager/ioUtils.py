@@ -155,6 +155,14 @@ def parse_section_from_dict(d:dict) -> BasicPath:
         pass
     return BasicPath(**d)
 
+def parse_obstacles_file(file:pathlib.Path) -> list[BasicPath]:
+    output = []
+    with open(file) as f:
+        data = json.load(f)
+        for e in data["sections"]:
+            output.append(parse_section_from_dict(e))
+    return output
+
 def straight_sections_compression(paths:list[BasicPath]) -> list[BasicPath]:
     """ If two straight basic paths follow one another, merge them into one. Return a (deep)copy of the list after this transformation.
     THIS DOES NOT CHECK IF THE FOLLOWING STRAIGHTS ARE ACTUALLY COLLINEAR.
@@ -455,9 +463,3 @@ if __name__ == '__main__':
         
         
     print("No action selected... Do nothing and exit...")
-        
-                
-            
-            
-            
-        

@@ -23,8 +23,8 @@ from typing import Optional
 import pathlib
 
 from _plotting_extra import linestyle_dict,my_cmap,ColorType
-from Dubins import FleetPlan,Pose3D,ListOfTimedPoses,DictOfPoseTrajectories,min_XY_dist
-from ioUtils import parse_trajectories_from_JSON,parse_trajectories_from_CSV,transpose_list_of_trajectories
+from Dubins import DubinsMove,FleetPlan,Pose3D,BasicPath,ListOfTimedPoses,DictOfPoseTrajectories,min_XY_dist
+from ioUtils import parse_trajectories_from_JSON,parse_trajectories_from_CSV,transpose_list_of_trajectories,parse_obstacles_file
 
 
 
@@ -45,6 +45,19 @@ ARROWS_SCALING = {
     'units' : 'inches',
     'width' : 0.03
 }
+
+def plot_BasicPath_obstacle(ax:Axes,p:BasicPath):
+    if p.type == DubinsMove.STRAIGHT:
+        start = p.start()
+        end = p.end()
+        return ax.plot([start.x,end.x],[start.y,end.y],'k-')
+    else:
+        poses = []
+        for t in np.linspace(0,p.duration(),100):
+            poses.append(p.pose_at(t))
+        _,lines,_,_ = plot_pose2d_sequence(ax,poses,False,False,color='k',linestyle='-')
+        return lines
+
 
 def plot_pose2d_sequence(ax:Axes,poses:list[Pose3D],endpoints:bool=False,endarrows:bool=False,**plot_kwargs)\
     -> tuple[Axes,list[Line2D],list[PathCollection],list[Quiver]]:
@@ -111,13 +124,15 @@ def plot_several_pose2d_sequences(ax:Axes,poses_dict:DictOfPoseTrajectories,colo
     return ax,output
 
 
-def snapshot_several_pose2d_sequences(poses_list:ListOfTimedPoses,snapshots:int,
+def snapshot_several_pose2d_sequences(poses_list:ListOfTimedPoses,geo_obstacles:list[BasicPath],
+                                     snapshots:int,
                                      color_dict:typing.Optional[dict[int,ColorType]]=None,
                                      name_dict:typing.Optional[dict[int,str]]=None,
                                      save_fig:typing.Optional[str]=None,
                                      show_fig:bool=False,
                                      no_legend:bool=False,
-                                     xlim:Optional[tuple[float,float]] = None):
+                                     xlim:Optional[tuple[float,float]] = None,
+                                     ylim:Optional[tuple[float,float]] = None):
     # Set axes aspect
     fig,ax = plt.subplots(figsize=(16,9))
     if xlim is None:
@@ -224,10 +239,23 @@ def snapshot_several_pose2d_sequences(poses_list:ListOfTimedPoses,snapshots:int,
     
     if xlim is not None:
         ax.set_xlim(xlim)
+    if ylim is not None:
+        ax.set_ylim(ylim)
     
     ax.set_title(f"Total flight time: {poses_list[-1][0]:.2f}")
     ax.set_xmargin(0.2)
     ax.set_ymargin(0.2)
+    
+    ## Plot obstacles while keeping the same axe limits
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    for d in geo_obstacles:
+        plot_BasicPath_obstacle(ax,d)
+        
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+
+    
     legend = ax.legend()
     if no_legend:
         legend.remove()
@@ -238,12 +266,15 @@ def snapshot_several_pose2d_sequences(poses_list:ListOfTimedPoses,snapshots:int,
     if show_fig:
         plt.show()
 
-def animate_several_pose2d_sequences(poses_list:ListOfTimedPoses,fps:int=30,
+def animate_several_pose2d_sequences(poses_list:ListOfTimedPoses,geo_obstacles:list[BasicPath],
+                                     fps:int=30,
                                      color_dict:typing.Optional[dict[int,ColorType]]=None,
                                      name_dict:typing.Optional[dict[int,str]]=None,
                                      save_animation:typing.Optional[str]=None,
                                      show_animation:bool=False,
-                                     no_legend:bool=False):
+                                     no_legend:bool=False,
+                                     xlim:Optional[tuple[float,float]] = None,
+                                     ylim:Optional[tuple[float,float]] = None):
     # Set axes aspect
     fig,ax = plt.subplots(figsize=(16,9))
     ax.set_aspect('equal','datalim')
@@ -329,10 +360,7 @@ def animate_several_pose2d_sequences(poses_list:ListOfTimedPoses,fps:int=30,
         offsets = np.asarray([[p.x,p.y] for p in poses])
         angles = np.asarray([p.theta for p in poses])
 
-        
-        
         ### Positions
-        
         
         min_dist,i1,i2 = min_XY_dist(poses)
         id1,p1 = keys[i1],poses[i1]
@@ -377,14 +405,30 @@ def animate_several_pose2d_sequences(poses_list:ListOfTimedPoses,fps:int=30,
         
         return modified_artists
     
-    fig.tight_layout()
-    ax.set_xmargin(0.2)
-    ax.set_ymargin(0.2)
+    if xlim is not None:
+        ax.set_xlim(xlim)
+    else:
+        ax.set_xmargin(0.2)
+        
+    if ylim is not None:
+        ax.set_ylim(ylim)
+    else:
+        ax.set_ymargin(0.2)
     legend = ax.legend()
     if no_legend:
         legend.remove()
         ax.set_axis_off()
     
+    ## Plot obstacles while keeping the same axe limits
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    for d in geo_obstacles:
+        plot_BasicPath_obstacle(ax,d)
+        
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    
+    fig.tight_layout()
     ani = FuncAnimation(fig,update,repeat=True,frames=len(poses_list),interval=1000/fps)
     
     if save_animation is not None:
@@ -400,7 +444,7 @@ def animate_several_pose2d_sequences(poses_list:ListOfTimedPoses,fps:int=30,
     if show_animation:
         plt.show()
 
-def animate_fleet_plan(plan:FleetPlan,sample_num:int,fps:int=30,
+def animate_fleet_plan(plan:FleetPlan,sample_num:int,geo_obstacles:list[BasicPath],fps:int=30,
                        color_dict:typing.Optional[dict[int,ColorType]]=None,
                        name_dict:typing.Optional[dict[int,str]]=None,
                        save_animation:typing.Optional[str]=None,
@@ -408,7 +452,7 @@ def animate_fleet_plan(plan:FleetPlan,sample_num:int,fps:int=30,
                        no_legend:bool=False):
     
     samples = plan.sample_poses(sample_num)
-    animate_several_pose2d_sequences(samples,
+    animate_several_pose2d_sequences(samples,geo_obstacles,
                                      fps,
                                      color_dict,
                                      name_dict,
@@ -432,17 +476,31 @@ if __name__ == '__main__':
     parser.add_argument('-s','--static',dest='static',type=int,
                         help="Print a static image with superposed snapshots instead of an animation. The parameter sets the number of snapshots. Must be a positive integer",
                         default=0)
-    parser.add_argument('--xlim',nargs=2,dest='xlim',help="If defined, set the X-axis limits from plotting",default=None)
+    parser.add_argument('--xlim',nargs=2,type=float,dest='xlim',help="If defined, set the X-axis limits from plotting",default=None)
+    parser.add_argument('--ylim',nargs=2,type=float,dest='ylim',help="If defined, set the Y-axis limits from plotting",default=None)
+    parser.add_argument('-G','--geo-obstacles',type=str,dest='geo_obstacles_path',help="Path to the geometric obstacles file.",default=None)
     
     args = parser.parse_args()
     
     path = pathlib.Path(args.file)
-    save = args.save
-    show_anim = not(args.no_print)
-    sample_num = args.sample_num
     if not(path.is_file()):
         print(f"{path} is not a file!! Exiting....")
         exit(1)
+    
+    geo_obstacles = []
+    if args.geo_obstacles_path is not None:
+        geo_obs_path = pathlib.Path(args.geo_obstacles_path)
+        if not(geo_obs_path.is_file()):
+            print(f"Path for obstacles does not point to a file: {args.geo_obstacles_path}")
+            exit(1)
+        geo_obstacles = parse_obstacles_file(geo_obs_path)
+            
+    
+    save = args.save
+    show_anim = not(args.no_print)
+    sample_num = args.sample_num
+        
+    
         
     data:ListOfTimedPoses = []
     ext = path.suffix
@@ -480,7 +538,9 @@ if __name__ == '__main__':
     
     
     if args.static > 0:
-        snapshot_several_pose2d_sequences(data,args.static,color_dict,name_dict,save,show_anim,args.no_legend)
+        snapshot_several_pose2d_sequences(data,geo_obstacles,
+                                          args.static,color_dict,name_dict,save,show_anim,args.no_legend,args.xlim,args.ylim)
     else:
-        animate_several_pose2d_sequences(data,args.fps,color_dict,name_dict,save,show_anim,args.no_legend)
+        animate_several_pose2d_sequences(data,geo_obstacles,
+                                         args.fps,color_dict,name_dict,save,show_anim,args.no_legend,args.xlim,args.ylim)
     print("Done! Exiting...")

@@ -68,6 +68,7 @@ PPRZ_DUBINS_TYPE_MAP = {
 
 def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
                    separation:float, wind:tuple[float,float],threads:int,
+                   geometric_obstacles_path:Optional[pathlib.Path],
                    start_extensions:list[float] = [],
                    end_extensions:list[float] = [],
                    **kwargs) -> list[str]:
@@ -87,6 +88,10 @@ def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
     cmd.append(str(10))
     
     cmd.append('-l')
+    
+    if geometric_obstacles_path is not None:
+        cmd.append('-G')
+        cmd.append(geometric_obstacles_path.resolve())
     
     if len(start_extensions) > 0:
         cmd.append('--straights-only')
@@ -110,6 +115,7 @@ def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
 
 def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
                    separation:float, wind:tuple[float,float],threads:int,
+                   geometric_obstacles_path:Optional[pathlib.Path],
                    start_extensions:list[float] = [],
                    end_extensions:list[float] = [],
                    **kwargs) -> subprocess.CompletedProcess[bytes]:
@@ -128,29 +134,34 @@ def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
     Returns:
         subprocess.CompletedProcess[bytes]: 
     """
-    cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads, start_extensions, end_extensions, **kwargs)
+    cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads, 
+        geometric_obstacles_path, start_extensions, end_extensions, **kwargs)
     
     return subprocess.run(cmd,stdout=subprocess.DEVNULL)
 
 def subprocess_solve_problem(solver:pathlib.Path,
                              pb_loc:pathlib.Path,sol_loc:pathlib.Path,
                              separation:float, wind:tuple[float,float],threads:int,
+                             geometric_obstacles_path:Optional[pathlib.Path],
                              start_extensions:list[float] = [],
                              end_extensions:list[float] = [],
                              **kwargs) -> subprocess.Popen:
     
-    cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads, start_extensions, end_extensions, **kwargs)
+    cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads, 
+        geometric_obstacles_path, start_extensions, end_extensions, **kwargs)
     
     return subprocess.Popen(cmd,stdout=subprocess.DEVNULL)
 
 async def async_subprocess_solve(solver:pathlib.Path,
                              pb_loc:pathlib.Path,sol_loc:pathlib.Path,
                              separation:float, wind:tuple[float,float],threads:int,
+                             geometric_obstacles_path:Optional[pathlib.Path],
                              start_extensions:list[float] = [],
                              end_extensions:list[float] = [],
                              **kwargs) -> int:
     # Create command to run
-    cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads, start_extensions, end_extensions, **kwargs)
+    cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads,
+                       geometric_obstacles_path, start_extensions, end_extensions, **kwargs)
 
     # Create subprocess (asynchronously)
     proc = await asyncio.create_subprocess_exec(*cmd,stdout=asyncio.subprocess.DEVNULL)
@@ -187,6 +198,7 @@ class FleetManager:
                  separation:float,
                  flight_alt:float,
                  threads:int=0,
+                 geometric_obstacles_path:Optional[pathlib.Path] = None,
                  transformer:pyproj.Transformer=pyproj.Transformer.from_crs('WGS84','EPSG:9794'), # Default to WGS84 to Lambert93
                  ignore_wind:bool=True,
                  end_strategy:FleetManagerEnd=FleetManagerEnd.NOTHING,
@@ -231,6 +243,7 @@ class FleetManager:
         self.separation:float = separation
         self.threads:int = threads
         self.transformer:pyproj.Transformer = transformer
+        self.geometric_obstacle_path = geometric_obstacles_path
 
         
         self.ac_ids:list[int] = [s.id for s in self.fleet_frames.ac_stats]
@@ -614,6 +627,7 @@ class FleetManager:
                 self.separation,
                 (0.,0.) if self.ignore_wind else (self.wind_x,self.wind_y),
                 self.threads,
+                self.geometric_obstacle_path,
                 [self.extra_straight_length] if self.extra_straight_length > 0 else [],
                 [self.extra_straight_length] if self.extra_straight_length > 0 else []
             )
