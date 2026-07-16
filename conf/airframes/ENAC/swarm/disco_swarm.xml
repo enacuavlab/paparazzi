@@ -31,8 +31,6 @@
     <define name="USE_AIRSPEED" value="TRUE"/>
     <module name="airspeed" type="ms45xx_i2c">
       <configure name="MS45XX_I2C_DEV" value="i2c1"/>
-      <define name="MS45XX_PRESSURE_SCALE" value="1.0"/>
-      <define name="MS45XX_PRESSURE_OFFSET" value="0"/>
     </module>
     <module name="air_data"/>
     <module name="actuators" type="disco"/>
@@ -44,11 +42,7 @@
     </module-->
   </firmware>
 
-  <servos>
-    <servo name="MOTOR" no="0" min="1000" neutral="1000" max="12500"/>
-    <servo name="AILEVON_RIGHT" no="6" min="1900" neutral="1500" max="1100"/> <!--check neutral 1430-->
-    <servo name="AILEVON_LEFT" no="1" min="1100" neutral="1500" max="1900"/> <!--check neutral 1430-->
-  </servos>
+  <include href="conf/airframes/ENAC/swarm/calibrations/disco_$AC_ID.xml"/>
 
   <commands>
     <axis name="THROTTLE" failsafe_value="0"/>
@@ -80,26 +74,6 @@
     <define name="MAX_PITCH" value="35" unit="deg"/>
   </section>
 
-  <section name="IMU" prefix="IMU_">
-    <define name="ACCEL_X_NEUTRAL" value="-141"/>
-    <define name="ACCEL_Y_NEUTRAL" value="13"/>
-    <define name="ACCEL_Z_NEUTRAL" value="-12"/>
-    <define name="ACCEL_X_SENS" value="2.43116617606" integer="16"/>
-    <define name="ACCEL_Y_SENS" value="2.46264528353" integer="16"/>
-    <define name="ACCEL_Z_SENS" value="2.41899590699" integer="16"/>
-
-    <define name="MAG_X_NEUTRAL" value="-164"/>
-    <define name="MAG_Y_NEUTRAL" value="-244"/>
-    <define name="MAG_Z_NEUTRAL" value="-590"/>
-    <define name="MAG_X_SENS" value="7.76268606256" integer="16"/>
-    <define name="MAG_Y_SENS" value="7.53777959342" integer="16"/>
-    <define name="MAG_Z_SENS" value="8.13033580043" integer="16"/>
-
-    <define name="BODY_TO_IMU_PHI" value="0"/>
-    <define name="BODY_TO_IMU_THETA" value="0"/>
-    <define name="BODY_TO_IMU_PSI" value="0"/>
-  </section>
-
   <include href="conf/mag/toulouse_muret.xml"/>
 
   <section name="BAT">
@@ -108,13 +82,16 @@
   </section>
 
   <section name="MISC">
-    <define name="NOMINAL_AIRSPEED" value="12." unit="m/s"/>
+    <define name="NOMINAL_AIRSPEED" value="14." unit="m/s"/>
     <define name="CARROT" value="5." unit="s"/>
-    <define name="KILL_MODE_DISTANCE" value="(1.5*MAX_DIST_FROM_HOME)"/>
-    <define name="DEFAULT_CIRCLE_RADIUS" value="80."/>
+    <define name="KILL_MODE_DISTANCE" value="(1.1*MAX_DIST_FROM_HOME)"/>
+    <define name="DEFAULT_CIRCLE_RADIUS" value="50."/>
     <define name="UNLOCKED_HOME_MODE" value="TRUE"/>
 
     <define name="APP_ANGLE" value="8" unit="deg"/>
+
+    <define name="MS45XX_PRESSURE_SCALE" value="0.08"/> <!-- from 3 planes: 0.0831, 0.0721, 0.0807 -->
+    <define name="MS45XX_PRESSURE_OFFSET" value="0.0"/> <!-- must be set before flying -->
   </section>
 
   <section name="VERTICAL CONTROL" prefix="V_CTL_">
@@ -146,7 +123,7 @@
     <define name="AUTO_PITCH_MIN_PITCH" value="-20" unit="deg"/>
 
     <!-- airspeed control -->
-    <define name="AUTO_AIRSPEED_SETPOINT" value="16."/>
+    <define name="AUTO_AIRSPEED_SETPOINT" value="14."/>
     <define name="AUTO_AIRSPEED_THROTTLE_PGAIN" value="0.1"/>
     <define name="AUTO_AIRSPEED_THROTTLE_DGAIN" value="0.12"/>
     <define name="AUTO_AIRSPEED_THROTTLE_IGAIN" value="0.0"/>
