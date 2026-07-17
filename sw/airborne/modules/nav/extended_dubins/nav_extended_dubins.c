@@ -352,6 +352,7 @@ bool nav_extended_dubins_init()
   // Handle verticality
   NavVerticalAutoThrottleMode(0); /* No pitch */
   NavVerticalAltitudeMode(ref_problem.target_alt, 0.);
+  // IPRINTF("Target altitude: %.3f\n",ref_problem.target_alt);
 
   curr_path_element = 0;
 
@@ -428,7 +429,29 @@ bool nav_extended_dubins_init()
     if (dubins_draw)
     {
       uint8_t id = make_draw_id(j);
-      uint8_t color = DRAW_make_line(AC_ID);
+      uint8_t color;
+
+      // Special case for some demo.
+      // A flight-plan based color would be nice...
+      switch (AC_ID)
+      {
+      case 60:
+        color = DRAW_make_line(DRAW_BLUE);
+        break;
+
+      case 61:
+        color = DRAW_make_line(DRAW_WHITE);
+        break;
+
+      case 62:
+        color = DRAW_make_line(DRAW_RED);
+        break;
+      
+      default:
+        color = DRAW_make_line(AC_ID);
+        break;
+      }
+       
 
       remove_drawn(id);
 
@@ -512,6 +535,7 @@ bool nav_extended_dubins_track(void)
     }
 
     float f_tow = ((float)gps_tow_from_sys_ticks(sys_time.nb_tick)) / 1000.f;
+    // IPRINTF("Now: %.3f\n",f_tow);
     float dt = ref_problem.end_time - f_tow;
     float current_dt = remaining_distance/stateGetAirspeed_f();
     float new_speed;

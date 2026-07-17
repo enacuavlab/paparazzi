@@ -39,6 +39,7 @@
   <modules>
     <module name="mission" type="fw"/>
     <module name="nav" type="takeoff_and_landing"/>
+    <module name="extended_dubins"/>
   </modules>
   <exceptions>
     <!--exception cond="datalink_time @GT 22" deroute="Standby"/-->
@@ -77,6 +78,15 @@
     </block>
     <block name="Wait 3" strip_button="Wait 3" group="wait">
       <circle radius="nav_radius" wp="WAIT_3"/>
+    </block>
+    <block name="Dubins W1--W3" strip_button="Dubins W1--W3" strip_icon="path.png" group="extra_pattern">
+      <call_once fun="extended_dubins_set_start_wp(WP_WAIT_1,-120)"/>
+      <call_once fun="extended_dubins_set_end_wp(WP_WAIT_3,100)"/>
+      <call_once fun="extended_dubins_set_radius(nav_radius)"/>
+      <call_once fun="extended_dubins_set_pathtype(RSR,0.)"/>
+      <call_once fun="nav_extended_dubins_init()"/>
+      <call fun="nav_extended_dubins_track()"/>
+      <deroute block="Standby"/>
     </block>
     <block name="Mission" strip_button="Mission">
       <call fun="mission_run()"/>

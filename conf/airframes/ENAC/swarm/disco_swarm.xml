@@ -20,6 +20,11 @@
       <configure name="PERIODIC_FREQUENCY" value="60"/>
       <module name="radio_control" type="ppm"/>
     </target>
+    <target name="nps" board="pc">
+      <module name="radio_control" type="ppm"/>
+      <module name="fdm" type="jsbsim"/>
+    </target>
+
 
     <module name="telemetry" type="transparent_udp"/>
 
@@ -184,6 +189,10 @@
   <section name="SIMU">
     <define name="ROLL_RESPONSE_FACTOR" value="20"/>
     <define name="JSBSIM_MODEL" value="Malolo1" type="string"/>
+  </section>
+  <section name="SIMULATOR" prefix="NPS_">
+    <define name="JSBSIM_LAUNCHSPEED" value="15"/>
+    <define name="JSBSIM_MODEL" value="easystar" type="string"/>
   </section>
 
 </airframe>
