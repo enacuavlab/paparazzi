@@ -34,20 +34,59 @@ from pyproj import Geod
 
 geod = Geod(ellps="WGS84")
 
-class FlightPlan:
 
-    def __init__(self):
-        self.header = ""        # type: str
-        self.waypoints = []     # type: List[Waypoint]
-        self.exceptions = []    # type: List[Exc]
-        self.blocks = []        # type: List[Block]
-        self.name = None
-        self.lat0 = None
-        self.lon0 = None
-        self.max_dist_from_home = None
-        self.ground_alt = None
-        self.security_height = None
-        self.alt = None
+@dataclass
+class Waypoint:
+    name:str
+    no:int
+    x:Optional[float] = None
+    y:Optional[float] = None
+    lat:Optional[float] = None
+    lon:Optional[float] = None
+    alt:Optional[float] = None
+    height:Optional[float] = None
+    
+    def __post_init__(self):
+        if self.x is not None:
+            self.x = float(self.x)
+        if self.y is not None:
+            self.y = float(self.y)
+        if self.lat is not None:
+            self.lat = float(self.lat)
+        if self.lon is not None:
+            self.lon = float(self.lon)
+        if self.alt is not None:
+            self.alt = float(self.alt)
+        if self.height is not None:
+            self.height = float(self.height)
+    
+
+class Block:
+    def __init__(self, name:str, no:int, xml):
+        self.name = name
+        self.no = no
+        self.xml = xml
+
+
+class Exc:
+    def __init__(self, cond, deroute):
+        self.cond = cond
+        self.deroute = deroute
+
+@dataclass
+class FlightPlan:
+    waypoints:List[Waypoint]
+    exceptions:List[Exc]
+    blocks:List[Block]
+    name:str
+    lat0:float
+    lon0:float
+    max_dist_from_home:float
+    ground_alt:float
+    security_height:float
+    alt:float
+    header:str = ""
+
 
     @staticmethod
     def parse(fp_xml: str):
@@ -56,43 +95,59 @@ class FlightPlan:
         elif fp_xml.startswith("http://"):
             tmp_file, _ = urllib.request.urlretrieve(fp_xml)
             fp_tree = etree.parse(tmp_file)
+        else:
+            raise ValueError("Flight plan path must start with file:// or http://")
         fp_element = fp_tree.find("flight_plan")
         
-        fp = FlightPlan()
-        fp.name = get_attrib(fp_element, "name")
-        fp.lat0 = get_attrib(fp_element, "lat0")
-        fp.lon0 = get_attrib(fp_element, "lon0")
-        fp.max_dist_from_home = get_attrib(fp_element, "max_dist_from_home")
-        fp.ground_alt = get_attrib(fp_element, "ground_alt")
-        fp.security_height = get_attrib(fp_element, "security_height")
-        fp.alt = get_attrib(fp_element, "alt")
+        
+        name = get_attrib(fp_element, "name")
+        lat0 = get_attrib(fp_element, "lat0")
+        lon0 = get_attrib(fp_element, "lon0")
+        max_dist_from_home = get_attrib(fp_element, "max_dist_from_home")
+        ground_alt = get_attrib(fp_element, "ground_alt")
+        security_height = get_attrib(fp_element, "security_height")
+        alt = get_attrib(fp_element, "alt")
 
         if fp_element.find("header") is not None:
-            fp.header = fp_element.find("header").text
+            header = fp_element.find("header").text
+        else:
+            header = ""
 
         ways_elt = fp_element.find("waypoints")
-        fp.waypoints = FlightPlan.parse_waypoints(ways_elt)
+        waypoints = FlightPlan.__parse_waypoints(ways_elt)
         
-        for wp in fp.waypoints:
+        for wp in waypoints:
             if wp.lat is None and wp.lon is None \
                 and wp.x is not None and wp.y is not None:
                 
                 angle = atan2(wp.y,wp.x)
                 azimut = (pi/2-angle)*180/pi
                 dist = sqrt(wp.x**2 + wp.y**2)
-                lon,lat,_ = geod.fwd(fp.lon0,fp.lat0,azimut,dist)
+                lon,lat,_ = geod.fwd(lon0,lat0,azimut,dist)
                 wp.lat = lat
                 wp.lon = lon
 
         blocks_elt = fp_element.find("blocks")
-        fp.blocks = FlightPlan.parse_blocks(blocks_elt)
+        blocks = FlightPlan.__parse_blocks(blocks_elt)
 
         excs_elt = fp_element.find("exceptions")
-        fp.exceptions = FlightPlan.parse_exceptions(excs_elt)
-        return fp
+        exceptions = FlightPlan.__parse_exceptions(excs_elt)
+        return FlightPlan(
+            waypoints=waypoints,
+            exceptions=exceptions,
+            blocks=blocks,
+            name=name,
+            lat0=lat0,
+            lon0=lon0,
+            max_dist_from_home=max_dist_from_home,
+            ground_alt=ground_alt,
+            security_height=security_height,
+            alt=alt,
+            header=header
+        )
 
     @staticmethod
-    def parse_waypoints(ways_elt: etree.Element):
+    def __parse_waypoints(ways_elt: etree.Element):
         waypoints = []
         w_no = 1    # first waypoint number is 1.
         for way_e in ways_elt.findall("waypoint"):
@@ -109,7 +164,7 @@ class FlightPlan:
         return waypoints
 
     @staticmethod
-    def parse_blocks(blocks_elt):
+    def __parse_blocks(blocks_elt):
         blocks = []
         for b_e in blocks_elt.findall("block"):
             name = get_attrib(b_e, "name")
@@ -119,7 +174,7 @@ class FlightPlan:
         return blocks
 
     @staticmethod
-    def parse_exceptions(exs_elt):
+    def __parse_exceptions(exs_elt):
         if exs_elt is None:
             return []
         excs = []
@@ -165,44 +220,6 @@ class FlightPlan:
     def get_blocks_from_group(self, groupname):
         return list(filter(lambda block: get_attrib_default(block.xml, "group", None) == groupname, self.blocks))
 
-
-@dataclass
-class Waypoint:
-    name:str
-    no:int
-    x:Optional[float] = None
-    y:Optional[float] = None
-    lat:Optional[float] = None
-    lon:Optional[float] = None
-    alt:Optional[float] = None
-    height:Optional[float] = None
-    
-    def __post_init__(self):
-        if self.x is not None:
-            self.x = float(self.x)
-        if self.y is not None:
-            self.y = float(self.y)
-        if self.lat is not None:
-            self.lat = float(self.lat)
-        if self.lon is not None:
-            self.lon = float(self.lon)
-        if self.alt is not None:
-            self.alt = float(self.alt)
-        if self.height is not None:
-            self.height = float(self.height)
-    
-
-class Block:
-    def __init__(self, name:str, no:int, xml):
-        self.name = name
-        self.no = no
-        self.xml = xml
-
-
-class Exc:
-    def __init__(self, cond, deroute):
-        self.cond = cond
-        self.deroute = deroute
 
 
 if __name__ == "__main__":
