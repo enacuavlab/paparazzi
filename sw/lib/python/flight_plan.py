@@ -26,8 +26,13 @@ import sys
 from xml_utils import get_attrib, get_attrib_default
 import urllib.request
 
+from math import atan2,pi,sqrt
+
 from typing import Optional
 from dataclasses import dataclass
+from pyproj import Geod
+
+geod = Geod(ellps="WGS84")
 
 class FlightPlan:
 
@@ -71,8 +76,13 @@ class FlightPlan:
         for wp in fp.waypoints:
             if wp.lat is None and wp.lon is None \
                 and wp.x is not None and wp.y is not None:
-                wp.lat = float(fp.lat0) + float(wp.x)
-                wp.lon = float(fp.lon0) + float(wp.y)
+                
+                angle = atan2(wp.y,wp.x)
+                azimut = (pi/2-angle)*180/pi
+                dist = sqrt(wp.x**2 + wp.y**2)
+                lon,lat,_ = geod.fwd(fp.lon0,fp.lat0,azimut,dist)
+                wp.lat = lat
+                wp.lon = lon
 
         blocks_elt = fp_element.find("blocks")
         fp.blocks = FlightPlan.parse_blocks(blocks_elt)
