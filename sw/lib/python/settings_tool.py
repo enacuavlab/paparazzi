@@ -2,6 +2,10 @@
 
 from __future__ import absolute_import, print_function
 
+import warnings
+
+warnings.warn("settings_tool.py is deprecated, use settings.py instead", DeprecationWarning)
+
 from ivy.std_api import *
 import logging
 import sys

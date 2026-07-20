@@ -2,6 +2,10 @@
 
 from __future__ import absolute_import, print_function
 
+import warnings
+
+warnings.warn("settings_xml_parse.py is deprecated, use settings.py instead", DeprecationWarning)
+
 import os
 import sys
 from lxml import etree
