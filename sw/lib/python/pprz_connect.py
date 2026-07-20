@@ -52,6 +52,8 @@ import sys
 from os import path, getenv, getpid
 from time import sleep
 
+from typing import Optional
+
 PPRZ_HOME = getenv("PAPARAZZI_HOME", path.normpath(path.join(path.dirname(path.abspath(__file__)), '../../../')))
 sys.path.append(PPRZ_HOME + "/var/lib/python")
 from pprzlink.ivy import IvyMessagesInterface
@@ -65,13 +67,13 @@ class PprzConfig(object):
     """
 
     def __init__(self, ac_id, ac_name, airframe, flight_plan, settings, radio, color):
-        self._ac_id = ac_id
-        self._ac_name = ac_name
-        self._airframe = airframe
-        self._flight_plan = flight_plan
-        self._settings = settings
-        self._radio = radio
-        self._color = color
+        self._ac_id         = ac_id
+        self._ac_name       = ac_name
+        self._airframe      = airframe
+        self._flight_plan   = flight_plan
+        self._settings      = settings
+        self._radio         = radio
+        self._color         = color
 
     def __str__(self):
         conf_str = 'A/C {} with ID {}\n\tairframe: {}\n\tflight plan: {}\n\tsettings: {}\n\tradio: {}\n\tcolor: {}'.format(
@@ -126,8 +128,8 @@ class PprzConnect(object):
         self.verbose = verbose
         self._notify = notify
 
-        self._conf_list_by_name = {}
-        self._conf_list_by_id = {}
+        self._conf_list_by_name:dict[str,PprzConfig] = {}
+        self._conf_list_by_id:dict[str,PprzConfig] = {}
 
         if ivy is None:
             self._ivy = IvyMessagesInterface("PprzConnect")
@@ -152,7 +154,7 @@ class PprzConnect(object):
             self._ivy.shutdown()
             self._ivy = None
 
-    def conf_by_name(self, ac_name=None):
+    def conf_by_name(self, ac_name:Optional[str]=None) -> PprzConfig|dict[str,PprzConfig]:
         """
         Get a conf by its name
 
@@ -164,7 +166,7 @@ class PprzConnect(object):
         else:
             return self._conf_list_by_name
 
-    def conf_by_id(self, ac_id=None):
+    def conf_by_id(self, ac_id:Optional[str]=None) -> PprzConfig|dict[str,PprzConfig]:
         """
         Get a conf by its ID
 
