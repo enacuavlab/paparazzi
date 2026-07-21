@@ -344,6 +344,56 @@ class BasicPath:
                 raise ValueError(f"Unknown Dubins Move:\n{self.type}")
         elif type(self.type) is not DubinsMove:
             self.type = DubinsMove(self.type)
+            
+    ##### Extra constructors #####
+    
+    @staticmethod
+    def from_2D(type: DubinsMove, length: float, start:Pose2D, radius:float, speed:float=1.) -> BasicPath:
+        dx = np.cos(start.angle)
+        vx = dx*speed
+        
+        dy = np.sin(start.angle)
+        vy = dy*speed
+        
+        if type is DubinsMove.STRAIGHT:
+            return BasicPath(type,length,
+                             start.x,start.y,0.,
+                             vx,vy,
+                             0.,0.)
+            
+        else:
+            z = 0.
+            p1 = radius
+            p2 = speed/radius
+            p3 = 0.
+            
+            if type is DubinsMove.LEFT:
+                cx = start.x - dy*radius
+                cy = start.y + dx*radius
+            else:
+                cx = start.x + dy*radius
+                cy = start.y - dx*radius
+                p2 *= -1
+            
+            p4 = np.arctan2(start.y - cy, start.x - cx)
+            return BasicPath(type,length,
+                             cx,cy,0.,
+                             p1,p2,p3,p4)
+    
+    @staticmethod
+    def from_2_points(point0:tuple[float,float,float],point1:tuple[float,float,float],speed:float=1.) -> BasicPath:
+        t = DubinsMove.STRAIGHT
+        length = np.sqrt((point0[0]-point1[0])**2 + (point0[1]-point1[1])**2 + (point0[2]-point1[2])**2)
+        x = point0[0]
+        y = point0[1]
+        z = point0[2]
+        p1 = speed*(point1[0]-point0[0])/length
+        p2 = speed*(point1[1]-point0[1])/length
+        p3 = speed*(point1[2]-point0[2])/length
+        p4 = 0
+        return BasicPath(t,length,x,y,z,p1,p2,p3,p4)
+    
+    ##### Setters and getters #####
     
     def speed(self) -> float:
         if self.type == DubinsMove.STRAIGHT:
@@ -395,44 +445,14 @@ class BasicPath:
         else:
             return self.length/self.speed()
     
+    ##### Export #####
+    
     def asdict(self) -> dict[str,float|DubinsMove]:
         output = asdict(self)
         output["type"] = str(output["type"])
         output["m"] = self.type.value
         return output
     
-    @staticmethod
-    def from_2D(type: DubinsMove, length: float, start:Pose2D, radius:float, speed:float=1.) -> BasicPath:
-        dx = np.cos(start.angle)
-        vx = dx*speed
-        
-        dy = np.sin(start.angle)
-        vy = dy*speed
-        
-        if type is DubinsMove.STRAIGHT:
-            return BasicPath(type,length,
-                             start.x,start.y,0.,
-                             vx,vy,
-                             0.,0.)
-            
-        else:
-            z = 0.
-            p1 = radius
-            p2 = speed/radius
-            p3 = 0.
-            
-            if type is DubinsMove.LEFT:
-                cx = start.x - dy*radius
-                cy = start.y + dx*radius
-            else:
-                cx = start.x + dy*radius
-                cy = start.y - dx*radius
-                p2 *= -1
-            
-            p4 = np.arctan2(start.y - cy, start.x - cx)
-            return BasicPath(type,length,
-                             cx,cy,0.,
-                             p1,p2,p3,p4)
     
     
 @dataclass
@@ -635,6 +655,7 @@ class ACStats:
     airspeed    :float # Speed in air referential
     climb       :float # Vertical change in elevation (both directions)
     turn_radius :float # Minimal turn radius
+    cruise_altitude:float = 250 # A reference altitude
     
     def asdict(self) -> dict[str,int|float]:
         return asdict(self)
@@ -834,9 +855,5 @@ class FleetPlan:
             self.wind_y,
             self.duration-time,
             new_trajs
-        )
-        
-        
-            
-            
+        )       
     

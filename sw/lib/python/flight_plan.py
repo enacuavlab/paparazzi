@@ -59,6 +59,15 @@ class Waypoint:
             self.alt = float(self.alt)
         if self.height is not None:
             self.height = float(self.height)
+                        
+    def update_latlon_from_ref(self, lat0:float, lon0:float):
+        if self.x is not None and self.y is not None:
+            angle = atan2(self.y,self.x)
+            azimut = (pi/2-angle)*180/pi
+            dist = sqrt(self.x**2 + self.y**2)
+            lon,lat,_ = geod.fwd(lon0,lat0,azimut,dist)
+            self.lat = lat
+            self.lon = lon
     
 
 class Block:
@@ -120,12 +129,7 @@ class FlightPlan:
             if wp.lat is None and wp.lon is None \
                 and wp.x is not None and wp.y is not None:
                 
-                angle = atan2(wp.y,wp.x)
-                azimut = (pi/2-angle)*180/pi
-                dist = sqrt(wp.x**2 + wp.y**2)
-                lon,lat,_ = geod.fwd(lon0,lat0,azimut,dist)
-                wp.lat = lat
-                wp.lon = lon
+                wp.update_latlon_from_ref(lat0, lon0)
 
         blocks_elt = fp_element.find("blocks")
         blocks = FlightPlan.__parse_blocks(blocks_elt)

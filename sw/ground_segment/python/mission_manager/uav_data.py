@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass,field
 from typing import Optional,Callable
 
@@ -14,6 +15,8 @@ from flight_plan import FlightPlan, Block, Waypoint
 from Dubins import Pose3D,poses_XY_dist,min_XY_dist,ACStats
 from FleetPath import FleetKeyframes
 from plotting import DictOfPoseTrajectories
+from pprz_connect import PprzConfig,IvyMessagesInterface
+from settings import PprzSettingsManager
 
 import numpy as np
 
@@ -22,8 +25,9 @@ class UAVData:
     '''
     Store UAV information
     '''
-    ac_id: str
-    name: str
+    ac_id: Optional[int]
+    name: Optional[str]
+    flight_plan: FlightPlan
     lat: float = 0.
     lon: float = 0.
     alt: float = 0.
@@ -42,7 +46,6 @@ class UAVData:
     mission_status: list[int] = field(default_factory=list)
     datalink_lost_time: int = 0
     time_since_last_msg: float = 0.
-    flight_plan: Optional[FlightPlan] = None
     start_mission_fp_block: Optional[Block] = None
     airspeed: float = 0.
     airspeed_sp: float = 0.
@@ -50,10 +53,18 @@ class UAVData:
     wind_east:Optional[float] = None
     wind_north:Optional[float] = None
     wind_up:Optional[float] = None
+    settings:Optional[PprzSettingsManager] = None
     
     @property
     def height(self) -> float:
         return self.alt - self.ref_alt
+    
+    @staticmethod
+    def from_conf(conf:PprzConfig,ivy_interface:IvyMessagesInterface) -> UAVData:
+        output = UAVData(conf.id,conf.name,FlightPlan.parse(conf.flight_plan))
+        output.settings = PprzSettingsManager(conf.settings,conf.id,ivy_interface)
+        return output
+        
 
 @dataclass
 class TrackingData:

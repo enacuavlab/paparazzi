@@ -39,6 +39,8 @@ sys.path.append(PPRZ_HOME + "/var/lib/python") # pprzlink
 from pprzlink.message import PprzMessage
 from pprz_connect import PprzConnect, PprzConfig
 from flight_plan import FlightPlan, Block, Waypoint
+from settings import PprzSettingsManager
+
 
 
 MAX_RETRY = 5
@@ -59,11 +61,11 @@ class MissionManager():
     and start mission mode from flight plan
     Bind to state messages and update UAV data
     '''
-    def __init__(self, ac_id=None, verbose=False, ivy_interface=None):
+    def __init__(self, ac_id:Optional[int]=None, verbose=False, ivy_interface=None):
         self.verbose = verbose
 
-        self.uav_data = UAVData(ac_id,str(ac_id))
-        self.ac_id = ac_id
+        self.uav_data:Optional[UAVData] = None
+        self.ac_id:Optional[int] = ac_id
 
         self.events: Dict[int, Event] = {0:Event()}
 
@@ -87,15 +89,13 @@ class MissionManager():
         self.connect.shutdown()
     
         
-    def connect_cb(self, conf):
+    def connect_cb(self, conf:PprzConfig):
         ''' get aircraft config '''
         if self.ac_id is None:
             self.ac_id = int(conf.id)
         
         if self.ac_id == int(conf.id):
-            self.uav_data = UAVData(conf.id, conf.name)
-            self.uav_data.mission_status = []       # TODO replace that by the correct dataclass initializer
-            self.uav_data.flight_plan = FlightPlan.parse(conf.flight_plan)
+            self.uav_data = UAVData.from_conf(conf,self.connect.ivy)
             try:
                 self.uav_data.start_mission_fp_block = self.uav_data.flight_plan.get_block('Mission')
                 if self.verbose:
@@ -119,7 +119,7 @@ class MissionManager():
         return self.events[0].wait(timeout)
 
     def flight_param_cb(self, ac_id, msg):
-        if int(ac_id) == self.ac_id:
+        if int(ac_id) == self.ac_id and self.uav_data is not None:
             self.uav_data.lat = float(msg['lat'])
             self.uav_data.lon = float(msg['long'])
             self.uav_data.alt = float(msg['alt'])
@@ -130,31 +130,31 @@ class MissionManager():
             self.uav_data.vnorth = speed * math.cos(course)
             self.uav_data.veast = speed * math.sin(course)
             self.uav_data.vup = float(msg['climb'])
-            self.uav_data.gps_tow = int(msg['itow']) / 1000 # FIXME s or ms ?
+            self.uav_data.gps_tow = int(msg['itow']) / 1000
             
     def ap_status_cb(self, ac_id, msg):
-        if int(ac_id) == self.ac_id:
+        if int(ac_id) == self.ac_id and self.uav_data is not None:
             self.uav_data.AP_mode = msg['ap_mode']
             self.uav_data.flight_time = msg['flight_time']
 
     def nav_status_cb(self, ac_id, msg):
-        if int(ac_id) == self.ac_id:
+        if int(ac_id) == self.ac_id and self.uav_data is not None:
             block_id = int(msg['cur_block'])
             block = self.uav_data.flight_plan.get_block(block_id)
             self.uav_data.FP_block = block.name
 
     def engine_status_cb(self, ac_id, msg):
-        if int(ac_id) == self.ac_id:
+        if int(ac_id) == self.ac_id and self.uav_data is not None:
             self.uav_data.bat_voltage = float(msg['bat'])
             # TODO compute % assuming 2 or 4 cells
 
     def telemetry_status_cb(self, ac_id, msg):
-        if int(ac_id) == self.ac_id:
+        if int(ac_id) == self.ac_id and self.uav_data is not None:
             self.uav_data.datalink_lost_time = int(msg['uplink_lost_time'])
             self.uav_data.time_since_last_msg = float(msg['time_since_last_msg'])
 
     def mission_status_cb(self, ac_id, msg):
-        if int(ac_id) == self.ac_id:
+        if int(ac_id) == self.ac_id and self.uav_data is not None:
             self.uav_data.mission_status = [ int(e) for e in msg['index_list'] if int(e) != 0 ]
             # Unblock function waiting for ACK
             for mission_id in self.uav_data.mission_status:
@@ -162,13 +162,13 @@ class MissionManager():
                     self.events[mission_id].set()
             
     def airspeed_cb(self, ac_id, msg):
-        if ac_id == self.ac_id:
+        if ac_id == self.ac_id and self.uav_data is not None:
             self.uav_data.airspeed       = msg['airspeed']
             self.uav_data.airspeed_sp    = msg['airspeed_sp']
             self.uav_data.groundspeed_sp = msg['groundspeed_sp']
             
     def windinfo_cb(self, ac_id, msg):
-        if ac_id == self.ac_id:
+        if ac_id == self.ac_id and self.uav_data is not None:
             flags = msg['flags']
             if flags & 0x1:
                 self.uav_data.wind_east     = msg['east']
@@ -183,7 +183,7 @@ class MissionManager():
                 self.uav_data.wind_up       = None
     
     def ins_ref_cb(self, ac_id, msg):
-        if int(ac_id) == self.ac_id:
+        if int(ac_id) == self.ac_id and self.uav_data is not None:
             self.uav_data.ref_alt = int(msg['hmsl0'])/1000
 
     def send_message_and_wait(self,msg:PprzMessage, retry:int=MAX_RETRY, ack_time:float=ACK_TIME):
@@ -272,6 +272,7 @@ class MissionManager():
     
     def start_mission(self):
         ''' enter Mission flight block for selected UAV or all if None'''
+        assert self.uav_data is not None, "No UAV!"
         msg = PprzMessage("ground", "JUMP_TO_BLOCK")
         msg['ac_id'] = self.ac_id
         msg['block_id'] = int(self.uav_data.start_mission_fp_block.no)
@@ -280,6 +281,7 @@ class MissionManager():
             print(msg)
 
     def get_home(self) -> Optional[Waypoint]:
+        assert self.uav_data is not None, "No UAV!"
         if self.uav_data.flight_plan is None:
             print("WARNING: Flight plan is not available")
             return None

@@ -3,6 +3,7 @@
 import pickle
 import pathlib
 import argparse
+import json
 
 from typing import Optional
 
@@ -16,11 +17,12 @@ from matplotlib.collections import PathCollection
 from matplotlib.quiver import Quiver
 from matplotlib.lines import Line2D 
 
-from Dubins import Pose3D,poses_XY_dist,min_XY_dist,ACStats
-from plotting import DictOfPoseTrajectories,plot_several_pose2d_sequences
+from plotting import DictOfPoseTrajectories,plot_several_pose2d_sequences,plot_BasicPath_obstacle
 from uav_data import UAVData, TrackingLogs
+from ioUtils import parse_section_from_dict
 
 def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str], 
+                      obstacles_path:Optional[pathlib.Path]=None,
                       hide_refs:bool=False, 
                       hide_reschedules:bool=False,
                       hide_keyframes:bool=False) -> tuple[Figure,Axes,list[Axes],list[SpanSelector]]:
@@ -36,6 +38,11 @@ def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str],
     axes[2,0].remove()
     
     traj_ax = fig.add_subplot(gs[:,0])
+    
+    if obstacles_path is not None:
+        with open(obstacles_path) as f:
+            for e in json.load(f)["sections"]:
+                plot_BasicPath_obstacle(traj_ax,parse_section_from_dict(e))
     
     _plot_trajs(traj_ax, logs, color_dict, hide_refs, hide_reschedules, hide_keyframes, labels=False, alpha=0.1)
     

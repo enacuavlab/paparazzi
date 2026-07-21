@@ -28,6 +28,35 @@ from pprzlink.ivy import IvyMessagesInterface
 
 DEBUG = True
 
+########## Util ##########
+
+def convert_point_list_to_dubins_obstacles(
+                        pts:list[tuple[float,float]],
+                        wrap:bool=False,
+                        transformer:Optional[pyproj.Transformer]=None) -> list[BasicPath]:
+    output = []
+    if len(pts) < 2:
+        return output
+    
+    if wrap:
+        pts.append(pts[0])
+    
+    for i in range(len(pts)-1):
+        p0 = pts[i]
+        p1 = pts[i+1]
+        
+        if transformer is not None:
+            p0 = transformer.transform(p0[0],p0[1])
+            p1 = transformer.transform(p1[0],p1[1])
+        
+        b = BasicPath.from_2_points(
+            (p0[0],p0[1],0),
+            (p1[0],p1[1],0)
+        )
+        
+        output.append(b)
+    return output
+
 PPRZ_DUBINS_TYPE_MAP = {
     'RSR' : 0,
     'LSL' : 1,
@@ -66,11 +95,16 @@ PPRZ_DUBINS_TYPE_MAP = {
     'SSRSS' : 3*8+7,
 }
 
+
+########## Call the solver ##########
+
 def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
                    separation:float, wind:tuple[float,float],threads:int,
                    geometric_obstacles_path:Optional[pathlib.Path],
                    start_extensions:list[float] = [],
                    end_extensions:list[float] = [],
+                   samples:int = 0,
+                   ellipse_ratio:float = 1.,
                    **kwargs) -> list[str]:
     cmd = []
     cmd.append(str(solver.resolve()))
@@ -87,11 +121,14 @@ def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
     cmd.append('-r')
     cmd.append(str(10))
     
+    cmd.append('-w')
+    cmd.append(str(5))
+    
     cmd.append('-l')
     
     if geometric_obstacles_path is not None:
         cmd.append('-G')
-        cmd.append(geometric_obstacles_path.resolve())
+        cmd.append(str(geometric_obstacles_path.resolve()))
     
     if len(start_extensions) > 0:
         cmd.append('--straights-only')
@@ -104,6 +141,14 @@ def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
         for e in end_extensions:
             cmd.append(str(e))
     
+    if samples > 0:
+        cmd.append('-S')
+        cmd.append(str(samples))
+        
+        if not np.isnan(ellipse_ratio):
+            cmd.append('-e')
+            cmd.append(f"{ellipse_ratio:.4f}")
+    
     for k,v in kwargs.items():
         cmd.append(k)
         
@@ -111,6 +156,7 @@ def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
             continue
         
         cmd.append(str(v))
+    print(cmd)
     return cmd
 
 def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
@@ -118,6 +164,8 @@ def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
                    geometric_obstacles_path:Optional[pathlib.Path],
                    start_extensions:list[float] = [],
                    end_extensions:list[float] = [],
+                   samples:int = 0,
+                   ellipse_ratio:float = 1.,
                    **kwargs) -> subprocess.CompletedProcess[bytes]:
     """ Call the Dubins fleet path planner with the given arguments
 
@@ -135,7 +183,8 @@ def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
         subprocess.CompletedProcess[bytes]: 
     """
     cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads, 
-        geometric_obstacles_path, start_extensions, end_extensions, **kwargs)
+        geometric_obstacles_path, start_extensions, end_extensions,
+        samples, ellipse_ratio, **kwargs)
     
     return subprocess.run(cmd,stdout=subprocess.DEVNULL)
 
@@ -145,10 +194,13 @@ def subprocess_solve_problem(solver:pathlib.Path,
                              geometric_obstacles_path:Optional[pathlib.Path],
                              start_extensions:list[float] = [],
                              end_extensions:list[float] = [],
+                             samples:int = 0,
+                             ellipse_ratio:float = 1.,
                              **kwargs) -> subprocess.Popen:
     
     cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads, 
-        geometric_obstacles_path, start_extensions, end_extensions, **kwargs)
+        geometric_obstacles_path, start_extensions, end_extensions,
+        samples, ellipse_ratio, **kwargs)
     
     return subprocess.Popen(cmd,stdout=subprocess.DEVNULL)
 
@@ -158,10 +210,13 @@ async def async_subprocess_solve(solver:pathlib.Path,
                              geometric_obstacles_path:Optional[pathlib.Path],
                              start_extensions:list[float] = [],
                              end_extensions:list[float] = [],
+                             samples:int = 0,
+                             ellipse_ratio:float = 1.,
                              **kwargs) -> int:
     # Create command to run
     cmd = _make_pb_cmd(solver, pb_loc, sol_loc, separation, wind, threads,
-                       geometric_obstacles_path, start_extensions, end_extensions, **kwargs)
+                       geometric_obstacles_path, start_extensions, end_extensions,
+                       samples, ellipse_ratio, **kwargs)
 
     # Create subprocess (asynchronously)
     proc = await asyncio.create_subprocess_exec(*cmd,stdout=asyncio.subprocess.DEVNULL)
@@ -176,6 +231,8 @@ class SolverInstance:
     start_time:float
     improvement:float
     result_loc:pathlib.Path
+    
+########## Main class ##########
     
 class FleetManagerEnd(enum.Enum):
     """ Possible final commands when the last keyposes are done:
@@ -217,6 +274,7 @@ class FleetManager:
                 Defaults to pyproj.Transformer.from_crs('WGS84','EPSG:9794'), i.e. GPS to Lambert93
         """
         self.ivy_interface = IvyMessagesInterface("PprzConnect")
+        self.mission_mode_started:bool = False
         
         self.fleet_frames = fleet_frames
         self.__fleet_frame_id:int = 0
@@ -244,10 +302,11 @@ class FleetManager:
         self.threads:int = threads
         self.transformer:pyproj.Transformer = transformer
         self.geometric_obstacle_path = geometric_obstacles_path
+        self.samples = 10            # Number of samples for the path generation algorithm
+        self.ellipse_ratio = 0.4    # Ellipse ratio size for ellipse-based extra path generation
 
         
         self.ac_ids:list[int] = [s.id for s in self.fleet_frames.ac_stats]
-        self.ac_ids.sort()
         self.acs:dict[int,ACStats] = dict()
         for s in self.fleet_frames.ac_stats:
             self.acs[s.id] = s
@@ -328,23 +387,51 @@ class FleetManager:
             dict[int,Pose3D]: Estimated aircraft positions
         """
         output = dict()
+        # print("Now: ",at)
         for id in self.ac_ids:
             mng = self.managers[id]
             data = mng.uav_data
+            assert data is not None, f"No UAVData for {id}!"
             xx, yy = self.transformer.transform(data.lat,data.lon)
             tref = data.gps_tow
-            dt = at - tref
-            pose = Pose3D(xx+data.veast*dt,yy+data.vnorth,data.alt+data.vup,np.pi/2-np.deg2rad(data.heading))
+            dt = max(at - tref,0) # Do go into the future!
+            # print(f"Time for {id} : {tref}")
+            pose = Pose3D(xx+data.veast*dt,yy+data.vnorth*dt,data.alt+data.vup*dt,np.pi/2-np.deg2rad(data.heading))
             output[id] = pose
+            # print(f"Current: {xx:.3f} {yy:.3f} | Interpolated: {pose.x:.3f} {pose.y:.3f}")
         return output
     
     def get_current_mission_ids(self) -> dict[int,list[int]]:
         output_mission_ids = dict()
         for id in self.ac_ids:
             mng = self.managers[id]
+            assert mng.uav_data is not None, f"No UAVData for {id}!"
             output_mission_ids[id] = mng.uav_data.mission_status
         return output_mission_ids
     
+    def coordinate_length_extensions(self):
+        max_extra_length = 0
+        for mng in self.managers.values():
+            assert mng.uav_data is not None, f"No UAVData for {mng.ac_id}!"
+            if mng.uav_data.settings is not None:
+                try:
+                    extr_len = mng.uav_data.settings["Extra straight lengths"]
+                except KeyError:
+                    extr_len = None
+                if extr_len is not None:
+                    max_extra_length = max(max_extra_length, extr_len.value)
+        if max_extra_length > 0:
+            self.extra_straight_length = max_extra_length
+            if self.verbosity > 0:
+                print(f"FleetManager: Using extra straight length of {self.extra_straight_length} m")
+        
+        for mng in self.managers.values():
+            assert mng.uav_data is not None, f"No UAVData for {mng.ac_id}!"
+            settings = mng.uav_data.settings
+            assert settings is not None, f"No settings for {mng.ac_id}!"
+            settings["Extra straight lengths"] = self.extra_straight_length
+
+
     async def __send_managers_messages_with_ack(self,mng_msg:list[tuple[MissionManager,PprzMessage]],retry:int,ack_time:float):
         coros = [send_and_ack_msg(el[0],el[1],retry=retry,ack_time=ack_time) for el in mng_msg]
         await asyncio.gather(*coros)
@@ -551,6 +638,7 @@ class FleetManager:
             
         
         for id,mng in self.managers.items():
+            assert mng.uav_data is not None, f"No UAVData for {id}!"
             # Position logging
             pose = self.__uavdata_to_pose(mng.uav_data)
             t = mng.uav_data.gps_tow
@@ -629,7 +717,8 @@ class FleetManager:
                 self.threads,
                 self.geometric_obstacle_path,
                 [self.extra_straight_length] if self.extra_straight_length > 0 else [],
-                [self.extra_straight_length] if self.extra_straight_length > 0 else []
+                [self.extra_straight_length] if self.extra_straight_length > 0 else [],
+                self.samples,self.ellipse_ratio
             )
         if r == 0:
             sol = parse_trajectories_from_JSON(output_file)
@@ -646,6 +735,11 @@ class FleetManager:
                 if (self.verbosity > 0):
                     print(f"Plan is ready, waiting for {wait_time:.2f} s")
                 await asyncio.sleep(wait_time)
+                
+                if not(self.mission_mode_started):
+                    self.start_mission()
+                    self.mission_mode_started = True
+                    
                 now = self.get_now()
                 self.__tracking_logs.replanning_timestamps.append(now)
                 await self.__send_fleet_mission(sol,now,insert_mode=MissionInsert.REPLACE_ALL)
@@ -737,11 +831,11 @@ class FleetManager:
         
         if self.verbosity > 0:
             print(f"{ac_id} : Path type : {p.abbr()}")
+            print(p.start,p.end)
             for i,el in enumerate(p.sections):
-                print(f"{ac_id} : Element {i} : Length {el.length:.3f} ; Radius {el.radius():.3f} ; Start ({el.start().x-xhome:.3f},{el.start().y-yhome:.3f},{el.start().theta:.3f})")
-            print('')
+                print(f"{ac_id} : Element {i} : Length {el.length:.3f} ; Radius {el.radius():.3f} ; Start ({el.start().x-xhome:.3f},{el.start().y-yhome:.3f},{el.start().z:.3f},{el.start().theta:.3f})")
         
-        
+        print("Extra len: ",self.extra_straight_length)
         if self.extra_straight_length > 0:
             shifted_path = copy.deepcopy(p)
             shifted_path = shifted_path.follow_for(shifted_path.sections[0].duration() + 1e-9)
@@ -790,25 +884,32 @@ if __name__ == '__main__':
     import argparse
     
     color_dict = {
-        17 : 'red',
-        18 : 'green',
-        20 : 'blue'
+        60 : 'blue',
+        31 : 'black', # Use a legible colors for graph... # 61 : 'white',
+        62 : 'red',
+        63 : 'green'
     }
     
-    stat_list = [ACStats(i,15.1,10/60,60) for i in [17,18,20]]
+    transformer = pyproj.Transformer.from_crs('WGS84','EPSG:9794') # Default to WGS84 to Lambert93
+    home_lat = 43.4626512
+    home_lon = 1.2732883
+    home_height = 225-185
+    home_alt = 225
+    home_x,home_y = transformer.transform(home_lat,home_lon)
+    
+    stat_list = [ACStats(i,14.1,10/60,40,(i%10)*10+10+home_alt) for i in [62,60,61]]
     separation = 30
     formation = chevron_formation(len(stat_list),separation*4/3)
     
-    transformer = pyproj.Transformer.from_crs('WGS84','EPSG:9794') # Default to WGS84 to Lambert93
-    home_lat = 43.46223
-    home_lon = 1.27289
-    home_height = 260-185
-    home_alt = 260
-    home_x,home_y = transformer.transform(home_lat,home_lon)
+    start = Pose3D(home_x,home_y+150,home_alt,0.)
+    fleet_plan = formation_oval(stat_list,start,80,60,formation)
+    # fleet_plan = formation_rectangle(stat_list,start,300,100,formation)
+    fleet_plan.keyposes = [fleet_plan.keyposes[0],fleet_plan.keyposes[2]]
     
-    start = Pose3D(home_x,home_y,home_alt,0.)
-    # fleet_plan = formation_oval(stat_list,start,250,200,formation)
-    fleet_plan = formation_rectangle(stat_list,start,250,200,formation)
+    # Adapt altitude using the reference cruise one 
+    for p in fleet_plan.keyposes:
+        for i in range(len(stat_list)):
+            p[i,2] = stat_list[i].cruise_altitude
     
     # fig,ax = plt.subplots()
     # plot_keyframes(fleet_plan,ax,['red','green','blue','yellow','cyan','magenta'])
@@ -825,6 +926,7 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--carrot',type=float, help='Anticipation time (in seconds) for declaring the current plan end. Default to 5s',
                         default=5)
+    parser.add_argument('-G','--obstacles',type=str,help="Path to the file describing the obstacles (as lines and circles).",default=None)
     
     args = parser.parse_args()
     
@@ -832,11 +934,19 @@ if __name__ == '__main__':
         raise ValueError(f"--carrot argument must be non-negative! Current value is: {args.carrot}")
 
     
+    obstacles_path = None
+    if args.obstacles is not None:
+        obstacles_path = pathlib.Path(args.obstacles)
+        if not(obstacles_path.is_file()):
+            print(f"The given paths for obstacles does not point to a file:\n{args.obstacles}")
+            exit(1)
+    
     manager = FleetManager(
         fleet_plan,
         args.dubins_solver,
         separation,
         home_alt,
+        geometric_obstacles_path=obstacles_path,
         transformer=transformer,
         end_strategy=FleetManagerEnd.LOOP,
         speed_ctl=args.speed_ctl,
@@ -846,6 +956,7 @@ if __name__ == '__main__':
     )
     
     manager.end_of_plan_carrot = args.carrot
+    manager.extra_straight_length = 20
     
     main_loop_exception = None
     
@@ -854,8 +965,8 @@ if __name__ == '__main__':
         if args.takeoff:
             print("Take off requested!")
             manager.takeoff(home_height)
-        manager.circle_home(insert_mode=MissionInsert.APPEND)
-        manager.start_mission()
+        # manager.circle_home(insert_mode=MissionInsert.APPEND)
+        # manager.start_mission()
         if args.autostart is not None:
             print(f"Wait for {args.autostart} seconds before starting main loop...",end=' ',flush=True)
             time.sleep(args.autostart)
@@ -866,8 +977,9 @@ if __name__ == '__main__':
     except(KeyboardInterrupt,SystemExit):
         print("Intettupted!")
     except Exception as e:
-        print("Some exception interrupted the main loop...")
+        print("Some exception interrupted the main loop...:\n",e)
         main_loop_exception = e
+        raise e
     finally:
         print("Closing")
         manager.closing()
@@ -882,7 +994,7 @@ if __name__ == '__main__':
         pickle.dump(logs, f)
     
     try:
-        fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict)
+        fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict,obstacles_path)
         fig.set_size_inches(16,9)
         fig.tight_layout()
         plt.show()
