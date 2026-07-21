@@ -264,7 +264,7 @@
   </section>
 
   <section name="TAG_TRACKING" prefix="TAG_TRACKING_">
-    <define name="BODY_TO_CAM_PSI" value="M_PI"/>
+    <define name="BODY_TO_CAM_PSI" value="90" unit="deg"/>
     <define name="CAM_POS_X" value="0.12"/>
     <define name="WPS" type="array">
       <!--field type="struct">
