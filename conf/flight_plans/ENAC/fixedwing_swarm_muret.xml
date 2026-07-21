@@ -12,15 +12,15 @@
     <waypoint alt="215.0" name="AF" x="152.661" y="-52.17"/>
     <waypoint alt="185.0" name="TD" x="-0.582" y="0.937"/>
     <waypoint name="_BASELEG" x="168.8" y="-13.8"/>
-    <waypoint name="CLIMB" x="-137.783" y="65.447"/>
-    <waypoint name="_FLY_1" lat="43.4627" lon="1.26967"/>
+    <waypoint name="CLIMB" x="-144.565" y="73.375"/>
+    <waypoint name="_FLY_1" lat="43.4617" lon="1.2692"/>
     <waypoint name="_FLY_2" lat="43.4654" lon="1.27082"/>
     <waypoint name="_FLY_3" lat="43.4649" lon="1.27764"/>
-    <waypoint name="_FLY_4" lat="43.4617" lon="1.27652"/>
-    <waypoint name="_KILL_1" lat="43.4625" lon="1.26903"/>
+    <waypoint name="_FLY_4" lat="43.4605" lon="1.27683"/>
+    <waypoint name="_KILL_1" lat="43.4615" lon="1.26871"/>
     <waypoint name="_KILL_2" lat="43.4657" lon="1.27044"/>
     <waypoint name="_KILL_3" lat="43.4652009" lon="1.2782612"/>
-    <waypoint name="_KILL_4" lat="43.4612995" lon="1.2769952"/>
+    <waypoint name="_KILL_4" lat="43.4601" lon="1.27736"/>
   </waypoints>
   <sectors>
     <sector name="FlightArea" color="lime">
