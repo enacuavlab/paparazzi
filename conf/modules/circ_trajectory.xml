@@ -61,16 +61,16 @@
 
   <makefile>
     <file name="circ_trajectory.c"/>
-    <define name="CIRC_TRAJECTORY_V_MAX" value="4.0"/>
+    <define name="CIRC_TRAJECTORY_V_MAX" value="4.5"/>
     <define name="CIRC_TRAJECTORY_K" value="0.3"/>
-    <define name="CIRC_TRAJECTORY_RADIUS" value="2.4"/>
+    <define name="CIRC_TRAJECTORY_RADIUS" value="5.0"/>
     <define name="CIRC_TRAJECTORY_T_END" value="60.0"/>
     <define name="CIRC_TRAJECTORY_MAX_ACCEL" value="8.0"/>
     <define name="CIRC_TRAJECTORY_MAX_ACCELZ" value="8.0"/>
-    <define name="CIRC_TRAJECTORY_CENTER" value="{0.0,-0.4,-1.5}"/>
+    <define name="CIRC_TRAJECTORY_CENTER" value="{0.0,0.0,-6.0}"/> <!-- {0.0,-0.1,-1.5} -->
     <define name="CIRC_TRAJECTORY_YAW_RATE" value="35.0"/>
     <define name="CIRC_TRAJECTORY_YAW_FF_GAIN" value="1.0"/>
-    <define name="CIRC_TRAJECTORY_ACCEL_LEAD_TIME" value="0.15"/>
+    <define name="CIRC_TRAJECTORY_ACCEL_LEAD_TIME" value="0.10"/>
     <define name="CIRC_TRAJECTORY_SMOOTH_W" value="2.5"/>
   </makefile>
 

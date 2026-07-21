@@ -233,7 +233,8 @@ void guidance_indi_enter(void)
     init_butterworth_2_low_pass(&filt_accel_ned[i], tau, sample_time, 0.0);
   }
   init_butterworth_2_low_pass(&thrust_filt, tau, sample_time, thrust_in);
-  init_quat_butterworth_low_pass(&quat_filt, filter_cutoff, sample_time, *stateGetNedToBodyQuat_f());
+  // the quat filter expects a natural frequency in rad/s, filter_cutoff is in Hz
+  init_quat_butterworth_low_pass(&quat_filt, 2.0f * M_PI * filter_cutoff, sample_time, *stateGetNedToBodyQuat_f());
 }
 
 /**

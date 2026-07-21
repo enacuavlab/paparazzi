@@ -89,4 +89,17 @@ extern void circ_trajectory_start(void);
 /** Stop the trajectory and release control back to the flight plan. */
 extern void circ_trajectory_stop(void);
 
+/** Height of the circle center above the local reference [m] (positive up). */
+extern float circ_trajectory_height(void);
+
+/**
+ * Move a flight plan waypoint to the circle center / start (t = 0) / end
+ * (t = t_end) position, computed from the current circ_traj parameters.
+ * Display and nav-fallback only; the trajectory itself is flown from
+ * circ_traj directly.
+ */
+extern void circ_trajectory_set_wp_center(uint8_t wp_id);
+extern void circ_trajectory_set_wp_start(uint8_t wp_id);
+extern void circ_trajectory_set_wp_end(uint8_t wp_id);
+
 #endif // CIRC_TRAJECTORY_H

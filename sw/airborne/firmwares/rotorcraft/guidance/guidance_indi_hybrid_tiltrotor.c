@@ -112,19 +112,21 @@ float guidance_indi_get_lift(struct FloatVect3 vel, float theta)
  */
 void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_HYBRID_U], struct FloatVect3 a_diff, float v_gih[GUIDANCE_INDI_HYBRID_V])
 {
+ struct FloatEulers eulers_filtered;
+ float_eulers_of_quat_zxy(&eulers_filtered, &quat_filt.quat);
  // Euler Angles
  // ZXY Rotation Order
- float sphi = sinf(roll_filt.o[0]);
- float cphi = cosf(roll_filt.o[0]);
- float stheta = sinf(pitch_filt.o[0]);
- float ctheta = cosf(pitch_filt.o[0]);
- float cpsi  = cosf(yaw_filt);
- float spsi  = sinf(yaw_filt);
+ float sphi = sinf(eulers_filtered.phi);
+ float cphi = cosf(eulers_filtered.phi);
+ float stheta = sinf(eulers_filtered.theta);
+ float ctheta = cosf(eulers_filtered.theta);
+ float cpsi  = cosf(eulers_filtered.psi);
+ float spsi  = sinf(eulers_filtered.psi);
 
  // Lift Estimates
  struct FloatVect3 vel;
  VECT3_COPY(vel, *stateGetSpeedNed_f());
- float lift = guidance_indi_get_lift(vel, pitch_filt.o[0]);
+ float lift = guidance_indi_get_lift(vel, eulers_filtered.theta);
 
  // Force Estimates
  float Fx = stab_thrust_filt.x;

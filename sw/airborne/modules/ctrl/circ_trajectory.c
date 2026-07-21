@@ -57,6 +57,7 @@
 #include "state.h"
 #include "autopilot.h"
 #include "modules/core/abi.h"
+#include "modules/nav/waypoints.h"
 #include "firmwares/rotorcraft/guidance/guidance_indi_hybrid.h"
 #include "math/pprz_algebra_float.h"
 
@@ -265,6 +266,39 @@ static void circ_eval(float t, struct FloatVect3 *p_ref, struct FloatVect3 *v_re
   const float nxy2 = tan_rot.x * tan_rot.x + tan_rot.y * tan_rot.y;
   *yaw_rate_ref = (nxy2 > 1e-6f) ?
                   (tan_rot.x * tandot_rot.y - tan_rot.y * tandot_rot.x) / nxy2 : 0.f;
+}
+
+/** Move a flight plan waypoint to a NED position of the circle. */
+static void circ_set_wp_ned(uint8_t wp_id, struct FloatVect3 *ned)
+{
+  struct EnuCoor_f enu = { .x = ned->y, .y = ned->x, .z = -ned->z };
+  waypoint_set_enu(wp_id, &enu);
+}
+
+float circ_trajectory_height(void)
+{
+  return -circ_traj.center.z;
+}
+
+void circ_trajectory_set_wp_center(uint8_t wp_id)
+{
+  circ_set_wp_ned(wp_id, &circ_traj.center);
+}
+
+void circ_trajectory_set_wp_start(uint8_t wp_id)
+{
+  struct FloatVect3 p, v, a;
+  float yaw, yaw_rate;
+  circ_eval(0.f, &p, &v, &a, &yaw, &yaw_rate);
+  circ_set_wp_ned(wp_id, &p);
+}
+
+void circ_trajectory_set_wp_end(uint8_t wp_id)
+{
+  struct FloatVect3 p, v, a;
+  float yaw, yaw_rate;
+  circ_eval(circ_traj.t_end, &p, &v, &a, &yaw, &yaw_rate);
+  circ_set_wp_ned(wp_id, &p);
 }
 
 #if PERIODIC_TELEMETRY

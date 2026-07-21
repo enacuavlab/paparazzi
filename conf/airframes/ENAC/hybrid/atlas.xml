@@ -67,14 +67,14 @@
         </module>
 
         <!-- Optitrack Settings -->
-        <module name="gps" type="optitrack"/>
-        <define name="INS_EKF2_OPTITRACK" value="TRUE"/>
-        <configure name="USE_MAGNETOMETER" value="FALSE"/>
+<!--        <module name="gps" type="optitrack"/>-->
+<!--        <define name="INS_EKF2_OPTITRACK" value="TRUE"/>-->
+<!--        <configure name="USE_MAGNETOMETER" value="FALSE"/>-->
 
         <!-- GPS Outdoors Settings -->
-<!--        <module name="gps" type="ublox">-->
-<!--            <configure name="GPS_BAUD" value="B115200"/>-->
-<!--        </module>-->
+        <module name="gps" type="ublox">
+            <configure name="GPS_BAUD" value="B115200"/>
+        </module>
 
         <module name="ins" type="ekf2"/>
         <module name="guidance" type="indi_hybrid_tiltrotor"/>
@@ -188,8 +188,9 @@
 
     <section name="AUTOPILOT">
         <define name="MODE_MANUAL" value="AP_MODE_MANUAL"/>
-        <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE"/>
-        <define name="MODE_AUTO2" value="AP_MODE_GUIDED"/>
+        <!-- <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE"/> -->
+        <define name="MODE_AUTO1" value="AP_MODE_GUIDED"/>
+        <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
         <define name="MODE_STARTUP" value="AP_MODE_MANUAL"/>
         <define name="AUTOPILOT_IN_FLIGHT_MIN_THRUST" value="1000"/>
     </section>

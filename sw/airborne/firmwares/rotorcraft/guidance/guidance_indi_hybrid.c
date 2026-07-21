@@ -377,7 +377,8 @@ void guidance_indi_init(void)
   }
   struct FloatQuat q0;
   float_quat_identity(&q0);
-  init_quat_butterworth_low_pass(&quat_filt, filter_cutoff, sample_time, q0);
+  // the quat filter expects a natural frequency in rad/s, filter_cutoff is in Hz
+  init_quat_butterworth_low_pass(&quat_filt, 2.0f * M_PI * filter_cutoff, sample_time, q0);
   init_butterworth_2_low_pass(&thrust_filt, tau, sample_time, 0.0);
   init_butterworth_2_low_pass(&accely_filt, tau, sample_time, 0.0);
 
@@ -420,7 +421,7 @@ void guidance_indi_enter(void)
     init_butterworth_2_low_pass(&filt_accel_ned[i], tau, sample_time, 0.0);
   }
 
-  init_quat_butterworth_low_pass(&quat_filt, filter_cutoff, sample_time, *stateGetNedToBodyQuat_f());
+  init_quat_butterworth_low_pass(&quat_filt, 2.0f * M_PI * filter_cutoff, sample_time, *stateGetNedToBodyQuat_f());
   init_butterworth_2_low_pass(&thrust_filt, tau, sample_time, thrust_in);
   init_butterworth_2_low_pass(&accely_filt, tau, sample_time, 0.0);
 
@@ -513,8 +514,8 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   // Speed setpoint rotated into the heading frame (body_v[0] = forward),
   // used by the WLS preferences (e.g. forward thrust / tilt bias).
   float body_v[3];
-  body_v[0] =  cosf(yaw_filt) * gi_speed_sp.x + sinf(yaw_filt) * gi_speed_sp.y;
-  body_v[1] = -sinf(yaw_filt) * gi_speed_sp.x + cosf(yaw_filt) * gi_speed_sp.y;
+  body_v[0] =  cosf(eulers_filtered.psi) * gi_speed_sp.x + sinf(eulers_filtered.psi) * gi_speed_sp.y;
+  body_v[1] = -sinf(eulers_filtered.psi) * gi_speed_sp.x + cosf(eulers_filtered.psi) * gi_speed_sp.y;
   body_v[2] = gi_speed_sp.z;
 
   // Calculate the maximum deflections
