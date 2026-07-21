@@ -135,8 +135,8 @@
     <define name="AUTO_AIRSPEED_PITCH_PGAIN" value="0.06"/>
     <define name="AUTO_AIRSPEED_PITCH_DGAIN" value="0.0"/>
     <define name="AUTO_AIRSPEED_PITCH_IGAIN" value="0.042"/>
-    <define name="AIRSPEED_MAX" value="30"/>
-    <define name="AIRSPEED_MIN" value="10"/>
+    <define name="AIRSPEED_MAX" value="18"/>
+    <define name="AIRSPEED_MIN" value="12"/>
 
     <!-- groundspeed control -->
     <define name="AUTO_GROUNDSPEED_SETPOINT" value="15"/>
