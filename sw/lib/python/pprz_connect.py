@@ -116,7 +116,7 @@ class PprzConnect(object):
     and update for the new ones
     """
 
-    def __init__(self, notify=None, ivy=None, verbose=False):
+    def __init__(self, notify=None, ivy:Optional[IvyMessagesInterface]=None, verbose=False):
         """
         Init function
         Create an ivy interface if not provided and request for all aircraft
@@ -179,7 +179,7 @@ class PprzConnect(object):
             return self._conf_list_by_id
 
     @property
-    def ivy(self):
+    def ivy(self) -> IvyMessagesInterface:
         """
         Getter function for the ivy interface
         """

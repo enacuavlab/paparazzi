@@ -132,16 +132,16 @@ class PprzSetting:
     """Paparazzi Setting Class"""
 
     def __init__(self, var, index, shortname, min_value, max_value, step, values, xml):
-        self.var = var              # type: str
-        self.index = index          # type: int
-        self.shortname = shortname  # type: str
-        self.min_value = min_value  # type: float
-        self.max_value = max_value  # type: float
-        self.step = step            # type: float
-        self.values = values        # type: List[str]
-        self.value = None           # type: float
-        self.buttons = []           # type: List[StripButton]
-        self.key_press = []         # type: List[KeyPress]
+        self.var:str = var              # type: str
+        self.index:int = index          # type: int
+        self.shortname:str = shortname  # type: str
+        self.min_value:float = min_value  # type: float
+        self.max_value:float = max_value  # type: float
+        self.step:float = step            # type: float
+        self.values:List[str] = values        # type: List[str]
+        self.value:float = None           # type: float
+        self.buttons:List[StripButton] = []           # type: List[StripButton]
+        self.key_press:List[KeyPress] = []         # type: List[KeyPress]
         self.xml = xml
 
     def __str__(self):
@@ -180,24 +180,24 @@ class KeyPress:
 class PprzSettingsGrp:
     """"Paparazzi Setting Group Class"""
 
-    def __init__(self, name):
-        self.name = name
-        self.settings_list = []     # type: List[PprzSetting]
-        self.groups_list = []       # type: List[PprzSettingsGrp]
+    def __init__(self, name:str):
+        self.name:str = name
+        self.settings_list:List[PprzSetting] = []           # type: List[PprzSetting]
+        self.groups_list:List[PprzSettingsGrp] = []         # type: List[PprzSettingsGrp]
 
     def __str__(self):
         grp_names = [grp.name for grp in self.groups_list]
         settings = [str(setting) for setting in self.settings_list]
         return ", ".join(grp_names + settings)
 
-    def get_all_settings(self):
+    def get_all_settings(self) -> List[PprzSetting]:
         all_settings = []
         all_settings += self.settings_list
         for group in self.groups_list:
             all_settings += group.get_all_settings()
         return sorted(all_settings, key=lambda s: s.index)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> PprzSetting:
         if type(item) == int:
             for setting in self.get_all_settings():
                 if item == setting.index:
@@ -208,6 +208,8 @@ class PprzSettingsGrp:
                 if item == setting.shortname:
                     return setting
             raise AttributeError('No such setting named "{}"'.format(item))
+        else:
+            raise ValueError("Bad type for item: {}".format(type(item)))
 
     def __len__(self):
         return len(self.get_all_settings())
