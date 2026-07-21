@@ -46,8 +46,10 @@
     <!-- <module name="air_data" /> -->
 
     <!-- <module name="ins" type="ext_pose"/> -->
-    <module name="ins" type="ekf2" />
-    <define name="INS_EKF2_MAG_FUSION_MODE" value="MAG_FUSE_TYPE_NONE"/>
+    <module name="ins" type="ekf2">
+      <define name="INS_EKF2_VDIST_SENSOR_TYPE" value="VDIST_SENSOR_RANGE"/>
+      <define name="INS_EKF2_MAG_FUSION_MODE" value="MAG_FUSE_TYPE_NONE"/>
+    </module>
 
     <module name="stabilization" type="indi">
       <configure name="INDI_NUM_ACT" value="6" />
@@ -65,14 +67,16 @@
 
     <module name="sonar" type="vl53l1x">
       <configure name="SONAR_VL53L1X_I2C_DEV" value="i2c2"/>
+      <define name="SENSOR_SYNC_SEND_SONAR"/>
       <!-- <define name="USE_SONAR" value=""/> -->
     </module>
 
     <module name="opticflow" type="pmw3901">
       <configure name="OPTICFLOW_PMW3901_SPI_DEV" value="spi2"/>
       <configure name="OPTICFLOW_PMW3901_SPI_SLAVE_IDX" value="SPI_SLAVE0"/>
-      <define name="OPTICFLOW_PMW3901_SENSOR_ANGLE" value="90"/>
-      <define name="SENSOR_SYNC_SEND_OPTICFLOW_PMW3901" value="FALSE"/>
+      <define name="OPTICFLOW_PMW3901_SENSOR_ANGLE" value="180"/>
+      <define name="SENSOR_SYNC_SEND_OPTICFLOW_PMW3901" value="TRUE"/>
+      <define name="USE_SPI_SLAVE0"/>
     </module>
 
     <module name="jevois">
@@ -196,11 +200,11 @@
 
     <!-- control effectiveness Hexa Form-->
     <define name="G1" type="matrix">
-      <field value="-11.86, -23.72, -11.86, 11.86, 23.72, 11.86" type="float[]"/>
-      <field value="10.76, -0.00, -10.76, -10.76, -0.00, 10.76" type="float[]"/>
+      <field value="11.86, 23.72, 11.86, -11.86, -23.72, -11.86" type="float[]"/>
+      <field value="-10.76, 0.00, 10.76, 10.76, 0.00, -10.76" type="float[]"/>
       <field value="8.30, -8.30, 8.30, -8.30, 8.30, -8.30" type="float[]"/>
-      <field value="-0.25, 0.51, -0.25, -0.25, 0.51, -0.25" type="float[]"/>
-      <field value="0.34, 0.00, -0.34, 0.34, -0.00, -0.34" type="float[]"/>
+      <field value="0.25, -0.51, 0.25, 0.25, -0.51, 0.25" type="float[]"/>
+      <field value="-0.34, 0.00, 0.34, -0.34, 0.00, 0.34" type="float[]"/>
       <field value="-0.29, -0.29, -0.29, -0.29, -0.29, -0.29" type="float[]"/>
     </define>
     <define name="G2" value="{49.03, -49.03, 49.03, -49.03, 49.03, -49.03}"/>
@@ -222,6 +226,10 @@
       <field name="THRUST_Y" value="{1,0,1,1,0,1}" />
       <field name="THRUST_Z" value="{1,1,1,1,1,1}" />
     </define>
+
+    <define name="V_THRUST_X" value="5.0"/>
+    <define name="V_THRUST_Y" value="5.0"/>
+
   </section>
 
   <section name="WLS" prefix="WLS_">
