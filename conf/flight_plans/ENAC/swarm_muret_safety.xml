@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="190" ground_alt="185" lat0="43.4625474" lon0="1.2732371" max_dist_from_home="150" name="Muret safety" security_height="1">
+<flight_plan alt="190" ground_alt="185" lat0="43.4625474" lon0="1.2732371" max_dist_from_home="150" name="Muret safety" security_height="1" wp_frame="ltp">
   <header>
   </header>
   <waypoints>
