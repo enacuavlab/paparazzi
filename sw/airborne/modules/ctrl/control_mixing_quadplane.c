@@ -71,7 +71,7 @@ static const float transition_increment = 1.f / (CMQ_TRANSITION_TIME * PERIODIC_
 static void transition_run(bool to_forward) {
   if (to_forward && transition_ratio < 1.f) {
     if (stateIsAirspeedValid()) {
-      if ((stateGetAirspeed_f() < CMQ_TRANSITION_AIRSPEED && transition_ratio < CMQ_TRANSITION_CUTOFF)
+      if ((stateGetAirspeed_f() < CMQ_TRANSITION_AIRSPEED && transition_ratio + transition_increment < CMQ_TRANSITION_CUTOFF)
           || stateGetAirspeed_f() >= CMQ_TRANSITION_AIRSPEED) {
         transition_ratio += transition_increment;
       }
