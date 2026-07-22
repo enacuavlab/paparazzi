@@ -1,0 +1,146 @@
+<?xml version="1.0"?>
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+<flight_plan alt="152" ground_alt="147" lat0="43.5634" lon0="1.48448" max_dist_from_home="80" name="Enac Carto with safety" security_height="2" wp_frame="ltp">
+  <header>
+    #ifdef NAV_C
+    #ifndef TAG_TRACKING_COORD_TO_M
+    #define TAG_TRACKING_COORD_TO_M (1.f / 1000.f)
+    #endif
+    #ifdef SITL
+    #define jevois_stream(_x) {}
+    #endif
+    #endif
+  </header>
+  <waypoints>
+    <waypoint name="HOME" x="-0.732" y="0.947"/>
+    <waypoint name="STDBY" x="15.215" y="11.945"/>
+    <waypoint name="LANDPAD" x="18.426" y="14.199"/>
+    <waypoint name="S1" x="2.749" y="26.197"/>
+    <waypoint name="S2" x="-21.562" y="9.824"/>
+    <waypoint name="S3" x="-2.699" y="-17.945"/>
+    <waypoint name="S4" x="21.696" y="-1.571"/>
+    <waypoint name="_FLY1" x="-8.433" y="60.016"/>
+    <waypoint name="_FLY2" x="52.842" y="-25.592"/>
+    <waypoint name="_FLY3" x="6.6" y="-58.499"/>
+    <waypoint name="_FLY4" x="-54.3" y="25.9"/>
+    <waypoint name="_KILL1" x="-7.066" y="65.666"/>
+    <waypoint name="_KILL2" x="60.091" y="-26.561"/>
+    <waypoint name="_KILL3" x="5.158" y="-66.664"/>
+    <waypoint name="_KILL4" x="-62.023" y="26.33"/>
+    <waypoint name="_HERE" x="13.836" y="-13.194"/>
+  </waypoints>
+  <sectors>
+    <sector color="lime" name="Flight_Area">
+      <corner name="_FLY1"/>
+      <corner name="_FLY2"/>
+      <corner name="_FLY3"/>
+      <corner name="_FLY4"/>
+    </sector>
+    <sector color="red" name="Kill">
+      <corner name="_KILL1"/>
+      <corner name="_KILL2"/>
+      <corner name="_KILL3"/>
+      <corner name="_KILL4"/>
+    </sector>
+    <sector color="yellow" name="Survey">
+      <corner name="S1"/>
+      <corner name="S2"/>
+      <corner name="S3"/>
+      <corner name="S4"/>
+    </sector>
+  </sectors>
+  <variables>
+    <variable init="20." var="fp_max_height" min="5." max="30." step="1."/>
+    <variable init="5." var="goto_height" min="2." max="20." step="0.1"/>
+    <variable init="4." var="goto_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="1." var="land_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="7." var="mapping_height" min="5." max="80." step="0.1"/>
+    <variable init="6." var="mapping_sweep" min="5." max="20." step="0.1"/>
+    <variable init="3." var="mapping_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="-1." var="mapping_radius" min="-1." max="100." step="1.0"/>
+    <variable init="5." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
+  </variables>
+  <modules>
+    <module name="nav" type="survey_hybrid">
+      <define name="SURVEY_HYBRID_MAX_SWEEP_BACK" value="1"/>
+      <define name="SURVEY_HYBRID_APPROACHING_TIME" value="0"/>
+      <define name="SURVEY_HYBRID_ENTRY_DISTANCE" value="0"/>
+      <define name="SURVEY_HYBRID_ENTRY_CIRCLE" value="FALSE"/>
+    </module>
+    <module name="tag_tracking">
+      <define name="TAG_TRACKING_WP" value="WP_LANDPAD"/>
+    </module>
+  </modules>
+  <exceptions>
+    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR (GetPosHeight() @GT fp_max_height+5)) @AND (nav_block @GEQ IndexOfBlock('Takeoff')) @AND (nav_block @LEQ IndexOfBlock('Flare'))" deroute="Emergency"/>
+    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR (GetPosHeight() @GT fp_max_height)) @AND (nav_block @GEQ IndexOfBlock('Takeoff')) @AND (nav_block @LEQ IndexOfBlock('Flare'))" deroute="Standby"/>
+  </exceptions>
+  <blocks>
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 2)"/>
+      <!--call_once fun="NavSetAltitudeReferenceHere()"/-->
+    </block>
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Start Engine">
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
+      <exception cond="stateGetPositionEnu_f() @DEREF z @GT 2.0" deroute="Standby"/>
+      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 1" vmode="throttle"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="LANDPAD"/>
+    </block>
+    <block name="Standby" strip_button="Standby" strip_icon="home.png">
+      <stay wp="STDBY"/>
+    </block>
+
+    <block name="Goto Mapping" strip_button="Mapping">
+      <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="S1" from="_HERE" hmode="route" height="mapping_height"/>
+      <stay wp="S1" height="mapping_height" until="stage_time @GT 3"/>
+      <call_once fun="nav_survey_hybrid_setup_towards(WP_S1, WP_S2, 4, mapping_sweep, mapping_radius, mapping_height)"/>
+      <deroute block="Run Mapping"/>
+    </block>
+    <block name="Run Mapping" on_exit="dc_stop()">
+      <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
+      <call_once fun="dc_distance(mapping_shot_distance)"/>
+      <call fun="nav_survey_hybrid_run()"/>
+      <deroute block="Landing"/>
+    </block>
+
+    <block name="Land here" strip_button="Land Here" strip_icon="land-right.png" group="land">
+      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+    </block>
+    <block name="Landing" strip_button="Land on pad" group="land">
+      <call_once fun="dc_send_command(DC_OFF)"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <go wp="STDBY" from="_HERE" hmode="route" height="goto_height"/>
+      <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
+      <go wp="LANDPAD" from="STDBY" hmode="route" height="goto_height"/>
+    </block>
+    <block name="Flare" on_enter="jevois_stream(true)" on_exit="jevois_stream(false)">
+      <exception cond="!nav_is_in_flight()" deroute="Landing Done"/>
+      <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
+      <stay wp="LANDPAD" height="goto_height" until="stage_time @GT4"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
+    </block>
+    <block name="Landing Done">
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Emergency">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+  </blocks>
+</flight_plan>

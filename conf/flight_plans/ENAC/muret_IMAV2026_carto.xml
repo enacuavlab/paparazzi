@@ -15,6 +15,7 @@
     #ifdef NAV_C
     #ifndef TAG_TRACKING_COORD_TO_M
     #define TAG_TRACKING_COORD_TO_M (1.f / 1000.f)
+    #endif
     #ifdef SITL
     #define jevois_stream(_x) {}
     #endif
