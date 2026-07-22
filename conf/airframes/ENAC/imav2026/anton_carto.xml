@@ -47,7 +47,10 @@
     </module>
     <module name="guidance" type="indi"/>
 
-    <module name="ins" type="ekf2"/>
+    <module name="ins" type="ekf2">
+      <configure name="USE_ALT_LLA_WAYPOINTS" value="FALSE"/>
+      <define name="INS_EKF2_FORCE_NAV_REF" value="TRUE"/>
+    </module>
     <module name="air_data"/>
 
     <module name="actuators" type="pwm"/>

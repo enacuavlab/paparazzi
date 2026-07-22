@@ -19,7 +19,6 @@
     #ifdef SITL
     #define jevois_stream(_x) {}
     #endif
-    #endif
 
     static inline bool delay_test_rc(bool test, int delay) {
       static int nb = 0;
@@ -103,6 +102,7 @@
     </block>
     <block name="Geo init">
       <while cond="LessThan(NavBlockTime(), 10)"/>
+      <!--<call_once fun="NavSetAltitudeReferenceHere()"/>-->
     </block>
     <block name="Holding point" strip_button="H. Point" group="home">
       <call_once fun="NavKillThrottle()"/>
