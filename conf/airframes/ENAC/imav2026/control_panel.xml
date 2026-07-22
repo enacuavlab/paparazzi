@@ -1,0 +1,75 @@
+<control_panel name="paparazzi control panel">
+  <section name="programs">
+    <!-- Examples of custom configuration. -->
+    <!--program name="Server" command="sw/ground_segment/tmtc/server">
+      <arg flag="-b" constant="192.168.1.255:2010"/>
+    </program>
+    <program name="GCS" command="sw/ground_segment/cockpit/gcs" icon="gcs.svg" favorite="True">
+      <arg flag="-layout" constant="large_left_col.xml"/>
+      <arg flag="-osm"/>
+    </program-->
+  </section>
+  <section name="sessions">
+    <session name="Flight USB-XBee-API@57600">
+      <program name="Data Link">
+        <arg flag="-d" constant="/dev/paparazzi/xbee"/>
+        <arg flag="-transport" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+    </session>
+    <session name="Flight USB-serial@57600">
+      <program name="Data Link">
+        <arg flag="-d" constant="/dev/pprz-tlm"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+    </session>
+    <session name="octva102_indoor">
+      <program name="Data Link">
+        <arg flag="-d" constant="/dev/paparazzi/xbee"/>
+        <arg flag="-transport" constant="xbee"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+      <program name="Messages"/>
+      <program name="NatNet3">
+        <arg flag="--up_axis" constant="z_up"/>
+        <arg flag="--long_edge" constant="near"/>
+        <arg flag="--x_side" constant="right"/>
+        <arg flag="--ac_nose" constant="far"/>
+        <arg flag="-ac" constant="102"/>
+        <arg flag="102"/>
+        <arg flag="-s" constant="192.168.1.240"/>
+      </program>
+    </session>
+    <session name="Hexaris">
+      <program name="Data Link">
+        <arg flag="-d" constant="/dev/ttyACM0"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+    </session>
+    <session name="Hexaris_Optitrack">
+      <program name="Data Link">
+        <arg flag="-d" constant="/dev/ttyACM0"/>
+        <arg flag="-s" constant="57600"/>
+      </program>
+      <program name="Server"/>
+      <program name="PprzGCS"/>
+      <program name="NatNet3">
+        <arg flag="--up_axis" constant="z_up"/>
+        <arg flag="--long_edge" constant="near"/>
+        <arg flag="--x_side" constant="right"/>
+        <arg flag="--ac_nose" constant="far"/>
+        <arg flag="-ac" constant="4"/>
+        <arg flag="4"/>
+        <arg flag="-s" constant="192.168.1.240"/>
+      </program>
+    </session>
+  </section>
+</control_panel>
