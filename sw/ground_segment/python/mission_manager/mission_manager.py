@@ -81,6 +81,7 @@ class MissionManager():
         self.connect.ivy.subscribe(self.telemetry_status_cb, PprzMessage("ground", "TELEMETRY_STATUS"))
         self.connect.ivy.subscribe(self.mission_status_cb, PprzMessage("telemetry", "MISSION_STATUS"))
         self.connect.ivy.subscribe(self.ins_ref_cb, PprzMessage("telemetry", "INS_REF"))
+        self.connect.ivy.subscribe(self.nav_ref_cb, PprzMessage("telemetry", "NAVIGATION_REF"))
         self.connect.ivy.subscribe(self.airspeed_cb, PprzMessage("telemetry", "AIRSPEED"))
         self.connect.ivy.subscribe(self.windinfo_cb, PprzMessage("telemetry", "WIND_INFO_RET"))
 
@@ -184,7 +185,14 @@ class MissionManager():
     
     def ins_ref_cb(self, ac_id, msg):
         if int(ac_id) == self.ac_id and self.uav_data is not None:
-            self.uav_data.ref_alt = int(msg['hmsl0'])/1000
+            self.uav_data.ins_hsml0 = int(msg['hmsl0'])/1000
+            
+    def nav_ref_cb(self, ac_id, msg):
+        if int(ac_id) == self.ac_id and self.uav_data is not None:
+            self.uav_data.navref_utm_east = int(msg['utm_east'])
+            self.uav_data.navref_utm_north = int(msg['utm_north'])
+            self.uav_data.navref_utm_zone = int(msg['utm_zone'])
+            self.uav_data.navref_ground_alt = float(msg['ground_alt'])
 
     def send_message_and_wait(self,msg:PprzMessage, retry:int=MAX_RETRY, ack_time:float=ACK_TIME):
         if self.uav_data is None:

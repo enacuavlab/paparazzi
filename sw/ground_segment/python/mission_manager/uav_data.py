@@ -36,7 +36,6 @@ class UAVData:
     vnorth: float = 0.
     veast: float = 0.
     vup: float = 0.
-    ref_alt: float = 0.
     bat_voltage: float = 0.
     bat_charge: float = 0.
     gps_tow: int = 0
@@ -55,9 +54,17 @@ class UAVData:
     wind_up:Optional[float] = None
     settings:Optional[PprzSettingsManager] = None
     
+    ins_hsml0: Optional[float] = None
+    ins_lat0: Optional[float] = None
+    ins_lon0: Optional[float] = None
+    navref_utm_east: Optional[float] = None
+    navref_utm_north: Optional[float] = None
+    navref_utm_zone: Optional[int] = None
+    navref_ground_alt: Optional[float] = None
+    
     @property
     def height(self) -> float:
-        return self.alt - self.ref_alt
+        return self.alt - self.ins_hsml0
     
     @staticmethod
     def from_conf(conf:PprzConfig,ivy_interface:IvyMessagesInterface) -> UAVData:

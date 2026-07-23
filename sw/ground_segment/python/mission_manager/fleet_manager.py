@@ -121,12 +121,17 @@ def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
     cmd.append('-r')
     cmd.append(str(10))
     
-    cmd.append('-w')
-    cmd.append(str(5))
+    cmd.append('-T')
+    cmd.append(str(2))
+    
+    # cmd.append('-v')
+    # cmd.append(str(2))
     
     cmd.append('-l')
     
     if geometric_obstacles_path is not None:
+        cmd.append('-w')
+        cmd.append(str(10))
         cmd.append('-G')
         cmd.append(str(geometric_obstacles_path.resolve()))
     
@@ -219,7 +224,7 @@ async def async_subprocess_solve(solver:pathlib.Path,
                        samples, ellipse_ratio, **kwargs)
 
     # Create subprocess (asynchronously)
-    proc = await asyncio.create_subprocess_exec(*cmd,stdout=asyncio.subprocess.DEVNULL)
+    proc = await asyncio.create_subprocess_exec(*cmd)#,stdout=asyncio.subprocess.STDOUT)
     
     # Wait for it to finish and return the subprocess return code
     retcode = await proc.wait()
@@ -295,7 +300,7 @@ class FleetManager:
         
         self.flight_alt:float = flight_alt
         self.speed_ctl = speed_ctl
-        self.extra_straight_length = 120 # In meters #TODO: Synchronize with matching DL_SETTING
+        self.extra_straight_length = 120 # In meters, synchronized with the aircraft with LOWEST value
 
         self.solver_path = pathlib.Path(solver_path)
         self.separation:float = separation
@@ -305,6 +310,7 @@ class FleetManager:
         self.samples = 10            # Number of samples for the path generation algorithm
         self.ellipse_ratio = 0.4    # Ellipse ratio size for ellipse-based extra path generation
 
+        self.adhoc_offset = 13 # Time offset to the local clock to tune it to the aircraft GPS (assumung they all have the same offset). It makes some sense when using simulated aircraft...
         
         self.ac_ids:list[int] = [s.id for s in self.fleet_frames.ac_stats]
         self.acs:dict[int,ACStats] = dict()
@@ -340,7 +346,7 @@ class FleetManager:
         """Get current GPS Time of Week
         """
         if self.nps_simulation:
-            return time.time() % 604800 # 1 week = 604800 seconds
+            return time.time() % 604800 + self.adhoc_offset# 1 week = 604800 seconds 
         else:
             raise NotImplemented("No way of giving real GPS Time!!")
     
@@ -387,7 +393,7 @@ class FleetManager:
             dict[int,Pose3D]: Estimated aircraft positions
         """
         output = dict()
-        # print("Now: ",at)
+        print("Now: ",at, f"(includes offset of {self.adhoc_offset} s)")
         for id in self.ac_ids:
             mng = self.managers[id]
             data = mng.uav_data
@@ -395,10 +401,10 @@ class FleetManager:
             xx, yy = self.transformer.transform(data.lat,data.lon)
             tref = data.gps_tow
             dt = max(at - tref,0) # Do go into the future!
-            # print(f"Time for {id} : {tref}")
+            print(f"Time for {id} : {tref} (dt={at - tref:.2f} s)")
             pose = Pose3D(xx+data.veast*dt,yy+data.vnorth*dt,data.alt+data.vup*dt,np.pi/2-np.deg2rad(data.heading))
             output[id] = pose
-            # print(f"Current: {xx:.3f} {yy:.3f} | Interpolated: {pose.x:.3f} {pose.y:.3f}")
+            print(f"Current: {xx:.3f} {yy:.3f} | Interpolated: {pose.x:.3f} {pose.y:.3f}")
         return output
     
     def get_current_mission_ids(self) -> dict[int,list[int]]:
@@ -410,7 +416,7 @@ class FleetManager:
         return output_mission_ids
     
     def coordinate_length_extensions(self):
-        max_extra_length = 0
+        min_extra_length = float('inf')
         for mng in self.managers.values():
             assert mng.uav_data is not None, f"No UAVData for {mng.ac_id}!"
             if mng.uav_data.settings is not None:
@@ -418,18 +424,19 @@ class FleetManager:
                     extr_len = mng.uav_data.settings["Extra straight lengths"]
                 except KeyError:
                     extr_len = None
-                if extr_len is not None:
-                    max_extra_length = max(max_extra_length, extr_len.value)
-        if max_extra_length > 0:
-            self.extra_straight_length = max_extra_length
+                if extr_len is not None and extr_len.value is not None:
+                    min_extra_length = min(min_extra_length, extr_len.value)
+        if min_extra_length > 0:
+            self.extra_straight_length = min_extra_length
             if self.verbosity > 0:
                 print(f"FleetManager: Using extra straight length of {self.extra_straight_length} m")
         
-        for mng in self.managers.values():
-            assert mng.uav_data is not None, f"No UAVData for {mng.ac_id}!"
-            settings = mng.uav_data.settings
-            assert settings is not None, f"No settings for {mng.ac_id}!"
-            settings["Extra straight lengths"] = self.extra_straight_length
+        if np.isfinite(self.extra_straight_length):
+            for mng in self.managers.values():
+                assert mng.uav_data is not None, f"No UAVData for {mng.ac_id}!"
+                settings = mng.uav_data.settings
+                assert settings is not None, f"No settings for {mng.ac_id}!"
+                settings["Extra straight lengths"] = self.extra_straight_length
 
 
     async def __send_managers_messages_with_ack(self,mng_msg:list[tuple[MissionManager,PprzMessage]],retry:int,ack_time:float):
@@ -454,7 +461,7 @@ class FleetManager:
             for id in self.ac_ids:
                 if is_ready[id]: continue
                 manager = self.managers[id]
-                ready = manager.wait_ready(timeout)
+                ready = manager.wait_ready(timeout) and manager.uav_data is not None and manager.uav_data.navref_utm_zone is not None
                 is_ready[id] = ready
                 all_ready = all_ready and ready
     
@@ -606,13 +613,19 @@ class FleetManager:
             if self.__current_timestamp_plan is None or self.__tracking_error >= 2*self.__tracking_err_threshold:
                 poses = self.interpolate_poses(now)
                 l_poses = [poses[id] for id in self.ac_ids]
-                await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,now,impr_threshold)
+                if min_XY_dist(l_poses)[0] > self.separation:
+                    await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,now,impr_threshold)
+                else:
+                    print("Scheduling: Not enough separation for next plan, waiting for next iteration...")
             else:
                 plan,timestamp = self.__current_timestamp_plan
                 poses = plan.poses_at(now-timestamp+self.schedule_lookahead)
                 try:
                     l_poses = [poses[id] for id in self.ac_ids]
-                    await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,now+self.schedule_lookahead,impr_threshold)
+                    if min_XY_dist(l_poses)[0] > self.separation:
+                        await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,now+self.schedule_lookahead,impr_threshold)
+                    else:
+                        print("Scheduling: Not enough separation for next plan, waiting for next iteration...")
                 except KeyError:
                     self.__current_timestamp_plan = None
                 
@@ -669,12 +682,12 @@ class FleetManager:
         if not(self.ignore_wind) and n > 0:            
             self.wind_x = avg_east_wind/n
             self.wind_y = avg_north_wind/n
-            
-        if self.verbosity > 0:
-            if current_plan is None:
-                print(f"No current plan!")
-            else:
-                print(f"Tracking error detected for {max_tracking_error_id}: {max_tracking_error_val:.2f}")
+        
+        if self.verbosity > 1 and current_plan is None:
+            print(f"No current plan!")
+        
+        if self.verbosity > 0 and current_plan is not None:
+            print(f"Tracking error detected for {max_tracking_error_id}: {max_tracking_error_val:.2f}")
                 
         self.__tracking_error = max_tracking_error_val
         
@@ -702,6 +715,7 @@ class FleetManager:
         
         pb = self.fleet_frames.generate_pb_to(frame_id,ref_poses)
         
+        self.coordinate_length_extensions()
         tempdir = tempfile.gettempdir()
         now = datetime.datetime.now()
         input_file = pathlib.Path(tempdir) / f"{now.strftime('%y-%m-%d_%H:%M:%S.%f')}_input.csv"
@@ -825,15 +839,26 @@ class FleetManager:
                 speed = e.airspeed
         assert speed != 0.
         
-        home = manager.get_home()
-        assert home is not None
-        xhome,yhome = self.transformer.transform(home.lat,home.lon)
+        assert manager.uav_data is not None, f"No UAVData for {ac_id}!"
+        
+        utm0_east = manager.uav_data.navref_utm_east
+        utm0_north = manager.uav_data.navref_utm_north
+        utm0_zone = manager.uav_data.navref_utm_zone
+        assert utm0_east is not None, f"utm0_east is not defined for {ac_id}"
+        assert utm0_north is not None, f"utm0_north is not defined for {ac_id}"
+        assert utm0_zone is not None, f"utm0_zone is not defined for {ac_id}"
+        
+        utm_to_lonlat = pyproj.Proj(proj='utm', zone=utm0_zone, ellps='WGS84', south=False, preserve_units=False)
+        lon,lat = utm_to_lonlat.transform(utm0_east, utm0_north,direction='INVERSE')
+        xref,yref = self.transformer.transform(lat,lon)
+        
+        print(f"AC {ac_id} : UTM0 : {utm0_east:.3f} {utm0_north:.3f} ; LonLat : {lon:.6f} {lat:.6f}")
         
         if self.verbosity > 0:
             print(f"{ac_id} : Path type : {p.abbr()}")
             print(p.start,p.end)
             for i,el in enumerate(p.sections):
-                print(f"{ac_id} : Element {i} : Length {el.length:.3f} ; Radius {el.radius():.3f} ; Start ({el.start().x-xhome:.3f},{el.start().y-yhome:.3f},{el.start().z:.3f},{el.start().theta:.3f})")
+                print(f"{ac_id} : Element {i} : Length {el.length:.3f} ; Radius {el.radius():.3f} ; Start ({el.start().x-xref:.3f},{el.start().y-yref:.3f},{el.start().z:.3f},{el.start().theta:.3f})")
         
         print("Extra len: ",self.extra_straight_length)
         if self.extra_straight_length > 0:
@@ -842,11 +867,11 @@ class FleetManager:
             assert shifted_path is not None
             
             params = [
-                p.start.x-xhome,
-                p.start.y-yhome,
+                p.start.x-xref,
+                p.start.y-yref,
                 p.start.theta,
-                p.end.x-xhome,
-                p.end.y-yhome,
+                p.end.x-xref,
+                p.end.y-yref,
                 p.end.theta,
                 p.end.z,
                 p.total_length - 2*self.extra_straight_length,
@@ -858,11 +883,11 @@ class FleetManager:
         
         else:
             params = [
-                p.start.x-xhome,
-                p.start.y-yhome,
+                p.start.x-xref,
+                p.start.y-yref,
                 p.start.theta,
-                p.end.x-xhome,
-                p.end.y-yhome,
+                p.end.x-xref,
+                p.end.y-yref,
                 p.end.theta,
                 p.end.z,
                 p.total_length,
@@ -878,14 +903,14 @@ class FleetManager:
             params,
             insert_mode=insert_mode
         )
-            
+
 
 if __name__ == '__main__':
     import argparse
     
     color_dict = {
         60 : 'blue',
-        31 : 'black', # Use a legible colors for graph... # 61 : 'white',
+        61 : 'black', # Use a legible colors for graph... # 61 : 'white',
         62 : 'red',
         63 : 'green'
     }
@@ -901,7 +926,7 @@ if __name__ == '__main__':
     separation = 30
     formation = chevron_formation(len(stat_list),separation*4/3)
     
-    start = Pose3D(home_x,home_y+150,home_alt,0.)
+    start = Pose3D(home_x,home_y+50,home_alt,0.)
     fleet_plan = formation_oval(stat_list,start,80,60,formation)
     # fleet_plan = formation_rectangle(stat_list,start,300,100,formation)
     fleet_plan.keyposes = [fleet_plan.keyposes[0],fleet_plan.keyposes[2]]
@@ -954,14 +979,14 @@ if __name__ == '__main__':
         full_dubins=not(args.dubins_el),
         tracking_error=10
     )
-    
+    manager.samples = 10 if obstacles_path is None else 0
     manager.end_of_plan_carrot = args.carrot
     manager.extra_straight_length = 20
     
     main_loop_exception = None
     
     try:
-        manager.wait_ready()
+        manager.wait_ready(15)
         if args.takeoff:
             print("Take off requested!")
             manager.takeoff(home_height)
@@ -983,8 +1008,8 @@ if __name__ == '__main__':
     finally:
         print("Closing")
         manager.closing()
-        print("Saving logs")
         
+    print("Saving logs")
     logs = manager.get_logs()
     
     os.makedirs("logs",exist_ok=True)
@@ -994,13 +1019,17 @@ if __name__ == '__main__':
         pickle.dump(logs, f)
     
     try:
+        print("Plotting logs...")
         fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict,obstacles_path)
         fig.set_size_inches(16,9)
         fig.tight_layout()
         plt.show()
-    except KeyError:
+    except KeyError as e:
         # If there is a key error, the log is incomplete, so delete it
         os.remove(f"logs/logs_{now_str}.pkl")
+        print("KeyError while plotting logs, deleted the log file. Error: ",e)
+        raise e
+        
         
     if main_loop_exception is not None:
         raise main_loop_exception
