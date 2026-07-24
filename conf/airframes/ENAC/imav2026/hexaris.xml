@@ -60,10 +60,10 @@
     <module name="pdec">
       <configure name="PDEC_UART" value="UART7" />
     </module>
-    <module name="uwb_positioning">
+    <!-- <module name="uwb_positioning"> -->
       <!-- <configure name="UWB_POSITIONING_USE_AS_LOCAL_POS" value="FALSE|TRUE"/> -->
       <!-- <configure name="UWB_POSITIONING_USE_AS_GPS" value="FALSE|TRUE"/> -->
-    </module>
+    <!-- </module> -->
 
     <module name="sonar" type="vl53l1x">
       <configure name="SONAR_VL53L1X_I2C_DEV" value="i2c2"/>
@@ -250,8 +250,6 @@
 
   <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
     <define name="MASS" value="0.41" />
-    <define name="POS_GAIN" value="0.1" />
-    <define name="SPEED_GAIN" value="0.4" />
   </section>
 
   <section name="NAV">
@@ -280,7 +278,7 @@
 
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="motor1,motor2,motor3,motor4,motor5,motor6" type="string[]" />
-    <define name="JSBSIM_MODEL" value="FAHEX" type="string" />
+    <define name="JSBSIM_MODEL" value="Hexaris" type="string" />
     <define name="COMMANDS_NB" value="6" />
     <define name="NO_MOTOR_MIXING" value="TRUE" />
     <!--<define
