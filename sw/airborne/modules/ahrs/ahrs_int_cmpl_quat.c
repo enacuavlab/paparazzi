@@ -153,6 +153,11 @@ void ahrs_icq_init(void)
   VECT3_ASSIGN(ahrs_icq.mag_h, MAG_BFP_OF_REAL(AHRS_H_X),
                MAG_BFP_OF_REAL(AHRS_H_Y), MAG_BFP_OF_REAL(AHRS_H_Z));
 
+#ifdef AHRS_MAG_YAW_OFFSET
+  ahrs_icq.mag_yaw_offset = AHRS_MAG_YAW_OFFSET;
+#else
+  ahrs_icq.mag_yaw_offset = 0.;
+#endif
   ahrs_icq.accel_cnt = 0;
   ahrs_icq.mag_cnt = 0;
 }
@@ -462,6 +467,14 @@ static inline void ahrs_icq_update_mag_2d(struct Int32Vect3 *mag, float dt)
   struct Int32Vect2 expected_ltp = {ahrs_icq.mag_h.x, ahrs_icq.mag_h.y};
   /* normalize expected ltp in 2D (x,y) */
   int32_vect2_normalize(&expected_ltp, INT32_MAG_FRAC);
+#ifdef AHRS_MAG_YAW_OFFSET
+  const float cy = cosf(ahrs_icq.mag_yaw_offset);
+  const float sy = sinf(ahrs_icq.mag_yaw_offset);
+  const float mx_rot = cy * (float)expected_ltp.x - sy * (float)expected_ltp.y;
+  const float my_rot = sy * (float)expected_ltp.x + cy * (float)expected_ltp.y;
+  expected_ltp.x = (int32_t) mx_rot;
+  expected_ltp.y = (int32_t) my_rot;
+#endif
 
   struct Int32RMat ltp_to_body_rmat;
   int32_rmat_of_quat(&ltp_to_body_rmat, &ahrs_icq.ltp_to_body_quat);

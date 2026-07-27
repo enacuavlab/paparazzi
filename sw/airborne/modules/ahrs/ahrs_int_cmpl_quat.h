@@ -94,6 +94,8 @@ struct AhrsIntCmplQuat {
    */
   float mag_zeta;
 
+  float mag_yaw_offset;
+
   /* internal counters for the gains */
   uint16_t accel_cnt; ///< number of propagations since last accel update
   uint16_t mag_cnt;   ///< number of propagations since last mag update
