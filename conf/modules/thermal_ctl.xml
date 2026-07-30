@@ -21,6 +21,7 @@
   <header>
     <file name="thermal_ctl.h"/>
   </header>
+  <periodic fun="thermal_cluster_periodic()" freq="1" />
   <datalink fun="thermal_clusters_cb(buf)" message="PAYLOAD_FLOAT" class="telemetry"/>
   <makefile>
     <file name="thermal_ctl.c"/>

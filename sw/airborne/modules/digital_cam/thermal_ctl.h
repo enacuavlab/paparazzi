@@ -36,4 +36,6 @@ void thermal_ctl_thermal_threshold_handler(float value);
 
 extern void thermal_clusters_cb(uint8_t* buf);	// PAYLOAD_FLOAT
 
+void thermal_cluster_periodic(void);
+
 #endif  // THERMAL_CTL_H

@@ -27,6 +27,7 @@
 #include "modules/datalink/downlink.h"
 #include "modules/datalink/extra_pprz_dl.h"
 #include <stdio.h>
+#include <string.h>
 
 float thermal_ctl = 0;
 float thermal_threshold = 50;
@@ -35,6 +36,23 @@ float thermal_threshold = 50;
 #define THERMAL_CTL_PWR_OFF 1
 #define THERMAL_CTL_REC_ON  2
 #define THERMAL_CTL_REC_OFF 3
+
+#define NB_SPOTS 3
+
+struct thermal_spot
+{
+  uint8_t cluster_idx;
+  int32_t lat;
+  int32_t lon;
+  float temp;
+  int count;
+};
+
+
+struct thermal_spot hottest_spots[3] = {0};
+
+static void thermal_send_draw(struct thermal_spot* spot);
+static void update_hottests(struct thermal_spot* spot);
 
 
 void thermal_ctl_thermal_ctl_handler(float value) {
@@ -73,24 +91,62 @@ void thermal_clusters_cb(uint8_t* buf)
   if(nb != 8) {return;}
 
   float *b = pprzlink_get_DL_PAYLOAD_FLOAT_values(buf);
-  uint8_t cluster_idx = b[0];
-  // struct EnuCoor_f enu = {.x = b[1], .y = b[2], .z = b[3]};
-  float lat = b[4];
-  float lon = b[5];
-  float temp = b[6];
-  int count = b[7];
 
+  struct thermal_spot spot = {
+    .cluster_idx = b[0] + 1,  // first is id 1, 0 is reserved.
+    .lat = b[4] * 1e7,
+    .lon = b[5] * 1e7,
+    .temp = b[6],
+    .count = b[7],
+  };
+
+  update_hottests(&spot);
+  thermal_send_draw(&spot);
+}
+
+static void update_hottests(struct thermal_spot* spot) {
+  int coldest_idx = 0;
+  for(int i=0; i<NB_SPOTS; i++) {
+    struct thermal_spot *hp = &hottest_spots[i];
+    
+    // cluster found in hottests, just update it.
+    if(hp->cluster_idx == spot->cluster_idx) {
+      memcpy(hp, spot, sizeof(struct thermal_spot));
+      return;
+    }
+
+    // find the coldest amongst the array.
+    if(hp->temp < hottest_spots[coldest_idx].temp) {
+      coldest_idx = i;
+    }
+  }
+
+  // the new spot it hotter than the coldest of the array, save it in place of the coldest.
+  if(spot->temp > hottest_spots[coldest_idx].temp) {
+    memcpy(&hottest_spots[coldest_idx], spot, sizeof(struct thermal_spot));
+  }
+}
+
+
+static void thermal_send_draw(struct thermal_spot* spot) {
+ 
   uint8_t color = 0 << 6 | 5 << 3 | 5;  // Transparent, Magenta, Magenta
   uint8_t shape = 0;
   uint8_t status = 0;
   float radius = 2;
-  int32_t latarr[] = {lat * 1e7};
-  int32_t lonarr[] = {lon * 1e7};
+
   char text[10];
-  int nb_text = snprintf(text, 10, "%.0fC (%d)", temp, count);
+  int nb_text = snprintf(text, 10, "%.0fC (%d)", spot->temp, spot->count);
 
-  DOWNLINK_SEND_DRAW(DefaultChannel, DefaultDevice, &cluster_idx, &color, &shape, &status, &radius, 1, latarr, 1, lonarr, nb_text, text);
-
+  DOWNLINK_SEND_DRAW(DefaultChannel, DefaultDevice, &spot->cluster_idx, &color, &shape, &status, &radius, 1, &spot->lat, 1, &spot->lon, nb_text, text);
 }
 
 
+void thermal_cluster_periodic() {
+  static int hottest_idx = 0;
+  
+  if(hottest_spots[hottest_idx].cluster_idx != 0) {
+    thermal_send_draw(&hottest_spots[hottest_idx]);
+    hottest_idx = (hottest_idx + 1) % NB_SPOTS;
+  }
+}
