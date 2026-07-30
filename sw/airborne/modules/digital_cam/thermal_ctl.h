@@ -29,9 +29,11 @@
 #include "stdint.h"
 
 extern float thermal_ctl;
+extern float thermal_threshold;
 
 void thermal_ctl_thermal_ctl_handler(float value);
+void thermal_ctl_thermal_threshold_handler(float value);
 
-extern void thermal_status_cb(uint8_t* buf);	// PAYLOAD_COMMAND
+extern void thermal_clusters_cb(uint8_t* buf);	// PAYLOAD_FLOAT
 
 #endif  // THERMAL_CTL_H

@@ -26,8 +26,10 @@
 #include "modules/digital_cam/thermal_ctl.h"
 #include "modules/datalink/downlink.h"
 #include "modules/datalink/extra_pprz_dl.h"
+#include <stdio.h>
 
 float thermal_ctl = 0;
+float thermal_threshold = 50;
 
 #define THERMAL_CTL_NONE    0
 #define THERMAL_CTL_PWR_OFF 1
@@ -56,10 +58,39 @@ void thermal_ctl_thermal_ctl_handler(float value) {
 
 }
 
-void thermal_status_cb(uint8_t* buf)
+void thermal_ctl_thermal_threshold_handler(float value) {
+  thermal_threshold = value;
+  uint8_t tab[2] = {'t', (uint8_t)value};
+  uint8_t dst_id = 0;
+  DOWNLINK_SEND_PAYLOAD_COMMAND(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &dst_id, 2, tab);
+}
+
+void thermal_clusters_cb(uint8_t* buf)
 {
-  // PAYLOAD_COMMAND
-  // your datalink code here
+  // PAYLOAD_FLOAT: cluster_key,east,north,up,latitude,longitude,median_temperature,member_count
+
+  int nb = pprzlink_get_PAYLOAD_FLOAT_values_length(buf);
+  if(nb != 8) {return;}
+
+  float *b = pprzlink_get_DL_PAYLOAD_FLOAT_values(buf);
+  uint8_t cluster_idx = b[0];
+  // struct EnuCoor_f enu = {.x = b[1], .y = b[2], .z = b[3]};
+  float lat = b[4];
+  float lon = b[5];
+  float temp = b[6];
+  int count = b[7];
+
+  uint8_t color = 0 << 6 | 5 << 3 | 5;  // Transparent, Magenta, Magenta
+  uint8_t shape = 0;
+  uint8_t status = 0;
+  float radius = 2;
+  int32_t latarr[] = {lat * 1e7};
+  int32_t lonarr[] = {lon * 1e7};
+  char text[10];
+  int nb_text = snprintf(text, 10, "%.0fC (%d)", temp, count);
+
+  DOWNLINK_SEND_DRAW(DefaultChannel, DefaultDevice, &cluster_idx, &color, &shape, &status, &radius, 1, latarr, 1, lonarr, nb_text, text);
+
 }
 
 

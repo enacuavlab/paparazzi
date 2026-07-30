@@ -11,6 +11,7 @@
           <strip_button name="REC"      value="2" group="speed_mode"/>
           <strip_button name="STOP_REC" value="3" group="speed_mode"/>
         </dl_setting>
+        <dl_setting MIN="20" MAX="200"  STEP="1" var="thermal_threshold" header="digital_cam/thermal_ctl" handler="thermal_threshold_handler"/>
     </dl_settings>
   </dl_settings>
 </settings>
@@ -20,7 +21,7 @@
   <header>
     <file name="thermal_ctl.h"/>
   </header>
-  <datalink fun="thermal_status_cb(buf)" message="PAYLOAD_COMMAND"/>
+  <datalink fun="thermal_clusters_cb(buf)" message="PAYLOAD_FLOAT" class="telemetry"/>
   <makefile>
     <file name="thermal_ctl.c"/>
     <test/>
