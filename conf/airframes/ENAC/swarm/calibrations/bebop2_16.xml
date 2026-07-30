@@ -9,8 +9,8 @@
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
         </field>
-        <field name="neutral" value="96,20,219" type="int[]"/>
-        <field name="scale_f" value="{ 2.4395, 2.4643, 2.4206 }"/>
+        <field name="neutral" value="20,0,-255" type="int[]"/>
+        <field name="scale_f" value="{ 2.4557, 2.4404, 2.4420 }"/>
       </field>
     </define>
     <define name="MAG_CALIB" type="array">
