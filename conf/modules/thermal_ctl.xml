@@ -23,7 +23,7 @@
   </header>
   <periodic fun="thermal_cluster_periodic()" freq="1" />
   <datalink fun="thermal_clusters_cb(buf)" message="PAYLOAD_FLOAT" class="telemetry"/>
-  <makefile>
+  <makefile target="ap">
     <file name="thermal_ctl.c"/>
     <test/>
   </makefile>
