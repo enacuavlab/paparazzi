@@ -92,14 +92,16 @@
     <module name="nav" type="hybrid"/>
 
     <module name="flight_recorder"/>
-    <!-- Just for dev, can be supp after  /-->    
+      
+    <!-- Just for debug, TO be ERASE or COMMENT if you pprzlog logging as LIDAR /-->    
+    <!--module name="logger_sd_chibios"/>
     <module name="logger" type="control_effectiveness">
       <define name="LOGGER_CONTROL_EFFECTIVENESS_COMMANDS" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
-      <define name="LOGGER_CONTROL_EFFECTIVENESS_POS" value="FALSE"/>
-      <define name="LOGGER_CONTROL_EFFECTIVENESS_SPEED" value="FALSE"/>
-      <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="FALSE"/>
-    </module>
+      <define name="LOGGER_CONTROL_EFFECTIVENESS_POS" value="TRUE"/>
+      <define name="LOGGER_CONTROL_EFFECTIVENESS_SPEED" value="TRUE"/>
+      <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="TRUE"/>
+    </module-->
 
 	<!-- Use LIDAR telemetry-->
     <module name="lidar_sf30d">

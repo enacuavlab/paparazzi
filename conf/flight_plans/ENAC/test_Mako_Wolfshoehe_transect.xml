@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+
+<!-- Set here your altitude flight in "alt" above the ground level "ground_alt" -->
+<flight_plan alt="407" ground_alt="357" lat0="49.4076163994" lon0="10.9538135952" max_dist_from_home="4000" name="Transect Test" security_height="20"> 
+
+  <header>
+  </header>
+  
+  <waypoints>
+    <waypoint name="HOME" x="0" y="0"/>
+    <waypoint name="TD" x="105.218" y="73.756"/>
+    <waypoint name="STDBY" x="83.572" y="72.035"/>
+    <waypoint name="_HERE" x="86.47" y="14.673"/>
+    <waypoint name="P1" x="46.053" y="-151.316"/> 
+    <waypoint name="P12" x="-38.74" y="5.553"/> 
+    <waypoint name="P2" x="-141.408" y="189.509"/>  
+    <waypoint name="_BASELEG" x="51.32" y="-36.187"/>
+  </waypoints>
+  
+  <variables>
+	<variable var="P1_height"  init="80"/>  <!-- @Anna Set here height desired in init  --> 
+	<variable var="P2_height"  init="120"/> <!-- @Anna Set here height desired in init  --> 
+	<variable var="P12_height" init="100"/> <!-- @Anna Set here height desired in init  --> 	
+    <variable var="circle_radius" init="100" max="120" min="-120" step="5"/>
+  </variables>
+
+  <blocks>
+    
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    
+    <!-- Set Home X Y reference and altitude to here -->
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 10)"/>
+      <call_once fun="NavSetGroundReferenceHere()"/>
+      <call_once fun="NavSetAltitudeReferenceHere()"/>
+    </block>
+    
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    <block name="Start Engine">
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+
+    
+    <!-- Standby block -->
+    <block name="Standby" strip_button="Standby" strip_icon="home.png">
+      <stay wp="STDBY"/>
+    </block>
+
+	<!-- Standby block -->
+    <block name="Return to Standby">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="STDBY" from="_HERE" hmode="route" approaching_time="3"/>
+      <deroute block="Standby"/>
+    </block>
+
+	<!-- Leg 1 Module  -->
+	
+    <block name="Takeoff_Leg_1" strip_button="Takeoff_Leg_1" strip_icon="takeoff.png">
+      <exception cond="GetPosHeight() @GT 20" deroute="Standby"/> 
+      <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 1" vmode="throttle"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="STDBY"/> 
+    </block>
+	
+    <block name="Start leg 1 spiral">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="P12" from="_HERE" hmode="route"  height="P12_height"/>
+      <circle radius="circle_radius" until="GetPosHeight() @GT P12_height - 10" wp="P12" height="P12_height"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="P12"  from="_HERE" hmode="route"  height="P12_height"/>
+      <go wp="P1"  from="P12"    hmode="route"  height="P1_height"/>
+      <go wp="P2"  from="P1"     hmode="route"  height="P2_height"/>
+      <go wp="P12" from="P2"     hmode="route"  height="P12_height"/>
+    </block>
+    
+    <block name="End leg 1">
+      <circle wp="STDBY" radius="circle_radius"/> 
+    </block>
+    
+    <block name="Land leg 1">
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="STDBY" from="_HERE" hmode="route" approaching_time="3"/>
+      <go wp="STDBY"/>
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="STDBY"/>
+    </block>
+
+    <block name="Kill landed">
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>  
+    
+    <block name="Start leg 1 quadcopter">
+      <go wp="P12" until="GetPosHeight() @GT P12_height - 10" height="P12_height"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="P1"  from="_HERE" hmode="route"  height="P1_height"/>
+      <go wp="P2"  from="P1"    hmode="route"  height="P2_height"/>
+      <go wp="P12" from="P2"    hmode="route"  height="P12_height"/>
+      <deroute block="End leg 1"/>
+    </block>    
+	 
+  </blocks>
+
+</flight_plan>

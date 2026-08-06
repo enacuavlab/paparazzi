@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="2800" ground_alt="2750" lat0="46.483879" lon0="7.8104227" max_dist_from_home="4000" name="Kanderfin" security_height="10">
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd"> 
+<flight_plan alt="2800" ground_alt="2750" lat0="46.483879" lon0="7.8104227" max_dist_from_home="4000" name="Kanderfin" security_height="10"> <!-- @Alex Set ground_alt and alt for each transect to P12 or P23 or P34 --> 
 
   <header>
   </header>
@@ -9,20 +9,20 @@
     <waypoint name="HOME" x="0" y="0"/>
     <waypoint name="TD" x="-34.131" y="101.983"/>
     <waypoint name="STDBY" x="26.827" y="37.95"/>
-    <waypoint name="CLIMB" x="60.671" y="-45.611" alt="2900"/>
     <waypoint name="_HERE" x="86.47" y="14.673"/>
-    <waypoint name="P1" x="-98.698" y="-98.146" alt="2900"/>
-    <waypoint name="P2" x="-965.16" y="-391.575" alt="2800"/>
+    <waypoint name="P1" x="498.8" y="-131.8" alt="2900"/>  <!-- @Alex Set altitude to make your LIDAR measurment (100m ?)  --> 
+    <waypoint name="P12" x="24.2" y="-109.3" alt="2850"/>  <!-- @Alex Set altitude to make your LIDAR measurment (100m ?) --> 
+    <waypoint name="P2" x="-453.6" y="-115.2" alt="2800"/>  <!-- @Alex Set altitude to make your LIDAR measurment (100m ?) --> 
+    <waypoint name="P23" x="-847.4" y="-293.2" alt="2775"/>  <!-- @Alex Set altitude to make your LIDAR measurment (100m ?) --> 
+    <waypoint name="P3" x="-1267.5" y="-557.7" alt="2730"/>  <!-- @Alex Set altitude to make your LIDAR measurment (100m ?) --> 
+    <waypoint name="P34" x="-1670.2" y="-814.4" alt="2700"/>  <!-- @Alex Set altitude to make your LIDAR measurment (100m ?) --> 
+    <waypoint name="P4" x="-2043.4" y="-1087.8" alt="2630"/>  <!-- @Alex Set altitude to make your LIDAR measurment (100m ?) -->         
     <waypoint name="_BASELEG" x="-3.927" y="-188.272"/>
   </waypoints>
   
   <variables>
     <variable init="100" max="120" min="-120" step="5" var="circle_radius"/>
   </variables>
-
-  <!--exceptions>
-    <exception cond="10.5 @LT PowerVoltage()" deroute="Standby"/>
-  </exceptions-->
 
   <blocks>
     
@@ -43,48 +43,139 @@
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
 
-    <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
-      <exception cond="GetPosHeight() @GT 20" deroute="Standby"/> 
-      <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
-      <call_once fun="NavResurrect()"/>
-      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 1" vmode="throttle"/>
-      <stay climb="nav.climb_vspeed" vmode="climb" wp="STDBY"/>
+    <!-- Emergency stop and Hover block -->
+    <block name="Stop and Hover" strip_icon="home.png">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <stay wp="_HERE"/>
     </block>
+    
+    <!-- Standby block -->
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
       <stay wp="STDBY"/>
     </block>
 
+	<!-- Standby block -->
     <block name="Return to Standby">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <go wp="STDBY" from="_HERE" hmode="route" approaching_time="3"/>
       <deroute block="Standby"/>
     </block>
 
+	<!-- Leg 1 Module  -->
+	
+    <block name="Takeoff_Leg_1" strip_button="Takeoff_Leg_1" strip_icon="takeoff.png">
+      <exception cond="GetPosHeight() @GT 20" deroute="Standby"/> 
+      <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 1" vmode="throttle"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="STDBY" height="WaypointAlt(WP_P12) -50"/> <!-- @Alex Set altitude to be at 50m above ground  --> 
+    </block>
+	
     <block name="Start leg 1">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <go wp="CLIMB" from="_HERE" hmode="route"/>
-      <circle radius="circle_radius" until="GetPosHeight() @GT WaypointAlt(WP_P1) - 10" wp="CLIMB"/>
+      <go wp="P12" from="_HERE" hmode="route"/>
+      <circle radius="circle_radius" until="GetPosHeight() @GT WaypointAlt(WP_P12) - 10" wp="P12"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <go wp="P1" from="_HERE" hmode="route"/>
+      <go wp="P1"               from="_HERE" hmode="route"/>
+      <go wp="P2"               from="P1" hmode="route" vmode="glide"/>
+      <go wp="P12"              from="P2" hmode="route"/>
     </block>
-    <block name="Leg 1">
-      <go wp="P2" from="P1" hmode="route" vmode="glide"/>
-    </block>
+    
     <block name="End leg 1">
-      <circle wp="P2" radius="circle_radius" height="WaypointAlt(WP_P2)-50"/>
+      <circle wp="P12" radius="circle_radius" height="WaypointAlt(WP_P12) - 50"/> <!-- @Alex Set altitude to be at 50m above ground  --> 
     </block>
+    
     <block name="Land leg 1">
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <go wp="P2" from="_HERE" hmode="route" approaching_time="3" height="WaypointAlt(WP_P2)-50"/>
-      <go wp="P2" height="WaypointAlt(WP_P2)-50"/>
-      <stay climb="nav.descend_vspeed" vmode="climb" wp="P2"/>
+      <go wp="STDBY" from="_HERE" hmode="route" approaching_time="3" height="WaypointAlt(WP_P12) - 50"/> <!-- @Alex Set altitude to be at 50m above ground  --> 
+      <go wp="STDBY" height="WaypointAlt(WP_P12) - 50"/>  <!-- @Alex Set altitude to be at 50m above ground  --> 
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="STDBY"/>
     </block>
 
     <block name="Kill landed">
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
 
+
+
+	<!-- Leg 2 Module  -->
+	
+    <block name="Takeoff_Leg_2" strip_button="Takeoff_Leg_2" strip_icon="takeoff.png">
+      <exception cond="GetPosHeight() @GT 20" deroute="Standby"/> 
+      <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 1" vmode="throttle"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="STDBY" height="WaypointAlt(WP_P23) -50"/> <!-- @Alex Set altitude to be at 50m above ground  --> 
+    </block>
+	
+    <block name="Start leg 2">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="P23" from="_HERE" hmode="route"/>
+      <circle radius="circle_radius" until="GetPosHeight() @GT WaypointAlt(WP_P23) - 10" wp="P23"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="P2"               from="_HERE" hmode="route"/>
+      <go wp="P3"               from="P2" hmode="route" vmode="glide"/>
+      <go wp="P23"              from="P3" hmode="route"/>
+    </block>
+    
+    <block name="End leg 2">
+      <circle wp="P23" radius="circle_radius" height="WaypointAlt(WP_P23) - 50"/> <!-- @Alex Set altitude to be at 50m above ground  --> 
+    </block>
+    
+    <block name="Land leg 2">
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="STDBY" from="_HERE" hmode="route" approaching_time="3" height="WaypointAlt(WP_P23) - 50"/> <!-- @Alex Set altitude to be at 50m above ground  --> 
+      <go wp="STDBY" height="WaypointAlt(WP_P23) - 50"/>  <!-- @Alex Set altitude to be at 50m above ground  --> 
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="STDBY"/>
+    </block>
+
+    <block name="Kill landed 2">
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    
+    
+
+	<!-- Leg 3 Module  -->
+	
+    <block name="Takeoff_Leg_3" strip_button="Takeoff_Leg_3" strip_icon="takeoff.png">
+      <exception cond="GetPosHeight() @GT 20" deroute="Standby"/> 
+      <call_once fun="NavSetWaypointHere(WP_STDBY)"/>
+      <call_once fun="NavResurrect()"/>
+      <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 1" vmode="throttle"/>
+      <stay climb="nav.climb_vspeed" vmode="climb" wp="STDBY" height="WaypointAlt(WP_P34) -50"/> <!-- @Alex Set altitude to be at 50m above ground  --> 
+    </block>
+	
+    <block name="Start leg 3">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="P34" from="_HERE" hmode="route"/>
+      <circle radius="circle_radius" until="GetPosHeight() @GT WaypointAlt(WP_P34) - 10" wp="P34"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="P3"               from="_HERE" hmode="route"/>
+      <go wp="P4"               from="P3" hmode="route" vmode="glide"/>
+      <go wp="P34"              from="P4" hmode="route"/>
+    </block>
+    
+    <block name="End leg 3">
+      <circle wp="P34" radius="circle_radius" height="WaypointAlt(WP_P34) - 50"/> <!-- @Alex Set altitude to be at 50m above ground  --> 
+    </block>
+    
+    <block name="Land leg 3">
+      <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="STDBY" from="_HERE" hmode="route" approaching_time="3" height="WaypointAlt(WP_P34) - 50"/> <!-- @Alex Set altitude to be at 50m above ground  --> 
+      <go wp="STDBY" height="WaypointAlt(WP_P34) - 50"/>  <!-- @Alex Set altitude to be at 50m above ground  --> 
+      <stay climb="nav.descend_vspeed" vmode="climb" wp="STDBY"/>
+    </block>
+
+    <block name="Kill landed 3">
+      <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
+    </block>
+    
+    
+
+	 
   </blocks>
 
 </flight_plan>
