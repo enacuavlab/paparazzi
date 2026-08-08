@@ -1,0 +1,18 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="pump_control" dir="pump_control">
+  <doc>
+    <description>Pump control for IMAV2026</description>
+  </doc>
+  <dep>
+    <depends>adc</depends>
+  </dep>
+  <header>
+    <file name="pump_control.h"/>
+  </header>
+  <init fun="pump_control_init()"/>
+  <makefile>
+    <file name="pump_control.c"/>
+    <define name="USE_ADC_1"/>
+    <test/>
+  </makefile>
+</module>

@@ -1,0 +1,104 @@
+/*
+ * Copyright (C) 2026 Gautier Hattenberger <gautier.hattenberger@enac.fr>
+ *
+ * This file is part of paparazzi
+ *
+ * paparazzi is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * paparazzi is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+
+/** @file "modules/pump_control/pump_control.c"
+ * @author Gautier Hattenberger <gautier.hattenberger@enac.fr>
+ * Pump control for IMAV2026
+ *
+ * Default values for Tawaki v2, AUX 1 connector
+ */
+
+#include "modules/pump_control/pump_control.h"
+#include "navigation.h"
+#include "mcu_periph/adc.h"
+#include "mcu_periph/gpio.h"
+
+#ifndef PUMP_CONTROL_ADC
+#define PUMP_CONTROL_ADC ADC_1
+#endif
+
+#ifndef PUMP_CONTROL_ADC_EMPTY
+#define PUMP_CONTROL_ADC_EMPTY 1000
+#endif
+
+#ifndef PUMP_CONTROL_GPIO_ACTIVATE
+#define PUMP_CONTROL_GPIO_ACTIVATE GPIOE,GPIO11
+#endif
+
+#ifndef PUMP_CONTROL_GPIO_PURGE
+#define PUMP_CONTROL_GPIO_PURGE GPIOE,GPIO13
+#endif
+
+static const float nav_dt = 1.f / NAVIGATION_FREQUENCY;
+
+struct PumpControl {
+  struct adc_buf adc_b;
+  float time;
+  float time_pumping;
+};
+
+static struct PumpControl pump_control;
+
+void pump_control_init(void)
+{
+  pump_control.time = 0.f;
+  pump_control.time_pumping = 0.f;
+  adc_buf_channel(PUMP_CONTROL_ADC, &pump_control.adc_b, DEFAULT_AV_NB_SAMPLE);
+  gpio_setup_output(PUMP_CONTROL_GPIO_ACTIVATE);
+  gpio_setup_output(PUMP_CONTROL_GPIO_PURGE);
+  gpio_clear(PUMP_CONTROL_GPIO_ACTIVATE);
+  gpio_clear(PUMP_CONTROL_GPIO_PURGE);
+}
+
+void pump_activate(void)
+{
+  pump_control.time = 0.f;
+  pump_control.time_pumping = 0.f;
+  gpio_set(PUMP_CONTROL_GPIO_ACTIVATE);
+  gpio_clear(PUMP_CONTROL_GPIO_PURGE);
+}
+
+void pump_purge(void)
+{
+  pump_control.time = 0.f;
+  pump_control.time_pumping = 0.f;
+  gpio_set(PUMP_CONTROL_GPIO_PURGE);
+  gpio_clear(PUMP_CONTROL_GPIO_ACTIVATE);
+}
+
+void pump_stop(void)
+{
+  gpio_clear(PUMP_CONTROL_GPIO_ACTIVATE);
+  gpio_clear(PUMP_CONTROL_GPIO_PURGE);
+}
+
+bool pump_done(float duration, float timeout)
+{
+  pump_control.time += nav_dt;
+  if (adc_buf_get(&pump_control.adc_b) > PUMP_CONTROL_ADC_EMPTY) {
+    pump_control.time_pumping += nav_dt;
+  }
+  if ((timeout > 0.f && pump_control.time > timeout)
+      || pump_control.time_pumping > duration) {
+    return true;
+  }
+  return false;
+}
+
