@@ -67,14 +67,14 @@
         </module>
 
         <!-- Optitrack Settings -->
-<!--        <module name="gps" type="optitrack"/>-->
-<!--        <define name="INS_EKF2_OPTITRACK" value="TRUE"/>-->
-<!--        <configure name="USE_MAGNETOMETER" value="FALSE"/>-->
+        <module name="gps" type="optitrack"/>
+        <define name="INS_EKF2_OPTITRACK" value="TRUE"/>
+        <configure name="USE_MAGNETOMETER" value="FALSE"/>
 
         <!-- GPS Outdoors Settings -->
-        <module name="gps" type="ublox">
-            <configure name="GPS_BAUD" value="B115200"/>
-        </module>
+<!--        <module name="gps" type="ublox">-->
+<!--            <configure name="GPS_BAUD" value="B115200"/>-->
+<!--        </module>-->
 
         <module name="ins" type="ekf2"/>
         <module name="guidance" type="indi_hybrid_tiltrotor"/>
@@ -103,8 +103,8 @@
     </servos>
 
     <servos driver="Pwm">
-        <servo name="TILT_RIGHT"    no="1" min="1030" neutral="1080" max="1430"/>
-        <servo name="TILT_LEFT"     no="2" min="1735" neutral="1685" max="1335"/>
+        <servo name="TILT_RIGHT"    no="1" min="1022" neutral="1072" max="1422"/>
+        <servo name="TILT_LEFT"     no="2" min="1726" neutral="1676" max="1326"/>
     </servos>
 
     <commands>
@@ -188,11 +188,12 @@
 
     <section name="AUTOPILOT">
         <define name="MODE_MANUAL" value="AP_MODE_MANUAL"/>
-        <!-- <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE"/> -->
-        <define name="MODE_AUTO1" value="AP_MODE_GUIDED"/>
+        <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
         <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
         <define name="MODE_STARTUP" value="AP_MODE_MANUAL"/>
         <define name="AUTOPILOT_IN_FLIGHT_MIN_THRUST" value="1000"/>
+        <define name="AUTOPILOT_IN_FLIGHT_TIME" value="50"/>
+
     </section>
 
     <section name="BAT">
@@ -209,14 +210,14 @@
         <define name="SP_MAX_PHI" value="50." unit="deg"/>
         <define name="SP_MAX_THETA" value="40." unit="deg"/>
         <define name="SP_MAX_R" value="30." unit="deg/s"/>
-        <define name="DEADBAND_R" value="50"/>  <!-- yaw deadband from radio -->
-        <define name="DEADBAND_A" value="50"/>
         <define name="SP_PSI_DELTA_LIMIT" value="50" unit="deg"/>
+        <!-- Radio Deadband -->
+        <define name="DEADBAND_R" value="50"/>
+        <define name="DEADBAND_A" value="50"/>
     </section>
 
     <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
-        <!-- control effectiveness, scaled by INDI_G_SCALING (1000)-->
-        <!-- Initial seed only (overwritten each cycle by eff_scheduling_atlas) -->
+        <!-- Initial effectiveness matrix G1 -->
         <define name="G1" type="matrix">
             <!--              FR     BR     BL     FL    TILT_R  TILT_L  -->
             <field value="{ -16.,   -16.,   16.,   16.,    0.,     0.   }"/>  <!-- Mx -->
@@ -226,48 +227,36 @@
             <field value="{   0.,     0.,    0.,    0.,    0.75,   0.75 }"/>  <!-- Ax -->
         </define>
         <define name="G1_THRUST_X" value="{0, 0, 0, 0, 0.85, 0.85}"/>
-        <!-- X mask must cover every actuator with a nonzero g1g2 Ax column (the
-             scheduler fills motor Ax entries once tilted); otherwise the WLS books
-             the motors' forward thrust against the Tx demand without it ever being
-             in the stab_thrust_filt.x baseline -> steady backward drift (Jul 8 logs) -->
         <define name="ACT_IS_THRUSTER_X" value="{1, 1, 1, 1, 1, 1}"/>
-        <!-- Explicit Z mask required with X all ones: the auto-fill only marks
-             non-X non-servo actuators as Z thrusters (num_thrusters would be 0) -->
         <define name="ACT_IS_THRUSTER_Z" value="{1, 1, 1, 1, 0, 0}"/>
 
         <!--Counter torque effect of spinning up a rotor-->
         <define name="G2" value="{0, 0, 0, 0, 0, 0}"/>
-
         <define name="ACT_PREF" value="{0, 0, 0, 0, 0, 0}"/>
 
         <!-- Proportional Gains for Angular Error (P - roll, Q - Pitch, R - Yaw) -->
-        <define name="REF_ERR_P" value="270.0"/> <!-- P angular error in roll axis (P) 200.0 -->
-        <define name="REF_ERR_Q" value="200.0"/>
+        <define name="REF_ERR_P" value="300.0"/>
+        <define name="REF_ERR_Q" value="280.0"/>
         <define name="REF_ERR_R" value="200.0"/>
         <!-- Proportional Gains for Angular Rate Error (P - roll, Q - Pitch, R - Yaw) -->
         <define name="REF_RATE_P" value="40.0"/>
-        <define name="REF_RATE_Q" value="20.0"/>
+        <define name="REF_RATE_Q" value="30.0"/>
         <define name="REF_RATE_R" value="18.0"/>
 
         <define name="FILT_CUTOFF" value="8.0"/>
 
-        <!-- first order actuator dynamics -->
+        <!-- First order actuator dynamics -->
         <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 12.66, 4.0, 4.0}"/>
         <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 9600, 9600}"/>
         <define name="ACT_IS_SERVO" value="{0, 0, 0, 0, 1, 1}"/>
 
         <!-- INDI outputs to commands association -->
-        <!-- TILT_F / TILT_M version
-        <define name="COMMANDS" value="{COMMAND_MOTOR_FR, COMMAND_MOTOR_BR, COMMAND_MOTOR_BL, COMMAND_MOTOR_FL, COMMAND_TILT_F, COMMAND_TILT_M}"/>
-        -->
         <define name="COMMANDS" value="{COMMAND_MOTOR_FR, COMMAND_MOTOR_BR, COMMAND_MOTOR_BL, COMMAND_MOTOR_FL, COMMAND_TILT_R, COMMAND_TILT_L}"/>
 
-        <!-- Inner-loop WLS objective priorities (Wv), [MX, MY, MZ, AZ, AX] {3000, 3000, 5000, 6000, 1000} -->
-        <!-- AZ raised 100 -> 3000: vertical thrust must outrank MZ/AX so altitude is not
-             the first objective sacrificed under moment/tilt saturation (Jun 30 logs) -->
+        <!-- Inner-loop WLS objective priorities (Wv), [MX, MY, MZ, AZ, AX] -->
         <define name="WLS_PRIORITIES" value="{10000,10000,5000,8000,2000}"/>
 
-        <!-- Wu: motors FR,BR,BL,FL, tilt_R, tilt_L  (lower = allocator prefers it) {1.0, 1.0, 1.0, 1.0, 0.3, 0.3}-->
+        <!-- Wu: [FR,BR,BL,FL,tilt_R,tilt_L]  (lower = allocator prefers it) -->
         <define name="WLS_WU" value="{1.0, 1.0, 1.0, 1.0, 0.1, 0.1}"/>
 
         <!-- Adaptive Learning Rate -->
@@ -277,9 +266,7 @@
     </section>
 
     <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-        <!-- feeds guidance_indi_max_bank (roll channel bound of the outer WLS);
-             keep below STABILIZATION_ATTITUDE_SP_MAX_PHI (40 deg) -->
-        <define name="MAX_BANK" value="50" unit="deg"/>
+        <define name="MAX_BANK" value="45" unit="deg"/> <!-- Guidance outer WLS bounds (keep below SP_MAX_PHI) -->
         <define name="USE_SPEED_REF" value="TRUE"/>
         <define name="PGAIN" value="180"/>
         <define name="DGAIN" value="180"/>
@@ -309,10 +296,9 @@
 
     <section name="NAV">
         <define name="NAV_CLIMB_VSPEED" value="1.5"/>
-        <define name="NAV_DESCEND_VSPEED" value="-1.5"/>
-        <define name="NAV_TAKEOFF_HEIGHT" value="10."/>
-        <define name="NAV_LANDING_AF_HEIGHT" value="20."/>
-        <define name="NAV_LANDING_FLARE_HEIGHT" value="10."/>
+        <define name="NAV_DESCEND_VSPEED" value="-0.7"/> <!-- outdoors "1.0" -->
+        <define name="NAV_LANDING_AF_HEIGHT" value="2."/>
+        <define name="NAV_LANDING_FLARE_HEIGHT" value="1."/>
         <define name="NAV_LANDING_DESCEND_SPEED" value="-2.0"/>
         <define name="SURVEY_HYBRID_MAX_SWEEP_BACK" value="1"/>
         <!--define name="MISSION_ALT_PROXIMITY" value="4."/-->

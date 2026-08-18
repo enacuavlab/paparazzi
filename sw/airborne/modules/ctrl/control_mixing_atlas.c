@@ -71,6 +71,21 @@ struct ThrustSetpoint guidance_set_rc_h_thrust(struct ThrustSetpoint *v_sp)
 //   }
 // }
 
+/**
+ * TILT GATE
+ *
+ * Tilt can be controlled only once the autopilot inflight flag is true. 
+ * The autonomous take-off and langing behaves as a pure quad. 
+ */
+static inline void atlas_tilt_gate(bool in_flight)
+{
+  if (!in_flight && !atlas_eff_disable_tilt) {
+    actuators_pprz[ATLAS_ACT_TILT_R] = 0;
+    actuators_pprz[ATLAS_ACT_TILT_L] = 0;
+  }
+  atlas_eff_disable_tilt = !in_flight;
+}
+
 static inline void copy_indi_commands(void)
 {
   commands[COMMAND_MOTOR_FR] = stabilization.cmd[COMMAND_MOTOR_FR];
@@ -113,7 +128,7 @@ void control_mixing_atlas_quad(void)
 
 void control_mixing_atlas_attitude_enter(void)
 {
-  atlas_eff_disable_tilt = false;
+  atlas_tilt_gate(autopilot_in_flight());
   guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
   guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
   stabilization_mode_changed(STABILIZATION_MODE_NONE, STABILIZATION_ATT_SUBMODE_HEADING);
@@ -122,9 +137,12 @@ void control_mixing_atlas_attitude_enter(void)
 
 void control_mixing_atlas_attitude(void)
 {
-  struct ThrustSetpoint v_sp = guidance_v_run(autopilot_in_flight());
+  bool in_flight = autopilot_in_flight();
+  atlas_tilt_gate(in_flight);
+
+  struct ThrustSetpoint v_sp = guidance_v_run(in_flight);
   struct ThrustSetpoint th_sp = guidance_set_rc_h_thrust(&v_sp);
-  stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
+  stabilization_run(in_flight, &stabilization.rc_sp, &th_sp, stabilization.cmd);
   copy_indi_commands();
 }
 
@@ -135,13 +153,14 @@ float             atlas_heading_sp = 0.f;           // heading setpoint [rad, NE
 
 void control_mixing_atlas_guidance_enter(void)
 {
-  atlas_eff_disable_tilt = false;
+  atlas_tilt_gate(autopilot_in_flight());
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
 }
 
 void control_mixing_atlas_guidance(void)
 {
   bool in_flight = autopilot_in_flight();
+  atlas_tilt_gate(in_flight);
 
   // Heading setpoint for the guidance loop
   guidance_h.sp.heading = atlas_heading_sp;
@@ -158,10 +177,41 @@ void control_mixing_atlas_guidance(void)
 }
 
 
+/**
+ * NAV guidance: same INDI hybrid horizontal (+ ABI accel) as
+ * control_mixing_atlas_guidance(), but the vertical thrust is taken from the
+ * active flight-plan vertical mode via guidance_v_run() (dispatches to
+ * guidance_v_from_nav: climb / hover / descend) instead of the forced position
+ * hold guidance_v_run_pos(). This is what lets NAV takeoff and landing
+ * (vmode="climb") actually climb and descend.
+ */
+void control_mixing_atlas_nav(void)
+{
+  bool in_flight = autopilot_in_flight();
+  atlas_tilt_gate(in_flight);
+
+  // Heading setpoint for the guidance loop
+  guidance_h.sp.heading = atlas_heading_sp;
+
+  struct StabilizationSetpoint stab_sp = guidance_indi_run_mode(
+      in_flight, &guidance_h, &guidance_v,
+      GUIDANCE_INDI_HYBRID_H_POS, GUIDANCE_INDI_HYBRID_V_POS);
+
+  // Vertical thrust from the flight-plan vertical mode (climb / hover / descend)
+  struct ThrustSetpoint thrust_sp = guidance_v_run(in_flight);
+
+  stabilization_run(in_flight, &stab_sp, &thrust_sp, stabilization.cmd);
+  copy_indi_commands();
+}
+
+
 void control_mixing_atlas_failsafe(void)
 {
+  bool in_flight = autopilot_in_flight();
+  atlas_tilt_gate(in_flight);
+
   struct StabilizationSetpoint stab_sp = stabilization_get_failsafe_sp();
-  struct ThrustSetpoint thrust_sp = guidance_v_run(autopilot_in_flight());
-  stabilization_run(autopilot_in_flight(), &stab_sp, &thrust_sp, stabilization.cmd);
+  struct ThrustSetpoint thrust_sp = guidance_v_run(in_flight);
+  stabilization_run(in_flight, &stab_sp, &thrust_sp, stabilization.cmd);
   copy_indi_commands();
 }

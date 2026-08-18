@@ -20,9 +20,13 @@
             <define name="PITCH_PREF_DEG"       value="0.0"          description="Preferred pitch angle for WLS, positive nose up [deg]"/>
             <define name="PITCH_PREF_RC_MIN_DEG" value="-10.0"       description="Pitch preference at tilt wheel (RADIO_TILT) minimum in GUIDED mode [deg]"/>
             <define name="PITCH_PREF_RC_MAX_DEG" value="20.0"        description="Pitch preference at tilt wheel (RADIO_TILT) maximum in GUIDED mode [deg]"/>
-            <define name="WU_PITCH"             value="100.0"        description="Pitch preference weight; objectives carry gamma_sq*Wv = 1e5 [-]"/>
+            <define name="WU_ROLL"              value="1.0"          description="Outer-WLS roll weight [-]"/>
+            <define name="WU_PITCH"             value="6.5"          description="Outer-WLS pitch weight [-]"/>
+            <define name="WU_TZ"                value="1.0"          description="Outer-WLS vertical-thrust weight [-]"/>
+            <define name="WU_TX"                value="1.0"          description="Outer-WLS forward-thrust (tilt) weight [-]"/>
         </section>
     </doc>
+
     <dep>
         <depends>guidance_indi_hybrid,eff_scheduling_atlas</depends>
         <conflicts>guidance_indi_hybrid_tailsitter, guidance_indi_hybrid_quadplane</conflicts>
@@ -32,10 +36,8 @@
         <file name="guidance_indi_hybrid_tiltrotor.h"/>
     </header>
     <makefile target="ap|nps" firmware="rotorcraft">
-        <define name="GUIDANCE_INDI_HYBRID_USE_WLS" value="1"/>
-        <!-- Guidance actuators: (roll, pitch, thrust_z, thrust_x) for tiltrotors  -->
-        <define name="GUIDANCE_INDI_HYBRID_U" value="4"/>
-        <!-- Guidance control objectives: ax, ay, az for tiltrotors -->
+        <define name="GUIDANCE_INDI_HYBRID_USE_WLS" value="1"/>     <!-- Guidance actuators: (roll, pitch, thrust_z, thrust_x) for tiltrotors  -->
+        <define name="GUIDANCE_INDI_HYBRID_U" value="4"/>           <!-- Guidance control objectives: ax, ay, az for tiltrotors -->
         <define name="GUIDANCE_INDI_HYBRID_V" value="3"/>
         <define name="GUIDANCE_INDI_PUSHER_INDEX"        value="4"/>
         <define name="GUIDANCE_INDI_MASS"                value="0.68"/>
@@ -50,7 +52,14 @@
         <define name="GUIDANCE_INDI_PITCH_PREF_DEG"      value="0.0"/>
         <define name="GUIDANCE_INDI_PITCH_PREF_RC_MIN_DEG" value="-5.0"/>
         <define name="GUIDANCE_INDI_PITCH_PREF_RC_MAX_DEG" value="15.0"/>
-        <define name="GUIDANCE_INDI_WU_PITCH"            value="0.0"/> <!-- 10000.0 -->
+        <define name="GUIDANCE_INDI_WU_ROLL"             value="1.0"/>
+        <define name="GUIDANCE_INDI_WU_PITCH"            value="6.5"/>
+        <!--
+        * Increase the Pitch Weighting (Wu) to increase the tilt contribution of forward acceleration
+        * (6.5 -> 30 %, 9.8 -> 50 %, 17 -> 75 %, 29 -> 90 %, 43 -> 95 % )
+        -->
+        <define name="GUIDANCE_INDI_WU_TZ"               value="1.0"/>
+        <define name="GUIDANCE_INDI_WU_TX"               value="1.0"/>
         <file name="guidance_indi_hybrid_tiltrotor.c" dir="$(SRC_FIRMWARE)/guidance"/>
     </makefile>
 </module>

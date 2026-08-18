@@ -46,6 +46,8 @@ extern void control_mixing_atlas_attitude(void);
 extern void control_mixing_atlas_guidance_enter(void);
 extern void control_mixing_atlas_guidance(void);
 
+extern void control_mixing_atlas_nav(void);
+
 extern void control_mixing_atlas_failsafe(void);
 
 extern struct FloatVect3 atlas_pos_sp;     // NED position setpoint [m]

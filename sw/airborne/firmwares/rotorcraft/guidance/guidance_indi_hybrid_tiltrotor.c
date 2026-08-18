@@ -39,8 +39,17 @@ static const float CL_alpha  = GUIDANCE_INDI_CL_ALPHA;
 
 static const float air_density = PPRZ_ISA_AIR_DENSITY;
 
+static const float pitch_pref_max_incr = 0.0873f;  /* 5 deg */
+
 float guidance_indi_max_thr_z = GUIDANCE_INDI_MAX_ACC_BODY_Z * GUIDANCE_INDI_MASS;
 float guidance_indi_max_thr_x = GUIDANCE_INDI_MAX_ACC_BODY_X * GUIDANCE_INDI_MASS;
+
+/* Outer-WLS actuator weights, settable so the pitch/tilt split can be modified
+ */
+float guidance_indi_wu_roll  = GUIDANCE_INDI_WU_ROLL;
+float guidance_indi_wu_pitch = GUIDANCE_INDI_WU_PITCH;
+float guidance_indi_wu_tz    = GUIDANCE_INDI_WU_TZ;
+float guidance_indi_wu_tx    = GUIDANCE_INDI_WU_TX;
 
 
 // // Filter Acceleration if used instead of actuator thrust estimates
@@ -173,10 +182,10 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
   wls_guid_p.Wv[GIHT_Y] = Wv_original[GIHT_Y];
   wls_guid_p.Wv[GIHT_Z] = Wv_original[GIHT_Z];
 
-  wls_guid_p.Wu[GIHT_CMD_ROLL]  = 0.0f;
-  wls_guid_p.Wu[GIHT_CMD_PITCH] = GUIDANCE_INDI_WU_PITCH;
-  wls_guid_p.Wu[GIHT_CMD_TZ]    = 0.0f;
-  wls_guid_p.Wu[GIHT_CMD_TX]    = 0.0f;
+  wls_guid_p.Wu[GIHT_CMD_ROLL]  = guidance_indi_wu_roll;
+  wls_guid_p.Wu[GIHT_CMD_PITCH] = guidance_indi_wu_pitch;
+  wls_guid_p.Wu[GIHT_CMD_TZ]    = guidance_indi_wu_tz;
+  wls_guid_p.Wu[GIHT_CMD_TX]    = guidance_indi_wu_tx;
 
   const float max_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MAX_PITCH);
   const float min_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MIN_PITCH);
@@ -211,17 +220,11 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
     du_max_thrust_z += (MAX_PPRZ - actuator_state_filt_vect[i]) * atlas_eff_sched_v.dT_dpprz[i] * ca / atlas_eff_sched_p.m;
     du_min_thrust_z +=           (-actuator_state_filt_vect[i]) * atlas_eff_sched_v.dT_dpprz[i] * ca / atlas_eff_sched_p.m;
   }
-  Bound(du_min_thrust_z, -10.f, 0.f);
-  Bound(du_max_thrust_z,   0.f, 10.f);
+  Bound(du_min_thrust_z,   6.f, 0.f);
+  Bound(du_max_thrust_z,   0.f, -10.f);
 
-  // Sign convention: Gmat[2][TZ] = +ctheta*cphi, so du_TZ>0 = descend (less
-  // upward thrust). Max descend = cut current thrust to zero (-du_min_thrust_z);
-  // max climb = spin motors up to MAX_PPRZ (-du_max_thrust_z). Matches the
-  // working guidance_indi_hybrid_quadplane convention.
-  wls_guid_p.u_min[GIHT_CMD_TZ] = -du_max_thrust_z;  // Min Tz: most climb   (<=0)
-  wls_guid_p.u_max[GIHT_CMD_TZ] = -du_min_thrust_z;  // Max Tz: most descend (>=0)
-  // wls_guid_p.u_min[GIHT_CMD_TZ] = du_min_thrust_z;  // Min Tz (vertical thrust)
-  // wls_guid_p.u_max[GIHT_CMD_TZ] = du_max_thrust_z;  // Max Tz (vertical thrust)
+  wls_guid_p.u_min[GIHT_CMD_TZ] = du_max_thrust_z;  // Min Tz: most climb   (<=0)
+  wls_guid_p.u_max[GIHT_CMD_TZ] = du_min_thrust_z;  // Max Tz: most descend (>=0)
 
   // Dynamic forward thrust headroom
   // (a) motor channel: more/less thrust along the current tilt direction
@@ -243,16 +246,20 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
       du_min_thrust_x += atlas_eff_sched_v.T[i] * (s_min - sa) / atlas_eff_sched_p.m;
     }
   }
-  Bound(du_min_thrust_x, -2.f, 0.f);
-  Bound(du_max_thrust_x,   0.f, 2.f);
+  Bound(du_min_thrust_x, -1.f, 0.f);
+  Bound(du_max_thrust_x,   0.f, 4.f);
 
   wls_guid_p.u_min[GIHT_CMD_TX] = du_min_thrust_x;  // Min Tx (forward thrust)
   wls_guid_p.u_max[GIHT_CMD_TX] = du_max_thrust_x;  // Max Tx (forward thrust)
 
-  // Preferences. Channels with Wu = 0 ignore their preference; only the pitch
-  // preference is active (see the weight block above).
   wls_guid_p.u_pref[GIHT_CMD_ROLL]  = 0.f;
-  wls_guid_p.u_pref[GIHT_CMD_PITCH] = pitch_pref_rad - pitch_angle;
   wls_guid_p.u_pref[GIHT_CMD_TZ]    = 0.f;
   wls_guid_p.u_pref[GIHT_CMD_TX]    = 0.f;
+
+  /* No pitch preference */
+  wls_guid_p.u_pref[GIHT_CMD_PITCH] = 0.f;
+
+  /* Pitch preference */
+  // wls_guid_p.u_pref[GIHT_CMD_PITCH] = pitch_pref_rad - pitch_angle;
+  // BoundAbs(wls_guid_p.u_pref[GIHT_CMD_PITCH], pitch_pref_max_incr);
 }

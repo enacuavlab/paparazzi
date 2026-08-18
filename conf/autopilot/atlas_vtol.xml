@@ -17,13 +17,13 @@
       <include name="modules/radio_control/radio_control.h"/>
       <include name="modules/gps/gps.h"/>
       <define name="MODE_MANUAL" value="AP_MODE_MANUAL" cond="ifndef MODE_MANUAL"/>
-      <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE" cond="ifndef MODE_AUTO1"/>
-      <define name="MODE_AUTO2" value="AP_MODE_GUID" cond="ifndef MODE_AUTO2"/>
+      <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD" cond="ifndef MODE_AUTO1"/>
+      <define name="MODE_AUTO2" value="AP_MODE_NAV" cond="ifndef MODE_AUTO2"/>
     </includes>
 
     <settings>
       <dl_setting var="autopilot.kill_throttle" min="0" step="1" max="1" module="autopilot" values="Resurrect|Kill" handler="KillThrottle"/>
-      <dl_setting var="autopilot_mode_auto2" min="2" step="1" max="3" module="autopilot" values="NAV|GUIDED"/>
+      <dl_setting var="autopilot_mode_auto2" min="2" step="1" max="3" module="autopilot" values="GUIDED|NAV"/>
     </settings>
 
     <mode_selection>
@@ -51,16 +51,17 @@
       <exception cond="RadioControlIsLost()" deroute="FAILSAFE"/>
     </mode>
 
-    <!-- RC Mode 1: INDI attitude stabilization -->
-    <mode name="ATTITUDE" shortname="ATT">
+    <!-- RC Mode 1: INDI quad attitude + altitude hold (TILT_L/TILT_R = 0) -->
+    <mode name="ATTITUDE_Z_HOLD" shortname="A_ZH">
       <on_enter>
-        <call fun="control_mixing_atlas_attitude_enter()"/>
+        <call fun="control_mixing_atlas_quad_enter()"/>
+        <call fun="guidance_v_mode_changed(GUIDANCE_V_MODE_HOVER)"/>
       </on_enter>
       <control freq="NAVIGATION_FREQUENCY">
         <call fun="nav_periodic_task()"/>
       </control>
       <control>
-        <call fun="control_mixing_atlas_attitude()"/>
+        <call fun="control_mixing_atlas_quad()"/>
       </control>
       <exception cond="RadioControlIsLost()" deroute="FAILSAFE"/>
     </mode>
@@ -92,7 +93,7 @@
         <call fun="nav_periodic_task()"/>
       </control>
       <control>
-        <call fun="control_mixing_atlas_guidance()"/>
+        <call fun="control_mixing_atlas_nav()"/>
       </control>
       <exception cond="GpsIsLost() && autopilot_in_flight()" deroute="FAILSAFE"/>
     </mode>
@@ -108,7 +109,7 @@
         <call fun="nav_home()"/>
       </control>
       <control>
-        <call fun="control_mixing_atlas_guidance()"/>
+        <call fun="control_mixing_atlas_nav()"/>
       </control>
       <exception cond="GpsIsLost()" deroute="FAILSAFE"/>
     </mode>

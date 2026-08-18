@@ -73,6 +73,10 @@ extern void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_an
 #define GUIDANCE_INDI_CL_ALPHA 5.0f
 #endif
 
+#ifndef GUIDANCE_INDI_AIRSPEED_IMPORTANCE
+#define GUIDANCE_INDI_AIRSPEED_IMPORTANCE 2.0f /* forward-velocity weight boost in cruise */
+#endif
+
 #ifndef GUIDANCE_INDI_PITCH_PREF_DEG
 #define GUIDANCE_INDI_PITCH_PREF_DEG 0.0f         /* preferred pitch angle, positive nose up [deg] */
 #endif
@@ -87,17 +91,34 @@ extern void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_an
 #define GUIDANCE_INDI_PITCH_PREF_RC_MAX_DEG 20.0f
 #endif
 
-#ifndef GUIDANCE_INDI_AIRSPEED_IMPORTANCE
-#define GUIDANCE_INDI_AIRSPEED_IMPORTANCE 2.0f /* forward-velocity weight boost in cruise */
+/* Outer-WLS actuator weights [roll, pitch, Tz, Tx]. All four must be > 0 or the
+ * 4-actuator / 3-objective problem is rank deficient and the allocator silently
+ * drops the Tx column. The pitch/tilt split of the forward acceleration is
+ *   tilt share s = Wu_pitch^2 / (Wu_pitch^2 + g^2 * Wu_tx^2)
+ * so with Wu_tx = 1: 6.5 -> 30 %, 9.8 -> 50 %, 17 -> 75 %, 29 -> 90 %. */
+#ifndef GUIDANCE_INDI_WU_ROLL
+#define GUIDANCE_INDI_WU_ROLL 1.0f
 #endif
 
 #ifndef GUIDANCE_INDI_WU_PITCH
-#define GUIDANCE_INDI_WU_PITCH 100.0f  /* pitch preference weight (vs gamma_sq * Wv = 1e5 on the objectives) */
+#define GUIDANCE_INDI_WU_PITCH 6.5f
 #endif
 
+#ifndef GUIDANCE_INDI_WU_TZ
+#define GUIDANCE_INDI_WU_TZ 1.0f
+#endif
+
+#ifndef GUIDANCE_INDI_WU_TX
+#define GUIDANCE_INDI_WU_TX 1.0f
+#endif
 
 extern float guidance_indi_max_thr_z;
 extern float guidance_indi_max_thr_x;
+
+extern float guidance_indi_wu_roll;
+extern float guidance_indi_wu_pitch;
+extern float guidance_indi_wu_tz;
+extern float guidance_indi_wu_tx;
 
 
 #endif /* GUIDANCE_INDI_HYBRID_TILTROTOR_H */

@@ -655,8 +655,20 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   float thrust_vect[3];
 #if GUIDANCE_INDI_HYBRID_U > 3
   thrust_vect[0] = du_gih[3];
-  if (thrust_vect[0] > GUIDANCE_INDI_MAX_PUSHER_INCREMENT*g1g2[4][GUIDANCE_INDI_PUSHER_INDEX]) {
-    thrust_vect[0] = GUIDANCE_INDI_MAX_PUSHER_INCREMENT*g1g2[4][GUIDANCE_INDI_PUSHER_INDEX];
+  /* Command-lead limit on the pusher: MAX_PUSHER_INCREMENT [pprz] converted to
+   * m/s^2 through the pusher's Ax effectiveness. Only meaningful while that
+   * column is a fixed, positive number. PUSHER_INDEX may point at a scheduled
+   * actuator (a tiltrotor's tilt servo), whose Ax column varies by two decades
+   * and is exactly zero whenever the tilt is disabled or sits at 90 deg -- the
+   * clip would then read "> 0 -> 0" and silently discard every positive forward
+   * thrust command. Skip it in that case; the WLS u_max[TX] bound and the
+   * actuator rate limits still constrain the increment. */
+  float pusher_eff = g1g2[4][GUIDANCE_INDI_PUSHER_INDEX];
+  if (pusher_eff > 0.f) {
+    float pusher_lim = GUIDANCE_INDI_MAX_PUSHER_INCREMENT * pusher_eff;
+    if (thrust_vect[0] > pusher_lim) {
+      thrust_vect[0] = pusher_lim;
+    }
   }
 #else
   thrust_vect[0] = 0;
