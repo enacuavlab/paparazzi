@@ -83,7 +83,7 @@ class MissionManager():
         self.connect.ivy.subscribe(self.ins_ref_cb, PprzMessage("telemetry", "INS_REF"))
         self.connect.ivy.subscribe(self.nav_ref_cb, PprzMessage("telemetry", "NAVIGATION_REF"))
         self.connect.ivy.subscribe(self.airspeed_cb, PprzMessage("telemetry", "AIRSPEED"))
-        self.connect.ivy.subscribe(self.windinfo_cb, PprzMessage("telemetry", "WIND_INFO_RET"))
+        self.connect.ivy.subscribe(self.windinfo_cb, PprzMessage("ground", "WIND"))
 
     def closing(self):
         ''' shutdown Ivy and window '''
@@ -163,26 +163,18 @@ class MissionManager():
                     self.events[mission_id].set()
             
     def airspeed_cb(self, ac_id, msg):
-        if ac_id == self.ac_id and self.uav_data is not None:
+        if int(ac_id) == self.ac_id and self.uav_data is not None:
             self.uav_data.airspeed       = msg['airspeed']
             self.uav_data.airspeed_sp    = msg['airspeed_sp']
             self.uav_data.groundspeed_sp = msg['groundspeed_sp']
             
     def windinfo_cb(self, ac_id, msg):
-        if ac_id == self.ac_id and self.uav_data is not None:
-            flags = msg['flags']
-            if flags & 0x1:
-                self.uav_data.wind_east     = msg['east']
-                self.uav_data.wind_north    = msg['north']
-            else:
-                self.uav_data.wind_east     = None
-                self.uav_data.wind_north    = None
-                
-            if flags & 0x2:
-                self.uav_data.wind_up       = msg['up']
-            else:
-                self.uav_data.wind_up       = None
-    
+        if int(ac_id) == self.ac_id and self.uav_data is not None:
+            wind_dir = msg['dir']
+            wind_speed = msg['wspeed']
+            self.uav_data.wind_east     = math.sin(math.pi/180.*(wind_dir-180)) * wind_speed
+            self.uav_data.wind_north    = math.cos(math.pi/180.*(wind_dir-180)) * wind_speed
+
     def ins_ref_cb(self, ac_id, msg):
         if int(ac_id) == self.ac_id and self.uav_data is not None:
             self.uav_data.ins_hsml0 = int(msg['hmsl0'])/1000
@@ -455,7 +447,6 @@ class MissionManager():
     
     def make_mission_custom(self,mission_id:int, name:str, params:list[float], duration:float = -1., insert_mode:MissionInsert = MissionInsert.APPEND) -> PprzMessage:
         assert len(name) <= 5
-        assert len(params) <= 12
         msg = PprzMessage("datalink", "MISSION_CUSTOM")
         msg['ac_id'] = self.ac_id
         msg['insert'] = insert_mode.value

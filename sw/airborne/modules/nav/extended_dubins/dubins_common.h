@@ -109,10 +109,12 @@ typedef struct
   Pose2D_t start_p, end_p;      // Endpoint poses
   float length;                 // Length of the path to follow. Used as an hint to fix some Dubins turns.  
   float end_time;               // End times of the trajectory, with respect to GPS ToW. If non-positive, speed is not tuned.
+  float start_time;             // Start time of the trajectory, with respect to GPS ToW. Deduced from end time, length and NOMINAL_AIRSPEED.
   float target_alt;             // Target final altitude
   DubinsType type;              // Type of Dubins path to generate
   float radius;                 // Radius of the target Dubins path
   float extra;                  // Extra parameter if needed (extended Dubins path)
+  float wind_x, wind_y;         // Wind vector in ENU coordinates (m/s)
 } DubinsPb_t;
 
 

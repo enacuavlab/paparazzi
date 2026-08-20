@@ -112,8 +112,8 @@ def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
     cmd.append(str(sol_loc.resolve()))
     cmd.append(str(separation))
     
-    cmd.append(str(wind[0]))
-    cmd.append(str(wind[1]))
+    cmd.append("'"+str(wind[0])+"'")
+    cmd.append("'"+str(wind[1])+"'")
     
     cmd.append('-t')
     cmd.append(str(threads))
@@ -124,14 +124,14 @@ def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
     cmd.append('-T')
     cmd.append(str(2))
     
-    # cmd.append('-v')
-    # cmd.append(str(2))
+    cmd.append('-v')
+    cmd.append(str(2))
     
     cmd.append('-l')
     
     if geometric_obstacles_path is not None:
         cmd.append('-w')
-        cmd.append(str(10))
+        cmd.append(str(20))
         cmd.append('-G')
         cmd.append(str(geometric_obstacles_path.resolve()))
     
@@ -265,7 +265,6 @@ class FleetManager:
                  ignore_wind:bool=True,
                  end_strategy:FleetManagerEnd=FleetManagerEnd.NOTHING,
                  speed_ctl:bool = False,
-                 full_dubins:bool = False,
                  tracking_error:float = 20,
                  verbosity:int=0) -> None:
         """_summary_
@@ -290,7 +289,6 @@ class FleetManager:
         self.__tracking_error:float = 0.    # Current maximal individual tracking error (Try an other metric, like cumulated error accross aircraft?)
         self.__tracking_err_threshold:float = tracking_error # In meters, if the tracking error is above this threshold, consider the plan as not followed and trigger a reschedule
         self.end_strategy = end_strategy
-        self.full_dubins = full_dubins
         self.__schedule_time = 0
         self.schedule_lookahead:float = 5. # In seconds, how long in the future the plan should be made, assuming perfect tracking of the current plan
         self.nps_simulation = True # If True, commands aircraft running using NPS. Otherwise, assume real aircraft
@@ -307,7 +305,7 @@ class FleetManager:
         self.threads:int = threads
         self.transformer:pyproj.Transformer = transformer
         self.geometric_obstacle_path = geometric_obstacles_path
-        self.samples = 10            # Number of samples for the path generation algorithm
+        self.samples = 0            # Number of samples for the path generation algorithm
         self.ellipse_ratio = 0.4    # Ellipse ratio size for ellipse-based extra path generation
 
         self.adhoc_offset = 13 # Time offset to the local clock to tune it to the aircraft GPS (assumung they all have the same offset). It makes some sense when using simulated aircraft...
@@ -322,8 +320,8 @@ class FleetManager:
         self.verbosity = verbosity
             
         self.ignore_wind:bool = ignore_wind
-        self.wind_x:float = 0.
-        self.wind_y:float = 0.
+        self.wind_east:float = 0.
+        self.wind_north:float = 0.
         
         self.mission_counter:int = 1
         
@@ -337,8 +335,7 @@ class FleetManager:
             )
 
     
-    #################### Util methods ####################
-    
+    #################### Util methods ####################    
     def get_logs(self) -> TrackingLogs:
         return self.__tracking_logs
     
@@ -348,7 +345,10 @@ class FleetManager:
         if self.nps_simulation:
             return time.time() % 604800 + self.adhoc_offset# 1 week = 604800 seconds 
         else:
-            raise NotImplemented("No way of giving real GPS Time!!")
+            now_utc = datetime.datetime.now(datetime.timezone.utc)
+            start_of_week = (now_utc - datetime.timedelta(days=now_utc.weekday())).replace(hour=0,minute=0,second=0,microsecond=0)
+            tow = (now_utc.timestamp() - start_of_week.timestamp()+86107) # 37 is the UTC to TAI fix
+            return tow
     
     def get_timed_poses(self) -> dict[int,tuple[float,Pose3D]]:
         """Return the list of currently known aircraft poses, with their associated onboard timestamps
@@ -603,8 +603,6 @@ class FleetManager:
                             print("Scheduling: try to improve")
             
         
-
-        
         if reschule:
             max_time = max(t for t,_ in self.get_timed_poses().values())
             now = self.get_now()
@@ -655,6 +653,7 @@ class FleetManager:
             # Position logging
             pose = self.__uavdata_to_pose(mng.uav_data)
             t = mng.uav_data.gps_tow
+            # print(f"{id}: GPS: {t} VS Me: {self.get_now()} (dt= {t - self.get_now():.3f})" )
             
             # Reference position logging
             tracking_data = TrackingData(id, t, pose, mng.uav_data.airspeed, None, mng.uav_data.airspeed_sp)
@@ -662,6 +661,8 @@ class FleetManager:
                 try:
                     _,p = current_plan.get_path(id)
                     ref_pose = p.pose_at(t-current_plan_date)
+                    ref_pose.x += current_plan.wind_x*(t-current_plan_date)
+                    ref_pose.y += current_plan.wind_y*(t-current_plan_date)
                     tracking_data.expected_pose = ref_pose
                     dist = poses_XY_dist(pose,ref_pose)
                     if dist > max_tracking_error_val:
@@ -680,8 +681,9 @@ class FleetManager:
                 n += 1
             
         if not(self.ignore_wind) and n > 0:            
-            self.wind_x = avg_east_wind/n
-            self.wind_y = avg_north_wind/n
+            self.wind_east = avg_east_wind/n
+            self.wind_north = avg_north_wind/n
+        # print(f"Average wind: {self.wind_east:.2f},{self.wind_north:.2f} m/s (wind is {'ignored' if self.ignore_wind else 'used'}, had {n} meas)")
         
         if self.verbosity > 1 and current_plan is None:
             print(f"No current plan!")
@@ -722,12 +724,15 @@ class FleetManager:
         output_file = pathlib.Path(tempdir) / f"{now.strftime('%y-%m-%d_%H:%M:%S.%f')}_output.json"
         write_pathplanning_problem_to_CSV(input_file,pb)
         
+        wind_x = self.wind_east if not(self.ignore_wind) else 0.
+        wind_y = self.wind_north if not(self.ignore_wind) else 0.
+        
         r = await async_subprocess_solve(
                 self.solver_path,
                 input_file,
                 output_file,
                 self.separation,
-                (0.,0.) if self.ignore_wind else (self.wind_x,self.wind_y),
+                (wind_x,wind_y),
                 self.threads,
                 self.geometric_obstacle_path,
                 [self.extra_straight_length] if self.extra_straight_length > 0 else [],
@@ -775,61 +780,13 @@ class FleetManager:
         mission_id_incr = 0
         for stats,path in plan.trajectories:
             t = times[stats.id] if isinstance(times,dict) else times
-            if self.full_dubins:
-                mng_msg.append(self.__make_path_mission(stats.id,path,t,insert_mode))
-                incr = 1
-            else:
-                incr = 0
-                first = True
-                for i,e in enumerate(path.sections):
-                    if e.length < 1e-3:
-                        continue
-                    mng_msg.append(self.__make_dubel_mission(stats.id,i,e,insert_mode if first else MissionInsert.APPEND))
-                    incr += 1
-                    first = False
+            mng_msg.append(self.__make_path_mission(stats.id,path,t,insert_mode))
+            incr = 1
+            
             mission_id_incr = max(mission_id_incr,incr)
         self.mission_counter += mission_id_incr
         await self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
 
-        
-    def __make_dubel_mission(self,ac_id:int, el_id:int, e:BasicPath, insert_mode:MissionInsert) -> tuple[MissionManager,PprzMessage]:
-        manager = self.managers[ac_id]
-        
-        home = manager.get_home()
-        assert home is not None
-        xhome,yhome = self.transformer.transform(home.lat,home.lon)
-        
-        start = e.start()
-        px = start.x
-        py = start.y
-        pz = e.end().z
-        ptheta = start.theta
-        radius = e.radius()
-        if e.type == DubinsMove.STRAIGHT:
-            radius = 0.
-        elif e.type == DubinsMove.LEFT:
-            radius = abs(radius)
-        elif e.type == DubinsMove.RIGHT:
-            radius = -abs(radius)
-        else:
-            raise ValueError(f"Unknown Dubins move type {e.type}")
-
-
-        params = [
-            px - xhome,
-            py - yhome,
-            ptheta,
-            radius,
-            e.length,
-            pz,
-            ]
-        
-        return manager,manager.make_mission_custom(
-            self.mission_counter+el_id,
-            'DUBEL',
-            params,
-            insert_mode=insert_mode
-        )
         
     def __make_path_mission(self,ac_id:int,p:Path,start_time:float,insert_mode:MissionInsert) -> tuple[MissionManager,PprzMessage]:
         manager = self.managers[ac_id]
@@ -840,7 +797,7 @@ class FleetManager:
         assert speed != 0.
         
         assert manager.uav_data is not None, f"No UAVData for {ac_id}!"
-        
+                
         utm0_east = manager.uav_data.navref_utm_east
         utm0_north = manager.uav_data.navref_utm_north
         utm0_zone = manager.uav_data.navref_utm_zone
@@ -851,16 +808,13 @@ class FleetManager:
         utm_to_lonlat = pyproj.Proj(proj='utm', zone=utm0_zone, ellps='WGS84', south=False, preserve_units=False)
         lon,lat = utm_to_lonlat.transform(utm0_east, utm0_north,direction='INVERSE')
         xref,yref = self.transformer.transform(lat,lon)
-        
-        print(f"AC {ac_id} : UTM0 : {utm0_east:.3f} {utm0_north:.3f} ; LonLat : {lon:.6f} {lat:.6f}")
-        
+                
         if self.verbosity > 0:
             print(f"{ac_id} : Path type : {p.abbr()}")
             print(p.start,p.end)
             for i,el in enumerate(p.sections):
                 print(f"{ac_id} : Element {i} : Length {el.length:.3f} ; Radius {el.radius():.3f} ; Start ({el.start().x-xref:.3f},{el.start().y-yref:.3f},{el.start().z:.3f},{el.start().theta:.3f})")
         
-        print("Extra len: ",self.extra_straight_length)
         if self.extra_straight_length > 0:
             shifted_path = copy.deepcopy(p)
             shifted_path = shifted_path.follow_for(shifted_path.sections[0].duration() + 1e-9)
@@ -896,6 +850,10 @@ class FleetManager:
                 p.max_turn_radius(),
                 path_extra_length(p)
             ]
+        
+        if not self.ignore_wind:
+            params.append(self.wind_east)
+            params.append(self.wind_north)
         
         return manager,manager.make_mission_custom(
             self.mission_counter,
@@ -945,8 +903,8 @@ if __name__ == '__main__':
     parser.add_argument('dubins_solver',help='Path to Dubins Fleet Planner')
     parser.add_argument('--verbose', '-v', action='count', default=0)
     parser.add_argument('-t','--takeoff',action='store_true',help='Send take off mission order first')
+    parser.add_argument('--ignore-wind',action='store_true',dest='ignore_wind',help='If set, ignore wind information from aircraft')
     parser.add_argument('--speed-ctl',action='store_true',dest='speed_ctl',help='If set, enable speed control for aircraft')
-    parser.add_argument('--dubins-el',action='store_true',dest='dubins_el',help='If set, send Dubins elements (DUBEK mission) instead of full Dubins path (DUBIN mission)')
     parser.add_argument('--autostart',type=float,help='If set, automatically launch the main after the given value (in seconds). Otherwise, wait for user input to start the main loop',
                         default=None)
     parser.add_argument('--carrot',type=float, help='Anticipation time (in seconds) for declaring the current plan end. Default to 5s',
@@ -975,13 +933,14 @@ if __name__ == '__main__':
         transformer=transformer,
         end_strategy=FleetManagerEnd.LOOP,
         speed_ctl=args.speed_ctl,
+        ignore_wind=args.ignore_wind,
         verbosity=args.verbose,
-        full_dubins=not(args.dubins_el),
-        tracking_error=10
+        tracking_error=20
     )
-    manager.samples = 10 if obstacles_path is None else 0
+    manager.samples = 0 #if obstacles_path is None else 10
     manager.end_of_plan_carrot = args.carrot
     manager.extra_straight_length = 20
+    manager.nps_simulation = True
     
     main_loop_exception = None
     

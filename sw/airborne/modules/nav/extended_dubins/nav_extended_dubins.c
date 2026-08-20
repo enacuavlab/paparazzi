@@ -1,6 +1,5 @@
 #include "nav_extended_dubins.h"
 
-#include <assert.h>
 #include "math.h"
 
 #include "firmwares/fixedwing/nav.h"
@@ -18,17 +17,12 @@
 
 #ifdef DEBUG
 #include <stdio.h>
-
-bool dubins_draw = true;
-
 #define IPRINTF(...) printf("%d : ",AC_ID) ; printf(__VA_ARGS__)
-
 #else
-
-bool dubins_draw = false;
 #define IPRINTF(...)
 #endif
 
+bool dubins_draw = true;
 int dubins_draw_samples = 10;
 float extra_straight_length = 120;
 bool mission_init_straight_flag = false;
@@ -106,18 +100,18 @@ static struct LlaCoor_i lla_i_from_enu_xyz_f(float x, float y, float z)
  * @param el        Shape to draw
  * @param id        Id associated to drawing
  * @param color     Color field (opacity,line color,fill color)
- * @param samples   Number of samples. Irrelevant for lines. 
- *                  For circles, if less than 2, the whole circle is drawn ; otherwise, the number of samples is used for a broken line approx
+ * @param samples   Number of samples. Irrelevant for lines. Bounded between 2 and 11 for circles.
  */
-static void draw_dubins_element(DubinsElement_t* el, uint8_t id, uint8_t color, uint8_t samples)
+static void draw_dubins_element(DubinsElement_t* el, uint8_t id, uint8_t color, uint8_t samples, float wind_x, float wind_y, float reach_time)
 {
   if (el->radius == 0.)
   {
     // STRAIGHT
-    struct LlaCoor_i startpoint_coords = lla_i_from_enu_xyz_f(el->init_point.x,el->init_point.y,0.);
+    struct LlaCoor_i startpoint_coords = lla_i_from_enu_xyz_f(el->init_point.x + wind_x * reach_time,el->init_point.y + wind_y * reach_time,0.);
+    float reach_end_time = reach_time + el->length/NOMINAL_AIRSPEED;
 
     Pose2D_t endpoint = dubins_element_end(el);
-    struct LlaCoor_i endpoint_coords = lla_i_from_enu_xyz_f(endpoint.x,endpoint.y,0.);
+    struct LlaCoor_i endpoint_coords = lla_i_from_enu_xyz_f(endpoint.x + wind_x * reach_end_time, endpoint.y + wind_y * reach_end_time,0.);
 
     uint8_t shape = DRAW_LINE;
     uint8_t status = DRAW_CREATE;
@@ -135,53 +129,34 @@ static void draw_dubins_element(DubinsElement_t* el, uint8_t id, uint8_t color, 
   else
   {
     // CIRCLE
-    if (samples < 2)
+
+    // Sample then draw broken line
+    samples = (samples > 11) ? 11 : samples; // Make sure it respects the 100 bytes limit !
+    samples = (samples < 2) ? 2 : samples; // Make sure there are at least 2 points to draw a line
+
+    int32_t lats[11];
+    int32_t lons[11];
+
+    for(int i = 0; i < samples; i++)
     {
-      // Draw full circle
-      float c = cos(el->init_point.theta);
-      float s = sin(el->init_point.theta);
+      float dl = i * el->length / (samples - 1);
+      Pose2D_t p = dubins_element_follow(el, dl);
+      struct LlaCoor_i coords = lla_i_from_enu_xyz_f(p.x + wind_x * (reach_time + dl/NOMINAL_AIRSPEED), p.y + wind_y * (reach_time + dl/NOMINAL_AIRSPEED), 0.);
 
-      float midx = el->init_point.x - el->radius*s;
-      float midy = el->init_point.y + el->radius*c;
-      struct LlaCoor_i mid = lla_i_from_enu_xyz_f(midx,midy,0.);
-
-      uint8_t shape = DRAW_CIRCLE;
-      uint8_t status = DRAW_CREATE;
-      float radius = el->radius;
-
-      char txt[1] = " ";
-
-      DOWNLINK_SEND_DRAW(DefaultChannel, DefaultDevice,
-        &id,&color,&shape,&status,&radius,
-        1,&mid.lat,1,&mid.lon,1,txt);
+      lats[i] = coords.lat;
+      lons[i] = coords.lon;
     }
-    else
-    {
-      // Sample then draw broken line
-      assert(samples <= 11); // Make sure it respects the 100 bytes limit !
 
-      int32_t lats[11];
-      int32_t lons[11];
+    uint8_t shape = DRAW_LINE;
+    uint8_t status = DRAW_CREATE;
+    float radius = 0.;
 
-      for(int i = 0; i < samples; i++)
-      {
-        Pose2D_t p = dubins_element_follow(el,i*el->length/(samples-1));
-        struct LlaCoor_i coords = lla_i_from_enu_xyz_f(p.x,p.y,0.);
+    char txt[1] = " ";
 
-        lats[i] = coords.lat;
-        lons[i] = coords.lon;
-      }
-
-      uint8_t shape = DRAW_LINE;
-      uint8_t status = DRAW_CREATE;
-      float radius = 0.;
-
-      char txt[1] = " ";
-
-      DOWNLINK_SEND_DRAW(DefaultChannel, DefaultDevice,
-        &id,&color,&shape,&status,&radius,
-        samples,lats,samples,lons,1,txt);
-    }
+    DOWNLINK_SEND_DRAW(DefaultChannel, DefaultDevice,
+      &id,&color,&shape,&status,&radius,
+      samples,lats,samples,lons,1,txt);
+    
   }
 }
 
@@ -252,20 +227,20 @@ void extended_dubins_set_pathtype(DubinsType type, float extra)
 
 // ******************** Underlying tracking function ******************** //
 
-static bool track_dubins_element(DubinsElement_t* el, float* remaining_length)
+static bool track_dubins_element(DubinsElement_t* el, float* remaining_length, float dx, float dy)
 {
   if(el->radius == 0)
   {
     // STRAIGHT
     Pose2D_t endpoint = dubins_element_end(el);
-    nav_route_xy(el->init_point.x, el->init_point.y, endpoint.x, endpoint.y);
+    nav_route_xy(el->init_point.x + dx, el->init_point.y + dy, endpoint.x + dx, endpoint.y + dy);
 
     /** distance to waypoint **/
-    float pw_x = endpoint.x - stateGetPositionEnu_f()->x;
-    float pw_y = endpoint.y - stateGetPositionEnu_f()->y;
+    float pw_x = endpoint.x + dx - stateGetPositionEnu_f()->x;
+    float pw_y = endpoint.y + dy - stateGetPositionEnu_f()->y;
     *remaining_length = sqrtf(pw_x*pw_x + pw_y*pw_y);
 
-    return (! nav_approaching_xy(endpoint.x, endpoint.y, el->init_point.x, el->init_point.y, end_of_straight_time));
+    return (! nav_approaching_xy(endpoint.x + dx, endpoint.y + dy, el->init_point.x + dx, el->init_point.y + dy, end_of_straight_time));
   }
   else
   {
@@ -273,8 +248,8 @@ static bool track_dubins_element(DubinsElement_t* el, float* remaining_length)
     float c = cos(el->init_point.theta);
     float s = sin(el->init_point.theta);
 
-    float midx = el->init_point.x - el->radius*s;
-    float midy = el->init_point.y + el->radius*c;
+    float midx = el->init_point.x + dx - el->radius*s;
+    float midy = el->init_point.y + dy + el->radius*c;
 
     nav_circle_XY(midx, midy, -el->radius);
     if (isnan(initial_nav_rad_angle))
@@ -376,6 +351,9 @@ bool nav_extended_dubins_init()
     if (ref_problem.end_time > 0)
     {      
       ref_problem.end_time += extra_straight_length/NOMINAL_AIRSPEED; // Include the 'pre-plan' (the starting straight of the next plan)
+
+      // Deduce the start time from the end time, length and nominal airspeed. Total length is given plus start extra straight plus two end extra straights
+      ref_problem.start_time = ref_problem.end_time - (ref_problem.length+3*extra_straight_length)/NOMINAL_AIRSPEED;
     }
   }
   else
@@ -388,12 +366,10 @@ bool nav_extended_dubins_init()
   }
 
   ExtendedDubins_t sol = fit_dubins(&ref_problem);
-
-
   
   if (mission_init_straight_flag)
   {
-    IPRINTF("Path type: S%s\n",dubinsTypeStr(sol.type));
+    IPRINTF("Path type: S%sS\n",dubinsTypeStr(sol.type));
 
     ref_problem.length += 3*extra_straight_length; // Add back the straights' lengths for correct computations after fitting
   }
@@ -407,8 +383,7 @@ bool nav_extended_dubins_init()
     path_elements[1+i] = sol.elements[i];
   }
 
-  float total_length = 0.;
-
+  float reach_time = 0.;
   for(int j = 0; j < EXTENDED_DUBINS_PATH_ELEMENTS_N; j++)
   {
     IPRINTF("Element %d : Length %.3f ; Radius %.3f ; Start (%.3f , %.3f , %.3f)\n",
@@ -418,14 +393,8 @@ bool nav_extended_dubins_init()
         path_elements[j].init_point.x,
         path_elements[j].init_point.y,
         path_elements[j].init_point.theta);
-
-    #if DEBUG
-    assert(path_elements[j].length >= 0.);
-    assert(!isnan(path_elements[j].length));
-
-    total_length += path_elements[j].length;
-    #endif
     
+      
     if (dubins_draw)
     {
       uint8_t id = make_draw_id(j);
@@ -457,9 +426,11 @@ bool nav_extended_dubins_init()
 
       if (path_elements[j].length > 1e-6)
       {
-        draw_dubins_element(&path_elements[j],id,color,dubins_draw_samples);
+        draw_dubins_element(&path_elements[j],id,color,dubins_draw_samples,ref_problem.wind_x,ref_problem.wind_y,reach_time);
       }
     }
+
+    reach_time += path_elements[j].length/NOMINAL_AIRSPEED;
   }
 
   mission_init_straight_flag = false; // Reset for ulterior utilisation
@@ -478,65 +449,45 @@ bool nav_extended_dubins_track(void)
   static float speed_sp = NOMINAL_AIRSPEED;
   float remaining_el_distance;
 
-  // if (dubins_use_gvf)
-  // {
-  //   float traveled = dubins_estimate_current_parameter(&ref_problem, NOMINAL_AIRSPEED, ((float)gps_tow_from_sys_ticks(sys_time.nb_tick)) / 1000.f);
-  //   int elements_num = EXTENDED_DUBINS_PATH_ELEMENTS_N;
-  //   float w = dubins_find_current_element(path_elements, &elements_num, traveled);
-  //   if (elements_num >= EXTENDED_DUBINS_PATH_ELEMENTS_N)
-  //   {
-  //     return false;
-  //   }
-    
-  //   nav_dubins_gvf_track(path_elements, elements_num, w, NOMINAL_AIRSPEED);
-  // }
-  // else
-  // {
-    // All elements done, return false to finish
-    if (curr_path_element >= EXTENDED_DUBINS_PATH_ELEMENTS_N)
-    {
-      IPRINTF("Dubins done!\n");
-      return false;
-    }
 
-    // Current element has null length, skip it and try the next one
-    if (path_elements[curr_path_element].length < 1e-6)
-    {
-      IPRINTF("Section %d is too short!\n",curr_path_element);
+  // All elements done, return false to finish
+  if (curr_path_element >= EXTENDED_DUBINS_PATH_ELEMENTS_N)
+  {
+    IPRINTF("Dubins done!\n");
+    return false;
+  }
 
-      remove_drawn(make_draw_id(curr_path_element));
+  // Current element has null length, skip it and try the next one
+  if (path_elements[curr_path_element].length < 1e-6)
+  {
+    IPRINTF("Section %d is too short!\n",curr_path_element);
+    remove_drawn(make_draw_id(curr_path_element));
 
-      curr_path_element++;
-      initial_nav_rad_angle = NAN;
-      return true;
-    }
+    curr_path_element++;
+    initial_nav_rad_angle = NAN;
+    return true;
+  }
 
-    bool tracking = track_dubins_element(&path_elements[curr_path_element],&remaining_el_distance);
-
-    // If current element is (almost) done, skip to the next
-    if (!tracking)
-    {
-      IPRINTF("Section %d is done!\n",curr_path_element);
-
-      remove_drawn(make_draw_id(curr_path_element));
-
-      curr_path_element++;
-      initial_nav_rad_angle = NAN;
-    }
-  // }
+  bool tracking;
 
   // Speed control
   if (ref_problem.end_time > 0.)
   {
+    float f_tow = ((float)gps_tow_from_sys_ticks(sys_time.nb_tick)) / 1000.f;
+    // IPRINTF("Now: %.3f (Pb start: %.3f)\n",f_tow,ref_problem.start_time);
+    float dt = ref_problem.end_time - f_tow;
+    float ellapsed = f_tow - ref_problem.start_time;
+    float drift_x = ref_problem.wind_x * ellapsed;
+    float drift_y = ref_problem.wind_y * ellapsed;
+
+    tracking = track_dubins_element(&path_elements[curr_path_element],&remaining_el_distance,drift_x,drift_y);
+
     float remaining_distance = remaining_el_distance;
     for(int i = curr_path_element+1; i < EXTENDED_DUBINS_PATH_ELEMENTS_N; i++)
     {
       remaining_distance += path_elements[i].length;
     }
 
-    float f_tow = ((float)gps_tow_from_sys_ticks(sys_time.nb_tick)) / 1000.f;
-    // IPRINTF("Now: %.3f\n",f_tow);
-    float dt = ref_problem.end_time - f_tow;
     float current_dt = remaining_distance/stateGetAirspeed_f();
     float new_speed;
 
@@ -560,6 +511,22 @@ bool nav_extended_dubins_track(void)
     v_ctl_auto_airspeed_setpoint = update_first_order_low_pass(&speed_sp_filter, speed_sp);
     // IPRINTF("Current DT: %.2f (s) ; Plan DT: %.2f (s) ; Remaining l: %.2f (m) ; Speed sp: %.2f\n",current_dt,dt,remaining_distance,v_ctl_auto_airspeed_setpoint);
   }
+  else
+  {
+    // If no time reference given, cannot estimate drift induced by wind, so just track the element without any compensation 
+    tracking = track_dubins_element(&path_elements[curr_path_element],&remaining_el_distance,0.,0.);
+  }
+
+  // If current element is (almost) done, skip to the next
+  if (!tracking)
+  {
+    IPRINTF("Section %d is done!\n",curr_path_element);
+
+    remove_drawn(make_draw_id(curr_path_element));
+
+    curr_path_element++;
+    initial_nav_rad_angle = NAN;
+  }
 
   if (dubins_draw && ref_problem.end_time > 0.)
   {
@@ -573,8 +540,8 @@ bool nav_extended_dubins_track(void)
     // IPRINTF("Now: %.2f (s) ; Start time: %.2f (s) ; Path traveled: %.2f (m) ; Current section: %d ; Current section traveled: %.2f (m)",
       // now, ref_problem.end_time - ref_problem.length/NOMINAL_AIRSPEED,traveled,elements_num,w);
 
-    desired_x = p.x;
-    desired_y = p.y;
+    desired_x = p.x+drift_x;
+    desired_y = p.y+drift_y;
   }
   
 
@@ -588,7 +555,7 @@ bool nav_extended_dubins_track(void)
 
 static bool nav_dubins_mission(uint8_t nb, float *params, enum MissionRunFlag flag)
 {
-  if (flag == MissionInit && nb == 12)
+  if (flag == MissionInit && nb >= 12)
   {
     ref_problem.start_p.x     = params[0];
     ref_problem.start_p.y     = params[1];
@@ -606,6 +573,12 @@ static bool nav_dubins_mission(uint8_t nb, float *params, enum MissionRunFlag fl
     ref_problem.type          = (int)params[9];
     ref_problem.radius        = params[10];
     ref_problem.extra         = params[11];
+
+    if (nb == 14)
+    {
+      ref_problem.wind_x = params[12];
+      ref_problem.wind_y = params[13];
+    }
 
     mission_init_straight_flag = (extra_straight_length > 0);
 
@@ -644,11 +617,11 @@ static bool nav_dubins_element_mission(uint8_t nb, float *params, enum MissionRu
 
     // draw_dubins_element(&solo_element,make_draw_id(mission.current_idx),DRAW_make_line(AC_ID),dubins_draw_samples);
     initial_nav_rad_angle = NAN;
-    return track_dubins_element(&solo_element,&remaining_length);
+    return track_dubins_element(&solo_element,&remaining_length, 0.,0.);
   }
   else if (flag == MissionRun)
   {
-    return track_dubins_element(&solo_element,&remaining_length);
+    return track_dubins_element(&solo_element,&remaining_length, 0.,0.);
   }
 
   // not a valid case
