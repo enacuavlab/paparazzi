@@ -279,7 +279,7 @@ def _plot_tracking(tracking_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str]
         vals = [t[1] for t in data]
         avg_err += np.mean(vals)
         max_val = max(max_val,max(vals))
-        tracking_ax.plot(ts,vals,label=f"{id}",color=color_dict[id])
+        tracking_ax.plot(ts,vals,color=color_dict[id])#,label=f"{id}")
     
     avg_err /= len(errs)
     tracking_ax.hlines(logs.tracking_error_threshold,min_t,max_t,colors='k',linestyles='dashed',label=f'Tracking error threshold: {logs.tracking_error_threshold:.1f} m')
@@ -297,6 +297,7 @@ def _plot_tracking(tracking_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str]
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyse tracking logs")
     parser.add_argument("logfile",type=pathlib.Path,help="Path to the log file to analyse")
+    parser.add_argument('-G',"--obstacles",dest='obstacles',type=pathlib.Path,default=None,help="Path to the obstacles JSON file to plot")
     parser.add_argument("--no-refs",dest='no_refs',action='store_true',help="Hide the reference trajectories in the plot (useful when they are too cluttered)")
     parser.add_argument("--no-reschedules",dest='no_reschedules',action='store_true',help="Hide the rescheduling points in the plot")
     parser.add_argument("--no-keyframes",dest='no_keyframes',action='store_true',help="Hide the keyframe poses in the plot")
@@ -311,7 +312,7 @@ if __name__ == "__main__":
     for i,stat in enumerate(logs.ac_stats):
         color_dict[stat.id] = colorlist[i%len(colorlist)]
         
-    fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict,
+    fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict,args.obstacles,
                                                        args.no_refs,
                                                        args.no_reschedules,
                                                        args.no_keyframes)
