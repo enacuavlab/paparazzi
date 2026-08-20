@@ -77,12 +77,12 @@ struct _mission_path {
   uint8_t nb;
 };
 
-#define MISSION_CUSTOM_MAX 12 // maximum number of parameters
+#define MISSION_CUSTOM_MAX 16 // maximum number of parameters
 #define MISSION_TYPE_SIZE 6
 
 /** custom mission element callback
  * @param[in] nb number of params
- * @param[in] params array of params with a maximum of 12
+ * @param[in] params array of params with a maximum of MISSION_CUSTOM_MAX
  * @param[in] init true if the function is called for the first time
  * @return true until the function ends
  */
