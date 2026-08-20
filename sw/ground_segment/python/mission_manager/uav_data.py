@@ -51,7 +51,7 @@ class UAVData:
     groundspeed_sp: float = 0.
     wind_east:Optional[float] = None
     wind_north:Optional[float] = None
-    wind_up:Optional[float] = None
+    wind_up:Optional[float] = None # Not recovered at the time
     settings:Optional[PprzSettingsManager] = None
     
     ins_hsml0: Optional[float] = None
