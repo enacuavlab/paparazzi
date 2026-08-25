@@ -125,7 +125,7 @@ def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
     cmd.append(str(2))
     
     cmd.append('-v')
-    cmd.append(str(2))
+    cmd.append(str(0))
     
     cmd.append('-l')
     
@@ -285,7 +285,7 @@ class FleetManager:
         self.__current_timestamp_plan:Optional[tuple[FleetPlan,float]] = None
         self.end_of_plan_carrot:float = 10. # In seconds, how much time before the end of the current plan to send the next one
         self.reschedule_dt:float = 10. # In seconds
-        self.relative_improvement_threshold:float = 0.9 # Minimum improvement in the plan duration to trigger a reschedule (in percentage of the current plan duration)
+        self.relative_improvement_threshold:float = 0.7 # Minimum improvement in the plan duration to trigger a reschedule (in percentage of the current plan duration)
         self.__tracking_error:float = 0.    # Current maximal individual tracking error (Try an other metric, like cumulated error accross aircraft?)
         self.__tracking_err_threshold:float = tracking_error # In meters, if the tracking error is above this threshold, consider the plan as not followed and trigger a reschedule
         self.end_strategy = end_strategy
@@ -590,17 +590,8 @@ class FleetManager:
             else:
                 ## Check for dynamic reschudling
                 if time.time() - self.__schedule_time > self.reschedule_dt:
-                    ## If tracking error, reschedule no matter what
-                    if self.__tracking_error > self.__tracking_err_threshold:
-                        reschule = True
-                        if self.verbosity > 0:
-                            print("Scheduling: tracking error plan")
-                    else:
-                        ## Otherwise, reschule only if significant improvement
-                        reschule = True
-                        impr_threshold = curr_plan.duration * self.relative_improvement_threshold
-                        if self.verbosity > 0:
-                            print("Scheduling: try to improve")
+                    reschule = True
+                    impr_threshold = curr_plan.duration * self.relative_improvement_threshold
             
         
         if reschule:
@@ -742,10 +733,10 @@ class FleetManager:
         if r == 0:
             sol = parse_trajectories_from_JSON(output_file)
             
-            if self.verbosity > 1:
+            if self.verbosity > 0:
                 print(f"New plan duration is {sol.duration:.2f} s (threshold is {improvement_threshold:.2f} s)")
             
-            if improvement_threshold < sol.duration:
+            if improvement_threshold < sol.duration and self.__tracking_error < self.__tracking_err_threshold:
                 # If the threshold is not met, do not apply new plan
                 return False
             
@@ -881,7 +872,7 @@ if __name__ == '__main__':
     home_x,home_y = transformer.transform(home_lat,home_lon)
     
     stat_list = [ACStats(i,14.1,10/60,40,(i%10)*10+10+home_alt) for i in [62,60,61]]
-    separation = 30
+    separation = 42
     formation = chevron_formation(len(stat_list),separation*4/3)
     
     start = Pose3D(home_x,home_y+50,home_alt,0.)
@@ -939,7 +930,7 @@ if __name__ == '__main__':
     )
     manager.samples = 0 #if obstacles_path is None else 10
     manager.end_of_plan_carrot = args.carrot
-    manager.extra_straight_length = 20
+    manager.extra_straight_length = 60
     manager.nps_simulation = True
     
     main_loop_exception = None
