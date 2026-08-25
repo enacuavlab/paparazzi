@@ -352,7 +352,7 @@ bool nav_extended_dubins_init()
     {      
       ref_problem.end_time += extra_straight_length/NOMINAL_AIRSPEED; // Include the 'pre-plan' (the starting straight of the next plan)
 
-      // Deduce the start time from the end time, length and nominal airspeed. Total length is given plus start extra straight plus two end extra straights
+      // Deduce the start time from the end time, length and nominal airspeed. Total length is given length plus start extra straight plus two end extra straights
       ref_problem.start_time = ref_problem.end_time - (ref_problem.length+3*extra_straight_length)/NOMINAL_AIRSPEED;
     }
   }
@@ -469,6 +469,8 @@ bool nav_extended_dubins_track(void)
   }
 
   bool tracking;
+  float drift_x = 0.;
+  float drift_y = 0.;
 
   // Speed control
   if (ref_problem.end_time > 0.)
@@ -477,8 +479,8 @@ bool nav_extended_dubins_track(void)
     // IPRINTF("Now: %.3f (Pb start: %.3f)\n",f_tow,ref_problem.start_time);
     float dt = ref_problem.end_time - f_tow;
     float ellapsed = f_tow - ref_problem.start_time;
-    float drift_x = ref_problem.wind_x * ellapsed;
-    float drift_y = ref_problem.wind_y * ellapsed;
+    drift_x = ref_problem.wind_x * ellapsed;
+    drift_y = ref_problem.wind_y * ellapsed;
 
     tracking = track_dubins_element(&path_elements[curr_path_element],&remaining_el_distance,drift_x,drift_y);
 
