@@ -24,9 +24,11 @@
             <define name="V_WING"          value="10.0"            description="Airspeed at which wing lift derivative is applied [m/s]"/>
             <define name="ALPHA_MIN"       value="-0.261"            description="Minimum tilt angle [rad] (default -0.1)"/>
             <define name="ALPHA_MAX"       value="M_PI/2"          description="Maximum tilt angle [rad] (default pi/2)"/>
-            <!-- TILT_F / TILT_M version
-            <define name="TILT_F_RATE"     value="20.0"            description="TILT_F (mean tilt) angular rate limit [deg/s]"/>
-            <define name="TILT_M_RATE"     value="15.0"            description="TILT_M (differential, per-side) angular rate limit [deg/s]"/>
+            <!-- Elevons
+            <define name="K_ELEVON_DEFLECT"  value="0"             description="delta = k*pprz [rad/pprz], = delta_max / MAX_PPRZ"/>
+            <define name="K_ELEVON_ROLL"     value="0"             description="dMx/ddelta = k_roll * V^2 [N.m/rad per (m/s)^2]"/>
+            <define name="K_ELEVON_PITCH"    value="0"             description="dMy/ddelta = k_pitch * V^2 [N.m/rad per (m/s)^2]"/>
+            <define name="K_ELEVON_PROPWASH" value="0.0"           description="dMy/ddelta += k_propwash * T_x * V (default 0)"/>
             -->
             <define name="TILT_RATE"       value="40.0"            description="Tilt servo angular rate limit [deg/s] (per servo)"/>
         </section>
@@ -61,7 +63,7 @@
     <periodic fun="eff_scheduling_atlas_periodic()" freq="500"/>
 
     <makefile>
-        <define name="ACTUATORS_NB"             value="6"/>
+        <define name="ACTUATORS_NB"             value="6"/> <!-- 8 with elevons: one per <servo>, all drivers -->
         <define name="ATLAS_EFF_IXX"            value="0.00372"/>
         <define name="ATLAS_EFF_IYY"            value="0.00389"/>
         <define name="ATLAS_EFF_IZZ"            value="0.01300"/>
@@ -76,14 +78,17 @@
         <define name="ATLAS_EFF_V_WING"         value="10.0"/>
         <define name="ATLAS_MOTOR_HOVER"        value="4640"/> <!-- was 3000; 4640 = measured hover command from flight logs -->
 
-        <define name="ATLAS_MOTOR_IDLE"         value="1000"/>
+        <define name="ATLAS_MOTOR_IDLE"         value="0"/>
         <define name="ATLAS_EFF_ALPHA_MIN"      value="-0.261"/>
         <define name="ATLAS_EFF_ALPHA_MAX"      value="M_PI/2"/>
-        <!-- TILT_F / TILT_M version
-        <define name="ATLAS_EFF_TILT_F_RATE"    value="20.0"/>
-        <define name="ATLAS_EFF_TILT_M_RATE"    value="15.0"/>
-        -->
         <define name="ATLAS_EFF_TILT_RATE"      value="80.0"/>
+
+        <!-- Elevons
+        <define name="ATLAS_EFF_K_ELEVON_DEFLECT"  value="3.2e-5"/>  0.31 rad (18 deg) / 9600
+        <define name="ATLAS_EFF_K_ELEVON_ROLL"     value="0.0"/>
+        <define name="ATLAS_EFF_K_ELEVON_PITCH"    value="0.0"/>
+        <define name="ATLAS_EFF_K_ELEVON_PROPWASH" value="0.0"/>
+        -->
         <file name="eff_scheduling_atlas.c"/>
     </makefile>
 </module>

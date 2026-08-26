@@ -32,6 +32,8 @@
 
 extern float g1g2[INDI_OUTPUTS][INDI_NUM_ACT];
 extern float actuator_state_filt_vect[INDI_NUM_ACT];
+extern float angular_acceleration[3];   // d/dt of the filtered body rates [rad/s^2]
+extern float angular_rate_filt[3];      // the filtered body rates themselves [rad/s]
 extern struct FloatVect3 stab_thrust_filt;
 
 /** PPRZ command to each actuator

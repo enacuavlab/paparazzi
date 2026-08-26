@@ -36,11 +36,10 @@
 #define ATLAS_ACT_MOTOR_FL   3          // Motor Front-Left (FL)
 #define ATLAS_ACT_TILT_R     4          // Right tilt servo (0 = vertical/hover, pi/2 = forward)
 #define ATLAS_ACT_TILT_L     5          // Left tilt servo  (0 = vertical/hover, pi/2 = forward)
-// // --- TILT_F / TILT_M (mean/differential) version ---
-// #define ATLAS_ACT_TILT_F     4          // Mean/forward tilt: TILT_F = (TILT_R + TILT_L)/2 → Ax
-// #define ATLAS_ACT_TILT_M     5          // Differential tilt: TILT_M = (TILT_R - TILT_L)/2 → Mz
-// #define ATLAS_ACT_ELEVON_R   6
-// #define ATLAS_ACT_ELEVON_L   7
+
+// // --- Elevons ---
+// #define ATLAS_ACT_ELEVON_R   6          // Right elevon servo (+pprz = elevon up)
+// #define ATLAS_ACT_ELEVON_L   7          // Left elevon servo  (+pprz = elevon up)
 
 /* Virtual control vector indices */
 #define ATLAS_VC_MX    0                // Angular Acceleration along body x-axis (roll)
@@ -86,10 +85,10 @@ struct atlas_eff_sched_param_t {
     float v_wing;                       // Airspeed to fully thrust wing lift [m/s]
 
     // // Elevon Coefficients
-    // float k_elevon_deflect[2];          // delta = c0 + c1 * pprz (k_elevon_deflection = [c0, c1]
-    // float k_elevon_roll;                // dMz_dDelta = k_roll * V^2
-    // float k_elevon_pitch;               // dMy_dDelta = k_pitch * V^2
-    // float k_elevon_propwash;            // dM_dDelta = k_propwash * T_x * V
+    // float k_elevon_deflect;             // Single slope: delta = k_elevon_deflect * pprz [rad/pprz]
+    // float k_elevon_roll;                // dMx_dDelta = k_roll * V^2   [N.m/rad per (m/s)^2]
+    // float k_elevon_pitch;               // dMy_dDelta = k_pitch * V^2  [N.m/rad per (m/s)^2]
+    // float k_elevon_propwash;            // dMy_dDelta += k_propwash * T_x * V (0 @ V = 0)
 };
 
 struct atlas_eff_sched_var_t
@@ -118,8 +117,6 @@ extern struct atlas_eff_sched_param_t atlas_eff_sched_p;
 extern struct atlas_eff_sched_var_t atlas_eff_sched_v;
 
 extern float atlas_eff_liftd;
-// extern float atlas_eff_tilt_f_rate;     // TILT_F (mean) tilt-angle rate [deg/s]
-// extern float atlas_eff_tilt_m_rate;     // TILT_M (per-side) tilt-angle rate [deg/s]
 extern float atlas_eff_tilt_rate;          // Tilt servo angular rate limit [deg/s]
 extern bool  atlas_eff_disable_tilt;       // Debug: freeze tilts at hover (alpha=0)
 

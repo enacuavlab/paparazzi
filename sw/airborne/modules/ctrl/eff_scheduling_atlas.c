@@ -41,6 +41,7 @@
 #include "firmwares/rotorcraft/guidance/guidance_indi_hybrid.h"
 
 #include "modules/actuators/actuators.h"
+#include "filters/low_pass_filter.h"
 #include "math.h"
 
 // Airframe file parameter checks
@@ -83,7 +84,7 @@
 #endif
 
 // #ifndef ATLAS_EFF_K_ELEVON_DEFLECT
-// #error "ATLAS_EFF_K_ELEVON_DEFLECT [2x1 float] not defined in airframe file"
+// #error "ATLAS_EFF_K_ELEVON_DEFLECT [float] not defined in airframe file — [rad/pprz]"
 // #endif
 // #ifndef ATLAS_EFF_K_ELEVON_ROLL
 // #error "ATLAS_EFF_K_ELEVON_ROLL [float] not defined in airframe file"
@@ -112,15 +113,19 @@
 #endif
 
 // Tilt-angle rate limit [deg/s]
-// // --- TILT_F / TILT_M version ---
-// #ifndef ATLAS_EFF_TILT_F_RATE
-// #define ATLAS_EFF_TILT_F_RATE  20.0f
-// #endif
-// #ifndef ATLAS_EFF_TILT_M_RATE
-// #define ATLAS_EFF_TILT_M_RATE  15.0f
-// #endif
 #ifndef ATLAS_EFF_TILT_RATE
 #define ATLAS_EFF_TILT_RATE  30.0f
+#endif
+
+/* Cutoff of the body-accelerometer filter logged in ATLAS_SYSID. Deliberately
+ * tied to the INDI gyro filter so the logged accel and ang_accel share a phase. */
+#ifndef STABILIZATION_INDI_FILT_CUTOFF
+#error "STABILIZATION_INDI_FILT_CUTOFF [float] not defined in airframe file"
+#endif
+
+/* ATLAS_SYSID carries the actuator vector as int16[6] */
+#if INDI_NUM_ACT != 6
+#error "ATLAS_SYSID u_cmd/u_state are int16[6]: widen the message to match INDI_NUM_ACT"
 #endif
 
 
@@ -151,12 +156,16 @@ struct atlas_eff_sched_var_t atlas_eff_sched_v;
 float const grav = 9.81f;                                             // Gravitational Acceleration [m/s^2]
 float atlas_eff_periodic_freq = EFF_SCHEDULING_ATLAS_PERIODIC_FREQ;   // Module Frequency [Hz]
 
-// float atlas_eff_tilt_f_rate = ATLAS_EFF_TILT_F_RATE;             // TILT_F (mean) tilt-angle rate [deg/s]
-// float atlas_eff_tilt_m_rate = ATLAS_EFF_TILT_M_RATE;             // TILT_M (per-side) tilt-angle rate [deg/s]
 float atlas_eff_tilt_rate = ATLAS_EFF_TILT_RATE;                     // Tilt servo angular rate limit [deg/s]
 float atlas_eff_tilt_scale = 1.0f;                                    // Scales the pprz/tilt angle slope
 float atlas_eff_liftd = 0.0f;                                         // Change in Lift wrt change in pitch (dLift/dpitch) [N/rad]
 bool  atlas_eff_disable_tilt = false;                                 // Debug: freeze tilts at hover (alpha=0)
+
+/* Body specific force, low-passed with the same 2nd-order Butterworth the INDI
+ * runs on the gyros. Matching the filter matters: the identification regresses
+ * accel_body against ang_accel, and a phase mismatch between the two shows up
+ * as a bias on every coefficient fitted from them. Logged by ATLAS_SYSID. */
+static Butterworth2LowPass atlas_accel_body_filt[3];
 
 
 /** Helper Function:
@@ -183,6 +192,7 @@ static inline float bound_or_zero(float value, float low, float up)
 }
 
 // Function declarations
+static inline void atlas_update_accel_cache(void);
 static inline void atlas_update_tilt_cache(void);
 static inline void atlas_update_cmd_cache(void);
 static inline void atlas_update_airspeed_cache(void);
@@ -194,6 +204,48 @@ static inline void atlas_schedule_liftd(void);
 
 float guidance_indi_get_liftd(float airspeed UNUSED, float theta UNUSED);
 void stabilization_indi_set_wls_settings(void);
+
+#if PERIODIC_TELEMETRY
+#include "modules/datalink/telemetry.h"
+
+/* Fixed-point packing for ATLAS_SYSID. Saturating rather than wrapping: a
+ * clipped sample is obvious in the plot, a wrapped one silently poisons a fit. */
+static inline int16_t sysid_i16(float v, float scale)
+{
+  float x = v * scale;
+  if (x >  32767.f) { return  32767; }
+  if (x < -32768.f) { return -32768; }
+  return (int16_t)x;
+}
+
+/* Full-scale / resolution, sized from the flown envelope (worst case seen so
+ * far: 5.5 rad/s, 232 rad/s^2 during the 21 Aug departure):
+ *   rate       +/- 32.767 rad/s     at 0.001 rad/s
+ *   ang_accel  +/- 327.67 rad/s^2   at 0.01  rad/s^2
+ *   accel_body +/- 327.67 m/s^2     at 0.01  m/s^2 */
+#define ATLAS_SYSID_RATE_SCALE   1000.f
+#define ATLAS_SYSID_ACCEL_SCALE   100.f
+
+static void send_atlas_sysid(struct transport_tx *trans, struct link_device *dev)
+{
+  int16_t u_cmd[INDI_NUM_ACT];
+  int16_t u_state[INDI_NUM_ACT];
+  for (int i = 0; i < INDI_NUM_ACT; i++) {
+    u_cmd[i]   = actuators_pprz[i];
+    u_state[i] = sysid_i16(actuator_state_filt_vect[i], 1.f);
+  }
+
+  int16_t rate[3], ang_accel[3], accel_body[3];
+  for (int i = 0; i < 3; i++) {
+    rate[i]       = sysid_i16(angular_rate_filt[i], ATLAS_SYSID_RATE_SCALE);
+    ang_accel[i]  = sysid_i16(angular_acceleration[i], ATLAS_SYSID_ACCEL_SCALE);
+    accel_body[i] = sysid_i16(atlas_accel_body_filt[i].o[0], ATLAS_SYSID_ACCEL_SCALE);
+  }
+
+  pprz_msg_send_ATLAS_SYSID(trans, dev, AC_ID,
+                            u_cmd, u_state, rate, ang_accel, accel_body);
+}
+#endif
 
 void eff_scheduling_atlas_init(void)
 {
@@ -234,12 +286,23 @@ void eff_scheduling_atlas_init(void)
   atlas_eff_sched_v.airspeed = 0.f;
   atlas_eff_sched_v.airspeed_sq = 0.f;
 
+  const float tau = 1.f / (2.f * (float)M_PI * STABILIZATION_INDI_FILT_CUTOFF);
+  const float sample_time = 1.f / atlas_eff_periodic_freq;
+  for (int i = 0; i < 3; i++) {
+    init_butterworth_2_low_pass(&atlas_accel_body_filt[i], tau, sample_time, 0.f);
+  }
+
+#if PERIODIC_TELEMETRY
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATLAS_SYSID, send_atlas_sysid);
+#endif
+
   // atlas_eff_sched_v.cmd_elevon_r = 0.f;
   // atlas_eff_sched_v.cmd_elevon_l = 0.f;
 }
 
 void eff_scheduling_atlas_periodic(void)
 {
+  atlas_update_accel_cache();
   atlas_update_tilt_cache();
   atlas_update_cmd_cache();
   atlas_update_airspeed_cache();
@@ -249,6 +312,18 @@ void eff_scheduling_atlas_periodic(void)
   atlas_update_tilt_effectiveness();
   // atlas_update_elevon_effectiveness();
   atlas_schedule_liftd();
+}
+
+/* Bias-corrected body accelerometer = specific force, i.e. exactly
+ * (sum of rotor thrust + aero) / m with gravity already excluded. Raw, it is
+ * dominated by prop vibration well above the control bandwidth, so it is only
+ * useful once filtered. */
+static inline void atlas_update_accel_cache(void)
+{
+  struct FloatVect3 *a = stateGetAccelBody_f();
+  update_butterworth_2_low_pass(&atlas_accel_body_filt[0], a->x);
+  update_butterworth_2_low_pass(&atlas_accel_body_filt[1], a->y);
+  update_butterworth_2_low_pass(&atlas_accel_body_filt[2], a->z);
 }
 
 static inline void atlas_update_tilt_cache(void)
@@ -261,11 +336,6 @@ static inline void atlas_update_tilt_cache(void)
     return;
   }
 
-  // // --- TILT_F / TILT_M version ---
-  // const float pprz_f = actuator_state_filt_vect[ATLAS_ACT_TILT_F];
-  // const float pprz_m = actuator_state_filt_vect[ATLAS_ACT_TILT_M];
-  // const float pprz_r = pprz_f + pprz_m;
-  // const float pprz_l = pprz_f - pprz_m;
   const float pprz_r = actuator_state_filt_vect[ATLAS_ACT_TILT_R];
   const float pprz_l = actuator_state_filt_vect[ATLAS_ACT_TILT_L];
 
@@ -385,9 +455,6 @@ static inline void atlas_update_tilt_effectiveness(void)
   }
 
   const float kappa = atlas_eff_sched_p.kappa;
-  // // --- TILT_F / TILT_M version ---
-  // const float pprz_f = actuator_state_filt_vect[ATLAS_ACT_TILT_F];
-  // const float pprz_m = actuator_state_filt_vect[ATLAS_ACT_TILT_M];
   const float pprz_r = actuator_state_filt_vect[ATLAS_ACT_TILT_R];
   const float pprz_l = actuator_state_filt_vect[ATLAS_ACT_TILT_L];
 
@@ -420,20 +487,6 @@ static inline void atlas_update_tilt_effectiveness(void)
     }
   }
 
-  // // --- TILT_F / TILT_M (mean/differential) transform ---
-  // //   pprz_R = TILT_F + TILT_M  →  ∂vc/∂TILT_F = g_R + g_L
-  // //   pprz_L = TILT_F - TILT_M  →  ∂vc/∂TILT_M = g_R - g_L
-  // g1g2[ATLAS_VC_MX][ATLAS_ACT_TILT_F] = (g_vc_R[ATLAS_VC_MX] + g_vc_L[ATLAS_VC_MX]) / atlas_eff_sched_p.Ixx;
-  // g1g2[ATLAS_VC_MY][ATLAS_ACT_TILT_F] = (g_vc_R[ATLAS_VC_MY] + g_vc_L[ATLAS_VC_MY]) / atlas_eff_sched_p.Iyy;
-  // g1g2[ATLAS_VC_MZ][ATLAS_ACT_TILT_F] = (g_vc_R[ATLAS_VC_MZ] + g_vc_L[ATLAS_VC_MZ]) / atlas_eff_sched_p.Izz;
-  // g1g2[ATLAS_VC_AX][ATLAS_ACT_TILT_F] = (g_vc_R[ATLAS_VC_AX] + g_vc_L[ATLAS_VC_AX]) / atlas_eff_sched_p.m;
-  // g1g2[ATLAS_VC_AZ][ATLAS_ACT_TILT_F] = (g_vc_R[ATLAS_VC_AZ] + g_vc_L[ATLAS_VC_AZ]) / atlas_eff_sched_p.m;
-  // g1g2[ATLAS_VC_MX][ATLAS_ACT_TILT_M] = (g_vc_R[ATLAS_VC_MX] - g_vc_L[ATLAS_VC_MX]) / atlas_eff_sched_p.Ixx;
-  // g1g2[ATLAS_VC_MY][ATLAS_ACT_TILT_M] = (g_vc_R[ATLAS_VC_MY] - g_vc_L[ATLAS_VC_MY]) / atlas_eff_sched_p.Iyy;
-  // g1g2[ATLAS_VC_MZ][ATLAS_ACT_TILT_M] = (g_vc_R[ATLAS_VC_MZ] - g_vc_L[ATLAS_VC_MZ]) / atlas_eff_sched_p.Izz;
-  // g1g2[ATLAS_VC_AX][ATLAS_ACT_TILT_M] = (g_vc_R[ATLAS_VC_AX] - g_vc_L[ATLAS_VC_AX]) / atlas_eff_sched_p.m;
-  // g1g2[ATLAS_VC_AZ][ATLAS_ACT_TILT_M] = (g_vc_R[ATLAS_VC_AZ] - g_vc_L[ATLAS_VC_AZ]) / atlas_eff_sched_p.m;
-
   // Per-servo effectiveness assigned directly (g_vc_R/L are already ∂vc/∂pprz per bank).
   g1g2[ATLAS_VC_MX][ATLAS_ACT_TILT_R] = g_vc_R[ATLAS_VC_MX] / atlas_eff_sched_p.Ixx;
   g1g2[ATLAS_VC_MY][ATLAS_ACT_TILT_R] = g_vc_R[ATLAS_VC_MY] / atlas_eff_sched_p.Iyy;
@@ -450,23 +503,28 @@ static inline void atlas_update_tilt_effectiveness(void)
 
 // /*
 //  * Control Effectiveness wrt. elevons
+//  *
+//  * Convention: +pprz = elevon up (trailing edge up) 
+//  * (+)ATLAS_ACT_ELEVON_R (+)ATLAS_ACT_ELEVON_L  -> pitch up (+My) 
+//  * (+)ATLAS_ACT_ELEVON_R (-)ATLAS_ACT_ELEVON_L  -> roll right (+Mx).
 //  */
 // static inline void atlas_update_elevon_effectiveness(void)
 // {
+//   // Forward thrust component: Tx
 //   float Tx = atlas_eff_sched_v.T[0] * atlas_eff_sched_v.sin_ar
 //             + atlas_eff_sched_v.T[1] * atlas_eff_sched_v.sin_ar
 //             + atlas_eff_sched_v.T[2] * atlas_eff_sched_v.sin_al
 //             + atlas_eff_sched_v.T[3] * atlas_eff_sched_v.sin_al;
 //
-//   const float dDelta = atlas_eff_sched_p.k_elevon_deflect[1]; // [rad per pprz]
+//   const float dDelta = atlas_eff_sched_p.k_elevon_deflect; // [rad per pprz]
 //
-//   // dM/dDelta (assumes symmetric tilt left/right
+//   // dM/dDelta [N.m/rad] (assumes symmetric tilt left/right)
 //   float dMx_dDelta = atlas_eff_sched_p.k_elevon_roll * atlas_eff_sched_v.airspeed_sq;
 //   float dMy_dDelta = atlas_eff_sched_p.k_elevon_pitch * atlas_eff_sched_v.airspeed_sq
 //                     + atlas_eff_sched_p.k_elevon_propwash * Tx * atlas_eff_sched_v.airspeed;
 //
-//   float dMx = dMx_dDelta * dDelta / atlas_eff_sched_p.Ixx;
-//   float dMy = dMy_dDelta * dDelta / atlas_eff_sched_p.Iyy;
+//   float dMx = dMx_dDelta * dDelta / atlas_eff_sched_p.Ixx;   // [rad/s^2 per pprz]
+//   float dMy = dMy_dDelta * dDelta / atlas_eff_sched_p.Iyy;   // [rad/s^2 per pprz]
 //
 //   Bound(dMx, 0.f, 0.1f);
 //   Bound(dMy, 0.f, 0.1f);
@@ -478,6 +536,13 @@ static inline void atlas_update_tilt_effectiveness(void)
 //   // Left Elevon (pitch up -> +delta, roll right -> -delta)
 //   g1g2[ATLAS_VC_MX][ATLAS_ACT_ELEVON_L] = -dMx;
 //   g1g2[ATLAS_VC_MY][ATLAS_ACT_ELEVON_L] = dMy;
+//
+//   g1g2[ATLAS_VC_MZ][ATLAS_ACT_ELEVON_R] = 0.f;   // TODO: differential-drag yaw
+//   g1g2[ATLAS_VC_AX][ATLAS_ACT_ELEVON_R] = 0.f;
+//   g1g2[ATLAS_VC_AZ][ATLAS_ACT_ELEVON_R] = 0.f;
+//   g1g2[ATLAS_VC_MZ][ATLAS_ACT_ELEVON_L] = 0.f;
+//   g1g2[ATLAS_VC_AX][ATLAS_ACT_ELEVON_L] = 0.f;
+//   g1g2[ATLAS_VC_AZ][ATLAS_ACT_ELEVON_L] = 0.f;
 // }
 
 
@@ -496,41 +561,6 @@ void stabilization_indi_set_wls_settings(void)
     wls_stab_p.u_max[i]  =  MAX_PPRZ;
     wls_stab_p.u_pref[i] =  act_pref[i];
   }
-
-  /* // --- TILT_F / TILT_M version ---
-  if (atlas_eff_disable_tilt) {
-    wls_stab_p.u_min[ATLAS_ACT_TILT_F] = 0.f;
-    wls_stab_p.u_max[ATLAS_ACT_TILT_F] = 0.f;
-    wls_stab_p.u_min[ATLAS_ACT_TILT_M] = 0.f;
-    wls_stab_p.u_max[ATLAS_ACT_TILT_M] = 0.f;
-  }
-  else {
-    const float dt = 1.f / atlas_eff_periodic_freq;
-    const float pprz_f_cmd = actuators_pprz[ATLAS_ACT_TILT_F];
-    const float pprz_m_cmd = actuators_pprz[ATLAS_ACT_TILT_M];
-    const float slope_r = ((pprz_f_cmd + pprz_m_cmd) >= 0.f) ? atlas_eff_sched_p.k_tilt_pprz[1] : atlas_eff_sched_p.k_tilt_pprz[0];
-    const float slope_l = ((pprz_f_cmd - pprz_m_cmd) >= 0.f) ? atlas_eff_sched_p.k_tilt_pprz[1] : atlas_eff_sched_p.k_tilt_pprz[0];
-    const float slope   = fmaxf(slope_r, slope_l);
-    const float dpprz_f = atlas_eff_tilt_f_rate * (float)(M_PI / 180.f) * dt / slope;
-    const float dpprz_m = atlas_eff_tilt_m_rate * (float)(M_PI / 180.f) * dt / slope;
-    const float pprz_tilt_max = (float)MAX_PPRZ / atlas_eff_tilt_scale;
-    const float pprz_tilt_min = -pprz_tilt_max;
-    float u_min_m = pprz_m_cmd - dpprz_m;
-    float u_max_m = pprz_m_cmd + dpprz_m;
-    if (u_min_m < pprz_tilt_min) u_min_m = pprz_tilt_min;
-    if (u_max_m > pprz_tilt_max) u_max_m = pprz_tilt_max;
-    wls_stab_p.u_min[ATLAS_ACT_TILT_M] = u_min_m;
-    wls_stab_p.u_max[ATLAS_ACT_TILT_M] = u_max_m;
-    float f_abs_max = pprz_tilt_max - fabsf(pprz_m_cmd);
-    if (f_abs_max < 0.f) f_abs_max = 0.f;
-    float u_min_f = pprz_f_cmd - dpprz_f;
-    float u_max_f = pprz_f_cmd + dpprz_f;
-    if (u_min_f < -f_abs_max) u_min_f = -f_abs_max;
-    if (u_max_f >  f_abs_max) u_max_f =  f_abs_max;
-    wls_stab_p.u_min[ATLAS_ACT_TILT_F] = u_min_f;
-    wls_stab_p.u_max[ATLAS_ACT_TILT_F] = u_max_f;
-  }
-  */
 
   // --- TILT_R / TILT_L  ---
   if (atlas_eff_disable_tilt) {
@@ -568,8 +598,8 @@ void stabilization_indi_set_wls_settings(void)
     wls_stab_p.u_min[ATLAS_ACT_TILT_L] = u_min_l;
     wls_stab_p.u_max[ATLAS_ACT_TILT_L] = u_max_l;
   }
-  // // Elevons
-  // for (int e = TW_ACT_ELEVON_R; e <= TW_ACT_ELEVON_L; e++) {
+  // // Elevons: full pprz range 
+  // for (int e = ATLAS_ACT_ELEVON_R; e <= ATLAS_ACT_ELEVON_L; e++) {
   //   wls_stab_p.u_pref[e] = actuator_state_filt_vect[e];
   // }
 }

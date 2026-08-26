@@ -52,38 +52,23 @@ float guidance_indi_wu_tz    = GUIDANCE_INDI_WU_TZ;
 float guidance_indi_wu_tx    = GUIDANCE_INDI_WU_TX;
 
 
-// // Filter Acceleration if used instead of actuator thrust estimates
+// // Filter Acceleration if used instead of thrust estimates
 // #ifndef GUIDANCE_INDI_BODY_FILTER_CUTOFF
-// #ifdef GUIDANCE_INDI_FILTER_CUTOFF
-// #define GUIDANCE_INDI_BODY_FILTER_CUTOFF GUIDANCE_INDI_FILTER_CUTOFF
-// #else
 // #define GUIDANCE_INDI_BODY_FILTER_CUTOFF 2.0f
 // #endif
-// #endif
+// Butterworth2LowPass accel_bodyx_filt;
+// Butterworth2LowPass accel_bodyz_filt;
 //
-// /**
-//  * Call upon entering indi guidance
-//  */
 // void guidance_indi_tiltrotor_init(void) {
-//  float tau_bodyx = 1.f/(2.f*M_PI*GUIDANCE_INDI_BODY_FILTER_CUTOFF);
-//  float tau_bodyz = 1.f/(2.f*M_PI*GUIDANCE_INDI_BODY_FILTER_CUTOFF);
-//  float sample_time = 1.f / PERIODIC_FREQUENCY;
-//  init_butterworth_2_low_pass(&accel_bodyx_filt, tau_bodyx, sample_time, 0.0f);
-//  init_butterworth_2_low_pass(&accel_bodyz_filt, tau_bodyz, sample_time, 9.81f);
+//   float tau = 1.f / (2.f * M_PI * GUIDANCE_INDI_BODY_FILTER_CUTOFF);
+//   float dt  = 1.f / PERIODIC_FREQUENCY;
+//   init_butterworth_2_low_pass(&accel_bodyx_filt, tau, dt,  0.0f);
+//   init_butterworth_2_low_pass(&accel_bodyz_filt, tau, dt, -9.81f);  // body z is down
 // }
 //
-// /**
-//  * Low pass the accelerometer measurements to remove noise from vibrations.
-//  * The roll and pitch also need to be filtered to synchronize them with the
-//  * acceleration
-//  * Called as a periodic function with PERIODIC_FREQ
-//  */
 // void guidance_indi_tiltrotor_propagate_filters(void) {
-//  // Propagate filters
-//  float accelx = ACCEL_FLOAT_OF_BFP(stateGetAccelBody_i()->x);
-//  float accelz = ACCEL_FLOAT_OF_BFP(stateGetAccelBody_i()->z);
-//  update_butterworth_2_low_pass(&accel_bodyx_filt, accelx);
-//  update_butterworth_2_low_pass(&accel_bodyz_filt, accelz);
+//   update_butterworth_2_low_pass(&accel_bodyx_filt, ACCEL_FLOAT_OF_BFP(stateGetAccelBody_i()->x));
+//   update_butterworth_2_low_pass(&accel_bodyz_filt, ACCEL_FLOAT_OF_BFP(stateGetAccelBody_i()->z));
 // }
 
 /**
@@ -138,8 +123,15 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
  float lift = guidance_indi_get_lift(vel, eulers_filtered.theta);
 
  // Force Estimates
- float Fx = stab_thrust_filt.x;
- float Fz = stab_thrust_filt.z + lift;
+ const float T_r = atlas_eff_sched_v.T[0] + atlas_eff_sched_v.T[1];
+ const float T_l = atlas_eff_sched_v.T[2] + atlas_eff_sched_v.T[3];
+ float Fx =  (T_r * atlas_eff_sched_v.sin_ar + T_l * atlas_eff_sched_v.sin_al) / atlas_eff_sched_p.m;
+ float Fz = -(T_r * atlas_eff_sched_v.cos_ar + T_l * atlas_eff_sched_v.cos_al) / atlas_eff_sched_p.m + lift;
+
+ // // Measured Force
+ // float Fx = accel_bodyx_filt.o[0];
+ // float Fz = accel_bodyz_filt.o[0];
+ // if (Fz > -5.f) { Fz = -5.f; }
 
 
  // dφ (Roll)

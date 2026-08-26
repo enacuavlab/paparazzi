@@ -92,10 +92,11 @@ static inline void copy_indi_commands(void)
   commands[COMMAND_MOTOR_BR] = stabilization.cmd[COMMAND_MOTOR_BR];
   commands[COMMAND_MOTOR_BL] = stabilization.cmd[COMMAND_MOTOR_BL];
   commands[COMMAND_MOTOR_FL] = stabilization.cmd[COMMAND_MOTOR_FL];
-  // commands[COMMAND_TILT_F]   = stabilization.cmd[COMMAND_TILT_F];
-  // commands[COMMAND_TILT_M]   = stabilization.cmd[COMMAND_TILT_M];
   commands[COMMAND_TILT_R]   = stabilization.cmd[COMMAND_TILT_R];
   commands[COMMAND_TILT_L]   = stabilization.cmd[COMMAND_TILT_L];
+  // // Elevons
+  // commands[COMMAND_ELEVON_R] = stabilization.cmd[COMMAND_ELEVON_R];
+  // commands[COMMAND_ELEVON_L] = stabilization.cmd[COMMAND_ELEVON_L];
   commands[COMMAND_THRUST]   = stabilization.cmd[COMMAND_THRUST];
   autopilot.throttle         = stabilization.cmd[COMMAND_THRUST];
 }
@@ -111,8 +112,6 @@ void control_mixing_atlas_quad_enter(void)
   guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
   stabilization_mode_changed(STABILIZATION_MODE_NONE, STABILIZATION_ATT_SUBMODE_HEADING);
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
-  // actuators_pprz[ATLAS_ACT_TILT_F] = 0.f;   // TILT_F / TILT_M version
-  // actuators_pprz[ATLAS_ACT_TILT_M] = 0.f;
   actuators_pprz[ATLAS_ACT_TILT_R] = 0.f;
   actuators_pprz[ATLAS_ACT_TILT_L] = 0.f;
 }

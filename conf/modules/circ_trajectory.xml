@@ -4,16 +4,6 @@
   <doc>
     <description>
       Circular reference trajectory generator for the INDI hybrid guidance.
-
-      The mode is selected manually from the ground station via the status
-      setting (default: HOVER). All active modes run the full
-      position/velocity/acceleration feedback cascade. HOVER holds the circle
-      center (heading captured on entry), GOTO_START holds the circle start
-      position and aligns the heading to the circle tangent after ALIGN_TIME
-      seconds, START flies the circular trajectory, END holds the circle end
-      position and final heading. The only automatic transition is START to
-      END when a finite duration T_END elapses. STOP deactivates the module
-      and releases the heading back to the guidance.
     </description>
     <section name="CIRC_TRAJECTORY" prefix="CIRC_TRAJECTORY_">
       <define name="RADIUS"            value="1.5"             description="circle radius [m]"/>
@@ -25,8 +15,7 @@
       <define name="CENTER"            value="{0.0,0.0,0.0}"  description="circle center in NED [m] (down negative = up)"/>
       <define name="MAX_ACCEL"         value="6.0"             description="bound on commanded horizontal acceleration [m/s^2]"/>
       <define name="MAX_ACCELZ"        value="9.0"             description="bound on commanded vertical acceleration [m/s^2]"/>
-      <define name="ALIGN_TIME"        value="5.0"             description="time in GOTO_START before the heading aligns to the circle tangent [s]"/>
-      <define name="YAW_RATE"          value="20.0"            description="max heading slew rate while aligning in HEADING mode [deg/s]"/>
+      <define name="YAW_RATE"          value="20.0"            description="max heading slew rate while aligning in HEAD mode [deg/s]"/>
       <define name="YAW_FF_GAIN"       value="1.0"             description="heading-rate feedforward gain (1 = feed the full trajectory heading rate)"/>
       <define name="ACCEL_LEAD_TIME"   value="0.1"             description="lead time [s] applied to the accel feedforward a_ref only (evaluated at t + lead) to compensate the attitude realization lag; 0 disables"/>
       <define name="SMOOTH_W"          value="2.0"             description="smooths the non-start response"/>
@@ -36,8 +25,8 @@
   <settings>
     <dl_settings>
       <dl_settings name="CircTraj">
-        <dl_setting var="circ_traj.status" min="0" max="5" step="1" shortname="status"
-                    values="STOP|HOVER|HEAD|GOTO_START|START|END"/>
+        <dl_setting var="circ_traj.status" min="1" max="6" step="1" shortname="status"
+                    values="HOVER|CENTER|HEAD|GOTO_START|START|END"/>
         <dl_setting var="circ_traj.r" min="0.5" max="20" step="0.1" shortname="radius" unit="m"/>
         <dl_setting var="circ_traj.v_max" min="0.5" max="15" step="0.1" shortname="v_max" unit="m/s"/>
         <dl_setting var="circ_traj.k" min="0.05" max="2" step="0.05" shortname="windup_k" unit="1/s"/>
@@ -61,16 +50,16 @@
 
   <makefile>
     <file name="circ_trajectory.c"/>
-    <define name="CIRC_TRAJECTORY_V_MAX" value="2.7"/>
+    <define name="CIRC_TRAJECTORY_V_MAX" value="3.5"/>
     <define name="CIRC_TRAJECTORY_K" value="0.3"/>
-    <define name="CIRC_TRAJECTORY_RADIUS" value="2.2"/>
+    <define name="CIRC_TRAJECTORY_RADIUS" value="2.6"/>
     <define name="CIRC_TRAJECTORY_T_END" value="60.0"/>
     <define name="CIRC_TRAJECTORY_MAX_ACCEL" value="8.0"/>
     <define name="CIRC_TRAJECTORY_MAX_ACCELZ" value="8.0"/>
     <define name="CIRC_TRAJECTORY_CENTER" value="{0.0,0.0,-2.0}"/> <!-- {0.0,-0.1,-1.5} -->
     <define name="CIRC_TRAJECTORY_YAW_RATE" value="35.0"/>
     <define name="CIRC_TRAJECTORY_YAW_FF_GAIN" value="1.0"/>
-    <define name="CIRC_TRAJECTORY_ACCEL_LEAD_TIME" value="0.08"/>
+    <define name="CIRC_TRAJECTORY_ACCEL_LEAD_TIME" value="0.12"/> <!-- 0.10 for 4 m/s, 0.13 for 4.5 m/s -->
     <define name="CIRC_TRAJECTORY_SMOOTH_W" value="2.5"/>
   </makefile>
 

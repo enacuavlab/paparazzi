@@ -241,6 +241,9 @@ float actuator_state_filt_vect[INDI_NUM_ACT];
 struct FloatRates angular_accel_ref = {0., 0., 0.};
 struct FloatRates angular_rate_ref = {0., 0., 0.};
 float angular_acceleration[3] = {0., 0., 0.};
+/* the rate signal angular_acceleration is differentiated from: exported so a
+ * logger can record the (rate, rate derivative) pair with a common phase lag */
+float angular_rate_filt[3] = {0., 0., 0.};
 float actuator_state[INDI_NUM_ACT];
 float indi_u[INDI_NUM_ACT];
 struct FloatVect3 stab_thrust_filt = { 0.f, 0.f, 0.f };
@@ -412,7 +415,7 @@ static void send_att_full_indi(struct transport_tx *trans, struct link_device *d
                                       3, angular_acceleration,     // ang.acc = rate.diff
                                       3, temp_ang_acc_ref,         // ang.acc.ref
                                       1, &zero,                    // jerk ref
-                                      1, &zero);                   // u
+                                      INDI_NUM_ACT, actuator_state_filt_vect); // u
 }
 #endif
 
@@ -641,6 +644,7 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     update_butterworth_2_low_pass(&estimation_output_lowpass_filters[i], rate_vect[i]);
 
     // Calculate the angular acceleration via finite difference
+    angular_rate_filt[i] = measurement_lowpass_filters[i].o[0];
     angular_acceleration[i] = (measurement_lowpass_filters[i].o[0]
                                - measurement_lowpass_filters[i].o[1]) * PERIODIC_FREQUENCY;
 

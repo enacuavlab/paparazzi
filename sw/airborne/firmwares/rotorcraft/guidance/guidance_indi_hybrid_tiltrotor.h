@@ -91,17 +91,12 @@ extern void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_an
 #define GUIDANCE_INDI_PITCH_PREF_RC_MAX_DEG 20.0f
 #endif
 
-/* Outer-WLS actuator weights [roll, pitch, Tz, Tx]. All four must be > 0 or the
- * 4-actuator / 3-objective problem is rank deficient and the allocator silently
- * drops the Tx column. The pitch/tilt split of the forward acceleration is
- *   tilt share s = Wu_pitch^2 / (Wu_pitch^2 + g^2 * Wu_tx^2)
- * so with Wu_tx = 1: 6.5 -> 30 %, 9.8 -> 50 %, 17 -> 75 %, 29 -> 90 %. */
 #ifndef GUIDANCE_INDI_WU_ROLL
 #define GUIDANCE_INDI_WU_ROLL 1.0f
 #endif
 
 #ifndef GUIDANCE_INDI_WU_PITCH
-#define GUIDANCE_INDI_WU_PITCH 6.5f
+#define GUIDANCE_INDI_WU_PITCH 1.0f
 #endif
 
 #ifndef GUIDANCE_INDI_WU_TZ
