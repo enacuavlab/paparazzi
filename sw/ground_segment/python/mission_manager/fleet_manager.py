@@ -585,6 +585,7 @@ class FleetManager:
             if curr_plan.duration < self.end_of_plan_carrot:
                 reschule = True
                 self.__fleet_frame_id += 1
+                self.__current_timestamp_plan = None
                 if self.verbosity > 0:
                     print("Scheduling: end of plan")
             else:
