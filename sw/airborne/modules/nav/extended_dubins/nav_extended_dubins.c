@@ -24,7 +24,7 @@
 
 bool dubins_draw = true;
 int dubins_draw_samples = 10;
-float extra_straight_length = 120;
+float extra_straight_length = 60;
 bool mission_init_straight_flag = false;
 float end_of_straight_time = 1.;
 bool dubins_use_gvf = false;
@@ -227,20 +227,20 @@ void extended_dubins_set_pathtype(DubinsType type, float extra)
 
 // ******************** Underlying tracking function ******************** //
 
-static bool track_dubins_element(DubinsElement_t* el, float* remaining_length, float dx, float dy)
+static bool track_dubins_element(DubinsElement_t* el, float* remaining_length)
 {
   if(el->radius == 0)
   {
     // STRAIGHT
     Pose2D_t endpoint = dubins_element_end(el);
-    nav_route_xy(el->init_point.x + dx, el->init_point.y + dy, endpoint.x + dx, endpoint.y + dy);
+    nav_route_xy(el->init_point.x, el->init_point.y, endpoint.x, endpoint.y);
 
     /** distance to waypoint **/
-    float pw_x = endpoint.x + dx - stateGetPositionEnu_f()->x;
-    float pw_y = endpoint.y + dy - stateGetPositionEnu_f()->y;
+    float pw_x = endpoint.x - stateGetPositionEnu_f()->x;
+    float pw_y = endpoint.y - stateGetPositionEnu_f()->y;
     *remaining_length = sqrtf(pw_x*pw_x + pw_y*pw_y);
 
-    return (! nav_approaching_xy(endpoint.x + dx, endpoint.y + dy, el->init_point.x + dx, el->init_point.y + dy, end_of_straight_time));
+    return (! nav_approaching_xy(endpoint.x, endpoint.y, el->init_point.x, el->init_point.y, end_of_straight_time));
   }
   else
   {
@@ -248,8 +248,8 @@ static bool track_dubins_element(DubinsElement_t* el, float* remaining_length, f
     float c = cos(el->init_point.theta);
     float s = sin(el->init_point.theta);
 
-    float midx = el->init_point.x + dx - el->radius*s;
-    float midy = el->init_point.y + dy + el->radius*c;
+    float midx = el->init_point.x - el->radius*s;
+    float midy = el->init_point.y + el->radius*c;
 
     nav_circle_XY(midx, midy, -el->radius);
     if (isnan(initial_nav_rad_angle))
@@ -449,7 +449,6 @@ bool nav_extended_dubins_track(void)
   static float speed_sp = NOMINAL_AIRSPEED;
   float remaining_el_distance;
 
-
   // All elements done, return false to finish
   if (curr_path_element >= EXTENDED_DUBINS_PATH_ELEMENTS_N)
   {
@@ -469,29 +468,87 @@ bool nav_extended_dubins_track(void)
   }
 
   bool tracking;
-  float drift_x = 0.;
-  float drift_y = 0.;
+
+  // Desired position along the path
+  float f_tow = ((float)gps_tow_from_sys_ticks(sys_time.nb_tick)) / 1000.f;
+  float traveled = dubins_estimate_current_parameter(&ref_problem, NOMINAL_AIRSPEED, f_tow);
+  int elements_num = EXTENDED_DUBINS_PATH_ELEMENTS_N;
+  float w = dubins_find_current_element(path_elements, &elements_num, traveled);
+  DubinsElement_t el_th = path_elements[elements_num];
+  Pose2D_t p = dubins_element_follow(&el_th,w);
 
   // Speed control
   if (ref_problem.end_time > 0.)
   {
-    float f_tow = ((float)gps_tow_from_sys_ticks(sys_time.nb_tick)) / 1000.f;
-    // IPRINTF("Now: %.3f (Pb start: %.3f)\n",f_tow,ref_problem.start_time);
+    // Current time in seconds since GPS epoch
     float dt = ref_problem.end_time - f_tow;
     float ellapsed = f_tow - ref_problem.start_time;
-    drift_x = ref_problem.wind_x * ellapsed;
-    drift_y = ref_problem.wind_y * ellapsed;
+    
+    // Wind induced dift
+    float drift_x = ref_problem.wind_x * ellapsed;
+    float drift_y = ref_problem.wind_y * ellapsed;
 
-    tracking = track_dubins_element(&path_elements[curr_path_element],&remaining_el_distance,drift_x,drift_y);
+    p.x += drift_x;
+    p.y += drift_y;
 
-    float remaining_distance = remaining_el_distance;
-    for(int i = curr_path_element+1; i < EXTENDED_DUBINS_PATH_ELEMENTS_N; i++)
+    // Pre-compute for distance error
+    float remaining_th_distance = ref_problem.length - traveled;
+    float dx = p.x - stateGetPositionEnu_f()->x;
+    float dy = p.y - stateGetPositionEnu_f()->y;
+    float theta = atan2f(dy,dx);
+    float len_error = sqrtf(dx*dx+dy*dy)*cosf(theta);
+    float remaining_distance;
+
+    // Include drift in the tracking of the current element
+    DubinsElement_t el = path_elements[curr_path_element];
+    if (el.radius != 0.)
     {
-      remaining_distance += path_elements[i].length;
+      // For a circle, simply drift the center point dynamically
+      el.init_point.x += drift_x;
+      el.init_point.y += drift_y;
+      tracking = track_dubins_element(&el,&remaining_el_distance);
+      remaining_distance = remaining_el_distance;
+      for(int i = curr_path_element+1; i < EXTENDED_DUBINS_PATH_ELEMENTS_N; i++)
+      {
+        remaining_distance += path_elements[i].length;
+      }
+    }
+    else
+    {
+      // For a straight, drift the start and end points of the line according to plan
+      // (Yes, we redo it each time instead of changing the plan)
+      float distance_to_curr = 0.;
+      for(int i = 0; i < curr_path_element; i++)
+      {
+        distance_to_curr += path_elements[i].length;
+      }
+
+      Pose2D_t startpoint = el.init_point;
+      Pose2D_t endpoint   = dubins_element_end(&el);
+      startpoint.x += (distance_to_curr/NOMINAL_AIRSPEED) * ref_problem.wind_x;
+      startpoint.y += (distance_to_curr/NOMINAL_AIRSPEED) * ref_problem.wind_y;
+
+      endpoint.x += ((distance_to_curr+el.length)/NOMINAL_AIRSPEED) * ref_problem.wind_x;
+      endpoint.y += ((distance_to_curr+el.length)/NOMINAL_AIRSPEED) * ref_problem.wind_y;
+
+      float dx = endpoint.x - startpoint.x;
+      float dy = endpoint.y - startpoint.y;
+
+      startpoint.theta = atan2f(dy,dx);
+      DubinsElement_t el_wind = {startpoint,0.,sqrtf(dx*dx+dy*dy)};
+      tracking = track_dubins_element(&el_wind,&remaining_el_distance);
+
+      // Pose2D_t end   = dubins_element_end(&el);
+      // float dx_to_end = end.x - stateGetPositionEnu_f()->x;
+      // float dy_to_end = end.y - stateGetPositionEnu_f()->y;
+      // remaining_el_distance = sqrtf(dx_to_end*dx_to_end+dy_to_end*dy_to_end);
+      remaining_distance = remaining_th_distance - len_error;
     }
 
     float current_dt = remaining_distance/stateGetAirspeed_f();
     float new_speed;
+
+    IPRINTF("Current DT: %.2f (s) ; Plan DT: %.2f (s) ; Remaining l: %.2f (m) ; Speed sp: %.2f\n",current_dt,dt,remaining_distance,v_ctl_auto_airspeed_setpoint);
 
     if (ABS(current_dt - dt) > 0.1)
     {
@@ -516,7 +573,7 @@ bool nav_extended_dubins_track(void)
   else
   {
     // If no time reference given, cannot estimate drift induced by wind, so just track the element without any compensation 
-    tracking = track_dubins_element(&path_elements[curr_path_element],&remaining_el_distance,0.,0.);
+    tracking = track_dubins_element(&path_elements[curr_path_element],&remaining_el_distance);
   }
 
   // If current element is (almost) done, skip to the next
@@ -530,22 +587,11 @@ bool nav_extended_dubins_track(void)
     initial_nav_rad_angle = NAN;
   }
 
-  if (dubins_draw && ref_problem.end_time > 0.)
+  if (dubins_draw)
   {
-    float now = ((float)gps_tow_from_sys_ticks(sys_time.nb_tick)) / 1000.f;
-    float traveled = dubins_estimate_current_parameter(&ref_problem, NOMINAL_AIRSPEED, now);
-    int elements_num = EXTENDED_DUBINS_PATH_ELEMENTS_N;
-    float w = dubins_find_current_element(path_elements, &elements_num, traveled);
-    DubinsElement_t el = path_elements[elements_num];
-    Pose2D_t p = dubins_element_follow(&el,w);
-
-    // IPRINTF("Now: %.2f (s) ; Start time: %.2f (s) ; Path traveled: %.2f (m) ; Current section: %d ; Current section traveled: %.2f (m)",
-      // now, ref_problem.end_time - ref_problem.length/NOMINAL_AIRSPEED,traveled,elements_num,w);
-
-    desired_x = p.x+drift_x;
-    desired_y = p.y+drift_y;
+      desired_x = p.x;
+      desired_y = p.y;
   }
-  
 
   return true;
 }
@@ -619,11 +665,11 @@ static bool nav_dubins_element_mission(uint8_t nb, float *params, enum MissionRu
 
     // draw_dubins_element(&solo_element,make_draw_id(mission.current_idx),DRAW_make_line(AC_ID),dubins_draw_samples);
     initial_nav_rad_angle = NAN;
-    return track_dubins_element(&solo_element,&remaining_length, 0.,0.);
+    return track_dubins_element(&solo_element,&remaining_length);
   }
   else if (flag == MissionRun)
   {
-    return track_dubins_element(&solo_element,&remaining_length, 0.,0.);
+    return track_dubins_element(&solo_element,&remaining_length);
   }
 
   // not a valid case
