@@ -1,0 +1,17 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="imav_rescue_people" dir="imav_rescue_people">
+  <doc>
+    <description>Indentify people to be rescued for IMAV2026</description>
+  </doc>
+  <dep>
+    <depends>jevois,uavcan</depends>
+  </dep>
+  <header>
+    <file name="imav_rescue_people.h"/>
+  </header>
+  <init fun="imav_rescue_init()"/>
+  <makefile>
+    <file name="imav_rescue_people.c"/>
+    <test/>
+  </makefile>
+</module>
