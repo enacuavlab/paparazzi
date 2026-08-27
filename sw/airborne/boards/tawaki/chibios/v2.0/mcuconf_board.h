@@ -428,9 +428,9 @@
 #define STM32_SERIAL_USE_USART3             FALSE
 #endif
 #if USE_UART4
-#define STM32_SERIAL_USE_USART4             TRUE
+#define STM32_SERIAL_USE_UART4             TRUE
 #else
-#define STM32_SERIAL_USE_USART4             FALSE
+#define STM32_SERIAL_USE_UART4             FALSE
 #endif
 #define STM32_SERIAL_USE_UART5              FALSE
 #define STM32_SERIAL_USE_USART6             FALSE
