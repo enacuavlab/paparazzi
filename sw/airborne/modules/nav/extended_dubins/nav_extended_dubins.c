@@ -548,7 +548,7 @@ bool nav_extended_dubins_track(void)
     float current_dt = remaining_distance/stateGetAirspeed_f();
     float new_speed;
 
-    IPRINTF("Current DT: %.2f (s) ; Plan DT: %.2f (s) ; Remaining l: %.2f (m) ; Speed sp: %.2f\n",current_dt,dt,remaining_distance,v_ctl_auto_airspeed_setpoint);
+    // IPRINTF("Current DT: %.2f (s) ; Plan DT: %.2f (s) ; Remaining l: %.2f (m) ; Speed sp: %.2f\n",current_dt,dt,remaining_distance,v_ctl_auto_airspeed_setpoint);
 
     if (ABS(current_dt - dt) > 0.1)
     {
@@ -558,7 +558,7 @@ bool nav_extended_dubins_track(void)
       }
       else
       {
-          new_speed = 0.97*remaining_distance/dt;
+          new_speed = 0.95*remaining_distance/dt;
       }
     }
     else
