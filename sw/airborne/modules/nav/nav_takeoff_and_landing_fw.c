@@ -93,11 +93,13 @@ static bool nav_land_mission(uint8_t nb, float *params, enum MissionRunFlag flag
     float td_alt = params[0];
     float radius = params[1];
     landing.status = NAV_LANDING_INIT;
+    v_ctl_speed_mode = V_CTL_SPEED_THROTTLE;
     return nav_land_here(td_alt, radius);
   } else if (flag == MissionInit && nb == 3) {
     uint8_t td_id = (uint8_t)(params[0]);
     uint8_t af_id = (uint8_t)(params[1]);
     float radius = params[2];
+    v_ctl_speed_mode = V_CTL_SPEED_THROTTLE;
     return nav_land_at_wp(td_id, af_id, radius);
   } else if (flag == MissionInit && nb == 6) {
     float td_alt = params[0];
@@ -106,6 +108,8 @@ static bool nav_land_mission(uint8_t nb, float *params, enum MissionRunFlag flag
     float dir = params[3];
     float dist = params[4];
     float radius = params[5];
+    printf("nav_land_mission: td_alt=%f lat=%f lon=%f dir=%f dist=%f radius=%f\n", td_alt, lat, lon, dir, dist, radius);
+    v_ctl_speed_mode = V_CTL_SPEED_THROTTLE;
     return nav_land_at_loc(td_alt, lat, lon, dir, dist, radius);
   } else if (flag == MissionRun) {
     return nav_land_run();
