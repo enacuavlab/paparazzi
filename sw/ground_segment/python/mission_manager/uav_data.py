@@ -280,3 +280,31 @@ class TrackingLogs:
         for ac_id, log in self.logs.items():
             trajectories[ac_id] = [(data.timestamp, data.expected_pose) for data in log if data.expected_pose is not None]
         return trajectories
+    
+    
+@dataclass
+class LandingSite:
+    lat: float  # Latitude  (WGS84) of the TD point
+    lon: float  # Longitude (WGS84) of the TD point
+    alt: float  # Altitude  (WGS84) of the TD point
+    possible_afs: list[tuple[float,float]] # List of (direction in degrees, distance in meters) tuples describing the approach direction to the TD point
+    radius: float # Final turn radius for the landing approach
+    
+    def best_direction(self, wind_east:float, wind_north:float) -> tuple[float,float]:
+        """Select the best approach direction for landing, given the wind and a list of possible approach directions
+        The best direction is the one aligned with the wind.
+
+        Args:
+            wind_east (float): Wind East component (m/s)
+            wind_north (float): Wind North component (m/s)
+        Returns:
+            tuple[float,float]: Best approach direction (angle, distance)
+        """
+        best_dir = 0
+        best_dot = np.dot(np.array([np.sin(np.deg2rad(self.possible_afs[0][0])), np.cos(np.deg2rad(self.possible_afs[0][0]))]), np.array([wind_east, wind_north]))
+        for i, af in enumerate(self.possible_afs):
+            dot = np.dot(np.array([np.sin(np.deg2rad(af[0])), np.cos(np.deg2rad(af[0]))]), np.array([wind_east, wind_north]))
+            if dot > best_dot:
+                best_dot = dot
+                best_dir = i
+        return self.possible_afs[best_dir]
