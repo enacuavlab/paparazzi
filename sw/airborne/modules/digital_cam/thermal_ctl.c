@@ -78,7 +78,8 @@ void thermal_ctl_thermal_ctl_handler(float value) {
 
 void thermal_ctl_thermal_threshold_handler(float value) {
   thermal_threshold = value;
-  uint8_t tab[2] = {'t', (uint8_t)value};
+  uint8_t kind = value > 0 ? 'h': 'c';
+  uint8_t tab[2] = {kind, (uint8_t)fabs(value)};
   uint8_t dst_id = 0;
   DOWNLINK_SEND_PAYLOAD_COMMAND(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &dst_id, 2, tab);
 }
@@ -90,14 +91,19 @@ void thermal_clusters_cb(uint8_t* buf)
   int nb = pprzlink_get_PAYLOAD_FLOAT_values_length(buf);
   if(nb != 8) {return;}
 
-  float *b = pprzlink_get_DL_PAYLOAD_FLOAT_values(buf);
+  float* b = pprzlink_get_DL_PAYLOAD_FLOAT_values(buf);
+  
+  // prevent unaligned access
+  float data[8];
+  memcpy(data, b, 8*sizeof(float));
+
 
   struct thermal_spot spot = {
-    .cluster_idx = b[0] + 1,  // first is id 1, 0 is reserved.
-    .lat = b[4] * 1e7,
-    .lon = b[5] * 1e7,
-    .temp = b[6],
-    .count = b[7],
+    .cluster_idx = data[0] + 1,  // first is id 1, 0 is reserved.
+    .lat = data[4] * 1e7,
+    .lon = data[5] * 1e7,
+    .temp = data[6],
+    .count = data[7],
   };
 
   update_hottests(&spot);
@@ -115,14 +121,17 @@ static void update_hottests(struct thermal_spot* spot) {
       return;
     }
 
-    // find the coldest amongst the array.
-    if(hp->temp < hottest_spots[coldest_idx].temp) {
+    // find the coldest/hottest amongst the array.
+    if((hp->temp < hottest_spots[coldest_idx].temp && thermal_threshold > 0) ||
+       (hp->temp > hottest_spots[coldest_idx].temp && thermal_threshold < 0)) {
       coldest_idx = i;
     }
   }
 
   // the new spot it hotter than the coldest of the array, save it in place of the coldest.
-  if(spot->temp > hottest_spots[coldest_idx].temp) {
+  // or colder than the hottest.
+  if((spot->temp > hottest_spots[coldest_idx].temp && thermal_threshold > 0) ||
+     (spot->temp < hottest_spots[coldest_idx].temp && thermal_threshold < 0)) {
     memcpy(&hottest_spots[coldest_idx], spot, sizeof(struct thermal_spot));
   }
 }
