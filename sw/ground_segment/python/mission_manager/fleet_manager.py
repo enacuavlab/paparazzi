@@ -20,9 +20,9 @@ from ioUtils import AC_PP_Problem, write_pathplanning_problem_to_CSV, parse_traj
 from Formation import Formation,chevron_formation
 from FleetPath import FleetKeyframes,plot_keyframes,formation_oval,formation_rectangle
 
-from uav_data import UAVData,TrackingData,TrackingLogs
-from mission_manager import MissionManager,MissionInsert,send_and_ack_msg,PprzMessage
-from tracking_logs_analyser import plot_trackingdata
+from uav_data import UAVData,TrackingData,TrackingLogs,LandingSite
+from mission_manager import MissionManager,MissionInsert,send_and_ack_msgs,PprzMessage,\
+                            make_mission_custom,make_mission_takeoff,make_mission_land_fw,make_mission_land_fw_here,make_mission_circle,make_end_mission_msg
 
 from pprzlink.ivy import IvyMessagesInterface
 
@@ -95,7 +95,6 @@ PPRZ_DUBINS_TYPE_MAP = {
     'SSRSS' : 3*8+7,
 }
 
-
 ########## Call the solver ##########
 
 def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
@@ -161,7 +160,6 @@ def _make_pb_cmd(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
             continue
         
         cmd.append(str(v))
-    print(cmd)
     return cmd
 
 def solve_problem(solver:pathlib.Path,pb_loc:pathlib.Path,sol_loc:pathlib.Path,
@@ -224,7 +222,7 @@ async def async_subprocess_solve(solver:pathlib.Path,
                        samples, ellipse_ratio, **kwargs)
 
     # Create subprocess (asynchronously)
-    proc = await asyncio.create_subprocess_exec(*cmd)#,stdout=asyncio.subprocess.STDOUT)
+    proc = await asyncio.create_subprocess_exec(*cmd,stdout=asyncio.subprocess.DEVNULL)
     
     # Wait for it to finish and return the subprocess return code
     retcode = await proc.wait()
@@ -238,7 +236,12 @@ class SolverInstance:
     result_loc:pathlib.Path
     
 ########## Main class ##########
-    
+
+class MissionManagerException(Exception):
+    pass
+
+class MissionManagerEndOfPlan(MissionManagerException):
+    pass
 class FleetManagerEnd(enum.Enum):
     """ Possible final commands when the last keyposes are done:
     - LOOP: go back to first keyposes and loop forever
@@ -291,6 +294,8 @@ class FleetManager:
         self.end_strategy = end_strategy
         self.__schedule_time = 0
         self.schedule_lookahead:float = 5. # In seconds, how long in the future the plan should be made, assuming perfect tracking of the current plan
+        self.landing_sites :list[LandingSite] = []
+        
         self.nps_simulation = True # If True, commands aircraft running using NPS. Otherwise, assume real aircraft
         
         self.msg_retry:int      = 5
@@ -439,11 +444,11 @@ class FleetManager:
                 settings["Extra straight lengths"] = self.extra_straight_length
 
 
-    async def __send_managers_messages_with_ack(self,mng_msg:list[tuple[MissionManager,PprzMessage]],retry:int,ack_time:float):
-        coros = [send_and_ack_msg(el[0],el[1],retry=retry,ack_time=ack_time) for el in mng_msg]
+    async def __send_managers_messages_with_ack(self,mng_msg:list[tuple[MissionManager,list[PprzMessage]|PprzMessage]],retry:int,ack_time:float):
+        coros = [send_and_ack_msgs(el[0],el[1] if isinstance(el[1], list) else [el[1]],retry=retry,ack_time=ack_time) for el in mng_msg]
         await asyncio.gather(*coros)
     
-    #################### Synchronous orders ####################
+    #################### Simple orders ####################
     
     def wait_ready(self,timeout:float=1):
         """Wait for all aircraft to be ready
@@ -467,14 +472,16 @@ class FleetManager:
     
     
     def takeoff(self,height:float):
+        for id,mng in self.managers.items():
+            mng.send_message_and_wait(make_mission_takeoff(id,self.mission_counter, height=height, insert_mode=MissionInsert.REPLACE_ALL))
+        self.mission_counter += 1
+        
+    async def takeoff_async(self,height:float):
         mng_msg = []
-        for mng in self.managers.values():
-            mng_msg.append((mng,mng.make_mission_takeoff(self.mission_counter, height=height, insert_mode=MissionInsert.REPLACE_ALL)))
+        for id,mng in self.managers.items():
+            mng_msg.append((mng,make_mission_takeoff(id,self.mission_counter, height=height, insert_mode=MissionInsert.REPLACE_ALL)))
 
-        asyncio.run(self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time),debug=DEBUG)
-                
-        self.__takeoff_height = height
-        self.__takeoff_done = False
+        await self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
         self.mission_counter += 1
         
     def go_home_straight(self,insert_mode:MissionInsert=MissionInsert.REPLACE_ALL):
@@ -493,42 +500,152 @@ class FleetManager:
             mng = self.managers[id]
             mng.circle_home(self.mission_counter, radius, insert=insert_mode)
         self.mission_counter += 1
-            
-    def land(self,landpads:list[tuple[float,float,float]],insert_mode:MissionInsert=MissionInsert.REPLACE_ALL):
-        assert len(self.ac_ids) == len(landpads)
-
-        mng_msg = []
+    
+    def circle_here(self,radii:Optional[list[float]]=None, insert_mode:MissionInsert=MissionInsert.REPLACE_ALL):
+        if radii is not None:
+            assert len(radii) == len(self.ac_ids)
+        else:
+            radii = [self.acs[id].turn_radius for id in self.ac_ids]
         
+        for i,id in enumerate(self.ac_ids):
+            radius = radii[i]
+            mng = self.managers[id]
+            mng.circle_here(self.mission_counter, radius, insert=insert_mode)
+        self.mission_counter += 1
+        
+    async def circle_here_async(self,radii:Optional[list[float]]=None, insert_mode:MissionInsert=MissionInsert.REPLACE_ALL):
+        if radii is not None:
+            assert len(radii) == len(self.ac_ids)
+        else:
+            radii = [self.acs[id].turn_radius for id in self.ac_ids]
+        
+        mng_msg = []
+        for i,id in enumerate(self.ac_ids):
+            radius = radii[i]
+            mng = self.managers[id]
+            assert mng.uav_data is not None, f"No UAVData for {id}!"
+            msg = make_mission_circle(id,self.mission_counter, mng.uav_data.lat, mng.uav_data.lon, mng.uav_data.alt, radius, insert_mode=insert_mode)
+            mng_msg.append((mng,msg))
+        
+        await self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
+        self.mission_counter += 1
+            
+    def land(self,land_args:list[tuple[float,float,float,float,float,float]],insert_mode:MissionInsert=MissionInsert.REPLACE_ALL):
+        assert len(self.ac_ids) == len(land_args)
+
         for i in range(len(self.ac_ids)):
-            lat,lon,h = landpads[i]
+            lat,lon,h,dir,dist,radius = land_args[i]
             id = self.ac_ids[i]
             
-            msg = self.managers[id].make_mission_land(self.mission_counter,lat,lon,h,insert_mode=insert_mode)
-            mng_msg.append((self.managers[id],msg))
+            msg = make_mission_land_fw(id,self.mission_counter,lat,lon,h,dir,dist,radius,insert_mode=insert_mode)
+            self.managers[id].send_message_and_wait(msg)
         self.mission_counter += 1
+        
+    async def land_async(self,land_args:list[tuple[float,float,float,float,float,float]],insert_mode:MissionInsert=MissionInsert.REPLACE_ALL):
+        assert len(self.ac_ids) == len(land_args)
 
-        asyncio.run(self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time),debug=DEBUG)
+        mng_msg = []
+        for i in range(len(self.ac_ids)):
+            lat,lon,h,dir,dist,radius = land_args[i]
+            id = self.ac_ids[i]
+            
+            msg = make_mission_land_fw(id,self.mission_counter,lat,lon,h,dir,dist,radius,insert_mode=insert_mode)
+            mng_msg.append((self.managers[id],msg))
         
+        await self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
+        self.mission_counter += 1
+    
+    def land_with_wind(self, landing_sites: list[LandingSite], insert_mode: MissionInsert = MissionInsert.APPEND):
+        assert len(self.ac_ids) == len(landing_sites)
+                        
+        for i in range(len(self.ac_ids)):
+            lat = landing_sites[i].lat
+            lon = landing_sites[i].lon
+            h = landing_sites[i].alt
+            radius = landing_sites[i].radius
+            dir,dist = landing_sites[i].best_direction(self.wind_east, self.wind_north)
+            id = self.ac_ids[i]
+            
+            msg = make_mission_land_fw(id,self.mission_counter,lat,lon,h,dir,dist,radius,insert_mode=insert_mode)
+            self.managers[id].send_message_and_wait(msg)
+        self.mission_counter += 1
         
+    async def land_with_wind_async(self, landing_sites: list[LandingSite], insert_mode: MissionInsert = MissionInsert.APPEND):
+        assert len(self.ac_ids) == len(landing_sites)
+        
+        mng_msg = []
+        for i in range(len(self.ac_ids)):
+            id = self.ac_ids[i]
+            
+            lat = landing_sites[i].lat
+            lon = landing_sites[i].lon
+            h = landing_sites[i].alt
+            radius = landing_sites[i].radius
+            dir,dist = landing_sites[i].best_direction(self.wind_east, self.wind_north)
+
+            mng = self.managers[id]
+            assert mng.uav_data is not None, f"No UAVData for {id}!"
+            clat = mng.uav_data.lat
+            clon = mng.uav_data.lon
+            
+            cx,cy = self.transformer.transform(clat,clon)
+            lx,ly = self.transformer.transform(lat,lon)
+            
+            dx = cx-lx
+            dy = cy-ly
+            
+            # Dir is a direction with 0° to north (y-axis)
+            cross_prod = dx*np.cos(np.deg2rad(dir)) - dy*np.sin(np.deg2rad(dir))
+            # Switch radius for easier turn depending on side with respect to the landing direction
+            if cross_prod > 0:
+                radius = -radius
+                
+            mng_msg.append((mng,make_mission_land_fw(id,self.mission_counter,lat,lon,h,dir,dist,radius,insert_mode=insert_mode)))
+        
+        await self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
+        self.mission_counter += 1
+            
+
     def land_here(self,ground_alt:float):
         """ Every aircraft land at their current location
         """
 
-        mng_msg = []
-        for mng in self.managers.values():
+        for id,mng in self.managers.items():
+            assert mng.uav_data is not None, f"No UAVData for {id}!"
             lat = mng.uav_data.lat
             lon = mng.uav_data.lon
-            msg = mng.make_mission_land(self.mission_counter,lat,lon,ground_alt,insert_mode=MissionInsert.REPLACE_ALL)
-            mng_msg.append((mng,msg))
+            msg = make_mission_land_fw_here(id,self.mission_counter,lat,lon,ground_alt,insert_mode=MissionInsert.REPLACE_ALL)
+            mng.send_message_and_wait(msg)
         self.mission_counter += 1
 
-        asyncio.run(self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time),debug=DEBUG)
     
     def start_mission(self):
         """Go to mission block for every aircraft
         """
         for mng in self.managers.values():
             mng.start_mission()
+            
+    # async def start_mission_async(self):
+    #     mng_msg = []
+    #     for mng in self.managers.values():
+    #         mng_msg.append((mng,mng.make_start_mission()))
+        
+    #     await self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
+    #     self.mission_counter += 1
+            
+    def end_mission(self):
+        """End mission block for every aircraft
+        """
+        for mng in self.managers.values():
+            mng.end_mission()
+            
+    async def end_mission_async(self):
+        mng_msg = []
+        for id,mng in self.managers.items():
+            mng_msg.append((mng,make_end_mission_msg(id)))
+        
+        await self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
+        self.mission_counter += 1
             
     def closing(self):
         """Close Ivy for all mission managers
@@ -544,13 +661,27 @@ class FleetManager:
             self.fleet_ctrl_loop()
         )
     
-    
     async def fleet_ctrl_loop(self,dt:float=0.1):
         assert dt >= 0, "Waiting time must be nonnegative!"
         while True:
             now = time.time()
             end = now + dt
-            await self.fleet_ctrl()
+            try:
+                await self.fleet_ctrl()
+            except MissionManagerEndOfPlan as e:
+                print("End of plan reached")
+                if self.end_strategy == FleetManagerEnd.NOTHING:
+                    break
+                elif self.end_strategy == FleetManagerEnd.END_MISSION:
+                    await self.end_mission_async()
+                    break
+                elif self.end_strategy == FleetManagerEnd.CIRCLE:
+                    await self.circle_here_async()
+                    break
+                elif self.end_strategy == FleetManagerEnd.LAND:
+                    print("Landing...")
+                    await self.landing_procedure(self.landing_sites)
+                    break
             wait = end - time.time()
             
             # Yield control only if there is some time to wait
@@ -604,7 +735,7 @@ class FleetManager:
                 poses = self.interpolate_poses(now)
                 l_poses = [poses[id] for id in self.ac_ids]
                 if min_XY_dist(l_poses)[0] > self.separation:
-                    await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,now,impr_threshold)
+                    await self.schedule_path_planning(self.__fleet_frame_id,l_poses,now,impr_threshold)
                 else:
                     print("Scheduling: Not enough separation for next plan, waiting for next iteration...")
             else:
@@ -613,7 +744,7 @@ class FleetManager:
                 try:
                     l_poses = [poses[id] for id in self.ac_ids]
                     if min_XY_dist(l_poses)[0] > self.separation:
-                        await self.schedule_path_planning(self.__fleet_frame_id+1,l_poses,now+self.schedule_lookahead,impr_threshold)
+                        await self.schedule_path_planning(self.__fleet_frame_id,l_poses,now+self.schedule_lookahead,impr_threshold)
                     else:
                         print("Scheduling: Not enough separation for next plan, waiting for next iteration...")
                 except KeyError:
@@ -701,11 +832,14 @@ class FleetManager:
     
     async def schedule_path_planning(self,frame_id:int,ref_poses:list[Pose3D], realease_time:float, improvement_threshold:float):
         
+        if self.verbosity > 0:
+            print(f"Scheduling new plan for frame {frame_id} (improvement threshold is {improvement_threshold:.2f})")
+        
         if self.end_strategy is FleetManagerEnd.LOOP:
             frame_id = frame_id % self.fleet_frames.keyposes_num
         else:
             if frame_id >= self.fleet_frames.keyposes_num:
-                raise StopIteration("No more fleet instruction to perform")
+                raise MissionManagerEndOfPlan(f"No more fleet instruction to perform (reached {frame_id} while max is {self.fleet_frames.keyposes_num})")
         
         pb = self.fleet_frames.generate_pb_to(frame_id,ref_poses)
         
@@ -742,14 +876,12 @@ class FleetManager:
                 return False
             
             try:
+                self.start_mission()
+                
                 wait_time = realease_time - self.get_now()
                 if (self.verbosity > 0):
                     print(f"Plan is ready, waiting for {wait_time:.2f} s")
                 await asyncio.sleep(wait_time)
-                
-                if not(self.mission_mode_started):
-                    self.start_mission()
-                    self.mission_mode_started = True
                     
                 now = self.get_now()
                 self.__tracking_logs.replanning_timestamps.append(now)
@@ -847,142 +979,57 @@ class FleetManager:
             params.append(self.wind_east)
             params.append(self.wind_north)
         
-        return manager,manager.make_mission_custom(
+        return manager,make_mission_custom(
+            ac_id,
             self.mission_counter,
             'DUBIN',
             params,
             insert_mode=insert_mode
         )
 
+    ########## Landing procedures ##########
+    
+    async def landing_procedure(self,landing_sites:list[LandingSite], waiting:float=30):
+        assert len(landing_sites) == len(self.ac_ids)
+                
+        mng_msg = []
+        for i in range(len(self.ac_ids)):
+            id = self.ac_ids[i]
+            print(f"Landing {id} (index {i}) at {landing_sites[i].lat:.6f} {landing_sites[i].lon:.6f} with wind {self.wind_east:.2f} {self.wind_north:.2f}")
+            
+            
+            lat = landing_sites[i].lat
+            lon = landing_sites[i].lon
+            h = landing_sites[i].alt
+            radius = landing_sites[i].radius
+            dir,dist = landing_sites[i].best_direction(self.wind_east, self.wind_north)
 
-if __name__ == '__main__':
-    import argparse
-    
-    color_dict = {
-        60 : 'blue',
-        61 : 'black', # Use a legible colors for graph... # 61 : 'white',
-        62 : 'red',
-        63 : 'green'
-    }
-    
-    transformer = pyproj.Transformer.from_crs('WGS84','EPSG:9794') # Default to WGS84 to Lambert93
-    home_lat = 43.4626512
-    home_lon = 1.2732883
-    home_height = 225-185
-    home_alt = 225
-    home_x,home_y = transformer.transform(home_lat,home_lon)
-    
-    stat_list = [ACStats(i,14.1,10/60,40,(i%10)*10+10+home_alt) for i in [62,60,61]]
-    separation = 42
-    formation = chevron_formation(len(stat_list),separation*4/3)
-    
-    start = Pose3D(home_x,home_y+50,home_alt,0.)
-    fleet_plan = formation_oval(stat_list,start,80,60,formation)
-    # fleet_plan = formation_rectangle(stat_list,start,300,100,formation)
-    fleet_plan.keyposes = [fleet_plan.keyposes[0],fleet_plan.keyposes[2]]
-    
-    # Adapt altitude using the reference cruise one 
-    for p in fleet_plan.keyposes:
-        for i in range(len(stat_list)):
-            p[i,2] = stat_list[i].cruise_altitude
-    
-    # fig,ax = plt.subplots()
-    # plot_keyframes(fleet_plan,ax,['red','green','blue','yellow','cyan','magenta'])
-    # ax.set_aspect('equal')
-    # plt.show()
-    
-    parser = argparse.ArgumentParser()
-    parser.add_argument('dubins_solver',help='Path to Dubins Fleet Planner')
-    parser.add_argument('--verbose', '-v', action='count', default=0)
-    parser.add_argument('-t','--takeoff',action='store_true',help='Send take off mission order first')
-    parser.add_argument('--ignore-wind',action='store_true',dest='ignore_wind',help='If set, ignore wind information from aircraft')
-    parser.add_argument('--speed-ctl',action='store_true',dest='speed_ctl',help='If set, enable speed control for aircraft')
-    parser.add_argument('--autostart',type=float,help='If set, automatically launch the main after the given value (in seconds). Otherwise, wait for user input to start the main loop',
-                        default=None)
-    parser.add_argument('--carrot',type=float, help='Anticipation time (in seconds) for declaring the current plan end. Default to 5s',
-                        default=5)
-    parser.add_argument('-G','--obstacles',type=str,help="Path to the file describing the obstacles (as lines and circles).",default=None)
-    
-    args = parser.parse_args()
-    
-    if args.carrot < 0.:
-        raise ValueError(f"--carrot argument must be non-negative! Current value is: {args.carrot}")
-
-    
-    obstacles_path = None
-    if args.obstacles is not None:
-        obstacles_path = pathlib.Path(args.obstacles)
-        if not(obstacles_path.is_file()):
-            print(f"The given paths for obstacles does not point to a file:\n{args.obstacles}")
-            exit(1)
-    
-    manager = FleetManager(
-        fleet_plan,
-        args.dubins_solver,
-        separation,
-        home_alt,
-        geometric_obstacles_path=obstacles_path,
-        transformer=transformer,
-        end_strategy=FleetManagerEnd.LOOP,
-        speed_ctl=args.speed_ctl,
-        ignore_wind=args.ignore_wind,
-        verbosity=args.verbose,
-        tracking_error=20
-    )
-    manager.samples = 0 #if obstacles_path is None else 10
-    manager.end_of_plan_carrot = args.carrot
-    manager.extra_straight_length = 60
-    manager.nps_simulation = True
-    
-    main_loop_exception = None
-    
-    try:
-        manager.wait_ready(15)
-        if args.takeoff:
-            print("Take off requested!")
-            manager.takeoff(home_height)
-        # manager.circle_home(insert_mode=MissionInsert.APPEND)
-        # manager.start_mission()
-        if args.autostart is not None:
-            print(f"Wait for {args.autostart} seconds before starting main loop...",end=' ',flush=True)
-            time.sleep(args.autostart)
-            print("Starting now!")
-        else:
-            input("Press any key to start fleet path planning...")
-        asyncio.run(manager.main(),debug=DEBUG)
-    except(KeyboardInterrupt,SystemExit):
-        print("Intettupted!")
-    except Exception as e:
-        print("Some exception interrupted the main loop...:\n",e)
-        main_loop_exception = e
-        raise e
-    finally:
-        print("Closing")
-        manager.closing()
+            mng = self.managers[id]
+            assert mng.uav_data is not None, f"No UAVData for {id}!"
+            clat = mng.uav_data.lat
+            clon = mng.uav_data.lon
+            
+            cx,cy = self.transformer.transform(clat,clon)
+            lx,ly = self.transformer.transform(lat,lon)
+            
+            dx = cx-lx
+            dy = cy-ly
+            
+            # Dir is a direction with 0° to north (y-axis)
+            cross_prod = dx*np.cos(np.deg2rad(dir)) - dy*np.sin(np.deg2rad(dir))
+            # Switch radius for easier turn depending on side with respect to the landing direction
+            if cross_prod > 0:
+                radius = -radius
+                
+            
+            msgs = []
+            if i > 0:
+                # Use endpoint of the last keypose as waiting point
+                wlat,wlon = self.transformer.transform(*self.fleet_frames.keyposes[-1][i][0:2],direction='INVERSE')
+                msgs.append(make_mission_circle(id,self.mission_counter, wlat, wlon, mng.uav_data.alt, radius, i*waiting, insert_mode=MissionInsert.APPEND))
+            msgs.append(make_mission_land_fw(id,self.mission_counter+1,lat,lon,h,dir,dist,radius,insert_mode=MissionInsert.APPEND))
+            mng_msg.append((mng,msgs))
         
-    print("Saving logs")
-    logs = manager.get_logs()
-    
-    os.makedirs("logs",exist_ok=True)
-    now_str = datetime.datetime.fromtimestamp(time.time()).strftime('%y-%m-%d_%H:%M:%S')
-    filename = f"logs/logs_{now_str}.pkl"
-    with open(filename,"wb") as f:
-        pickle.dump(logs, f)
-    
-    try:
-        print("Plotting logs...")
-        fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict,obstacles_path)
-        fig.set_size_inches(16,9)
-        fig.tight_layout()
-        plt.show()
-    except KeyError as e:
-        # If there is a key error, the log is incomplete, so delete it
-        os.remove(f"logs/logs_{now_str}.pkl")
-        print("KeyError while plotting logs, deleted the log file. Error: ",e)
-        raise e
+        await self.__send_managers_messages_with_ack(mng_msg,self.msg_retry,self.msg_ack_time)
+        self.mission_counter += 2
         
-        
-    if main_loop_exception is not None:
-        raise main_loop_exception
-    
-    

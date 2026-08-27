@@ -101,7 +101,7 @@ class Formation:
         """ Number of agents in the formation """
         return self.positions.shape[0]
     
-    def reorder(self,indices:np.ndarray) -> Self:
+    def reorder(self,indices:np.ndarray|list) -> Self:
         """ Reorder the positions in the formation given a permutation
 
         Args:
