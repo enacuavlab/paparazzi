@@ -12,6 +12,10 @@
   <init fun="imav_rescue_init()"/>
   <makefile>
     <file name="imav_rescue_people.c"/>
-    <test/>
+    <test>
+      <define name="DOWNLINK_TRANSPORT" value="pprz_tp"/>
+      <define name="DOWNLINK_DEVICE" value="uart0"/>
+      <define name="USE_UART0"/>
+    </test>
   </makefile>
 </module>

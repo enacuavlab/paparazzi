@@ -27,6 +27,8 @@
 #include "modules/core/abi.h"
 #include "modules/nav/waypoints.h"
 #include "modules/datalink/downlink.h"
+#include "modules/sensors/cameras/jevois.h"
+#include <stdio.h>
 #include <string.h>
 #include "state.h"
 
@@ -69,6 +71,10 @@
 #define IMAV_RESCUE_CAM_POS_Z 0.f
 #endif
 
+#ifndef IMAV_RESCUE_PROXIMITY
+#define IMAV_RESCUE_PROXIMITY 3
+#endif
+
 // Convert pixel unit to m in image plane on x axis
 // from "mm" to meter by default
 #ifndef IMAV_RESCUE_PIXEL_TO_IMAGE_X
@@ -102,17 +108,24 @@ static abi_event imav_rescue_jevois_msg_ev;
 
 // Rescue spots
 struct rescue_spot {
-  uint8_t cluster_idx;
-  int32_t lat;
-  int32_t lon;
+  struct NedCoor_f pos;
   float score;
   int count;
+  uint8_t wp_id;
 };
 
 static struct rescue_spot rescue_spots[IMAV_RESCUE_SPOTS_NB] = {0};
 
-static void rescue_send_draw(struct rescue_spot* spot);
-static void update_spots(struct rescue_spot* spot);
+#if (defined IMAV_RESCUE_SPOTS_WPS)
+static uint8_t imav_rescue_wps[] = IMAV_RESCUE_SPOTS_WPS;
+const uint8_t imav_rescue_wps_len = sizeof(imav_rescue_wps);
+#else
+static uint8_t imav_rescue_wps[] = {};
+const uint8_t imav_rescue_wps_len = 0;
+#endif
+
+static void rescue_send_draw(struct rescue_spot* spot) UNUSED;
+static void update_spots(struct NedCoor_f pos, float score);
 
 
 static void imav_rescue_jevois_msg_cb(uint8_t sender_id UNUSED,
@@ -123,21 +136,21 @@ static void imav_rescue_jevois_msg_cb(uint8_t sender_id UNUSED,
     return; // invalid frame
   }
 
-  char type[20];
+  char category[20];
   float score = 0.f;
   char *tk = strtok(id, ":");
   bool valid = false;
 
-  // parse string id with format "type:score"
+  // parse string id with format "category:score"
   if (tk != NULL) {
-    strncpy(type, tk, 20);
+    strncpy(category, tk, 20);
     tk = strtok(NULL, ":");
     if (tk != NULL) {
       score = strtof(tk, NULL);
     }
-    if (strncmp(type, "person", 20) == 0) {
+    if (strncmp(category, "person", 20) == 0) {
       valid = true;
-    } else if (strncmp(type, "sofa", 20) == 0) {
+    } else if (strncmp(category, "sofa", 20) == 0) {
       valid = true;
       score *= 0.8; // apply penalty ?
     }
@@ -179,25 +192,15 @@ static void imav_rescue_jevois_msg_cb(uint8_t sender_id UNUSED,
     lla_of_ecef_f(&target_loc.pos_lla, &target_ecef);
 
     target_loc.valid = true;
-    //if (target_localization_update_wp) {
-    //  // look for waypoint to update
-    //  uint8_t i = 0;
-    //  while (target_loc_wp_tab[i][0] != 0) {
-    //    if (target_loc_wp_tab[i][0] == target_loc.type) {
-    //      // update WP (ENU) from target (NED)
-    //      waypoint_move_xy_i(target_loc_wp_tab[i][1], POS_BFP_OF_REAL(target_loc.target.y), POS_BFP_OF_REAL(target_loc.target.x));
-    //    }
-    //    i++;
-    //  }
-    //}
+    // update closest spot or create a new one
+    // TODO cross check with sound and light sensors
+    update_spots(target_loc.target, score);
   }
   else {
     // if too close from ground, don't do anything
     target_loc.valid = false;
   }
 
-  // TODO store rescue spot if score is high enough, update if close to existing spot and increase counter
-  // cross check with sound and light sensors
 }
 
 void imav_rescue_init(void)
@@ -220,32 +223,62 @@ void imav_rescue_init(void)
 
   target_loc.valid = false;
 
+  for (int i = 0; i < Min(imav_rescue_wps_len,IMAV_RESCUE_SPOTS_NB); i++) {
+    rescue_spots[i].wp_id = imav_rescue_wps[i];
+  }
+
   // Abi messages bindings
   AbiBindMsgJEVOIS_MSG(IMAV_RESCUE_JEVOIS_MSG_ID, &imav_rescue_jevois_msg_ev, imav_rescue_jevois_msg_cb);
 }
 
 
-static void update_spots(struct rescue_spot* spot) {
-  int coldest_idx = 0;
-  for(int i=0; i<IMAV_RESCUE_SPOTS_NB; i++) {
+static void update_spots(struct NedCoor_f pos, float score) {
+  // find closest and merge position and score,
+  for (int i = 0; i < IMAV_RESCUE_SPOTS_NB; i++) {
     struct rescue_spot *sp = &rescue_spots[i];
-
-    // cluster found in hottests, just update it.
-    if (sp->cluster_idx == spot->cluster_idx) {
-      memcpy(sp, spot, sizeof(struct rescue_spot));
+    struct FloatVect2 d_pos;
+    VECT2_DIFF(d_pos, pos, sp->pos);
+    float dist = float_vect2_norm2(&d_pos);
+    // is it close enough
+    if (dist < IMAV_RESCUE_PROXIMITY) {
+      float new_x = (pos.x + sp->pos.x) / 2.f;
+      float new_y = (pos.y + sp->pos.y) / 2.f;
+      waypoint_move_xy_i(sp->wp_id, POS_BFP_OF_REAL(new_x), POS_BFP_OF_REAL(new_y));
+      sp->pos.x = new_x;
+      sp->pos.y = new_y;
+      sp->score = (score + sp->score) / 2.f;
+      sp->count++;
       return;
     }
+  }
 
-    // find the lowest score amongst the array.
-    if (sp->score < rescue_spots[coldest_idx].score) {
-      coldest_idx = i;
+  // if not find empty slot,
+  for (int i = 0; i < IMAV_RESCUE_SPOTS_NB; i++) {
+    struct rescue_spot *sp = &rescue_spots[i];
+    if (sp->count == 0) {
+      sp->pos = pos;
+      sp->score = score;
+      sp->count = 1;
+      waypoint_move_xy_i(sp->wp_id, POS_BFP_OF_REAL(pos.x), POS_BFP_OF_REAL(pos.y));
+      return;
     }
   }
 
-  // the new spot has higher score, save it in place of the lowest.
-  if (spot->score > rescue_spots[coldest_idx].score) {
-    memcpy(&rescue_spots[coldest_idx], spot, sizeof(struct rescue_spot));
+  // if not replace if score is better
+  float lowest_score = 100.f;
+  int lowest_idx = 0;
+  for (int i = 0; i < IMAV_RESCUE_SPOTS_NB; i++) {
+    struct rescue_spot *sp = &rescue_spots[i];
+    if (sp->score < lowest_score) {
+      lowest_score = sp->score;
+      lowest_idx = i;
+    }
   }
+  rescue_spots[lowest_idx].pos = pos;
+  rescue_spots[lowest_idx].score = score;
+  rescue_spots[lowest_idx].count = 1;
+  waypoint_move_xy_i(rescue_spots[lowest_idx].wp_id, POS_BFP_OF_REAL(pos.x), POS_BFP_OF_REAL(pos.y));
+  return;
 }
 
 
@@ -255,12 +288,18 @@ static void rescue_send_draw(struct rescue_spot* spot)
   uint8_t shape = 0;
   uint8_t status = 0;
   float radius = 2;
-  uint8_t idx = spot->cluster_idx + IMAV_RESCUE_DRAW_OFFSET;
+  uint8_t idx = spot->wp_id + IMAV_RESCUE_DRAW_OFFSET;
+  struct NedCoor_i ned;
+  NED_BFP_OF_REAL(ned, spot->pos);
+  struct EcefCoor_i ecef;
+  ecef_of_ned_pos_i(&ecef, stateGetNedOrigin_i(), &ned);
+  struct LlaCoor_i lla;
+  lla_of_ecef_i(&lla, &ecef);
 
   char text[10];
   int nb_text = snprintf(text, 10, "%.2f (%d)", spot->score, spot->count);
 
-  DOWNLINK_SEND_DRAW(DefaultChannel, DefaultDevice, &idx, &color, &shape, &status, &radius, 1, &spot->lat, 1, &spot->lon, nb_text, text);
+  DOWNLINK_SEND_DRAW(DefaultChannel, DefaultDevice, &idx, &color, &shape, &status, &radius, 1, &lla.lat, 1, &lla.lon, nb_text, text);
 }
 
 
