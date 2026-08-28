@@ -52,6 +52,8 @@ extern int trilateration_init(struct Anchor *anchors);
  * @return error status (0 for valid position)
  */
 extern int trilateration_compute(struct Anchor *anchors, struct EnuCoor_f *pos);
+extern int multilat_compute(struct Anchor *anchors, struct EnuCoor_f *pos);
+
 
 #endif
 

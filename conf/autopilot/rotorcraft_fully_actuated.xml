@@ -5,7 +5,7 @@
   <state_machine name="ap" freq="PERIODIC_FREQUENCY" gcs_mode="true" settings_mode="true" settings_handler="autopilot_generated|SetModeHandler">
 
     <modules>
-      <module name="nav" type="rotorcraft"/>
+      <module name="nav" type="basic_rotorcraft"/>
       <module name="guidance" type="rotorcraft"/>
       <module name="guidance" type="indi_fully_actuated"/>
       <module name="stabilization" type="rotorcraft"/>

@@ -26,6 +26,15 @@
 
 #include "trilateration.h"
 #include "math/pprz_algebra_float.h"
+#include "math/pprz_simple_matrix.h"
+
+
+#include "generated/airframe.h"
+
+
+#include "generated/uwb.c"
+
+
 
 // base original locations
 static float P[3][3];
@@ -35,6 +44,11 @@ static float Ex[3], Ey[3], Ez[3];
 static float D, I, J;
 
 bool init_failed;
+
+
+float multilat_b[UWB_POSITIONING_NB_ANCHORS][1] = {0};
+// float mtl_A [UWB_POSITIONING_NB_ANCHORS][4] = {0};
+// float mtl_L [4][UWB_POSITIONING_NB_ANCHORS] = {0};
 
 int trilateration_init(struct Anchor *anchors)
 {
@@ -114,3 +128,41 @@ int trilateration_compute(struct Anchor *anchors, struct EnuCoor_f *pos)
   return 0;
 }
 
+// void multilat_init() {
+//   for(int i=0; i<UWB_POSITIONING_NB_ANCHORS; i++) {
+//     mtl_A[i][0] = 1;
+//     mtl_A[i][1] = -2*anchors[i].pos.x;
+//     mtl_A[i][2] = -2*anchors[i].pos.y;
+//     mtl_A[i][3] = -2*anchors[i].pos.z;
+//   }
+//   float mtl_At[4][UWB_POSITIONING_NB_ANCHORS] = {0};
+//   float mtl_AtA [4][4] = {0};
+
+
+  
+//   float_mat_inv_4d(float invOut[4][4], const float mat_in[4][4]);
+// }
+
+int multilat_compute(struct Anchor *anchors, struct EnuCoor_f *pos) {
+  for(int i=0; i<UWB_POSITIONING_NB_ANCHORS; i++) {
+    multilat_b[i][0] = anchors[i].distance * anchors[i].distance - B_c[i][0];
+  }
+
+  float x[4][1] = {0};
+
+  MAKE_MATRIX_PTR(_L, L, 4);
+  MAKE_MATRIX_PTR(_b, multilat_b, UWB_POSITIONING_NB_ANCHORS);
+  MAKE_MATRIX_PTR(_x, x, 4);
+
+  // C = A*B   A:(i,k) B:(k,j) C:(i,j)
+  //MAT_MUL(_i, _k, _j, C, A, B)
+  MAT_MUL(4, UWB_POSITIONING_NB_ANCHORS, 1, _x, _L, _b);
+  //MAT_MUL2(4, UWB_POSITIONING_NB_ANCHORS, 1, x, L, multilat_b);
+
+  pos->x = x[1][0];
+  pos->y = x[2][0];
+  pos->z = x[3][0];
+
+  return 0;
+
+}

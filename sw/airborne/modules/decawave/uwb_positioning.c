@@ -66,12 +66,12 @@
 
 /** default offset, applied to individual distances */
 #ifndef UWB_POSITIONING_RANGE_OFFSET
-#define UWB_POSITIONING_RANGE_OFFSET { 0.f, 0.f, 0.f }
+#define UWB_POSITIONING_RANGE_OFFSET { 0.f, 0.f, 0.f, 0.f }
 #endif
 
 /** default scale factor, applied to individual distances */
 #ifndef UWB_POSITIONING_RANGE_SCALE
-#define UWB_POSITIONING_RANGE_SCALE { 1.f, 1.f, 1.f }
+#define UWB_POSITIONING_RANGE_SCALE { 1.f, 1.f, 1.f, 1.f }
 #endif
 
 /** My UWB tag id */
@@ -114,7 +114,7 @@
 #define UWB_POSITIONING_VEL_NOISE_Z 0.1f
 #endif
 
-#if UWB_POSITIONING_USE_EKF
+// #if UWB_POSITIONING_USE_EKF
 #include "modules/decawave/ekf_range.h"
 #include "filters/median_filter.h"
 
@@ -124,7 +124,7 @@
 
 #ifndef UWB_POSITIONING_EKF_P0_POS
 #define UWB_POSITIONING_EKF_P0_POS 1.0f
-#endif
+// #endif
 
 #ifndef UWB_POSITIONING_EKF_P0_SPEED
 #define UWB_POSITIONING_EKF_P0_SPEED 1.0f
@@ -362,7 +362,7 @@ static inline bool check_and_compute_data(struct UwbPositioning *uwb)
     // Direct trilateration only
     // if no timeout on anchors, run trilateration algorithm
     return (check_anchor_timeout(uwb, timeout) == false &&
-        trilateration_compute(uwb->anchors, &(uwb->pos)) == 0);
+        multilat_compute(uwb->anchors, &(uwb->pos)) == 0);
   }
 }
 

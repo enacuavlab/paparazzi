@@ -306,5 +306,27 @@ class Conf:
             os.remove(CONF)
             os.symlink(conf, CONF)
 
+    def __contains__(self, item):
+        for ac in self.aircrafts:
+            if isinstance(item, str):
+                if ac.name == item:
+                    return True
+            elif isinstance(item, int):
+                if ac.ac_id == item:
+                    return True
+        return False
+
+    def __iter__(self):
+        self.iter_idx = 0
+        return self
+
+    def __next__(self):
+        if self.iter_idx >= len(self.aircrafts):
+            raise StopIteration
+        ac = self.aircrafts[self.iter_idx]
+        self.iter_idx += 1
+        print(self.iter_idx)
+        return ac
+
 
 

@@ -42,12 +42,13 @@
       <define name="IMU_MPU_SMPLRT_DIV" value="0" />
     </module>
 
-    <module name="gps" type="optitrack" />
-    <!-- <module name="air_data" /> -->
-
-    <module name="ins" type="ext_pose"/>
-    <!--module name="ins" type="ekf2" />
-    <define name="INS_EKF2_OPTITRACK" value="TRUE"/-->
+    <module name="ahrs" type="int_cmpl_quat">
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+    </module>
+    <module name="ins" type="extended">
+      <define name="HFF_R_POS" value="0.3"/>
+      <define name="HFF_R_GPS_SPEED" value="4.0"/>
+    </module>
     <!--define name="INS_EKF2_MAG_FUSION_MODE" value="MAG_FUSE_TYPE_NONE"/-->
 
     <module name="stabilization" type="indi">
@@ -61,19 +62,23 @@
     </module>
     <module name="uwb_positioning">
       <!-- <configure name="UWB_POSITIONING_USE_AS_LOCAL_POS" value="FALSE|TRUE"/> -->
-      <!-- <configure name="UWB_POSITIONING_USE_AS_GPS" value="FALSE|TRUE"/> -->
+      <configure name="UWB_POSITIONING_USE_AS_GPS" value="TRUE"/>
+      <configure name="UWB_POSITIONING_USE_AS_LOCAL_POS" value="FALSE"/>
     </module>
+    <module name="gps"></module>
 
     <module name="sonar" type="vl53l1x">
       <configure name="SONAR_VL53L1X_I2C_DEV" value="i2c2"/>
-      <!-- <define name="USE_SONAR" value=""/> -->
+      <!-- <define name="SENSOR_SYNC_SEND_SONAR"/> -->
+      <define name="USE_SONAR"/>
     </module>
 
     <module name="opticflow" type="pmw3901">
       <configure name="OPTICFLOW_PMW3901_SPI_DEV" value="spi2"/>
       <configure name="OPTICFLOW_PMW3901_SPI_SLAVE_IDX" value="SPI_SLAVE0"/>
-      <define name="OPTICFLOW_PMW3901_SENSOR_ANGLE" value="90"/>
-      <define name="SENSOR_SYNC_SEND_OPTICFLOW_PMW3901" value="FALSE"/>
+      <define name="OPTICFLOW_PMW3901_SENSOR_ANGLE" value="180"/>
+      <define name="SENSOR_SYNC_SEND_OPTICFLOW_PMW3901" value="TRUE"/>
+      <define name="USE_SPI_SLAVE0"/>
     </module>
 
     <module name="jevois">
@@ -153,9 +158,9 @@
           <field name="scale_f" value="true" />
           <field name="rotation" value="true" />
         </field>
-        <field name="neutral" value="-1361,-966,-690" type="int[]" />
-        <field name="scale_f" value="{ 0.7693, 0.7183, 0.7283 }" />
-        <field value="TAWAKIV2_IMU_ROT" />
+        <field name="neutral" value="-1236,-1089,-842" type="int[]"/>
+        <field name="scale_f" value="{ 0.6092, 0.6116, 0.6131 }"/>
+        <field value="TAWAKIV2_MAG_ROT" />
       </field>
     </define>
 
@@ -197,12 +202,6 @@
 
     <!-- control effectiveness Hexa Form-->
     <define name="G1" type="matrix">
-      <!--field value="-11.86, -23.72, -11.86, 11.86, 23.72, 11.86" type="float[]"/>
-      <field value="10.76, -0.00, -10.76, -10.76, -0.00, 10.76" type="float[]"/>
-      <field value="8.30, -8.30, 8.30, -8.30, 8.30, -8.30" type="float[]"/>
-      <field value="-0.25, 0.51, -0.25, -0.25, 0.51, -0.25" type="float[]"/>
-      <field value="0.34, 0.00, -0.34, 0.34, -0.00, -0.34" type="float[]"/>
-      <field value="-0.29, -0.29, -0.29, -0.29, -0.29, -0.29" type="float[]"/-->
       <field value="11.86, 23.72, 11.86, -11.86, -23.72, -11.86" type="float[]"/>
       <field value="-10.76, 0.00, 10.76, 10.76, 0.00, -10.76" type="float[]"/>
       <field value="8.30, -8.30, 8.30, -8.30, 8.30, -8.30" type="float[]"/>
@@ -229,6 +228,10 @@
       <field name="THRUST_Y" value="{1,0,1,1,0,1}" />
       <field name="THRUST_Z" value="{1,1,1,1,1,1}" />
     </define>
+
+    <define name="V_THRUST_X" value="5.0"/>
+    <define name="V_THRUST_Y" value="5.0"/>
+
   </section>
 
   <section name="WLS" prefix="WLS_">
@@ -245,12 +248,13 @@
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
     <define name="MAX_BANK" value="20" unit="deg" />
+    <define name="REF_MAX_SPEED" value="0.3"/>
   </section>
 
   <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
     <define name="MASS" value="0.41" />
-    <define name="POS_GAIN" value="0.1" />
-    <define name="SPEED_GAIN" value="0.4" />
+    <define name="POS_GAIN" value="1" />
+    <define name="SPEED_GAIN" value="1.5" />
   </section>
 
   <section name="NAV">
@@ -300,11 +304,16 @@
 
   <section name="UWB_POSITIONING" prefix="UWB_POSITIONING_">
     <define name="NB_ANCHORS" value="4"/>
-    <define name="ANCHORS_IDS" value="{0x1234, 0xcfdc, 0xdead, 0xbeef}"/>
-    <define name="ANCHORS_POS_X" value="{0., 0., 5., 5.}"/>
-    <define name="ANCHORS_POS_Y" value="{0., 5., 0., 5.}"/>
-    <define name="ANCHORS_POS_Z" value="{1.5, 1.5, 1.5, 1.5}"/>
-    <define name="USE_EKF" value="TRUE"/>
+    <define name="ANCHORS_IDS" value="{0x9591,0xFC17, 0x7223, 0x9E7A}"/>
+    <define name="ANCHORS_POS_Y" value="{4, 4, -3, -3}"/>
+    <define name="ANCHORS_POS_X" value="{-4.5, 2.5, 2.5, -4.5}"/>
+    <define name="ANCHORS_POS_Z" value="{1.7, 0.4, 1.7, 0.4}"/>
+    <define name="TAG_ID" value="0xCFDC"/>
+    <define name="USE_EKF" value="FALSE"/>
+  </section>
+
+  <section name="AHRS" prefix="AHRS_">
+    <define name="MAG_YAW_OFFSET" value="35" unit="deg"/>
   </section>
 
 </airframe>
