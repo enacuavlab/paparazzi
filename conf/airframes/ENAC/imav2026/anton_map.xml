@@ -180,15 +180,15 @@
     <!-- Full INDI -->
     <!-- control effectiveness -->
     <define name="G1" type="matrix">
-      <field value="{ -20.0,  -20.0,  20.0,  20.0 }"/>
-      <field value="{  20.0,  -20.0, -20.0,  20.0 }"/>
-      <field value="{  -1.5,    1.5,    -1.5,   1.5 }"/>
-      <field value="{ -1.5, -1.5, -1.5, -1.5}"/>
+      <field value="{ -26.0,  -26.0,  26.0,  26.0 }"/>
+      <field value="{  23.0,  -23.0, -23.0,  23.0 }"/>
+      <field value="{  -1.2,    1.2,    -1.2,   1.2 }"/>
+      <field value="{ -1, -1, -1, -1}"/>
     </define>
     <!--Counter torque effect of spinning up a rotor-->
     <define name="G2"        value="{-100, 100, -100, 100 }"/>
     <!-- first order actuator dynamics -->
-    <define name="ACT_FREQ" value="{25, 25, 25, 25}"/>
+    <define name="ACT_FREQ" value="{23.1, 23.1, 23.1, 23.1}"/>
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
     <!--Priority for each axis (roll, pitch, yaw and thrust)-->
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
