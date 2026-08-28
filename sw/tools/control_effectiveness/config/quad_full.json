@@ -4,7 +4,7 @@
     "act_freq" : 15.0
   },
   "ranges" : {
-    "act_freq" : [10.0, 40.0, 0.2]
+    "act_freq" : [8.0, 40.0, 0.1]
   },
   "data" : [
     {
@@ -73,7 +73,7 @@
     {
       "name" : "act_1",
       "type" : "command",
-      "column" : 11,
+      "column" : 7,
       "index" : 0,
       "format" : "pprz",
       "filters" : [["1st_order", ["act_freq"]], ["butter", [2, "filt_cutoff"]], ["diff_signal", [1]]]
@@ -81,7 +81,7 @@
     {
       "name" : "act_2",
       "type" : "command",
-      "column" : 12,
+      "column" : 8,
       "index" : 1,
       "format" : "pprz",
       "filters" : [["1st_order", ["act_freq"]], ["butter", [2, "filt_cutoff"]], ["diff_signal", [1]]]
@@ -89,7 +89,7 @@
     {
       "name" : "act_3",
       "type" : "command",
-      "column" : 13,
+      "column" : 9,
       "index" : 2,
       "format" : "pprz",
       "filters" : [["1st_order", ["act_freq"]], ["butter", [2, "filt_cutoff"]], ["diff_signal", [1]]]
@@ -97,7 +97,7 @@
     {
       "name" : "act_4",
       "type" : "command",
-      "column" : 14,
+      "column" : 10,
       "index" : 3,
       "format" : "pprz",
       "filters" : [["1st_order", ["act_freq"]], ["butter", [2, "filt_cutoff"]], ["diff_signal", [1]]]
@@ -105,7 +105,7 @@
     {
       "name" : "act_g2_1",
       "type" : "command",
-      "column" : 11,
+      "column" : 7,
       "index" : 4,
       "format" : "pprz",
       "filters" : [["1st_order", ["act_freq"]], ["butter", [2, "filt_cutoff"]], ["diff_signal", [2]], ["div", ["freq"]]]
@@ -113,7 +113,7 @@
     {
       "name" : "act_g2_2",
       "type" : "command",
-      "column" : 12,
+      "column" : 8,
       "index" : 5,
       "format" : "pprz",
       "filters" : [["1st_order", ["act_freq"]], ["butter", [2, "filt_cutoff"]], ["diff_signal", [2]], ["div", ["freq"]]]
@@ -121,7 +121,7 @@
     {
       "name" : "act_g2_3",
       "type" : "command",
-      "column" : 13,
+      "column" : 9,
       "index" : 6,
       "format" : "pprz",
       "filters" : [["1st_order", ["act_freq"]], ["butter", [2, "filt_cutoff"]], ["diff_signal", [2]], ["div", ["freq"]]]
@@ -129,7 +129,7 @@
     {
       "name" : "act_g2_4",
       "type" : "command",
-      "column" : 14,
+      "column" : 10,
       "index" : 7,
       "format" : "pprz",
       "filters" : [["1st_order", ["act_freq"]], ["butter", [2, "filt_cutoff"]], ["diff_signal", [2]], ["div", ["freq"]]]
