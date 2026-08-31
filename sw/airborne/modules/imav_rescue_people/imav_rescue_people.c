@@ -136,7 +136,7 @@ static void imav_rescue_jevois_msg_cb(uint8_t sender_id UNUSED,
     return; // invalid frame
   }
 
-  char category[20];
+  char category[21];
   float score = 0.f;
   char *tk = strtok(id, ":");
   bool valid = false;
@@ -302,4 +302,22 @@ static void rescue_send_draw(struct rescue_spot* spot)
   DOWNLINK_SEND_DRAW(DefaultChannel, DefaultDevice, &idx, &color, &shape, &status, &radius, 1, &lla.lat, 1, &lla.lon, nb_text, text);
 }
 
+void imav_rescue_set_best_wp(uint8_t wp_id)
+{
+  // find best
+  float best_score = 0.f;
+  int best_idx = -1;
+  for (int i = 0; i < IMAV_RESCUE_SPOTS_NB; i++) {
+    struct rescue_spot *sp = &rescue_spots[i];
+    if (sp->score > best_score && sp->count > 0) {
+      best_score = sp->score;
+      best_idx = i;
+    }
+  }
+  if (best_idx != -1 && best_idx < IMAV_RESCUE_SPOTS_NB) {
+    float pos_x = rescue_spots[best_idx].pos.x;
+    float pos_y = rescue_spots[best_idx].pos.y;
+    waypoint_move_xy_i(wp_id, POS_BFP_OF_REAL(pos_x), POS_BFP_OF_REAL(pos_y));
+  }
+}
 

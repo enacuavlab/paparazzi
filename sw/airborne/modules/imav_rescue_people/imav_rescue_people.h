@@ -26,6 +26,12 @@
 #ifndef IMAV_RESCUE_PEOPLE_H
 #define IMAV_RESCUE_PEOPLE_H
 
+#include "std.h"
+
 extern void imav_rescue_init(void);
+
+/** Update waypoint position to match the current best spot */
+extern void imav_rescue_set_best_wp(uint8_t wp_id);
+
 
 #endif  // IMAV_RESCUE_PEOPLE_H
