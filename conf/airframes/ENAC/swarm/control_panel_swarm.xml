@@ -13,7 +13,6 @@
       <program name="Data Link">
         <arg flag="-udp"/>
         <arg flag="-udp_broadcast"/>
-        <arg flag="-noac_info"/>
       </program>
       <program name="Server">
         <arg flag="-n"/>
@@ -59,7 +58,6 @@
       <program name="Data Link">
         <arg flag="-udp"/>
         <arg flag="-udp_broadcast"/>
-        <arg flag="-noac_info"/>
       </program>
       <program name="Server">
         <arg flag="-n"/>

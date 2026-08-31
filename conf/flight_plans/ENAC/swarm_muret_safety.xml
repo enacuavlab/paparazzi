@@ -40,6 +40,9 @@
       <corner name="_KILL4"/>
     </sector>
   </sectors>
+  <modules>
+    <module name="nav_fish"/>
+  </modules>
   <exceptions>
     <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 50)) @AND (nav_block @GEQ IndexOfBlock('Takeoff')) @AND (nav_block @LT IndexOfBlock('Flare'))" deroute="Standby"/>
   </exceptions>
@@ -101,6 +104,9 @@
     </block>
     <block name="Stay P10">
       <stay wp="p10"/>
+    </block>
+    <block group="fish" name="Nav Fish" strip_button="Fish" on_enter="autopilot_set_mode(AP_MODE_GUIDED)" on_exit="autopilot_set_mode(AP_MODE_NAV)">
+      <call fun="nav_fish_velocity_run()"/>
     </block>
     <block name="Land here" strip_button="Land Here" strip_icon="land-right.png">
       <call_once fun="NavSetWaypointHere(WP_TD)"/>

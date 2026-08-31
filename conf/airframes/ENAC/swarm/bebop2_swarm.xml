@@ -158,6 +158,19 @@
     <define name="DESCEND_VSPEED" value="-1.0"/>
   </section>
 
+  <section name="NAV_FISH" prefix="NAV_FISH_">
+    <define name="BODY_LENGTH" value="0.5"/>
+    <define name="FLUCT" value="0.0"/>
+    <define name="YW" value="0.2"/>
+    <define name="LW" value="9.0"/>
+    <define name="D0ALI" value="3.0"/>
+    <define name="LALI" value="18.0"/>
+    <define name="D0ATT" value="9.0"/>
+    <define name="LATT" value="18.0"/>
+    <define name="MIND2D" value="3.0"/>
+    <define name="WALL_DISTANCE" value="50.0"/>
+  </section>
+
   <section name="AUTOPILOT">
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
