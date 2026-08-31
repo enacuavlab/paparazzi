@@ -24,11 +24,11 @@ home_lon = 1.2732883
 home_height = 225-185
 home_alt = 225
 home_x,home_y = transformer.transform(home_lat,home_lon)
-stat_list = [ACStats(i,14.1,10/60,40,(i%10)*10+10+home_alt) for i in [62,60,61]]
+stat_list = [ACStats(i,14.1,10/60,40,(i%10)*10+10+home_alt) for i in [60,61,62]]
 separation = 42
 
 ##### Demo formation #####
-frmtion = formation.chevron_formation(len(stat_list),separation*4/3)
+frmtion = formation.chevron_formation(len(stat_list),separation*4/3).reorder([1,2,0])
     
 start = Pose3D(home_x,home_y+50,home_alt,0.)
 fleet_plan = formation_oval(stat_list,start,80,60,frmtion)
@@ -41,7 +41,7 @@ for p in fleet_plan.keyposes:
         p[i,2] = stat_list[i].cruise_altitude
     
 ##### Landing formation #####
-preland_frmtion = formation.column_formation(len(stat_list),70).reorder([1,0,2])
+preland_frmtion = formation.column_formation(len(stat_list),70).reorder([2,1,0])
 preland_frmtion.orientation -= np.deg2rad(136)
 preland_frmtion.center = np.array([home_x+130,home_y+110,home_alt])
 land_to_af_direction = 109.
@@ -49,9 +49,9 @@ land_to_af_bisdirection = land_to_af_direction + 180.
 land_to_af_distance = 160.
 possible_afs = [(land_to_af_direction,land_to_af_distance),(land_to_af_bisdirection,land_to_af_distance)]
 
-landing_sites = [LandingSite(43.4627618, 1.2733660, 0., possible_afs, 70),
-                 LandingSite(43.4626595, 1.2732809, 0., possible_afs, 70),
-                 LandingSite(43.4627104, 1.2733237, 0., possible_afs, 70),] 
+landing_sites = [LandingSite(43.4626595, 1.2732809, 0., possible_afs, 70),
+                 LandingSite(43.4627104, 1.2733237, 0., possible_afs, 70),
+                 LandingSite(43.4627618, 1.2733660, 0., possible_afs, 70)] 
 
 
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('fleet_plan',help='Plan type',choices=['demo','landing'])
+    parser.add_argument('fleet_plan',help='Plan type',choices=['demo','land','landing'])
     parser.add_argument('dubins_solver',help='Path to Dubins Fleet Planner')
     parser.add_argument('--verbose', '-v', action='count', default=0)
     parser.add_argument('-t','--takeoff',action='store_true',help='Send take off mission order first')
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     if args.carrot < 0.:
         raise ValueError(f"--carrot argument must be non-negative! Current value is: {args.carrot}")
     
-    if args.fleet_plan == 'landing':
+    if args.fleet_plan[0:4] == 'land':
         fleet_plan.keyposes = [preland_frmtion.get_abs_positions()]
     
     obstacles_path = None
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         home_alt,
         geometric_obstacles_path=obstacles_path,
         transformer=transformer,
-        end_strategy=FleetManagerEnd.LAND if args.fleet_plan == 'landing' else FleetManagerEnd.NOTHING,
+        end_strategy=FleetManagerEnd.LAND if args.fleet_plan[0:4] == 'land' else FleetManagerEnd.NOTHING,
         speed_ctl=args.speed_ctl,
         ignore_wind=args.ignore_wind,
         verbosity=args.verbose,
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     manager.extra_straight_length = 60
     manager.nps_simulation = True
     
-    if args.fleet_plan == 'landing':
+    if args.fleet_plan[0:4] == 'land':
         manager.landing_sites = landing_sites
         
     main_loop_exception = None
