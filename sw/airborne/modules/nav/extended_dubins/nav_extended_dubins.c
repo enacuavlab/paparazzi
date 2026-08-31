@@ -4,6 +4,7 @@
 
 #include "firmwares/fixedwing/nav.h"
 #include "firmwares/fixedwing/guidance/guidance_v.h"
+#include <std.h>
 
 #include "modules/gps/gps.h"
 #include "modules/datalink/downlink.h"
@@ -15,12 +16,6 @@
 
 #define DEBUG 1
 
-#ifdef DEBUG
-#include <stdio.h>
-#define IPRINTF(...) printf("%d : ",AC_ID) ; printf(__VA_ARGS__)
-#else
-#define IPRINTF(...)
-#endif
 
 bool dubins_draw = true;
 int dubins_draw_samples = 10;
@@ -453,6 +448,10 @@ bool nav_extended_dubins_track(void)
   if (curr_path_element >= EXTENDED_DUBINS_PATH_ELEMENTS_N)
   {
     IPRINTF("Dubins done!\n");
+    if (ref_problem.end_time > 0.)
+    {
+      v_ctl_auto_airspeed_setpoint = NOMINAL_AIRSPEED; // Reset to nominal airspeed
+    }
     return false;
   }
 
