@@ -26,6 +26,9 @@
 
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
+
+      <configure name="MODEM_PORT_OUT" value="4242+2*$(AC_ID)"/>
+      <configure name="MODEM_PORT_IN"  value="4243+2*$(AC_ID)"/>
     </target>
 
     <module name="telemetry" type="transparent_udp"/>
