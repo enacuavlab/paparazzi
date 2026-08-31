@@ -38,11 +38,6 @@
     
     <module name="telemetry" type="xbee_api"/>
 
-    <!--module name="extra_dl">
-      <configure name="EXTRA_DL_PORT" value="UART3"/>
-      <configure name="EXTRA_DL_BAUD" value="B115200"/>
-    </module-->
-
     <module name="actuators" type="dshot">
       <configure name="DSHOT_BIDIR" value="FALSE"/>
     </module>
@@ -55,23 +50,28 @@
     <module name="stabilization" type="indi"/>
     <module name="guidance" type="indi"/>
 
-    <module name="ins" type="ekf2"/>
+    <module name="ins" type="ekf2">
+      <configure name="USE_ALT_LLA_WAYPOINTS" value="FALSE"/>
+      <define name="INS_EKF2_FORCE_NAV_REF" value="TRUE"/>
+    </module>      
+
 
     <module name="flight_recorder"/>
-    <module name="logger" type="control_effectiveness"/>
-
-    <module name="thermal_ctl">
-      <configure name="EXTRA_DL_PORT" value="UART3"/>
-      <configure name="EXTRA_DL_BAUD" value="B115200"/>
+    <module name="logger_control_effectiveness">
+      <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
     </module>
+
+    <!-- <module name="sonar" type="vl53l4cx">
+    </module> -->
+
 
   </firmware>
 
   <servos driver="DShot">
-    <servo name="FR" no="1" min="0" neutral="100" max="2000"/>
-    <servo name="BR" no="3" min="0" neutral="100" max="2000"/>
-    <servo name="BL" no="4" min="0" neutral="100" max="2000"/>
-    <servo name="FL" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="FR" no="2" min="0" neutral="100" max="2000"/>
+    <servo name="BR" no="1" min="0" neutral="100" max="2000"/>
+    <servo name="BL" no="3" min="0" neutral="100" max="2000"/>
+    <servo name="FL" no="4" min="0" neutral="100" max="2000"/>
   </servos>
 
   <commands>
@@ -82,17 +82,6 @@
     <axis name="THRUST" failsafe_value="0"/>
     <axis name="THROTTLE" failsafe_value="MOTOR_STOP"/>
   </commands>
-
-  <!-- <rc_commands>
-    <set command="THROTTLE" value="@THROTTLE"/>
-  </rc_commands>
-
-  <command_laws>
-    <set servo="FR" value="@THROTTLE"/>
-    <set servo="BR" value="@THROTTLE"/>
-    <set servo="BL" value="@THROTTLE"/>
-    <set servo="FL" value="@THROTTLE"/>
-  </command_laws> -->
 
   <command_laws>
     <set servo="FR" value="@FR"/>
@@ -110,8 +99,8 @@
           <field name="scale_f" value="true"/>
           <field name="rotation" value="true"/>
         </field>
-        <field name="neutral" value="-8,-5,94" type="int[]"/>
-        <field name="scale_f" value="{ 2.4486, 2.4484, 2.4532 }"/>
+        <field name="neutral" value="-5,7,77" type="int[]"/>
+        <field name="scale_f" value="{ 2.4474, 2.4480, 2.4559 }"/>
         <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
@@ -134,8 +123,8 @@
           <field name="scale_f" value="true"/>
           <field name="rotation" value="true"/>
         </field>
-        <field name="neutral" value="-3002,971,-297" type="int[]"/>
-        <field name="scale_f" value="{ 0.7758, 0.8038, 0.7907 }"/>
+        <field name="neutral" value="-1903,795,-68" type="int[]"/>
+        <field name="scale_f" value="{ 0.5513, 0.5620, 0.5576 }"/>
         <field value="TAWAKIV2_MAG_ROT"/>
       </field>
     </define>
@@ -179,15 +168,15 @@
     <!-- Full INDI -->
     <!-- control effectiveness -->
     <define name="G1" type="matrix">
-      <field value="{ -20.0,  -20.0,  20.0,  20.0 }"/>
-      <field value="{  20.0,  -20.0, -20.0,  20.0 }"/>
-      <field value="{  -1.5,    1.5,    -1.5,   1.5 }"/>
-      <field value="{ -1.5, -1.5, -1.5, -1.5}"/>
+      <field value="{ -18.0,  -18.0,  18.0,  18.0 }"/>
+      <field value="{  18.0,  -18.0, -18.0,  18.0 }"/>
+      <field value="{  -1,    1,    -1,   1 }"/>
+      <field value="{ -1.2, -1.2, -1.2, -1.2}"/>
     </define>
     <!--Counter torque effect of spinning up a rotor-->
-    <define name="G2"        value="{-100, 100, -100, 100 }"/>
+    <define name="G2"        value="{-105, 105, -105, 105 }"/>
     <!-- first order actuator dynamics -->
-    <define name="ACT_FREQ" value="{25, 25, 25, 25}"/>
+    <define name="ACT_FREQ" value="{18.3, 18.3, 18.3, 18.3}"/>
     <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
     <!--Priority for each axis (roll, pitch, yaw and thrust)-->
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
