@@ -337,8 +337,8 @@ static bool nav_land_run(void)
       NavVerticalAutoThrottleMode(0.f);
       NavVerticalThrottleMode(0.f);
       NavAttitude(0.f);
-      landing.status = NAV_LANDING_INIT;
-      return false;
+      // landing.status = NAV_LANDING_INIT;
+      // return false;
       
   }
   landing.timeout = false;
