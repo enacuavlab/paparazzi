@@ -236,7 +236,7 @@ void autopilot_reset_flight_time(void)
  */
 void autopilot_force_motors_on(bool motors_on)
 {
-  IPRINTF("(autopilot_force_motors_on) Motors on: %s", motors_on ? "true" : "false");
+  IPRINTF("(autopilot_force_motors_on) Motors on: %s\n", motors_on ? "true" : "false");
 #if USE_GENERATED_AUTOPILOT
   autopilot_generated_set_motors_on(motors_on);
 #else
@@ -250,7 +250,7 @@ void autopilot_force_motors_on(bool motors_on)
  */
 bool autopilot_set_motors_on(bool motors_on)
 {
-  IPRINTF("(autopilot_set_motors_on) Motors on: %s (current: %s)", motors_on ? "true" : "false", autopilot.motors_on ? "true" : "false");
+  IPRINTF("(autopilot_set_motors_on) Motors on: %s (current: %s)\n", motors_on ? "true" : "false", autopilot.motors_on ? "true" : "false");
   // Prevent unnessary preflight checks
   if (autopilot.motors_on == motors_on) {
     return true;
@@ -303,7 +303,7 @@ bool autopilot_get_motors_on(void)
  */
 void autopilot_set_kill_throttle(bool kill)
 {
-  IPRINTF("(autopilot_set_kill_throttle) Kill throttle: %s", kill ? "true" : "false");
+  IPRINTF("(autopilot_set_kill_throttle) Kill throttle: %s\n", kill ? "true" : "false");
   autopilot.kill_throttle = kill;
   autopilot_set_motors_on(!kill);
 }
