@@ -49,6 +49,9 @@
     <waypoint name="_HERE" lat="48.8065608" lon="7.8530971"/>
     <waypoint name="SEARCH" x="-45.57" y="386.571"/>
     <waypoint name="RESCUE" x="-53.678" y="371.374"/>
+    <waypoint name="R1" x="-59.538" y="394.244"/>
+    <waypoint name="R2" x="-58.843" y="388.047"/>
+    <waypoint name="R3" x="-57.558" y="381.841"/>
   </waypoints>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
@@ -69,6 +72,7 @@
       <define name="TAG_TRACKING_SIM_WP" value="WP_TAG"/>
     </module>
     <module name="agl_dist"/>
+    <module name="imav_rescue_people"/>
   </modules>
   <includes>
     <include name="Data" procedure="IMAV2026_data.xml"/>
@@ -133,6 +137,7 @@
       <for var="i" from="1" to="search_radius/search_sweep">
         <circle wp="SEARCH" radius="search_sweep*$i" height="search_height" until="NavCircleCount() @GT 1."/>
       </for>
+      <call_once fun="imav_rescue_set_best_wp(WP_RESCUE)"/>
       <deroute block="Drop Medikit"/>
       <!--deroute block="Landing"/-->
     </block>
