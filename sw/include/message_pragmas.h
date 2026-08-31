@@ -34,4 +34,7 @@
 #define PRINT_CONFIG_VAR(var)
 #endif
 
+/* dynamic printing, only useful for debugging */
+#define IPRINTF(...) printf("%d : ",AC_ID) ; printf(__VA_ARGS__)
+
 #endif
