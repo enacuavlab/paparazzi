@@ -76,6 +76,14 @@
 #define BARO_BMP3_SENDER_ID 20
 #endif
 
+#ifndef BARO_DPS310_SENDER_ID
+#define BARO_DPS310_SENDER_ID 21
+#endif
+
+#ifndef BARO_SPA_SENDER_ID
+#define BARO_SPA_SENDER_ID 22
+#endif
+
 #ifndef METEO_STICK_SENDER_ID
 #define METEO_STICK_SENDER_ID 30
 #endif
@@ -304,8 +312,8 @@
 #define GPS_IMCU_ID 14
 #endif
 
-#ifndef GPS_DW1000_ID
-#define GPS_DW1000_ID 15
+#ifndef GPS_UWB_ID
+#define GPS_UWB_ID 15
 #endif
 
 #ifndef GPS_UBX2_ID
@@ -528,12 +536,20 @@
 #endif
 
 /*
- * UWB communication (message 19)
+ * UWB communication and ranging (messages 19, 43, 44)
 */
 #ifndef UWB_COMM_ID
 #define UWB_COMM_ID 1
 #endif
 
+#ifndef UWB_DW1000_ARDUINO_ID
+#define UWB_DW1000_ARDUINO_ID 2
+#endif
+
+
+#ifndef UWB_PDEC_ID
+#define UWB_PDEC_ID 3
+#endif
 /*
  * IDs of Obstacle detection systems
  */
