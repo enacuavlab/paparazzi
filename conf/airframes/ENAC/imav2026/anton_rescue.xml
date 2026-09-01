@@ -55,14 +55,11 @@
     <module name="actuators" type="pwm"/>
     <module name="switch" type="servo"/>
 
-    <!--module name="sonar_adc">
-      <configure name="SONAR_ADC_PORT" value="ADC_1"/>
+    <module name="sonar" type="vl53l1x">
+      <configure name="SONAR_VL53L1X_I2C_DEV" value="i2c2"/>
+      <!-- <define name="SENSOR_SYNC_SEND_SONAR"/> -->
       <define name="USE_SONAR"/>
     </module>
-    <module name="agl_dist"/-->
-    <!--module name="current_sensor">
-      <configure name="ADC_CURRENT_SENSOR" value="ADC_8"/>
-    </module-->
 
     <!--module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
