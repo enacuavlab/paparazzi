@@ -4,7 +4,7 @@
     <description>Indentify people to be rescued for IMAV2026</description>
   </doc>
   <dep>
-    <depends>jevois,uavcan</depends>
+    <depends>jevois</depends>
   </dep>
   <header>
     <file name="imav_rescue_people.h"/>
