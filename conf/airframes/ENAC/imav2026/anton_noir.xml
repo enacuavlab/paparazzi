@@ -234,7 +234,7 @@
 
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="ne_motor, se_motor, sw_motor, nw_motor" type="string[]"/>
-    <define name="JSBSIM_MODEL" value="simple_x_quad_ccw" type="string"/>
+    <define name="JSBSIM_MODEL" value="anton" type="string"/>
     <define name="COMMANDS_NB" value="4"/>
     <define name="NO_MOTOR_MIXING" value="TRUE"/>
   </section>

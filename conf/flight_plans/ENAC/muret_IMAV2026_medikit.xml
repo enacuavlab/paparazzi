@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="155" ground_alt="135" lat0="48.8064855" lon0="7.8525385" max_dist_from_home="1000" name="IMAV2026 Medikit" security_height="10" home_mode_height="30">
+<flight_plan alt="200" ground_alt="185" lat0="43.46223" lon0="1.27289" max_dist_from_home="600" name="Muret test IMAV2026" security_height="10" home_mode_height="10" wp_frame="ltp">
 
   <header>
     #define FP_NONE       0
@@ -19,9 +19,9 @@
     #ifdef NAV_C
     #ifndef TAG_TRACKING_COORD_TO_M
     #define TAG_TRACKING_COORD_TO_M (1.f / 1000.f)
+    #endif
     #ifdef SITL
     #define jevois_stream(_x) {}
-    #endif
     #endif
 
     static inline bool delay_test_rc(bool test, int delay) {
@@ -42,16 +42,15 @@
     #endif
   </header>
   <waypoints>
-    <waypoint name="HOME" lat="48.8064855" lon="7.8525385"/>
-    <waypoint name="STDBY" lat="48.8066600" lon="7.8521841"/>
-    <waypoint name="LANDPAD" lat="48.8064" lon="7.85256"/>
-    <waypoint name="TAG" lat="48.8064" lon="7.85233"/>
-    <waypoint name="_HERE" lat="48.8065608" lon="7.8530971"/>
-    <waypoint name="SEARCH" x="-45.57" y="386.571"/>
-    <waypoint name="RESCUE" x="-53.678" y="371.374"/>
-    <waypoint name="R1" x="-59.538" y="394.244"/>
-    <waypoint name="R2" x="-58.843" y="388.047"/>
-    <waypoint name="R3" x="-57.558" y="381.841"/>
+    <waypoint name="HOME" x="-20.316" y="40.632"/>
+    <waypoint name="STDBY" x="-18.312" y="30.449"/>
+    <waypoint name="LANDPAD" x="-20.528" y="25.442"/>
+    <waypoint name="_HERE" x="41.14" y="7.752"/>
+    <waypoint name="SEARCH" x="12.955" y="81.688"/>
+    <waypoint name="RESCUE" x="-16.844" y="67.943"/>
+    <waypoint name="R1" x="-13.188" y="96.167"/>
+    <waypoint name="R2" x="-14.181" y="90.887"/>
+    <waypoint name="R3" x="-15.506" y="86.363"/>
   </waypoints>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
@@ -67,21 +66,21 @@
   </variables>
   <modules>
     <module name="nav" type="takeoff_and_landing"/>
-    <module name="tag_tracking">
+    <!--module name="tag_tracking">
       <define name="TAG_TRACKING_WP" value="WP_LANDPAD"/>
       <define name="TAG_TRACKING_SIM_WP" value="WP_TAG"/>
-    </module>
+    </module-->
     <module name="agl_dist"/>
     <module name="imav_rescue_people"/>
   </modules>
-  <includes>
+  <!--includes>
     <include name="Data" procedure="IMAV2026_data.xml"/>
-  </includes>
+  </includes-->
   <exceptions>
-    <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 100)) @AND (nav_block @GT IndexOfBlock('Holding point')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
-    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 120)) @AND (nav_block @GT IndexOfBlock('Holding point')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Kill landed"/>
-    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed')) @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 5))" deroute="Kill landed"/>
-    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed')) @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))" deroute="Kill landed"/>
+    <!--exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 100))                @AND (nav_block @GT IndexOfBlock('Holding point')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Standby"/>
+    <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 120))                @AND (nav_block @GT IndexOfBlock('Holding point')) @AND (nav_block @LT IndexOfBlock('Kill landed'))" deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed'))                @AND (GpsIsLost() @AND delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 5))" deroute="Kill landed"/>
+    <exception cond="(nav_block @GT IndexOfBlock('Holding point') @AND nav_block @LT IndexOfBlock('Kill landed'))                @AND (delay_test_rc(RadioControlIsLost(),20) @AND (datalink_time @GT 15))" deroute="Kill landed"/-->
   </exceptions>
   <blocks>
     <block name="Wait GPS">
@@ -91,7 +90,8 @@
       <while cond="!GpsFixValid()"/>
     </block>
     <block name="Geo init">
-      <while cond="LessThan(NavBlockTime(), 4)"/>
+      <while cond="LessThan(NavBlockTime(), 10)"/>
+      <!--<call_once fun="NavSetAltitudeReferenceHere()"/>-->
     </block>
     <block name="Holding point" strip_button="H. Point" group="home">
       <call_once fun="NavKillThrottle()"/>
@@ -157,7 +157,7 @@
     </block>
     <block name="Drop Medikit" on_enter="jevois_stream(true)" on_exit="jevois_stream(false)">
       <stay wp="RESCUE" until="stage_time @GT 3" height="search_height"/>
-      <stay wp="RESCUE" vmode="climb" climb="-0.5" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT drop_height)) @OR (GetPosHeight() @LT 0.5) @OR (!nav_is_in_flight())"/>
+      <stay wp="RESCUE" vmode="climb" climb="-0.5" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT drop_height)) @OR (GetPosHeight() @LT 1.) @OR (!nav_is_in_flight())"/>
       <call_once fun="DropOpen()"/>
       <stay wp="RESCUE" until="stage_time @GT 3" height="goto_height"/>
       <deroute block="Landing"/>
@@ -174,11 +174,10 @@
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
       <go wp="LANDPAD" from="STDBY" hmode="route" height="goto_height"/>
     </block>
-    <block name="Flare" on_enter="jevois_stream(true)" on_exit="jevois_stream(false)">
+    <block name="Flare"> <!-- on_enter="jevois_stream(true)" on_exit="jevois_stream(false)"> -->
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
-      <stay climb="2*nav.descend_vspeed" vmode="climb" wp="LANDPAD" until="GetPosHeight() @LT takeoff_height"/>
-      <stay wp="LANDPAD" height="takeoff_height" until="stage_time @GT 3"/>
+      <stay climb="2*nav.descend_vspeed" vmode="climb" wp="LANDPAD" until="GetPosHeight() @LT 10"/>
       <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
     </block>
     <block name="Kill landed">
