@@ -31,7 +31,7 @@
 #include "mcu_periph/gpio.h"
 
 #ifndef PUMP_CONTROL_ADC
-#define PUMP_CONTROL_ADC ADC_1
+#define PUMP_CONTROL_ADC ADC_4
 #endif
 
 #ifndef PUMP_CONTROL_ADC_EMPTY
@@ -39,14 +39,21 @@
 #endif
 
 #ifndef PUMP_CONTROL_GPIO_ACTIVATE
-#define PUMP_CONTROL_GPIO_ACTIVATE GPIOE,GPIO11
+#define PUMP_CONTROL_GPIO_ACTIVATE GPIOA,GPIO0
 #endif
 
 #ifndef PUMP_CONTROL_GPIO_PURGE
-#define PUMP_CONTROL_GPIO_PURGE GPIOE,GPIO13
+#define PUMP_CONTROL_GPIO_PURGE GPIOA,GPIO1
 #endif
 
+
+#define PUMP_CTRL_OFF 0
+#define PUMP_CTRL_PUMP 1
+#define PUMP_CTRL_VALVE 2
+
 static const float nav_dt = 1.f / NAVIGATION_FREQUENCY;
+
+float pump_ctrl_state;
 
 struct PumpControl {
   struct adc_buf adc_b;
@@ -73,6 +80,7 @@ void pump_activate(void)
   pump_control.time_pumping = 0.f;
   gpio_set(PUMP_CONTROL_GPIO_ACTIVATE);
   gpio_clear(PUMP_CONTROL_GPIO_PURGE);
+  pump_ctrl_state = PUMP_CTRL_PUMP;
 }
 
 void pump_purge(void)
@@ -81,12 +89,14 @@ void pump_purge(void)
   pump_control.time_pumping = 0.f;
   gpio_set(PUMP_CONTROL_GPIO_PURGE);
   gpio_clear(PUMP_CONTROL_GPIO_ACTIVATE);
+  pump_ctrl_state = PUMP_CTRL_VALVE;
 }
 
 void pump_stop(void)
 {
   gpio_clear(PUMP_CONTROL_GPIO_ACTIVATE);
   gpio_clear(PUMP_CONTROL_GPIO_PURGE);
+  pump_ctrl_state = PUMP_CTRL_OFF;
 }
 
 bool pump_done(float duration, float timeout)
@@ -102,3 +112,21 @@ bool pump_done(float duration, float timeout)
   return false;
 }
 
+void pump_control_handler(float value) {
+  int val = value;
+  switch (val)
+  {
+  case PUMP_CTRL_OFF:
+    pump_stop();
+    break;
+  case PUMP_CTRL_PUMP:
+    pump_activate();
+  break;
+  case PUMP_CTRL_VALVE:
+    pump_purge();
+  break;
+  
+  default:
+    break;
+  }
+}

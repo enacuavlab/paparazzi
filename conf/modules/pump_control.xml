@@ -3,6 +3,18 @@
   <doc>
     <description>Pump control for IMAV2026</description>
   </doc>
+  <settings>
+    <dl_settings>
+      <dl_settings name="Water">
+        <dl_setting var="pump_ctrl_state" min="0" max="3" values="OFF|PUMP|VALVE" handler="handler" module="pump_control/pump_control">
+          <strip_button name="Pump ON" value="1" group="water"/>
+          <strip_button name="Valve ON" value="2" group="water"/>
+          <strip_button name="Pump OFF" value="0" group="water"/>
+        </dl_setting>
+      </dl_settings>
+      
+    </dl_settings>
+  </settings>
   <dep>
     <depends>adc</depends>
   </dep>
@@ -12,7 +24,7 @@
   <init fun="pump_control_init()"/>
   <makefile>
     <file name="pump_control.c"/>
-    <define name="USE_ADC_1"/>
+    <define name="USE_ADC_4"/>
     <test/>
   </makefile>
 </module>
