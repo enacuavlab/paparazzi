@@ -14,7 +14,7 @@
     <configure name="PERIODIC_FREQUENCY" value="500"/>
     <configure name="AHRS_PROPAGATE_FREQUENCY" value="$(PERIODIC_FREQUENCY)"/>
 
-    <target name="ap" board="tawaki_1.1">
+    <target name="ap" board="tawaki_2.0">
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
       <module name="radio_control" type="sbus"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
@@ -24,17 +24,16 @@
     <target name="nps" board="pc">
       <module name="fdm" type="jsbsim"/>
       <module name="radio_control" type="ppm"/>
+      <define name="TAWAKIV2_IMU_ROT" value=""/>
+      <define name="TAWAKIV2_MAG_ROT" value=""/>
     </target>
 
     <module name="telemetry" type="xbee_api"/>
 
     <module name="actuators" type="dshot"/>
 
-    <module name="board" type="tawaki">
-      <define name="IMU_MPU_LOWPASS_FILTER" value="MPU60X0_DLPF_256HZ"/>
-      <define name="IMU_MPU_ACCEL_LOWPASS_FILTER" value="MPU60X0_DLPF_ACC_44HZ"/>
-      <define name="IMU_MPU_SMPLRT_DIV" value="0"/>
-    </module>
+    <module name="board" type="tawaki_2.0"/>
+
     <module name="gps" type="ublox">
       <configure name="GPS_BAUD" value="B115200"/>
       <define name="USE_GPS_UBX_RTCM" value="TRUE"/>
@@ -109,22 +108,26 @@
   <section name="IMU" prefix="IMU_">
     <define name="ACCEL_CALIB" type="array">
       <field type="struct">
-        <field name="abi_id" value="9"/>
+        <field name="abi_id" value="24"/>
         <field name="calibrated" type="struct">
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
+          <field name="rotation" value="true"/>
         </field>
-        <field name="neutral" value="10,68,3" type="int[]"/>
-        <field name="scale_f" value="{ 2.3211, 2.5230, 2.4626 }"/>
+        <field name="neutral" value="-9,6,-11" type="int[]"/>
+        <field name="scale_f" value="{ 2.4457, 2.4569, 2.4566 }"/>
+        <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
     <define name="GYRO_CALIB" type="array">
       <field type="struct">
-        <field name="abi_id" value="9"/>
+        <field name="abi_id" value="24"/>
         <field name="calibrated" type="struct">
           <field name="neutral" value="false"/>
-          <field name="scale" value="false"/>
+          <field name="scale_f" value="false"/>
+          <field name="rotation" value="true"/>
         </field>
+        <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
     <define name="MAG_CALIB" type="array">
@@ -133,9 +136,11 @@
         <field name="calibrated" type="struct">
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
+          <field name="rotation" value="true"/>
         </field>
-        <field name="neutral" value="-1479,-1342,-46" type="int[]"/>
-        <field name="scale_f" value="{ 0.6704, 0.6786, 0.6516 }"/>
+        <field name="neutral" value="-2209,524,-1210" type="int[]"/>
+        <field name="scale_f" value="{ 0.6938, 0.6884, 0.6702 }"/>
+        <field value="TAWAKIV2_MAG_ROT"/>
       </field>
     </define>
     <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
@@ -143,11 +148,6 @@
     <define name="BODY_TO_IMU_PSI" value="-135." unit="deg"/>
   </section>
 
-  <section name="MAG">
-    <define name="LIS3MDL_MAG_TO_IMU_PHI" value="0." unit="deg"/>
-    <define name="LIS3MDL_MAG_TO_IMU_THETA" value="0." unit="deg"/>
-    <define name="LIS3MDL_MAG_TO_IMU_PSI" value="0." unit="deg"/>
-  </section>
 
   <include href="conf/mag/toulouse_muret.xml"/>
 
@@ -291,4 +291,3 @@
   </section>
 
 </airframe>
-
