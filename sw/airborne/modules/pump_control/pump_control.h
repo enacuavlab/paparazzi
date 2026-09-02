@@ -34,6 +34,8 @@ extern void pump_purge(void);
 extern void pump_stop(void);
 extern bool pump_done(float duration, float timeout);
 
+void pump_control_report(void);
+
 void pump_control_handler(float value);
 extern float pump_ctrl_state;
 

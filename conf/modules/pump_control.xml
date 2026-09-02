@@ -23,6 +23,7 @@
     <file name="pump_control.h"/>
   </header>
   <init fun="pump_control_init()"/>
+  <periodic fun="pump_control_report()" freq="2" autorun="FALSE"/>
   <makefile>
     <file name="pump_control.c"/>
     <configure name="PUMP_CONTROL_ADC" default="ADC_4"/>

@@ -29,6 +29,7 @@
 #include "navigation.h"
 #include "mcu_periph/adc.h"
 #include "mcu_periph/gpio.h"
+#include "modules/datalink/downlink.h"
 
 #ifndef PUMP_CONTROL_ADC
 #error "PUMP_CONTROL_ADC must be defined!"
@@ -36,7 +37,7 @@
 #endif
 
 #ifndef PUMP_CONTROL_ADC_EMPTY
-#define PUMP_CONTROL_ADC_EMPTY 1000
+#define PUMP_CONTROL_ADC_EMPTY 20000
 #endif
 
 #ifndef PUMP_CONTROL_GPIO_ACTIVATE
@@ -130,4 +131,14 @@ void pump_control_handler(float value) {
   default:
     break;
   }
+}
+
+void pump_control_report(void)
+{
+  uint16_t val1 = adc_buf_get(&pump_control.adc_b);
+  uint16_t val2 = adc_buf_get(&pump_control.adc_b) > PUMP_CONTROL_ADC_EMPTY;
+
+  DOWNLINK_SEND_ADC_GENERIC(DefaultChannel, DefaultDevice,
+      &val1,
+      &val2);
 }
