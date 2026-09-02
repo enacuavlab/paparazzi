@@ -31,6 +31,7 @@
 #include "mcu_periph/gpio.h"
 
 #ifndef PUMP_CONTROL_ADC
+#error "PUMP_CONTROL_ADC must be defined!"
 #define PUMP_CONTROL_ADC ADC_4
 #endif
 
