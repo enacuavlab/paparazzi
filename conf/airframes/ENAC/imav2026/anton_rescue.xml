@@ -270,6 +270,10 @@
     </define>
   </section>
 
+  <section name="IMAV_RESCUE" prefix="IMAV_RESCUE_">
+    <define name="SPOTS_WPS" value="{WP_R1, WP_R2, WP_R3}"/>
+  </section>
+
   <section name="MISC">
     <define name="POWER_SWITCH_GPIO" value="GPIOA,GPIO6"/>
   </section>

@@ -32,6 +32,8 @@
 #include <string.h>
 #include "state.h"
 
+#include <generated/flight_plan.h>
+
 #ifndef IMAV_RESCUE_JEVOIS_MSG_ID
 #define IMAV_RESCUE_JEVOIS_MSG_ID ABI_BROADCAST
 #endif

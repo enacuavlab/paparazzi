@@ -70,12 +70,13 @@
     <variable init="3." var="search_speed" min="0.5" max="6." step="0.1"/>
     <variable init="15." var="search_radius" min="-1." max="30." step="1.0"/>
     <variable init="4." var="search_sweep" min="1." max="20." step="0.1"/>
-    <variable init="1.5" var="drop_height" min="1." max="3." step="0.1"/>
+    <variable init="2." var="drop_height" min="1." max="3." step="0.1"/>
     <variable init="1." var="water_height" min="0." max="80." step="0.1"/>
     <variable init="1." var="water_speed" min="0.5" max="10." step="0.1"/>
     <variable init="30." var="water_duration" min="1." max="60." step="1."/>
     <variable init="50." var="water_timeout" min="10." max="120." step="1."/>
     <variable init="30." var="water_purge" min="1." max="60." step="1."/>
+    <variable init="1." var="water_height_target"/>
   </variables>
   <modules>
     <module name="nav" type="survey_hybrid">
@@ -89,6 +90,7 @@
     </module>
     <module name="agl_dist"/>
     <module name="pump_control"/>
+    <module name="agl_dist"/>
     <module name="imav_rescue_people"/>
   </modules>
   <exceptions>
@@ -172,15 +174,17 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
-      <go wp="WATER" from="_HERE" hmode="route" height="goto_height"/>
+      <go wp="WATER" from="_HERE" hmode="route" height="goto_height" approaching_time="2"/>
       <deroute block="Fill Tank"/>
     </block>
     <block name="Fill Tank" on_exit="pump_stop()">
       <call_once fun="guidance_h_SetMaxSpeed(water_speed)"/>
       <stay wp="WATER" height="goto_height" until="stage_time @GT 2"/>
-      <stay wp="WATER" height="water_height" until="GetPosHeight() @LT water_height + 0.5"/>
+      <stay wp="WATER" vmode="climb" climb="-0.6" until="GetPosHeight() @LT water_height + 3"/>
+      <stay wp="WATER" vmode="climb" climb="-0.3" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT water_height)) @OR (!nav_is_in_flight())"/>
+      <set var="water_height_target" value="GetPosHeight()"/>
       <call_once fun="pump_activate()"/>
-      <stay wp="WATER" height="water_height" until="pump_done(water_duration, water_timeout)"/>
+      <stay wp="WATER" height="water_height_target" until="pump_done(water_duration, water_timeout)"/>
       <deroute block="Goto Drop Water"/>
     </block>
     <block name="Goto Drop Water">
