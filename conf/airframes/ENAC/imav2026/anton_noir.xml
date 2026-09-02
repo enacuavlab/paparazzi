@@ -61,11 +61,15 @@
       <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
     </module>
 
-    <module name="sonar" type="vl53l1x">
-      <configure name="SONAR_VL53L1X_I2C_DEV" value="i2c2"/>
+    <module name="sonar" type="adc">
+       <configure name="SONAR_ADC_PORT" value="ADC_3"/>
+       <!-- <configure name="USE_SONAR_ADC_AGL" value="TRUE" /> -->
+       <define name="SONAR_ADC_SCALE" value="0.00016129" />
       <!-- <define name="SENSOR_SYNC_SEND_SONAR"/> -->
       <define name="USE_SONAR"/>
     </module>
+
+    <configure name="PUMP_CONTROL_ADC" value="ADC_4"/>
 
 
   </firmware>

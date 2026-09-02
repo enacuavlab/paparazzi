@@ -2,6 +2,7 @@
 <module name="pump_control" dir="pump_control">
   <doc>
     <description>Pump control for IMAV2026</description>
+    <configure name="PUMP_CONTROL_ADC" default="ADC_4"/>
   </doc>
   <settings>
     <dl_settings>
@@ -24,7 +25,9 @@
   <init fun="pump_control_init()"/>
   <makefile>
     <file name="pump_control.c"/>
-    <define name="USE_ADC_4"/>
+    <configure name="PUMP_CONTROL_ADC" default="ADC_4"/>
+    <define name="PUMP_CONTROL_ADC" value="$(PUMP_CONTROL_ADC)"/>
+    <define name="USE_$(PUMP_CONTROL_ADC)" />
     <test/>
   </makefile>
 </module>
