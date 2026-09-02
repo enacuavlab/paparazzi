@@ -66,11 +66,11 @@
     <variable init="7." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="5." var="takeoff_height" min="0.5" max="15." step="0.1"/>
     <variable init="2." var="land_speed" min="0.5" max="10." step="0.1"/>
-    <variable init="60." var="mapping_height" min="5." max="80." step="0.1"/>
-    <variable init="50." var="mapping_sweep" min="5." max="20." step="0.1"/>
+    <variable init="50." var="mapping_height" min="5." max="80." step="0.1"/>
+    <variable init="30." var="mapping_sweep" min="5." max="20." step="0.1"/>
     <variable init="7." var="mapping_speed" min="0.5" max="10." step="0.1"/>
     <variable init="-1." var="mapping_radius" min="-1." max="100." step="1.0"/>
-    <variable init="40." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
+    <variable init="30." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
   </variables>
   <modules>
     <module name="nav" type="takeoff_and_landing"/>
