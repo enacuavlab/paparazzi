@@ -7,7 +7,7 @@
 
       Output values are stored in global variables that can be used in flight plans
     </description>
-    <section name="AGL" prefix="AGL_DIST_SONAR_">
+    <section name="AGL" prefix="AGL_DIST_">
       <define name="ID" value="ABI_BROADCAST" description="Sonar ABI ID"/>
       <define name="MAX_RANGE" value="5." description="Max detection range in meters"/>
       <define name="MIN_RANGE" value="0.001" description="Min detection range in meters"/>

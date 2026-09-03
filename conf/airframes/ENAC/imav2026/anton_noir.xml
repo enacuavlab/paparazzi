@@ -61,15 +61,6 @@
       <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
     </module>
 
-    <!-- <module name="sonar" type="adc">
-       <configure name="SONAR_ADC_PORT" value="ADC_3"/>
-       <configure name="USE_SONAR_ADC_AGL" value="TRUE" />
-       <configure name="SONAR_ADC_USE_FILTER" value="FALSE"/>
-       <define name="SONAR_ADC_SCALE" value="0.00016129" />
-       <define name="SENSOR_SYNC_SEND_SONAR"/>
-      <define name="USE_SONAR"/>
-    </module> -->
-
     <module name="lidar" type="tfmini">
       <configure name="TFMINI_PORT" value="UART3"/>
     </module>
