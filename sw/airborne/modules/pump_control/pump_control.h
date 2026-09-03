@@ -33,7 +33,7 @@ extern void pump_activate(void);
 extern void pump_purge(void);
 extern void pump_stop(void);
 extern bool pump_done(float duration, float timeout);
-
+extern bool pump_pumping(void);
 void pump_control_report(void);
 
 void pump_control_handler(float value);

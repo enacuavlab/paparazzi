@@ -181,10 +181,11 @@
       <call_once fun="guidance_h_SetMaxSpeed(water_speed)"/>
       <stay wp="WATER" height="goto_height" until="stage_time @GT 2"/>
       <stay wp="WATER" vmode="climb" climb="-0.6" until="GetPosHeight() @LT water_height + 3"/>
-      <stay wp="WATER" vmode="climb" climb="-0.3" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT water_height)) @OR (!nav_is_in_flight())"/>
+      <stay wp="WATER" vmode="climb" climb="-0.3" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT water_height)) @OR pump_pumping()"/>
       <set var="water_height_target" value="GetPosHeight()"/>
       <call_once fun="pump_activate()"/>
-      <stay wp="WATER" height="water_height_target" until="pump_done(water_duration, water_timeout)"/>
+      <stay wp="WATER" vmode="climb" climb="0" until="pump_done(water_duration, water_timeout)"/>
+      <!-- <stay wp="WATER" height="water_height_target" until="pump_done(water_duration, water_timeout)"/> -->
       <deroute block="Goto Drop Water"/>
     </block>
     <block name="Goto Drop Water">

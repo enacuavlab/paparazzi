@@ -101,10 +101,14 @@ void pump_stop(void)
   pump_ctrl_state = PUMP_CTRL_OFF;
 }
 
+bool pump_pumping(void) {
+  return adc_buf_get(&pump_control.adc_b) > PUMP_CONTROL_ADC_EMPTY;
+}
+
 bool pump_done(float duration, float timeout)
 {
   pump_control.time += nav_dt;
-  if (adc_buf_get(&pump_control.adc_b) > PUMP_CONTROL_ADC_EMPTY) {
+  if (pump_pumping()) {
     pump_control.time_pumping += nav_dt;
   }
   if ((timeout > 0.f && pump_control.time > timeout)

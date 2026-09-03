@@ -30,6 +30,8 @@
 #define AGL_DIST_H
 
 extern void agl_dist_init(void);
+void agl_dist_report(void);
+void agl_dist_timeout(void);
 
 extern float agl_dist_valid;
 extern float agl_dist_value;
