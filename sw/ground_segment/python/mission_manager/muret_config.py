@@ -59,7 +59,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('fleet_plan',help='Plan type',choices=['demo','land','landing'])
+    parser.add_argument('fleet_plan',help='Plan type',choices=['demo','land','landing','actual'])
     parser.add_argument('dubins_solver',help='Path to Dubins Fleet Planner')
     parser.add_argument('--verbose', '-v', action='count', default=0)
     parser.add_argument('-t','--takeoff',action='store_true',help='Send take off mission order first')
@@ -76,8 +76,15 @@ if __name__ == "__main__":
     if args.carrot < 0.:
         raise ValueError(f"--carrot argument must be non-negative! Current value is: {args.carrot}")
     
+    request_land = False
+    
+    if args.fleet_plan == 'actual':
+        fleet_plan.keyposes.append(preland_frmtion.get_abs_positions())
+        request_land = True
+    
     if args.fleet_plan[0:4] == 'land':
         fleet_plan.keyposes = [preland_frmtion.get_abs_positions()]
+        request_land = True
     
     obstacles_path = None
     if args.obstacles is not None:
@@ -93,7 +100,7 @@ if __name__ == "__main__":
         home_alt,
         geometric_obstacles_path=obstacles_path,
         transformer=transformer,
-        end_strategy=FleetManagerEnd.LAND if args.fleet_plan[0:4] == 'land' else FleetManagerEnd.NOTHING,
+        end_strategy=FleetManagerEnd.LAND if request_land else FleetManagerEnd.NOTHING,
         speed_ctl=args.speed_ctl,
         ignore_wind=args.ignore_wind,
         verbosity=args.verbose,
@@ -102,7 +109,7 @@ if __name__ == "__main__":
     manager.samples = 0 #if obstacles_path is None else 10
     manager.end_of_plan_carrot = args.carrot
     manager.extra_straight_length = 60
-    manager.nps_simulation = True
+    manager.nps_simulation = False
     
     if args.fleet_plan[0:4] == 'land':
         manager.landing_sites = landing_sites

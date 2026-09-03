@@ -530,8 +530,8 @@ bool nav_extended_dubins_track(void)
       endpoint.x += ((distance_to_curr+el.length)/NOMINAL_AIRSPEED) * ref_problem.wind_x;
       endpoint.y += ((distance_to_curr+el.length)/NOMINAL_AIRSPEED) * ref_problem.wind_y;
 
-      float dx = endpoint.x - startpoint.x;
-      float dy = endpoint.y - startpoint.y;
+      dx = endpoint.x - startpoint.x;
+      dy = endpoint.y - startpoint.y;
 
       startpoint.theta = atan2f(dy,dx);
       DubinsElement_t el_wind = {startpoint,0.,sqrtf(dx*dx+dy*dy)};

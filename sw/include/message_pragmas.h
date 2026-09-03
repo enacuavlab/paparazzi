@@ -35,6 +35,7 @@
 #endif
 
 /* dynamic printing, only useful for debugging */
-#define IPRINTF(...) printf("%d : ",AC_ID) ; printf(__VA_ARGS__)
+// #define IPRINTF(...) printf("%d : ",AC_ID) ; printf(__VA_ARGS__)
+#define IPRINTF(...)
 
 #endif

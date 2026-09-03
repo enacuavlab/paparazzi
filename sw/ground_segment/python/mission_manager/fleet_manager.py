@@ -30,18 +30,18 @@ DEBUG = True
 
 ########## Util ##########
 
-from datetime import datetime, timezone
+from datetime import timezone
 
-GPS_EPOCH = datetime(1980, 1, 6, tzinfo=timezone.utc)
+GPS_EPOCH = datetime.datetime(1980, 1, 6, tzinfo=timezone.utc)
 GPS_UTC_OFFSET = 18  # GPS is currently 18 seconds ahead of UTC
 
 
 def get_gps_time():
-    utc = datetime.now(timezone.utc)
+    utc = datetime.datetime.now(timezone.utc)
 
     # Convert UTC to GPS time
     gps = utc.timestamp() + GPS_UTC_OFFSET
-    gps = datetime.fromtimestamp(gps, timezone.utc)
+    gps = datetime.datetime.fromtimestamp(gps, timezone.utc)
 
     elapsed = gps - GPS_EPOCH
 
