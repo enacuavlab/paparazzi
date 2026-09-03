@@ -30,6 +30,28 @@ DEBUG = True
 
 ########## Util ##########
 
+from datetime import datetime, timezone
+
+GPS_EPOCH = datetime(1980, 1, 6, tzinfo=timezone.utc)
+GPS_UTC_OFFSET = 18  # GPS is currently 18 seconds ahead of UTC
+
+
+def get_gps_time():
+    utc = datetime.now(timezone.utc)
+
+    # Convert UTC to GPS time
+    gps = utc.timestamp() + GPS_UTC_OFFSET
+    gps = datetime.fromtimestamp(gps, timezone.utc)
+
+    elapsed = gps - GPS_EPOCH
+
+    total_seconds = elapsed.total_seconds()
+    week = int(total_seconds // 604800)
+    tow = total_seconds % 604800
+
+    return week, tow
+
+
 def convert_point_list_to_dubins_obstacles(
                         pts:list[tuple[float,float]],
                         wrap:bool=False,
@@ -350,10 +372,7 @@ class FleetManager:
         if self.nps_simulation:
             return time.time() % 604800 + self.adhoc_offset# 1 week = 604800 seconds 
         else:
-            now_utc = datetime.datetime.now(datetime.timezone.utc)
-            start_of_week = (now_utc - datetime.timedelta(days=now_utc.weekday())).replace(hour=0,minute=0,second=0,microsecond=0)
-            tow = (now_utc.timestamp() - start_of_week.timestamp()+86107) # 37 is the UTC to TAI fix
-            return tow
+            return get_gps_time()[1]
     
     def get_timed_poses(self) -> dict[int,tuple[float,Pose3D]]:
         """Return the list of currently known aircraft poses, with their associated onboard timestamps
