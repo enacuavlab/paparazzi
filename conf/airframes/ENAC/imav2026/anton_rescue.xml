@@ -58,6 +58,10 @@
     <module name="lidar" type="tfmini">
       <configure name="TFMINI_PORT" value="UART4"/>
     </module>
+    
+    <module name="scoutector">
+      <configure name="UAVCAN_USE_CAN1" value="TRUE"/>
+    </module>
 
     <!--module name="tag_tracking">
       <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>

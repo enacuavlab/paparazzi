@@ -1,0 +1,25 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="scoutector" dir="imav_rescue_people" task="sensors">
+  <doc>
+    <description>Scoutector driver, specially made for IMAV 2026 !</description>
+  </doc>
+  <dep>
+    <depends>uavcan</depends>
+  </dep>
+  <header>
+    <file name="scoutector.h"/>
+  </header>
+  <init fun="scoutector_init()"/>
+  <periodic fun="scoutector_report()" freq="10.0" autorun="FALSE"/>
+  <makefile target="ap">
+    <file name="scoutector.c"/>
+
+    <!-- Load DSDL generated files-->
+    <include name="$(PAPARAZZI_HOME)/var/include/DSDLcode/include"/>
+    <file name="uavcan.protocol.debug.KeyValue.c" dir="$(PAPARAZZI_HOME)/var/include/DSDLcode/src"/>
+    <test>
+      <include name="$(PAPARAZZI_HOME)/sw/ext/dronecan/libcanard"/>
+    </test>
+    <test/>
+  </makefile>
+</module>
