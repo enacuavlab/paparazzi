@@ -17,9 +17,11 @@
     <!-- Load DSDL generated files-->
     <include name="$(PAPARAZZI_HOME)/var/include/DSDLcode/include"/>
     <file name="uavcan.protocol.debug.KeyValue.c" dir="$(PAPARAZZI_HOME)/var/include/DSDLcode/src"/>
-    <test>
+    <test firmware="rotorcraft">
       <include name="$(PAPARAZZI_HOME)/sw/ext/dronecan/libcanard"/>
+      <define name="DOWNLINK_TRANSPORT" value="pprz_tp"/>
+      <define name="DOWNLINK_DEVICE" value="uart0"/>
+      <define name="USE_UART0"/>
     </test>
-    <test/>
   </makefile>
 </module>
