@@ -188,8 +188,8 @@
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
     <define name="REF_MIN_ZDD" value="-0.4*9.81"/>
     <define name="REF_MAX_ZDD" value=" 0.4*9.81"/>
-    <define name="REF_MIN_ZD" value="-2."/>
-    <define name="REF_MAX_ZD" value=" 2."/>
+    <define name="REF_MIN_ZD" value="-1.5"/>
+    <define name="REF_MAX_ZD" value=" 0.6"/>
     <define name="NOMINAL_HOVER_THROTTLE" value="0.35"/>
   </section>
 
