@@ -25,6 +25,7 @@
     <waypoint name="R2" x="-25.038" y="19.001"/>
     <waypoint name="R3" x="-19.513" y="22.543"/>
     <waypoint name="RESCUE" x="-8.98" y="14.429"/>
+    <waypoint name="SEARCH" x="0." y="0."/>
     <waypoint name="WATER" x="-6.593" y="8.092"/>
     <waypoint name="DROP" x="4.988" y="-7.253"/>
     <waypoint name="_FLY1" x="-8.433" y="60.016"/>
@@ -36,6 +37,7 @@
     <waypoint name="_KILL3" x="5.158" y="-66.664"/>
     <waypoint name="_KILL4" x="-62.023" y="26.33"/>
     <waypoint name="_HERE" x="13.836" y="-13.194"/>
+    <waypoint name="SCOUT" x="14.836" y="-11.194" height="0."/>
   </waypoints>
   <sectors>
     <sector color="lime" name="Flight_Area">
@@ -60,7 +62,7 @@
   <variables>
     <variable init="20." var="fp_max_height" min="5." max="30." step="1."/>
     <variable init="5." var="goto_height" min="2." max="20." step="0.1"/>
-    <variable init="4." var="goto_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="2." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="1." var="land_speed" min="0.5" max="10." step="0.1"/>
     <variable init="7." var="survey_height" min="5." max="80." step="0.1"/>
     <variable init="6." var="survey_sweep" min="5." max="20." step="0.1"/>
@@ -68,8 +70,8 @@
     <variable init="-1." var="survey_radius" min="-1." max="100." step="1.0"/>
     <variable init="8." var="search_height" min="4." max="20." step="0.1"/>
     <variable init="3." var="search_speed" min="0.5" max="6." step="0.1"/>
-    <variable init="15." var="search_radius" min="-1." max="30." step="1.0"/>
-    <variable init="4." var="search_sweep" min="1." max="20." step="0.1"/>
+    <variable init="20." var="search_radius" min="-1." max="30." step="1.0"/>
+    <variable init="3." var="search_sweep" min="1." max="20." step="0.1"/>
     <variable init="2." var="drop_height" min="1." max="3." step="0.1"/>
     <variable init="1." var="water_height" min="0." max="80." step="0.1"/>
     <variable init="1." var="water_speed" min="0.5" max="10." step="0.1"/>
@@ -92,6 +94,7 @@
     <module name="pump_control"/>
     <module name="agl_dist"/>
     <module name="imav_rescue_people"/>
+    <module name="scoutector"/>
   </modules>
   <exceptions>
     <exception cond="(!InsideKill(GetPosX(), GetPosY()) @OR (GetPosHeight() @GT fp_max_height+5)) @AND (nav_block @GEQ IndexOfBlock('Takeoff')) @AND (nav_block @LEQ IndexOfBlock('Flare'))" deroute="Emergency"/>
@@ -142,16 +145,18 @@
     <block name="Goto Search" strip_button="Rescue">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <go wp="HOME" from="_HERE" hmode="route" height="search_height"/>
+      <call_once fun="scout_map_reset(&scout_map)"/>
+      <go wp="SEARCH" from="_HERE" hmode="route" height="search_height"/>
       <deroute block="Run Search"/>
     </block>
     <block name="Run Search" on_enter="jevois_stream(true)" on_exit="jevois_stream(false)">
       <!-- exception to deroute to drop if validated target -->
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <for var="i" from="1" to="search_radius/search_sweep">
-        <circle wp="HOME" radius="search_sweep*$i" height="search_height" until="NavCircleCount() @GT 1."/>
+        <circle wp="SEARCH" radius="search_sweep*$i" height="search_height" until="NavCircleCount() @GT 1."/>
       </for>
-      <call_once fun="imav_rescue_set_best_wp(WP_RESCUE)"/>
+      <call_once fun="scout_map_update_wp(&scout_map, WP_RESCUE)"/>
+      <!--call_once fun="imav_rescue_set_best_wp(WP_RESCUE)"/-->
       <deroute block="Drop Medikit"/>
     </block>
 

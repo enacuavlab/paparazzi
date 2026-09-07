@@ -36,6 +36,18 @@
 #define WP_SEARCH 0
 #endif
 
+#define SCOUT_MAP_DEBUG 0
+
+#if (defined SITL) && SCOUT_MAP_DEBUG
+#define DEBUG_PRINT printf
+#else
+#define DEBUG_PRINT(...) {}
+#endif
+
+#ifndef SCOUT_MAP_THRESHOLD
+#define SCOUT_MAP_THRESHOLD 0.8f
+#endif
+
 static uavcan_event scoutector_uavcan_ev;
 
 scoutector_t scout_data;
@@ -87,6 +99,25 @@ void scoutector_report(void) {
   DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 3, f);
 }
 
+void scoutector_sim(void) {
+#if (defined SITL) && (defined WP_SCOUT)
+  struct EnuCoor_f scout = *waypoint_get_enu_f(WP_SCOUT);
+  struct EnuCoor_f pos = *stateGetPositionEnu_f();
+  struct FloatVect3 dp;
+  VECT3_DIFF(dp, pos, scout);
+  float dist = float_vect3_norm(&dp);
+  // scout at 3 m ~ 95 dB
+  // sound level: L(d) = L(d0) - 20 * log10(d/d0)
+  // snr = 20 db at 3 m with propellers -> L(d0) = 20 (FIXME check correct value)
+  float snr = 20. - 20.f*log10f(dist/3.f);
+  if (snr > 3.f) { //FIXME check with Alex
+    scout_data.snr = snr;
+  } else {
+    scout_data.snr = 0.f;
+  }
+  scout_mat_update(&scout_map, scout_data, *stateGetPositionNed_f());
+#endif
+}
 
 /*******
  * MAP *
@@ -96,6 +127,17 @@ void scout_map_init(struct scout_map_t *map, struct NedCoor_f pos, float res)
 {
   map->res = res;
   map->center = pos;
+  for (int i = 0; i < SCOUT_MAP_SIZE; i++) {
+    for (int j = 0; j < SCOUT_MAP_SIZE; j++) {
+      map->grid[i][j].det = 0.f;
+      map->grid[i][j].snr = 0.f;
+      map->grid[i][j].lit = 0.f;
+    }
+  }
+}
+
+void scout_map_reset(struct scout_map_t *map)
+{
   for (int i = 0; i < SCOUT_MAP_SIZE; i++) {
     for (int j = 0; j < SCOUT_MAP_SIZE; j++) {
       map->grid[i][j].det = 0.f;
@@ -124,21 +166,47 @@ float scout_mat_get_barycenter(struct scout_map_t *map, struct NedCoor_f *pos)
   int nb_qual = 0;
   float sum = 0.f;
   const int offset = (int)(SCOUT_MAP_SIZE / 2.f + 0.5f);
+  float max = 0.f;
+  //float mx = 0.f;
+  //float my = 0.f;
   for (int i = 0; i < SCOUT_MAP_SIZE; i++) {
     for (int j = 0; j < SCOUT_MAP_SIZE; j++) {
-      bx += map->grid[i][j].snr * (float)(i - offset);
-      by += map->grid[i][j].snr * (float)(j - offset);
-      sum += map->grid[i][j].snr;
-      if (map->grid[i][j].snr > 0.f) {
+      if (map->grid[i][j].snr > max) {
+        max = map->grid[i][j].snr;
+        // mx = (float)(i - offset) * map->res;
+        // my = (float)(j - offset) * map->res;
+      }
+    }
+  }
+  if (max < 1e-5) {
+    *pos = map->center;
+    return 0.f; // nothing in the map
+  }
+  DEBUG_PRINT("map:\n");
+  for (int i = 0; i < SCOUT_MAP_SIZE; i++) {
+    for (int j = 0; j < SCOUT_MAP_SIZE; j++) {
+      float val = powf(map->grid[i][j].snr/max, 2.f);
+      //float val = map->grid[i][j].snr/max;
+      DEBUG_PRINT("\t%.1f,", val);
+      if (val > SCOUT_MAP_THRESHOLD) {
+        bx += val * (float)(i - offset);
+        by += val * (float)(j - offset);
+        sum += val;
         quality += map->grid[i][j].snr;
         nb_qual++;
       }
     }
+    DEBUG_PRINT("\n");
   }
   pos->x = map->center.x + (bx * map->res / sum);
   pos->y = map->center.y + (by * map->res / sum);
   pos->z = map->center.z;
   quality /= (float)nb_qual;
+  DEBUG_PRINT(" -> offset %d, sum %f, res %f, bx %f, by %f, cx %f, cy %f, mx %f, my %f\n", offset, sum, map->res, bx, by, map->center.x, map->center.y, mx, my);
+  DEBUG_PRINT(" -> pos %.4f %.4f, quality=%.2f\n", pos->x, pos->y, quality);
+#ifdef WP_SCOUT
+  DEBUG_PRINT(" -> scout %f %f\n", waypoint_get_enu_f(WP_SCOUT)->y, waypoint_get_enu_f(WP_SCOUT)->x); // ENU -> NED
+#endif
   return quality;
 }
 

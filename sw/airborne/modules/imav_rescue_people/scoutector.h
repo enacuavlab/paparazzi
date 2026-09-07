@@ -37,6 +37,7 @@ typedef struct {
 
 extern void scoutector_init(void);
 extern void scoutector_report(void);
+extern void scoutector_sim(void);
 
 extern scoutector_t scout_data;
 
@@ -60,6 +61,11 @@ extern struct scout_map_t scout_map;
  * @param[in] res resolution of the map in m per cell
  */
 extern void scout_map_init(struct scout_map_t *map, struct NedCoor_f pos, float res);
+
+/** reset map
+ * @param[in] map pointer to map
+ */
+extern void scout_map_reset(struct scout_map_t *map);
 
 /** update map with new data
  * @param[in] map pointer to map

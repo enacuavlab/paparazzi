@@ -11,7 +11,8 @@
   </header>
   <init fun="scoutector_init()"/>
   <periodic fun="scoutector_report()" freq="10.0" autorun="FALSE"/>
-  <makefile target="ap">
+  <periodic fun="scoutector_sim()" freq="3.0" autorun="TRUE"/>
+  <makefile>
     <file name="scoutector.c"/>
 
     <!-- Load DSDL generated files-->
