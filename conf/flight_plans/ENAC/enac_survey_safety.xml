@@ -72,7 +72,7 @@
     <variable init="3." var="search_speed" min="0.5" max="6." step="0.1"/>
     <variable init="20." var="search_radius" min="-1." max="30." step="1.0"/>
     <variable init="3." var="search_sweep" min="1." max="20." step="0.1"/>
-    <variable init="2." var="drop_height" min="1." max="3." step="0.1"/>
+    <variable init="1.5." var="drop_height" min="1." max="3." step="0.1"/>
     <variable init="1." var="water_height" min="0." max="80." step="0.1"/>
     <variable init="1." var="water_speed" min="0.5" max="10." step="0.1"/>
     <variable init="30." var="water_duration" min="1." max="60." step="1."/>
@@ -144,7 +144,7 @@
     <block name="Goto Search" strip_button="Rescue">
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <call_once fun="scout_map_reset(&scout_map)"/>
+      <call_once fun="scout_map_reset(Ptr(scout_map))"/>
       <go wp="SEARCH" from="_HERE" hmode="route" height="search_height"/>
       <deroute block="Run Search"/>
     </block>
@@ -154,7 +154,7 @@
       <for var="i" from="1" to="search_radius/search_sweep">
         <circle wp="SEARCH" radius="search_sweep*$i" height="search_height" until="NavCircleCount() @GT 1."/>
       </for>
-      <call_once fun="scout_map_update_wp(&scout_map, WP_RESCUE)"/>
+      <call_once fun="scout_map_update_wp(Ptr(scout_map), WP_RESCUE)"/>
       <!--call_once fun="imav_rescue_set_best_wp(WP_RESCUE)"/-->
       <deroute block="Drop Medikit"/>
     </block>
@@ -169,6 +169,7 @@
     <block name="Drop Medikit" on_enter="jevois_stream(true)" on_exit="jevois_stream(false)">
       <stay wp="RESCUE" until="stage_time @GT 3" height="search_height"/>
       <stay wp="RESCUE" vmode="climb" climb="-0.5" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT drop_height)) @OR (GetPosHeight() @LT 0.5) @OR (!nav_is_in_flight())"/>
+      <!--stay wp="RESCUE" vmode="climb" climb="-0.5" until="(GetPosHeight() @LT 1.5) @OR (!nav_is_in_flight())"/-->
       <call_once fun="DropOpen()"/>
       <stay wp="RESCUE" until="stage_time @GT 3" height="goto_height"/>
       <deroute block="Standby"/>
