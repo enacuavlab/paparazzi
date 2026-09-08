@@ -53,7 +53,6 @@
     <waypoint name="S2" x="-21.562" y="9.824"/>
     <waypoint name="S3" x="-2.699" y="-17.945"/>
     <waypoint name="S4" x="21.696" y="-1.571"/>
-    <waypoint name="DROP" x="4.988" y="-7.253"/>
     <waypoint name="_FLY1" x="-8.433" y="60.016"/>
     <waypoint name="_FLY2" x="52.842" y="-25.592"/>
     <waypoint name="_FLY3" x="6.6" y="-58.499"/>

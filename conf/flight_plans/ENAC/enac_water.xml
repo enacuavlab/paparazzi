@@ -78,9 +78,11 @@
     <variable init="1." var="land_speed" min="0.5" max="10." step="0.1"/>
     <variable init="1." var="water_height" min="0." max="80." step="0.1"/>
     <variable init="1." var="water_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="-0.6" var="water_descent" min="-1.5" max="-0.1" step="0.01"/>
     <variable init="30." var="water_duration" min="1." max="60." step="1."/>
     <variable init="50." var="water_timeout" min="10." max="120." step="1."/>
     <variable init="30." var="water_purge" min="1." max="60." step="1."/>
+    <variable init="2." var="fp_height"/>
   </variables>
   <modules>
     <module name="agl_dist"/>
@@ -129,14 +131,16 @@
       <call_once fun="guidance_h_SetMaxSpeed(water_speed)"/>
       <stay wp="WATER" height="goto_height" until="stage_time @GT 2"/>
       <!-- Descend until lidar height close to water_height -->
-      <stay wp="WATER" vmode="climb" climb="-0.6" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT water_height+1))"/>
+      <stay wp="WATER" vmode="climb" climb="water_descent" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT water_height+1))"/>
       <!-- Stabilize at this height for a few seconds -->
-      <stay wp="WATER" height="GetPosHeight()" until="stage_time @GT 4"/>
+      <set var="fp_height" value="GetPosHeight()"/>
+      <stay wp="WATER" height="fp_height" until="stage_time @GT 4"/>
       <!-- Compute exact height from lidar measurements, and stabilize -->
-      <stay wp="WATER" height="GetPosHeight() - agl_dist_value_filtered + water_height" until="stage_time @GT 2"/>
+      <set var="fp_height" value="GetPosHeight() - agl_dist_value_filtered + water_height"/>
+      <stay wp="WATER" height="fp_height" until="stage_time @GT 2"/>
       <call_once fun="pump_activate()"/>
       <!-- Wait to fill the tank -->
-      <stay wp="WATER" height="GetPosHeight() - agl_dist_value_filtered + water_height" until="pump_done(water_duration, water_timeout)"/>
+      <stay wp="WATER" height="fp_height" until="pump_done(water_duration, water_timeout)"/>
       <deroute block="Goto Drop Water"/>
     </block>
     <block name="Goto Drop Water">
@@ -150,8 +154,10 @@
       <call_once fun="guidance_h_SetMaxSpeed(water_speed)"/>
       <stay wp="DROP" height="goto_height" until="stage_time @GT 2"/>
       <stay wp="DROP" height="water_height" until="GetPosHeight() @LT water_height + 0.5"/>
+      <stay wp="DROP" vmode="climb" climb="water_descent" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT water_height+1))"/>
+      <set var="fp_height" value="GetPosHeight()"/>
       <call_once fun="pump_purge()"/>
-      <stay wp="DROP" height="water_height" until="stage_time @GT 30"/>
+      <stay wp="DROP" height="fp_height" until="stage_time @GT 30"/>
       <deroute block="Goto Water"/>
     </block>
 
