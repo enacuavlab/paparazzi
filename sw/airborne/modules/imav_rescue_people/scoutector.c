@@ -110,7 +110,7 @@ void scoutector_sim(void) {
   // sound level: L(d) = L(d0) - 20 * log10(d/d0)
   // snr = 20 db at 3 m with propellers -> L(d0) = 20 (FIXME check correct value)
   float snr = 20. - 20.f*log10f(dist/3.f);
-  if (snr > 3.f) { //FIXME check with Alex
+  if (snr > 8.f) { //FIXME check with Alex
     scout_data.snr = snr;
   } else {
     scout_data.snr = 0.f;
