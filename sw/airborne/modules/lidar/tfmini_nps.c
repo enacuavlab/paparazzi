@@ -81,38 +81,43 @@ void tfmini_event(void)
 // If you want to use the lidar simulation, you need to use the lidar correction module
 void sim_overwrite_lidar(void)
 {
-//  if (!stateIsLocalCoordinateValid()) { return; }
-//
-//  // Convert GPS position to NED coordinates
-//  struct FloatVect2 pos = {0.0f, 0.0f};
-//  struct NedCoor_i ned = {0.0f, 0.0f, 0.0f};
-//  ned_of_lla_point_i(&ned, stateGetNedOrigin_i(), &gps.lla_pos);
-//  pos.x = (float)(ned.y / 100.0f);
-//  pos.y = (float)(ned.x / 100.0f);
-//
-//  // Calculate the angle of the rover (and servo if used)
-//  float theta = M_PI / 2 - (stateGetNedToBodyEulers_f()->psi);
-//#ifdef USE_SERVO_LIDAR
-//  theta = theta - servoLidar.angle * M_PI / 180;
-//#endif
-//
-//  float min_distance = FLT_MAX;
-//
-//  // Traverse the wall array and store the minimum distance (!= 0)
-//  for (uint8_t w = 0; w < wall_system.wall_count; w++) {
-//    struct Wall *wall = &wall_system.walls[w];
-//    for (uint8_t p = 0; p < wall->count - 1; p++) {
-//      struct FloatVect2 p1 = wall->points_ltp[p];
-//      struct FloatVect2 p2 = wall->points_ltp[p + 1];
-//      float distance = distance_to_wall(theta, &pos, &p1, &p2);
-//      if (distance < min_distance && distance > 0) {
-//        min_distance = distance;
-//      }
-//    }
-//  }
-//
-//  // Store that data in the variable tfmini.distance
-//  setLidarDistance_f(min_distance);
+#if USE_LIDAR_CORRECTION
+  if (!stateIsLocalCoordinateValid()) { return; }
+
+  // Convert GPS position to NED coordinates
+  struct FloatVect2 pos = {0.0f, 0.0f};
+  struct NedCoor_i ned = {0.0f, 0.0f, 0.0f};
+  ned_of_lla_point_i(&ned, stateGetNedOrigin_i(), &gps.lla_pos);
+  pos.x = (float)(ned.y / 100.0f);
+  pos.y = (float)(ned.x / 100.0f);
+
+  // Calculate the angle of the rover (and servo if used)
+  float theta = M_PI / 2 - (stateGetNedToBodyEulers_f()->psi);
+#ifdef USE_SERVO_LIDAR
+  theta = theta - servoLidar.angle * M_PI / 180;
+#endif
+
+  float min_distance = FLT_MAX;
+
+  // Traverse the wall array and store the minimum distance (!= 0)
+  for (uint8_t w = 0; w < wall_system.wall_count; w++) {
+    struct Wall *wall = &wall_system.walls[w];
+    for (uint8_t p = 0; p < wall->count - 1; p++) {
+      struct FloatVect2 p1 = wall->points_ltp[p];
+      struct FloatVect2 p2 = wall->points_ltp[p + 1];
+      float distance = distance_to_wall(theta, &pos, &p1, &p2);
+      if (distance < min_distance && distance > 0) {
+        min_distance = distance;
+      }
+    }
+  }
+
+  // Store that data in the variable tfmini.distance
+  setLidarDistance_f(min_distance);
+#else
+  // by default, use lidar as AGL distance measurement
+  setLidarDistance_f(stateGetPositionEnu_f()->z);
+#endif
 }
 
 
@@ -133,6 +138,10 @@ void setLidarDistance_f(float distance)
 // Send the lidar message (if requested, OBSTACLE_DETECTION)
 void tfmini_send_abi(void)
 {
+  uint32_t now_ts = get_sys_time_usec();
+  if (tfmini.update_agl) {
+    AbiSendMsgAGL(AGL_LIDAR_TFMINI_ID, now_ts, tfmini.distance);
+  }
 #ifndef USE_SERVO_LIDAR
   //send message (if there is not servo module)
   AbiSendMsgOBSTACLE_DETECTION(AGL_LIDAR_TFMINI_ID, tfmini.distance, 0, 0);
