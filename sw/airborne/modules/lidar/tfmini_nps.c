@@ -63,6 +63,7 @@ static void tfmini_send_lidar(struct transport_tx *trans, struct link_device *de
 void tfmini_init(void)
 {
   tfmini.distance = 0;
+  tfmini.update_agl = USE_TFMINI_AGL;
   tfmini.device = &((TFMINI_PORT).device);
 
 #if PERIODIC_TELEMETRY

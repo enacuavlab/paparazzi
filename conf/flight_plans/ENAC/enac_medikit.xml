@@ -95,11 +95,11 @@
     <variable init="0" type="int" var="skip_goto_search" min="0" max="1" step="1"/>
   </variables>
   <modules>
-    <module name="jevois">
+    <!--module name="jevois">
       <configure name="JEVOIS_UART" value="UART3"/>
-    </module>
+    </module-->
     <module name="agl_dist"/>
-    <module name="imav_rescue_people"/>
+    <!--module name="imav_rescue_people"/-->
     <module name="scoutector"/>
   </modules>
   <exceptions>
@@ -109,7 +109,7 @@
   <blocks>
     <block name="Wait GPS">
       <call_once fun="NavKillThrottle()"/>
-      <call_once fun="jevois_stream(false)"/>
+      <!--call_once fun="jevois_stream(false)"/-->
       <call_once fun="DropOpen()"/>
       <while cond="!GpsFixValid()"/>
     </block>
@@ -159,7 +159,7 @@
       <set var="fp_search_height" value="GetPosHeight()+search_height-agl_dist_value_filtered"/>
       <deroute block="Run Search"/>
     </block>
-    <block name="Run Search" on_enter="jevois_stream(true)" on_exit="jevois_stream(false)">
+    <block name="Run Search"> <!-- on_enter="jevois_stream(true)" on_exit="jevois_stream(false)"-->
       <!-- exception to deroute to drop if validated target -->
       <call_once fun="scout_map_reset(Ptr(scout_map))"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
@@ -216,7 +216,7 @@
       <go wp="RESCUE" from="_HERE" hmode="route" height="fp_search_height"/>
       <deroute block="Drop Medikit"/>
     </block>
-    <block name="Drop Medikit" on_enter="jevois_stream(true)" on_exit="jevois_stream(false)">
+    <block name="Drop Medikit"> <!-- on_enter="jevois_stream(true)" on_exit="jevois_stream(false)"-->
       <stay wp="RESCUE" until="stage_time @GT 3" height="fp_search_height"/>
       <stay wp="RESCUE" vmode="climb" climb="-0.5" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT drop_height)) @OR (GetPosHeight() @LT 0.5) @OR (!nav_is_in_flight())"/>
       <call_once fun="DropOpen()"/>
