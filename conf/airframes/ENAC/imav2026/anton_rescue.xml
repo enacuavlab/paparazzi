@@ -49,6 +49,7 @@
     <module name="ins" type="ekf2">
       <configure name="USE_ALT_LLA_WAYPOINTS" value="FALSE"/>
       <define name="INS_EKF2_FORCE_NAV_REF" value="TRUE"/>
+      <define name="INS_EKF2_VDIST_SENSOR_TYPE" value="VDIST_SENSOR_GPS"/>
     </module>
     <module name="air_data"/>
 
@@ -67,7 +68,10 @@
       <configure name="JEVOIS_UART" value="UART3" description="UART on which Jevois camera is connected"/>
     </module-->
 
-    <configure name="JEVOIS_UART" value="UART3"/>
+    <!--module name="jevois">
+      <configure name="JEVOIS_UART" value="UART3"/>
+      <define name="JEVOIS_SEND_ALT"/>
+    </module-->
 
     <module name="flight_recorder"/>
     <module name="logger_control_effectiveness">
