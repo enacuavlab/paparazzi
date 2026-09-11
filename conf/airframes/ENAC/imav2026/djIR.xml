@@ -116,8 +116,8 @@
           <field name="scale_f" value="true"/>
           <field name="rotation" value="true"/>
         </field>
-        <field name="neutral" value="-2843,3167,-3108" type="int[]"/>
-        <field name="scale_f" value="{ 0.7327, 0.7609, 0.7382 }"/>
+        <field name="neutral" value="-2677,3223,-3142" type="int[]"/>
+        <field name="scale_f" value="{ 0.6654, 0.6802, 0.6746 }"/>
         <field value="TAWAKIV2_MAG_ROT"/>
       </field>
     </define>
