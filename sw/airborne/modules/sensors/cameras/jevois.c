@@ -479,3 +479,13 @@ void jevois_send_state(void)
   jevois_send_string(str);
 #endif
 }
+
+
+void jevois_save_image(void) {
+  char str[32] __attribute__((unused));
+  static int nb = 0;
+  sprintf(str, "save image_%d\r\n", nb);
+  jevois_send_string(str);
+  nb++;
+}
+

@@ -88,6 +88,7 @@ extern int jevois_mapping_setting;
 /** Send state to camera
  */
 extern void jevois_send_state(void);
+extern void jevois_save_image(void);
 
 /** Extract a number from jevoid ID field
  */
