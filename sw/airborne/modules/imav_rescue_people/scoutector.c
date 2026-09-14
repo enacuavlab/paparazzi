@@ -65,9 +65,7 @@ static void scoutector_uavcan_cb(struct uavcan_iface_t *iface __attribute__((unu
     return;
   }
 
-  if(strncmp("det", (const char*)msg.key.data, 3) == 0) {
-    scout_data.det = msg.value;
-  } else if(strncmp("snr", (const char*)msg.key.data, 3) == 0) {
+  if(strncmp("snr", (const char*)msg.key.data, 3) == 0) {
     scout_data.snr = msg.value;
   } else if(strncmp("lit", (const char*)msg.key.data, 3) == 0) {
     scout_data.lit = msg.value;
@@ -95,8 +93,8 @@ void scoutector_init(void)
 }
 
 void scoutector_report(void) {
-  float f[3] = {scout_data.det, scout_data.snr, scout_data.lit};
-  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 3, f);
+  float f[2] = {scout_data.snr, scout_data.lit};
+  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 2, f);
 }
 
 void scoutector_sim(void) {
@@ -129,7 +127,6 @@ void scout_map_init(struct scout_map_t *map, struct NedCoor_f pos, float res)
   map->center = pos;
   for (int i = 0; i < SCOUT_MAP_SIZE; i++) {
     for (int j = 0; j < SCOUT_MAP_SIZE; j++) {
-      map->grid[i][j].det = 0.f;
       map->grid[i][j].snr = 0.f;
       map->grid[i][j].lit = 0.f;
     }
@@ -140,7 +137,6 @@ void scout_map_reset(struct scout_map_t *map)
 {
   for (int i = 0; i < SCOUT_MAP_SIZE; i++) {
     for (int j = 0; j < SCOUT_MAP_SIZE; j++) {
-      map->grid[i][j].det = 0.f;
       map->grid[i][j].snr = 0.f;
       map->grid[i][j].lit = 0.f;
     }
@@ -172,7 +168,7 @@ float scout_mat_get_barycenter(struct scout_map_t *map, struct NedCoor_f *pos)
   for (int i = 0; i < SCOUT_MAP_SIZE; i++) {
     for (int j = 0; j < SCOUT_MAP_SIZE; j++) {
       if (map->grid[i][j].snr > max) {
-        max = map->grid[i][j].snr;
+        max = map->grid[i][j].snr * (1.+ map->grid[i][j].lit);
         // mx = (float)(i - offset) * map->res;
         // my = (float)(j - offset) * map->res;
       }
@@ -185,7 +181,7 @@ float scout_mat_get_barycenter(struct scout_map_t *map, struct NedCoor_f *pos)
   DEBUG_PRINT("map:\n");
   for (int i = 0; i < SCOUT_MAP_SIZE; i++) {
     for (int j = 0; j < SCOUT_MAP_SIZE; j++) {
-      float val = powf(map->grid[i][j].snr/max, 2.f);
+      float val = powf((map->grid[i][j].snr * (1.+ map->grid[i][j].lit))/max, 2.f);
       //float val = map->grid[i][j].snr/max;
       DEBUG_PRINT("\t%.1f,", val);
       if (val > SCOUT_MAP_THRESHOLD) {

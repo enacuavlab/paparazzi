@@ -86,9 +86,10 @@
     <variable init="3." var="search_speed" min="0.5" max="6." step="0.1"/>
     <variable init="20." var="search_radius" min="-1." max="30." step="1.0"/>
     <variable init="4." var="search_sweep" min="1." max="20." step="0.1"/>
-    <variable init="2." var="search_speed_2" min="0.5" max="6." step="0.1"/>
-    <variable init="8." var="search_radius_2" min="-1." max="30." step="1.0"/>
+    <variable init="1.5" var="search_speed_2" min="0.5" max="6." step="0.1"/>
+    <variable init="2." var="search_radius_2" min="-1." max="30." step="1.0"/>
     <variable init="2." var="search_sweep_2" min="1." max="20." step="0.1"/>
+    <variable init="3." var="search_height_2" min="1." max="20." step="0.1"/>
     <variable init="1.5" var="drop_height" min="1." max="3." step="0.1"/>
     <variable init="20." var="fp_max_height" min="5." max="30." step="1."/>
     <variable init="6." var="fp_search_height"/>
@@ -179,27 +180,33 @@
       <set var="mission_nb" value="FP_NONE"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
-      <call_once fun="scout_map_reset(Ptr(scout_map))"/>
-      <go wp="SEARCH" from="_HERE" hmode="route" height="search_height"/>
+      <go wp="SEARCH" from="_HERE" hmode="route" height="goto_height"/>
+      <stay wp="SEARCH" vmode="climb" climb="-0.5" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT 3.)) @OR (!nav_is_in_flight())"/>
+      <set var="fp_search_height" value="GetPosHeight()+search_height-agl_dist_value_filtered"/>
       <deroute block="Run Search 2 step 1"/>
     </block>
     <block name="Run Search 2 step 1">
-      <exception cond="scout_data.snr @GT 5." deroute="Run Search 2 step 2"/>
+      <!--exception cond="scout_data.snr @GT 5." deroute="Run Search 2 step 2"/-->
       <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
+      <call_once fun="scout_map_reset(Ptr(scout_map))"/>
       <for var="i" from="1" to="search_radius/search_sweep">
-        <circle wp="SEARCH" radius="search_sweep*$i" height="search_height" until="NavCircleCount() @GT 0.9"/>
+        <circle wp="SEARCH" radius="search_sweep*$i" height="fp_search_height" until="NavCircleCount() @GT 0.9"/>
       </for>
-      <call_once fun="scout_map_update_wp(Ptr(scout_map), WP_RESCUE)"/>
+      <call_once fun="scout_map_update_wp(Ptr(scout_map), WP_SEARCH)"/>
       <!--call_once fun="imav_rescue_set_best_wp(WP_RESCUE)"/-->
-      <deroute block="Goto Drop"/>
+      <deroute block="Run Search 2 step 2"/>
     </block>
     <block name="Run Search 2 step 2">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <go wp="SEARCH" from="_HERE" hmode="route" height="fp_search_height"/>
+      <stay wp="SEARCH" vmode="climb" climb="-0.5" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT 3.)) @OR (!nav_is_in_flight())"/>
+      <set var="fp_search_height" value="GetPosHeight()+search_height_2-agl_dist_value_filtered"/>
       <call_once fun="guidance_h_SetMaxSpeed(search_speed_2)"/>
-      <call_once fun="NavSetWaypointHere(WP_SEARCH)"/>
-      <call_once fun="scout_map_init(Ptr(scout_map), *stateGetPositionNed_f(), 0.5f)"/>
-      <for var="i" from="1" to="search_radius_2/search_sweep_2">
+      <call_once fun="scout_map_init(Ptr(scout_map), *stateGetPositionNed_f(), 0.2f)"/>
+      <circle wp="SEARCH" radius="search_radius_2" height="fp_search_height" until="NavCircleCount() @GT 1.2"/>
+      <!--for var="i" from="1" to="search_radius_2/search_sweep_2">
         <circle wp="SEARCH" radius="search_sweep_2*$i" height="search_height" until="NavCircleCount() @GT 0.9"/>
-      </for>
+      </for-->
       <call_once fun="scout_map_update_wp(Ptr(scout_map), WP_RESCUE)"/>
       <deroute block="Goto Drop"/>
     </block>
@@ -211,7 +218,7 @@
     <block name="Goto Drop">
       <set var="mission_nb" value="FP_NONE"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
+      <call_once fun="guidance_h_SetMaxSpeed(search_speed)"/>
       <!--stay wp="_HERE" until="stage_time @GT 3" height="fp_search_height"/-->
       <go wp="RESCUE" from="_HERE" hmode="route" height="fp_search_height"/>
       <deroute block="Drop Medikit"/>

@@ -30,7 +30,6 @@
 #include "math/pprz_geodetic_float.h"
 
 typedef struct {
-  float det;
   float snr;
   float lit;
 } scoutector_t;
