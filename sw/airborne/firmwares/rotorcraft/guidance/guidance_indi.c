@@ -279,9 +279,9 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   guidance_euler_cmd.phi   = eulers_filtered.phi + du_guidance[0];
   guidance_euler_cmd.theta = eulers_filtered.theta + du_guidance[1];
   guidance_euler_cmd.psi   = eulers_filtered.psi + du_guidance[2];
-  thrust_vect[0] = du_guidance[3]; // (TX)
-  thrust_vect[1] = du_guidance[4]; // (TY)
-  thrust_vect[2] = du_guidance[5]; // (TZ)
+  thrust_vect[0] = du_guidance[3]/m; // (TX)
+  thrust_vect[1] = du_guidance[4]/m; // (TY)
+  thrust_vect[2] = du_guidance[5]/m; // (TZ)
   thrust_sp = th_sp_from_incr_vect_f(thrust_vect);
 
 #else // !USE_WLS
