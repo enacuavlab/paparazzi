@@ -168,7 +168,7 @@ float scout_mat_get_barycenter(struct scout_map_t *map, struct NedCoor_f *pos)
   for (int i = 0; i < SCOUT_MAP_SIZE; i++) {
     for (int j = 0; j < SCOUT_MAP_SIZE; j++) {
       if (map->grid[i][j].snr > max) {
-        max = map->grid[i][j].snr;
+        max = map->grid[i][j].snr * (1.+ map->grid[i][j].lit);
         // mx = (float)(i - offset) * map->res;
         // my = (float)(j - offset) * map->res;
       }
@@ -181,7 +181,7 @@ float scout_mat_get_barycenter(struct scout_map_t *map, struct NedCoor_f *pos)
   DEBUG_PRINT("map:\n");
   for (int i = 0; i < SCOUT_MAP_SIZE; i++) {
     for (int j = 0; j < SCOUT_MAP_SIZE; j++) {
-      float val = powf(map->grid[i][j].snr/max, 2.f);
+      float val = powf((map->grid[i][j].snr * (1.+ map->grid[i][j].lit))/max, 2.f);
       //float val = map->grid[i][j].snr/max;
       DEBUG_PRINT("\t%.1f,", val);
       if (val > SCOUT_MAP_THRESHOLD) {
