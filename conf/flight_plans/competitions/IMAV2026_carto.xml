@@ -7,29 +7,12 @@
     #define FP_MAPPING    1
 
     #if DIGITAL_CAM
-    #define LINE_START_FUNCTION dc_Survey(mapping_shot_distance);
-    #define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
+    //#define LINE_START_FUNCTION dc_Survey(mapping_shot_distance);
+    //#define LINE_STOP_FUNCTION dc_autoshoot = DC_AUTOSHOOT_STOP;
     #endif
 
     #ifdef NAV_C
-    #ifndef TAG_TRACKING_COORD_TO_M
-    #define TAG_TRACKING_COORD_TO_M (1.f / 1000.f)
-    #ifdef SITL
-    #define jevois_stream(_x) {}
-    #endif
-    #endif
 
-    static void fp_tag_cb(uint8_t sender_id UNUSED,
-        uint8_t type, char * id UNUSED,
-        uint8_t nb UNUSED, int16_t * coord, uint16_t * dim UNUSED,
-        struct FloatQuat quat UNUSED, char * extra UNUSED)
-    {
-      if (type == JEVOIS_MSG_D3) {
-        tag_distance = coord[2] * TAG_TRACKING_COORD_TO_M;
-        tag_valid = true;
-      }
-    }
-    
     static inline bool delay_test_rc(bool test, int delay) {
       static int nb = 0;
         if (test) {
@@ -49,7 +32,7 @@
   </header>
   <waypoints>
     <waypoint name="HOME" lat="48.8064855" lon="7.8525385"/>
-    <waypoint name="STDBY" lat="48.8066" lon="7.85248"/>
+    <waypoint name="STDBY" lat="48.8066" lon="7.85269"/>
     <waypoint name="LANDPAD" lat="48.8064" lon="7.85256"/>
     <waypoint name="TAG" lat="48.8064" lon="7.85233"/>
     <waypoint name="_HERE" lat="48.8065608" lon="7.8530971"/>
@@ -72,26 +55,18 @@
     <variable init="7." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="5." var="takeoff_height" min="0.5" max="15." step="0.1"/>
     <variable init="4." var="land_speed" min="0.5" max="10." step="0.1"/>
-    <variable init="70." var="mapping_height" min="5." max="80." step="0.1"/>
-    <variable init="70." var="mapping_sweep" min="5." max="20." step="0.1"/>
+    <variable init="50." var="mapping_height" min="5." max="80." step="0.1"/>
+    <variable init="50." var="mapping_sweep" min="5." max="20." step="0.1"/>
     <variable init="7." var="mapping_speed" min="0.5" max="10." step="0.1"/>
     <variable init="-1." var="mapping_radius" min="-1." max="100." step="1.0"/>
-    <variable init="50." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
-    <variable init="42." var="tag_distance"/>
-    <variable init="false" type="bool" var="tag_valid"/>
-    <abi_binding name="JEVOIS_MSG" handler="fp_tag_cb"/>
+    <variable init="30." var="mapping_shot_distance" min="5." max="60." step="0.1"/>
   </variables>
   <modules>
-    <module name="nav" type="takeoff_and_landing"/>
     <module name="nav" type="survey_hybrid">
       <define name="SURVEY_HYBRID_MAX_SWEEP_BACK" value="1"/>
       <define name="SURVEY_HYBRID_APPROACHING_TIME" value="0"/>
       <define name="SURVEY_HYBRID_ENTRY_DISTANCE" value="10"/>
       <define name="SURVEY_HYBRID_ENTRY_CIRCLE" value="FALSE"/>
-    </module>
-    <module name="tag_tracking">
-      <define name="TAG_TRACKING_WP" value="WP_LANDPAD"/>
-      <define name="TAG_TRACKING_SIM_WP" value="WP_TAG"/>
     </module>
   </modules>
   <includes>
@@ -106,7 +81,6 @@
   <blocks>
     <block name="Wait GPS">
       <call_once fun="NavKillThrottle()"/>
-      <call_once fun="jevois_stream(false)"/>
       <while cond="!GpsFixValid()"/>
     </block>
     <block name="Geo init">
@@ -123,9 +97,9 @@
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png" group="home">
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_NONE" deroute="Standby"/>
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_MAPPING" deroute="Goto Mapping"/>
-      <call_once fun="NavSetAltitudeReferenceHere()"/>
+      <!--call_once fun="NavSetAltitudeReferenceHere()"/-->
       <call_once fun="NavResurrect()"/>
-      <attitude pitch="0" roll="0" throttle="0.1" until="stage_time @GT 2" vmode="throttle"/>
+      <attitude pitch="0" roll="0" throttle="0." until="stage_time @GT 2" vmode="throttle"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <stay climb="nav.climb_vspeed" vmode="climb" wp="_HERE"/>
     </block>
@@ -142,16 +116,15 @@
     <block name="Goto Mapping">
       <set var="mission_nb" value="FP_NONE"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
-      <call_once fun="jevois_stream(false)"/>
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="mapping_height"/>
       <go wp="S1" from="_HERE" hmode="route" height="mapping_height"/>
-      <!--call_once fun="pprzlink_cam_ctrl_set_expo(PPRZLINK_CAM_AUTO_EXPO)"/-->
       <call_once fun="nav_survey_hybrid_setup_towards(WP_S1, WP_S2, 4, mapping_sweep, mapping_radius, mapping_height)"/>
       <deroute block="Run Mapping"/>
     </block>
-    <block name="Run Mapping">
+    <block name="Run Mapping" on_exit="dc_stop()">
       <call_once fun="guidance_h_SetMaxSpeed(mapping_speed)"/>
+      <call_once fun="dc_distance(mapping_shot_distance)"/>
       <call fun="nav_survey_hybrid_run()"/>
       <deroute block="Landing"/>
     </block>
@@ -161,8 +134,6 @@
       <deroute block="Flare"/>
     </block>
     <block name="Landing" strip_button="Land on pad" group="land">
-      <call_once fun="jevois_stream(false)"/>
-      <call_once fun="dc_send_command(DC_OFF)"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
       <go wp="STDBY" from="_HERE" hmode="route" height="goto_height"/>
@@ -172,8 +143,7 @@
     <block name="Flare">
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
-      <call_once fun="jevois_stream(true)"/>
-      <stay climb="2*nav.descend_vspeed" vmode="climb" wp="LANDPAD" until="GetPosHeight() @LT 10"/>
+      <stay climb="2*nav.descend_vspeed" vmode="climb" wp="LANDPAD" until="GetPosHeight() @LT takeoff_height"/>
       <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
     </block>
     <block name="Kill landed">

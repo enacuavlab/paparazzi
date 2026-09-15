@@ -168,10 +168,10 @@
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
       <go wp="LANDPAD" from="STDBY" hmode="route" height="goto_height"/>
     </block>
-    <block name="Flare"> <!-- on_enter="jevois_stream(true)" on_exit="jevois_stream(false)"> -->
+    <block name="Flare">
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
-      <stay climb="2*nav.descend_vspeed" vmode="climb" wp="LANDPAD" until="GetPosHeight() @LT 10"/>
+      <stay climb="2*nav.descend_vspeed" vmode="climb" wp="LANDPAD" until="GetPosHeight() @LT takeoff_height"/>
       <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
     </block>
     <block name="Kill landed">
