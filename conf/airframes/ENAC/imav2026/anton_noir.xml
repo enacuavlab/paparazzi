@@ -24,7 +24,7 @@
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
 
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
-      <define name="INS_EKF2_OPTITRACK" value="FALSE"/>
+      <define name="INS_EKF2_VDIST_SENSOR_TYPE" value="VDIST_SENSOR_GPS"/>
     </target>
 
     <target name="nps" board="pc">
@@ -53,7 +53,6 @@
     <module name="ins" type="ekf2">
       <configure name="USE_ALT_LLA_WAYPOINTS" value="FALSE"/>
       <define name="INS_EKF2_FORCE_NAV_REF" value="TRUE"/>
-      <define name="INS_EKF2_VDIST_SENSOR_TYPE" value="VDIST_SENSOR_GPS"/>
     </module>      
 
 

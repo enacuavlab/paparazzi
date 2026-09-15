@@ -67,6 +67,8 @@
     <variable init="30." var="water_duration" min="1." max="60." step="1."/>
     <variable init="50." var="water_timeout" min="10." max="120." step="1."/>
     <variable init="30." var="water_purge" min="1." max="60." step="1."/>
+    <variable init="3" type="int" var="lap_nb" min="1" max="5" step="1"/>
+    <variable init="0" type="int" var="lap_count"/>
     <variable init="2." var="fp_height"/>
   </variables>
   <modules>
@@ -98,6 +100,7 @@
       <exception cond="stateGetPositionEnu_f() @DEREF z @GT 2.0" deroute="Standby"/>
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
       <call_once fun="NavResurrect()"/>
+      <set var="lap_count" value="0"/>
       <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 1" vmode="throttle"/>
       <stay climb="nav.climb_vspeed" vmode="climb" wp="LANDPAD"/>
     </block>
@@ -105,6 +108,7 @@
       <stay wp="STDBY"/>
     </block>
     <block name="Goto Water">
+      <exception cond="lap_count @GEQ lap_nb" deroute="Landing"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
@@ -140,20 +144,28 @@
       <stay wp="DROP" vmode="climb" climb="water_descent" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT water_height+0.5))"/>
       <set var="fp_height" value="GetPosHeight()"/>
       <call_once fun="pump_purge()"/>
-      <stay wp="DROP" height="fp_height" until="stage_time @GT 30"/>
+      <stay wp="DROP" height="fp_height" until="stage_time @GT water_purge"/>
+      <set var="lap_count" value="lap_count+1"/>
       <deroute block="Goto Water"/>
     </block>
 
     <block name="Land here" strip_button="Land Here" strip_icon="land-right.png" group="land">
       <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+      <deroute block="Flare"/>
+    </block>
+    <block name="Landing" strip_button="Land on pad" group="land">
+      <call_once fun="NavSetWaypointHere(WP__HERE)"/>
+      <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
+      <go wp="LANDPAD" from="_HERE" hmode="route" height="goto_height"/>
     </block>
     <block name="Flare">
       <exception cond="!nav_is_in_flight()" deroute="Landing Done"/>
       <call_once fun="guidance_h_SetMaxSpeed(land_speed)"/>
-      <stay wp="LANDPAD" height="goto_height" until="stage_time @GT4"/>
+      <stay wp="LANDPAD" height="goto_height" until="stage_time @GT 2"/>
       <stay climb="nav.descend_vspeed" vmode="climb" wp="LANDPAD"/>
     </block>
     <block name="Landing Done">
+      <call_once fun="NavKillThrottle()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
     <block name="Emergency">
