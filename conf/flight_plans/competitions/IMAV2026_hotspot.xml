@@ -93,6 +93,7 @@
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_NONE" deroute="Standby"/>
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_HOTSPOT" deroute="Goto Hotspot"/>
       <!--call_once fun="NavSetAltitudeReferenceHere()"/-->
+      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
       <call_once fun="NavResurrect()"/>
       <attitude pitch="0" roll="0" throttle="0.1" until="stage_time @GT 2" vmode="throttle"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
