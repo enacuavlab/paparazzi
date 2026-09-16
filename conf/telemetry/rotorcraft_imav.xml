@@ -9,14 +9,13 @@
       <message name="AUTOPILOT_VERSION"      period="11.1"/>
       <message name="DL_VALUE"               period="1.1"/>
       <message name="ROTORCRAFT_STATUS"      period="3.2"/>
-      <message name="ROTORCRAFT_FP"          period="0.1"/>
-      <message name="ALIVE"                  period="3.1"/>
+      <message name="ROTORCRAFT_FP"          period="0.25"/>
+      <message name="ALIVE"                  period="4.1"/>
       <message name="INS_REF"                period="5.1"/>
       <message name="ROTORCRAFT_NAV_STATUS"  period="2.6"/>
       <message name="WP_MOVED"               period="2.3"/>
-      <message name="GPS_INT"                period="1."/>
-      <!--message name="INS"                    period="1.2"/-->
-      <message name="ENERGY"                 period="0.1"/>
+      <message name="GPS_INT"                period="2.1"/>
+      <message name="ENERGY"                 period="1.5"/>
       <message name="DATALINK_REPORT"        period="6.1"/>
       <message name="STATE_FILTER_STATUS"    period="4.2"/>
       <message name="AIR_DATA"               period="2.3"/>
