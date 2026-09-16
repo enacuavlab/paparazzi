@@ -36,9 +36,9 @@
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
     <variable init="5." var="goto_height" min="3." max="20." step="0.1"/>
-    <variable init="2." var="goto_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="3." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="3." var="takeoff_height" min="0.5" max="15." step="0.1"/>
-    <variable init="1." var="land_speed" min="0.5" max="10." step="0.1"/>
+    <variable init="2." var="land_speed" min="0.5" max="10." step="0.1"/>
     <variable init="1." var="water_height" min="0." max="80." step="0.1"/>
     <variable init="1." var="water_speed" min="0.5" max="10." step="0.1"/>
     <variable init="-0.6" var="water_descent" min="-1.5" max="-0.1" step="0.01"/>
@@ -125,7 +125,7 @@
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
       <call_once fun="guidance_h_SetMaxSpeed(goto_speed)"/>
       <stay wp="_HERE" until="stage_time @GT 3" height="goto_height"/>
-      <go wp="DROP" from="_HERE" hmode="route" height="goto_height" approaching_time="1"/>
+      <go wp="DROP" from="_HERE" hmode="route" height="goto_height" approaching_time="2"/>
       <deroute block="Drop Water"/>
     </block>
     <block name="Drop Water" on_exit="pump_stop()">
