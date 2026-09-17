@@ -22,7 +22,7 @@
             <define name="KAPPA"           value="0"               description="Drag-torque to thrust ratio (kappa = k_m/k_t) [m]"/>
             <define name="K_LIFT"          value="0"               description="Wing lift derivative: dL/d(alpha) = k_lift * V^2 [N/rad]"/>
             <define name="V_WING"          value="10.0"            description="Airspeed at which wing lift derivative is applied [m/s]"/>
-            <define name="ALPHA_MIN"       value="-0.1656"         description="Tilt angle at -MAX_PPRZ [rad], measured per bank"/>
+            <define name="ALPHA_MIN"       value="-0.261"          description="Tilt angle at -MAX_PPRZ [rad], measured per bank"/>
             <define name="ALPHA_MAX"       value="1.5708"          description="Tilt angle at +MAX_PPRZ [rad], measured per bank"/>
             <!-- Elevons
             <define name="K_ELEVON_DEFLECT"  value="0"             description="delta = k*pprz [rad/pprz], = delta_max / MAX_PPRZ"/>

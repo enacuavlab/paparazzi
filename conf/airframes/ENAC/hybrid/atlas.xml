@@ -221,7 +221,7 @@
 
     <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
         <!-- setpoints -->
-        <define name="SP_MAX_PHI" value="70." unit="deg"/>
+        <define name="SP_MAX_PHI" value="60." unit="deg"/>
         <define name="SP_MAX_THETA" value="40." unit="deg"/>
         <define name="SP_MAX_R" value="30." unit="deg/s"/>
         <define name="SP_PSI_DELTA_LIMIT" value="50" unit="deg"/>
@@ -307,7 +307,7 @@
     </section>
 
     <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-        <define name="MAX_BANK" value="60" unit="deg"/>         <!-- Guidance outer WLS bounds (keep below SP_MAX_PHI) -->
+        <define name="MAX_BANK" value="50" unit="deg"/>         <!-- Guidance outer WLS bounds (keep below SP_MAX_PHI) -->
         <define name="USE_SPEED_REF" value="TRUE"/>
         <define name="PGAIN" value="180"/>
         <define name="DGAIN" value="180"/>
@@ -326,8 +326,8 @@
     <section name="GUIDANCE_INDI">
         <define name="GUIDANCE_INDI_POS_GAIN"          value="1.0"/>
         <define name="GUIDANCE_INDI_SPEED_GAIN"        value="1.4"/>
-        <define name="GUIDANCE_INDI_POS_GAINZ"         value="1.0"/>
-        <define name="GUIDANCE_INDI_SPEED_GAINZ"       value="2.2"/>
+        <define name="GUIDANCE_INDI_POS_GAINZ"         value="2.2"/>
+        <define name="GUIDANCE_INDI_SPEED_GAINZ"       value="2.0"/>
         <define name="GUIDANCE_INDI_MAX_AIRSPEED"      value="16.0"/>
         <define name="GUIDANCE_INDI_MIN_AIRSPEED"      value="0.0"/>
         <define name="GUIDANCE_INDI_FILTER_CUTOFF"     value="8.0"/>
