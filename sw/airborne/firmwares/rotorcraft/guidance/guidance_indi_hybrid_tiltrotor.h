@@ -30,7 +30,8 @@
 #include "math/pprz_algebra_float.h"
 
 
-extern float guidance_indi_get_lift(struct FloatVect3 vel, float theta);
+extern void guidance_indi_get_aero(struct FloatVect3 vel, struct FloatEulers *eul,
+                                   float *fx, float *fz);
 extern void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_HYBRID_U], struct FloatVect3 a_diff, float v_gih[GUIDANCE_INDI_HYBRID_V]);
 extern void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angle, float pitch_angle);
 
@@ -61,28 +62,10 @@ extern void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_an
 #define GUIDANCE_INDI_MAX_ACC_BODY_Z 3.0f
 #endif
 
-#ifndef GUIDANCE_INDI_WING_AREA
-#define GUIDANCE_INDI_WING_AREA 0.5f
-#endif
-
-#ifndef GUIDANCE_INDI_CL_0
-#define GUIDANCE_INDI_CL_0 0.1f
-#endif
-
-#ifndef GUIDANCE_INDI_CL_ALPHA
-#define GUIDANCE_INDI_CL_ALPHA 5.0f
-#endif
-
-#ifndef GUIDANCE_INDI_AIRSPEED_IMPORTANCE
-#define GUIDANCE_INDI_AIRSPEED_IMPORTANCE 2.0f /* forward-velocity weight boost in cruise */
-#endif
-
 #ifndef GUIDANCE_INDI_PITCH_PREF_DEG
 #define GUIDANCE_INDI_PITCH_PREF_DEG 0.0f         /* preferred pitch angle, positive nose up [deg] */
 #endif
 
-/* In GUIDED mode the tilt wheel (RADIO_TILT) sets the pitch preference:
- * wheel min -> RC_MIN, wheel center -> 0 deg, wheel max -> RC_MAX. */
 #ifndef GUIDANCE_INDI_PITCH_PREF_RC_MIN_DEG
 #define GUIDANCE_INDI_PITCH_PREF_RC_MIN_DEG -10.0f
 #endif

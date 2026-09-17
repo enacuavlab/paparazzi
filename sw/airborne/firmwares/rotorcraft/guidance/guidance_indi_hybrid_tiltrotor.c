@@ -33,13 +33,24 @@
 #endif
 
 
-static const float wing_area = GUIDANCE_INDI_WING_AREA;
-static const float CL_0      = GUIDANCE_INDI_CL_0;
-static const float CL_alpha  = GUIDANCE_INDI_CL_ALPHA;
-
 static const float air_density = PPRZ_ISA_AIR_DENSITY;
 
-static const float pitch_pref_max_incr = 0.0873f;  /* 5 deg */
+/* Aerodynamic model */
+static const float wing_area   = 0.05f;    /* [m^2] */
+static const float CL_0        = 0.1f;
+static const float CL_alpha    = 1.0f;     /* [1/rad] */
+static const float CL_min      = -0.5f;
+static const float CL_max      = 1.2f;
+static const float S_CD        = 0.0246f;  /* drag area S*CD [m^2] */
+static const float lift_v_on   = 4.0f;     /* wing term fades in over this band [m/s] */
+static const float lift_v_full = 6.0f;
+
+/* Fz handed to the outer WLS is held in this band: it must stay clearly negative
+ * or the roll/pitch columns of G collapse and then invert. */
+static const float Fz_min = -20.0f;        /* [m/s^2] */
+static const float Fz_max = -5.0f;
+
+static const float pitch_pref_max_incr UNUSED = 0.0873f;  /* 5 deg */
 
 float guidance_indi_max_thr_z = GUIDANCE_INDI_MAX_ACC_BODY_Z * GUIDANCE_INDI_MASS;
 float guidance_indi_max_thr_x = GUIDANCE_INDI_MAX_ACC_BODY_X * GUIDANCE_INDI_MASS;
@@ -72,27 +83,54 @@ float guidance_indi_wu_tx    = GUIDANCE_INDI_WU_TX;
 // }
 
 /**
- * Calculate aerodynamic lift force along body z axis
+ * Aerodynamic specific force, resolved from the wind frame onto the body axes
  *
- * @param vel    NED velocity vector (m/s) [1x3]
- * @param theta  pitch angle (rad)
- * @return lift force (N)
+ * @param vel  NED velocity vector (m/s) [1x3]
+ * @param eul  body attitude, ZXY euler order (rad)
+ * @param fx   body-x specific force (m/s^2)
+ * @param fz   body-z specific force (m/s^2)
  */
-float guidance_indi_get_lift(struct FloatVect3 vel, float theta)
+void guidance_indi_get_aero(struct FloatVect3 vel, struct FloatEulers *eul,
+                            float *fx, float *fz)
 {
- float V   = sqrtf(vel.x*vel.x + vel.y*vel.y + vel.z*vel.z);
- float vxy = sqrtf(vel.x*vel.x + vel.y*vel.y);
+ *fx = 0.0f;
+ *fz = 0.0f;
 
- if (V <= 4.0f) {
-  return 0.0f;
+ float V = sqrtf(vel.x*vel.x + vel.y*vel.y + vel.z*vel.z);
+ if (V < 0.1f) {
+  return;
  }
 
- float gamma = atan2f(-vel.z, vxy);
- float alpha = gamma - theta;
- float dyn   = 0.5f * air_density * V * V;
- float lift  = dyn * wing_area * (CL_0 + CL_alpha * alpha);
+ const float sphi = sinf(eul->phi),   cphi = cosf(eul->phi);
+ const float sth  = sinf(eul->theta), cth  = cosf(eul->theta);
+ const float spsi = sinf(eul->psi),   cpsi = cosf(eul->psi);
 
- return -lift * cosf(alpha) / GUIDANCE_INDI_MASS;
+ // Relative wind resolved on the body x and z axes (ZXY, same columns as Tx / Tz)
+ const float u = (-sth*sphi*spsi + cth*cpsi) * vel.x
+               + ( sth*sphi*cpsi + cth*spsi) * vel.y
+               + (-sth*cphi)                 * vel.z;
+ const float w = ( cth*sphi*spsi + sth*cpsi) * vel.x
+               + (-cth*sphi*cpsi + sth*spsi) * vel.y
+               + ( cth*cphi)                 * vel.z;
+
+ const float alpha = atan2f(w, u);
+ const float dyn   = 0.5f * air_density * V * V;
+
+ float drag = dyn * S_CD;
+ float lift = 0.0f;
+
+ float fade = (V - lift_v_on) / (lift_v_full - lift_v_on);
+ Bound(fade, 0.0f, 1.0f);
+ if (fade > 0.0f) {
+  fade = fade * fade * (3.0f - 2.0f * fade);
+  float CL = CL_0 + CL_alpha * alpha;
+  Bound(CL, CL_min, CL_max);
+  lift = fade * dyn * wing_area * CL;
+ }
+
+ const float ca = cosf(alpha), sa = sinf(alpha);
+ *fx = (-drag * ca + lift * sa) / GUIDANCE_INDI_MASS;
+ *fz = (-drag * sa - lift * ca) / GUIDANCE_INDI_MASS;
 }
 
 /**
@@ -117,16 +155,19 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
  float cpsi  = cosf(eulers_filtered.psi);
  float spsi  = sinf(eulers_filtered.psi);
 
- // Lift Estimates
+ // Aerodynamic force estimate, wind frame rotated onto the body axes
  struct FloatVect3 vel;
  VECT3_COPY(vel, *stateGetSpeedNed_f());
- float lift = guidance_indi_get_lift(vel, eulers_filtered.theta);
+ float aero_x, aero_z;
+ guidance_indi_get_aero(vel, &eulers_filtered, &aero_x, &aero_z);
 
  // Force Estimates
  const float T_r = atlas_eff_sched_v.T[0] + atlas_eff_sched_v.T[1];
  const float T_l = atlas_eff_sched_v.T[2] + atlas_eff_sched_v.T[3];
- float Fx =  (T_r * atlas_eff_sched_v.sin_ar + T_l * atlas_eff_sched_v.sin_al) / atlas_eff_sched_p.m;
- float Fz = -(T_r * atlas_eff_sched_v.cos_ar + T_l * atlas_eff_sched_v.cos_al) / atlas_eff_sched_p.m + lift;
+ float Fx =  (T_r * atlas_eff_sched_v.sin_ar + T_l * atlas_eff_sched_v.sin_al) / atlas_eff_sched_p.m + aero_x;
+ float Fz = -(T_r * atlas_eff_sched_v.cos_ar + T_l * atlas_eff_sched_v.cos_al) / atlas_eff_sched_p.m + aero_z;
+
+ Bound(Fz, Fz_min, Fz_max);
 
  // // Measured Force
  // float Fx = accel_bodyx_filt.o[0];
@@ -195,7 +236,7 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
         : -wheel * GUIDANCE_INDI_PITCH_PREF_RC_MIN_DEG;
   }
 #endif
-  const float pitch_pref_rad      = RadOfDeg(guidance_indi_pitch_pref_deg);
+  const float pitch_pref_rad UNUSED = RadOfDeg(guidance_indi_pitch_pref_deg);
 
   // Roll limits
   wls_guid_p.u_min[GIHT_CMD_ROLL]  = -guidance_indi_max_bank - roll_angle;
@@ -252,6 +293,6 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
   wls_guid_p.u_pref[GIHT_CMD_PITCH] = 0.f;
 
   /* Pitch preference */
-  // wls_guid_p.u_pref[GIHT_CMD_PITCH] = pitch_pref_rad - pitch_angle;
-  // BoundAbs(wls_guid_p.u_pref[GIHT_CMD_PITCH], pitch_pref_max_incr);
+   // wls_guid_p.u_pref[GIHT_CMD_PITCH] = pitch_pref_rad - pitch_angle;
+   // BoundAbs(wls_guid_p.u_pref[GIHT_CMD_PITCH], pitch_pref_max_incr);
 }

@@ -1,0 +1,71 @@
+<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
+
+<flight_plan alt="148" ground_alt="146" lat0="43.5640917" lon0="1.4829201" max_dist_from_home="150" name="Atlas Flight Plan (Enac)" security_height="2">
+  <header>
+#include "autopilot.h"
+#include "modules/ctrl/circ_trajectory.h"
+  </header>
+  <waypoints>
+    <waypoint name="HOME" x="0.0" y="0.0"/>
+    <waypoint name="HOLD" x="0.0" y="0.0"/>
+  </waypoints>
+  <modules>
+    <module name="nav" type="takeoff_and_landing"/>
+  </modules>
+  <blocks>
+    <block name="Wait GPS">
+      <call_once fun="NavKillThrottle()"/>
+      <call_once fun="circ_trajectory_stop()"/>
+      <while cond="!GpsFixValid()"/>
+    </block>
+    <block name="Geo init">
+      <while cond="LessThan(NavBlockTime(), 10)"/>
+      <call_once fun="NavSetGroundReferenceHere()"/>
+    </block>
+    <block name="Holding point">
+      <call_once fun="NavKillThrottle()"/>
+      <call_once fun="circ_trajectory_stop()"/>
+      <attitude pitch="0" roll="0" throttle="0" vmode="throttle" until="FALSE"/>
+    </block>
+    <block name="Takeoff (Here)" strip_button="Takeoff (Here)" strip_icon="takeoff.png" group="takeoff">
+      <call_once fun="circ_trajectory_stop()"/>
+      <call fun="nav_takeoff_from_here(-1.)"/>
+      <deroute block="Hover (Here)"/>
+    </block>
+    <block name="Hover (Here)" strip_button="Hover (Here)" strip_icon="home.png">
+      <set var="circ_traj.status" value="CIRC_TRAJ_HOVER"/>
+      <call_once fun="waypoint_set_here(WP_HOLD)"/>
+      <stay wp="HOLD"/>
+    </block>
+    <block name="Circle Center" strip_button="Circle Center">
+      <set var="circ_traj.status" value="CIRC_TRAJ_CENTER"/>
+      <while cond="TRUE"/>
+    </block>
+    <block name="Circle Heading" strip_button="Circle Heading">
+      <set var="circ_traj.status" value="CIRC_TRAJ_HEADING"/>
+      <while cond="TRUE"/>
+    </block>
+    <block name="Circle Goto Start" strip_button="Circle Goto Start">
+      <set var="circ_traj.status" value="CIRC_TRAJ_GOTO_START"/>
+      <while cond="TRUE"/>
+    </block>
+    <block name="Circle Start" strip_button="Circle Start">
+      <exception cond="(circ_traj.status == CIRC_TRAJ_END) @AND (NavBlockTime() @GT 1)" deroute="Circle End"/>
+      <set var="circ_traj.status" value="CIRC_TRAJ_START"/>
+      <while cond="TRUE"/>
+    </block>
+    <block name="Circle End" strip_button="Circle End">
+      <set var="circ_traj.status" value="CIRC_TRAJ_END"/>
+      <while cond="TRUE"/>
+    </block>
+    <block name="Land (Here)" strip_button="Land (Here)" strip_icon="land-right.png" group="land">
+      <call_once fun="circ_trajectory_stop()"/>
+      <call fun="nav_land_here(0., 0.)"/>
+      <deroute block="Landed"/>
+    </block>
+    <block name="Landed">
+      <call_once fun="circ_trajectory_stop()"/>
+      <attitude pitch="0" roll="0" throttle="0" vmode="throttle" until="FALSE"/>
+    </block>
+  </blocks>
+</flight_plan>

@@ -17,8 +17,10 @@
       <define name="MAX_ACCELZ"        value="9.0"             description="bound on commanded vertical acceleration [m/s^2]"/>
       <define name="YAW_RATE"          value="20.0"            description="max heading slew rate while aligning in HEAD mode [deg/s]"/>
       <define name="YAW_FF_GAIN"       value="1.0"             description="heading-rate feedforward gain (1 = feed the full trajectory heading rate)"/>
-      <define name="ACCEL_LEAD_TIME"   value="0.1"             description="lead time [s] applied to the accel feedforward a_ref only (evaluated at t + lead) to compensate the attitude realization lag; 0 disables"/>
       <define name="SMOOTH_W"          value="2.0"             description="smooths the non-start response"/>
+      <define name="ACCEL_LEAD_TIME"   value="0.0"             description="lead time [s] applied to the accel feedforward a_ref only (evaluated at t + lead) to compensate the attitude realization lag; 0 disables"/>
+      <define name="POS_IGAIN"         value="0.0"             description="integral gain on the radial position error [1/s^2]; 0 disables"/>
+      <define name="MAX_IVEL"          value="1.0"             description="bound on the velocity the integrator may contribute [m/s]"/>
     </section>
   </doc>
 
@@ -31,11 +33,14 @@
         <dl_setting var="circ_traj.v_max" min="0.5" max="15" step="0.1" shortname="v_max" unit="m/s"/>
         <dl_setting var="circ_traj.k" min="0.05" max="2" step="0.05" shortname="windup_k" unit="1/s"/>
         <dl_setting var="circ_traj.t_end" min="0" max="600" step="5" shortname="t_end" unit="s"/>
-        <dl_setting var="circ_traj.max_accel" min="0.5" max="10" step="0.5" shortname="max_accel" unit="m/s2"/>
+        <dl_setting var="circ_traj.max_accel" min="0.5" max="12" step="0.5" shortname="max_accel" unit="m/s2"/>
         <dl_setting var="circ_traj.max_accelz" min="0.5" max="12" step="0.5" shortname="max_accelz" unit="m/s2"/>
         <dl_setting var="circ_traj.yaw_rate" min="5" max="180" step="5" shortname="yaw_rate" unit="deg/s"/>
         <dl_setting var="circ_traj.yaw_ff" min="0" max="1.5" step="0.05" shortname="yaw_ff"/>
         <dl_setting var="circ_traj.smooth_w" min="0.3" max="3.0" step="0.1" shortname="smooth_w" unit="rad/s"/>
+        <dl_setting var="circ_traj.accel_lead" min="0" max="0.3" step="0.01" shortname="accel_lead" unit="s"/>
+        <dl_setting var="circ_traj.pos_igain" min="0" max="1.5" step="0.05" shortname="pos_igain" unit="1/s2"/>
+        <dl_setting var="circ_traj.max_ivel" min="0" max="3.0" step="0.1" shortname="max_ivel" unit="m/s"/>
       </dl_settings>
     </dl_settings>
   </settings>
@@ -51,16 +56,18 @@
   <makefile>
     <file name="circ_trajectory.c"/>
     <define name="CIRC_TRAJECTORY_V_MAX" value="3.5"/>
-    <define name="CIRC_TRAJECTORY_K" value="0.3"/>
-    <define name="CIRC_TRAJECTORY_RADIUS" value="2.6"/>
+    <define name="CIRC_TRAJECTORY_K" value="0.35"/>
+    <define name="CIRC_TRAJECTORY_RADIUS" value="3.0"/>
     <define name="CIRC_TRAJECTORY_T_END" value="60.0"/>
-    <define name="CIRC_TRAJECTORY_MAX_ACCEL" value="8.0"/>
+    <define name="CIRC_TRAJECTORY_MAX_ACCEL" value="12.0"/>
     <define name="CIRC_TRAJECTORY_MAX_ACCELZ" value="8.0"/>
     <define name="CIRC_TRAJECTORY_CENTER" value="{0.0,0.0,-2.0}"/> <!-- {0.0,-0.1,-1.5} -->
-    <define name="CIRC_TRAJECTORY_YAW_RATE" value="35.0"/>
+    <define name="CIRC_TRAJECTORY_YAW_RATE" value="45.0"/>
     <define name="CIRC_TRAJECTORY_YAW_FF_GAIN" value="1.0"/>
-    <define name="CIRC_TRAJECTORY_ACCEL_LEAD_TIME" value="0.12"/> <!-- 0.10 for 4 m/s, 0.13 for 4.5 m/s -->
-    <define name="CIRC_TRAJECTORY_SMOOTH_W" value="2.5"/>
+    <define name="CIRC_TRAJECTORY_SMOOTH_W" value="1.5"/>
+    <define name="CIRC_TRAJECTORY_ACCEL_LEAD_TIME" value="0.04"/>
+    <define name="CIRC_TRAJECTORY_POS_IGAIN" value="0.0"/>
+    <define name="CIRC_TRAJECTORY_MAX_IVEL" value="0.0"/>
   </makefile>
 
 </module>

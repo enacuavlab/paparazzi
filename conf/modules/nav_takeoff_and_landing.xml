@@ -12,6 +12,7 @@
     </description>
     <section name="NAV_TAKEOFF" prefix="NAV_TAKEOFF_">
       <define name="CLIMB_SPEED" value="1.0" description="Takeoff climb speed (rotorcraft, default: NAV_CLIMB_VSPEED)"/>
+      <define name="CLIMB_RAMP_TIME" value="0." unit="s" description="Ramp the takeoff climb speed up from zero over this time (rotorcraft, default: 0 = step)"/>
       <define name="PITCH" value="15." unit="deg" description="Takeoff pitch angle (fixedwing)"/>
       <define name="THROTTLE" value="1.0" unit="[0-1]" description="Takeoff throttle (fixedwing, normalized [0-1])"/>
       <define name="HEIGHT" value="2./20." unit="m" description="Takeoff end height (default: rotorcraft=2., fixedwing=20."/>

@@ -68,7 +68,7 @@
 #error "ATLAS_EFF_RZ [4x1 float] not defined in airframe file"
 #endif
 #ifndef ATLAS_EFF_K_T_PPRZ
-#error "ATLAS_EFF_K_T_PPRZ [3x1 float] not defined in airframe file — {a [N], b [N/pprz], c [N/pprz^2]}"
+#error "ATLAS_EFF_K_T_PPRZ [2x1 float] not defined in airframe file — {b [N/pprz], c [N/pprz^2]}"
 #endif
 #ifndef ATLAS_EFF_KAPPA
 #error "ATLAS_EFF_KAPPA [float] not defined in airframe file"
@@ -117,15 +117,12 @@
 #define ATLAS_EFF_TILT_RATE  30.0f
 #endif
 
-/* Cutoff of the body-accelerometer filter logged in ATLAS_SYSID. Deliberately
- * tied to the INDI gyro filter so the logged accel and ang_accel share a phase. */
 #ifndef STABILIZATION_INDI_FILT_CUTOFF
 #error "STABILIZATION_INDI_FILT_CUTOFF [float] not defined in airframe file"
 #endif
 
-/* ATLAS_SYSID carries the actuator vector as int16[6] */
 #if INDI_NUM_ACT != 6
-#error "ATLAS_SYSID u_cmd/u_state are int16[6]: widen the message to match INDI_NUM_ACT"
+#error "ATLAS_TEL/ATLAS_ACT u_cmd/u_state are int16[6]: widen the messages to match INDI_NUM_ACT"
 #endif
 
 
@@ -164,7 +161,7 @@ bool  atlas_eff_disable_tilt = false;                                 // Debug: 
 /* Body specific force, low-passed with the same 2nd-order Butterworth the INDI
  * runs on the gyros. Matching the filter matters: the identification regresses
  * accel_body against ang_accel, and a phase mismatch between the two shows up
- * as a bias on every coefficient fitted from them. Logged by ATLAS_SYSID. */
+ * as a bias on every coefficient fitted from them. Logged by ATLAS_TEL. */
 static Butterworth2LowPass atlas_accel_body_filt[3];
 
 
@@ -208,7 +205,7 @@ void stabilization_indi_set_wls_settings(void);
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
 
-/* Fixed-point packing for ATLAS_SYSID. Saturating rather than wrapping: a
+/* Fixed-point packing for ATLAS_TEL. Saturating rather than wrapping: a
  * clipped sample is obvious in the plot, a wrapped one silently poisons a fit. */
 static inline int16_t sysid_i16(float v, float scale)
 {
@@ -223,26 +220,44 @@ static inline int16_t sysid_i16(float v, float scale)
  *   rate       +/- 32.767 rad/s     at 0.001 rad/s
  *   ang_accel  +/- 327.67 rad/s^2   at 0.01  rad/s^2
  *   accel_body +/- 327.67 m/s^2     at 0.01  m/s^2 */
-#define ATLAS_SYSID_RATE_SCALE   1000.f
-#define ATLAS_SYSID_ACCEL_SCALE   100.f
+#define ATLAS_TEL_RATE_SCALE   1000.f
+#define ATLAS_TEL_ACCEL_SCALE   100.f
 
-static void send_atlas_sysid(struct transport_tx *trans, struct link_device *dev)
+static inline void atlas_pack_actuators(int16_t *u_cmd, int16_t *u_state)
 {
-  int16_t u_cmd[INDI_NUM_ACT];
-  int16_t u_state[INDI_NUM_ACT];
   for (int i = 0; i < INDI_NUM_ACT; i++) {
     u_cmd[i]   = actuators_pprz[i];
     u_state[i] = sysid_i16(actuator_state_filt_vect[i], 1.f);
   }
+}
+
+/* The radio downlink only gets the actuator halves: 37 B against ATLAS_TEL's
+ * 55, and the three fields left out are the ones that need a rate the XBee
+ * cannot carry anyway. Plant identification reads ATLAS_TEL off the SD card,
+ * where the FlightRecorder logs it at 100 Hz. */
+static void send_atlas_act(struct transport_tx *trans, struct link_device *dev)
+{
+  int16_t u_cmd[INDI_NUM_ACT];
+  int16_t u_state[INDI_NUM_ACT];
+  atlas_pack_actuators(u_cmd, u_state);
+
+  pprz_msg_send_ATLAS_ACT(trans, dev, AC_ID, u_cmd, u_state);
+}
+
+static void send_atlas_tel(struct transport_tx *trans, struct link_device *dev)
+{
+  int16_t u_cmd[INDI_NUM_ACT];
+  int16_t u_state[INDI_NUM_ACT];
+  atlas_pack_actuators(u_cmd, u_state);
 
   int16_t rate[3], ang_accel[3], accel_body[3];
   for (int i = 0; i < 3; i++) {
-    rate[i]       = sysid_i16(angular_rate_filt[i], ATLAS_SYSID_RATE_SCALE);
-    ang_accel[i]  = sysid_i16(angular_acceleration[i], ATLAS_SYSID_ACCEL_SCALE);
-    accel_body[i] = sysid_i16(atlas_accel_body_filt[i].o[0], ATLAS_SYSID_ACCEL_SCALE);
+    rate[i]       = sysid_i16(angular_rate_filt[i], ATLAS_TEL_RATE_SCALE);
+    ang_accel[i]  = sysid_i16(angular_acceleration[i], ATLAS_TEL_ACCEL_SCALE);
+    accel_body[i] = sysid_i16(atlas_accel_body_filt[i].o[0], ATLAS_TEL_ACCEL_SCALE);
   }
 
-  pprz_msg_send_ATLAS_SYSID(trans, dev, AC_ID,
+  pprz_msg_send_ATLAS_TEL(trans, dev, AC_ID,
                             u_cmd, u_state, rate, ang_accel, accel_body);
 }
 #endif
@@ -254,7 +269,7 @@ void eff_scheduling_atlas_init(void)
   atlas_eff_sched_p.k_tilt_pprz[1] = atlas_eff_tilt_scale * (ATLAS_EFF_ALPHA_MAX /  (float)MAX_PPRZ);  // pprz >= 0
 
   // Checks for positive and non-zeros coefficients
-  const float a  = atlas_eff_sched_p.k_T_pprz[1];   // linear thrust coefficient
+  const float a  = atlas_eff_sched_p.k_T_pprz[0];   // linear thrust coefficient
   const float b = atlas_eff_sched_p.k_tilt_pprz[1];
 
   if (a < 0.f || b == 0.f)
@@ -263,7 +278,7 @@ void eff_scheduling_atlas_init(void)
    * Prevent the stabilization module from starting if (1) a is negative or (2) b is zero:
    * (1):
    * The change in thrust due to change in pprz is given by: dT/du = b + 2*c*u,
-   * if T_pprz[1] is negative an increase in pprz results in a decrease in thrust, breaking the thrust model
+   * if k_T_pprz[0] is negative an increase in pprz results in a decrease in thrust, breaking the thrust model
    * (2):
    * The change in tilt angle due to a change in pprz is given by: alpha = k_tilt_pprz[1] * pprz (positive range)
    * if k_tilt_pprz[1] is zero, ALPHA_MAX or MAX_PPRZ are zero — tilt cannot be commanded
@@ -281,7 +296,7 @@ void eff_scheduling_atlas_init(void)
   {
   atlas_eff_sched_v.cmd_motor[i] = ATLAS_MOTOR_HOVER;
   atlas_eff_sched_v.T[i] = atlas_eff_sched_p.m*grav/4.f;
-  atlas_eff_sched_v.dT_dpprz[i] = atlas_eff_sched_p.k_T_pprz[1];
+  atlas_eff_sched_v.dT_dpprz[i] = atlas_eff_sched_p.k_T_pprz[0];
   }
   atlas_eff_sched_v.airspeed = 0.f;
   atlas_eff_sched_v.airspeed_sq = 0.f;
@@ -293,7 +308,8 @@ void eff_scheduling_atlas_init(void)
   }
 
 #if PERIODIC_TELEMETRY
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATLAS_SYSID, send_atlas_sysid);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATLAS_TEL, send_atlas_tel);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATLAS_ACT, send_atlas_act);
 #endif
 
   // atlas_eff_sched_v.cmd_elevon_r = 0.f;
@@ -373,19 +389,18 @@ static inline void atlas_update_airspeed_cache(void)
 }
 
 /* Quadratic thrust model:
- *   T(u)      = a + b*u + c*u^2    (a = idle thrust at pprz = 0)
+ *   T(u)      = b*u + c*u^2
  *   dT/du(u)  = b + 2*c*u
- * k_T_pprz = [a, b, c].
+ * k_T_pprz = [b, c].
  */
 static inline void atlas_update_thrust_model(void)
 {
-  const float a = atlas_eff_sched_p.k_T_pprz[0];
-  const float b = atlas_eff_sched_p.k_T_pprz[1];
-  const float c = atlas_eff_sched_p.k_T_pprz[2];
+  const float b = atlas_eff_sched_p.k_T_pprz[0];
+  const float c = atlas_eff_sched_p.k_T_pprz[1];
   for (int i = 0; i < 4; i++) {
     float u = atlas_eff_sched_v.cmd_motor[i];
     Bound(u, 0.f, MAX_PPRZ);
-    atlas_eff_sched_v.T[i]        = a + b * u + c * u * u;
+    atlas_eff_sched_v.T[i]        = b * u + c * u * u;
     atlas_eff_sched_v.dT_dpprz[i] = b + 2.f * c * u;
     Bound(atlas_eff_sched_v.dT_dpprz[i], 0.1f * b, 5.0f * b);
   }

@@ -161,6 +161,10 @@ void control_mixing_atlas_guidance(void)
   bool in_flight = autopilot_in_flight();
   atlas_tilt_gate(in_flight);
 
+  if (!in_flight) {
+    guidance_h_hover_enter();
+  }
+
   // Heading setpoint for the guidance loop
   guidance_h.sp.heading = atlas_heading_sp;
 
@@ -188,6 +192,10 @@ void control_mixing_atlas_nav(void)
 {
   bool in_flight = autopilot_in_flight();
   atlas_tilt_gate(in_flight);
+
+  if (!in_flight) {
+    guidance_h_nav_enter();
+  }
 
   // Heading setpoint for the guidance loop
   guidance_h.sp.heading = atlas_heading_sp;

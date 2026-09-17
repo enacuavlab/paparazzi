@@ -18,12 +18,12 @@
             <define name="RX"              value="{0,0,0,0}"       description="Rotor x positions [m], order: FR, RR, RL, FL"/>
             <define name="RY"              value="{0,0,0,0}"       description="Rotor y positions [m], order: FR, RR, RL, FL"/>
             <define name="RZ"              value="{0,0,0,0}"       description="Rotor z positions [m], order: FR, RR, RL, FL"/>
-            <define name="K_T_PPRZ"        value="{0,0,0}"         description="Quadratic thrust model: T = a + b*u + c*u^2, value = {a [N], b [N/pprz], c [N/pprz^2]}"/>
+            <define name="K_T_PPRZ"        value="{0,0}"           description="Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]}"/>
             <define name="KAPPA"           value="0"               description="Drag-torque to thrust ratio (kappa = k_m/k_t) [m]"/>
             <define name="K_LIFT"          value="0"               description="Wing lift derivative: dL/d(alpha) = k_lift * V^2 [N/rad]"/>
             <define name="V_WING"          value="10.0"            description="Airspeed at which wing lift derivative is applied [m/s]"/>
-            <define name="ALPHA_MIN"       value="-0.261"            description="Minimum tilt angle [rad] (default -0.1)"/>
-            <define name="ALPHA_MAX"       value="M_PI/2"          description="Maximum tilt angle [rad] (default pi/2)"/>
+            <define name="ALPHA_MIN"       value="-0.1656"         description="Tilt angle at -MAX_PPRZ [rad], measured per bank"/>
+            <define name="ALPHA_MAX"       value="1.5708"          description="Tilt angle at +MAX_PPRZ [rad], measured per bank"/>
             <!-- Elevons
             <define name="K_ELEVON_DEFLECT"  value="0"             description="delta = k*pprz [rad/pprz], = delta_max / MAX_PPRZ"/>
             <define name="K_ELEVON_ROLL"     value="0"             description="dMx/ddelta = k_roll * V^2 [N.m/rad per (m/s)^2]"/>
@@ -64,24 +64,24 @@
 
     <makefile>
         <define name="ACTUATORS_NB"             value="6"/> <!-- 8 with elevons: one per <servo>, all drivers -->
-        <define name="ATLAS_EFF_IXX"            value="0.00372"/>
-        <define name="ATLAS_EFF_IYY"            value="0.00389"/>
+        <define name="ATLAS_EFF_IXX"            value="0.0087"/>
+        <define name="ATLAS_EFF_IYY"            value="0.0023"/>
         <define name="ATLAS_EFF_IZZ"            value="0.01300"/>
         <define name="ATLAS_EFF_RX"             value="{0.09,-0.10,-0.10,0.09}"/>
         <define name="ATLAS_EFF_RY"             value="{0.15,0.15,-0.15,-0.15}"/>
-        <define name="ATLAS_EFF_RZ"             value="{0.0,0.0,0.0,0.0}"/>
+        <define name="ATLAS_EFF_RZ"             value="{0.0,0.0,0.0,0.0}"/> <!-- "{-0.012,-0.012,-0.012,-0.012}" -->
         <define name="ATLAS_EFF_SPIN_DIR"       value="{-1.0,1.0,-1.0,1.0}"/>
-        <define name="ATLAS_EFF_K_T_PPRZ"       value="{0.163,1.22e-4,4.08e-8}"/>
-        <define name="ATLAS_EFF_KAPPA"          value="0.018"/> <!-- was 0.06; 0.018 from log-ID: yaw eff kappa*dT/Izz~9.5e-4 with Izz=0.013 -->
+        <define name="ATLAS_EFF_K_T_PPRZ"       value="{2.32e-4,2.12e-8}"/>
+        <define name="ATLAS_EFF_KAPPA"          value="0.030"/>
 
         <define name="ATLAS_EFF_K_LIFT"         value="0.311"/>
         <define name="ATLAS_EFF_V_WING"         value="10.0"/>
-        <define name="ATLAS_MOTOR_HOVER"        value="4640"/> <!-- was 3000; 4640 = measured hover command from flight logs -->
+        <define name="ATLAS_MOTOR_HOVER"        value="4750"/>
 
         <define name="ATLAS_MOTOR_IDLE"         value="0"/>
         <define name="ATLAS_EFF_ALPHA_MIN"      value="-0.261"/>
-        <define name="ATLAS_EFF_ALPHA_MAX"      value="M_PI/2"/>
-        <define name="ATLAS_EFF_TILT_RATE"      value="80.0"/>
+        <define name="ATLAS_EFF_ALPHA_MAX"      value="1.5708"/>
+        <define name="ATLAS_EFF_TILT_RATE"      value="120.0"/>
 
         <!-- Elevons
         <define name="ATLAS_EFF_K_ELEVON_DEFLECT"  value="3.2e-5"/>  0.31 rad (18 deg) / 9600

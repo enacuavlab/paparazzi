@@ -35,6 +35,10 @@
 #define NAV_TAKEOFF_CLIMB_SPEED NAV_CLIMB_VSPEED
 #endif
 
+#ifndef NAV_TAKEOFF_CLIMB_RAMP_TIME
+#define NAV_TAKEOFF_CLIMB_RAMP_TIME 0.f
+#endif
+
 #ifndef NAV_TAKEOFF_HEIGHT
 #define NAV_TAKEOFF_HEIGHT 2.f
 #endif
@@ -135,11 +139,13 @@ void nav_takeoff_and_landing_periodic(void)
 
 static bool nav_takeoff_run(void) {
   static int start_motor_counter = 0;
+  static float climb_speed = 0.f;
 
   switch (takeoff.status) {
     case NAV_TAKEOFF_INIT:
       takeoff.status = NAV_TAKEOFF_START_MOTOR;
       start_motor_counter = 0;
+      climb_speed = 0.f;
       break;
     case NAV_TAKEOFF_START_MOTOR:
       NavResurrect();
@@ -157,8 +163,14 @@ static bool nav_takeoff_run(void) {
       // call vertical climb from nav/guidance
       autopilot_set_in_flight(true);
       NavGotoWaypoint(takeoff.climb_id);
-      NavVerticalClimbMode(NAV_TAKEOFF_CLIMB_SPEED);
-      if (stateGetPositionEnu_f()->z - takeoff.start_pos.z > takeoff.climb_pos.z) {
+      if (NAV_TAKEOFF_CLIMB_RAMP_TIME > 0.f) {
+        climb_speed += NAV_TAKEOFF_CLIMB_SPEED / (NAV_TAKEOFF_CLIMB_RAMP_TIME * NAVIGATION_FREQUENCY);
+        Bound(climb_speed, 0.f, NAV_TAKEOFF_CLIMB_SPEED);
+      } else {
+        climb_speed = NAV_TAKEOFF_CLIMB_SPEED;
+      }
+      NavVerticalClimbMode(climb_speed);
+      if (stateGetPositionEnu_f()->z > takeoff.climb_pos.z) {
         // end when takeoff height is reached
         takeoff.status = NAV_TAKEOFF_DONE;
       }

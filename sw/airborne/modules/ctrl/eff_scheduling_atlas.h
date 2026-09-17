@@ -63,13 +63,12 @@ struct atlas_eff_sched_param_t {
     float r_z[4];                       // Vertical Offset from CG (positive = down)
 
     /* Rotor Coefficients
-    * Quadratic Thrust Model per motor:  T(pprz) = a + b * pprz + c * pprz^2
+    * Quadratic Thrust Model per motor:  T(pprz) = b * pprz + c * pprz^2
     * Derivative:                        dT/dpprz = b + 2 * c * pprz
     */
-    float k_T_pprz[3];                  // Quadratic thrust coefficients:
-                                        //   [0]: a — idle thrust at pprz = 0 [N]
-                                        //   [1]: b — linear term [N/pprz]
-                                        //   [2]: c — quadratic term [N/pprz^2]
+    float k_T_pprz[2];                  // Quadratic thrust coefficients:
+                                        //   [0]: b — linear term [N/pprz]
+                                        //   [1]: c — quadratic term [N/pprz^2]
     float kappa;                        // Propeller torque coefficient: M = κ * T [m]
     float spin_dir[4];                  // Rotor spin direction (+1 for CW. -1 for CCW)
 

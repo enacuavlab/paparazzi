@@ -74,6 +74,10 @@
         <!-- GPS Outdoors Settings -->
 <!--        <module name="gps" type="ublox">-->
 <!--            <configure name="GPS_BAUD" value="B115200"/>-->
+<!--            <define name="INS_EKF2_VDIST_SENSOR_TYPE" value="VDIST_SENSOR_GPS"/>-->
+<!--        </module>-->
+<!--        <module name="gps" type="ubx_ucenter">-->
+<!--            <define name="GPS_UBX_UCENTER_RATE" value="100"/>-->
 <!--        </module>-->
 
         <module name="ins" type="ekf2"/>
@@ -103,8 +107,8 @@
     </servos>
     
     <servos driver="Pwm">
-        <servo name="TILT_RIGHT"    no="1" min="1170" neutral="1240" max="1600"/>
-        <servo name="TILT_LEFT"     no="2" min="1905" neutral="1830" max="1460"/>
+        <servo name="TILT_RIGHT"    no="1" min="1250" neutral="1310" max="1730"/>
+        <servo name="TILT_LEFT"     no="2" min="1830" neutral="1780" max="1400"/>
         <!-- Elevons: left mirrored (min > max) so +pprz = elevon up on both sides
         <servo name="ELEVON_RIGHT"  no="3" min="-9600" neutral="0" max="9600"/>
         <servo name="ELEVON_LEFT"   no="4" min="-9600" neutral="0" max="9600"/>
@@ -174,7 +178,6 @@
                 <field value="TAWAKIV2_IMU_ROT"/>
             </field>
         </define>
-
         <define name="MAG_CALIB" type="array">
             <field type="struct">
                 <field name="abi_id" value="3"/>
@@ -182,9 +185,12 @@
                     <field name="neutral" value="true"/>
                     <field name="scale_f" value="true"/>
                     <field name="rotation" value="true"/>
+<!--                    <field name="current" value="true"/>-->
                 </field>
                 <field name="neutral" value="-2234,-391,-359" type="int[]"/>
                 <field name="scale_f" value="{ 0.6892, 0.6836, 0.6893 }"/>
+                <!-- MAGNETOMETER Current Calibration -->
+<!--                <field name="current_scale" value="{Kx, Ky, Kz"/>-->
                 <field value="TAWAKIV2_MAG_ROT"/>
             </field>
         </define>
@@ -201,7 +207,6 @@
         <define name="MODE_STARTUP" value="AP_MODE_MANUAL"/>
         <define name="AUTOPILOT_IN_FLIGHT_MIN_THRUST" value="1500"/>
         <define name="AUTOPILOT_IN_FLIGHT_TIME" value="50"/>
-
     </section>
 
     <section name="BAT">
@@ -211,11 +216,12 @@
         <define name="LOW_BAT_LEVEL" value="10.2" unit="V"/>
         <define name="MAX_BAT_LEVEL" value="12.9" unit="V"/>
         <define name="BAT_NB_CELLS" value="3"/>
+<!--        <define name="MILLIAMP_AT_FULL_THROTTLE" value="10000"/>-->
     </section>
 
     <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
         <!-- setpoints -->
-        <define name="SP_MAX_PHI" value="60." unit="deg"/>
+        <define name="SP_MAX_PHI" value="70." unit="deg"/>
         <define name="SP_MAX_THETA" value="40." unit="deg"/>
         <define name="SP_MAX_R" value="30." unit="deg/s"/>
         <define name="SP_PSI_DELTA_LIMIT" value="50" unit="deg"/>
@@ -262,18 +268,18 @@
         -->
 
         <!-- Proportional Gains for Angular Error (P - roll, Q - Pitch, R - Yaw) -->
-        <define name="REF_ERR_P" value="280.0"/>
-        <define name="REF_ERR_Q" value="250.0"/>
-        <define name="REF_ERR_R" value="200.0"/>
+        <define name="REF_ERR_P" value="140.0"/>
+        <define name="REF_ERR_Q" value="120.0"/>
+        <define name="REF_ERR_R" value="280.0"/>
         <!-- Proportional Gains for Angular Rate Error (P - roll, Q - Pitch, R - Yaw) -->
-        <define name="REF_RATE_P" value="40.0"/>
-        <define name="REF_RATE_Q" value="25.0"/>
-        <define name="REF_RATE_R" value="18.0"/>
+        <define name="REF_RATE_P" value="20.0"/>
+        <define name="REF_RATE_Q" value="15.0"/>
+        <define name="REF_RATE_R" value="25.0"/>
 
         <define name="FILT_CUTOFF" value="8.0"/>
 
         <!-- First order actuator dynamics -->
-        <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 12.66, 5.0, 5.0}"/> <!-- 4.0 -->
+        <define name="ACT_FREQ" value="{25.0,25.0,25.0,25.0,5.0,5.0}"/>
         <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 9600, 9600}"/>
         <define name="ACT_IS_SERVO" value="{0, 0, 0, 0, 1, 1}"/>
 
@@ -291,7 +297,7 @@
         <define name="WLS_PRIORITIES" value="{10000,10000,5000,8000,2000}"/>
 
         <!-- Wu: [FR,BR,BL,FL,tilt_R,tilt_L]  (lower = allocator prefers it) -->
-        <define name="WLS_WU" value="{1.0, 1.0, 1.0, 1.0, 0.1, 0.1}"/>
+        <define name="WLS_WU" value="{1.0, 1.0, 1.0, 1.0, 0.3, 0.3}"/>
         <!-- <define name="WLS_WU" value="{1.0, 1.0, 1.0, 1.0, 0.1, 0.1, 0.1, 0.1}"/> -->
 
         <!-- Adaptive Learning Rate -->
@@ -301,7 +307,7 @@
     </section>
 
     <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-        <define name="MAX_BANK" value="50" unit="deg"/> <!-- Guidance outer WLS bounds (keep below SP_MAX_PHI) -->
+        <define name="MAX_BANK" value="60" unit="deg"/>         <!-- Guidance outer WLS bounds (keep below SP_MAX_PHI) -->
         <define name="USE_SPEED_REF" value="TRUE"/>
         <define name="PGAIN" value="180"/>
         <define name="DGAIN" value="180"/>
@@ -318,10 +324,10 @@
     </section>
 
     <section name="GUIDANCE_INDI">
-        <define name="GUIDANCE_INDI_POS_GAIN"          value="0.9"/>
-        <define name="GUIDANCE_INDI_SPEED_GAIN"        value="1.2"/>
+        <define name="GUIDANCE_INDI_POS_GAIN"          value="1.0"/>
+        <define name="GUIDANCE_INDI_SPEED_GAIN"        value="1.4"/>
         <define name="GUIDANCE_INDI_POS_GAINZ"         value="1.0"/>
-        <define name="GUIDANCE_INDI_SPEED_GAINZ"       value="2.0"/>
+        <define name="GUIDANCE_INDI_SPEED_GAINZ"       value="2.2"/>
         <define name="GUIDANCE_INDI_MAX_AIRSPEED"      value="16.0"/>
         <define name="GUIDANCE_INDI_MIN_AIRSPEED"      value="0.0"/>
         <define name="GUIDANCE_INDI_FILTER_CUTOFF"     value="8.0"/>
@@ -331,7 +337,9 @@
 
     <section name="NAV">
         <define name="NAV_CLIMB_VSPEED" value="1.5"/>
-        <define name="NAV_DESCEND_VSPEED" value="-0.7"/> <!-- outdoors "1.0" -->
+        <define name="NAV_DESCEND_VSPEED" value="-0.7"/> <!-- outdoors "-1.0" -->
+        <define name="NAV_TAKEOFF_CLIMB_SPEED" value="1.0"/>
+        <define name="NAV_TAKEOFF_CLIMB_RAMP_TIME" value="1.5"/>
         <define name="NAV_LANDING_AF_HEIGHT" value="2."/>
         <define name="NAV_LANDING_FLARE_HEIGHT" value="0.7"/>
         <define name="NAV_LANDING_DESCEND_SPEED" value="-0.6"/>

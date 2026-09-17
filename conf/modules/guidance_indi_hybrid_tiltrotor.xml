@@ -8,10 +8,7 @@
 
         <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
             <define name="PUSHER_INDEX"         value="4"            description="Stabilization actuator index with non-zero Ax effectiveness, used to bound forward thrust increment [-]"/>
-            <define name="MASS"                 value="0.75"         description="Vehicle mass [kg]"/>
-            <define name="WING_AREA"            value="0.5"          description="Wing reference area [m^2]"/>
-            <define name="CL_0"                 value="0.1"          description="Zero-alpha lift coefficient [-]"/>
-            <define name="CL_ALPHA"             value="5.0"          description="Lift slope [1/rad]"/>
+            <define name="MASS"                 value="0.642"         description="Vehicle mass [kg]"/>
             <define name="MAX_ACC_BODY_X"       value="5.0"          description="Max longitudinal body acceleration [m/s^2]"/>
             <define name="MAX_ACC_BODY_Z"       value="5.0"          description="Max vertical body acceleration [m/s^2]"/>
             <define name="WLS_PRIORITIES"       value="{2.,2.,1.}"    description="WLS cost weights for ax, ay, az [-]"/>
@@ -40,24 +37,17 @@
         <define name="GUIDANCE_INDI_HYBRID_U"                value="4"/>           <!-- Guidance control objectives: ax, ay, az for tiltrotors -->
         <define name="GUIDANCE_INDI_HYBRID_V"                value="3"/>
         <define name="GUIDANCE_INDI_PUSHER_INDEX"            value="4"/>
-        <define name="GUIDANCE_INDI_MASS"                    value="0.68"/>
-        <define name="GUIDANCE_INDI_WING_AREA"               value="0.5"/>
-        <define name="GUIDANCE_INDI_CL_0"                    value="0.1"/>
-        <define name="GUIDANCE_INDI_CL_ALPHA"                value="5.0"/>
-        <define name="GUIDANCE_INDI_MAX_ACC_BODY_X"          value="10.0"/>
+        <define name="GUIDANCE_INDI_MASS"                    value="0.642"/>
+        <define name="GUIDANCE_INDI_MAX_ACC_BODY_X"          value="12.0"/>
         <define name="GUIDANCE_INDI_MAX_ACC_BODY_Z"          value="8.0"/>
         <define name="GUIDANCE_INDI_WLS_PRIORITIES"          value="{2.5,2.5,1.0}"/>
         <define name="GUIDANCE_INDI_MIN_PITCH"               value="-40."/>
         <define name="GUIDANCE_INDI_MAX_PITCH"               value="40."/>
-        <define name="GUIDANCE_INDI_PITCH_PREF_DEG"          value="0.0"/>
+        <define name="GUIDANCE_INDI_PITCH_PREF_DEG"          value="5.0"/>
         <define name="GUIDANCE_INDI_PITCH_PREF_RC_MIN_DEG"   value="-5.0"/>
         <define name="GUIDANCE_INDI_PITCH_PREF_RC_MAX_DEG"   value="15.0"/>
         <define name="GUIDANCE_INDI_WU_ROLL"                 value="1.0"/>
-        <define name="GUIDANCE_INDI_WU_PITCH"                value="19.0"/>
-        <!--
-        * Increase the Pitch Weighting (Wu) to increase the tilt contribution of forward acceleration
-        * (7.2 -> 30 %, 11 -> 50 %, 19 -> 75 %, 33 -> 90 %, 48 -> 95 % )
-        -->
+        <define name="GUIDANCE_INDI_WU_PITCH"                value="11.0"/>        <!--- Increase Wu to increase tilt contribution (7.2 -> 30 %, 11 -> 50 %, 19 -> 75 %, 33 -> 90 %, 48 -> 95 % ) --->
         <define name="GUIDANCE_INDI_WU_TZ"                   value="1.0"/>
         <define name="GUIDANCE_INDI_WU_TX"                   value="1.0"/>
         <file name="guidance_indi_hybrid_tiltrotor.c" dir="$(SRC_FIRMWARE)/guidance"/>

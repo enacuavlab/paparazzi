@@ -38,9 +38,8 @@
  *
  *
  * Every active mode runs the full feedback cascade
- *   v_cmd = V_ref + Kp * (P_ref - P)
+ *   v_cmd = V_ref + Kp * (P_ref - P)      (the Ki radial term is disabled)
  *   a_sp  = A_ref + Kv * (v_cmd - V)        (bounded)
- * using the guidance_indi gains, and publishes a_sp on the ACCEL_SP ABI
  * message (3D) consumed by guidance_indi_hybrid. The heading setpoint is
  * commanded directly with guidance_indi_hybrid_set_heading_sp() via
  * guidance_indi_hybrid_set_heading_rate_ff().
@@ -69,7 +68,6 @@
 #define CIRC_TRAJECTORY_ACCEL_SP_ID ACCEL_SP_CIRC_ID
 #endif
 
-/* --- fixed trajectory parameters  --- */
 #ifndef CIRC_TRAJECTORY_RADIUS
 #define CIRC_TRAJECTORY_RADIUS 2.0f
 #endif
@@ -113,9 +111,18 @@
 #define CIRC_TRAJECTORY_SMOOTH_W 1.0f
 #endif
 
-/* Lead time [s] applied to the accel feedforward only: a_ref is evaluated at t + lead */
 #ifndef CIRC_TRAJECTORY_ACCEL_LEAD_TIME
-#define CIRC_TRAJECTORY_ACCEL_LEAD_TIME 0.1f
+#define CIRC_TRAJECTORY_ACCEL_LEAD_TIME 0.0f
+#endif
+
+/* Integral gain on the radial position error [1/s^2], 0 disables */
+#ifndef CIRC_TRAJECTORY_POS_IGAIN
+#define CIRC_TRAJECTORY_POS_IGAIN 0.0f
+#endif
+
+/* Bound on the velocity the integrator may contribute [m/s] */
+#ifndef CIRC_TRAJECTORY_MAX_IVEL
+#define CIRC_TRAJECTORY_MAX_IVEL 1.0f
 #endif
 
 struct CircTraj circ_traj = {
@@ -131,6 +138,9 @@ struct CircTraj circ_traj = {
   .yaw_rate          = CIRC_TRAJECTORY_YAW_RATE,
   .yaw_ff            = CIRC_TRAJECTORY_YAW_FF_GAIN,
   .smooth_w          = CIRC_TRAJECTORY_SMOOTH_W,
+  .accel_lead        = CIRC_TRAJECTORY_ACCEL_LEAD_TIME,
+  .pos_igain         = CIRC_TRAJECTORY_POS_IGAIN,
+  .max_ivel          = CIRC_TRAJECTORY_MAX_IVEL,
   .status            = CIRC_TRAJ_HOVER,
   .t                 = 0.0f,
 };
@@ -314,10 +324,26 @@ static void circ_smooth_step(struct FloatVect3 *ref_pos, struct FloatVect3 *ref_
 {
   const float w2 = w * w;
   const float two_w = 2.f * w;
+
+  struct FloatVect3 err;
+  VECT3_DIFF(err, *target, *ref_pos);
+
+  if (w2 > 1e-6f) {
+    const float d_max_h = circ_traj.max_accel / w2;
+    const float d_max_z = circ_traj.max_accelz / w2;
+    const float d_h = sqrtf(err.x * err.x + err.y * err.y);
+    if (d_h > d_max_h) {
+      const float scale = d_max_h / d_h;
+      err.x *= scale;
+      err.y *= scale;
+    }
+    Bound(err.z, -d_max_z, d_max_z);
+  }
+
   // model acceleration for this step
-  a_ref->x = w2 * (target->x - ref_pos->x) - two_w * ref_vel->x;
-  a_ref->y = w2 * (target->y - ref_pos->y) - two_w * ref_vel->y;
-  a_ref->z = w2 * (target->z - ref_pos->z) - two_w * ref_vel->z;
+  a_ref->x = w2 * err.x - two_w * ref_vel->x;
+  a_ref->y = w2 * err.y - two_w * ref_vel->y;
+  a_ref->z = w2 * err.z - two_w * ref_vel->z;
   // semi-implicit Euler integration (unconditionally stable for w*dt << 1)
   ref_vel->x += a_ref->x * dt;
   ref_vel->y += a_ref->y * dt;
@@ -342,6 +368,9 @@ void circ_trajectory_run(void)
 
   const float dt = 1.f / circ_trajectory_periodic_freq;
 
+  struct NedCoor_f *pos = stateGetPositionNed_f();
+  struct NedCoor_f *vel = stateGetSpeedNed_f();
+
   if (status == CIRC_TRAJ_STOP) {
     if (entered) {
       // Release the heading back to the guidance, syncing its integrator to
@@ -349,11 +378,11 @@ void circ_trajectory_run(void)
       guidance_indi_hybrid_release_heading_sp();
       guidance_indi_hybrid_heading_sp = stateGetNedToBodyEulers_f()->psi;
     }
+    VECT3_COPY(ref_pos, *pos);
+    VECT3_COPY(ref_vel, *vel);
+    circ_traj.pos_err_int = 0.f;
     return;
   }
-
-  struct NedCoor_f *pos = stateGetPositionNed_f();
-  struct NedCoor_f *vel = stateGetSpeedNed_f();
 
   // Guidance consumes our ACCEL_SP only in an autonomous, airborne mode. Until
   // then the smoothing reference is kept on the vehicle (see below).
@@ -423,13 +452,11 @@ void circ_trajectory_run(void)
       hold_mode = false;
       if (entered) { circ_traj.t = 0.f; }
       circ_eval(circ_traj.t, &p_ref, &v_ref, &a_ref, &yaw_ref, &yaw_rate_ref);
-      // Lead only the accel feedforward: the rotating a_ref is delivered early
-      // to compensate the attitude realization lag (p/v/yaw refs stay at t)
-      if (CIRC_TRAJECTORY_ACCEL_LEAD_TIME > 0.f) {
-        struct FloatVect3 p_lead, v_lead;
-        float yaw_lead, yaw_rate_lead;
-        circ_eval(circ_traj.t + CIRC_TRAJECTORY_ACCEL_LEAD_TIME,
-                  &p_lead, &v_lead, &a_ref, &yaw_lead, &yaw_rate_lead);
+      if (circ_traj.accel_lead > 0.f) {
+        // a_ref only, evaluated at t + lead to offset the attitude realization lag
+        struct FloatVect3 p_l, v_l;
+        float yaw_l, yaw_rate_l;
+        circ_eval(circ_traj.t + circ_traj.accel_lead, &p_l, &v_l, &a_ref, &yaw_l, &yaw_rate_l);
       }
       circ_traj.t += dt;
 
@@ -454,10 +481,17 @@ void circ_trajectory_run(void)
     }
 
     default:
+      VECT3_COPY(ref_pos, *pos);
+      VECT3_COPY(ref_vel, *vel);
+      circ_traj.pos_err_int = 0.f;
       return;
   }
 
   if (hold_mode && guidance_active) {
+    if (entered) {
+      VECT3_COPY(ref_pos, *pos);
+      VECT3_COPY(ref_vel, *vel);
+    }
     circ_smooth_step(&ref_pos, &ref_vel, &target, circ_traj.smooth_w, dt,
                      &p_ref, &v_ref, &a_ref);
   } else {
@@ -470,13 +504,38 @@ void circ_trajectory_run(void)
     }
   }
 
+  struct FloatVect3 p_err;
+  p_err.x = p_ref.x - pos->x;
+  p_err.y = p_ref.y - pos->y;
+  p_err.z = p_ref.z - pos->z;
+
+  /* Radial position integrator - DISABLED 2026-09-17.
+   * Never flown, and it is unstable above the outer crossover (~1.2 rad/s).
+   * circ_traj.pos_igain / max_ivel are still exposed as settings but have no
+   * effect while this is commented out. To re-enable, restore this block and
+   * the vi_r terms in v_cmd below.
+   *
+   * struct FloatVect3 e_rad;
+   * VECT3_DIFF(e_rad, p_ref, circ_traj.center);
+   * const float rad = FLOAT_VECT3_NORM(e_rad);
+   * VECT3_SMUL(e_rad, e_rad, (rad > 1e-3f) ? 1.f / rad : 0.f);
+   *
+   * if (guidance_active && !entered) {
+   *   const float i_max = (circ_traj.pos_igain > 0.f) ? circ_traj.max_ivel / circ_traj.pos_igain : 0.f;
+   *   circ_traj.pos_err_int += VECT3_DOT_PRODUCT(p_err, e_rad) * dt;
+   *   BoundAbs(circ_traj.pos_err_int, i_max);
+   * } else {
+   *   circ_traj.pos_err_int = 0.f;
+   * }
+   * const float vi_r = circ_traj.pos_igain * circ_traj.pos_err_int;
+   */
+  circ_traj.pos_err_int = 0.f;
+
   // Outer loop velocity setpoint using guidance_indi gains
-  // Horizontal: pos_gain. Vertical: pos_gainz. The inner speed_gain loop is
-  // closed inside guidance_indi_hybrid.
   struct FloatVect3 v_cmd;
-  v_cmd.x = v_ref.x + gih_params.pos_gain  * (p_ref.x - pos->x);
-  v_cmd.y = v_ref.y + gih_params.pos_gain  * (p_ref.y - pos->y);
-  v_cmd.z = v_ref.z + gih_params.pos_gainz * (p_ref.z - pos->z);
+  v_cmd.x = v_ref.x + gih_params.pos_gain  * p_err.x;  /* + vi_r * e_rad.x; integrator disabled */
+  v_cmd.y = v_ref.y + gih_params.pos_gain  * p_err.y;  /* + vi_r * e_rad.y; integrator disabled */
+  v_cmd.z = v_ref.z + gih_params.pos_gainz * p_err.z;  /* + vi_r * e_rad.z; integrator disabled */
 
   struct FloatVect3 accel_sp;
   accel_sp.x = a_ref.x + gih_params.speed_gain  * (v_cmd.x - vel->x);
