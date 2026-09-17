@@ -224,7 +224,7 @@
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_GUIDED"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
-    <define name="FAILSAFE_FIXED_THROTTLE" value="0.4"/>
+    <define name="FAILSAFE_THROTTLE" value="0.2*MAX_PPRZ"/>
   </section>
 
   <section name="GCS">
