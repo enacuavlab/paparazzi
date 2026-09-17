@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="145" ground_alt="135" lat0="48.8064855" lon0="7.8525385" max_dist_from_home="1000" name="IMAV2026 Water drop" security_height="5" home_mode_height="10">
+<flight_plan alt="147" ground_alt="141" lat0="48.8064855" lon0="7.8525385" max_dist_from_home="1000" name="IMAV2026 Water drop" security_height="5" home_mode_height="10">
 
   <header>
     #define FP_NONE    0
