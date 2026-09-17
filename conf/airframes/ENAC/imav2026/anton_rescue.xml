@@ -90,7 +90,7 @@
   </servos>
 
   <servos driver="Pwm">
-    <servo name="SWITCH" no="4" min="1000" neutral="1500" max="1600"/>
+    <servo name="SWITCH" no="4" min="1000" neutral="1900" max="2000"/>
   </servos>
 
   <commands>
