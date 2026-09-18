@@ -2,15 +2,15 @@
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
 <procedure>
   <waypoints>
-    <waypoint name="_FLY1" lat="48.8059319" lon="7.8518465"/>
-    <waypoint name="_FLY2" lat="48.8107179" lon="7.8513690"/>
-    <waypoint name="_FLY3" lat="48.8124065" lon="7.8596839"/>
-    <waypoint name="_FLY4" lat="48.8082096" lon="7.8593942"/>
-    <waypoint name="_FLY5" lat="48.8061921" lon="7.8532141"/>
-    <waypoint lat="48.8111813" lon="7.8497783" name="_KILL1"/>
-    <waypoint lat="48.8057788" lon="7.8510310" name="_KILL2"/>
-    <waypoint lat="48.8075280" lon="7.8604398" name="_KILL3"/>
-    <waypoint lat="48.8133011" lon="7.8609362" name="_KILL4"/>
+    <waypoint name="_FLY1" lat="48.8062741" lon="7.8516257"/>
+    <waypoint name="_FLY2" lat="48.8109861" lon="7.8510199"/>
+    <waypoint name="_FLY3" lat="48.8126712" lon="7.8599193"/>
+    <waypoint name="_FLY4" lat="48.8084725" lon="7.8594378"/>
+    <waypoint name="_FLY5" lat="48.8065693" lon="7.8528800"/>
+    <waypoint lat="48.811254" lon="7.849834" name="_KILL1"/>
+    <waypoint lat="48.813519" lon="7.861106" name="_KILL2"/>
+    <waypoint lat="48.808367" lon="7.860520" name="_KILL3"/>
+    <waypoint lat="48.806034" lon="7.850607" name="_KILL4"/>
   </waypoints>
   <sectors>
     <sector color="orange" name="Flight_Area">

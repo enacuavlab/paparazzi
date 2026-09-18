@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="161" ground_alt="141" lat0="48.8064855" lon0="7.8525385" max_dist_from_home="1000" name="IMAV2026 Hotspot" security_height="10" home_mode_height="30">
+<flight_plan alt="161" ground_alt="141" lat0="48.806623" lon0="7.852214" max_dist_from_home="1000" name="IMAV2026 Hotspot" security_height="10" home_mode_height="30">
 
   <header>
     #define FP_NONE       0
@@ -26,15 +26,14 @@
     #endif
   </header>
   <waypoints>
-    <waypoint name="HOME" lat="48.8064855" lon="7.8525385"/>
-    <waypoint name="STDBY" lat="48.8066" lon="7.85248"/>
-    <waypoint name="LANDPAD" lat="48.8064" lon="7.85256"/>
-    <waypoint name="TAG" lat="48.8064" lon="7.85233"/>
+    <waypoint name="HOME" lat="48.8068" lon="7.8521"/>
+    <waypoint name="STDBY" lat="48.8068" lon="7.85219"/>
+    <waypoint name="LANDPAD" lat="48.806623" lon="7.852214"/>
     <waypoint name="_HERE" lat="48.8065608" lon="7.8530971"/>
-    <waypoint name="H1" lat="48.8090016" lon="7.8531032"/>
-    <waypoint name="H2" lat="48.8101404" lon="7.8529565"/>
-    <waypoint name="H3" lat="48.8101956" lon="7.8537741"/>
-    <waypoint name="H4" lat="48.8090704" lon="7.8539340"/>
+    <waypoint name="H1" lat="48.808494" lon="7.851707"/>
+    <waypoint name="H2" lat="48.809522" lon="7.851791"/>
+    <waypoint name="H3" lat="48.809540" lon="7.852558"/>
+    <waypoint name="H4" lat="48.808518" lon="7.852497"/>
   </waypoints>
   <sectors>
     <sector color="orange" name="Survey">

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="161" ground_alt="141" lat0="48.8064855" lon0="7.8525385" max_dist_from_home="1000" name="IMAV2026" security_height="10" home_mode_height="35">
+<flight_plan alt="161" ground_alt="141" lat0="48.806623" lon0="7.852214" max_dist_from_home="1000" name="IMAV2026" security_height="10" home_mode_height="35">
 
   <header>
     #define FP_NONE       0
@@ -31,15 +31,20 @@
     #endif
   </header>
   <waypoints>
-    <waypoint name="HOME" lat="48.8064855" lon="7.8525385"/>
-    <waypoint name="STDBY" lat="48.8066" lon="7.85269"/>
-    <waypoint name="LANDPAD" lat="48.8064" lon="7.85256"/>
-    <waypoint name="TAG" lat="48.8064" lon="7.85233"/>
+    <waypoint name="HOME" lat="48.8068" lon="7.8521"/>
+    <waypoint name="STDBY" lat="48.8068" lon="7.85237"/>
+    <waypoint name="LANDPAD" lat="48.806623" lon="7.852214"/>
     <waypoint name="_HERE" lat="48.8065608" lon="7.8530971"/>
-    <waypoint name="S1" lat="48.8071002" lon="7.8527638"/>
-    <waypoint name="S2" lat="48.8102303" lon="7.8524634"/>
-    <waypoint name="S3" lat="48.8115516" lon="7.8588041"/>
-    <waypoint name="S4" lat="48.8083862" lon="7.8588470"/>
+    <waypoint name="S1" lat="48.8074" lon="7.85223"/>
+    <waypoint name="S2" lat="48.8105" lon="7.85192"/>
+    <waypoint name="S3" lat="48.8119" lon="7.85878"/>
+    <waypoint name="S4" lat="48.8089" lon="7.85883"/>
+    <waypoint name="_C1" lat="48.806895" lon="7.851654"/>
+    <waypoint name="_C2" lat="48.810883" lon="7.851214"/>
+    <waypoint name="_C3" lat="48.811362" lon="7.854512"/>
+    <waypoint name="_C4" lat="48.807676" lon="7.855065"/>
+    <waypoint name="_C5" lat="48.808588" lon="7.859258"/>
+    <waypoint name="_C6" lat="48.812459" lon="7.859645"/>
   </waypoints>
   <sectors>
     <sector color="green" name="Survey">
@@ -47,6 +52,18 @@
       <corner name="S2"/>
       <corner name="S3"/>
       <corner name="S4"/>
+    </sector>
+    <sector color="blue" name="Map1">
+      <corner name="_C1"/>
+      <corner name="_C2"/>
+      <corner name="_C3"/>
+      <corner name="_C4"/>
+    </sector>
+    <sector color="blue" name="Map2">
+      <corner name="_C3"/>
+      <corner name="_C4"/>
+      <corner name="_C5"/>
+      <corner name="_C6"/>
     </sector>
   </sectors>
   <variables>
@@ -65,7 +82,7 @@
     <module name="nav" type="survey_hybrid">
       <define name="SURVEY_HYBRID_MAX_SWEEP_BACK" value="1"/>
       <define name="SURVEY_HYBRID_APPROACHING_TIME" value="0"/>
-      <define name="SURVEY_HYBRID_ENTRY_DISTANCE" value="10"/>
+      <define name="SURVEY_HYBRID_ENTRY_DISTANCE" value="2"/>
       <define name="SURVEY_HYBRID_ENTRY_CIRCLE" value="FALSE"/>
     </module>
   </modules>

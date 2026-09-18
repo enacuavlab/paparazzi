@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="147" ground_alt="141" lat0="48.8064855" lon0="7.8525385" max_dist_from_home="1000" name="IMAV2026 Water drop" security_height="5" home_mode_height="10">
+<flight_plan alt="147" ground_alt="141" lat0="48.806623" lon0="7.852214" max_dist_from_home="1000" name="IMAV2026 Water drop" security_height="5" home_mode_height="10">
 
   <header>
     #define FP_NONE    0
@@ -26,12 +26,12 @@
     #endif
   </header>
   <waypoints>
-    <waypoint name="HOME" lat="48.8064855" lon="7.8525385"/>
-    <waypoint name="STDBY" lat="48.8064" lon="7.85227"/>
-    <waypoint name="LANDPAD" lat="48.8064" lon="7.85256"/>
+    <waypoint name="HOME" lat="48.8068" lon="7.8521"/>
+    <waypoint name="STDBY" lat="48.8066" lon="7.85196"/>
+    <waypoint name="LANDPAD" lat="48.806623" lon="7.852214"/>
     <waypoint name="_HERE" lat="48.8065608" lon="7.8530971"/>
-    <waypoint name="WATER" x="-46.155" y="9.309"/>
-    <waypoint name="DROP" x="-43.207" y="-16.845"/>
+    <waypoint name="WATER" lat="48.807028" lon="7.851883"/>
+    <waypoint name="DROP" lat="48.806737" lon="7.851935"/>
   </waypoints>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
