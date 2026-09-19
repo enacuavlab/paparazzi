@@ -284,7 +284,7 @@
 
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="motor1,motor2,motor3,motor4,motor5,motor6" type="string[]" />
-    <define name="JSBSIM_MODEL" value="FAHEX" type="string" />
+    <define name="JSBSIM_MODEL" value="Hexaris" type="string" />
     <define name="COMMANDS_NB" value="6" />
     <define name="NO_MOTOR_MIXING" value="TRUE" />
     <!--<define
