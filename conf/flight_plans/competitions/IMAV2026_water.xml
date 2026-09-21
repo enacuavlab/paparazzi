@@ -30,7 +30,7 @@
     <waypoint name="STDBY" lat="48.8066" lon="7.85196"/>
     <waypoint name="LANDPAD" lat="48.806623" lon="7.852214"/>
     <waypoint name="_HERE" lat="48.8065608" lon="7.8530971"/>
-    <waypoint name="WATER" lat="48.807028" lon="7.851883"/>
+    <waypoint name="WATER" lat="48.8070268" lon="7.8519140"/>
     <waypoint name="DROP" lat="48.806737" lon="7.851935"/>
   </waypoints>
   <variables>
