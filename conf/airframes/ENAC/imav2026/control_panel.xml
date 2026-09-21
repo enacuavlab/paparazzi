@@ -28,7 +28,9 @@
       </program>
       <program name="Server"/>
       <program name="PprzGCS"/>
-      <program name="NTRIP2ivy"/>
+      <program name="NTRIP2ivy">
+        <arg flag="-m" constant="KIRR"/>
+      </program>
     </session>
     <session name="Hexaris">
       <program name="Data Link">

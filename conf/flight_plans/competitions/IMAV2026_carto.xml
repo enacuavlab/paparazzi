@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="161" ground_alt="141" lat0="48.806623" lon0="7.852214" max_dist_from_home="1000" name="IMAV2026" security_height="10" home_mode_height="35">
+<flight_plan alt="172" ground_alt="142.2" lat0="48.806623" lon0="7.852214" max_dist_from_home="1000" name="IMAV2026" security_height="20" home_mode_height="35">
 
   <header>
     #define FP_NONE       0
@@ -115,7 +115,7 @@
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_NONE" deroute="Standby"/>
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_MAPPING" deroute="Goto Mapping"/>
       <!--call_once fun="NavSetAltitudeReferenceHere()"/-->
-      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+      <!--call_once fun="NavSetWaypointHere(WP_LANDPAD)"/-->
       <call_once fun="NavResurrect()"/>
       <attitude pitch="0" roll="0" throttle="0." until="stage_time @GT 2" vmode="throttle"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>

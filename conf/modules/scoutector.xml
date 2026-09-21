@@ -10,7 +10,7 @@
     <file name="scoutector.h"/>
   </header>
   <init fun="scoutector_init()"/>
-  <periodic fun="scoutector_report()" freq="10.0" autorun="FALSE"/>
+  <periodic fun="scoutector_report()" freq="2.0" autorun="TRUE"/>
   <periodic fun="scoutector_sim()" freq="3.0" autorun="TRUE"/>
   <makefile>
     <file name="scoutector.c"/>

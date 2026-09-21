@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="147" ground_alt="141" lat0="48.806623" lon0="7.852214" max_dist_from_home="1000" name="IMAV2026 Water drop" security_height="5" home_mode_height="10">
+<flight_plan alt="148" ground_alt="142.2" lat0="48.806623" lon0="7.852214" max_dist_from_home="1000" name="IMAV2026 Water drop" security_height="5" home_mode_height="10">
 
   <header>
     #define FP_NONE    0
@@ -30,7 +30,7 @@
     <waypoint name="STDBY" lat="48.8066" lon="7.85196"/>
     <waypoint name="LANDPAD" lat="48.806623" lon="7.852214"/>
     <waypoint name="_HERE" lat="48.8065608" lon="7.8530971"/>
-    <waypoint name="WATER" lat="48.8070268" lon="7.8519140"/>
+    <waypoint name="WATER" lat="48.8070268" lon="7.8519140" alt="144.2"/>
     <waypoint name="DROP" lat="48.806737" lon="7.851935"/>
   </waypoints>
   <variables>
@@ -39,7 +39,7 @@
     <variable init="3." var="goto_speed" min="0.5" max="10." step="0.1"/>
     <variable init="3." var="takeoff_height" min="0.5" max="15." step="0.1"/>
     <variable init="2." var="land_speed" min="0.5" max="10." step="0.1"/>
-    <variable init="1." var="water_height" min="0." max="80." step="0.1"/>
+    <variable init="2." var="water_height" min="0." max="80." step="0.1"/>
     <variable init="1." var="water_speed" min="0.5" max="10." step="0.1"/>
     <variable init="-0.6" var="water_descent" min="-1.5" max="-0.1" step="0.01"/>
     <variable init="30." var="water_duration" min="1." max="60." step="1."/>
@@ -83,7 +83,7 @@
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_NONE" deroute="Standby"/>
       <exception cond="GetPosHeight() @GT takeoff_height @AND mission_nb == FP_WATER" deroute="Goto Water"/>
       <!--call_once fun="NavSetAltitudeReferenceHere()"/-->
-      <call_once fun="NavSetWaypointHere(WP_LANDPAD)"/>
+      <!--call_once fun="NavSetWaypointHere(WP_LANDPAD)"/-->
       <call_once fun="NavResurrect()"/>
       <attitude pitch="0" roll="0" throttle="0" until="stage_time @GT 1" vmode="throttle"/>
       <call_once fun="NavSetWaypointHere(WP__HERE)"/>
@@ -112,13 +112,10 @@
     <block name="Fill Tank" on_exit="pump_stop()">
       <call_once fun="guidance_h_SetMaxSpeed(water_speed)"/>
       <stay wp="WATER" height="goto_height" until="stage_time @GT 2"/>
-      <stay wp="WATER" vmode="climb" climb="water_descent" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT water_height+0.2))"/>
-      <set var="fp_height" value="GetPosHeight()"/>
-      <stay wp="WATER" height="fp_height" until="stage_time @GT 1"/>
-      <set var="fp_height" value="GetPosHeight() - agl_dist_value_filtered + water_height"/>
-      <stay wp="WATER" height="fp_height" until="stage_time @GT 1"/>
+      <stay wp="WATER" vmode="climb" climb="water_descent" until="(GetPosHeight() @LT water_height+0.2)"/>
+      <stay wp="WATER" height="water_height" until="stage_time @GT 1"/>
       <call_once fun="pump_activate()"/>
-      <stay wp="WATER" height="fp_height" until="pump_done(water_duration, water_timeout)"/>
+      <stay wp="WATER" height="water_height" until="pump_done(water_duration, water_timeout)"/>
       <deroute block="Goto Water Drop"/>
     </block>
     <block name="Goto Water Drop">
@@ -131,7 +128,7 @@
     <block name="Drop Water" on_exit="pump_stop()">
       <call_once fun="guidance_h_SetMaxSpeed(water_speed)"/>
       <stay wp="DROP" height="goto_height" until="stage_time @GT 2"/>
-      <stay wp="DROP" vmode="climb" climb="water_descent" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT water_height+0.5))"/>
+      <stay wp="DROP" vmode="climb" climb="water_descent" until="(agl_dist_valid @AND (agl_dist_value_filtered @LT water_height))"/>
       <set var="fp_height" value="GetPosHeight()"/>
       <call_once fun="pump_purge()"/>
       <stay wp="DROP" height="fp_height" until="stage_time @GT water_purge"/>

@@ -93,8 +93,10 @@ void scoutector_init(void)
 }
 
 void scoutector_report(void) {
-  float f[2] = {scout_data.snr, scout_data.lit};
-  DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 2, f);
+  if(scout_data.snr > 0 || scout_data.lit > 0) {
+    float f[2] = {scout_data.snr, scout_data.lit};
+    DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 2, f);
+  }
 }
 
 void scoutector_sim(void) {
