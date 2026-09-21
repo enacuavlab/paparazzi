@@ -32,7 +32,7 @@
     <waypoint name="_HERE" lat="48.8065608" lon="7.8530971"/>
     <waypoint name="WATER" lat="48.8070268" lon="7.8519140" alt="144.2"/>
     <waypoint name="DROP" lat="48.806737" lon="7.851935"/>
-    <waypoint name="WATER_SIDE" lat="48.8070333" lon="7.8519565"/>
+    <waypoint name="WATER_SIDE" lat="48.8070262" lon="7.8519780"/>
   </waypoints>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>
@@ -120,7 +120,7 @@
       <set var="fp_height" value="fp_height - 1."/>
       <stay wp="WATER" height="fp_height" until="stage_time @GT 1"/>
       <call_once fun="pump_activate()"/>
-      <stay wp="WATER" height="water_height" until="pump_done(water_duration, water_timeout)"/>
+      <stay wp="WATER" height="fp_height" until="pump_done(water_duration, water_timeout)"/>
       <deroute block="Goto Water Drop"/>
     </block>
     <block name="Goto Water Drop">
