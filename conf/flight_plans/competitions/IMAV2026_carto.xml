@@ -35,10 +35,10 @@
     <waypoint name="STDBY" lat="48.8068" lon="7.85237"/>
     <waypoint name="LANDPAD" lat="48.806623" lon="7.852214"/>
     <waypoint name="_HERE" lat="48.8065608" lon="7.8530971"/>
-    <waypoint name="S1" lat="48.8074" lon="7.85223"/>
-    <waypoint name="S2" lat="48.8105" lon="7.85192"/>
-    <waypoint name="S3" lat="48.8119" lon="7.85878"/>
-    <waypoint name="S4" lat="48.8089" lon="7.85883"/>
+    <waypoint name="S1" lat="48.8076363" lon="7.8523567"/>
+    <waypoint name="S2" lat="48.8102981" lon="7.8521134"/>
+    <waypoint name="S3" lat="48.8105717" lon="7.8542833"/>
+    <waypoint name="S4" lat="48.8079797" lon="7.8543048"/>
     <waypoint name="_C1" lat="48.806895" lon="7.851654"/>
     <waypoint name="_C2" lat="48.810883" lon="7.851214"/>
     <waypoint name="_C3" lat="48.811362" lon="7.854512"/>
