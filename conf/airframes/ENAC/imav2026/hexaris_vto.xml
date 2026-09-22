@@ -306,9 +306,9 @@
   <section name="UWB_POSITIONING" prefix="UWB_POSITIONING_">
     <define name="NB_ANCHORS" value="4"/>
     <define name="ANCHORS_IDS" value="{0x9591,0xFC17, 0x7223, 0x9E7A}"/>
-    <define name="ANCHORS_POS_Y" value="{4, 4, -3, -3}"/>
-    <define name="ANCHORS_POS_X" value="{-4.5, 2.5, 2.5, -4.5}"/>
-    <define name="ANCHORS_POS_Z" value="{1.7, 0.4, 1.7, 0.4}"/>
+    <define name="ANCHORS_POS_X" value="{-1, -1, 5.4, 5.4}"/>
+    <define name="ANCHORS_POS_Y" value="{0, 8.8, 8.8, 0}"/>
+    <define name="ANCHORS_POS_Z" value="{0.4, 1.7, 0.4, 1.7}"/>
     <define name="TAG_ID" value="0xCFDC"/>
     <define name="USE_EKF" value="FALSE"/>
   </section>
