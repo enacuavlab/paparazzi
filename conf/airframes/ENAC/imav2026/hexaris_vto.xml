@@ -263,6 +263,7 @@
     <define name="NAV_DESCEND_VSPEED" value="-0.5" />
     <define name="NAV_CLIMB_VSPEED" value="0.5" />
     <define name="NAV_RADIUS" value="1.5" />
+    <define name="FAILSAFE_THROTTLE" value="0.1*MAX_PPRZ"/>
   </section>
 
   <section name="BAT">
