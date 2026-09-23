@@ -166,7 +166,8 @@
       </on_enter>
       <control>
         <call fun="stabilization_get_failsafe_sp()" store="struct StabilizationSetpoint stab_failsafe"/>
-        <call fun="guidance_v_run(autopilot_in_flight())" store="struct ThrustSetpoint thrust_sp"/>
+        <!--call fun="guidance_v_run(autopilot_in_flight())" store="struct ThrustSetpoint thrust_sp"/-->
+        <call fun="th_sp_from_thrust_i(FAILSAFE_THROTTLE, THRUST_AXIS_Z)" store="struct ThrustSetpoint thrust_sp"/>
         <call fun="stabilization_run(autopilot_in_flight(), &stab_failsafe, &thrust_sp, stabilization.cmd)"/>
         <call_block name="set_commands"/>
       </control>
