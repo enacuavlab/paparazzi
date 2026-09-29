@@ -42,6 +42,7 @@
     <waypoint name="SEARCH" lat="48.8102294" lon="7.8517356"/>
     <waypoint name="TEST" lat="48.807959" lon="7.851744"/>
     <waypoint name="RESCUE" lat="48.8100689" lon="7.8516697"/>
+    <waypoint name="SCOUT" lat="48.81006" lon="7.85166" height="0"/>
   </waypoints>
   <variables>
     <variable init="0" type="int" var="mission_nb"/>

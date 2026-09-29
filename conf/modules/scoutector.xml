@@ -1,5 +1,5 @@
 <!DOCTYPE module SYSTEM "module.dtd">
-<module name="scoutector" dir="imav_rescue_people" task="sensors">
+<module name="scoutector" dir="imav_rescue_people">
   <doc>
     <description>Scoutector driver, specially made for IMAV 2026 !</description>
   </doc>

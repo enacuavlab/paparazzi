@@ -72,14 +72,14 @@ extern void scout_map_reset(struct scout_map_t *map);
  * @param[in] pos position of the new data
  * @return false is position is outside the map
  */
-extern bool scout_mat_update(struct scout_map_t *map, scoutector_t data, struct NedCoor_f pos);
+extern bool scout_map_update(struct scout_map_t *map, scoutector_t data, struct NedCoor_f pos);
 
 /** get weighted center of the measurements (snr), expected to be the scout position
  * @param[in] map pointer to map
  * @param[out] pos pointer to computed position
  * @return signal quality (the averaged snr level FIXME really needed ?)
  */
-extern float scout_mat_get_barycenter(struct scout_map_t *map, struct NedCoor_f *pos);
+extern float scout_map_get_barycenter(struct scout_map_t *map, struct NedCoor_f *pos);
 
 /** update waypoint position from map
  * @param[in] map pointer to map

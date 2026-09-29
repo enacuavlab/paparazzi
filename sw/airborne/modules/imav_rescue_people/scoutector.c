@@ -78,7 +78,7 @@ static void scoutector_uavcan_cb(struct uavcan_iface_t *iface __attribute__((unu
   }
 
   // update map
-  scout_mat_update(&scout_map, scout_data, *stateGetPositionNed_f());
+  scout_map_update(&scout_map, scout_data, *stateGetPositionNed_f());
 }
 
 
@@ -115,7 +115,8 @@ void scoutector_sim(void) {
   } else {
     scout_data.snr = 0.f;
   }
-  scout_mat_update(&scout_map, scout_data, *stateGetPositionNed_f());
+  //DEBUG_PRINT("sim val %f %f | %f | %f %f %f | %f %f %f\n", snr, scout_data.snr, dist, scout.x, scout.y, scout.z, pos.x, pos.y, pos.z);
+  scout_map_update(&scout_map, scout_data, *stateGetPositionNed_f());
 #endif
 }
 
@@ -145,7 +146,7 @@ void scout_map_reset(struct scout_map_t *map)
   }
 }
 
-bool scout_mat_update(struct scout_map_t *map, scoutector_t data, struct NedCoor_f pos)
+bool scout_map_update(struct scout_map_t *map, scoutector_t data, struct NedCoor_f pos)
 {
   int x = (int)((pos.x - map->center.x) / map->res + SCOUT_MAP_SIZE / 2.f + 0.5f);
   int y = (int)((pos.y - map->center.y) / map->res + SCOUT_MAP_SIZE / 2.f + 0.5f);
@@ -156,7 +157,7 @@ bool scout_mat_update(struct scout_map_t *map, scoutector_t data, struct NedCoor
   return true;
 }
 
-float scout_mat_get_barycenter(struct scout_map_t *map, struct NedCoor_f *pos)
+float scout_map_get_barycenter(struct scout_map_t *map, struct NedCoor_f *pos)
 {
   float bx = 0.f;
   float by = 0.f;
@@ -165,19 +166,24 @@ float scout_mat_get_barycenter(struct scout_map_t *map, struct NedCoor_f *pos)
   float sum = 0.f;
   const int offset = (int)(SCOUT_MAP_SIZE / 2.f + 0.5f);
   float max = 0.f;
-  //float mx = 0.f;
-  //float my = 0.f;
+#if DEBUG_PRINT
+  float mx = 0.f;
+  float my = 0.f;
+#endif
   for (int i = 0; i < SCOUT_MAP_SIZE; i++) {
     for (int j = 0; j < SCOUT_MAP_SIZE; j++) {
       if (map->grid[i][j].snr > max) {
         max = map->grid[i][j].snr * (1.+ map->grid[i][j].lit);
-        // mx = (float)(i - offset) * map->res;
-        // my = (float)(j - offset) * map->res;
+#if DEBUG_PRINT
+        mx = (float)(i - offset) * map->res;
+        my = (float)(j - offset) * map->res;
+#endif
       }
     }
   }
   if (max < 1e-5) {
     *pos = map->center;
+    DEBUG_PRINT("nothing in map\n");
     return 0.f; // nothing in the map
   }
   DEBUG_PRINT("map:\n");
@@ -211,7 +217,7 @@ float scout_mat_get_barycenter(struct scout_map_t *map, struct NedCoor_f *pos)
 void scout_map_update_wp(struct scout_map_t *map, uint8_t wp_id)
 {
   struct NedCoor_f pos;
-  if (scout_mat_get_barycenter(map, &pos) > 0.f) {
+  if (scout_map_get_barycenter(map, &pos) > 0.f) {
     struct EnuCoor_f enu;
     ENU_OF_TO_NED(enu, pos);
     waypoint_set_enu(wp_id, &enu);
