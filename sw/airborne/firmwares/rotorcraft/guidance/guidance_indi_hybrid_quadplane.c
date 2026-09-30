@@ -103,7 +103,7 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
   float lift_thrust_bz = accel_bodyz_filt.o[0]; // Sum of lift and thrust in boxy z axis (level flight)
 
   // get the derivative of the lift wrt to theta
-  float liftd = guidance_indi_get_liftd(0.0f, 0.0f);
+  float liftd = guidance_indi_get_liftd(0.0f, eulers_filtered.theta);
 
   // ZXY Euler order
   Gmat[0][0] =  0.0f;

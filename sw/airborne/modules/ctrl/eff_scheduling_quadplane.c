@@ -37,6 +37,24 @@
 #include "modules/datalink/downlink.h"
 
 // TODO :
+// Control mixing higher level and modes
+// scheduling lower see atlas
+
+//Get the derivative of lift wrt to theta
+float guidance_indi_get_liftd(0.0f, 0.0f);
+
+
+// Create struct flyhigh eff sched
+// create eff_scheduling_quadplane.xml or create for Flyhigh 
+
+
+// Update G1G2 matrix in here
+
+// Add lift calculation ft (see guidance_indi_hybrid.c)
+
+
+
+
 // Next flight test
 // Find the flight speed
 // Remove Yaw control
@@ -243,4 +261,36 @@ extern void eff_scheduling_quadplane_report(void)
   };
   DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 6, f);
 }
+
+
+void stabilization_indi_set_wls_settings(void) 
+{
+	
+	   //TODO check with control_mixing_quadplane
+	   
+	   
+	   // Calculate the min and max increments
+  /* wls_stab_p.u_min[CMQ_ACT_MOTOR_FRONT_RIGHT] = CMQ_MOTOR_IDLE;
+   wls_stab_p.u_max[CMQ_ACT_MOTOR_FRONT_RIGHT] = MAX_PPRZ;
+   wls_stab_p.u_pref[CMQ_ACT_MOTOR_FRONT_RIGHT] = act_pref[CMQ_ACT_MOTOR_FRONT_RIGHT];
+
+   wls_stab_p.u_min[CMQ_ACT_MOTOR_BACK_RIGHT] = CMQ_MOTOR_IDLE;
+   wls_stab_p.u_max[CMQ_ACT_MOTOR_BACK_RIGHT] = MAX_PPRZ;
+   wls_stab_p.u_pref[CMQ_ACT_MOTOR_BACK_RIGHT] = act_pref[CMQ_ACT_MOTOR_BACK_RIGHT];
+
+   wls_stab_p.u_min[CMQ_ACT_MOTOR_FRONT_LEFT] = CMQ_MOTOR_IDLE;
+   wls_stab_p.u_max[CMQ_ACT_MOTOR_FRONT_LEFT] = MAX_PPRZ;
+   wls_stab_p.u_pref[CMQ_ACT_MOTOR_FRONT_LEFT] = act_pref[CMQ_ACT_MOTOR_FRONT_LEFT];
+
+   wls_stab_p.u_min[CMQ_ACT_MOTOR_BACK_LEFT] = CMQ_MOTOR_IDLE;
+   wls_stab_p.u_max[CMQ_ACT_MOTOR_BACK_LEFT] = MAX_PPRZ;
+   wls_stab_p.u_pref[CMQ_ACT_MOTOR_BACK_LEFT] = act_pref[CMQ_ACT_MOTOR_BACK_LEFT];*/
+	
+	
+	if(flyhigh_disable_pusher) {
+			// 
+			//wls_stab_p.u_max[CMQ_ACT_MOTOR_FRONT_RIGHT] = MAX_PPRZ;
+	}
+}
+
 
