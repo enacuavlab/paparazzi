@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="172" ground_alt="142" lat0="43.56360224300044" lon0="1.484305509579363" max_dist_from_home="400" name="Enac Rugby Field" security_height="1" wp_frame="ltp">
+<flight_plan alt="152" ground_alt="142" lat0="43.56360224300044" lon0="1.484305509579363" max_dist_from_home="400" name="Enac Rugby Field" security_height="1" wp_frame="ltp">
   <header>
     #if DIGITAL_CAM
     #define LINE_START_FUNCTION dc_Survey(20);
