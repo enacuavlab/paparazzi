@@ -21,8 +21,7 @@ from plotting import DictOfPoseTrajectories,plot_several_pose2d_sequences,plot_B
 from uav_data import UAVData, TrackingLogs
 from ioUtils import parse_section_from_dict
 
-def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str], 
-                      obstacles_path:Optional[pathlib.Path]=None,
+def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str],
                       hide_refs:bool=False, 
                       hide_reschedules:bool=False,
                       hide_keyframes:bool=False) -> tuple[Figure,Axes,list[Axes],list[SpanSelector]]:
@@ -38,11 +37,6 @@ def plot_trackingdata(logs: TrackingLogs, color_dict: dict[int,str],
     axes[2,0].remove()
     
     traj_ax = fig.add_subplot(gs[:,0])
-    
-    if obstacles_path is not None:
-        with open(obstacles_path) as f:
-            for e in json.load(f)["sections"]:
-                plot_BasicPath_obstacle(traj_ax,parse_section_from_dict(e))
     
     _plot_trajs(traj_ax, logs, color_dict, hide_refs, hide_reschedules, hide_keyframes, labels=False, alpha=0.1)
     
@@ -273,12 +267,16 @@ def _plot_tracking(tracking_ax:Axes, logs:TrackingLogs, color_dict:dict[int,str]
     
     avg_err = 0
     for id,data in errs.items():
-        ts = [t[0]-logs.start_time for t in data]
+        ts = np.array([t[0]-logs.start_time for t in data])
+        vals = np.array([t[1] for t in data])
+        valids = np.isnan(vals) == False
+        ts = ts[valids]
+        vals = vals[valids]
         min_t = min(min_t,min(ts))
         max_t = max(max_t,max(ts))
-        vals = [t[1] for t in data]
         avg_err += np.mean(vals)
         max_val = max(max_val,max(vals))
+        print(f"Plotting tracking error for {id}: {len(ts)} points, mean: {np.mean(vals):.2f} m, max: {np.max(vals):.2f} m")
         tracking_ax.plot(ts,vals,color=color_dict[id])#,label=f"{id}")
     
     avg_err /= len(errs)
@@ -298,6 +296,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyse tracking logs")
     parser.add_argument("logfile",type=pathlib.Path,help="Path to the log file to analyse")
     parser.add_argument('-G',"--obstacles",dest='obstacles',type=pathlib.Path,default=None,help="Path to the obstacles JSON file to plot")
+    parser.add_argument("-z","--zero",dest='zero',action='store_true',help="Set coordinate axes to start at zero")
     parser.add_argument("--no-refs",dest='no_refs',action='store_true',help="Hide the reference trajectories in the plot (useful when they are too cluttered)")
     parser.add_argument("--no-reschedules",dest='no_reschedules',action='store_true',help="Hide the rescheduling points in the plot")
     parser.add_argument("--no-keyframes",dest='no_keyframes',action='store_true',help="Hide the keyframe poses in the plot")
@@ -311,11 +310,30 @@ if __name__ == "__main__":
     color_dict = {}
     for i,stat in enumerate(logs.ac_stats):
         color_dict[stat.id] = colorlist[i%len(colorlist)]
-        
-    fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict,args.obstacles,
+    
+    if args.zero:
+        minx,miny = logs.zero_coordinates()
+    else:
+        minx,miny = 0.,0.
+    
+    fig,traj_ax,axes,selectors = plot_trackingdata(logs,color_dict,
                                                        args.no_refs,
                                                        args.no_reschedules,
                                                        args.no_keyframes)
+    
+    if args.obstacles is not None:
+        with open(args.obstacles) as f:
+            for e in json.load(f)["sections"]:
+                s = parse_section_from_dict(e)
+                if args.zero:
+                    s.x -= minx
+                    s.y -= miny
+                plot_BasicPath_obstacle(traj_ax,s)
+    
+    if args.zero:
+        traj_ax.set_xlabel(f"Local Easting (m)")
+        traj_ax.set_ylabel(f"Local Northing (m)")
+        axes[-1].set_xlabel(f"Time since Fleet Manager start (s)")
     
     fig.set_size_inches(16,9)
     fig.tight_layout()

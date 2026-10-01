@@ -123,6 +123,41 @@ class TrackingLogs:
     def ac_stats(self) -> list[ACStats]:
         return self.keyframes.ac_stats
     
+    def zero_coordinates(self) -> tuple[float,float]:
+        """
+        Shift all coordinates by -min(x),-min(y) and change start_time to start at 0.
+
+        Returns:
+            tuple[float,float]: min(x),min(y)
+        """
+        minx,miny,mint = np.inf,np.inf,np.inf
+    
+        for log in self.logs.values():
+            for data in log:
+                minx = min(minx,data.pose.x)
+                miny = min(miny,data.pose.y)
+                mint = min(mint,data.timestamp)
+                if data.expected_pose is not None:
+                    minx = min(minx,data.expected_pose.x)
+                    miny = min(miny,data.expected_pose.y)
+                    
+        self.start_time = mint
+        
+        for log in self.logs.values():
+            for data in log:
+                data.pose.x -= minx
+                data.pose.y -= miny
+                if data.expected_pose is not None:
+                    data.expected_pose.x -= minx
+                    data.expected_pose.y -= miny
+                    
+        for keypose in self.keyframes.keyposes:
+            keypose[:,0] -= minx
+            keypose[:,1] -= miny
+        
+    
+        return minx,miny
+    
     def add_tracking_data(self, data: TrackingData):
         self._tpose_lists.pop(data.ac_id, None)
         self._trefs_lists.pop(data.ac_id, None)
