@@ -1,0 +1,135 @@
+/*
+ * Copyright (C) 2026 Jean-Baptiste FORESTIER <jean-baptiste.forestier@enac.fr>
+ *
+ * This file is part of paparazzi
+ *
+ * paparazzi is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * paparazzi is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+/**
+ @file "modules/lidar/lidar_sf20c.c"
+* @author Jean-Baptiste FORESTIER
+* @brief driver for the Lightware SF20/C LIDAR connected over I2C bus. 
+* https://lightwarelidar.com/shop/sf20-c-100-m/ 
+* Don't hesitate to contact the support : support@lightwarelidar.com 
+* 
+* The SF20/C supports I2C communication and provides distance measurements 
+* through its register-based communication protocol. 
+* 
+* The measurement update rate can be configured according to the application. 
+* We use a main loop at 500 Hz (2000 us) and configure the sensor for 
+* 625 readings/s. 
+* 
+* The SF20/C distance data register provides several measurement values, 
+* including: 
+* - First return raw 
+* - First return closest 
+* - First return median 
+* - First return furthest 
+* - First return strength 
+* - Last return raw 
+* 
+* We use the first return measurement and apply a median filter in the 
+* Paparazzi driver to calculate homeFiltered. 
+* 
+* TODO @USER in Lightware Studio :
+* - Set the Output type (legacy) to = Full communication mode
+* - Set the Exposure time to 1600 us (625 /sec)
+* - Set the I2C address in Lidar Software to 102
+*/
+
+#ifndef LIDAR_SF20C_H
+#define LIDAR_SF20C_H
+
+#include "std.h"
+#include "mcu_periph/i2c.h"
+
+
+#define LIDAR_SF20D_ID 18
+#define UPDATE_RATE 8
+#define LIDAR_SF20C_REG_REQ_DATA 44 // Register to request data
+#define LIDAR_SF20C_REG_OUTPUT 27
+#define LIDAR_SF20C_STARTUP_DELAY 2.5 // Delay to wait before reading data after startup
+#define LIDAR_SF20C_I2C_ADRESS  (0x66 << 1) // LIDAR SF20/C I2C address (7-bit address shifted to 8-bit)
+#define LOG_ASCII 0 // 0 == ASCII and 1 == Binary
+
+
+// generic lidar_sf20C message structure _ 24 parameters
+struct lidar_sf20C_msg_t {
+  int16_t first;
+  int16_t firstFiltered;
+  int16_t firstStrength;
+  int16_t last;
+  float homeFiltered;
+  uint32_t homeFiltered_raw;
+  float phi;
+  float theta;
+  float gain;
+  uint32_t now_ts;
+};
+
+struct gps_lidar_data {
+    char lat_buf[16]; 
+    char lon_buf[16];
+    char lat_hemi;
+    char lon_hemi;
+	  double lat;            ///< Latitude
+    double lon;            ///< Longiitude
+    uint8_t num_sv;        ///< number of sat in fix
+    uint16_t pdop;         ///< position dilution of precision scaled by 100
+    float hmsl;            ///< Orthometric height (MSL reference)
+    float vground;         ///< Speed over ground in m/s
+    float course;        ///< GPS course over ground in rad*1e7, [0, 2*Pi]*1e7 (CW/north)
+};
+
+/** config status states */
+enum LidarSF20CConfStatus {
+  LIDAR_CONF_UNINIT,
+  LIDAR_BASED_PROTOCOL,
+  LIDAR_OUTPUT_MODE,
+  LIDAR_CONF_DONE
+};
+
+struct LidarSF20C
+{
+  struct i2c_transaction trans;
+  uint8_t addr;
+  enum LidarSF20CConfStatus init_status; 
+  bool update_agl;
+  bool compensate_rotation;
+  bool log_ptu_started;
+  bool initialized;
+  bool error_init; // Flag to indicate if there was an error during initialization
+  struct lidar_sf20C_msg_t msg;
+  struct gps_lidar_data gps_data;
+};
+
+
+void lidar_sf20c_send_config(void);
+void lidar_sf20c_start_configure(void);
+void lidar_sf20c_read(void);
+void lidar_sf20c_log_data(void);
+void lidar_recover_gps_data(void);
+void lidar_get_system_date_str(char *buf_date, size_t buf_date_size, char *buf_time, size_t buf_time_size);
+void lidar_convert_deg_to_DDMM(double deg, char *buf, int is_lat);
+
+extern void lidar_sf20c_init(void);
+extern void lidar_sf20c_event(void);
+extern void lidar_sf20c_periodic(void);
+extern void lidar_sf20c_downlink(void);
+
+
+
+#endif
+
