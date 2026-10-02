@@ -34,6 +34,7 @@
 #include "firmwares/rotorcraft/guidance.h"
 #include "firmwares/rotorcraft/guidance/guidance_indi_hybrid.h"
 #include "firmwares/rotorcraft/navigation.h"
+#include "modules/ctrl/circ_trajectory.h"
 #include "state.h"
 
 #ifndef GUIDANCE_INDI_MAX_H_THRUST
@@ -150,10 +151,29 @@ struct FloatVect3 atlas_pos_sp  = {0.f, 0.f, -1.f};  // NED position setpoint [m
 struct FloatVect3 atlas_vel_sp  = {0.f, 0.f, 0.f};  // NED velocity setpoint [m/s]
 float             atlas_heading_sp = 0.f;           // heading setpoint [rad, NED]
 
+
+static void atlas_run_heading(bool in_flight)
+{
+  static bool circ_had_heading = false;
+  const bool circ_has_heading = (circ_traj.status != CIRC_TRAJ_STOP);
+
+  if (!circ_has_heading) {
+    if (!in_flight || circ_had_heading) {
+      atlas_heading_sp = guidance_indi_hybrid_get_heading();
+    }
+    guidance_indi_hybrid_set_heading_sp(atlas_heading_sp);
+    guidance_indi_hybrid_set_heading_rate_ff(0.f);
+  }
+  circ_had_heading = circ_has_heading;
+
+  guidance_h.sp.heading = guidance_indi_hybrid_heading_sp;  // carrot, display only
+}
+
 void control_mixing_atlas_guidance_enter(void)
 {
   atlas_tilt_gate(autopilot_in_flight());
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
+  atlas_heading_sp = guidance_indi_hybrid_get_heading();  // hold the heading we enter with
 }
 
 void control_mixing_atlas_guidance(void)
@@ -165,8 +185,7 @@ void control_mixing_atlas_guidance(void)
     guidance_h_hover_enter();
   }
 
-  // Heading setpoint for the guidance loop
-  guidance_h.sp.heading = atlas_heading_sp;
+  atlas_run_heading(in_flight);
 
   struct StabilizationSetpoint stab_sp = guidance_indi_run_mode(
       in_flight, &guidance_h, &guidance_v,
@@ -197,8 +216,7 @@ void control_mixing_atlas_nav(void)
     guidance_h_nav_enter();
   }
 
-  // Heading setpoint for the guidance loop
-  guidance_h.sp.heading = atlas_heading_sp;
+  atlas_run_heading(in_flight);
 
   struct StabilizationSetpoint stab_sp = guidance_indi_run_mode(
       in_flight, &guidance_h, &guidance_v,

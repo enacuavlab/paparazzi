@@ -998,6 +998,13 @@ static void vel_sp_cb(uint8_t sender_id __attribute__((unused)), struct FloatVec
   time_of_vel_sp = get_sys_time_float();
 }
 
+float guidance_indi_hybrid_get_heading(void)
+{
+  struct FloatEulers eul_zxy;
+  float_eulers_of_quat_zxy(&eul_zxy, stateGetNedToBodyQuat_f());
+  return eul_zxy.psi;
+}
+
 void guidance_indi_hybrid_set_heading_sp(float heading)
 {
   FLOAT_ANGLE_NORMALIZE(heading);

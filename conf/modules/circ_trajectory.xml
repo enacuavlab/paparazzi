@@ -57,17 +57,17 @@
     <file name="circ_trajectory.c"/>
     <define name="CIRC_TRAJECTORY_V_MAX" value="3.5"/>
     <define name="CIRC_TRAJECTORY_K" value="0.35"/>
-    <define name="CIRC_TRAJECTORY_RADIUS" value="3.0"/>
+    <define name="CIRC_TRAJECTORY_RADIUS" value="2.8"/>
     <define name="CIRC_TRAJECTORY_T_END" value="60.0"/>
     <define name="CIRC_TRAJECTORY_MAX_ACCEL" value="12.0"/>
     <define name="CIRC_TRAJECTORY_MAX_ACCELZ" value="8.0"/>
-    <define name="CIRC_TRAJECTORY_CENTER" value="{0.0,0.0,-2.0}"/> <!-- {0.0,-0.1,-1.5} -->
+    <define name="CIRC_TRAJECTORY_CENTER" value="{0.0,-0.2,-2.0}"/> <!-- {0.0,-0.1,-1.5} -->
     <define name="CIRC_TRAJECTORY_YAW_RATE" value="45.0"/>
     <define name="CIRC_TRAJECTORY_YAW_FF_GAIN" value="1.0"/>
     <define name="CIRC_TRAJECTORY_SMOOTH_W" value="1.5"/>
     <define name="CIRC_TRAJECTORY_ACCEL_LEAD_TIME" value="0.04"/>
-    <define name="CIRC_TRAJECTORY_POS_IGAIN" value="0.0"/>
-    <define name="CIRC_TRAJECTORY_MAX_IVEL" value="0.0"/>
+    <define name="CIRC_TRAJECTORY_POS_IGAIN" value="0.15"/>
+    <define name="CIRC_TRAJECTORY_MAX_IVEL" value="1.0"/>
   </makefile>
 
 </module>

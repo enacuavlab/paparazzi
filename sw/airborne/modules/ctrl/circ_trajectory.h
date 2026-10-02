@@ -30,10 +30,10 @@
  *
  * Calculates the velocity setpoint in a cascaded manner using
  * guidance_indi gains:
- * vel_sp = V_ref + Kp * (P_ref - P)
- * The Ki term on the radial position error is commented out in the .c and
- * has no effect; pos_igain / max_ivel / pos_err_int are kept only so the
- * settings and struct layout are unchanged.
+ * vel_sp = V_ref + Kp * (P_ref - P) + Ki * int(e_rad . (P_ref - P)) * e_rad
+ * The Ki term (pos_igain / max_ivel) acts on the radial position error only.
+ * It is unstable above the outer crossover, so keep omega = v_max / r below
+ * ~1.0 rad/s; pos_igain = 0 disables it and holds the state at zero.
  */
 
 #ifndef CIRC_TRAJECTORY_H

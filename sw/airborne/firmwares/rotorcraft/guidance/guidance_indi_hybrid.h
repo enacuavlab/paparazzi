@@ -72,6 +72,11 @@ enum GuidanceIndiHybrid_VMode {
 extern struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accep_sp, float heading_sp);
 extern struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndiHybrid_HMode h_mode, enum GuidanceIndiHybrid_VMode v_mode);
 
+/** Current heading in the ZXY euler convention the guidance commands in [rad].
+ * Differs from stateGetNedToBodyEulers_f()->psi (ZYX) as soon as the vehicle is
+ * banked or pitched, so capturing a heading with the ZYX value steps the setpoint.
+ */
+extern float guidance_indi_hybrid_get_heading(void);
 /** Command the heading from an external module (e.g. a trajectory generator) [rad].
  * Overrides the nav/free heading; falls back if not refreshed within 0.5s.
  */
