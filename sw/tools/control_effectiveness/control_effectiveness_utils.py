@@ -30,6 +30,7 @@ from scipy import signal
 from scipy.fftpack import fft
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import show
+from matplotlib.widgets import Slider, RadioButtons
 
 #
 # functions for actuators model
@@ -191,21 +192,19 @@ def extract_filtered_data(conf, var, data, nb_in, nb_out, start, end):
 #
 # Display functions
 #
-
-def plot_results(x, y, y_raw, z, t, freq, label, show=False):
-    '''
-    plot two curves for comparison
-    '''
+def plot_results(x, y, y_raw, z, t, freq, label, show=False, spectrogram_window:int=256):
     fig = plt.figure(layout='constrained')
-    ax_time = plt.subplot2grid((2,3), (0,0), colspan=2, rowspan=2)
-    ax_fit = plt.subplot2grid((2,3), (0,2))
-    ax_fft = plt.subplot2grid((2,3), (1,2))
+    gs = fig.add_gridspec(4,3)
+    ax_time = fig.add_subplot(gs[0:2, 0:2])
+    ax_spectro = fig.add_subplot(gs[2:4, 0:2])
+    ax_spectro.sharex(ax_time)
+    ax_fit = fig.add_subplot(gs[0:2, 2])
+    ax_fft = fig.add_subplot(gs[2:4, 2])
 
     # time plot
-    ax_time.plot(t, y)
-    ax_time.plot(t, x)
+    ax_time.plot(t, y, label='filtered')
+    ax_time.plot(t, x, label='input')
     ax_time.set_title(label)
-    ax_time.set_xlabel('t [s]')
 
     # Fit line
     ax_fit.plot(x, y)
@@ -224,9 +223,83 @@ def plot_results(x, y, y_raw, z, t, freq, label, show=False):
     ax_fft.set_xlabel('Freq (Hz)')
     ax_fft.set_yticks([])
     ax_fft.set_ylabel('FFT Amplitude')
+    
+    # Spectrogram
+    ax_spectro.specgram(y_raw[:,0],NFFT=spectrogram_window,Fs=freq,xextent=(t[0],t[-1]),
+                        noverlap=spectrogram_window//2)
+    ax_spectro.set_title('Spectrogram (window: {}, Overlap: {} samples)'.format(spectrogram_window, spectrogram_window//2))
+    ax_spectro.set_ylabel('Freq (Hz)')
+    ax_spectro.set_xlabel('t [s]')
 
-    if show:
-        plt.show()
+
+def plot_results_interactive(x, y, y_raw, z, t, freq, label, spectrogram_window:int=256):
+    fig = plt.figure(layout='constrained')
+    gs = fig.add_gridspec(6,3)
+    ax_time = fig.add_subplot(gs[0:2, 0:2])
+    ax_spectro = fig.add_subplot(gs[2:4, 0:2])
+    ax_spectro.sharex(ax_time)
+    ax_fit = fig.add_subplot(gs[0:2, 2])
+    ax_fft = fig.add_subplot(gs[2:4, 2])
+    ax_spectro_window = fig.add_subplot(gs[4, 0:2])
+    ax_spectro_overlap = fig.add_subplot(gs[5, 0:2])
+    ax_fft_source = fig.add_subplot(gs[4:6, 2])
+
+    # time plot
+    ax_time.plot(t, y, label='filtered')
+    ax_time.plot(t, x, label='input')
+    ax_time.set_title(label)
+
+    # Fit line
+    ax_fit.plot(x, y)
+    p = np.poly1d(z)
+    xp = np.linspace(np.min(x), np.max(x), 2)
+    ax_fit.plot(xp,p(xp),'r')
+    ax_fit.set_title(f'fit error: {abs(1.-z[0]):.3E}')
+    
+    # FFT
+    N = len(y)
+    T = 1./freq
+    yf = fft(y_raw)
+    xf = np.linspace(0.0, 1.0/(2.0*T), int(N/2))
+    ax_fft.plot(xf, 2.0/N * np.abs(yf[0:int(N/2)]))
+    ax_fft.grid()
+    ax_fft.set_xlabel('Freq (Hz)')
+    ax_fft.set_yticks([])
+    ax_fft.set_ylabel('FFT Amplitude')
+    
+    # Spectrogram
+    ax_spectro.specgram(y_raw[:,0],NFFT=spectrogram_window,Fs=freq,xextent=(t[0],t[-1]),
+                        noverlap=spectrogram_window//2)
+    ax_spectro.set_title('Spectrogram')
+    ax_spectro.set_ylabel('Freq (Hz)')
+    ax_spectro.set_xlabel('t [s]')
+    
+    
+    window_slider = Slider(ax_spectro_window, 'FFT Window width', 64, 2048, valinit=spectrogram_window,
+                           valstep=[2**i for i in range(6, 12)])
+    overlap_slider = Slider(ax_spectro_overlap, 'FFT Overlap (%)', 0, 100, valinit=50, valstep=10)
+    fft_source_buttons = RadioButtons(ax_fft_source, ('input', 'filtered', 'raw'), active=2)
+    
+    def update_sprecgram(val):
+        window = int(window_slider.val)
+        overlap = int(overlap_slider.val)
+        ax_spectro.cla()
+        specdata = y_raw
+        if fft_source_buttons.value_selected == 'input':
+            specdata = x
+        elif fft_source_buttons.value_selected == 'filtered':
+            specdata = y
+        ax_spectro.specgram(specdata[:,0],NFFT=window,Fs=freq,xextent=(t[0],t[-1]),
+                            noverlap=int(window*overlap/100))
+        ax_spectro.set_title('Spectrogram')
+        ax_spectro.set_ylabel('Freq (Hz)')
+        ax_spectro.set_xlabel('t [s]')
+            
+        fig.canvas.draw_idle()
+    
+    window_slider.on_changed(update_sprecgram)
+    overlap_slider.on_changed(update_sprecgram)
+    fft_source_buttons.on_clicked(update_sprecgram)
 
 def plot_residuals(values, residuals, label, show=False):
     plt.figure()
