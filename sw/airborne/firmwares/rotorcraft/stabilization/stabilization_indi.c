@@ -99,6 +99,11 @@
 #define STABILIZATION_INDI_ACT_IS_THRUSTER_Y {0}
 #endif
 
+// Estimate the current Z thrust from every actuator in the Bwls Z row, not only the Z thrusters
+#ifndef STABILIZATION_INDI_THRUST_Z_ALL_ACT
+#define STABILIZATION_INDI_THRUST_Z_ALL_ACT FALSE
+#endif
+
 /**
  * Limit the maximum specific moment that can be compensated (units rad/s^2)
 */
@@ -686,17 +691,18 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
     // Compute estimated thrust
     FLOAT_VECT3_ZERO(stab_thrust_filt);
     for (i = 0; i < INDI_NUM_ACT; i++) {
+      const int32_t est_z = STABILIZATION_INDI_THRUST_Z_ALL_ACT ? 1 : (int32_t) act_thrust_mat[2][i];
 #if INDI_OUTPUTS == 4
-      stab_thrust_filt.z += Bwls[3][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
+      stab_thrust_filt.z += Bwls[3][i] * actuator_lowpass_filters[i].o[0] * est_z;
 #endif
 #if INDI_OUTPUTS == 5 // FIXME change order of Z and X, or better detect that automatically ?
       stab_thrust_filt.x += Bwls[4][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[0][i];
-      stab_thrust_filt.z += Bwls[3][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
+      stab_thrust_filt.z += Bwls[3][i] * actuator_lowpass_filters[i].o[0] * est_z;
 #endif
 #if INDI_OUTPUTS == 6
       stab_thrust_filt.x += Bwls[3][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[0][i];
       stab_thrust_filt.y += Bwls[4][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[1][i];
-      stab_thrust_filt.z += Bwls[5][i] * actuator_lowpass_filters[i].o[0] * (int32_t) act_thrust_mat[2][i];
+      stab_thrust_filt.z += Bwls[5][i] * actuator_lowpass_filters[i].o[0] * est_z;
 #endif
     }
     // Add the current estimated thrust to the increment

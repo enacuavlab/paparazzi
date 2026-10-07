@@ -45,19 +45,15 @@
             <configure name="DSHOT_BIDIR" value="FALSE"/>
         </module>
         <!-- ACTUATORS IN PWM : TILT SERVOS + ELEVONS -->
-        <module name="actuators" type="pwm">
-<!--            <define name="USE_PWM_TIM3" value="TRUE"/>-->
-<!--            <define name="USE_PWM5" value="TRUE"/>-->
-<!--            <define name="USE_PWM6" value="TRUE"/>-->
-        </module>
+        <module name="actuators" type="pwm"/>
 
         <module name="board" type="tawaki_2.0"/>
 
         <!-- Airspeed sensor : get the measured airspeed in the messages 45 and -0.1 -->
         <module name="airspeed" type="sdp3x">
             <define name="SDP3X_i2C_DEV" value="i2c2"/>
-            <define name="SDP3X_PRESSURE_SCALE" value="24.8"/>
-            <define name="SDP3X_PRESSURE_OFFSET" value="-2.5"/>
+            <define name="SDP3X_PRESSURE_SCALE" value="10.2"/>
+            <define name="SDP3X_PRESSURE_OFFSET" value="0.1"/>
             <define name="USE_AIRSPEED_SDP3X" value="TRUE"/>
         </module>
         <!-- Don't know why but it's needed for getting the airspeed in the state -->
@@ -69,6 +65,7 @@
         <!-- Optitrack Settings -->
         <module name="gps" type="optitrack"/>
         <define name="INS_EKF2_OPTITRACK" value="TRUE"/>
+        <define name="INS_EKF2_EV_DELAY" value="70"/>
         <configure name="USE_MAGNETOMETER" value="FALSE"/>
         <define name="INS_EKF2_MAG_ID" value="ABI_DISABLE"/>
         <define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_NONE"/>
@@ -84,14 +81,9 @@
 
         <module name="ins" type="ekf2"/>
         <module name="guidance" type="indi_hybrid_tiltrotor"/>
-        <!--
-        <module name="guidance" type="indi_hybrid_tiltrotor">
-            <define name="GUIDANCE_INDI_POS_SP_DEBUG"/>
-        </module>
-        -->
         <module name="stabilization" type="indi">
             <configure name="INDI_OUTPUTS" value="5"/>
-            <configure name="INDI_NUM_ACT" value="6"/> <!-- 8 with elevons -->
+            <configure name="INDI_NUM_ACT" value="8"/>                                                                  <!-- 4 motors + 2 tilts + 2 elevons -->
             <define name="WLS_N_U_MAX" value = "8"/>
             <define name="WLS_N_V_MAX" value = "6"/>
         </module>
@@ -111,10 +103,8 @@
     <servos driver="Pwm">
         <servo name="TILT_RIGHT"    no="1" min="1250" neutral="1310" max="1730"/>
         <servo name="TILT_LEFT"     no="2" min="1830" neutral="1780" max="1400"/>
-        <!-- Elevons: left mirrored (min > max) so +pprz = elevon up on both sides
-        <servo name="ELEVON_RIGHT"  no="3" min="-9600" neutral="0" max="9600"/>
-        <servo name="ELEVON_LEFT"   no="4" min="-9600" neutral="0" max="9600"/>
-        -->
+        <servo name="ELEVON_RIGHT"  no="3" min="1150" neutral="1500" max="1850"/>
+        <servo name="ELEVON_LEFT"   no="4" min="1780" neutral="1430" max="1080"/>
     </servos>
 
     <commands>
@@ -124,10 +114,8 @@
         <axis name="MOTOR_FL"       group="REAL"    failsafe_value="MOTOR_STOP"/>
         <axis name="TILT_RIGHT"     group="REAL"    failsafe_value="1140"/>
         <axis name="TILT_LEFT"      group="REAL"    failsafe_value="1530"/>
-        <!-- Elevons
         <axis name="ELEVON_RIGHT"   group="REAL"    failsafe_value="0"/>
         <axis name="ELEVON_LEFT"    group="REAL"    failsafe_value="0"/>
-        -->
 
         <axis name="PITCH"          group="VIRTUAL" failsafe_value="0"/>
         <axis name="ROLL"           group="VIRTUAL" failsafe_value="0"/>
@@ -136,10 +124,8 @@
         <axis name="THRUST_X"       group="VIRTUAL" failsafe_value="0"/>
         <axis name="TILT_R"         group="VIRTUAL" failsafe_value="0"/>
         <axis name="TILT_L"         group="VIRTUAL" failsafe_value="0"/>
-        <!-- Elevons 
         <axis name="ELEVON_R"       group="VIRTUAL" failsafe_value="0"/>
         <axis name="ELEVON_L"       group="VIRTUAL" failsafe_value="0"/>
-        -->
     </commands>
 
     <command_laws>
@@ -149,10 +135,8 @@
         <set servo="MOTOR_FL"       value="@MOTOR_FL"/>
         <set servo="TILT_RIGHT"     value="@TILT_R"/>
         <set servo="TILT_LEFT"      value="@TILT_L"/>
-        <!-- Elevons
         <set servo="ELEVON_RIGHT"   value="@ELEVON_R"/>
         <set servo="ELEVON_LEFT"    value="@ELEVON_L"/>
-        -->
     </command_laws>
 
     <section name="IMU" prefix="IMU_">
@@ -235,39 +219,21 @@
     <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
         <!-- Initial effectiveness matrix G1 -->
         <define name="G1" type="matrix">
-            <!--              FR     BR     BL     FL    TILT_R  TILT_L  -->
-            <field value="{ -16.,   -16.,   16.,   16.,    0.,     0.   }"/>  <!-- Mx -->
-            <field value="{   8.,    -8.,   -8.,    8.,    0.,     0.   }"/>  <!-- My -->
-            <field value="{   0.,     0.,    0.,    0.,   -7.3,    7.3  }"/>  <!-- Mz -->
-            <field value="{ -0.85,  -0.85, -0.85, -0.85,   0.,     0.   }"/>  <!-- Az -->
-            <field value="{   0.,     0.,    0.,    0.,    0.75,   0.75 }"/>  <!-- Ax -->
+            <!--              FR     BR     BL     FL    TILT_R  TILT_L  ELEV_R  ELEV_L -->
+            <field value="{ -16.,   -16.,   16.,   16.,    0.,     0.,     0.,     0.   }"/>  <!-- Mx -->
+            <field value="{   8.,    -8.,   -8.,    8.,    0.,     0.,     0.,     0.   }"/>  <!-- My -->
+            <field value="{   0.,     0.,    0.,    0.,   -7.3,    7.3,    0.,     0.   }"/>  <!-- Mz -->
+            <field value="{ -0.85,  -0.85, -0.85, -0.85,   0.,     0.,     0.,     0.   }"/>  <!-- Az -->
+            <field value="{   0.,     0.,    0.,    0.,    0.75,   0.75,   0.,     0.   }"/>  <!-- Ax -->
         </define>
-        <!-- With elevons
-        <define name="G1" type="matrix">
-            <!-\-             FR     BR     BL     FL    TILT_R  TILT_L  ELEV_R  ELEV_L -\->
-            <field value="{ -16.,   -16.,   16.,   16.,    0.,     0.,     0.,     0.   }"/>
-            <field value="{   8.,    -8.,   -8.,    8.,    0.,     0.,     0.,     0.   }"/>
-            <field value="{   0.,     0.,    0.,    0.,   -7.3,    7.3,    0.,     0.   }"/>
-            <field value="{ -0.85,  -0.85, -0.85, -0.85,   0.,     0.,     0.,     0.   }"/>
-            <field value="{   0.,     0.,    0.,    0.,    0.75,   0.75,   0.,     0.   }"/>
-        </define>
-        -->
-        <define name="G1_THRUST_X" value="{0, 0, 0, 0, 0.85, 0.85}"/>
-        <define name="ACT_IS_THRUSTER_X" value="{1, 1, 1, 1, 1, 1}"/>
-        <define name="ACT_IS_THRUSTER_Z" value="{1, 1, 1, 1, 0, 0}"/>
-        <!-- With elevons:
         <define name="G1_THRUST_X" value="{0, 0, 0, 0, 0.85, 0.85, 0, 0}"/>
         <define name="ACT_IS_THRUSTER_X" value="{1, 1, 1, 1, 1, 1, 0, 0}"/>
         <define name="ACT_IS_THRUSTER_Z" value="{1, 1, 1, 1, 0, 0, 0, 0}"/>
-        -->
+        <define name="THRUST_Z_ALL_ACT" value="TRUE"/>
 
         <!--Counter torque effect of spinning up a rotor-->
-        <define name="G2" value="{0, 0, 0, 0, 0, 0}"/>
-        <define name="ACT_PREF" value="{0, 0, 0, 0, 0, 0}"/>
-        <!-- With elevons
         <define name="G2" value="{0, 0, 0, 0, 0, 0, 0, 0}"/>
         <define name="ACT_PREF" value="{0, 0, 0, 0, 0, 0, 0, 0}"/>
-        -->
 
         <!-- Proportional Gains for Angular Error (P - roll, Q - Pitch, R - Yaw) -->
         <define name="REF_ERR_P" value="140.0"/>
@@ -281,26 +247,19 @@
         <define name="FILT_CUTOFF" value="8.0"/>
 
         <!-- First order actuator dynamics -->
-        <define name="ACT_FREQ" value="{25.0,25.0,25.0,25.0,3.0,3.0}"/>
-        <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 9600, 9600}"/>
-        <define name="ACT_IS_SERVO" value="{0, 0, 0, 0, 1, 1}"/>
-
-        <!-- With elevons
-        <define name="ACT_FREQ" value="{12.66, 12.66, 12.66, 12.66, 4.0, 4.0, 20.0, 20.0}"/>
+        <!-- Elevon 20 rad/s is a placeholder, not identified -->
+        <define name="ACT_FREQ" value="{25.0,25.0,25.0,25.0,3.0,3.0,20.0,20.0}"/>
         <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 9600, 9600, 9600, 9600}"/>
         <define name="ACT_IS_SERVO" value="{0, 0, 0, 0, 1, 1, 1, 1}"/>
-        -->
 
         <!-- INDI outputs to commands association -->
-        <define name="COMMANDS" value="{COMMAND_MOTOR_FR, COMMAND_MOTOR_BR, COMMAND_MOTOR_BL, COMMAND_MOTOR_FL, COMMAND_TILT_R, COMMAND_TILT_L}"/>
-        <!-- <define name="COMMANDS" value="{COMMAND_MOTOR_FR, COMMAND_MOTOR_BR, COMMAND_MOTOR_BL, COMMAND_MOTOR_FL, COMMAND_TILT_R, COMMAND_TILT_L, COMMAND_ELEVON_R, COMMAND_ELEVON_L}"/> -->
+        <define name="COMMANDS" value="{COMMAND_MOTOR_FR, COMMAND_MOTOR_BR, COMMAND_MOTOR_BL, COMMAND_MOTOR_FL, COMMAND_TILT_R, COMMAND_TILT_L, COMMAND_ELEVON_R, COMMAND_ELEVON_L}"/>
 
         <!-- Inner-loop WLS objective priorities (Wv), [MX, MY, MZ, AZ, AX] -->
         <define name="WLS_PRIORITIES" value="{10000,10000,5000,8000,2000}"/>
 
-        <!-- Wu: [FR,BR,BL,FL,tilt_R,tilt_L]  (lower = allocator prefers it) -->
-        <define name="WLS_WU" value="{1.0, 1.0, 1.0, 1.0, 0.8, 0.8}"/>
-        <!-- <define name="WLS_WU" value="{1.0, 1.0, 1.0, 1.0, 0.1, 0.1, 0.1, 0.1}"/> -->
+        <!-- Wu: [FR,BR,BL,FL,tilt_R,tilt_L,elev_R,elev_L]  (lower = allocator prefers it) -->
+        <define name="WLS_WU" value="{1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.5, 0.5}"/>
 
         <!-- Adaptive Learning Rate -->
         <define name="USE_ADAPTIVE" value="FALSE"/>

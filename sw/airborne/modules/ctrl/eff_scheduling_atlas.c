@@ -76,25 +76,27 @@
 #ifndef ATLAS_EFF_SPIN_DIR
 #error "ATLAS_EFF_SPIN_DIR [4x1 float] (+/-1) not defined in airframe file"
 #endif
-#ifndef ATLAS_EFF_K_LIFT
-#error "ATLAS_EFF_K_LIFT [float] not defined in airframe file"
-#endif
-#ifndef ATLAS_EFF_V_WING
-#define ATLAS_EFF_V_WING 10.0f
-#endif
 
-// #ifndef ATLAS_EFF_K_ELEVON_DEFLECT
-// #error "ATLAS_EFF_K_ELEVON_DEFLECT [float] not defined in airframe file — [rad/pprz]"
-// #endif
-// #ifndef ATLAS_EFF_K_ELEVON_ROLL
-// #error "ATLAS_EFF_K_ELEVON_ROLL [float] not defined in airframe file"
-// #endif
-// #ifndef ATLAS_EFF_K_ELEVON_PITCH
-// #error "ATLAS_EFF_K_ELEVON_PITCH [float] not defined in airframe file"
-// #endif
-// #ifndef ATLAS_EFF_K_ELEVON_PROPWASH
-// #define ATLAS_EFF_K_ELEVON_PROPWASH 0.0f
-// #endif
+#ifndef ATLAS_EFF_K_ELEVON_DEFLECT
+#error "ATLAS_EFF_K_ELEVON_DEFLECT [float] not defined in airframe file — [rad/pprz]"
+#endif
+#ifndef ATLAS_EFF_K_ELEVON_ROLL
+#error "ATLAS_EFF_K_ELEVON_ROLL [float] not defined in airframe file"
+#endif
+#ifndef ATLAS_EFF_K_ELEVON_PITCH
+#error "ATLAS_EFF_K_ELEVON_PITCH [float] not defined in airframe file"
+#endif
+#ifndef ATLAS_EFF_K_ELEVON_PROPWASH
+#define ATLAS_EFF_K_ELEVON_PROPWASH 0.0f
+#endif
+// Forward speed at which the elevons get their full travel [m/s]; 0 = full travel at any speed
+#ifndef ATLAS_EFF_ELEVON_V_FULL
+#define ATLAS_EFF_ELEVON_V_FULL 0.0f
+#endif
+// Elevon command slew limit [pprz/s]
+#ifndef ATLAS_EFF_ELEVON_RATE
+#define ATLAS_EFF_ELEVON_RATE 9600.0f
+#endif
 
 // Motor Hover Value [pprz]
 #ifndef ATLAS_MOTOR_HOVER
@@ -121,10 +123,11 @@
 #error "STABILIZATION_INDI_FILT_CUTOFF [float] not defined in airframe file"
 #endif
 
-#if INDI_NUM_ACT != 6
-#error "ATLAS_TEL/ATLAS_ACT u_cmd/u_state are int16[6]: widen the messages to match INDI_NUM_ACT"
+#if INDI_NUM_ACT != 8
+#error "eff_scheduling_atlas: INDI_NUM_ACT must be 8 (4 motors, 2 tilts, 2 elevons)"
 #endif
 
+#define ATLAS_TEL_NUM_ACT 6
 
 struct atlas_eff_sched_param_t atlas_eff_sched_p = {
  .Ixx = ATLAS_EFF_IXX,
@@ -139,12 +142,11 @@ struct atlas_eff_sched_param_t atlas_eff_sched_p = {
  .alpha_max = ATLAS_EFF_ALPHA_MAX,
  .kappa = ATLAS_EFF_KAPPA,
  .spin_dir = ATLAS_EFF_SPIN_DIR,
- .k_lift = ATLAS_EFF_K_LIFT,
- .v_wing = ATLAS_EFF_V_WING,
- // .k_elevon_deflect = ATLAS_EFF_K_ELEVON_DEFLECT,
- // .k_elevon_roll = ATLAS_EFF_K_ELEVON_ROLL,
- // .k_elevon_pitch = ATLAS_EFF_K_ELEVON_PITCH,
- // .k_elevon_propwash = ATLAS_EFF_K_ELEVON_PROPWASH,
+ .k_elevon_deflect = ATLAS_EFF_K_ELEVON_DEFLECT,
+ .k_elevon_roll = ATLAS_EFF_K_ELEVON_ROLL,
+ .k_elevon_pitch = ATLAS_EFF_K_ELEVON_PITCH,
+ .k_elevon_propwash = ATLAS_EFF_K_ELEVON_PROPWASH,
+ .elevon_v_full = ATLAS_EFF_ELEVON_V_FULL,
 };
 
 struct atlas_eff_sched_var_t atlas_eff_sched_v;
@@ -154,8 +156,8 @@ float const grav = 9.81f;                                             // Gravita
 float atlas_eff_periodic_freq = EFF_SCHEDULING_ATLAS_PERIODIC_FREQ;   // Module Frequency [Hz]
 
 float atlas_eff_tilt_rate = ATLAS_EFF_TILT_RATE;                     // Tilt servo angular rate limit [deg/s]
+float atlas_eff_elevon_rate = ATLAS_EFF_ELEVON_RATE;                 // Elevon command slew limit [pprz/s]
 float atlas_eff_tilt_scale = 1.0f;                                    // Scales the pprz/tilt angle slope
-float atlas_eff_liftd = 0.0f;                                         // Change in Lift wrt change in pitch (dLift/dpitch) [N/rad]
 bool  atlas_eff_disable_tilt = false;                                 // Debug: freeze tilts at hover (alpha=0)
 
 /* Body specific force, low-passed with the same 2nd-order Butterworth the INDI
@@ -196,10 +198,8 @@ static inline void atlas_update_airspeed_cache(void);
 static inline void atlas_update_thrust_model(void);
 static inline void atlas_update_motor_effectiveness(void);
 static inline void atlas_update_tilt_effectiveness(void);
-// static inline void atlas_update_elevon_effectiveness(void);
-static inline void atlas_schedule_liftd(void);
+static inline void atlas_update_elevon_effectiveness(void);
 
-float guidance_indi_get_liftd(float airspeed UNUSED, float theta UNUSED);
 void stabilization_indi_set_wls_settings(void);
 
 #if PERIODIC_TELEMETRY
@@ -225,7 +225,7 @@ static inline int16_t sysid_i16(float v, float scale)
 
 static inline void atlas_pack_actuators(int16_t *u_cmd, int16_t *u_state)
 {
-  for (int i = 0; i < INDI_NUM_ACT; i++) {
+  for (int i = 0; i < ATLAS_TEL_NUM_ACT; i++) {
     u_cmd[i]   = actuators_pprz[i];
     u_state[i] = sysid_i16(actuator_state_filt_vect[i], 1.f);
   }
@@ -237,8 +237,8 @@ static inline void atlas_pack_actuators(int16_t *u_cmd, int16_t *u_state)
  * where the FlightRecorder logs it at 100 Hz. */
 static void send_atlas_act(struct transport_tx *trans, struct link_device *dev)
 {
-  int16_t u_cmd[INDI_NUM_ACT];
-  int16_t u_state[INDI_NUM_ACT];
+  int16_t u_cmd[ATLAS_TEL_NUM_ACT];
+  int16_t u_state[ATLAS_TEL_NUM_ACT];
   atlas_pack_actuators(u_cmd, u_state);
 
   pprz_msg_send_ATLAS_ACT(trans, dev, AC_ID, u_cmd, u_state);
@@ -246,8 +246,8 @@ static void send_atlas_act(struct transport_tx *trans, struct link_device *dev)
 
 static void send_atlas_tel(struct transport_tx *trans, struct link_device *dev)
 {
-  int16_t u_cmd[INDI_NUM_ACT];
-  int16_t u_state[INDI_NUM_ACT];
+  int16_t u_cmd[ATLAS_TEL_NUM_ACT];
+  int16_t u_state[ATLAS_TEL_NUM_ACT];
   atlas_pack_actuators(u_cmd, u_state);
 
   int16_t rate[3], ang_accel[3], accel_body[3];
@@ -312,8 +312,8 @@ void eff_scheduling_atlas_init(void)
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATLAS_ACT, send_atlas_act);
 #endif
 
-  // atlas_eff_sched_v.cmd_elevon_r = 0.f;
-  // atlas_eff_sched_v.cmd_elevon_l = 0.f;
+  atlas_eff_sched_v.cmd_elevon_r = 0.f;
+  atlas_eff_sched_v.cmd_elevon_l = 0.f;
 }
 
 void eff_scheduling_atlas_periodic(void)
@@ -326,14 +326,9 @@ void eff_scheduling_atlas_periodic(void)
 
   atlas_update_motor_effectiveness();
   atlas_update_tilt_effectiveness();
-  // atlas_update_elevon_effectiveness();
-  atlas_schedule_liftd();
+  atlas_update_elevon_effectiveness();
 }
 
-/* Bias-corrected body accelerometer = specific force, i.e. exactly
- * (sum of rotor thrust + aero) / m with gravity already excluded. Raw, it is
- * dominated by prop vibration well above the control bandwidth, so it is only
- * useful once filtered. */
 static inline void atlas_update_accel_cache(void)
 {
   struct FloatVect3 *a = stateGetAccelBody_f();
@@ -377,15 +372,25 @@ static inline void atlas_update_cmd_cache(void)
   atlas_eff_sched_v.cmd_motor[1] = actuator_state_filt_vect[ATLAS_ACT_MOTOR_BR];
   atlas_eff_sched_v.cmd_motor[2] = actuator_state_filt_vect[ATLAS_ACT_MOTOR_BL];
   atlas_eff_sched_v.cmd_motor[3] = actuator_state_filt_vect[ATLAS_ACT_MOTOR_FL];
-  // atlas_eff_sched_v.cmd_elevon_r = actuator_state_filt_vect[ATLAS_ACT_ELEVON_R];
-  // atlas_eff_sched_v.cmd_elevon_l = actuator_state_filt_vect[ATLAS_ACT_ELEVON_L];
+  atlas_eff_sched_v.cmd_elevon_r = actuator_state_filt_vect[ATLAS_ACT_ELEVON_R];
+  atlas_eff_sched_v.cmd_elevon_l = actuator_state_filt_vect[ATLAS_ACT_ELEVON_L];
 }
 
+// Airspeed = forward (body x) EKF speed, standing in for the airspeed sensor
 static inline void atlas_update_airspeed_cache(void)
 {
-  atlas_eff_sched_v.airspeed = stateGetAirspeed_f();
-  Bound(atlas_eff_sched_v.airspeed, 0.f, 30.f);
-  atlas_eff_sched_v.airspeed_sq = atlas_eff_sched_v.airspeed * atlas_eff_sched_v.airspeed;
+  const struct FloatRMat *ned_to_body = stateGetNedToBodyRMat_f();
+  const struct NedCoor_f *vel = stateGetSpeedNed_f();
+
+  float u = RMAT_ELMT(*ned_to_body, 0, 0) * vel->x
+          + RMAT_ELMT(*ned_to_body, 0, 1) * vel->y
+          + RMAT_ELMT(*ned_to_body, 0, 2) * vel->z;
+
+  // Written so that a NaN velocity also lands on 0: this feeds the inner-loop B matrix
+  if (!(u > 0.f)) { u = 0.f; }
+  if (u > 30.f)   { u = 30.f; }
+  atlas_eff_sched_v.airspeed = u;
+  atlas_eff_sched_v.airspeed_sq = u * u;
 }
 
 /* Quadratic thrust model:
@@ -516,49 +521,54 @@ static inline void atlas_update_tilt_effectiveness(void)
   g1g2[ATLAS_VC_AZ][ATLAS_ACT_TILT_L] = g_vc_L[ATLAS_VC_AZ] / atlas_eff_sched_p.m;
 }
 
-// /*
-//  * Control Effectiveness wrt. elevons
-//  *
-//  * Convention: +pprz = elevon up (trailing edge up) 
-//  * (+)ATLAS_ACT_ELEVON_R (+)ATLAS_ACT_ELEVON_L  -> pitch up (+My) 
-//  * (+)ATLAS_ACT_ELEVON_R (-)ATLAS_ACT_ELEVON_L  -> roll right (+Mx).
-//  */
-// static inline void atlas_update_elevon_effectiveness(void)
-// {
-//   // Forward thrust component: Tx
-//   float Tx = atlas_eff_sched_v.T[0] * atlas_eff_sched_v.sin_ar
-//             + atlas_eff_sched_v.T[1] * atlas_eff_sched_v.sin_ar
-//             + atlas_eff_sched_v.T[2] * atlas_eff_sched_v.sin_al
-//             + atlas_eff_sched_v.T[3] * atlas_eff_sched_v.sin_al;
-//
-//   const float dDelta = atlas_eff_sched_p.k_elevon_deflect; // [rad per pprz]
-//
-//   // dM/dDelta [N.m/rad] (assumes symmetric tilt left/right)
-//   float dMx_dDelta = atlas_eff_sched_p.k_elevon_roll * atlas_eff_sched_v.airspeed_sq;
-//   float dMy_dDelta = atlas_eff_sched_p.k_elevon_pitch * atlas_eff_sched_v.airspeed_sq
-//                     + atlas_eff_sched_p.k_elevon_propwash * Tx * atlas_eff_sched_v.airspeed;
-//
-//   float dMx = dMx_dDelta * dDelta / atlas_eff_sched_p.Ixx;   // [rad/s^2 per pprz]
-//   float dMy = dMy_dDelta * dDelta / atlas_eff_sched_p.Iyy;   // [rad/s^2 per pprz]
-//
-//   Bound(dMx, 0.f, 0.1f);
-//   Bound(dMy, 0.f, 0.1f);
-//
-//   // Elevon effectiveness matrix
-//   // Right Elevon (pitch up -> +delta, roll right -> +delta)
-//   g1g2[ATLAS_VC_MX][ATLAS_ACT_ELEVON_R] = dMx;
-//   g1g2[ATLAS_VC_MY][ATLAS_ACT_ELEVON_R] = dMy;
-//   // Left Elevon (pitch up -> +delta, roll right -> -delta)
-//   g1g2[ATLAS_VC_MX][ATLAS_ACT_ELEVON_L] = -dMx;
-//   g1g2[ATLAS_VC_MY][ATLAS_ACT_ELEVON_L] = dMy;
-//
-//   g1g2[ATLAS_VC_MZ][ATLAS_ACT_ELEVON_R] = 0.f;   // TODO: differential-drag yaw
-//   g1g2[ATLAS_VC_AX][ATLAS_ACT_ELEVON_R] = 0.f;
-//   g1g2[ATLAS_VC_AZ][ATLAS_ACT_ELEVON_R] = 0.f;
-//   g1g2[ATLAS_VC_MZ][ATLAS_ACT_ELEVON_L] = 0.f;
-//   g1g2[ATLAS_VC_AX][ATLAS_ACT_ELEVON_L] = 0.f;
-//   g1g2[ATLAS_VC_AZ][ATLAS_ACT_ELEVON_L] = 0.f;
-// }
+/*
+ * Control Effectiveness wrt. elevons
+ *
+ * Convention: +pprz = elevon up (trailing edge up)
+ * (+)ATLAS_ACT_ELEVON_R (+)ATLAS_ACT_ELEVON_L  -> pitch up (+My)
+ * (+)ATLAS_ACT_ELEVON_R (-)ATLAS_ACT_ELEVON_L  -> roll right (+Mx).
+ *
+ * Scheduled on the forward speed (see atlas_update_airspeed_cache): the columns are
+ * zero at rest and grow with V^2, so the allocator brings the elevons in on its own.
+ */
+static inline void atlas_update_elevon_effectiveness(void)
+{
+  // Forward thrust component: Tx
+  float Tx = atlas_eff_sched_v.T[0] * atlas_eff_sched_v.sin_ar
+            + atlas_eff_sched_v.T[1] * atlas_eff_sched_v.sin_ar
+            + atlas_eff_sched_v.T[2] * atlas_eff_sched_v.sin_al
+            + atlas_eff_sched_v.T[3] * atlas_eff_sched_v.sin_al;
+
+  const float V = atlas_eff_sched_v.airspeed;
+
+  const float dDelta = atlas_eff_sched_p.k_elevon_deflect; // [rad per pprz]
+
+  // dM/dDelta [N.m/rad] (assumes symmetric tilt left/right)
+  float dMx_dDelta = atlas_eff_sched_p.k_elevon_roll * atlas_eff_sched_v.airspeed_sq;
+  float dMy_dDelta = atlas_eff_sched_p.k_elevon_pitch * atlas_eff_sched_v.airspeed_sq
+                    + atlas_eff_sched_p.k_elevon_propwash * Tx * V;
+
+  float dMx = dMx_dDelta * dDelta / atlas_eff_sched_p.Ixx;   // [rad/s^2 per pprz]
+  float dMy = dMy_dDelta * dDelta / atlas_eff_sched_p.Iyy;   // [rad/s^2 per pprz]
+
+  Bound(dMx, 0.f, 0.1f);
+  Bound(dMy, 0.f, 0.1f);
+
+  // Elevon effectiveness matrix
+  // Right Elevon (pitch up -> +delta, roll right -> +delta)
+  g1g2[ATLAS_VC_MX][ATLAS_ACT_ELEVON_R] = dMx;
+  g1g2[ATLAS_VC_MY][ATLAS_ACT_ELEVON_R] = dMy;
+  // Left Elevon (pitch up -> +delta, roll right -> -delta)
+  g1g2[ATLAS_VC_MX][ATLAS_ACT_ELEVON_L] = -dMx;
+  g1g2[ATLAS_VC_MY][ATLAS_ACT_ELEVON_L] = dMy;
+
+  g1g2[ATLAS_VC_MZ][ATLAS_ACT_ELEVON_R] = 0.f;   // TODO: differential-drag yaw
+  g1g2[ATLAS_VC_AX][ATLAS_ACT_ELEVON_R] = 0.f;
+  g1g2[ATLAS_VC_AZ][ATLAS_ACT_ELEVON_R] = 0.f;
+  g1g2[ATLAS_VC_MZ][ATLAS_ACT_ELEVON_L] = 0.f;
+  g1g2[ATLAS_VC_AX][ATLAS_ACT_ELEVON_L] = 0.f;
+  g1g2[ATLAS_VC_AZ][ATLAS_ACT_ELEVON_L] = 0.f;
+}
 
 
 // Inner Loop Stabilization WLS settings
@@ -613,28 +623,21 @@ void stabilization_indi_set_wls_settings(void)
     wls_stab_p.u_min[ATLAS_ACT_TILT_L] = u_min_l;
     wls_stab_p.u_max[ATLAS_ACT_TILT_L] = u_max_l;
   }
-  // // Elevons: full pprz range 
-  // for (int e = ATLAS_ACT_ELEVON_R; e <= ATLAS_ACT_ELEVON_L; e++) {
-  //   wls_stab_p.u_pref[e] = actuator_state_filt_vect[e];
-  // }
-}
+  // Elevons: the travel opens with dynamic pressure, (V / elevon_v_full)^2 of the range.
 
-/*
- * Wing lift derivative wrt. pitch
- * @return atlas_eff_liftd: lift derivative
- */
-static inline void atlas_schedule_liftd(void)
-{
-  float lift_d = atlas_eff_sched_p.k_lift * atlas_eff_sched_v.airspeed_sq / atlas_eff_sched_p.m;
-
-  // Apply lift derivative contribution above a certian speed (v_wind)
-  if (atlas_eff_sched_v.airspeed < atlas_eff_sched_p.v_wing) {
-    lift_d = 0.f;
+  float open = 1.f;
+  if (atlas_eff_sched_p.elevon_v_full > 0.f) {
+    const float q = atlas_eff_sched_v.airspeed / atlas_eff_sched_p.elevon_v_full;
+    if (q < 1.f) { open = q * q; }
   }
-  Bound(lift_d, -150.f, 0.f);
-  atlas_eff_liftd = lift_d;
-}
-
-float guidance_indi_get_liftd(float pitch UNUSED, float theta UNUSED) {
-  return atlas_eff_liftd;
+  // Each step moves at most elevon_rate / freq around the last command, inside that travel
+  const float lim = open * MAX_PPRZ;
+  const float step = atlas_eff_elevon_rate / atlas_eff_periodic_freq;
+  for (int e = ATLAS_ACT_ELEVON_R; e <= ATLAS_ACT_ELEVON_L; e++) {
+    float u = actuators_pprz[e];
+    Bound(u, -lim, lim);
+    wls_stab_p.u_min[e]  = Max(u - step, -lim);
+    wls_stab_p.u_max[e]  = Min(u + step, lim);
+    wls_stab_p.u_pref[e] = open * actuator_state_filt_vect[e];
+  }
 }

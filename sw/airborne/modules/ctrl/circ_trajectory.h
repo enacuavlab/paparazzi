@@ -30,10 +30,7 @@
  *
  * Calculates the velocity setpoint in a cascaded manner using
  * guidance_indi gains:
- * vel_sp = V_ref + Kp * (P_ref - P) + Ki * int(e_rad . (P_ref - P)) * e_rad
- * The Ki term (pos_igain / max_ivel) acts on the radial position error only.
- * It is unstable above the outer crossover, so keep omega = v_max / r below
- * ~1.0 rad/s; pos_igain = 0 disables it and holds the state at zero.
+ * vel_sp = V_ref + Kp * (P_ref - P)
  */
 
 #ifndef CIRC_TRAJECTORY_H
@@ -80,8 +77,6 @@ struct CircTraj {
   float yaw_ff;             ///< heading-rate feedforward gain (1 = full trajectory heading rate)
   float smooth_w;           ///< natural frequency of the critically-damped reference model easing the hold-point setpoint [rad/s]
   float accel_lead;         ///< lead time applied to the accel feedforward [s], 0 disables
-  float pos_igain;          ///< integral gain on the radial position error [1/s^2], 0 disables
-  float max_ivel;           ///< bound on the integral velocity contribution [m/s]
 
   /* --- runtime state --- */
   enum CircTrajStatus status;
@@ -90,7 +85,6 @@ struct CircTraj {
   float hold_yaw;              ///< heading captured by HOVER / CENTER [rad]
   struct FloatVect3 final_pos; ///< circle end position, computed on END entry (NED) [m]
   float final_yaw;             ///< circle end heading, computed on END entry [rad]
-  float pos_err_int;           ///< integrated radial position error [m.s]
 };
 
 extern struct CircTraj circ_traj;

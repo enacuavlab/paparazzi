@@ -36,12 +36,12 @@
 static const float air_density = PPRZ_ISA_AIR_DENSITY;
 
 /* Aerodynamic model */
-static const float wing_area   = 0.05f;    /* [m^2] */
+static const float wing_area   = 0.072f;   /* [m^2] */
 static const float CL_0        = 0.1f;
-static const float CL_alpha    = 1.0f;     /* [1/rad] */
+static const float CL_alpha    = 2.0f;     /* [1/rad] */
 static const float CL_min      = -0.5f;
 static const float CL_max      = 1.2f;
-static const float S_CD        = 0.0246f;  /* drag area S*CD [m^2] */
+static const float S_CD        = 0.06f;    /* drag area S*CD [m^2] */
 static const float lift_v_on   = 4.0f;     /* wing term fades in over this band [m/s] */
 static const float lift_v_full = 6.0f;
 
@@ -82,24 +82,48 @@ float guidance_indi_wu_tx    = GUIDANCE_INDI_WU_TX;
 //   update_butterworth_2_low_pass(&accel_bodyz_filt, ACCEL_FLOAT_OF_BFP(stateGetAccelBody_i()->z));
 // }
 
+// Wing term fade-in over the forward (body x) speed
+static float wing_fade(float u)
+{
+ float fade = (u - lift_v_on) / (lift_v_full - lift_v_on);
+ Bound(fade, 0.0f, 1.0f);
+ return fade * fade * (3.0f - 2.0f * fade);
+}
+
+/**
+ * Derivative of the wing lift w.r.t. pitch, as specific force (m/s^2 per rad).
+ * Negative as in the other hybrids: pitching up adds lift, which acts along -z.
+ *
+ * @param airspeed  forward (body x) speed (m/s)
+ */
+float guidance_indi_get_liftd(float airspeed, float theta UNUSED)
+{
+ const float fade = wing_fade(airspeed);
+ if (fade <= 0.0f) {
+  return 0.0f;
+ }
+ float liftd = -fade * 0.5f * air_density * airspeed * airspeed * wing_area * CL_alpha / GUIDANCE_INDI_MASS;
+ Bound(liftd, -150.0f, 0.0f);
+ return liftd;
+}
+
 /**
  * Aerodynamic specific force, resolved from the wind frame onto the body axes
  *
- * @param vel  NED velocity vector (m/s) [1x3]
- * @param eul  body attitude, ZXY euler order (rad)
- * @param fx   body-x specific force (m/s^2)
- * @param fz   body-z specific force (m/s^2)
+ * @param vel    NED velocity vector (m/s) [1x3]
+ * @param eul    body attitude, ZXY euler order (rad)
+ * @param fx     body-x specific force (m/s^2)
+ * @param fz     body-z specific force (m/s^2)
+ * @param liftd  lift derivative w.r.t. pitch (m/s^2 per rad), zero while CL is clamped
+ * @param aoa    angle of attack (rad)
  */
 void guidance_indi_get_aero(struct FloatVect3 vel, struct FloatEulers *eul,
-                            float *fx, float *fz)
+                            float *fx, float *fz, float *liftd, float *aoa)
 {
  *fx = 0.0f;
  *fz = 0.0f;
-
- float V = sqrtf(vel.x*vel.x + vel.y*vel.y + vel.z*vel.z);
- if (V < 0.1f) {
-  return;
- }
+ *liftd = 0.0f;
+ *aoa = 0.0f;
 
  const float sphi = sinf(eul->phi),   cphi = cosf(eul->phi);
  const float sth  = sinf(eul->theta), cth  = cosf(eul->theta);
@@ -113,20 +137,28 @@ void guidance_indi_get_aero(struct FloatVect3 vel, struct FloatEulers *eul,
                + (-cth*sphi*cpsi + sth*spsi) * vel.y
                + ( cth*cphi)                 * vel.z;
 
+ // Lift and drag run on the forward (body x) speed only
+ if (!(u > 0.1f)) {
+  return;
+ }
+
  const float alpha = atan2f(w, u);
- const float dyn   = 0.5f * air_density * V * V;
+ const float dyn   = 0.5f * air_density * u * u;
 
  float drag = dyn * S_CD;
  float lift = 0.0f;
 
- float fade = (V - lift_v_on) / (lift_v_full - lift_v_on);
- Bound(fade, 0.0f, 1.0f);
+ const float fade = wing_fade(u);
  if (fade > 0.0f) {
-  fade = fade * fade * (3.0f - 2.0f * fade);
   float CL = CL_0 + CL_alpha * alpha;
+  // Slope tapers to zero over the last 0.2 of CL before a clamp
+  float slope = Min(CL - CL_min, CL_max - CL) / 0.2f;
+  Bound(slope, 0.0f, 1.0f);
+  *liftd = slope * guidance_indi_get_liftd(u, eul->theta);
   Bound(CL, CL_min, CL_max);
   lift = fade * dyn * wing_area * CL;
  }
+ *aoa = alpha;
 
  const float ca = cosf(alpha), sa = sinf(alpha);
  *fx = (-drag * ca + lift * sa) / GUIDANCE_INDI_MASS;
@@ -158,16 +190,24 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
  // Aerodynamic force estimate, wind frame rotated onto the body axes
  struct FloatVect3 vel;
  VECT3_COPY(vel, *stateGetSpeedNed_f());
- float aero_x, aero_z;
- guidance_indi_get_aero(vel, &eulers_filtered, &aero_x, &aero_z);
+ float aero_x, aero_z, liftd, aoa;
+ guidance_indi_get_aero(vel, &eulers_filtered, &aero_x, &aero_z, &liftd, &aoa);
 
- // Force Estimates
+ // Thrust Estimates
  const float T_r = atlas_eff_sched_v.T[0] + atlas_eff_sched_v.T[1];
  const float T_l = atlas_eff_sched_v.T[2] + atlas_eff_sched_v.T[3];
- float Fx =  (T_r * atlas_eff_sched_v.sin_ar + T_l * atlas_eff_sched_v.sin_al) / atlas_eff_sched_p.m + aero_x;
- float Fz = -(T_r * atlas_eff_sched_v.cos_ar + T_l * atlas_eff_sched_v.cos_al) / atlas_eff_sched_p.m + aero_z;
+ const float Tx =  (T_r * atlas_eff_sched_v.sin_ar + T_l * atlas_eff_sched_v.sin_al) / atlas_eff_sched_p.m;
+ const float Tz = -(T_r * atlas_eff_sched_v.cos_ar + T_l * atlas_eff_sched_v.cos_al) / atlas_eff_sched_p.m;
 
+ // Roll turns the thrust and the aerodynamic force together
+ float Fx = Tx + aero_x;
+ float Fz = Tz + aero_z;
  Bound(Fz, Fz_min, Fz_max);
+
+ // Pitch turns the thrust only: lift stays normal to the wind and grows with angle of attack
+ float Px = Tx - liftd * cosf(aoa);
+ float Pz = Tz - liftd * sinf(aoa);
+ Bound(Pz, Fz_min, Fz_max);
 
  // // Measured Force
  // float Fx = accel_bodyx_filt.o[0];
@@ -181,9 +221,9 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
  Gmat[2][GIHT_CMD_ROLL] = Fx * (stheta * sphi) +          Fz * (-ctheta * sphi);
 
  // dθ (Pitch)
- Gmat[0][GIHT_CMD_PITCH] = Fx * (-ctheta * sphi * spsi - stheta * cpsi) + Fz * (-stheta * sphi * spsi + ctheta * cpsi);
- Gmat[1][GIHT_CMD_PITCH] = Fx * (ctheta * sphi * cpsi - stheta * spsi) +  Fz * (stheta * sphi * cpsi + ctheta * spsi);
- Gmat[2][GIHT_CMD_PITCH] = Fx * (-ctheta * cphi) +                        Fz * (-stheta * cphi);
+ Gmat[0][GIHT_CMD_PITCH] = Px * (-ctheta * sphi * spsi - stheta * cpsi) + Pz * (-stheta * sphi * spsi + ctheta * cpsi);
+ Gmat[1][GIHT_CMD_PITCH] = Px * (ctheta * sphi * cpsi - stheta * spsi) +  Pz * (stheta * sphi * cpsi + ctheta * spsi);
+ Gmat[2][GIHT_CMD_PITCH] = Px * (-ctheta * cphi) +                        Pz * (-stheta * cphi);
 
  // dTz (Vertical Thrust)
  Gmat[0][GIHT_CMD_TZ] = ctheta * sphi * spsi + stheta * cpsi;
@@ -290,9 +330,9 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
   wls_guid_p.u_pref[GIHT_CMD_TX]    = 0.f;
 
   /* No pitch preference */
-  wls_guid_p.u_pref[GIHT_CMD_PITCH] = 0.f;
+  // wls_guid_p.u_pref[GIHT_CMD_PITCH] = 0.f;
 
   /* Pitch preference */
-   // wls_guid_p.u_pref[GIHT_CMD_PITCH] = pitch_pref_rad - pitch_angle;
-   // BoundAbs(wls_guid_p.u_pref[GIHT_CMD_PITCH], pitch_pref_max_incr);
+   wls_guid_p.u_pref[GIHT_CMD_PITCH] = pitch_pref_rad - pitch_angle;
+   BoundAbs(wls_guid_p.u_pref[GIHT_CMD_PITCH], pitch_pref_max_incr);
 }

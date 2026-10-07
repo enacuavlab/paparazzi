@@ -95,9 +95,9 @@ static inline void copy_indi_commands(void)
   commands[COMMAND_MOTOR_FL] = stabilization.cmd[COMMAND_MOTOR_FL];
   commands[COMMAND_TILT_R]   = stabilization.cmd[COMMAND_TILT_R];
   commands[COMMAND_TILT_L]   = stabilization.cmd[COMMAND_TILT_L];
-  // // Elevons
-  // commands[COMMAND_ELEVON_R] = stabilization.cmd[COMMAND_ELEVON_R];
-  // commands[COMMAND_ELEVON_L] = stabilization.cmd[COMMAND_ELEVON_L];
+  // Elevons
+  commands[COMMAND_ELEVON_R] = stabilization.cmd[COMMAND_ELEVON_R];
+  commands[COMMAND_ELEVON_L] = stabilization.cmd[COMMAND_ELEVON_L];
   commands[COMMAND_THRUST]   = stabilization.cmd[COMMAND_THRUST];
   autopilot.throttle         = stabilization.cmd[COMMAND_THRUST];
 }

@@ -37,17 +37,17 @@
         <define name="GUIDANCE_INDI_HYBRID_U"                value="4"/>           <!-- Guidance control objectives: ax, ay, az for tiltrotors -->
         <define name="GUIDANCE_INDI_HYBRID_V"                value="3"/>
         <define name="GUIDANCE_INDI_PUSHER_INDEX"            value="4"/>
-        <define name="GUIDANCE_INDI_MASS"                    value="0.642"/>
+        <define name="GUIDANCE_INDI_MASS"                    value="0.720"/>
         <define name="GUIDANCE_INDI_MAX_ACC_BODY_X"          value="12.0"/>
         <define name="GUIDANCE_INDI_MAX_ACC_BODY_Z"          value="8.0"/>
-        <define name="GUIDANCE_INDI_WLS_PRIORITIES"          value="{2.5,2.5,1.0}"/>
-        <define name="GUIDANCE_INDI_MIN_PITCH"               value="-40."/>
-        <define name="GUIDANCE_INDI_MAX_PITCH"               value="40."/>
-        <define name="GUIDANCE_INDI_PITCH_PREF_DEG"          value="5.0"/>
+        <define name="GUIDANCE_INDI_WLS_PRIORITIES"          value="{1.0,1.0,0.7}"/>
+        <define name="GUIDANCE_INDI_MIN_PITCH"               value="-20."/>
+        <define name="GUIDANCE_INDI_MAX_PITCH"               value="30."/>
+        <define name="GUIDANCE_INDI_PITCH_PREF_DEG"          value="6.0"/>
         <define name="GUIDANCE_INDI_PITCH_PREF_RC_MIN_DEG"   value="-5.0"/>
         <define name="GUIDANCE_INDI_PITCH_PREF_RC_MAX_DEG"   value="15.0"/>
         <define name="GUIDANCE_INDI_WU_ROLL"                 value="1.0"/>
-        <define name="GUIDANCE_INDI_WU_PITCH"                value="11.0"/>        <!--- Increase Wu to increase tilt contribution (7.2 -> 30 %, 11 -> 50 %, 19 -> 75 %, 33 -> 90 %, 48 -> 95 % ) --->
+        <define name="GUIDANCE_INDI_WU_PITCH"                value="11.0"/>        <!-- Increase Wu to increase tilt contribution (7.2 -> 30 %, 11 -> 50 %, 19 -> 75 %, 33 -> 90 %, 48 -> 95 % ) -->
         <define name="GUIDANCE_INDI_WU_TZ"                   value="1.0"/>
         <define name="GUIDANCE_INDI_WU_TX"                   value="1.0"/>
         <file name="guidance_indi_hybrid_tiltrotor.c" dir="$(SRC_FIRMWARE)/guidance"/>

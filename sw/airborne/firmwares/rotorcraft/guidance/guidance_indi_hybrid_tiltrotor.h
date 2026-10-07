@@ -31,7 +31,7 @@
 
 
 extern void guidance_indi_get_aero(struct FloatVect3 vel, struct FloatEulers *eul,
-                                   float *fx, float *fz);
+                                   float *fx, float *fz, float *liftd, float *aoa);
 extern void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_HYBRID_U], struct FloatVect3 a_diff, float v_gih[GUIDANCE_INDI_HYBRID_V]);
 extern void guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angle, float pitch_angle);
 

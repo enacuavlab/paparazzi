@@ -29,7 +29,7 @@
 
 #include "std.h"
 
-/* Actuator indices for INDI vector (INDI_NUM_ACT = 6/8)*/
+/* Actuator indices for INDI vector (INDI_NUM_ACT = 8)*/
 #define ATLAS_ACT_MOTOR_FR   0          // Motor Front-Right (FR)
 #define ATLAS_ACT_MOTOR_BR   1          // Motor Back-Right (BR)
 #define ATLAS_ACT_MOTOR_BL   2          // Motor Back-Left (BL)
@@ -37,9 +37,9 @@
 #define ATLAS_ACT_TILT_R     4          // Right tilt servo (0 = vertical/hover, pi/2 = forward)
 #define ATLAS_ACT_TILT_L     5          // Left tilt servo  (0 = vertical/hover, pi/2 = forward)
 
-// // --- Elevons ---
-// #define ATLAS_ACT_ELEVON_R   6          // Right elevon servo (+pprz = elevon up)
-// #define ATLAS_ACT_ELEVON_L   7          // Left elevon servo  (+pprz = elevon up)
+// --- Elevons ---
+#define ATLAS_ACT_ELEVON_R   6          // Right elevon servo (+pprz = elevon up)
+#define ATLAS_ACT_ELEVON_L   7          // Left elevon servo  (+pprz = elevon up)
 
 /* Virtual control vector indices */
 #define ATLAS_VC_MX    0                // Angular Acceleration along body x-axis (roll)
@@ -79,15 +79,12 @@ struct atlas_eff_sched_param_t {
     float alpha_min;                    // Min tilt angle [rad] (0 = vertical, hover)
     float alpha_max;                    // Max tilt angle [rad] (pi/2 = horizontal, forward)
 
-    // Wing Coefficients
-    float k_lift;                       // Wing Lift Coefficient: L = k_lift * V^2 / m
-    float v_wing;                       // Airspeed to fully thrust wing lift [m/s]
-
-    // // Elevon Coefficients
-    // float k_elevon_deflect;             // Single slope: delta = k_elevon_deflect * pprz [rad/pprz]
-    // float k_elevon_roll;                // dMx_dDelta = k_roll * V^2   [N.m/rad per (m/s)^2]
-    // float k_elevon_pitch;               // dMy_dDelta = k_pitch * V^2  [N.m/rad per (m/s)^2]
-    // float k_elevon_propwash;            // dMy_dDelta += k_propwash * T_x * V (0 @ V = 0)
+    // Elevon Coefficients
+    float k_elevon_deflect;             // Single slope: delta = k_elevon_deflect * pprz [rad/pprz]
+    float k_elevon_roll;                // dMx_dDelta = k_roll * V^2   [N.m/rad per (m/s)^2]
+    float k_elevon_pitch;               // dMy_dDelta = k_pitch * V^2  [N.m/rad per (m/s)^2]
+    float k_elevon_propwash;            // dMy_dDelta += k_propwash * T_x * V (0 @ V = 0)
+    float elevon_v_full;                // Forward speed for full elevon travel [m/s] (0 = always full)
 };
 
 struct atlas_eff_sched_var_t
@@ -103,20 +100,20 @@ struct atlas_eff_sched_var_t
     float T[4];                         // Thurst per motor [N]
     float dT_dpprz[4];                  // Derivative wrt pprz [N/pprz]
 
-    // Airspeed Measurements
+    // Airspeed: forward (body x) EKF speed, standing in for the sensor [m/s]
     float airspeed;
     float airspeed_sq;
 
-    // // Elevon Commands
-    // float cmd_elevon_r;                 // Right Elevon Command
-    // float cmd_elevon_l;                 // Left Elevon Command
+    // Elevon Commands
+    float cmd_elevon_r;                 // Right Elevon Command
+    float cmd_elevon_l;                 // Left Elevon Command
 };
 
 extern struct atlas_eff_sched_param_t atlas_eff_sched_p;
 extern struct atlas_eff_sched_var_t atlas_eff_sched_v;
 
-extern float atlas_eff_liftd;
 extern float atlas_eff_tilt_rate;          // Tilt servo angular rate limit [deg/s]
+extern float atlas_eff_elevon_rate;        // Elevon command slew limit [pprz/s]
 extern bool  atlas_eff_disable_tilt;       // Debug: freeze tilts at hover (alpha=0)
 
 extern void eff_scheduling_atlas_init(void);

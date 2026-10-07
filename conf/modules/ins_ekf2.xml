@@ -12,6 +12,7 @@
     <define name="INS_EKF2_GPS_CHECK_MASK" value="(MASK_GPS_NSATS | MASK_GPS_HACC | MASK_GPS_SACC)" description="GPS checks enabled before initialization of the global positioning"/>
     <define name="INS_EKF2_EVP_NOISE" value="0.1" description="External vision position noise [m]"/>
     <define name="INS_EKF2_EVV_NOISE" value="1.0" description="External vision velocity noise [m/s]"/>
+    <define name="INS_EKF2_EV_DELAY" value="175" description="External vision delay [ms]"/>
     <define name="INS_EKF2_EVA_NOISE" value="0.05" description="External vision angle noise [rad]"/>
     <define name="INS_EKF2_GPS_V_NOISE" value="0.3" description="GPS measurement noise for horizontal velocity [m/s]"/>
     <define name="INS_EKF2_GPS_P_NOISE" value="0.5" description="GPS measurement position noise [m]"/>

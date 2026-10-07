@@ -38,7 +38,7 @@
  *
  *
  * Every active mode runs the full feedback cascade
- *   v_cmd = V_ref + Kp * (P_ref - P) + Ki * int(e_rad . (P_ref - P)) * e_rad
+ *   v_cmd = V_ref + Kp * (P_ref - P)
  *   a_sp  = A_ref + Kv * (v_cmd - V)        (bounded)
  * and publishes a_sp as an ACCEL_SP ABI message consumed by
  * guidance_indi_hybrid, with the heading commanded through
@@ -115,16 +115,6 @@
 #define CIRC_TRAJECTORY_ACCEL_LEAD_TIME 0.0f
 #endif
 
-/* Integral gain on the radial position error [1/s^2], 0 disables */
-#ifndef CIRC_TRAJECTORY_POS_IGAIN
-#define CIRC_TRAJECTORY_POS_IGAIN 0.0f
-#endif
-
-/* Bound on the velocity the integrator may contribute [m/s] */
-#ifndef CIRC_TRAJECTORY_MAX_IVEL
-#define CIRC_TRAJECTORY_MAX_IVEL 1.0f
-#endif
-
 struct CircTraj circ_traj = {
   .r                 = CIRC_TRAJECTORY_RADIUS,
   .v_max             = CIRC_TRAJECTORY_V_MAX,
@@ -139,8 +129,6 @@ struct CircTraj circ_traj = {
   .yaw_ff            = CIRC_TRAJECTORY_YAW_FF_GAIN,
   .smooth_w          = CIRC_TRAJECTORY_SMOOTH_W,
   .accel_lead        = CIRC_TRAJECTORY_ACCEL_LEAD_TIME,
-  .pos_igain         = CIRC_TRAJECTORY_POS_IGAIN,
-  .max_ivel          = CIRC_TRAJECTORY_MAX_IVEL,
   .status            = CIRC_TRAJ_HOVER,
   .t                 = 0.0f,
 };
@@ -376,7 +364,6 @@ void circ_trajectory_run(void)
     if (entered) { guidance_indi_hybrid_release_heading_sp(); }
     VECT3_COPY(ref_pos, *pos);
     VECT3_COPY(ref_vel, *vel);
-    circ_traj.pos_err_int = 0.f;
     return;
   }
 
@@ -479,7 +466,6 @@ void circ_trajectory_run(void)
     default:
       VECT3_COPY(ref_pos, *pos);
       VECT3_COPY(ref_vel, *vel);
-      circ_traj.pos_err_int = 0.f;
       return;
   }
 
@@ -505,36 +491,11 @@ void circ_trajectory_run(void)
   p_err.y = p_ref.y - pos->y;
   p_err.z = p_ref.z - pos->z;
 
-  /* Radial position integrator. The error is integrated along the radial
-   * direction only: a radius deficit is DC in the rotating frame, while a
-   * plain NED integrator would only have gain Ki/omega against it. e_rad is
-   * (p_ref - center) normalised, so it vanishes on the center and CENTER mode
-   * freezes the integrator by itself. Gain 0 pins the state to 0, so the
-   * setting doubles as a reset.
-   *
-   * Do NOT run this above the outer crossover (~1.2 rad/s): the integrator
-   * sees the plant phase arg(P*S) at omega and is only stable while that is
-   * inside 90 deg. Keep omega = v_max / r below ~1.0 rad/s.
-   */
-  struct FloatVect3 e_rad;
-  VECT3_DIFF(e_rad, p_ref, circ_traj.center);
-  const float rad = FLOAT_VECT3_NORM(e_rad);
-  VECT3_SMUL(e_rad, e_rad, (rad > 1e-3f) ? 1.f / rad : 0.f);
-
-  if (guidance_active && !entered) {
-    const float i_max = (circ_traj.pos_igain > 0.f) ? circ_traj.max_ivel / circ_traj.pos_igain : 0.f;
-    circ_traj.pos_err_int += VECT3_DOT_PRODUCT(p_err, e_rad) * dt;
-    BoundAbs(circ_traj.pos_err_int, i_max);
-  } else {
-    circ_traj.pos_err_int = 0.f;
-  }
-  const float vi_r = circ_traj.pos_igain * circ_traj.pos_err_int;
-
   // Outer loop velocity setpoint using guidance_indi gains
   struct FloatVect3 v_cmd;
-  v_cmd.x = v_ref.x + gih_params.pos_gain  * p_err.x + vi_r * e_rad.x;
-  v_cmd.y = v_ref.y + gih_params.pos_gain  * p_err.y + vi_r * e_rad.y;
-  v_cmd.z = v_ref.z + gih_params.pos_gainz * p_err.z + vi_r * e_rad.z;
+  v_cmd.x = v_ref.x + gih_params.pos_gain  * p_err.x;
+  v_cmd.y = v_ref.y + gih_params.pos_gain  * p_err.y;
+  v_cmd.z = v_ref.z + gih_params.pos_gainz * p_err.z;
 
   struct FloatVect3 accel_sp;
   accel_sp.x = a_ref.x + gih_params.speed_gain  * (v_cmd.x - vel->x);

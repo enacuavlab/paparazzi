@@ -275,6 +275,12 @@ PRINT_CONFIG_VAR(INS_EKF2_EVV_NOISE)
 #endif
 PRINT_CONFIG_VAR(INS_EKF2_EVA_NOISE)
 
+/* External vision delay (ms) */
+#ifndef INS_EKF2_EV_DELAY
+#define INS_EKF2_EV_DELAY 175
+#endif
+PRINT_CONFIG_VAR(INS_EKF2_EV_DELAY)
+
 /* GPS measurement noise for horizontal velocity (m/s) */
 #ifndef INS_EKF2_GPS_V_NOISE
 #define INS_EKF2_GPS_V_NOISE 0.3f
@@ -560,6 +566,8 @@ void ins_ekf2_init(void)
   ekf_params->gps_vel_noise = INS_EKF2_GPS_V_NOISE;
   ekf_params->gps_pos_noise = INS_EKF2_GPS_P_NOISE;
   ekf_params->baro_noise = INS_EKF2_BARO_NOISE;
+
+  ekf_params->ev_delay_ms = INS_EKF2_EV_DELAY;
 
   /* Set optical flow parameters */
   ekf_params->flow_qual_min = INS_EKF2_MIN_FLOW_QUALITY;

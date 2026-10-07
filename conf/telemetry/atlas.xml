@@ -10,6 +10,7 @@
     <mode name="default" key_press="d">
       <message name="ROTORCRAFT_FP"            period="0.2"/>    <!-- pos/vel/att: ground track, velocity, forward speed -->
       <message name="ATLAS_ACT"                period="0.2"/>    <!-- u_cmd/u_state: tilt + motor commands -->
+      <message name="ACTUATORS"                period="0.2"/>    <!-- all 8 actuators in pprz, incl. elevons (not in ATLAS_ACT) -->
       <message name="GUIDANCE_INDI_HYBRID"     period="0.2"/>    <!-- outer-loop accel setpoint vs measured -->
 
       <!-- state and navigation -->
@@ -21,6 +22,7 @@
       <message name="EXTERNAL_POSE_DOWN"       period="1.0"/>    <!-- raw mocap sample the EKF fused: yaw ground truth -->
       <message name="WP_MOVED"                 period="3.3"/>
       <message name="INS_REF"                  period="8.1"/>
+      <message name="AIR_DATA"                 period="1.0"/>
 
       <!-- control loops -->
       <message name="WLS_U"                    period="4.0"/>    <!-- allocator bounds and weights, rate limited -->
@@ -184,6 +186,7 @@
   <process name="FlightRecorder">
     <mode name="default">
       <message name="ATLAS_TEL"              period="0.01"/>   <!-- 100 Hz -->
+      <message name="ACTUATORS"                period="0.02"/>   <!-- 50 Hz, elevons (not in ATLAS_TEL) -->
 
       <!-- control loops -->
       <message name="GUIDANCE_INDI_HYBRID"     period="0.02"/>   <!-- 50 Hz -->
