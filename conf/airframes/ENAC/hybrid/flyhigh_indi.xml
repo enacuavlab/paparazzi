@@ -282,7 +282,7 @@
     
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
     <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600}"/>
-    <define name="ACT_IS_SERVO"   value="{0, 0, 0, 0}"/>
+	<define name="ACT_IS_SERVO"   value="{0, 0, 0, 0, 1, 1, 0}"/>  <!-- used to know if we have a motor or servo to set the limits in wls ie : {FR, BR, BL, FL, ELEVON_R, ELEVON_L, PUSHER}-->
   </section>
   
   <section name="STABILIZATION_PLANE" prefix="STABILIZATION_PLANE_">
