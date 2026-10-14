@@ -13,7 +13,7 @@
   </description>
 
   <firmware name="rotorcraft">
-    <autopilot name="quadplane"/>
+    <autopilot name="quadplane_full_INDI"/>
 
     <configure name="RTOS_DEBUG" value="FALSE"/>
     <configure name="PERIODIC_FREQUENCY" value="500"/>
@@ -86,10 +86,12 @@
       <configure name="INDI_NUM_ACT" value="7"/>
       <configure name="INDI_OUTPUTS" value="5"/>
       <define name="WLS_N_U_MAX"     value="7"/>
-      <define name="WLS_N_V_MAX"     value="4"/>
-    </module>
+      <define name="WLS_N_V_MAX"     value="5"/>
+    </module>  
     <module name="guidance" type="indi_hybrid_quadplane"/>
     <module name="nav" type="hybrid"/>
+    <module name="eff_scheduling_quadplane"/>
+    <module name="circ_trajectory"/>  
 
     <module name="flight_recorder"/>
     
@@ -159,11 +161,15 @@
     <axis name="MOTOR_BACK_RIGHT"   group="REAL"    failsafe_value="-9600"/>
     <axis name="MOTOR_FRONT_LEFT"   group="REAL"    failsafe_value="-9600"/>
     <axis name="MOTOR_BACK_LEFT"    group="REAL"    failsafe_value="-9600"/>
+    <axis name="ELEVON_LEFT"        group="REAL"    failsafe_value="-9600"/>
+    <axis name="ELEVON_RIGHT"       group="REAL"    failsafe_value="-9600"/>    
     <axis name="MOTOR_PUSHER"       group="REAL"    failsafe_value="-9600"/>
+    
     <axis name="ROLL"               group="VIRTUAL" failsafe_value="0"/>
     <axis name="PITCH"              group="VIRTUAL" failsafe_value="0"/>
     <axis name="YAW"                group="VIRTUAL" failsafe_value="0"/>
     <axis name="THRUST"             group="VIRTUAL" failsafe_value="0"/>  
+    <axis name="THRUST_X"           group="VIRTUAL" failsafe_value="0"/> 
   </commands>
   
   <section name="MIXER">
@@ -265,24 +271,30 @@
     <define name="ADAPTIVE_MU"  value="0.0001"/>
 
     <!-- Full INDI -->
+    <define name="COMMANDS" value="{COMMAND_MOTOR_FRONT_RIGHT, COMMAND_MOTOR_BACK_RIGHT, COMMAND_MOTOR_BACK_LEFT, COMMAND_MOTOR_FRONT_LEFT, COMMAND_ELEVON_RIGHT, COMMAND_ELEVON_LEFT, COMMAND_THRUST_X}"/>
     <!-- control effectiveness All value are divided by INDI_G_SCALING (=1000)-->
     <define name="G1" type="matrix">
-      <!--COLUMNS:                     FR    BR      BL     FL -->
-      <field name="ROLL"     value="{-6.2,  -6.2,   6.2,   6.2}"/>  <!-- MX - ROLL  -->
-      <field name="PITCH"    value="{ 9.0,-14.8, -14.8,  9.0}"/>  <!-- MY - PITCH -->
-      <field name="YAW"      value="{ 1.8,  -1.8,   1.8,  -1.8}"/>  <!-- MZ - YAW   -->
-      <field name="THRUST"   value="{-1.8, -0.7, -0.7, -1.8}"/>  <!-- FZ         -->
+      <!--COLUMNS:                     FR    BR      BL     FL   Elevon_R   Elevon_L    Pusher-->
+      <field name="ROLL"     value="{-6.2,  -6.2,   6.2,   6.2,     0,         0,          0}"/>  <!-- MX - ROLL  -->
+      <field name="PITCH"    value="{ 9.0, -14.8,  -14.8,  9.0,     0,         0,          0}"/>  <!-- MY - PITCH -->
+      <field name="YAW"      value="{ 1.8,  -1.8,   1.8,  -1.8,     0,         0,          0}"/>  <!-- MZ - YAW   -->
+      <field name="THRUST"   value="{-1.8,  -0.7,  -0.7,  -1.8,     0,         0,          0}"/>  <!-- FZ         -->
+      <field name="THRUST_X" value="{   0,     0,     0,     0,     0,         0,       0.05}"/>  <!-- FX         -->
     </define>    
-    <define name="G2"             value="{1.0, -1.0, 1.0, -1.0}"/>
+    <define name="G1_THRUST_X" value="{0, 0, 0, 0, 0, 0, 0.05}"/>
+    <define name="G2"             value="{1.0, -1.0, 1.0, -1.0, 0, 0, 0}"/>
+    
+    <define name="ACT_IS_SERVO"   value="{0, 0, 0, 0, 1, 1, 0}"/>  <!-- used to know if we have a motor or servo to set the limits in wls ie : {FR, BR, BL, FL, ELEVON_R, ELEVON_L, PUSHER}-->
+	<define name="ACT_IS_THRUSTER_X" value="{0, 0, 0, 0, 0, 0, 1}"/>
+	<define name="ACT_IS_THRUSTER_Z" value="{1, 1, 1, 1, 0, 0, 0}"/>
+	<define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100, 0}"/>
 
     <!-- second order filter parameters -->
-    <define name="ACT_FREQ"       value="{27.4, 27.4, 27.4, 27.4}"/>       
+    <define name="ACT_FREQ"       value="{27.4, 27.4, 27.4, 27.4, 20, 20, 27.4}"/>       
     <define name="FILT_CUTOFF"  value="4.0"/>
     <define name="FILT_CUTOFF_R" value="4.0"/>     
     
-    <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
-    <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600}"/>
-	<define name="ACT_IS_SERVO"   value="{0, 0, 0, 0, 1, 1, 0}"/>  <!-- used to know if we have a motor or servo to set the limits in wls ie : {FR, BR, BL, FL, ELEVON_R, ELEVON_L, PUSHER}-->
+    <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 9600, 9600, 9600}"/>
   </section>
   
   <section name="STABILIZATION_PLANE" prefix="STABILIZATION_PLANE_">
@@ -293,8 +305,43 @@
     <define name="THETA_IGAIN" value="1300"/>
     <define name="THETA_DGAIN" value="1300"/>
   </section>
+  
+  
+	<section name="VEHICLE_PROPERTIES" prefix="VEHICLE_">
+	  <define name="MASS" value="1.0"/>  <!-- Mass total in kg -->
+	  <define name="IXX" value="0.00372"/>  <!-- MMOI about longitudinal (x) axis [kg.m^2] -->
+	  <define name="IYY" value="0.00389"/>  <!-- MMOI about longitudinal (y) axis [kg.m^2] -->
+	  <define name="IZZ" value="0.01300"/>  <!-- MMOI about longitudinal (z) axis [kg.m^2] -->
+      <!-- 4 Hoovering motors -->
+      <define name="RX" value="{0.187, -0.187, -0.187, 0.187}"/>  <!-- Rotor x positions [m], order: FR, RR, RL, FL -->
+      <define name="RY" value="{ 0.145, 0.145,-0.145,-0.145}"/>  <!-- Rotor y positions [m], order: FR, RR, RL, FL -->
+      <define name="RZ"                 value="{0,0,0,0}" />  <!-- Rotor z positions [m], order: FR, RR, RL, FL -->
+      <define name="SPIN_DIR"           value="{-1.0,1.0,-1.0,1.0}" />  <!-- Motors spin direction (+1 for CW. -1 for CCW) -->
+      <define name="ROTOR_K_T_PPRZ"     value="{1.22e-4,4.08e-8}" />  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} -->
+      <define name="KAPPA"              value="0" />  <!-- Drag-torque to thrust ratio (kappa = k_m/k_t) [m] -->
+      <define name="MOTOR_HOVER"        value="7000" />  <!-- Hover motor command 4640 -->
+      <define name="MOTOR_IDLE"         value="3000" />  <!-- Idle motor command -->
+      <!-- Wing -->
+      <define name="K_LIFT"             value="0" />  <!-- Wing lift derivative: dL/d(alpha) = k_lift * V^2 [N/rad] -->
+      <define name="V_WING"             value="10.0"/>  <!--Airspeed at which wing lift derivative is applied [m/s] -->
+      <!-- Elevons -->
+      <define name="K_ELEVON_DEFLECT"   value="0"/>  <!-- delta = k*pprz [rad/pprz], = delta_max / MAX_PPRZ -->
+      <define name="K_ELEVON_ROLL"      value="0" />  <!-- dMx/ddelta = k_roll * V^2 [N.m/rad per (m/s)^2] -->
+      <define name="K_ELEVON_PITCH"     value="0" />  <!-- dMy/ddelta = k_pitch * V^2 [N.m/rad per (m/s)^2] -->
+      <define name="K_ELEVON_PROPWASH"  value="0.0" />  <!-- dMy/ddelta += k_propwash * T_x * V (default 0) -->
+      <define name="K_ELEVON_DIFF_DRAG_YAW" value="0.0" />  <!-- dMz/ddelta = +/- k_yaw * V^2 * delta [N.m/rad]; + for right elevon -->
+      <define name="K_ELEVON_V_FULL"    value="0.0" />  <!-- Elevons travel opening with dynamic pressure -->
+      <define name="ELEVON_RATE"        value="0.0" />  <!-- Elevon rate -->
+      <!-- Pusher -->
+      <define name="PUSHER_RY"          value="0"/>  <!-- Lateral Offset from CG (positive = right) -->
+      <define name="PUSHER_RZ"          value="0"/>  <!-- Vertical Offset from CG (positive = down) -->
+      <define name="PUSHER_SPIN_DIR"    value="0"/>  <!-- Pusher spin direction (+1 for CW. -1 for CCW) -->
+      <define name="PUSHER_K_T_PPRZ"    value="{1.22e-4,4.08e-8}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} -->
+	</section>
+
 
   <section name="HYBRID_TRANSITION">
+	<define name="QUADPLANE_HOVER_TEST" value="15."/>
     <define name="CMQ_TRANSITION_AIRSPEED" value="15."/> <!-- Transition speed in m/s when we cut the 4 motors to go in plane mode -->
     <define name="CMQ_TRANSITION_TIME" value="4."/> <!-- Transition time -->
     <define name="CMQ_TRANSITION_PITCH" value="0."/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->
@@ -322,6 +369,10 @@
 
   <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
     <define name="THRUST_DYNAMICS_FREQ" value="30.5"/>
+    <define name="PUSHER_INDEX" value="6"/> <!-- Pusher column index in G1G2 matrix -->
+    <define name="THRUST_Z_EFF" value="(-0.002002496f / VEHICLE_MASS)"/> <!-- Collective vertical-thrust effectiveness, converting a PPRZ throttle increment into a body-Z acceleration increment. -->
+    <define name="MAX_AIRSPEED" value="25"/> <!-- m/s - Maximum airspeed command used by the guidance controller to limit forward-flight speed requests. -->
+    <define name="HEADING_BANK_GAIN" value="5"/> <!-- Gain converting heading error into a lateral acceleration demand for coordinated turns. -->
   </section>
 
   <section name="GUIDANCE_PLANE" prefix="GUIDANCE_PLANE_">
@@ -359,12 +410,8 @@
   <section name="AUTOPILOT">
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE"/>
-    <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/>
+    <define name="MODE_AUTO1" value="AP_MODE_NAV"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
-    <!--define name="MODE_STARTUP" value="AP_MODE_KILL"/>
-    <define name="MODE_MANUAL" value="AP_MODE_MANUAL"/>
-    <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE"/>
-    <define name="MODE_AUTO2" value="AP_MODE_FORWARD"/-->
     <define name="FAILSAFE_FIXED_THROTTLE" value="0.4"/>
   </section>
 

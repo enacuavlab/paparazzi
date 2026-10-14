@@ -95,6 +95,8 @@ struct quadplane_eff_sched_var_t {
 
 extern struct quadplane_eff_sched_var_t quadplane_eff_sched_v;
 extern struct quadplane_eff_sched_param_t quadplane_eff_sched_p;
+extern bool  quadplane_eff_disable_pusher; //Disable pusher when not in flight (autonomous take-off and landing behaves as a pure quad)     
+
 
 void eff_scheduling_quadplane_init(void);
 void eff_scheduling_quadplane_periodic(void);

@@ -47,126 +47,126 @@
 #endif
 
 // Airframe file parameter checks
-#ifndef QUADPLANE_EFF_IXX
-#error "QUADPLANE_EFF_IXX [float] not defined in airframe file"
+#ifndef VEHICLE_IXX
+#error "VEHICLE_IXX [float] not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_IYY
-#error "QUADPLANE_EFF_IYY [float] not defined in airframe file"
+#ifndef VEHICLE_IYY
+#error "VEHICLE_IYY [float] not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_IZZ
-#error "QUADPLANE_EFF_IZZ [float] not defined in airframe file"
+#ifndef VEHICLE_IZZ
+#error "VEHICLE_IZZ [float] not defined in airframe file"
 #endif
-#ifndef GUIDANCE_INDI_MASS
-#error "GUIDANCE_INDI_MASS [float] not defined in airframe file"
+#ifndef VEHICLE_MASS
+#error "VEHICLE_MASS [float] not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_RX
-#error "QUADPLANE_EFF_RX [4x1 float] not defined in airframe file"
+#ifndef VEHICLE_RX
+#error "VEHICLE_RX [4x1 float] not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_RY
-#error "QUADPLANE_EFF_RY [4x1 float] not defined in airframe file"
+#ifndef VEHICLE_RY
+#error "VEHICLE_RY [4x1 float] not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_RZ
-#error "QUADPLANE_EFF_RZ [4x1 float] not defined in airframe file"
+#ifndef VEHICLE_RZ
+#error "VEHICLE_RZ [4x1 float] not defined in airframe file"
 #endif
 /* T(u) = a + b*u + c*u² for the vertical motors. */
-#ifndef QUADPLANE_EFF_ROTOR_K_T_PPRZ
-#error "QUADPLANE_EFF_K_T_PPRZ [2x1 float] not defined in airframe file — {b [N/pprz], c [N/pprz^2]}"
+#ifndef VEHICLE_ROTOR_K_T_PPRZ
+#error "VEHICLE_K_T_PPRZ [2x1 float] not defined in airframe file — {b [N/pprz], c [N/pprz^2]}"
 #endif
-#ifndef QUADPLANE_EFF_KAPPA
-#error "QUADPLANE_EFF_KAPPA [float] not defined in airframe file"
+#ifndef VEHICLE_KAPPA
+#error "VEHICLE_KAPPA [float] not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_SPIN_DIR
-#error "QUADPLANE_EFF_SPIN_DIR [4x1 float] (+/-1) not defined in airframe file"
+#ifndef VEHICLE_SPIN_DIR
+#error "VEHICLE_SPIN_DIR [4x1 float] (+/-1) not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_K_LIFT
-#error "QUADPLANE_EFF_K_LIFT [float] not defined in airframe file"
+#ifndef VEHICLE_K_LIFT
+#error "VEHICLE_K_LIFT [float] not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_V_WING
-#define QUADPLANE_EFF_V_WING 10.0f
+#ifndef VEHICLE_V_WING
+#define VEHICLE_V_WING 10.0f
 #endif
 /* Pusher */
-#ifndef QUADPLANE_EFF_PUSHER_K_T_PPRZ
-#error "QUADPLANE_EFF_PUSHER_K_T_PPRZ not defined"
+#ifndef VEHICLE_PUSHER_K_T_PPRZ
+#error "VEHICLE_PUSHER_K_T_PPRZ not defined"
 #endif
-#ifndef QUADPLANE_EFF_PUSHER_RY
-#error "QUADPLANE_EFF_PUSHER_RY float not defined"
+#ifndef VEHICLE_PUSHER_RY
+#error "VEHICLE_PUSHER_RY float not defined"
 #endif
-#ifndef QUADPLANE_EFF_PUSHER_RZ
-#error "QUADPLANE_EFF_PUSHER_RZ float not defined"
+#ifndef VEHICLE_PUSHER_RZ
+#error "VEHICLE_PUSHER_RZ float not defined"
 #endif
-#ifndef QUADPLANE_EFF_PUSHER_SPIN_DIR
-#error "QUADPLANE_EFF_PUSHER_SPIN_DIR float (+/-1) not defined in airframe file"
+#ifndef VEHICLE_PUSHER_SPIN_DIR
+#error "VEHICLE_PUSHER_SPIN_DIR float (+/-1) not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_K_ELEVON_DEFLECT
-#error "QUADPLANE_EFF_K_ELEVON_DEFLECT [float] not defined in airframe file — [rad/pprz]"
+#ifndef VEHICLE_K_ELEVON_DEFLECT
+#error "VEHICLE_K_ELEVON_DEFLECT [float] not defined in airframe file — [rad/pprz]"
 #endif
-#ifndef QUADPLANE_EFF_K_ELEVON_ROLL
-#error "QUADPLANE_EFF_K_ELEVON_ROLL [float] not defined in airframe file"
+#ifndef VEHICLE_K_ELEVON_ROLL
+#error "VEHICLE_K_ELEVON_ROLL [float] not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_K_ELEVON_PITCH
-#error "QUADPLANE_EFF_K_ELEVON_PITCH [float] not defined in airframe file"
+#ifndef VEHICLE_K_ELEVON_PITCH
+#error "VEHICLE_K_ELEVON_PITCH [float] not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_K_ELEVON_PROPWASH
-#define QUADPLANE_EFF_K_ELEVON_PROPWASH 0.0f
+#ifndef VEHICLE_K_ELEVON_PROPWASH
+#define VEHICLE_K_ELEVON_PROPWASH 0.0f
 #endif
-#ifndef QUADPLANE_EFF_K_ELEVON_V_FULL
-#define QUADPLANE_EFF_K_ELEVON_V_FULL 0.0f
+#ifndef VEHICLE_K_ELEVON_V_FULL
+#define VEHICLE_K_ELEVON_V_FULL 0.0f
 #endif
 // Elevon command slew limit [pprz/s]
-#ifndef QUADPLANE_EFF_ELEVON_RATE
-#define QUADPLANE_EFF_ELEVON_RATE 9600.0f
+#ifndef VEHICLE_ELEVON_RATE
+#define VEHICLE_ELEVON_RATE 9600.0f
 #endif
 /* Differential-drag yaw: dMz/d(delta_cmd) = k * V^2 * delta. */
-#ifndef QUADPLANE_EFF_K_ELEVON_DIFF_DRAG_YAW
-#define QUADPLANE_EFF_K_ELEVON_DIFF_DRAG_YAW 0.0f
+#ifndef VEHICLE_K_ELEVON_DIFF_DRAG_YAW
+#define VEHICLE_K_ELEVON_DIFF_DRAG_YAW 0.0f
 #endif
 // Motor Hover Value [pprz]
-#ifndef QUADPLANE_EFF_MOTOR_HOVER
-#error "QUADPLANE_EFF_MOTOR_HOVER [float] not defined in airframe file"
+#ifndef VEHICLE_MOTOR_HOVER
+#error "VEHICLE_MOTOR_HOVER [float] not defined in airframe file"
 #endif
-#ifndef QUADPLANE_EFF_MOTOR_IDLE
-#error "QUADPLANE_EFF_MOTOR_IDLE [float] not defined in airframe file"
+#ifndef VEHICLE_MOTOR_IDLE
+#error "VEHICLE_MOTOR_IDLE [float] not defined in airframe file"
 #endif
 
 
-
+bool  quadplane_eff_disable_pusher = false; 
 
 
 struct quadplane_eff_sched_param_t quadplane_eff_sched_p = {
-  .Ixx = QUADPLANE_EFF_IXX,
-  .Iyy = QUADPLANE_EFF_IYY,
-  .Izz = QUADPLANE_EFF_IZZ,
-  .mass = GUIDANCE_INDI_MASS,
+  .Ixx = VEHICLE_IXX,
+  .Iyy = VEHICLE_IYY,
+  .Izz = VEHICLE_IZZ,
+  .mass = VEHICLE_MASS,
 
-  .r_x = QUADPLANE_EFF_RX,
-  .r_y = QUADPLANE_EFF_RY,
-  .r_z = QUADPLANE_EFF_RZ,
-  .spin_dir = QUADPLANE_EFF_SPIN_DIR,
+  .r_x = VEHICLE_RX,
+  .r_y = VEHICLE_RY,
+  .r_z = VEHICLE_RZ,
+  .spin_dir = VEHICLE_SPIN_DIR,
 
-  .rotor_k_t_pprz = QUADPLANE_EFF_ROTOR_K_T_PPRZ,
-  .kappa = QUADPLANE_EFF_KAPPA,
+  .rotor_k_t_pprz = VEHICLE_ROTOR_K_T_PPRZ,
+  .kappa = VEHICLE_KAPPA,
 
-  .pusher_k_t_pprz = QUADPLANE_EFF_PUSHER_K_T_PPRZ,
-  .pusher_y = QUADPLANE_EFF_PUSHER_RY,
-  .pusher_z = QUADPLANE_EFF_PUSHER_RZ,
-  .pusher_spin_dir = QUADPLANE_EFF_PUSHER_SPIN_DIR,
+  .pusher_k_t_pprz = VEHICLE_PUSHER_K_T_PPRZ,
+  .pusher_y = VEHICLE_PUSHER_RY,
+  .pusher_z = VEHICLE_PUSHER_RZ,
+  .pusher_spin_dir = VEHICLE_PUSHER_SPIN_DIR,
 
-  .elevon_deflect = QUADPLANE_EFF_K_ELEVON_DEFLECT,
-  .elevon_roll = QUADPLANE_EFF_K_ELEVON_ROLL,
-  .elevon_pitch = QUADPLANE_EFF_K_ELEVON_PITCH,
-  .elevon_propwash = QUADPLANE_EFF_K_ELEVON_PROPWASH,
-  .elevon_diff_drag_yaw = QUADPLANE_EFF_K_ELEVON_DIFF_DRAG_YAW,
-  .elevon_v_full = QUADPLANE_EFF_K_ELEVON_V_FULL,
+  .elevon_deflect = VEHICLE_K_ELEVON_DEFLECT,
+  .elevon_roll = VEHICLE_K_ELEVON_ROLL,
+  .elevon_pitch = VEHICLE_K_ELEVON_PITCH,
+  .elevon_propwash = VEHICLE_K_ELEVON_PROPWASH,
+  .elevon_diff_drag_yaw = VEHICLE_K_ELEVON_DIFF_DRAG_YAW,
+  .elevon_v_full = VEHICLE_K_ELEVON_V_FULL,
 
-  .k_lift = QUADPLANE_EFF_K_LIFT,
-  .v_wing = QUADPLANE_EFF_V_WING,
+  .k_lift = VEHICLE_K_LIFT,
+  .v_wing = VEHICLE_V_WING,
 };
 
 static float quadplane_eff_liftd;
 float const grav = 9.81f;  // Gravitational Acceleration [m/s^2]
-float quadplane_eff_elevon_rate = QUADPLANE_EFF_ELEVON_RATE;                 // Elevon command slew limit [pprz/s]
+float quadplane_eff_elevon_rate = VEHICLE_ELEVON_RATE;                 // Elevon command slew limit [pprz/s]
 float quadplane_eff_periodic_freq = EFF_SCHEDULING_QUADPLANE_PERIODIC_FREQ;   // Module Frequency [Hz]
-
+struct quadplane_eff_sched_var_t quadplane_eff_sched_v;
 
 static inline void quadplane_update_cmd_cache(void);
 static inline void quadplane_update_airspeed_cache(void);
@@ -189,7 +189,7 @@ void eff_scheduling_quadplane_init(void)
   /*Initialize commands for 4 hoovering motors */
   for (int i = 0; i < 4; i++)
   {
-    quadplane_eff_sched_v.rotor_cmd[i] = QUADPLANE_EFF_MOTOR_HOVER;
+    quadplane_eff_sched_v.rotor_cmd[i] = VEHICLE_MOTOR_HOVER;
     quadplane_eff_sched_v.rotor_cmd_T[i] = quadplane_eff_sched_p.mass*grav/4.f;
     quadplane_eff_sched_v.rotor_dT_dpprz[i] = quadplane_eff_sched_p.rotor_k_t_pprz[0];
   }
@@ -296,7 +296,7 @@ static inline void quadplane_update_motor_effectiveness(void)
   for (int i = 0; i < 4; i++) {
     const float x  = quadplane_eff_sched_p.r_x[i];
     const float y  = quadplane_eff_sched_p.r_y[i];
-    const float z  = quadplane_eff_sched_p.r_z[i];
+    //const float z  = quadplane_eff_sched_p.r_z[i];
     const float spin = quadplane_eff_sched_p.spin_dir[i];
     const float kappa = quadplane_eff_sched_p.kappa;
     const float rotor_dT = quadplane_eff_sched_v.rotor_dT_dpprz[i];
@@ -416,14 +416,23 @@ void stabilization_indi_set_wls_settings(void)
 #endif
 
   for (uint8_t i = 0; i < INDI_NUM_ACT; i++) {
-    wls_stab_p.u_min[i] = act_is_servo[i] ? -MAX_PPRZ : QUADPLANE_EFF_MOTOR_IDLE;
+    wls_stab_p.u_min[i] = act_is_servo[i] ? -MAX_PPRZ : VEHICLE_MOTOR_IDLE;
     wls_stab_p.u_max[i]  =  MAX_PPRZ;
     wls_stab_p.u_pref[i] =  act_pref[i];
   }
+
+  #ifdef QUADPLANE_HOVER_TEST
+  for (uint8_t i = QUADPLANE_ACT_MOTOR_FR;
+       i <= QUADPLANE_ACT_MOTOR_FL; i++) {
+    wls_stab_p.u_min[i]  = VEHICLE_MOTOR_IDLE;
+    wls_stab_p.u_pref[i] = VEHICLE_MOTOR_HOVER;
+  }
+#endif
+
 /* Same same, need to define correctly act_is_servo
   // 4 hoovering motors 
   for (uint8_t i = 0; i < 4; i++) {
-    wls_stab_p.u_min[i] = QUADPLANE_EFF_MOTOR_IDLE;
+    wls_stab_p.u_min[i] = VEHICLE_MOTOR_IDLE;
     wls_stab_p.u_max[i] = MAX_PPRZ;
     wls_stab_p.u_pref[i] = act_pref[i];
   }
@@ -438,7 +447,7 @@ void stabilization_indi_set_wls_settings(void)
   wls_stab_p.u_pref[QUADPLANE_ACT_ELEVON_L] = act_pref[QUADPLANE_ACT_ELEVON_L];
 
   // Pusher : motor 
-  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = QUADPLANE_EFF_MOTOR_IDLE;
+  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = VEHICLE_MOTOR_IDLE;
   wls_stab_p.u_max[QUADPLANE_ACT_PUSHER] = MAX_PPRZ;
   wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = act_pref[QUADPLANE_ACT_PUSHER];
 */
@@ -460,4 +469,19 @@ void stabilization_indi_set_wls_settings(void)
     wls_stab_p.u_max[e]  = Min(u + step, lim);
     wls_stab_p.u_pref[e] = open * actuator_state_filt_vect[e];
   }
+
+  #ifdef QUADPLANE_HOVER_TEST
+  const uint8_t locked_actuators[] = {
+    QUADPLANE_ACT_ELEVON_R,
+    QUADPLANE_ACT_ELEVON_L,
+    QUADPLANE_ACT_PUSHER
+  };
+
+  for (uint8_t i = 0; i < 3; i++) {
+    const uint8_t a = locked_actuators[i];
+    wls_stab_p.u_min[a] = 0.f;
+    wls_stab_p.u_max[a] = 0.f;
+    wls_stab_p.u_pref[a] = 0.f;
+  }
+#endif
 }

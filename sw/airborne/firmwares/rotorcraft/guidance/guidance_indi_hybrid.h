@@ -71,6 +71,24 @@ enum GuidanceIndiHybrid_VMode {
 
 extern struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accep_sp, float heading_sp);
 extern struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight, struct HorizontalGuidance *gh, struct VerticalGuidance *gv, enum GuidanceIndiHybrid_HMode h_mode, enum GuidanceIndiHybrid_VMode v_mode);
+
+/** Current heading in the ZXY euler convention the guidance commands in [rad].
+ * Differs from stateGetNedToBodyEulers_f()->psi (ZYX) as soon as the vehicle is
+ * banked or pitched, so capturing a heading with the ZYX value steps the setpoint.
+ */
+extern float guidance_indi_hybrid_get_heading(void);
+/** Command the heading from an external module (e.g. a trajectory generator) [rad].
+ * Overrides the nav/free heading; falls back if not refreshed within 0.5s.
+ */
+extern void guidance_indi_hybrid_set_heading_sp(float heading);
+/** Heading-rate feedforward accompanying the external heading setpoint [rad/s].
+ * Only used while an external heading setpoint is active, where it replaces
+ * the coordinated-turn rate estimate in the feedforward body rates. Cleared
+ * on release/timeout of the external heading setpoint.
+ */
+extern void guidance_indi_hybrid_set_heading_rate_ff(float rate);
+/** Release an external heading setpoint and hand the heading back to the guidance. */
+extern void guidance_indi_hybrid_release_heading_sp(void);
 extern void guidance_set_min_max_airspeed(float min_airspeed, float max_airspeed);
 extern void guidance_set_max_bank_angle(float max_bank);
 extern void guidance_set_max_climb_speed(float max_climb_speed_quad, float max_climb_speed_fwd);
@@ -105,6 +123,7 @@ extern float guidance_indi_thrust_z_eff;
 
 extern float guidance_indi_specific_force_gain;
 extern bool take_heading_control;
+extern float guidance_indi_hybrid_heading_sp;
 extern float guidance_indi_max_bank;
 extern float guidance_indi_min_pitch;
 extern bool force_forward;       ///< forward flight for hybrid nav

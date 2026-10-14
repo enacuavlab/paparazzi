@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Gautier Hattenberger <gautier.hattenberger@enac.fr>
+ * Copyright (C) 2025 Gautier Hattenberger <gautier.hattenberger@enac.fr> Jean-Baptiste Forestier <jean-baptiste.forestier@enac.fr
  *
  * This file is part of paparazzi
  *
@@ -24,6 +24,7 @@
  */
 
 #include "modules/ctrl/control_mixing_quadplane.h"
+#include "modules/ctrl/eff_scheduling_quadplane.h"
 #include "modules/radio_control/radio_control.h"
 #include "generated/modules.h"
 #include "modules/core/commands.h"
@@ -33,207 +34,100 @@
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/guidance.h"
 #include "firmwares/rotorcraft/navigation.h"
-#include "firmwares/rotorcraft/guidance/guidance_plane.h"
+#include "firmwares/rotorcraft/guidance/guidance_indi_hybrid.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude_plane_pid.h"
+#include "modules/ctrl/circ_trajectory.h"
+#include "firmwares/rotorcraft/autopilot_utils.h"
 
-// Motor idle position
-#ifndef CMQ_MOTOR_IDLE
-#define CMQ_MOTOR_IDLE 0
-#endif
+float   quadplane_heading_sp = 0.f;           // heading setpoint [rad, NED]
 
-// Time for forward transition
-#ifndef CMQ_TRANSITION_TIME
-#define CMQ_TRANSITION_TIME 4.f
-#endif
-
-// Transition airspeed, set a negative value to disable
-#ifndef CMQ_TRANSITION_AIRSPEED
-#define CMQ_TRANSITION_AIRSPEED 10.f
-#endif
-
-// Transition ratio cutoff (activate ailevons and reduce quad motors)
-#ifndef CMQ_TRANSITION_CUTOFF
-#define CMQ_TRANSITION_CUTOFF 0.8f
-#endif
-
-// Pitch angle during transition (in radians)
-#ifndef CMQ_TRANSITION_PITCH
-#define CMQ_TRANSITION_PITCH 0.0f
-#endif
-
-#define TRANSITION_TO_HOVER false
-#define TRANSITION_TO_FORWARD true
-
-static float transition_ratio;
-static const float transition_increment = 1.f / (CMQ_TRANSITION_TIME * PERIODIC_FREQUENCY);
-
-static void transition_run(bool to_forward) {
-  if (to_forward && transition_ratio < 1.f) {
-    if (stateIsAirspeedValid()) {
-      if ((stateGetAirspeed_f() < CMQ_TRANSITION_AIRSPEED && transition_ratio + transition_increment < CMQ_TRANSITION_CUTOFF)
-          || stateGetAirspeed_f() >= CMQ_TRANSITION_AIRSPEED) {
-        transition_ratio += transition_increment;
-      }
-    }
-  } else if (!to_forward && transition_ratio > 0.f) {
-    transition_ratio -= transition_increment;
-    //transition_ratio = 0.f; // immediately switch back to hover
+/**
+ * Pusher GATE
+ *
+ * Pusher can be controlled only once the autopilot inflight flag is true. 
+ * The autonomous take-off and langing behaves as a pure quad. 
+ */
+static inline void quadplane_pusher_gate(bool in_flight)
+{
+  if (!in_flight && !quadplane_eff_disable_pusher) {
+    actuators_pprz[QUADPLANE_ACT_PUSHER] = 0;
   }
-  Bound(transition_ratio, 0.f, 1.f);
+  quadplane_eff_disable_pusher = !in_flight;
 }
 
-static int32_t command_from_transition(int32_t hover_cmd, int32_t forward_cmd, float start_ratio, float end_ratio) {
-  Bound(start_ratio, 0.f, 1.f);
-  Bound(end_ratio, 0.f, 1.f);
-  float ratio = (transition_ratio - start_ratio) / (end_ratio - start_ratio);
-  Bound(ratio, 0.f, 1.f);
-  return (int32_t) (hover_cmd + ratio * (forward_cmd - hover_cmd));
-}
 
 void control_mixing_quadplane_init(void)
 {
-  transition_ratio = 0.f; // 0. for hover to 1. for forward flight
+
 }
 
-void control_mixing_quadplane_manual(void)
+/* Attitude direct : Quad only mode in manual for quadplane */
+void control_mixing_quadplane_attitude_direct_enter(void)
 {
-  transition_run(TRANSITION_TO_FORWARD);
-  commands[COMMAND_ROLL] = radio_control_get(RADIO_ROLL);
-  commands[COMMAND_PITCH] = radio_control_get(RADIO_PITCH);
-  commands[COMMAND_YAW] = 0;
-  commands[COMMAND_MOTOR_PUSHER] = radio_control_get(RADIO_THROTTLE);
-  commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
-  commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
-  commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
-  commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
-  commands[COMMAND_THRUST] = commands[COMMAND_MOTOR_PUSHER];
-  autopilot.throttle = commands[COMMAND_THRUST];
+  quadplane_eff_disable_pusher = true;
+  guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
+  guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
+  stabilization_mode_changed(STABILIZATION_MODE_NONE, STABILIZATION_ATT_SUBMODE_HEADING);
+  stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
+  actuators_pprz[QUADPLANE_ACT_PUSHER] = 0.f;
 }
 
 void control_mixing_quadplane_attitude_direct(void)
 {
-  transition_run(TRANSITION_TO_HOVER);
-  //commands[COMMAND_ROLL] = 0;
-  //commands[COMMAND_PITCH] = 0;
-  commands[COMMAND_YAW] = 0; // TODO check if in flight ?
-  commands[COMMAND_MOTOR_PUSHER] = MIN_PPRZ;
-  struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
+  struct ThrustSetpoint v_sp = guidance_v_run(autopilot_in_flight());
+  float thrust_vect[3] = {0.f, 0.f, th_sp_to_thrust_f(&v_sp, 0, THRUST_AXIS_Z)};
+  struct ThrustSetpoint th_sp = th_sp_from_thrust_vect_f(thrust_vect);
   stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
-  if (autopilot_get_motors_on()) {
-    commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
-    commands[COMMAND_MOTOR_BACK_RIGHT]  = actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT];
-    commands[COMMAND_MOTOR_BACK_LEFT]   = actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT];
-    commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
-    commands[COMMAND_THRUST]            = stabilization.cmd[COMMAND_THRUST];
-    commands[COMMAND_ROLL]              = command_from_transition(0, stabilization.cmd[COMMAND_ROLL], 0.f, 0.6f);
-    commands[COMMAND_PITCH]             = command_from_transition(0, stabilization.cmd[COMMAND_PITCH], 0.f, 0.6f);
-  } else {
-    commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
-    commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
-    commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
-    commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
-    commands[COMMAND_THRUST]            = 0;
-    commands[COMMAND_ROLL]              = 0;
-    commands[COMMAND_PITCH]             = 0;
-  }
+
+  SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
   autopilot.throttle = commands[COMMAND_THRUST];
 }
 
-void control_mixing_quadplane_attitude_direct_enter(void)
+static void quadplane_run_heading(bool in_flight)
 {
-  guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
-  guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
-  stabilization_mode_changed(STABILIZATION_MODE_NONE, STABILIZATION_ATT_SUBMODE_HEADING); // force mode change to always reset heading
-  stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
-}
+  static bool circ_had_heading = false;
+  const bool circ_has_heading = (circ_traj.status != CIRC_TRAJ_STOP);
 
-void stabilization_indi_set_wls_settings(void)
-{
-   // Calculate the min and max increments
-   wls_stab_p.u_min[CMQ_ACT_MOTOR_FRONT_RIGHT] = CMQ_MOTOR_IDLE;
-   wls_stab_p.u_max[CMQ_ACT_MOTOR_FRONT_RIGHT] = MAX_PPRZ;
-   wls_stab_p.u_pref[CMQ_ACT_MOTOR_FRONT_RIGHT] = act_pref[CMQ_ACT_MOTOR_FRONT_RIGHT];
-
-   wls_stab_p.u_min[CMQ_ACT_MOTOR_BACK_RIGHT] = CMQ_MOTOR_IDLE;
-   wls_stab_p.u_max[CMQ_ACT_MOTOR_BACK_RIGHT] = MAX_PPRZ;
-   wls_stab_p.u_pref[CMQ_ACT_MOTOR_BACK_RIGHT] = act_pref[CMQ_ACT_MOTOR_BACK_RIGHT];
-
-   wls_stab_p.u_min[CMQ_ACT_MOTOR_FRONT_LEFT] = CMQ_MOTOR_IDLE;
-   wls_stab_p.u_max[CMQ_ACT_MOTOR_FRONT_LEFT] = MAX_PPRZ;
-   wls_stab_p.u_pref[CMQ_ACT_MOTOR_FRONT_LEFT] = act_pref[CMQ_ACT_MOTOR_FRONT_LEFT];
-
-   wls_stab_p.u_min[CMQ_ACT_MOTOR_BACK_LEFT] = CMQ_MOTOR_IDLE;
-   wls_stab_p.u_max[CMQ_ACT_MOTOR_BACK_LEFT] = MAX_PPRZ;
-   wls_stab_p.u_pref[CMQ_ACT_MOTOR_BACK_LEFT] = act_pref[CMQ_ACT_MOTOR_BACK_LEFT];
-}
-
-void control_mixing_quadplane_attitude_plane_enter(void)
-{
-  // don't use forward submode to avoid pitch offset on RC input
-  guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
-  guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
-  stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
-  stabilization_attitude_plane_pid_enter();
-}
-
-void control_mixing_quadplane_attitude_plane(void)
-{
-  transition_run(TRANSITION_TO_FORWARD);
-
-  if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
-    struct ThrustSetpoint hover_th_sp = guidance_v_run(autopilot_in_flight());
-    stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &hover_th_sp, stabilization.cmd);
-  }
-  struct ThrustSetpoint th_sp = th_sp_from_thrust_i(radio_control_get(RADIO_THROTTLE), THRUST_AXIS_X);
-  struct FloatEulers rc_sp = {
-    .phi = STABILIZATION_ATTITUDE_SP_MAX_PHI * radio_control_get(RADIO_ROLL) / MAX_PPRZ,
-    .theta = STABILIZATION_ATTITUDE_SP_MAX_THETA * radio_control_get(RADIO_PITCH) / MAX_PPRZ,
-    .psi = 0.f
-  };
-  struct StabilizationSetpoint stab_sp = stab_sp_from_eulers_f(&rc_sp);
-  stabilization_attitude_plane_pid_run(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
-
-  commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
-  commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
-  commands[COMMAND_YAW] = 0;
-  if (autopilot_get_motors_on()) {
-    if (transition_ratio < 0.90f) {
-      commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, MAX_PPRZ, 0.f, 1.f); // blend from idle, unless thrust is lower
-    } else {
-      commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
+  if (!circ_has_heading) {
+    if (!in_flight || circ_had_heading) {
+      quadplane_heading_sp = guidance_indi_hybrid_get_heading();
     }
-  } else {
-	commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
+    guidance_indi_hybrid_set_heading_sp(quadplane_heading_sp);
+    guidance_indi_hybrid_set_heading_rate_ff(0.f);
   }
-  commands[COMMAND_THRUST] = commands[COMMAND_MOTOR_PUSHER];
-  if (autopilot_in_flight()) {
-    if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
-      // hover stabilization
-      commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
-      commands[COMMAND_MOTOR_BACK_RIGHT]  = actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT];
-      commands[COMMAND_MOTOR_BACK_LEFT]   = actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT];
-      commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
-    } else {
-      // blend to idle and stop
-      if (transition_ratio < 0.99f) {
-        commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
-        commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
-        commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
-        commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
-      } else {
-        commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
-        commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
-        commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
-        commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
-      }
-    }
-  } else {
-    commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
-    commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
-    commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
-    commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
+  circ_had_heading = circ_has_heading;
+
+  guidance_h.sp.heading = guidance_indi_hybrid_heading_sp;  // carrot, display only
+}
+
+void control_mixing_quadplane_guidance_enter(void)
+{
+  quadplane_pusher_gate(autopilot_in_flight());
+  stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
+  quadplane_heading_sp = guidance_indi_hybrid_get_heading();  // hold the heading we enter with
+}
+
+void control_mixing_quadplane_guidance(void)
+{
+  bool in_flight = autopilot_in_flight();
+  quadplane_pusher_gate(in_flight);
+
+  if (!in_flight) {
+    guidance_h_hover_enter();
   }
+
+  quadplane_run_heading(in_flight);
+
+  struct StabilizationSetpoint stab_sp = guidance_indi_run_mode(
+      in_flight, &guidance_h, &guidance_v,
+      GUIDANCE_INDI_HYBRID_H_POS, GUIDANCE_INDI_HYBRID_V_POS);
+
+  // Retrieve the vertical thrust setpoint computed inside run_mode
+  struct ThrustSetpoint thrust_sp = guidance_v_run_pos(in_flight, &guidance_v);
+
+  stabilization_run(in_flight, &stab_sp, &thrust_sp, stabilization.cmd);
+
+  SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
   autopilot.throttle = commands[COMMAND_THRUST];
 }
 
@@ -244,108 +138,48 @@ void control_mixing_quadplane_nav_enter(void)
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
 }
 
-void control_mixing_quadplane_nav_run(void)
+void control_mixing_quadplane_nav(void)
 {
-  if (nav.horizontal_mode == NAV_HORIZONTAL_MODE_ROUTE ||
-      nav.horizontal_mode == NAV_HORIZONTAL_MODE_CIRCLE) {
-    transition_run(TRANSITION_TO_FORWARD);
+  bool in_flight = autopilot_in_flight();
+  quadplane_pusher_gate(in_flight);
 
-    struct ThrustSetpoint th_sp = guidance_plane_thrust_from_nav(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight());
-    if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
-      guidance_plane.pitch_cmd = 0.f;
-    }
-    struct StabilizationSetpoint stab_sp = guidance_plane_attitude_from_nav(autopilot_in_flight());
-    if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
-      stabilization_attitude_plane_pid_run(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
-      struct ThrustSetpoint hover_th_sp = guidance_v_run(autopilot_in_flight());
-      struct FloatEulers eulers_sp = { .phi = 0.f , .theta = CMQ_TRANSITION_PITCH, .psi = guidance_plane.course_setpoint };
-      struct StabilizationSetpoint hover_stab_sp = stab_sp_from_eulers_f(&eulers_sp);
-      stabilization_run(autopilot_in_flight(), &hover_stab_sp, &hover_th_sp, stabilization.cmd); // will overwrite COMMAND_THRUST
-    } else {
-      stabilization_attitude_plane_pid_run(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
-    }
-    nav.heading = stateGetNedToBodyEulers_f()->psi; // overwrite nav heading to avoid problems when transition to hover
+  /*if (!in_flight) {
+    guidance_h_nav_enter();
+  }*/
 
-    commands[COMMAND_ROLL] = stabilization.cmd[COMMAND_ROLL];
-    commands[COMMAND_PITCH] = stabilization.cmd[COMMAND_PITCH];
-    commands[COMMAND_YAW] = 0;
-    if (autopilot_get_motors_on()) {
-      if (transition_ratio < 0.90f) {
-        commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, MAX_PPRZ, 0.f, 1.f); // blend from idle, unless thrust is lower
-      } else {
-        commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
-      }
-      if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
-        // hover stabilization
-        commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
-        commands[COMMAND_MOTOR_BACK_RIGHT]  = actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT];
-        commands[COMMAND_MOTOR_BACK_LEFT]   = actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT];
-        commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
-      } else {
-        // blend to idle and stop
-        if (transition_ratio < 0.99f) {
-          commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
-          commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
-          commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
-          commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0, CMQ_TRANSITION_CUTOFF, 1.f);
-        } else {
-          commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
-          commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
-          commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
-          commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
-        }
-      }
-      commands[COMMAND_THRUST] = commands[COMMAND_MOTOR_PUSHER];
-    } else {
-      commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
-      commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
-      commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
-      commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
-      commands[COMMAND_MOTOR_PUSHER]      = MIN_PPRZ;
-      commands[COMMAND_THRUST]            = 0;
-    }
-  } else {
-    // all other nav modes are in rotorcraft flight mode
-    transition_run(TRANSITION_TO_HOVER);
-    //commands[COMMAND_ROLL] = 0;
-    //commands[COMMAND_PITCH] = 0;
-    commands[COMMAND_YAW] = 0;
-    
-    struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
-    struct StabilizationSetpoint stab_sp = guidance_h_run(autopilot_in_flight());
-    stabilization_run(autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
+  quadplane_run_heading(in_flight);
 
-    if (autopilot_get_motors_on()) {
-      if(stateGetAirspeed_f() >= CMQ_TRANSITION_AIRSPEED && stateIsAirspeedValid()) {
-        commands[COMMAND_MOTOR_FRONT_RIGHT] = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT], 0, 0.f, 1.f);
-        commands[COMMAND_MOTOR_BACK_RIGHT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT], 0, 0.f, 1.f);
-        commands[COMMAND_MOTOR_BACK_LEFT]   = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT], 0, 0.f, 1.f);
-        commands[COMMAND_MOTOR_FRONT_LEFT]  = command_from_transition(actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT], 0, 0.f, 1.f);
-        commands[COMMAND_MOTOR_PUSHER]      = command_from_transition(MIN_PPRZ, stabilization.cmd[COMMAND_THRUST], 0.6f, 1.f);
-        commands[COMMAND_THRUST]            = stabilization.cmd[COMMAND_THRUST];
-        commands[COMMAND_ROLL]              = command_from_transition(0, stabilization.cmd[COMMAND_ROLL], 0.f, 0.6f);
-        commands[COMMAND_PITCH]             = command_from_transition(0, stabilization.cmd[COMMAND_PITCH], 0.f, 0.6f);
-      } else {
-        commands[COMMAND_MOTOR_FRONT_RIGHT] = actuators_pprz[CMQ_ACT_MOTOR_FRONT_RIGHT];
-        commands[COMMAND_MOTOR_BACK_RIGHT]  = actuators_pprz[CMQ_ACT_MOTOR_BACK_RIGHT];
-        commands[COMMAND_MOTOR_BACK_LEFT]   = actuators_pprz[CMQ_ACT_MOTOR_BACK_LEFT];
-        commands[COMMAND_MOTOR_FRONT_LEFT]  = actuators_pprz[CMQ_ACT_MOTOR_FRONT_LEFT];
-        commands[COMMAND_MOTOR_PUSHER]      = MIN_PPRZ;
-        commands[COMMAND_THRUST]            = stabilization.cmd[COMMAND_THRUST];
-        commands[COMMAND_ROLL]              = 0;
-        commands[COMMAND_PITCH]             = 0;
-      }
-    } else {
-      commands[COMMAND_MOTOR_FRONT_RIGHT] = MIN_PPRZ;
-      commands[COMMAND_MOTOR_BACK_RIGHT]  = MIN_PPRZ;
-      commands[COMMAND_MOTOR_BACK_LEFT]   = MIN_PPRZ;
-      commands[COMMAND_MOTOR_FRONT_LEFT]  = MIN_PPRZ;
-      commands[COMMAND_MOTOR_PUSHER]      = MIN_PPRZ;
-      commands[COMMAND_THRUST]            = 0;
-      commands[COMMAND_ROLL]              = 0;
-      commands[COMMAND_PITCH]             = 0;
-    }
-  }
+  struct StabilizationSetpoint stab_sp = guidance_indi_run_mode(
+      in_flight, &guidance_h, &guidance_v,
+      GUIDANCE_INDI_HYBRID_H_POS, GUIDANCE_INDI_HYBRID_V_POS);
+
+  // Vertical thrust from the flight-plan vertical mode (climb / hover / descend)
+  struct ThrustSetpoint thrust_sp = guidance_v_run(in_flight);
+
+  stabilization_run(in_flight, &stab_sp, &thrust_sp, stabilization.cmd);
+
+  SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
   autopilot.throttle = commands[COMMAND_THRUST];
 }
+
+
+void control_mixing_quadplane_failsafe(void)
+{
+  bool in_flight = autopilot_in_flight();
+  quadplane_pusher_gate(in_flight);
+
+  struct StabilizationSetpoint stab_sp = stabilization_get_failsafe_sp();
+  struct ThrustSetpoint thrust_sp = guidance_v_run(in_flight);
+  stabilization_run(in_flight, &stab_sp, &thrust_sp, stabilization.cmd);
+
+  SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
+  autopilot.throttle = commands[COMMAND_THRUST];
+}
+
+
+
+
+
+
+
 

@@ -179,6 +179,7 @@
       <!--<message name="INS2"              period=".05"/>
       <message name="INS3"              period=".20"/>-->
       <message name="INS_REF"           period="5.1"/>
+      <message name="TUNE_VERT" period="0.1"/>
     </mode>
 
     <mode name="RTCM3" >

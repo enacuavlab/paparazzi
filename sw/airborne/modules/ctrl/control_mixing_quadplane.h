@@ -34,17 +34,16 @@
 
 extern void control_mixing_quadplane_init(void);
 
-/** Direct manual control in plane style flight
- */
-extern void control_mixing_quadplane_manual(void);
-
-/** Stabilization in attitude direct mode
- */
-extern void control_mixing_quadplane_attitude_direct(void);
 extern void control_mixing_quadplane_attitude_direct_enter(void);
-extern void control_mixing_quadplane_attitude_plane(void);
-extern void control_mixing_quadplane_attitude_plane_enter(void);
+extern void control_mixing_quadplane_attitude_direct(void);
+
+extern void control_mixing_quadplane_guidance_enter(void);
+extern void control_mixing_quadplane_guidance(void);
+
 extern void control_mixing_quadplane_nav_enter(void);
-extern void control_mixing_quadplane_nav_run(void);
+extern void control_mixing_quadplane_nav(void);
+
+extern void control_mixing_quadplane_failsafe(void);
+
 
 #endif  // CONTROL_MIXING_QUADPLANE_H
