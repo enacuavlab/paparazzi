@@ -55,6 +55,10 @@ struct quadplane_eff_sched_param_t {
   float r_z[4];                    // Vertical Offset from CG (positive = down)
   float spin_dir[4];               // Rotor spin direction (+1 for CW. -1 for CCW)
 
+  float rotor_rot_x[4];
+  float rotor_rot_y[4];
+  float rotor_rot_z[4];
+
   float rotor_k_t_pprz[2];         // Quadratic thrust coefficients:
                                     //   [0]: b — linear term [N/pprz]
                                     //   [1]: c — quadratic term [N/pprz^2]

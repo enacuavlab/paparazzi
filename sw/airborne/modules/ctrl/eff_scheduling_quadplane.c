@@ -68,6 +68,15 @@
 #ifndef VEHICLE_RZ
 #error "VEHICLE_RZ [4x1 float] not defined in airframe file"
 #endif
+#ifndef VEHICLE_ROTOR_ROT_X
+#error "VEHICLE_ROTOR_ROT_X not defined in airframe file"
+#endif
+#ifndef VEHICLE_ROTOR_ROT_Y
+#error "VEHICLE_ROTOR_ROT_Y not defined in airframe file"
+#endif
+#ifndef VEHICLE_ROTOR_ROT_Z
+#error "VEHICLE_ROTOR_ROT_Z not defined in airframe file"
+#endif
 /* T(u) = a + b*u + c*u² for the vertical motors. */
 #ifndef VEHICLE_ROTOR_K_T_PPRZ
 #error "VEHICLE_K_T_PPRZ [2x1 float] not defined in airframe file — {b [N/pprz], c [N/pprz^2]}"
@@ -142,6 +151,9 @@ struct quadplane_eff_sched_param_t quadplane_eff_sched_p = {
   .r_y = VEHICLE_RY,
   .r_z = VEHICLE_RZ,
   .spin_dir = VEHICLE_SPIN_DIR,
+  .rotor_rot_x = VEHICLE_ROTOR_ROT_X,
+  .rotor_rot_y = VEHICLE_ROTOR_ROT_Y,
+  .rotor_rot_z = VEHICLE_ROTOR_ROT_Z,
 
   .rotor_k_t_pprz = VEHICLE_ROTOR_K_T_PPRZ,
   .kappa = VEHICLE_KAPPA,
@@ -296,18 +308,49 @@ static inline void quadplane_update_motor_effectiveness(void)
   for (int i = 0; i < 4; i++) {
     const float x  = quadplane_eff_sched_p.r_x[i];
     const float y  = quadplane_eff_sched_p.r_y[i];
-    //const float z  = quadplane_eff_sched_p.r_z[i];
+    const float z  = quadplane_eff_sched_p.r_z[i];
     const float spin = quadplane_eff_sched_p.spin_dir[i];
     const float kappa = quadplane_eff_sched_p.kappa;
     const float rotor_dT = quadplane_eff_sched_v.rotor_dT_dpprz[i];
 
 
-    /* Angular-acceleration effectiveness wrt. motor commands */
-    float dMx = -y * rotor_dT;
-    float dMy = x * rotor_dT;
-    float dMz = - spin * kappa * rotor_dT;
+
+    //float dMx = -y * rotor_dT;
+    //float dMy = x * rotor_dT;
+    //float dMz = - spin * kappa * rotor_dT;
     /* Linear-acceleration effectiveness wrt. motor commands*/
-    float dAz = -rotor_dT;
+    //float dAz = -rotor_dT;
+
+    /* Angular-acceleration effectiveness wrt. motor commands 
+    Angle Motor rotation in the body frame X = forward Y = right Z = down  
+    d = Rz(ψ) · Ry(θ) · Rx(φ) · {0, 0, -1} */
+    const float phi   = quadplane_eff_sched_p.rotor_rot_x[i];
+    const float theta = quadplane_eff_sched_p.rotor_rot_y[i];
+    const float psi   = quadplane_eff_sched_p.rotor_rot_z[i];
+
+    const float cphi = cosf(phi);
+    const float sphi = sinf(phi);
+    const float ctheta = cosf(theta);
+    const float stheta = sinf(theta);
+    const float cpsi = cosf(psi);
+    const float spsi = sinf(psi);
+
+    /* d = Rz(psi) * Ry(theta) * Rx(phi) * {0, 0, -1} */
+    const float fx = -cpsi * stheta * cphi - spsi * sphi;
+    const float fy = -spsi * stheta * cphi + cpsi * sphi;
+    const float fz = -ctheta * cphi;
+
+    /* Force and Moment calculations */
+    const float reaction = spin * kappa * rotor_dT;
+
+    const float dMx = (y * fz - z * fy) * rotor_dT + reaction * fx;
+    const float dMy = (z * fx - x * fz) * rotor_dT + reaction * fy;
+    const float dMz = (x * fy - y * fx) * rotor_dT + reaction * fz;
+
+    const float dAx = fx * rotor_dT;
+    const float dAz = fz * rotor_dT;
+
+
 
     g1g2[QUADPLANE_VC_MX][i] = dMx / quadplane_eff_sched_p.Ixx;
     g1g2[QUADPLANE_VC_MY][i] = dMy / quadplane_eff_sched_p.Iyy;
@@ -415,21 +458,13 @@ void stabilization_indi_set_wls_settings(void)
   }
 #endif
 
-  for (uint8_t i = 0; i < INDI_NUM_ACT; i++) {
+ /* for (uint8_t i = 0; i < INDI_NUM_ACT; i++) {
     wls_stab_p.u_min[i] = act_is_servo[i] ? -MAX_PPRZ : VEHICLE_MOTOR_IDLE;
     wls_stab_p.u_max[i]  =  MAX_PPRZ;
     wls_stab_p.u_pref[i] =  act_pref[i];
-  }
+  }*/
 
-  #ifdef QUADPLANE_HOVER_TEST
-  for (uint8_t i = QUADPLANE_ACT_MOTOR_FR;
-       i <= QUADPLANE_ACT_MOTOR_FL; i++) {
-    wls_stab_p.u_min[i]  = VEHICLE_MOTOR_IDLE;
-    wls_stab_p.u_pref[i] = VEHICLE_MOTOR_HOVER;
-  }
-#endif
 
-/* Same same, need to define correctly act_is_servo
   // 4 hoovering motors 
   for (uint8_t i = 0; i < 4; i++) {
     wls_stab_p.u_min[i] = VEHICLE_MOTOR_IDLE;
@@ -447,10 +482,20 @@ void stabilization_indi_set_wls_settings(void)
   wls_stab_p.u_pref[QUADPLANE_ACT_ELEVON_L] = act_pref[QUADPLANE_ACT_ELEVON_L];
 
   // Pusher : motor 
-  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = VEHICLE_MOTOR_IDLE;
+  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = 0.f;
   wls_stab_p.u_max[QUADPLANE_ACT_PUSHER] = MAX_PPRZ;
   wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = act_pref[QUADPLANE_ACT_PUSHER];
-*/
+
+
+
+  //#ifdef QUADPLANE_HOVER_TEST
+  for (uint8_t i = QUADPLANE_ACT_MOTOR_FR;
+       i <= QUADPLANE_ACT_MOTOR_FL; i++) {
+    wls_stab_p.u_min[i]  = VEHICLE_MOTOR_IDLE;
+    wls_stab_p.u_pref[i] = VEHICLE_MOTOR_HOVER;
+  }
+//#endif
+
 
   // Elevons: the travel opens with dynamic pressure, (V / elevon_v_full)^2 of the range.
   // if elevon_v_full = 0 => full travel at any speed

@@ -36,7 +36,6 @@
 #include "firmwares/rotorcraft/navigation.h"
 #include "firmwares/rotorcraft/guidance/guidance_indi_hybrid.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
-#include "modules/ctrl/circ_trajectory.h"
 #include "firmwares/rotorcraft/autopilot_utils.h"
 
 float   quadplane_heading_sp = 0.f;           // heading setpoint [rad, NED]
@@ -83,28 +82,10 @@ void control_mixing_quadplane_attitude_direct(void)
   autopilot.throttle = commands[COMMAND_THRUST];
 }
 
-static void quadplane_run_heading(bool in_flight)
-{
-  static bool circ_had_heading = false;
-  const bool circ_has_heading = (circ_traj.status != CIRC_TRAJ_STOP);
-
-  if (!circ_has_heading) {
-    if (!in_flight || circ_had_heading) {
-      quadplane_heading_sp = guidance_indi_hybrid_get_heading();
-    }
-    guidance_indi_hybrid_set_heading_sp(quadplane_heading_sp);
-    guidance_indi_hybrid_set_heading_rate_ff(0.f);
-  }
-  circ_had_heading = circ_has_heading;
-
-  guidance_h.sp.heading = guidance_indi_hybrid_heading_sp;  // carrot, display only
-}
-
 void control_mixing_quadplane_guidance_enter(void)
 {
   quadplane_pusher_gate(autopilot_in_flight());
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
-  quadplane_heading_sp = guidance_indi_hybrid_get_heading();  // hold the heading we enter with
 }
 
 void control_mixing_quadplane_guidance(void)
@@ -116,14 +97,13 @@ void control_mixing_quadplane_guidance(void)
     guidance_h_hover_enter();
   }
 
-  quadplane_run_heading(in_flight);
-
-  struct StabilizationSetpoint stab_sp = guidance_indi_run_mode(
+  /*struct StabilizationSetpoint stab_sp = guidance_indi_run_mode(
       in_flight, &guidance_h, &guidance_v,
-      GUIDANCE_INDI_HYBRID_H_POS, GUIDANCE_INDI_HYBRID_V_POS);
+      GUIDANCE_INDI_HYBRID_H_POS, GUIDANCE_INDI_HYBRID_V_POS);*/
 
   // Retrieve the vertical thrust setpoint computed inside run_mode
   struct ThrustSetpoint thrust_sp = guidance_v_run_pos(in_flight, &guidance_v);
+  struct StabilizationSetpoint stab_sp = guidance_h_from_nav(in_flight);
 
   stabilization_run(in_flight, &stab_sp, &thrust_sp, stabilization.cmd);
 
@@ -143,18 +123,18 @@ void control_mixing_quadplane_nav(void)
   bool in_flight = autopilot_in_flight();
   quadplane_pusher_gate(in_flight);
 
-  /*if (!in_flight) {
+  if (!in_flight) {
     guidance_h_nav_enter();
-  }*/
+  }
 
-  quadplane_run_heading(in_flight);
-
+  /*
   struct StabilizationSetpoint stab_sp = guidance_indi_run_mode(
       in_flight, &guidance_h, &guidance_v,
-      GUIDANCE_INDI_HYBRID_H_POS, GUIDANCE_INDI_HYBRID_V_POS);
+      GUIDANCE_INDI_HYBRID_H_POS, GUIDANCE_INDI_HYBRID_V_POS);*/
 
   // Vertical thrust from the flight-plan vertical mode (climb / hover / descend)
   struct ThrustSetpoint thrust_sp = guidance_v_run(in_flight);
+  struct StabilizationSetpoint stab_sp = guidance_h_from_nav(in_flight);
 
   stabilization_run(in_flight, &stab_sp, &thrust_sp, stabilization.cmd);
 

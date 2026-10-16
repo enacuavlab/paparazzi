@@ -227,6 +227,7 @@
     <property>fcs/YAW</property>
     <property>fcs/THRUST</property>
     <property>fcs/THRUST_X</property>
+
     <property>fcs/motor_front_right_lag</property>
     <property>fcs/motor_front_left_lag</property>
     <property>fcs/motor_back_right_lag</property>
@@ -235,203 +236,283 @@
     <property>fcs/ailevon_right_lag</property>
     <property>fcs/ailevon_left_lag</property>
 
-    <property value="5.7">fcs/motor_max_thrust</property> <!-- 0.768 kg hovering at 33% throttle with 4 motors -->
-    <!--property value="0.00001">fcs/motor_max_torque</property-->
-    <property value="0.001">fcs/motor_max_torque</property>
+    <!--
+      Modèle commun à l'airframe :
+        T(u) = 1.22e-4 u + 4.08e-8 u² [N]
+        m = u / 9600
 
-    <!-- First the lift forces produced by each propeller -->
+      T(m) = 0.263296234 m + 0.845310401 m² [lbf]
+
+      Couple de réaction :
+        Q = spin × KAPPA × T
+        KAPPA = 1.75e-4 m
+
+      |Q(m)| = 0.0001511707 m + 0.0004853324 m² [ft·lbf]
+    -->
+
+    <!-- Forces des quatre rotors inclinés -->
 
     <force name="motor_front_right" frame="BODY" unit="LBS">
       <function>
-        <product>
-          <property>fcs/motor_front_right_lag</property>
-          <property>fcs/motor_max_thrust</property>
-          <value>0.224808943</value> <!-- N to LBS -->
-        </product>
+        <sum>
+          <product>
+            <property>fcs/motor_front_right_lag</property>
+            <value>0.263296234</value>
+          </product>
+          <product>
+            <property>fcs/motor_front_right_lag</property>
+            <property>fcs/motor_front_right_lag</property>
+            <value>0.845310401</value>
+          </product>
+        </sum>
       </function>
       <location unit="M">
-        <x> -0.187 </x>
-        <y> 0.145 </y>
-        <z> 0. </z>
+        <x>-0.187</x>
+        <y> 0.145</y>
+        <z> 0.000</z>
       </location>
       <direction>
-        <x> 0 </x>
-        <y> 0.34202 </y>
-        <z> -0.939693 </z>
+        <x> 0.000000</x>
+        <y> 0.342020</y>
+        <z>-0.939693</z>
       </direction>
     </force>
+
     <force name="motor_front_left" frame="BODY" unit="LBS">
       <function>
-        <product>
-          <property>fcs/motor_front_left_lag</property>
-          <property>fcs/motor_max_thrust</property>
-          <value>0.224808943</value> <!-- N to LBS -->
-        </product>
+        <sum>
+          <product>
+            <property>fcs/motor_front_left_lag</property>
+            <value>0.263296234</value>
+          </product>
+          <product>
+            <property>fcs/motor_front_left_lag</property>
+            <property>fcs/motor_front_left_lag</property>
+            <value>0.845310401</value>
+          </product>
+        </sum>
       </function>
       <location unit="M">
-        <x> -0.187 </x>
-        <y> -0.145 </y>
-        <z> 0 </z>
+        <x>-0.187</x>
+        <y>-0.145</y>
+        <z> 0.000</z>
       </location>
       <direction>
-        <x> 0 </x>
-        <y> -0.34202 </y>
-        <z> -0.939693 </z>
+        <x> 0.000000</x>
+        <y>-0.342020</y>
+        <z>-0.939693</z>
       </direction>
     </force>
+
     <force name="motor_back_right" frame="BODY" unit="LBS">
       <function>
-        <product>
-          <property>fcs/motor_back_right_lag</property>
-          <property>fcs/motor_max_thrust</property>
-          <value>0.224808943</value> <!-- N to LBS -->
-        </product>
+        <sum>
+          <product>
+            <property>fcs/motor_back_right_lag</property>
+            <value>0.263296234</value>
+          </product>
+          <product>
+            <property>fcs/motor_back_right_lag</property>
+            <property>fcs/motor_back_right_lag</property>
+            <value>0.845310401</value>
+          </product>
+        </sum>
       </function>
       <location unit="M">
-        <x> 0.187 </x>
-        <y> 0.145 </y>
-        <z> 0. </z>
+        <x> 0.187</x>
+        <y> 0.145</y>
+        <z> 0.000</z>
       </location>
       <direction>
-        <x> 0 </x>
-        <y> 0.34202 </y>
-        <z> -0.939693 </z>
+        <x> 0.000000</x>
+        <y> 0.342020</y>
+        <z>-0.939693</z>
       </direction>
     </force>
+
     <force name="motor_back_left" frame="BODY" unit="LBS">
       <function>
-        <product>
-          <property>fcs/motor_back_left_lag</property>
-          <property>fcs/motor_max_thrust</property>
-          <value>0.224808943</value> <!-- N to LBS -->
-        </product>
+        <sum>
+          <product>
+            <property>fcs/motor_back_left_lag</property>
+            <value>0.263296234</value>
+          </product>
+          <product>
+            <property>fcs/motor_back_left_lag</property>
+            <property>fcs/motor_back_left_lag</property>
+            <value>0.845310401</value>
+          </product>
+        </sum>
       </function>
       <location unit="M">
-        <x> 0.187 </x>
-        <y> -0.145 </y>
-        <z> 0 </z>
+        <x> 0.187</x>
+        <y>-0.145</y>
+        <z> 0.000</z>
       </location>
       <direction>
-        <x> 0 </x>
-        <y> -0.34202 </y>
-        <z> -0.939693 </z>
+        <x> 0.000000</x>
+        <y>-0.342020</y>
+        <z>-0.939693</z>
       </direction>
     </force>
+
+    <!-- Pusher -->
+
     <force name="motor_pusher" frame="BODY" unit="LBS">
       <function>
-        <product>
-          <property>fcs/motor_pusher_lag</property>
-          <property>fcs/motor_max_thrust</property>
-          <value>0.224808943</value> <!-- N to LBS -->
-        </product>
+        <sum>
+          <product>
+            <property>fcs/motor_pusher_lag</property>
+            <value>0.263296234</value>
+          </product>
+          <product>
+            <property>fcs/motor_pusher_lag</property>
+            <property>fcs/motor_pusher_lag</property>
+            <value>0.845310401</value>
+          </product>
+        </sum>
       </function>
       <location unit="M">
-        <x> 0.11 </x>
-        <y> 0 </y>
-        <z> 0 </z>
+        <x>0.11</x>
+        <y>0.00</y>
+        <z>0.00</z>
       </location>
       <direction>
-        <x> 1 </x>
-        <y> 0 </y>
-        <z> 0 </z>
+        <x>1.00</x>
+        <y>0.00</y>
+        <z>0.00</z>
       </direction>
     </force>
-    
-    <!-- Then the Moment Couples -->
+
+    <!-- Couples de réaction : directions déjà signées selon SPIN_DIR -->
 
     <moment name="motor_front_right_torque" frame="BODY">
       <function>
-        <product>
-          <property>fcs/motor_front_right_lag</property>
-          <property>fcs/motor_max_torque</property>
-          <value> 0.738 </value> <!-- N.m to FT.LBS -->
-        </product>
+        <sum>
+          <product>
+            <property>fcs/motor_front_right_lag</property>
+            <value>0.0001511707</value>
+          </product>
+          <product>
+            <property>fcs/motor_front_right_lag</property>
+            <property>fcs/motor_front_right_lag</property>
+            <value>0.0004853324</value>
+          </product>
+        </sum>
       </function>
       <location unit="M">
-        <x> -0.187 </x>
-        <y> 0.145 </y>
-        <z> 0. </z>
+        <x>-0.187</x>
+        <y> 0.145</y>
+        <z> 0.000</z>
       </location>
       <direction>
-        <x> 0 </x>
-        <y> -0.34202 </y>
-        <z> 0.939693 </z>
+        <x> 0.000000</x>
+        <y>-0.342020</y>
+        <z> 0.939693</z>
       </direction>
     </moment>
+
     <moment name="motor_front_left_torque" frame="BODY">
       <function>
-        <product>
-          <property>fcs/motor_front_left_lag</property>
-          <property>fcs/motor_max_torque</property>
-          <value> 0.738 </value> <!-- N.m to FT.LBS -->
-        </product>
+        <sum>
+          <product>
+            <property>fcs/motor_front_left_lag</property>
+            <value>0.0001511707</value>
+          </product>
+          <product>
+            <property>fcs/motor_front_left_lag</property>
+            <property>fcs/motor_front_left_lag</property>
+            <value>0.0004853324</value>
+          </product>
+        </sum>
       </function>
       <location unit="M">
-        <x> -0.187 </x>
-        <y> -0.145 </y>
-        <z> 0. </z>
+        <x>-0.187</x>
+        <y>-0.145</y>
+        <z> 0.000</z>
       </location>
       <direction>
-        <x> 0 </x>
-        <y> -0.34202 </y>
-        <z> -0.939693 </z>
+        <x> 0.000000</x>
+        <y>-0.342020</y>
+        <z>-0.939693</z>
       </direction>
     </moment>
+
     <moment name="motor_back_right_torque" frame="BODY">
       <function>
-        <product>
-          <property>fcs/motor_back_right_lag</property>
-          <property>fcs/motor_max_torque</property>
-          <value> 0.738 </value> <!-- N.m to FT.LBS -->
-        </product>
+        <sum>
+          <product>
+            <property>fcs/motor_back_right_lag</property>
+            <value>0.0001511707</value>
+          </product>
+          <product>
+            <property>fcs/motor_back_right_lag</property>
+            <property>fcs/motor_back_right_lag</property>
+            <value>0.0004853324</value>
+          </product>
+        </sum>
       </function>
       <location unit="M">
-        <x> 0.187 </x>
-        <y> 0.145 </y>
-        <z> 0. </z>
+        <x> 0.187</x>
+        <y> 0.145</y>
+        <z> 0.000</z>
       </location>
       <direction>
-        <x> 0 </x>
-        <y> 0.34202 </y>
-        <z> -0.939693 </z>
+        <x> 0.000000</x>
+        <y> 0.342020</y>
+        <z>-0.939693</z>
       </direction>
     </moment>
+
     <moment name="motor_back_left_torque" frame="BODY">
       <function>
-        <product>
-          <property>fcs/motor_back_left_lag</property>
-          <property>fcs/motor_max_torque</property>
-          <value> 0.738 </value> <!-- N.m to FT.LBS -->
-        </product>
+        <sum>
+          <product>
+            <property>fcs/motor_back_left_lag</property>
+            <value>0.0001511707</value>
+          </product>
+          <product>
+            <property>fcs/motor_back_left_lag</property>
+            <property>fcs/motor_back_left_lag</property>
+            <value>0.0004853324</value>
+          </product>
+        </sum>
       </function>
       <location unit="M">
-        <x> 0.187 </x>
-        <y> -0.145 </y>
-        <z> 0. </z>
+        <x> 0.187</x>
+        <y>-0.145</y>
+        <z> 0.000</z>
       </location>
       <direction>
-        <x> 0 </x>
-        <y> 0.34202 </y>
-        <z> 0.939693 </z>
+        <x> 0.000000</x>
+        <y> 0.342020</y>
+        <z> 0.939693</z>
       </direction>
     </moment>
+
     <moment name="motor_pusher_torque" frame="BODY">
       <function>
-        <product>
-          <property>fcs/motor_pusher_lag</property>
-          <property>fcs/motor_max_torque</property>
-          <value> 0.738 </value> <!-- N.m to FT.LBS -->
-        </product>
+        <sum>
+          <product>
+            <property>fcs/motor_pusher_lag</property>
+            <value>0.0001511707</value>
+          </product>
+          <product>
+            <property>fcs/motor_pusher_lag</property>
+            <property>fcs/motor_pusher_lag</property>
+            <value>0.0004853324</value>
+          </product>
+        </sum>
       </function>
       <location unit="M">
-        <x> 0.11 </x>
-        <y> 0 </y>
-        <z> 0 </z>
+        <x>0.11</x>
+        <y>0.00</y>
+        <z>0.00</z>
       </location>
       <direction>
-        <x> 1 </x>
-        <y> 0 </y>
-        <z> 0 </z>
+        <x>1.00</x>
+        <y>0.00</y>
+        <z>0.00</z>
       </direction>
     </moment>
 

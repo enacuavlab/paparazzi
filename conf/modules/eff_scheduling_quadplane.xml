@@ -16,6 +16,9 @@
       <define name="KAPPA"              value="0"               description="Drag-torque to thrust ratio (kappa = k_m/k_t) [m]"/>
       <define name="MOTOR_HOVER"        value="4640"            description="Hover motor command"/>
       <define name="MOTOR_IDLE"         value="0"               description="Idle motor command"/>
+      <define name="ROTOR_ROT_X"        value="{RadOfDeg(20.f), RadOfDeg(20.f), RadOfDeg(-20.f), RadOfDeg(-20.f)}" description="Rotations on motors X axis FR BR BL FL"/> 
+      <define name="ROTOR_ROT_Y"        value="{0.f, 0.f, 0.f, 0.f}" description="Rotations on motors Y axis FR BR BL FL"/>
+      <define name="ROTOR_ROT_Z"        value="{0.f, 0.f, 0.f, 0.f}" description="Rotations on motors Z axis FR BR BL FL"/>
 
       <!-- Wing -->
       <define name="K_LIFT"             value="0"               description="Wing lift derivative: dL/d(alpha) = k_lift * V^2 [N/rad]"/>

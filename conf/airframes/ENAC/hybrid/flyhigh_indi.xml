@@ -91,7 +91,6 @@
     <module name="guidance" type="indi_hybrid_quadplane"/>
     <module name="nav" type="hybrid"/>
     <module name="eff_scheduling_quadplane"/>
-    <module name="circ_trajectory"/>  
 
     <module name="flight_recorder"/>
     
@@ -159,8 +158,8 @@
   <commands>
     <axis name="MOTOR_FRONT_RIGHT"  group="REAL"    failsafe_value="-9600"/>
     <axis name="MOTOR_BACK_RIGHT"   group="REAL"    failsafe_value="-9600"/>
-    <axis name="MOTOR_FRONT_LEFT"   group="REAL"    failsafe_value="-9600"/>
     <axis name="MOTOR_BACK_LEFT"    group="REAL"    failsafe_value="-9600"/>
+    <axis name="MOTOR_FRONT_LEFT"   group="REAL"    failsafe_value="-9600"/>    
     <axis name="ELEVON_LEFT"        group="REAL"    failsafe_value="-9600"/>
     <axis name="ELEVON_RIGHT"       group="REAL"    failsafe_value="-9600"/>    
     <axis name="MOTOR_PUSHER"       group="REAL"    failsafe_value="-9600"/>
@@ -179,15 +178,18 @@
   </section>
     
   <command_laws>
-    <let var="aileron"          value="@ROLL  * AILEVON_AILERON_RATE"/>  <!--Max Roll-->
-    <let var="elevator"         value="@PITCH * AILEVON_ELEVATOR_RATE"/> <!--Max Pitch-->	  
+    <!--let var="aileron"          value="@ROLL  * AILEVON_AILERON_RATE"/-->  <!--Max Roll-->
+    <!--let var="elevator"         value="@PITCH * AILEVON_ELEVATOR_RATE"/--> <!--Max Pitch-->	  
     <set servo="MOTOR_FR"       value="@MOTOR_FRONT_RIGHT"/>
     <set servo="MOTOR_BR"       value="@MOTOR_BACK_RIGHT"/>
     <set servo="MOTOR_BL"       value="@MOTOR_BACK_LEFT"/>
     <set servo="MOTOR_FL"       value="@MOTOR_FRONT_LEFT"/>
-    <set servo="AILEVON_RIGHT"  value="- $elevator - ($aileron > 0 ? 1 : AILERON_DIFF) * $aileron"/> <!-- Adverse yaw-->
-    <set servo="AILEVON_LEFT"   value="$elevator - ($aileron > 0 ? AILERON_DIFF : 1) * $aileron"/> <!-- Adverse yaw-->
-    <set servo="MOTOR_PUSHER"   value="@MOTOR_PUSHER"/>
+    <set servo="AILEVON_RIGHT"       value="@ELEVON_RIGHT"/>
+    <set servo="AILEVON_LEFT"       value="@ELEVON_LEFT"/>
+    <set servo="MOTOR_PUSHER"       value="@THRUST_X"/>    
+    <!--set servo="AILEVON_RIGHT"  value="- $elevator - ($aileron > 0 ? 1 : AILERON_DIFF) * $aileron"/--> <!-- Adverse yaw-->
+    <!--set servo="AILEVON_LEFT"   value="$elevator - ($aileron > 0 ? AILERON_DIFF : 1) * $aileron"/--> <!-- Adverse yaw-->
+    <!--set servo="MOTOR_PUSHER"   value="@MOTOR_PUSHER"/-->
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
@@ -287,7 +289,7 @@
     <define name="ACT_IS_SERVO"   value="{0, 0, 0, 0, 1, 1, 0}"/>  <!-- used to know if we have a motor or servo to set the limits in wls ie : {FR, BR, BL, FL, ELEVON_R, ELEVON_L, PUSHER}-->
 	<define name="ACT_IS_THRUSTER_X" value="{0, 0, 0, 0, 0, 0, 1}"/>
 	<define name="ACT_IS_THRUSTER_Z" value="{1, 1, 1, 1, 0, 0, 0}"/>
-	<define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100, 0}"/>
+	<define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100, 100}"/>
 
     <!-- second order filter parameters -->
     <define name="ACT_FREQ"       value="{27.4, 27.4, 27.4, 27.4, 20, 20, 27.4}"/>       
@@ -318,30 +320,34 @@
       <define name="RZ"                 value="{0,0,0,0}" />  <!-- Rotor z positions [m], order: FR, RR, RL, FL -->
       <define name="SPIN_DIR"           value="{-1.0,1.0,-1.0,1.0}" />  <!-- Motors spin direction (+1 for CW. -1 for CCW) -->
       <define name="ROTOR_K_T_PPRZ"     value="{1.22e-4,4.08e-8}" />  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} -->
-      <define name="KAPPA"              value="0" />  <!-- Drag-torque to thrust ratio (kappa = k_m/k_t) [m] -->
-      <define name="MOTOR_HOVER"        value="7000" />  <!-- Hover motor command 4640 -->
+      <define name="KAPPA"              value="1.75e-4" />  <!-- Drag-torque to thrust ratio (kappa = k_m/k_t) [m] -->
+      <define name="MOTOR_HOVER"        value="6641.45" />  <!-- Hover motor command 4640 -->
       <define name="MOTOR_IDLE"         value="3000" />  <!-- Idle motor command -->
+      <!-- Angle Motor rotation in the body frame X = forward Y = right Z = down  d = Rz(ψ) · Ry(θ) · Rx(φ) · {0, 0, -1} -->
+      <define name="ROTOR_ROT_X" value="{RadOfDeg(20.f), RadOfDeg(20.f), RadOfDeg(-20.f), RadOfDeg(-20.f)}"/> <!-- Rotations on motors X axis FR BR BL FL -->
+      <define name="ROTOR_ROT_Y" value="{0.f, 0.f, 0.f, 0.f}"/> <!-- Rotations on  motors Y axis FR BR BL FL -->
+      <define name="ROTOR_ROT_Z" value="{0.f, 0.f, 0.f, 0.f}"/> <!-- Rotations on  motors Z axis FR BR BL FL -->   
       <!-- Wing -->
       <define name="K_LIFT"             value="0" />  <!-- Wing lift derivative: dL/d(alpha) = k_lift * V^2 [N/rad] -->
       <define name="V_WING"             value="10.0"/>  <!--Airspeed at which wing lift derivative is applied [m/s] -->
       <!-- Elevons -->
-      <define name="K_ELEVON_DEFLECT"   value="0"/>  <!-- delta = k*pprz [rad/pprz], = delta_max / MAX_PPRZ -->
-      <define name="K_ELEVON_ROLL"      value="0" />  <!-- dMx/ddelta = k_roll * V^2 [N.m/rad per (m/s)^2] -->
-      <define name="K_ELEVON_PITCH"     value="0" />  <!-- dMy/ddelta = k_pitch * V^2 [N.m/rad per (m/s)^2] -->
-      <define name="K_ELEVON_PROPWASH"  value="0.0" />  <!-- dMy/ddelta += k_propwash * T_x * V (default 0) -->
-      <define name="K_ELEVON_DIFF_DRAG_YAW" value="0.0" />  <!-- dMz/ddelta = +/- k_yaw * V^2 * delta [N.m/rad]; + for right elevon -->
-      <define name="K_ELEVON_V_FULL"    value="0.0" />  <!-- Elevons travel opening with dynamic pressure -->
-      <define name="ELEVON_RATE"        value="0.0" />  <!-- Elevon rate -->
+      <define name="K_ELEVON_DEFLECT"   value="(RadOfDeg(20.f) / 9600.f)"/>  <!-- delta = k*pprz [rad/pprz], = delta_max / MAX_PPRZ / 20 degree of max debatement-->
+      <define name="K_ELEVON_ROLL"      value="0.0196f" />  <!-- dMx/ddelta = k_roll * V^2 [N.m/rad per (m/s)^2] -->
+      <define name="K_ELEVON_PITCH"     value="0.0130f" />  <!-- dMy/ddelta = k_pitch * V^2 [N.m/rad per (m/s)^2] -->
+      <define name="K_ELEVON_PROPWASH"  value="0.f" />  <!-- dMy/ddelta += k_propwash * T_x * V (default 0) -->
+      <define name="K_ELEVON_DIFF_DRAG_YAW" value="0.f" />  <!-- dMz/ddelta = +/- k_yaw * V^2 * delta [N.m/rad]; + for right elevon -->
+      <define name="K_ELEVON_V_FULL"    value="10.f" />  <!-- Elevons travel opening with dynamic pressure, full available at x m/s -->
+      <define name="ELEVON_RATE"        value="9600.f" />  <!-- Elevon rate -->
       <!-- Pusher -->
       <define name="PUSHER_RY"          value="0"/>  <!-- Lateral Offset from CG (positive = right) -->
       <define name="PUSHER_RZ"          value="0"/>  <!-- Vertical Offset from CG (positive = down) -->
-      <define name="PUSHER_SPIN_DIR"    value="0"/>  <!-- Pusher spin direction (+1 for CW. -1 for CCW) -->
+      <define name="PUSHER_SPIN_DIR"    value="1"/>  <!-- Pusher spin direction (+1 for CW. -1 for CCW) -->
       <define name="PUSHER_K_T_PPRZ"    value="{1.22e-4,4.08e-8}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} -->
 	</section>
 
 
   <section name="HYBRID_TRANSITION">
-	<define name="QUADPLANE_HOVER_TEST" value="15."/>
+	<!--define name="QUADPLANE_HOVER_TEST" value="15."/-->
     <define name="CMQ_TRANSITION_AIRSPEED" value="15."/> <!-- Transition speed in m/s when we cut the 4 motors to go in plane mode -->
     <define name="CMQ_TRANSITION_TIME" value="4."/> <!-- Transition time -->
     <define name="CMQ_TRANSITION_PITCH" value="0."/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->
@@ -370,9 +376,8 @@
   <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
     <define name="THRUST_DYNAMICS_FREQ" value="30.5"/>
     <define name="PUSHER_INDEX" value="6"/> <!-- Pusher column index in G1G2 matrix -->
-    <define name="THRUST_Z_EFF" value="(-0.002002496f / VEHICLE_MASS)"/> <!-- Collective vertical-thrust effectiveness, converting a PPRZ throttle increment into a body-Z acceleration increment. -->
     <define name="MAX_AIRSPEED" value="25"/> <!-- m/s - Maximum airspeed command used by the guidance controller to limit forward-flight speed requests. -->
-    <define name="HEADING_BANK_GAIN" value="5"/> <!-- Gain converting heading error into a lateral acceleration demand for coordinated turns. -->
+    <define name="HEADING_BANK_GAIN" value="1.0"/> <!-- Gain converting heading error into a lateral acceleration demand for coordinated turns. -->
   </section>
 
   <section name="GUIDANCE_PLANE" prefix="GUIDANCE_PLANE_">

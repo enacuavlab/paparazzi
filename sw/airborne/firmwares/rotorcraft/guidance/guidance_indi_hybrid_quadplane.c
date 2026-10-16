@@ -38,10 +38,17 @@
 #error "You need to define GUIDANCE_INDI_PUSHER_INDEX"
 #endif
 
-#ifndef GUIDANCE_INDI_THRUST_Z_EFF
-#error "You need to define GUIDANCE_INDI_THRUST_Z_EFF"
-#else
-float guidance_indi_thrust_z_eff = GUIDANCE_INDI_THRUST_Z_EFF;
+#ifndef VEHICLE_ROTOR_K_T_PPRZ
+#error "VEHICLE_K_T_PPRZ [2x1 float] not defined in airframe file — {b [N/pprz], c [N/pprz^2]}"
+#endif
+#ifndef VEHICLE_ROTOR_ROT_X
+#error "VEHICLE_ROTOR_ROT_X not defined in airframe file"
+#endif
+#ifndef VEHICLE_ROTOR_ROT_Y
+#error "VEHICLE_ROTOR_ROT_Y not defined in airframe file"
+#endif
+#ifndef VEHICLE_ROTOR_ROT_Z
+#error "VEHICLE_ROTOR_ROT_Z not defined in airframe file"
 #endif
 
 #ifndef GUIDANCE_INDI_BODYZ_FILTER_CUTOFF
@@ -137,6 +144,30 @@ void WEAK guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angl
   float min_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MIN_PITCH);
 
   float pitch_pref_rad = RadOfDeg(guidance_indi_pitch_pref_deg);
+
+  /* guidance_indi_thrust_z_eff calculation wrt hoovering motor rotation */
+  const float rotor_rot_x[4] = VEHICLE_ROTOR_ROT_X;
+  const float rotor_rot_y[4] = VEHICLE_ROTOR_ROT_Y;
+  const float rotor_k_t_pprz[2] = VEHICLE_ROTOR_K_T_PPRZ;
+  const float b = rotor_k_t_pprz[0];
+  const float c = rotor_k_t_pprz[1];
+
+  /* Actual collective command, bounded in the domain of the T(u) law. */
+  float u_collective = (float)stabilization.cmd[COMMAND_THRUST];
+  Bound(u_collective, 0.f, (float)MAX_PPRZ);
+
+  /* dT/du if each motor, in N/PPRZ. */
+  const float rotor_dT_du = b + 2.f * c * u_collective;
+
+  /* Sum of the four vertical contributions. Negative value: Z body towards the bottom. */
+  float guidance_indi_thrust_z_eff = 0.f;
+  for (uint8_t i = 0; i < 4; i++) {
+    const float fz = -cosf(rotor_rot_y[i]) * cosf(rotor_rot_x[i]);
+    guidance_indi_thrust_z_eff += fz * rotor_dT_du;
+  }
+  guidance_indi_thrust_z_eff /= VEHICLE_MASS;
+
+
 
   // Set lower limits
   wls_guid_p.u_min[0] = -guidance_indi_max_bank - roll_angle; //roll
