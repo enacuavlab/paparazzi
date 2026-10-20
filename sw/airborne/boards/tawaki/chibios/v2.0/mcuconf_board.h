@@ -123,7 +123,7 @@
 #define STM32_SW                            STM32_SW_PLL1_P_CK
 
 #if HAL_USE_RTC
-#define STM32_RTCSEL                        STM32_RTCSEL_LSI_CK
+#define STM32_RTCSEL                        STM32_RTCSEL_HSE_1M_CK
 #else
 #define STM32_RTCSEL                        STM32_RTCSEL_NOCLK
 #endif
@@ -236,6 +236,8 @@
 #define STM32_ADC_USE_ADC12                 TRUE
 #define STM32_ADC_USE_ADC3                  TRUE
 #define STM32_ADC_ADC12_DMA_STREAM          STM32_DMA_STREAM_ID_ANY
+#define STM32_ADC_ADC3_DMA_STREAM           STM32_DMA_STREAM_ID_ANY
+#define STM32_ADC_ADC3_USE_BDMA             TRUE
 #define STM32_ADC_ADC3_BDMA_STREAM          STM32_BDMA_STREAM_ID_ANY
 #define STM32_ADC_ADC12_DMA_PRIORITY        2
 #define STM32_ADC_ADC3_DMA_PRIORITY         2
@@ -395,8 +397,8 @@
 /*
  * RTC driver system settings.
  */
-#define STM32_RTC_PRESA_VALUE               32
-#define STM32_RTC_PRESS_VALUE               1024
+#define STM32_RTC_PRESA_VALUE               125
+#define STM32_RTC_PRESS_VALUE               8000
 #define STM32_RTC_CR_INIT                   0
 #define STM32_RTC_TAMPCR_INIT               0
 

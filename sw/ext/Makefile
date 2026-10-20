@@ -33,10 +33,12 @@ EXT_DIR=$(PAPARAZZI_SRC)/sw/ext
 include $(PAPARAZZI_SRC)/conf/Makefile.arm-embedded-toolchain
 
 MY_PYTHON := $(shell echo `which python3`)
-MY_MAVLINKTOOLS := $(shell $(MY_PYTHON) -c 'import imp; import future' 2>&1)
+MY_MAVLINKTOOLS := $(shell $(MY_PYTHON) -c 'import future' 2>&1)
 MY_DRONECANTOOLS := $(shell $(MY_PYTHON) -c 'import em' 2>&1)
+BOOST_INSTALLED := $(shell dpkg -s libboost-program-options-dev >/dev/null 2>&1 && echo yes)
+CMAKE_INSTALLED := $(shell command -v cmake 2>/dev/null)
 
-all: chibios fatfs libsbp TRICAL hacl-c key_generator rustlink ecl matrix mavlink dronecan
+all: chibios fatfs libsbp TRICAL hacl-c key_generator rustlink ecl matrix mavlink dronecan unifiedmocaprouter
 
 # update (and init if needed) all submodules
 update_submodules:
@@ -102,7 +104,25 @@ else
 	@echo dronecan not installed, missing package 'em'
 endif
 
+unifiedmocaprouter: unifiedmocaprouter.update unifiedmocaprouter.build
+
+unifiedmocaprouter.build:
+ifeq ($(BOOST_INSTALLED),yes)
+ifeq ($(CMAKE_INSTALLED),)
+	@echo "cmake is not installed. Please install cmake to build unifiedmocaprouter."
+else
+	cd $(EXT_DIR)/unifiedmocaprouter/ && \
+	mkdir -p build && \
+	cd build && \
+	cmake -D'MOCAPS=optitrack' -D'AGENTS=console;ivy' .. && \
+	make
+endif
+else
+	@echo "libboost-program-options-dev is not installed. Please install it to build unifiedmocaprouter."
+endif
+
 clean:
+	make -C unifiedmocaprouter clean
 
 
 clean_opencv_bebop:
@@ -114,4 +134,4 @@ clean_opencv_bebop:
 .PHONY: all clean update_submodules \
 		chibios fatfs \
 		mavlink.build libsbp pprzlink pprzlink.build opencv_bebop \
-		opencv_bebop.build clean_opencv_bebop TRICAL dronecan
+		opencv_bebop.build clean_opencv_bebop unifiedmocaprouter TRICAL dronecan

@@ -132,6 +132,9 @@ conf: conf/conf.xml conf/control_panel.xml conf/tools/blacklisted
 conf/%.xml :conf/%_example.xml
 	[ -L $@ ] || [ -f $@ ] || cp $< $@
 
+conf/conf.xml: conf/conf_example.xml
+	[ -L $@ ] || [ -f $@ ] || ln -s $(<F) $@
+
 conf/tools/blacklisted: conf/tools/blacklisted_example
 	cp conf/tools/blacklisted_example conf/tools/blacklisted
 
@@ -166,10 +169,12 @@ sim_static: libpprz
 
 ext:
 	$(MAKE) -C $(EXT)
-	$(MAKE) -C $(TOOLS)/bluegiga_usb_dongle
 
 opencv_bebop:
 	$(MAKE) -C $(EXT) opencv_bebop
+
+mocap:
+	$(MAKE) -C $(EXT) unifiedmocaprouter
 
 #
 # make misc subdirs
@@ -346,6 +351,6 @@ test_full:
 
 .PHONY: all print_build_version _print_building _save_build_version init dox ground_segment ground_segment.opt \
 subdirs $(SUBDIRS) conf ext libpprz libpprzlink.update libpprzlink.install tmtc tmtc.opt generators\
-static sim_static opencv_bebop\
+static sim_static opencv_bebop mocap \
 clean cleanspaces ab_clean dist_clean distclean dist_clean_irreversible \
 test test_examples test_math test_all_confs
