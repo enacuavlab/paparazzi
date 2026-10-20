@@ -53,31 +53,37 @@
   </firmware>
 
   <servos driver="Pwm">
-    <servo name="MOTOR_UP"    no="1" min="1000" neutral="1100" max="2000"/>
-    <servo name="MOTOR_DOWN"  no="2" min="1000" neutral="1100" max="2000"/>
-    <servo name="TILT_UP_X"   no="3" min="1000" neutral="1500" max="2000"/>
-    <servo name="TILT_UP_Y"   no="4" min="1000" neutral="1500" max="2000"/>
+    <servo name="MOTOR_UP"      no="1" min="1000" neutral="1100" max="2000"/>
+    <servo name="MOTOR_DOWN"    no="2" min="1000" neutral="1100" max="2000"/>
+    <servo name="TILT_UP_X"     no="3" min="1000" neutral="1500" max="2000"/>
+    <servo name="TILT_UP_Y"     no="4" min="1000" neutral="1500" max="2000"/>
+    <servo name="TILT_DOWN_X"   no="5" min="1000" neutral="1500" max="2000"/>
+    <servo name="TILT_DOWN_Y"   no="6" min="1000" neutral="1500" max="2000"/>
   </servos>
 
   <commands>
-    <axis name="ROLL" failsafe_value="0"/>
-    <axis name="PITCH" failsafe_value="0"/>
-    <axis name="YAW" failsafe_value="0"/>
-    <axis name="THRUST" failsafe_value="0"/>
+    <axis name="MOTOR_UP"     failsafe_value="MOTOR_STOP"/>
+    <axis name="MOTOR_DOWN"   failsafe_value="MOTOR_STOP"/>
+    <axis name="TILT_UP_X"    failsafe_value="0"/>
+    <axis name="TILT_UP_Y"    failsafe_value="0"/>
+    <axis name="TILT_DOWN_X"  failsafe_value="0"/>
+    <axis name="TILT_DOWN_Y"  failsafe_value="0"/>
+    <axis name="THRUST"       failsafe_value="0"/>
   </commands>
 
   <command_laws>
-    <set servo="MOTOR_UP"   value="autopilot_get_motors_on() ? actuators_pprz[0] : -MAX_PPRZ"/>
-    <set servo="MOTOR_DOWN" value="autopilot_get_motors_on() ? actuators_pprz[1] : -MAX_PPRZ"/>
-    <set servo="TILT_UP_X"  value="autopilot_get_motors_on() ? actuators_pprz[2] : 0"/>
-    <set servo="TILT_UP_Y"  value="autopilot_get_motors_on() ? actuators_pprz[3] : 0"/>
+    <set servo="MOTOR_UP"     value="@MOTOR_UP"/>
+    <set servo="MOTOR_DOWN"   value="@MOTOR_DOWN"/>
+    <set servo="TILT_UP_X"    value="@TILT_UP_X"/>
+    <set servo="TILT_UP_Y"    value="@TILT_UP_Y"/>
+    <set servo="TILT_DOWN_X"  value="@TILT_DOWN_X"/>
+    <set servo="TILT_DOWN_Y"  value="@TILT_DOWN_Y"/>
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
     <define name="GYRO_P_SIGN" value="-1"/>
     <define name="GYRO_Q_SIGN" value="-1"/>
     <define name="GYRO_R_SIGN" value="1"/>
-
 
     <define name="ACCEL_X_SIGN" value="-1"/>
     <define name="ACCEL_Y_SIGN" value="-1"/>
@@ -108,23 +114,11 @@
 
   <include href="conf/mag/north_unit.xml"/>
 
-  <section name="INS" prefix="INS_">
-    <define name="INV_NXZ" value="0.25"/>
-    <define name="INV_NH" value="2.0"/>
-    <define name="INV_MVZ" value="8."/>
-  </section>
-
-  <section name="AHRS" prefix="AHRS_">
-    <!-- Use GPS heading instead of magneto -->
-    <define name="USE_GPS_HEADING" value="0"/>
-    <!-- <define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/> -->
-  </section>
-
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
     <!-- setpoint limits for attitude stabilization rc flight -->
     <define name="SP_MAX_PHI" value="45" unit="deg"/>
     <define name="SP_MAX_THETA" value="45" unit="deg"/>
-    <define name="SP_MAX_R" value="120" unit="deg/s"/>
+    <define name="SP_MAX_R" value="90" unit="deg/s"/>
     <define name="DEADBAND_A" value="0"/>
     <define name="DEADBAND_E" value="0"/>
     <define name="DEADBAND_R" value="50"/>
@@ -132,6 +126,7 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <define name="NUM_ACT" value="4"/>
+
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="111"/>
     <define name="REF_ERR_Q" value="111"/>
@@ -140,22 +135,18 @@
     <define name="REF_RATE_Q" value="20.0"/>
     <define name="REF_RATE_R" value="11.0"/>
 
-    <define name="MAX_R" value="120" unit="deg/s"/>
+    <define name="MAX_R" value="60" unit="deg/s"/>
 
     <!-- second order filter parameters -->
     <define name="FILT_CUTOFF" value="4.0"/>
     <define name="FILT_CUTOFF_R" value="4.0"/>
-
-    <!-- Adaptive Learning Rate -->
-    <define name="USE_ADAPTIVE" value="FALSE"/>
-    <define name="ADAPTIVE_MU" value="0.0001"/>
 
     <!-- Full INDI -->
     <!-- control effectiveness -->
     <define name="G1" type="matrix">
       <field value="{  0.0,  0.0, 10.0, 0.0 }"/>
       <field value="{  0.0,  0.0, 0.0, 10.0 }"/>
-      <field value="{ -7.0,  7.0,  0.0,  0.0 }"/>
+      <field value="{ -3.0,  3.0,  0.0,  0.0 }"/>
       <field value="{ -1.7,  -1.7,  0.0,  0.0 }"/>
     </define>
     <!--Counter torque effect of spinning up a rotor-->
@@ -165,10 +156,16 @@
     <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600}"/>
     <define name="ACT_IS_SERVO" value="{0, 0, 1, 1}"/>
 
-    <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
-
     <!--Priority for each axis (roll, pitch, yaw and thrust)-->
     <define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100}"/>
+    <!-- INDI outputs to commands association -->
+    <define name="COMMANDS" value="{COMMAND_MOTOR_UP, COMMAND_MOTOR_DOWN, COMMAND_TILT_UP_X, COMMAND_TILT_UP_Y}"/>
+
+    <!-- Adaptive Learning Rate -->
+    <define name="USE_ADAPTIVE" value="FALSE"/>
+    <define name="ADAPTIVE_MU" value="0.0001"/>
+    <define name="ESTIMATION_FILT_CUTOFF" value="4.0"/>
+
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
@@ -181,19 +178,16 @@
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
    <define name="MAX_BANK" value="20" unit="deg"/>
-   <define name="REF_MAX_SPEED" value="4."/>
+   <define name="REF_MAX_SPEED" value="1."/>
    <define name="REF_MAX_ACCEL" value="2."/>
   </section>
 
   <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
     <define name="SPEED_GAIN" value="3.0"/>
-    <define name="SPECIFIC_FORCE_GAIN" value="-500.0"/>
-    <define name="THRUST_DYNAMICS_FREQ" value="15.6"/>
-    <define name="RC_DEBUG" value="FALSE"/>
   </section>
 
   <section name="NAV">
-    <define name="ARRIVED_AT_WAYPOINT" value="2.0"/>
+    <define name="ARRIVED_AT_WAYPOINT" value="1.0"/>
     <define name="NAV_DESCEND_VSPEED" value="-0.5"/>
     <define name="NAV_CLIMB_VSPEED" value="0.5"/>
   </section>
@@ -210,23 +204,26 @@
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
   </section>
 
-  <section name="TAG_TRACKING" prefix="TAG_TRACKING_">
-    <define name="BODY_TO_CAM_PSI" value="M_PI"/>
-    <define name="CAM_POS_X" value="0.1"/>
-  </section>
-
   <section name="GCS">
-    <define name="ALT_SHIFT_PLUS_PLUS" value="5"/>
-    <define name="ALT_SHIFT_PLUS" value="1"/>
-    <define name="ALT_SHIFT_MINUS" value="-1"/>
+    <define name="ALT_SHIFT_PLUS_PLUS" value="1."/>
+    <define name="ALT_SHIFT_PLUS" value="0.5"/>
+    <define name="ALT_SHIFT_MINUS" value="-0.5"/>
   </section>
 
-  <section name="SIMULATOR" prefix="NPS_">
+  <!--section name="PYBULLET_SIMULATOR" prefix="NPS_">
     <define name="ACTUATORS_ORDER" value="{0, 1, 2, 3}"/>
     <define name="PYBULLET_MODULE" value="coaxial_donut" type="string"/>
     <define name="PYBULLET_URDF" value="coaxial_donut.urdf" type="string"/>
     <define name="COMMANDS_NB" value="4"/>
     <define name="NO_MOTOR_MIXING" value="TRUE"/>
+  </section-->
+
+  <section name="JSBSIM_SIMULATOR" prefix="NPS_">
+    <define name="PYBULLET_ACTUATORS_ORDER" value="{0, 1, 2, 3}"/>
+    <define name="PYBULLET_MODULE" value="coaxial_donut" type="string"/>
+    <define name="PYBULLET_URDF" value="coaxial_donut.urdf" type="string"/>
+    <define name="JSBSIM_MODEL" value="donut" type="string"/>
+    <define name="USE_COMMANDS" value="TRUE"/>
   </section>
 
 </airframe>
