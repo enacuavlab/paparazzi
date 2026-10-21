@@ -34,8 +34,14 @@
 
 extern void control_mixing_quadplane_init(void);
 
+extern void control_mixing_quadplane_elevon_test_enter(void);
+extern void control_mixing_quadplane_elevon_test(void);
+
 extern void control_mixing_quadplane_attitude_direct_enter(void);
 extern void control_mixing_quadplane_attitude_direct(void);
+
+extern void control_mixing_quadplane_attitude_plane_enter(void);
+extern void control_mixing_quadplane_attitude_plane(void);
 
 extern void control_mixing_quadplane_guidance_enter(void);
 extern void control_mixing_quadplane_guidance(void);

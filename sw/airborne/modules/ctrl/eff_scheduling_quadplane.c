@@ -136,9 +136,18 @@
 #ifndef VEHICLE_MOTOR_IDLE
 #error "VEHICLE_MOTOR_IDLE [float] not defined in airframe file"
 #endif
+/* Airspeed range for elevon testing */
+#ifndef CMQ_ELEVON_TEST_AIRSPEED_MAX
+#define CMQ_ELEVON_TEST_AIRSPEED_MAX 30.0f
+#endif
+
+
 
 
 bool  quadplane_eff_disable_pusher = false; 
+bool  quadplane_eff_pusher_forced = false; 
+float  quadplane_eff_pusher_forced_cmd = 0.f;
+bool  quadplane_eff_forward_mode = false;
 
 
 struct quadplane_eff_sched_param_t quadplane_eff_sched_p = {
@@ -179,6 +188,7 @@ float const grav = 9.81f;  // Gravitational Acceleration [m/s^2]
 float quadplane_eff_elevon_rate = VEHICLE_ELEVON_RATE;                 // Elevon command slew limit [pprz/s]
 float quadplane_eff_periodic_freq = EFF_SCHEDULING_QUADPLANE_PERIODIC_FREQ;   // Module Frequency [Hz]
 struct quadplane_eff_sched_var_t quadplane_eff_sched_v;
+bool quadplane_eff_ground_test = false;
 
 static inline void quadplane_update_cmd_cache(void);
 static inline void quadplane_update_airspeed_cache(void);
@@ -249,16 +259,31 @@ static inline void quadplane_update_cmd_cache(void)
 // Airspeed = forward (body x) EKF speed, standing in for the airspeed sensor
 static inline void quadplane_update_airspeed_cache(void)
 {
-  const struct FloatRMat *ned_to_body = stateGetNedToBodyRMat_f();
-  const struct NedCoor_f *vel = stateGetSpeedNed_f();
+  float u;
 
-  float u = RMAT_ELMT(*ned_to_body, 0, 0) * vel->x
-          + RMAT_ELMT(*ned_to_body, 0, 1) * vel->y
-          + RMAT_ELMT(*ned_to_body, 0, 2) * vel->z;
+  if (quadplane_eff_ground_test) {
+    /*
+     * MIN_PPRZ -> 0 m/s
+     * MAX_PPRZ -> CMQ_ELEVON_TEST_AIRSPEED_MAX
+     */
+    float throttle_ratio = (float)radio_control_get(RADIO_THROTTLE) / (float)MAX_PPRZ;
 
-  // Written so that a NaN velocity also lands on 0: this feeds the inner-loop B matrix
+    Bound(throttle_ratio, 0.f, 1.f);
+
+    u = throttle_ratio * CMQ_ELEVON_TEST_AIRSPEED_MAX;
+
+  } else {
+    const struct FloatRMat *ned_to_body = stateGetNedToBodyRMat_f();
+    const struct NedCoor_f *vel = stateGetSpeedNed_f();
+
+    u = RMAT_ELMT(*ned_to_body, 0, 0) * vel->x
+      + RMAT_ELMT(*ned_to_body, 0, 1) * vel->y
+      + RMAT_ELMT(*ned_to_body, 0, 2) * vel->z;
+  }
+
   if (!(u > 0.f)) { u = 0.f; }
   if (u > 30.f)   { u = 30.f; }
+
   quadplane_eff_sched_v.airspeed = u;
   quadplane_eff_sched_v.airspeed_sq = u * u;
 }
@@ -347,7 +372,7 @@ static inline void quadplane_update_motor_effectiveness(void)
     const float dMy = (z * fx - x * fz) * rotor_dT + reaction * fy;
     const float dMz = (x * fy - y * fx) * rotor_dT + reaction * fz;
 
-    const float dAx = fx * rotor_dT;
+    //const float dAx = fx * rotor_dT;
     const float dAz = fz * rotor_dT;
 
 
@@ -441,7 +466,15 @@ static inline void quadplane_update_elevon_effectiveness(void)
  */
 void eff_scheduling_quadplane_report(void)
 {
+  if (quadplane_eff_ground_test) {
+    float payload[3] = {
+      quadplane_eff_sched_v.airspeed,      // payload[0] : vitesse simulée [m/s]
+      quadplane_eff_sched_v.airspeed_sq,   // payload[1] : V²
+      quadplane_eff_ground_test ? 1.f : 0.f // payload[2] : test actif
+    };
 
+    DOWNLINK_SEND_PAYLOAD_FLOAT(DefaultChannel, DefaultDevice, 3, payload);
+    }
 }
 
 
@@ -464,12 +497,21 @@ void stabilization_indi_set_wls_settings(void)
     wls_stab_p.u_pref[i] =  act_pref[i];
   }*/
 
-
-  // 4 hoovering motors 
-  for (uint8_t i = 0; i < 4; i++) {
-    wls_stab_p.u_min[i] = VEHICLE_MOTOR_IDLE;
-    wls_stab_p.u_max[i] = MAX_PPRZ;
-    wls_stab_p.u_pref[i] = act_pref[i];
+  // 4 hoovering motors turns off in forward mode
+  if (quadplane_eff_forward_mode) {
+    for (uint8_t i = QUADPLANE_ACT_MOTOR_FR;
+        i <= QUADPLANE_ACT_MOTOR_FL; i++) {
+      wls_stab_p.u_min[i]  = 0.f;
+      wls_stab_p.u_max[i]  = 0.f;
+      wls_stab_p.u_pref[i] = 0.f;
+    }
+  }  else {
+    // 4 hoovering motors 
+    for (uint8_t i = 0; i < 4; i++) {
+      wls_stab_p.u_min[i] = VEHICLE_MOTOR_IDLE;
+      wls_stab_p.u_max[i] = MAX_PPRZ;
+      wls_stab_p.u_pref[i] = act_pref[i];
+    }
   }
 
   // Elevons : servos 
@@ -481,20 +523,41 @@ void stabilization_indi_set_wls_settings(void)
   wls_stab_p.u_max[QUADPLANE_ACT_ELEVON_L] =  MAX_PPRZ;
   wls_stab_p.u_pref[QUADPLANE_ACT_ELEVON_L] = act_pref[QUADPLANE_ACT_ELEVON_L];
 
+// Pusher motor
+if (quadplane_eff_disable_pusher) {
+  /*
+   * Pusher forbidden : ground
+   */
+  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = 0.f;
+  wls_stab_p.u_max[QUADPLANE_ACT_PUSHER] = 0.f;
+  wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = 0.f;
+
+} else if (quadplane_eff_pusher_forced) {
+  /*
+   * Transition : pusher controled by control_mixing_quadplane.
+   */
+  float cmd = quadplane_eff_pusher_forced_cmd;
+  Bound(cmd, 0.f, MAX_PPRZ);
+
+  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = cmd;
+  wls_stab_p.u_max[QUADPLANE_ACT_PUSHER] = cmd;
+  wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = cmd;
+
+} else {
+  /*
+   * Forward : INDI/WLS pusher management
+   */
+  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = 0.f;
+  wls_stab_p.u_max[QUADPLANE_ACT_PUSHER] = MAX_PPRZ;
+  wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = act_pref[QUADPLANE_ACT_PUSHER];
+}
+
+/*
   // Pusher : motor 
   wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = 0.f;
   wls_stab_p.u_max[QUADPLANE_ACT_PUSHER] = MAX_PPRZ;
   wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = act_pref[QUADPLANE_ACT_PUSHER];
-
-
-
-  //#ifdef QUADPLANE_HOVER_TEST
-  for (uint8_t i = QUADPLANE_ACT_MOTOR_FR;
-       i <= QUADPLANE_ACT_MOTOR_FL; i++) {
-    wls_stab_p.u_min[i]  = VEHICLE_MOTOR_IDLE;
-    wls_stab_p.u_pref[i] = VEHICLE_MOTOR_HOVER;
-  }
-//#endif
+*/
 
 
   // Elevons: the travel opens with dynamic pressure, (V / elevon_v_full)^2 of the range.
@@ -514,19 +577,4 @@ void stabilization_indi_set_wls_settings(void)
     wls_stab_p.u_max[e]  = Min(u + step, lim);
     wls_stab_p.u_pref[e] = open * actuator_state_filt_vect[e];
   }
-
-  #ifdef QUADPLANE_HOVER_TEST
-  const uint8_t locked_actuators[] = {
-    QUADPLANE_ACT_ELEVON_R,
-    QUADPLANE_ACT_ELEVON_L,
-    QUADPLANE_ACT_PUSHER
-  };
-
-  for (uint8_t i = 0; i < 3; i++) {
-    const uint8_t a = locked_actuators[i];
-    wls_stab_p.u_min[a] = 0.f;
-    wls_stab_p.u_max[a] = 0.f;
-    wls_stab_p.u_pref[a] = 0.f;
-  }
-#endif
 }

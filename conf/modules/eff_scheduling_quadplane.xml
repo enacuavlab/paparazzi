@@ -66,7 +66,7 @@
 
   <init fun="eff_scheduling_quadplane_init()"/>
   <periodic fun="eff_scheduling_quadplane_periodic()" freq="500.0"/>
-  <periodic fun="eff_scheduling_quadplane_report()" freq="0.5" autorun="FALSE"/> <!-- TRUE  FALSE-->
+  <periodic fun="eff_scheduling_quadplane_report()" freq="0.5" autorun="TRUE"/> <!-- TRUE  FALSE-->
 
   <makefile target="ap|nps" firmware="rotorcraft">
 

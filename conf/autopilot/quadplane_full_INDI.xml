@@ -14,7 +14,7 @@
     <includes>
       <include name="autopilot_rc_helpers.h"/>
       <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE" cond="ifndef MODE_MANUAL"/>
-      <define name="MODE_AUTO1" value="AP_MODE_NAV" cond="ifndef MODE_AUTO1"/>
+      <define name="MODE_AUTO1" value="AP_MODE_FORWARD" cond="ifndef MODE_AUTO1"/>
       <define name="MODE_AUTO2" value="AP_MODE_NAV" cond="ifndef MODE_AUTO2"/>
     </includes>
 
@@ -68,6 +68,20 @@
       <exception cond="!GpsIsLost()" deroute="$LAST_MODE"/>
     </mode>
 
+    <mode name="ELEVON_TEST" shortname="ELV_TEST">
+      <select cond="CMQ_GROUND_ELEVON_TEST && !kill_switch_is_on()"/>
+
+      <on_enter>
+        <call fun="control_mixing_quadplane_elevon_test_enter()"/>
+      </on_enter>
+
+      <control>
+        <call fun="control_mixing_quadplane_elevon_test()"/>
+      </control>
+
+      <exception cond="RadioControlIsLost()" deroute="KILL"/>
+    </mode>
+
     <mode name="MANUAL" shortname="MAN">
       <on_enter>
         <call fun="control_mixing_quadplane_attitude_direct_enter()"/>
@@ -77,6 +91,19 @@
       </control>
       <control>
         <call fun="control_mixing_quadplane_attitude_direct()"/>
+      </control>
+      <exception cond="RadioControlIsLost()" deroute="FAILSAFE"/>
+    </mode>
+
+    <mode name="FORWARD" shortname="FWD">
+      <on_enter>
+        <call fun="control_mixing_quadplane_attitude_plane_enter()"/>
+      </on_enter>
+      <control freq="NAVIGATION_FREQUENCY">
+        <call fun="nav_periodic_task()"/>
+      </control>
+      <control>
+        <call fun="control_mixing_quadplane_attitude_plane()"/>
       </control>
       <exception cond="RadioControlIsLost()" deroute="FAILSAFE"/>
     </mode>
