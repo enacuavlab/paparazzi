@@ -1,0 +1,50 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="baro_logger" dir="sensors" task="sensors">
+  <doc>
+    <description>
+      Logs averaged barometric pressure and temperature measurements,
+      together with current GPS data, to the SD card.
+    </description>
+
+    <configure name="BARO_LOGGER_FREQUENCY"
+               value="10"
+               description="SD logging frequency in Hz."/>
+
+    <define name="BARO_LOGGER_BARO_ABS_ID"
+            value="ABI_SENDER_ID"
+            description="ABI sender for absolute pressure; default is ABI_BROADCAST."/>
+
+    <define name="BARO_LOGGER_TEMPERATURE_ID"
+            value="ABI_SENDER_ID"
+            description="ABI sender for temperature; default is ABI_BROADCAST."/>
+  </doc>
+
+  <dep>
+    <depends>logger_sd_chibios</depends>
+  </dep>
+  
+  <header>
+    <file name="baro_logger.h"/>
+  </header>
+
+  <init fun="tawaki_baro_logger_init()"/>
+
+  <periodic fun="tawaki_baro_logger_periodic()"
+            freq="BARO_LOGGER_FREQUENCY"/>
+
+  <makefile target="ap">
+    <configure name="BARO_LOGGER_FREQUENCY" default="10"/>
+
+    <define name="BARO_LOGGER_FREQUENCY"
+            value="$(BARO_LOGGER_FREQUENCY)"/>
+
+    <define name="BARO_LOGGER_BARO_ABS_ID"
+            value="BARO_BMP3_SENDER_ID"/>
+
+    <define name="BARO_LOGGER_TEMPERATURE_ID"
+            value="BARO_BMP3_SENDER_ID"/>
+
+    <file name="baro_logger.c"/>
+  </makefile>
+</module>
