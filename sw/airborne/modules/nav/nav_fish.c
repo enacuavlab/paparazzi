@@ -33,7 +33,7 @@
  * https://doi.org/10.1371/journal.pcbi.1005933
  */
 
-#include "modules/nav/nav_fish.h"
+#include "modules/nav/swarm_fish.h"
 #include "modules/multi/traffic_info.h"
 #include "firmwares/rotorcraft/navigation.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
@@ -53,175 +53,243 @@
  * Default parameters
  */
 
-#ifndef NAV_FISH_BODY_LENGTH
-#define NAV_FISH_BODY_LENGTH 0.5f
+#ifndef SWARM_FISH_MAX_SPEED
+#define SWARM_FISH_MAX_SPEED 5.0f
 #endif
 
-#ifndef NAV_FISH_MAXVELOCITY
-#define NAV_FISH_MAXVELOCITY 0.5f
+#ifndef SWARM_FISH_MIN_SPEED
+#define SWARM_FISH_MIN_SPEED 0.5f
 #endif
 
-#ifndef NAV_FISH_MINVELOCITY
-#define NAV_FISH_MINVELOCITY 0.1f
+#ifndef SWARM_FISH_MAX_YAW
+#define SWARM_FISH_MAX_YAW RadOfDeg(90.f)
 #endif
 
-#ifndef NAV_FISH_MIND2D
-#define NAV_FISH_MIND2D 1.f
+#ifndef SWARM_FISH_MAX_ALT
+#define SWARM_FISH_MAX_ALT 50.0f
 #endif
 
-#ifndef NAV_FISH_FLUCT
-#define NAV_FISH_FLUCT 0.1f
+#ifndef SWARM_FISH_MIN_ALT
+#define SWARM_FISH_MIN_ALT 2.0f
 #endif
 
-#ifndef NAV_FISH_EW1
-#define NAV_FISH_EW1 0.7f
+#ifndef SWARM_FISH_ARENA_RADIUS
+#define SWARM_FISH_ARENA_RADIUS 15.f
 #endif
 
-#ifndef NAV_FISH_EW2
-#define NAV_FISH_EW2 0.f
+#ifndef SWARM_FISH_USE_HEADING
+#define SWARM_FISH_USE_HEADING true
 #endif
 
-#ifndef NAV_FISH_ALPHA
-#define NAV_FISH_ALPHA 0.6f
+#ifndef SWARM_FISH_FREE_HEADING
+#define SWARM_FISH_FREE_HEADING true
 #endif
 
-#ifndef NAV_FISH_YW
-#define NAV_FISH_YW 0.8f
+#ifndef SWARM_FISH_VZ_CTL
+#define SWARM_FISH_VZ_CTL false
 #endif
 
-#ifndef NAV_FISH_LW
-#define NAV_FISH_LW (2.5f*NAV_FISH_BODY_LENGTH)
+#ifndef SWARM_FISH_Y_ATT
+#define SWARM_FISH_Y_ATT 1.0f
 #endif
 
-#ifndef NAV_FISH_ALPHA_REP
-#define NAV_FISH_ALPHA_REP 1.f
+#ifndef SWARM_FISH_L_ATT
+#define SWARM_FISH_L_ATT 6.0f
 #endif
 
-#ifndef NAV_FISH_YATT
-#define NAV_FISH_YATT 0.4f
+#ifndef SWARM_FISH_D_ATT
+#define SWARM_FISH_D_ATT 2.f
 #endif
 
-#ifndef NAV_FISH_LATT
-#define NAV_FISH_LATT 3.f
+#ifndef SWARM_FISH_A_ATT
+#define SWARM_FISH_A_ATT 0.3f
 #endif
 
-#ifndef NAV_FISH_D0ATT
-#define NAV_FISH_D0ATT 1.5f
+#ifndef SWARM_FISH_Y_ALI
+#define SWARM_FISH_Y_ALI 0.5f
 #endif
 
-#ifndef NAV_FISH_YALI
-#define NAV_FISH_YALI 0.15f
+#ifndef SWARM_FISH_L_ALI
+#define SWARM_FISH_L_ALI 3.f
 #endif
 
-#ifndef NAV_FISH_LALI
-#define NAV_FISH_LALI 3.f
+#ifndef SWARM_FISH_A_ALI
+#define SWARM_FISH_A_ALI 0.0f
 #endif
 
-#ifndef NAV_FISH_D0ALI
-#define NAV_FISH_D0ALI 1.f
+#ifndef SWARM_FISH_Y_V
+#define SWARM_FISH_Y_V 0.5f
 #endif
 
-#ifndef NAV_FISH_ALT
-#define NAV_FISH_ALT 2.0f
+#ifndef SWARM_FISH_L_V
+#define SWARM_FISH_L_V 3.f
 #endif
 
-#ifndef NAV_FISH_WALL_DISTANCE
-#define NAV_FISH_WALL_DISTANCE 10.f
+#ifndef SWARM_FISH_A_V
+#define SWARM_FISH_A_V 0.0f
 #endif
 
-#ifndef NAV_FISH_STRATEGY
-#define NAV_FISH_STRATEGY 0
+#ifndef SWARM_FISH_Y_Z
+#define SWARM_FISH_Y_Z 0.3f
 #endif
 
-#ifndef NAV_FISH_TRYATT
-#define NAV_FISH_TRYATT 0.2f
+#ifndef SWARM_FISH_L_Z
+#define SWARM_FISH_L_Z 4.f
 #endif
 
-#ifndef NAV_FISH_TRLATT
-#define NAV_FISH_TRLATT 3.f
+#ifndef SWARM_FISH_D_Z
+#define SWARM_FISH_D_Z 2.0f
 #endif
 
-#ifndef NAV_FISH_TRYALI
-#define NAV_FISH_TRYALI 0.25f
+#ifndef SWARM_FISH_A_Z
+#define SWARM_FISH_A_Z 0.0f
 #endif
 
-#ifndef NAV_FISH_TRLALI
-#define NAV_FISH_TRLALI 2.f
+#ifndef SWARM_FISH_Y_NAV
+#define SWARM_FISH_Y_NAV 0.3f
 #endif
 
-static float distance_wall = NAV_FISH_WALL_DISTANCE;
-struct NavFishParams nav_fish_params;
+#ifndef SWARM_FISH_Y_Z_NAV
+#define SWARM_FISH_Y_Z_NAV 0.5f
+#endif
+
+#ifndef SWARM_FISH_L_Z_NAV
+#define SWARM_FISH_L_Z_NAV 1.f
+#endif
+
+#ifndef SWARM_FISH_Y_IN
+#define SWARM_FISH_Y_IN 1.0f
+#endif
+
+#ifndef SWARM_FISH_L_IN
+#define SWARM_FISH_L_IN 4.0f
+#endif
+
+#ifndef SWARM_FISH_A_IN
+#define SWARM_FISH_A_IN 0.2f
+#endif
+
+#ifndef SWARM_FISH_Y_Z_IN
+#define SWARM_FISH_Y_Z_IN 1.0f
+#endif
+
+#ifndef SWARM_FISH_L_Z_IN
+#define SWARM_FISH_L_Z_IN 4.0f
+#endif
+
+#ifndef SWARM_FISH_D_Z_IN
+#define SWARM_FISH_D_Z_IN 1.0f
+#endif
+
+#ifndef SWARM_FISH_Y_OBS
+#define SWARM_FISH_Y_OBS 1.0f
+#endif
+
+#ifndef SWARM_FISH_Y_V_OBS
+#define SWARM_FISH_Y_V_OBS 1.0f
+#endif
+
+#ifndef SWARM_FISH_L_OBS
+#define SWARM_FISH_L_OBS 4.0f
+#endif
+
+#ifndef SWARM_FISH_A_OBS
+#define SWARM_FISH_A_OBS 0.5f
+#endif
+
+#ifndef SWARM_FISH_V0_OBS
+#define SWARM_FISH_V0_OBS 1.0f
+#endif
+
+#ifndef SWARM_FISH_Y_Z_OBS
+#define SWARM_FISH_Y_Z_OBS 0.5f
+#endif
+
+#ifndef SWARM_FISH_L_Z_OBS
+#define SWARM_FISH_L_Z_OBS 0.2f
+#endif
+
+
+struct SwarmFishParams swarm_fish_params;
 // shortname to params
-#define nfp nav_fish_params
+#define sfp swarm_fish_params
+
+struct SwarmFishNav swarm_fish_nav;
+// shortname to nav params
+#define sfn swarm_fish_nav
 
 //state data
-struct NavFish {
-  float heading;      ///< heading command
-  float step_size;    ///< step size
-  float r_w;          ///< distance to wall
-  float f_w;          ///< intensity of wall effect
-  float theta_w;      ///< angle to wall
-  float f_fluct;      ///< fluctuation effect
-  float f_wall;       ///< wall effect
-  float f_ali;        ///< alignement effect
-  float f_att;        ///< attraction effect
-  float velocity;     ///< current velocity
+struct SwarmFish {
+  float heading;        ///< heading command
+  float theta_obs;      ///< angle to wall
+  float f_social[3];    ///< social interactions
+  float f_nav[3];       ///< navigation
+  float f_intruder[3];  ///< intruder repulsion
+  float f_obstacle[3];  ///< obstacle repulsion
 };
 
-struct NavFish nav_fish;
+static struct SwarmFish swarm_fish;
 
 /** initialization of parameters and state variables
 */
-void nav_fish_init(void)
+void swarm_fish_init(void)
 {
-  nav_fish_params.max_velocity = NAV_FISH_MAXVELOCITY;
-  nav_fish_params.min_velocity = NAV_FISH_MINVELOCITY;
-  nav_fish_params.min_d2d      = NAV_FISH_MIND2D;
-  nav_fish_params.fluct        = NAV_FISH_FLUCT;
-  nav_fish_params.alpha        = NAV_FISH_ALPHA;
-  nav_fish_params.e_w1         = NAV_FISH_EW1;
-  nav_fish_params.e_w2         = NAV_FISH_EW2;
-  nav_fish_params.y_w          = NAV_FISH_YW;
-  nav_fish_params.l_w          = NAV_FISH_LW;
-  nav_fish_params.alpha_rep    = NAV_FISH_ALPHA_REP;
-  nav_fish_params.y_att        = NAV_FISH_YATT;
-  nav_fish_params.l_att        = NAV_FISH_LATT;
-  nav_fish_params.d0_att       = NAV_FISH_D0ATT;
-  nav_fish_params.y_ali        = NAV_FISH_YALI;
-  nav_fish_params.l_ali        = NAV_FISH_LALI;
-  nav_fish_params.d0_ali       = NAV_FISH_D0ALI;
-  nav_fish_params.alt          = NAV_FISH_ALT;
-  nav_fish_params.tr_y_att     = NAV_FISH_TRYATT;
-  nav_fish_params.tr_l_att     = NAV_FISH_TRLATT;
-  nav_fish_params.tr_y_ali     = NAV_FISH_TRYALI;
-  nav_fish_params.tr_l_ali     = NAV_FISH_TRLALI;
-  nav_fish_params.strategy     = NAV_FISH_STRATEGY;
+  swarm_fish_params.y_att        = SWARM_FISH_Y_ATT;
+  swarm_fish_params.l_att        = SWARM_FISH_L_ATT;
+  swarm_fish_params.d_att        = SWARM_FISH_D_ATT;
+  swarm_fish_params.a_att        = SWARM_FISH_A_ATT;
+  swarm_fish_params.y_ali        = SWARM_FISH_Y_ALI;
+  swarm_fish_params.l_ali        = SWARM_FISH_L_ALI;
+  swarm_fish_params.a_ali        = SWARM_FISH_A_ALI;
+  swarm_fish_params.y_v          = SWARM_FISH_Y_V;
+  swarm_fish_params.l_v          = SWARM_FISH_L_V;
+  swarm_fish_params.a_v          = SWARM_FISH_A_V;
+  swarm_fish_params.y_z          = SWARM_FISH_Y_Z;
+  swarm_fish_params.l_z          = SWARM_FISH_L_Z;
+  swarm_fish_params.d_z          = SWARM_FISH_D_Z;
+  swarm_fish_params.a_z          = SWARM_FISH_A_Z;
+  swarm_fish_params.y_nav        = SWARM_FISH_Y_NAV;
+  swarm_fish_params.y_z_nav      = SWARM_FISH_Y_Z_NAV;
+  swarm_fish_params.l_z_nav      = SWARM_FISH_L_Z_NAV;
+  swarm_fish_params.y_in         = SWARM_FISH_Y_IN;
+  swarm_fish_params.l_in         = SWARM_FISH_L_IN;
+  swarm_fish_params.a_in         = SWARM_FISH_A_IN;
+  swarm_fish_params.y_z_in       = SWARM_FISH_Y_Z_IN;
+  swarm_fish_params.l_z_in       = SWARM_FISH_L_Z_IN;
+  swarm_fish_params.a_z_in       = SWARM_FISH_A_Z_IN;
+  swarm_fish_params.y_obs        = SWARM_FISH_Y_OBS;
+  swarm_fish_params.y_v_obs      = SWARM_FISH_Y_V_OBS;
+  swarm_fish_params.l_obs        = SWARM_FISH_L_OBS;
+  swarm_fish_params.a_obs        = SWARM_FISH_A_OBS;
+  swarm_fish_params.v0_obs       = SWARM_FISH_V0_OBS;
+  swarm_fish_params.y_z_obs      = SWARM_FISH_Y_Z_OBS;
+  swarm_fish_params.l_z_obs      = SWARM_FISH_L_Z_OBS;
 
-  nav_fish.heading = 0.f;
-  nav_fish.step_size = NAV_FISH_BODY_LENGTH;
-  nav_fish.r_w = 0.f;
-  nav_fish.f_w = 0.f;
-  nav_fish.theta_w = 0.f;
-  nav_fish.f_fluct = 0.f;
-  nav_fish.f_wall = 0.f;
-  nav_fish.f_ali = 0.f;
-  nav_fish.f_att = 0.f;
-  nav_fish.velocity = 0.5f;
+  swarm_fish_params.max_speed    = SWARM_FISH_MAX_SPEED;
+  swarm_fish_params.min_speed    = SWARM_FISH_MIN_SPEED;
+  swarm_fish_params.max_yaw      = SWARM_FISH_MAX_YAW;
+  swarm_fish_params.max_alt      = SWARM_FISH_MAX_ALT;
+  swarm_fish_params.min_alt      = SWARM_FISH_MIN_ALT;
+  swarm_fish_params.arena_radius = SWARM_FISH_ARENA_RADIUS;
+  swarm_fish_params.use_heading  = SWARM_FISH_USE_HEADING;
+  swarm_fish_params.free_heading = SWARM_FISH_FREE_HEADING;
+  swarm_fish_params.vz_ctl       = SWARM_FISH_VZ_CTL;
 }
 
 
 static inline void send_swarm_message(void)
 {
-  DOWNLINK_SEND_SWARM_FISH(DefaultChannel, DefaultDevice,
-      &nav_fish.heading,
-      &nav_fish.step_size,
-      &nav_fish.r_w,
-      &nav_fish.f_w,
-      &nav_fish.theta_w,
-      &nav_fish.f_fluct,
-      &nav_fish.f_wall,
-      &nav_fish.f_ali,
-      &nav_fish.f_att);
+  // TODO update message fields
+  //DOWNLINK_SEND_SWARM_FISH(DefaultChannel, DefaultDevice,
+  //    &swarm_fish.heading,
+  //    &swarm_fish.step_size,
+  //    &swarm_fish.r_w,
+  //    &swarm_fish.f_w,
+  //    &swarm_fish.theta_w,
+  //    &swarm_fish.f_fluct,
+  //    &swarm_fish.f_wall,
+  //    &swarm_fish.f_ali,
+  //    &swarm_fish.f_att);
 }
 
 /** sign function
@@ -238,33 +306,33 @@ static float sign(float x)
   }
 }
 
-/** Gaussian random number generator with mean =0 and invariance =1 using Box-Muller method
- * @return random number following a normal distribution
+/** anisotropic function
+ *
+ * @param a anisotropy coef (0 means isotropic, gain = 1.)
+ * @param psi angle of perseption
+ * @return anisotripic gain in [-1., 1.]
  */
-static float normal_random_gen(void)
+static float anisotripic(float a, float psi)
 {
-  float random1 = ((float)rand()) / ((float)(RAND_MAX));
-  float random2 = ((float)rand()) / ((float)(RAND_MAX));
-  return cosf(2.f*M_PI * random1) * sqrtf(-2.f*logf(random2));
+  return (1.f + a * cosf(psi)) / (1.f + a);
 }
 
-/** Calculates distance between the uav and wall
+/** Calculates distance between the uav and the arena wall
+ *  centered on a WP
  *
+ * @param wp_id waypoint ID
  * @param pos ENU coordinates
- * @return distance to circular wall
+ * @return distance to circular wall, negatif if outside
  */
-static float distance_to_wall(struct EnuCoor_f *pos)
+static float distance_to_arena(uint8_t wp_id, struct EnuCoor_f *pos)
 {
-  float x_home = waypoint_get_x(WP_HOME);
-  float y_home = waypoint_get_y(WP_HOME);
-  float dist = distance_wall - sqrtf(((pos->x - x_home) * (pos->x - x_home)) + ((pos->y - y_home) * (pos->y - y_home)));
-  if (dist < 0.f) {
-    return 0.f;
-  }
+  float x_center = waypoint_get_x(wp_id);
+  float y_center = waypoint_get_y(wp_id);
+  float dist = sfp.arena_radius - sqrtf(((pos->x - x_center) * (pos->x - x_center)) + ((pos->y - y_center) * (pos->y - y_center)));
   return dist;
 }
 
-/** calculates the relative orientation too the wall
+/** calculates the relative orientation to the wall
  *
  * @param pos ENU coordinates
  * @param psi angle from north clockwise
@@ -279,17 +347,30 @@ static float angle_to_wall(struct EnuCoor_f *pos, float psi)
   return delta;
 }
 
-/** calculates the distance between two uavs
+/** calculates the horizontal distance between two uavs
  *
  * @param pos ENU coordinates of the first drone
  * @param other ENU coordinates of the second drone
  * @return the distance between two uavs from their given position
  */
-static float distance_drone_to_drone(struct EnuCoor_f *pos, struct EnuCoor_f *other)
+static float get_distance_2D(struct EnuCoor_f *pos, struct EnuCoor_f *other)
 {
   struct EnuCoor_f diff;
   VECT3_DIFF(diff, *other, *pos);
-  return sqrtf(VECT2_NORM2(diff));
+  return FLOAT_VECT2_NORM(diff);
+}
+
+/** calculates the 3D distance between two uavs
+ *
+ * @param pos ENU coordinates of the first drone
+ * @param other ENU coordinates of the second drone
+ * @return the distance between two uavs from their given position
+ */
+static float get_distance_3D(struct EnuCoor_f *pos, struct EnuCoor_f *other)
+{
+  struct EnuCoor_f diff;
+  VECT3_DIFF(diff, *other, *pos);
+  return FLOAT_VECT3_NORM(diff);
 }
 
 /** calculates a uav's viewing angle on another uav
@@ -335,14 +416,14 @@ static float neighbor_influence(struct EnuCoor_f *pos, struct EnuCoor_f *other, 
   float view = viewing_angle(pos, other, psi);
   float d2d = distance_drone_to_drone(pos, other);
   float d_phi = delta_phi(psi, psi_other);
-  float tmp_ali = d2d / nfp.l_ali;
-  tmp_ali = nfp.y_ali * sinf(d_phi) * ((d2d + nfp.d0_ali) / nfp.l_ali) * expf(-tmp_ali * tmp_ali);
+  float tmp_ali = d2d / sfp.l_ali;
+  tmp_ali = sfp.y_ali * sinf(d_phi) * ((d2d + sfp.d0_ali) / sfp.l_ali) * expf(-tmp_ali * tmp_ali);
   float amplifier = 1.f;
-  if (d2d < nfp.d0_att) {
-    amplifier = expf(nfp.alpha_rep * ((nfp.d0_att - d2d)/(nfp.d0_att)));
+  if (d2d < sfp.d0_att) {
+    amplifier = expf(sfp.alpha_rep * ((sfp.d0_att - d2d)/(sfp.d0_att)));
   }
-  float tmp_att = d2d / nfp.l_att;
-  tmp_att = nfp.y_att * (((d2d - nfp.d0_att) / nfp.l_att) / (1.f + tmp_att * tmp_att)) * sinf(view) * amplifier;
+  float tmp_att = d2d / sfp.l_att;
+  tmp_att = sfp.y_att * (((d2d - sfp.d0_att) / sfp.l_att) / (1.f + tmp_att * tmp_att)) * sinf(view) * amplifier;
   return fabs(tmp_att + tmp_ali);
 }
 
@@ -357,19 +438,19 @@ static float neighbor_attraction(struct EnuCoor_f *pos, struct EnuCoor_f *other,
   float view = viewing_angle(pos, other, psi);
   float d2d = distance_drone_to_drone(pos, other);
 
-  if(d2d <= nfp.min_d2d) {
+  if(d2d <= sfp.min_d2d) {
     if (view > -M_PI_2 && view <= M_PI_2) {
-      nav_fish.velocity = nav_fish.velocity - nfp.min_velocity;
+      swarm_fish.velocity = swarm_fish.velocity - sfp.min_velocity;
     } else {
-      nav_fish.velocity = nav_fish.velocity + nfp.min_velocity;
+      swarm_fish.velocity = swarm_fish.velocity + sfp.min_velocity;
     }
   }
   float amplifier = 1.f;
-  if (d2d < nfp.d0_att) {
-    amplifier = expf(nfp.alpha_rep * ((nfp.d0_att - d2d) / nfp.d0_att));
+  if (d2d < sfp.d0_att) {
+    amplifier = expf(sfp.alpha_rep * ((sfp.d0_att - d2d) / sfp.d0_att));
   }
-  float tmp_att = d2d / nfp.l_att;
-  tmp_att = nfp.y_att * (((d2d - nfp.d0_att) / nfp.l_att) / (1.f + tmp_att * tmp_att)) * sinf(view) * amplifier;
+  float tmp_att = d2d / sfp.l_att;
+  tmp_att = sfp.y_att * (((d2d - sfp.d0_att) / sfp.l_att) / (1.f + tmp_att * tmp_att)) * sinf(view) * amplifier;
   return tmp_att;
 }
 
@@ -384,8 +465,8 @@ static float neighbor_alignement(struct EnuCoor_f *pos, struct EnuCoor_f *other,
 {
   float d2d = distance_drone_to_drone(pos, other);
   float d_phi = delta_phi(psi, psi_other);
-  float tmp_ali = d2d / nfp.l_ali;
-  tmp_ali = nfp.y_ali * sinf(d_phi) * ((d2d + nfp.d0_ali) / nfp.l_ali) * expf(-tmp_ali * tmp_ali);
+  float tmp_ali = d2d / sfp.l_ali;
+  tmp_ali = sfp.y_ali * sinf(d_phi) * ((d2d + sfp.d0_ali) / sfp.l_ali) * expf(-tmp_ali * tmp_ali);
   return tmp_ali;
 }
 
@@ -406,8 +487,8 @@ static float calculate_new_heading(void)
   float psi = stateGetNedToBodyEulers_f()->psi;
 
   // compute distance and angle to wall
-  nav_fish.r_w = distance_to_wall(pos);
-  nav_fish.theta_w = angle_to_wall(pos, psi);
+  swarm_fish.r_w = distance_to_wall(pos);
+  swarm_fish.theta_w = angle_to_wall(pos, psi);
 
   // trajectory attraction and alignement (not ready)
   //float dx = x_finish - x_start;
@@ -415,15 +496,15 @@ static float calculate_new_heading(void)
   //float alpha = atan2f(dx, dy) - psi;
   //float pd = perpendicular_distance(pos->x, pos->y, x_start, y_start, dx, dy);
   //float beta = (sign(x_finish - pos->x)*M_PI_2) - psi - atanf((y_finish - pos->y)/(x_finish - pos->x)) ;
-  //float trajectory = (nfp.tr_y_ali * sinf(alpha) * expf(nfp.tr_l_ali - pd)) + (nfp.tr_y_att * sinf(beta) * expf((pd - (3 * nfp.tr_l_att)) / (nfp.tr_l_att + pd)));
+  //float trajectory = (sfp.tr_y_ali * sinf(alpha) * expf(sfp.tr_l_ali - pd)) + (sfp.tr_y_att * sinf(beta) * expf((pd - (3 * sfp.tr_l_att)) / (sfp.tr_l_att + pd)));
 
   // compute fluctuation and wall reaction
-  float fw = expf(-powf(nav_fish.r_w / nfp.l_w, 2.f));
-  float ow = (-1.0f)*sinf(nav_fish.theta_w) * (1.f + nfp.e_w1 * cosf(nav_fish.theta_w) + nfp.e_w2 * cosf(2.f * nav_fish.theta_w));
-  nav_fish.f_w = fw;
-  nav_fish.f_fluct = nfp.fluct * (1.f - nfp.alpha * fw) * normal_random_gen();
-  nav_fish.f_wall = nfp.y_w * ow * fw;
-  nav_fish.step_size = (1.1f - fw) / 2.f;
+  float fw = expf(-powf(swarm_fish.r_w / sfp.l_w, 2.f));
+  float ow = (-1.0f)*sinf(swarm_fish.theta_w) * (1.f + sfp.e_w1 * cosf(swarm_fish.theta_w) + sfp.e_w2 * cosf(2.f * swarm_fish.theta_w));
+  swarm_fish.f_w = fw;
+  swarm_fish.f_fluct = sfp.fluct * (1.f - sfp.alpha * fw) * normal_random_gen();
+  swarm_fish.f_wall = sfp.y_w * ow * fw;
+  swarm_fish.step_size = (1.1f - fw) / 2.f;
 
   // compute alignement and attraction with other drones
   struct EnuCoor_f *pos_focal = NULL;
@@ -434,8 +515,8 @@ static float calculate_new_heading(void)
   uint8_t id_current = 0;
   float min_distance = 1000000.f;
   float max_influence = 0.f;
-  nav_fish.f_ali = 0.f;
-  nav_fish.f_att = 0.f;
+  swarm_fish.f_ali = 0.f;
+  swarm_fish.f_att = 0.f;
 
   for (uint8_t ac = 0; ac < NB_ACS; ac++) {
     if (ti_acs[ac].ac_id == AC_ID || ti_acs[ac].ac_id == 0) { continue; }
@@ -445,12 +526,12 @@ static float calculate_new_heading(void)
       id_current = ti_acs[ac].ac_id;
       pos_current = acInfoGetPositionEnu_f(id_current);
       psi_current = acInfoGetCourse(id_current);
-      if (nfp.strategy == 2) {
+      if (sfp.strategy == 2) {
         pos_focal = NULL;
-        nav_fish.f_ali = nav_fish.f_ali + neighbor_alignement(pos, pos_current, psi, psi_current);
-        nav_fish.f_att = nav_fish.f_att + neighbor_attraction(pos, pos_current, psi);
+        swarm_fish.f_ali = swarm_fish.f_ali + neighbor_alignement(pos, pos_current, psi, psi_current);
+        swarm_fish.f_att = swarm_fish.f_att + neighbor_attraction(pos, pos_current, psi);
       }
-      if (nfp.strategy == 1) {
+      if (sfp.strategy == 1) {
         float influence = neighbor_influence(pos, pos_current ,psi ,psi_current);
         if (influence > max_influence) {
           max_influence = influence;
@@ -459,7 +540,7 @@ static float calculate_new_heading(void)
           psi_focal = psi_current;
         }
       }
-      if (nfp.strategy == 0) {
+      if (sfp.strategy == 0) {
         float distance = distance_drone_to_drone(pos, pos_current);
         if (distance < min_distance) {
           min_distance = distance;
@@ -471,12 +552,12 @@ static float calculate_new_heading(void)
     }
   }
   if (pos_focal != NULL) {
-    nav_fish.f_ali = neighbor_alignement(pos, pos_focal, psi, psi_focal);
-    nav_fish.f_att = neighbor_attraction(pos, pos_focal, psi);
+    swarm_fish.f_ali = neighbor_alignement(pos, pos_focal, psi, psi_focal);
+    swarm_fish.f_att = neighbor_attraction(pos, pos_focal, psi);
   }
 
   // compute heading variation
-  float diff_heading = nav_fish.f_fluct + nav_fish.f_wall + nav_fish.f_ali + nav_fish.f_att;
+  float diff_heading = swarm_fish.f_fluct + swarm_fish.f_wall + swarm_fish.f_ali + swarm_fish.f_att;
   return diff_heading;
 }
 
@@ -484,19 +565,19 @@ static float calculate_new_heading(void)
 /** runs the uav according to fish movement model using velocity control
  * @return true
  */
-bool nav_fish_velocity_run(void)
+bool swarm_fish_velocity_run(void)
 {
   static int counter = PRESCALE;
-  counter = counter - (1 + (int)(nav_fish.f_w * (PRESCALE - 1)));
+  counter = counter - (1 + (int)(swarm_fish.f_w * (PRESCALE - 1)));
   if (counter > 0) { return true; }
   counter = PRESCALE;
   float diff_heading = calculate_new_heading();
-  float new_heading = nav_fish.heading + diff_heading;
+  float new_heading = swarm_fish.heading + diff_heading;
   FLOAT_ANGLE_NORMALIZE(new_heading);
-  nav_fish.heading = new_heading;
-  autopilot_guided_update(GUIDED_FLAG_XY_BODY | GUIDED_FLAG_XY_VEL, nav_fish.velocity, 0.0f, -nfp.alt, nav_fish.heading);
-  nav_fish.velocity = nfp.max_velocity;
-#if NAV_FISH_SYNC_SEND
+  swarm_fish.heading = new_heading;
+  autopilot_guided_update(GUIDED_FLAG_XY_BODY | GUIDED_FLAG_XY_VEL, swarm_fish.velocity, 0.0f, -sfp.alt, swarm_fish.heading);
+  swarm_fish.velocity = sfp.max_velocity;
+#if SWARM_FISH_SYNC_SEND
   send_swarm_message();
 #endif
   return true;
