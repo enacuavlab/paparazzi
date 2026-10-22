@@ -66,6 +66,9 @@
     <module name="flight_recorder"/>
 
 
+	<module name="baro_logger">
+	  <configure name="BARO_LOGGER_FREQUENCY" value="10"/>
+	</module>
 
 	<!-- Use LIDAR telemetry-->
     <module name="lidar_sf30d">
