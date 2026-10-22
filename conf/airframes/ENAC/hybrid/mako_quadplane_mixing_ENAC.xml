@@ -140,7 +140,7 @@
     <servo name="AILEVON_RIGHT" no="1" max="1110"  neutral="1510" min="1910"/>
     <servo name="AILEVON_LEFT"  no="2" max="1100"  neutral="1500" min="1900"/>
     <servo name="MOTOR_PUSHER"  no="3" min="1000" neutral="1000" max="2000"/>
-    <servo name="TRIGGER_CAMERA"  no="12" min="1000" neutral="1000" max="2000"/>
+    <!--servo name="TRIGGER_CAMERA"  no="12" min="1000" neutral="1000" max="2000"/-->
   </servos>
   
   <commands>

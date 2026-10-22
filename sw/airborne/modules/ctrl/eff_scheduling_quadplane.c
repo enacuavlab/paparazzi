@@ -281,7 +281,7 @@ static inline void quadplane_update_airspeed_cache(void)
       + RMAT_ELMT(*ned_to_body, 0, 2) * vel->z;
   }
 
-  if (!(u > 0.f)) { u = 0.f; }
+  if (!(u > 1.f)) { u = 1.f; }
   if (u > 30.f)   { u = 30.f; }
 
   quadplane_eff_sched_v.airspeed = u;
