@@ -31,6 +31,7 @@
 #define INDI_G_SCALING 1000.0
 
 extern float g1g2[INDI_OUTPUTS][INDI_NUM_ACT];
+extern float g2[INDI_NUM_ACT];
 extern float actuator_state_filt_vect[INDI_NUM_ACT];
 extern struct FloatVect3 stab_thrust_filt;
 

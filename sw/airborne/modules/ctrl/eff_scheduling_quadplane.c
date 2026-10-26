@@ -379,7 +379,7 @@ static inline void quadplane_update_motor_effectiveness(void)
 
     g1g2[QUADPLANE_VC_MX][i] = dMx / quadplane_eff_sched_p.Ixx;
     g1g2[QUADPLANE_VC_MY][i] = dMy / quadplane_eff_sched_p.Iyy;
-    g1g2[QUADPLANE_VC_MZ][i] = dMz / quadplane_eff_sched_p.Izz;
+    g1g2[QUADPLANE_VC_MZ][i] = dMz / quadplane_eff_sched_p.Izz + g2[i] / INDI_G_SCALING;
     g1g2[QUADPLANE_VC_AX][i] = 0.f;
     g1g2[QUADPLANE_VC_AZ][i] = dAz / quadplane_eff_sched_p.mass;
   }

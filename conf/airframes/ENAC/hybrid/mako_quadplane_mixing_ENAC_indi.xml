@@ -202,8 +202,8 @@
           <field name="scale_f"     value="true"/>
           <field name="rotation"  value="true"/>
         </field>
-		  <field name="neutral" value="0,-5,-38" type="int[]"/>
-		  <field name="scale_f" value="{ 2.4510, 2.4513, 2.4518 }"/>
+			<field name="neutral" value="-2,-4,-9" type="int[]"/>
+			<field name="scale_f" value="{ 2.4530, 2.4533, 2.4544 }"/>
         <field value="TAWAKIV2_IMU_ROT"/>
       </field>
     </define>
@@ -293,7 +293,7 @@
 	<define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100, 100}"/>
 
     <!-- second order filter parameters -->
-    <define name="ACT_FREQ"       value="{27.4, 27.4, 27.4, 27.4, 20, 20, 27.4}"/>       
+    <define name="ACT_FREQ"       value="{26.,26.,26.,26.,20.,20.,27.4}"/>       
     <define name="FILT_CUTOFF"  value="4.0"/>
     <define name="FILT_CUTOFF_R" value="4.0"/>     
     
@@ -312,18 +312,18 @@
   
 	<section name="VEHICLE_PROPERTIES" prefix="VEHICLE_">
 	  <define name="MASS" value="1.0"/>  <!-- Mass total in kg -->
-	  <define name="IXX" value="0.00372"/>  <!-- MMOI about longitudinal (x) axis [kg.m^2] -->
-	  <define name="IYY" value="0.00389"/>  <!-- MMOI about longitudinal (y) axis [kg.m^2] -->
-	  <define name="IZZ" value="0.01300"/>  <!-- MMOI about longitudinal (z) axis [kg.m^2] -->
+	  <define name="IXX" value="0.029421"/>  <!-- MMOI about longitudinal (x) axis [kg.m^2] 0.00372 -->
+	  <define name="IYY" value="0.020499"/>  <!-- MMOI about longitudinal (y) axis [kg.m^2] 0.00389 -->
+	  <define name="IZZ" value="0.030164"/>  <!-- MMOI about longitudinal (z) axis [kg.m^2] 0.01300 -->
       <!-- 4 Hoovering motors -->
-      <define name="RX" value="{0.187, -0.187, -0.187, 0.187}"/>  <!-- Rotor x positions [m], order: FR, RR, RL, FL -->
-      <define name="RY" value="{ 0.145, 0.145,-0.145,-0.145}"/>  <!-- Rotor y positions [m], order: FR, RR, RL, FL -->
+      <define name="RX" value="{0.195, -0.270, -0.270, 0.195}"/>  <!-- Rotor x positions [m], order: FR, RR, RL, FL -->
+      <define name="RY" value="{ 0.225, 0.220,-0.220,-0.225}"/>  <!-- Rotor y positions [m], order: FR, RR, RL, FL -->
       <define name="RZ"                 value="{0,0,0,0}" />  <!-- Rotor z positions [m], order: FR, RR, RL, FL -->
       <define name="SPIN_DIR"           value="{-1.0,1.0,-1.0,1.0}" />  <!-- Motors spin direction (+1 for CW. -1 for CCW) -->
-      <define name="ROTOR_K_T_PPRZ"     value="{1.22e-4,4.08e-8}" />  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} -->
+      <define name="ROTOR_K_T_PPRZ"     value="{2.90304e-4, 1.0787e-7}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} -->
       <define name="KAPPA"              value="1.75e-4" />  <!-- Drag-torque to thrust ratio (kappa = k_m/k_t) [m] -->
-      <define name="MOTOR_HOVER"        value="3500" />  <!-- Hover motor command 4640 -->
-      <define name="MOTOR_IDLE"         value="3000" />  <!-- Idle motor command -->
+      <define name="MOTOR_HOVER"        value="3640" />  <!-- Hover motor command 4640 -->
+      <define name="MOTOR_IDLE"         value="150" />  <!-- Idle motor command -->
       <!-- Angle Motor rotation in the body frame X = forward Y = right Z = down  d = Rz(ψ) · Ry(θ) · Rx(φ) · {0, 0, -1} -->
       <define name="ROTOR_ROT_X" value="{RadOfDeg(20.f), RadOfDeg(20.f), RadOfDeg(-20.f), RadOfDeg(-20.f)}"/> <!-- Rotations on motors X axis FR BR BL FL -->
       <define name="ROTOR_ROT_Y" value="{0.f, 0.f, 0.f, 0.f}"/> <!-- Rotations on  motors Y axis FR BR BL FL -->
