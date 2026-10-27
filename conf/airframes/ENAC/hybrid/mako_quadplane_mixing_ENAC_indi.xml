@@ -297,7 +297,7 @@
     <define name="FILT_CUTOFF"  value="4.0"/>
     <define name="FILT_CUTOFF_R" value="4.0"/>     
     
-    <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 9600, 9600, 9600}"/>
+    <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 600, 600, 9600}"/>
   </section>
   
   <section name="STABILIZATION_PLANE" prefix="STABILIZATION_PLANE_">
@@ -311,16 +311,16 @@
   
   
 	<section name="VEHICLE_PROPERTIES" prefix="VEHICLE_">
-	  <define name="MASS" value="1.0"/>  <!-- Mass total in kg -->
-	  <define name="IXX" value="0.029421"/>  <!-- MMOI about longitudinal (x) axis [kg.m^2] 0.00372 -->
-	  <define name="IYY" value="0.020499"/>  <!-- MMOI about longitudinal (y) axis [kg.m^2] 0.00389 -->
-	  <define name="IZZ" value="0.030164"/>  <!-- MMOI about longitudinal (z) axis [kg.m^2] 0.01300 -->
+	  <define name="MASS" value="1.533"/>    <!-- Mass total in kg -->
+	  <define name="IXX" value="0.007445"/>  <!-- MMOI about longitudinal (x) axis [kg.m^2] 0.00372 -->
+	  <define name="IYY" value="0.006033"/>  <!-- MMOI about longitudinal (y) axis [kg.m^2] 0.00389 -->
+	  <define name="IZZ" value="0.012950"/>  <!-- MMOI about longitudinal (z) axis [kg.m^2] 0.01300 -->
       <!-- 4 Hoovering motors -->
       <define name="RX" value="{0.195, -0.270, -0.270, 0.195}"/>  <!-- Rotor x positions [m], order: FR, RR, RL, FL -->
       <define name="RY" value="{ 0.225, 0.220,-0.220,-0.225}"/>  <!-- Rotor y positions [m], order: FR, RR, RL, FL -->
       <define name="RZ"                 value="{0,0,0,0}" />  <!-- Rotor z positions [m], order: FR, RR, RL, FL -->
       <define name="SPIN_DIR"           value="{-1.0,1.0,-1.0,1.0}" />  <!-- Motors spin direction (+1 for CW. -1 for CCW) -->
-      <define name="ROTOR_K_T_PPRZ"     value="{2.90304e-4, 1.0787e-7}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} -->
+      <define name="ROTOR_K_T_PPRZ"     value="{8.33925e-5, 3.09866e-8}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} -->
       <define name="KAPPA"              value="1.75e-4" />  <!-- Drag-torque to thrust ratio (kappa = k_m/k_t) [m] -->
       <define name="MOTOR_HOVER"        value="3640" />  <!-- Hover motor command 4640 -->
       <define name="MOTOR_IDLE"         value="150" />  <!-- Idle motor command -->
@@ -332,13 +332,13 @@
       <define name="K_LIFT"             value="0" />  <!-- Wing lift derivative: dL/d(alpha) = k_lift * V^2 [N/rad] -->
       <define name="V_WING"             value="10.0"/>  <!--Airspeed at which wing lift derivative is applied [m/s] -->
       <!-- Elevons -->
-      <define name="K_ELEVON_DEFLECT"   value="(RadOfDeg(20.f) / 9600.f)"/>  <!-- delta = k*pprz [rad/pprz], = delta_max / MAX_PPRZ / 20 degree of max debatement-->
-      <define name="K_ELEVON_ROLL"      value="0.0136f" />  <!-- dMx/ddelta = k_roll * V^2 [N.m/rad per (m/s)^2] 0196f -->
-      <define name="K_ELEVON_PITCH"     value="0.0104f" />  <!-- dMy/ddelta = k_pitch * V^2 [N.m/rad per (m/s)^2] -->
+      <define name="K_ELEVON_DEFLECT"   value="(RadOfDeg(45.f) / 9600.f)"/>  <!-- delta = k*pprz [rad/pprz], = delta_max / MAX_PPRZ / 20 degree of max debatement-->
+      <define name="K_ELEVON_ROLL"      value="0.00136f" />  <!-- dMx/ddelta = k_roll * V^2 [N.m/rad per (m/s)^2] 0136f -->
+      <define name="K_ELEVON_PITCH"     value="0.00104f" />  <!-- dMy/ddelta = k_pitch * V^2 [N.m/rad per (m/s)^2] 0104f -->
       <define name="K_ELEVON_PROPWASH"  value="0.f" />  <!-- dMy/ddelta += k_propwash * T_x * V (default 0) -->
       <define name="K_ELEVON_DIFF_DRAG_YAW" value="0.f" />  <!-- dMz/ddelta = +/- k_yaw * V^2 * delta [N.m/rad]; + for right elevon -->
       <define name="K_ELEVON_V_FULL"    value="10.f" />  <!-- Elevons travel opening with dynamic pressure, full available at x m/s -->
-      <define name="ELEVON_RATE"        value="9600.f" />  <!-- Elevon rate -->
+      <define name="ELEVON_RATE"        value="300000.f" />  <!-- Elevon rate -->
       <!-- Pusher -->
       <define name="PUSHER_RY"          value="0"/>  <!-- Lateral Offset from CG (positive = right) -->
       <define name="PUSHER_RZ"          value="0"/>  <!-- Vertical Offset from CG (positive = down) -->
@@ -348,7 +348,7 @@
 
 
   <section name="HYBRID_TRANSITION">
-	<define name="CMQ_GROUND_ELEVON_TEST" value="FALSE"/> <!-- Use for Elevon test on ground, turn off motors and allow only elevon to move. Go in forward to use it -->
+	<define name="CMQ_GROUND_ELEVON_TEST" value="TRUE"/> <!-- Use for Elevon test on ground, turn off motors and allow only elevon to move. Go in forward to use it -->
     <define name="CMQ_TRANSITION_AIRSPEED" value="13."/> <!-- Transition speed in m/s when we cut the 4 motors to go in plane mode -->
     <define name="CMQ_TRANSITION_TIME" value="4."/> <!-- Transition time -->
     <define name="CMQ_TRANSITION_PITCH" value="0."/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->

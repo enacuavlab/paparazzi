@@ -140,7 +140,10 @@
 #ifndef CMQ_ELEVON_TEST_AIRSPEED_MAX
 #define CMQ_ELEVON_TEST_AIRSPEED_MAX 30.0f
 #endif
-
+/* Airspeed range for elevon testing */
+#ifndef CMQ_ELEVON_TEST_AIRSPEED_MIN
+#define CMQ_ELEVON_TEST_AIRSPEED_MIN CMQ_TRANSITION_AIRSPEED
+#endif
 
 
 
@@ -270,7 +273,7 @@ static inline void quadplane_update_airspeed_cache(void)
 
     Bound(throttle_ratio, 0.f, 1.f);
 
-    u = throttle_ratio * CMQ_ELEVON_TEST_AIRSPEED_MAX;
+    u = CMQ_ELEVON_TEST_AIRSPEED_MIN + throttle_ratio * (CMQ_ELEVON_TEST_AIRSPEED_MAX - CMQ_ELEVON_TEST_AIRSPEED_MIN);
 
   } else {
     const struct FloatRMat *ned_to_body = stateGetNedToBodyRMat_f();
