@@ -63,21 +63,21 @@
         </module>
 
         <!-- Optitrack Settings -->
-        <module name="gps" type="optitrack"/>
-        <define name="INS_EKF2_OPTITRACK" value="TRUE"/>
-        <define name="INS_EKF2_EV_DELAY" value="70"/>
-        <configure name="USE_MAGNETOMETER" value="FALSE"/>
-        <define name="INS_EKF2_MAG_ID" value="ABI_DISABLE"/>
-        <define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_NONE"/>
+<!--        <module name="gps" type="optitrack"/>-->
+<!--        <define name="INS_EKF2_OPTITRACK" value="TRUE"/>-->
+<!--        <define name="INS_EKF2_EV_DELAY" value="70"/>-->
+<!--        <configure name="USE_MAGNETOMETER" value="FALSE"/>-->
+<!--        <define name="INS_EKF2_MAG_ID" value="ABI_DISABLE"/>-->
+<!--        <define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_NONE"/>-->
 
         <!-- GPS Outdoors Settings -->
-<!--        <module name="gps" type="ublox">-->
-<!--            <configure name="GPS_BAUD" value="B115200"/>-->
-<!--            <define name="INS_EKF2_VDIST_SENSOR_TYPE" value="VDIST_SENSOR_GPS"/>-->
-<!--        </module>-->
-<!--        <module name="gps" type="ubx_ucenter">-->
-<!--            <define name="GPS_UBX_UCENTER_RATE" value="100"/>-->
-<!--        </module>-->
+        <module name="gps" type="ublox">
+            <configure name="GPS_BAUD" value="B115200"/>
+            <define name="INS_EKF2_VDIST_SENSOR_TYPE" value="VDIST_SENSOR_GPS"/>
+        </module>
+        <module name="gps" type="ubx_ucenter">
+            <define name="GPS_UBX_UCENTER_RATE" value="100"/>
+        </module>
 
         <module name="ins" type="ekf2"/>
         <module name="guidance" type="indi_hybrid_tiltrotor"/>
@@ -236,11 +236,11 @@
         <define name="ACT_PREF" value="{0, 0, 0, 0, 0, 0, 0, 0}"/>
 
         <!-- Proportional Gains for Angular Error (P - roll, Q - Pitch, R - Yaw) -->
-        <define name="REF_ERR_P" value="140.0"/>
+        <define name="REF_ERR_P" value="130.0"/>
         <define name="REF_ERR_Q" value="120.0"/>
         <define name="REF_ERR_R" value="130.0"/>
         <!-- Proportional Gains for Angular Rate Error (P - roll, Q - Pitch, R - Yaw) -->
-        <define name="REF_RATE_P" value="20.0"/>
+        <define name="REF_RATE_P" value="15.0"/>
         <define name="REF_RATE_Q" value="15.0"/>
         <define name="REF_RATE_R" value="16.0"/>
 
@@ -248,7 +248,7 @@
 
         <!-- First order actuator dynamics -->
         <!-- Elevon 20 rad/s is a placeholder, not identified -->
-        <define name="ACT_FREQ" value="{25.0,25.0,25.0,25.0,3.0,3.0,20.0,20.0}"/>
+        <define name="ACT_FREQ" value="{16.0,16.0,16.0,16.0,3.0,3.0,10.0,10.0}"/>
         <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 9600, 9600, 9600, 9600}"/>
         <define name="ACT_IS_SERVO" value="{0, 0, 0, 0, 1, 1, 1, 1}"/>
 
@@ -259,7 +259,7 @@
         <define name="WLS_PRIORITIES" value="{10000,10000,5000,8000,2000}"/>
 
         <!-- Wu: [FR,BR,BL,FL,tilt_R,tilt_L,elev_R,elev_L]  (lower = allocator prefers it) -->
-        <define name="WLS_WU" value="{1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.5, 0.5}"/>
+        <define name="WLS_WU" value="{1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.35, 0.35}"/>
 
         <!-- Adaptive Learning Rate -->
         <define name="USE_ADAPTIVE" value="FALSE"/>
@@ -286,9 +286,9 @@
 
     <section name="GUIDANCE_INDI">
         <define name="GUIDANCE_INDI_POS_GAIN"          value="1.0"/>
-        <define name="GUIDANCE_INDI_SPEED_GAIN"        value="1.4"/>
+        <define name="GUIDANCE_INDI_SPEED_GAIN"        value="1.2"/>
         <define name="GUIDANCE_INDI_POS_GAINZ"         value="1.0"/>
-        <define name="GUIDANCE_INDI_SPEED_GAINZ"       value="2.2"/>
+        <define name="GUIDANCE_INDI_SPEED_GAINZ"       value="2.0"/>
         <define name="GUIDANCE_INDI_MAX_AIRSPEED"      value="16.0"/>
         <define name="GUIDANCE_INDI_MIN_AIRSPEED"      value="0.0"/>
         <define name="GUIDANCE_INDI_FILTER_CUTOFF"     value="8.0"/>

@@ -631,8 +631,10 @@ void stabilization_indi_set_wls_settings(void)
     if (q < 1.f) { open = q * q; }
   }
   // Each step moves at most elevon_rate / freq around the last command, inside that travel
-  const float lim = open * MAX_PPRZ;
   const float step = atlas_eff_elevon_rate / atlas_eff_periodic_freq;
+  // The travel closes no faster than that slew, so a speed drop cannot drag the elevons
+  static float lim = MAX_PPRZ;
+  lim = Max(open * MAX_PPRZ, lim - step);
   for (int e = ATLAS_ACT_ELEVON_R; e <= ATLAS_ACT_ELEVON_L; e++) {
     float u = actuators_pprz[e];
     Bound(u, -lim, lim);

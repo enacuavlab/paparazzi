@@ -39,6 +39,7 @@ extern void control_mixing_atlas_init(void);
 
 extern void control_mixing_atlas_quad_enter(void);
 extern void control_mixing_atlas_quad(void);
+extern void control_mixing_atlas_z_hold(void);
 
 extern void control_mixing_atlas_attitude_enter(void);
 extern void control_mixing_atlas_attitude(void);

@@ -14,37 +14,37 @@
       <message name="GUIDANCE_INDI_HYBRID"     period="0.2"/>    <!-- outer-loop accel setpoint vs measured -->
 
       <!-- state and navigation -->
-      <message name="ROTORCRAFT_STATUS"        period="1.2"/>    <!-- mode/in_flight/motors_on -->
-      <message name="DL_VALUE"                 period="1.1"/>    <!-- settings -->
+      <message name="ROTORCRAFT_STATUS"        period="1.0"/>    <!-- mode/in_flight/motors_on -->
+      <message name="DL_VALUE"                 period="1.0"/>    <!-- settings -->
       <message name="GPS_INT"                  period="2.0"/>
-      <message name="ROTORCRAFT_NAV_STATUS"    period="2.6"/>
+      <message name="ROTORCRAFT_NAV_STATUS"    period="2.5"/>
       <message name="INS_EKF2"                 period="3.0"/>    <!-- health / innovation test ratios -->
       <message name="EXTERNAL_POSE_DOWN"       period="1.0"/>    <!-- raw mocap sample the EKF fused: yaw ground truth -->
-      <message name="WP_MOVED"                 period="3.3"/>
-      <message name="INS_REF"                  period="8.1"/>
-      <message name="AIR_DATA"                 period="1.0"/>
+      <message name="WP_MOVED"                 period="3.5"/>
+      <message name="INS_REF"                  period="8.0"/>
+      <message name="AIR_DATA"                 period="1.0"/>    <!-- pitot tube: wind speed, temperature, diff pressure -->
 
       <!-- control loops -->
-      <message name="WLS_U"                    period="4.0"/>    <!-- allocator bounds and weights, rate limited -->
-      <message name="WLS_V"                    period="4.0"/>    <!-- objective errors and priorities; sent per loop -->
-      <message name="EFF_MAT_STAB"             period="6.0"/>
+      <message name="WLS_U"                    period="5.0"/>    <!-- allocator bounds and weights, rate limited -->
+      <message name="WLS_V"                    period="5.0"/>    <!-- objective errors and priorities; sent per loop -->
+      <!-- <message name="EFF_MAT_STAB"             period="6.0"/> -->
 
       <!-- housekeeping -->
-      <message name="ALIVE"                    period="3.1"/>
+      <message name="ALIVE"                    period="3.0"/>
       <message name="ENERGY"                   period="4.0"/>
       <message name="RTOS_MON"                 period="5.0"/>
-      <message name="DATALINK_REPORT"          period="5.1"/>
-      <message name="LOGGER_STATUS"            period="5.1"/>    <!-- confirms the SD copy is running -->
-      <message name="STATE_FILTER_STATUS"      period="5.2"/>
-      <message name="I2C_ERRORS"               period="10.1"/>
-      <message name="UART_ERRORS"              period="10.1"/>
-      <message name="AUTOPILOT_VERSION"        period="20.1"/>
+      <message name="DATALINK_REPORT"          period="5.0"/>
+      <message name="LOGGER_STATUS"            period="5.0"/>    <!-- confirms the SD copy is running -->
+      <message name="STATE_FILTER_STATUS"      period="5.0"/>
+      <message name="I2C_ERRORS"               period="10.0"/>
+      <message name="UART_ERRORS"              period="10.0"/>
+      <message name="AUTOPILOT_VERSION"        period="20.0"/>
     </mode>
 
     <mode name="ppm">
       <message name="DL_VALUE"                 period="0.5"/>
-      <message name="ALIVE"                    period="2.1"/>
-      <message name="ROTORCRAFT_CMD"           period=".05"/>
+      <message name="ALIVE"                    period="2.0"/>
+      <message name="ROTORCRAFT_CMD"           period="0.05"/>
       <message name="PPM"                      period="0.5"/>
       <message name="RC"                       period="0.5"/>
       <message name="ROTORCRAFT_RADIO_CONTROL" period="0.5"/>
@@ -203,7 +203,8 @@
       <message name="INS_REF"                  period="5.1"/>
       <message name="ROTORCRAFT_NAV_STATUS"    period="1.6"/>
       <message name="IMU_MAG_SCALED"           period="0.2"/>    <!-- mag health  -->
-      <message name="AIR_DATA"                 period="1.3"/>    <!-- static pressure and temperature only -->
+      <message name="AIR_DATA"                 period="0.1"/>    <!-- pitot tube: wind speed, temperature, diff pressure -->
+      <message name="INS_EKF2"                 period="1.0"/>    <!-- EKF2 test ratios -->
 
       <!-- housekeeping -->
       <message name="AUTOPILOT_VERSION"        period="11.1"/>

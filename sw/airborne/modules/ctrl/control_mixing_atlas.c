@@ -119,10 +119,34 @@ void control_mixing_atlas_quad_enter(void)
 
 void control_mixing_atlas_quad(void)
 {
+  // Keeps the guidance filters warm for a switch to ATTITUDE_Z_HOLD
+  guidance_indi_propagate_filters();
+
   struct ThrustSetpoint v_sp = guidance_v_run(autopilot_in_flight());
   float thrust_vect[3] = {0.f, 0.f, th_sp_to_thrust_f(&v_sp, 0, THRUST_AXIS_Z)};
   struct ThrustSetpoint th_sp = th_sp_from_thrust_vect_f(thrust_vect);
   stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
+  copy_indi_commands();
+}
+
+/**
+ * ATTITUDE_Z_HOLD: attitude from the sticks, height held at the entry altitude by the vertical INDI
+ */
+void control_mixing_atlas_z_hold(void)
+{
+  bool in_flight = autopilot_in_flight();
+
+  guidance_v_run(in_flight);
+  struct ThrustSetpoint th_sp = guidance_indi_run_vertical(&guidance_v);
+
+  // On the ground the stick throttle passes through and the hold starts at lift-off
+  if (!in_flight) {
+    guidance_v_guided_enter();
+    float thrust_vect[3] = {0.f, 0.f, (float)guidance_v.rc_delta_t / MAX_PPRZ};
+    th_sp = th_sp_from_thrust_vect_f(thrust_vect);
+  }
+
+  stabilization_run(in_flight, &stabilization.rc_sp, &th_sp, stabilization.cmd);
   copy_indi_commands();
 }
 

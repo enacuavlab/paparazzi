@@ -115,6 +115,12 @@
 #define CIRC_TRAJECTORY_ACCEL_LEAD_TIME 0.0f
 #endif
 
+/* Delay of the velocity and acceleration references [s] (Optitrack: 0.0 - GPS: 0.07) */
+static const float circ_ref_delay = 0.07f;
+
+/* Horizontal acceleration cap of the GOTO_START transfer [m/s^2] */
+static const float circ_goto_max_accel = 5.0f;
+
 struct CircTraj circ_traj = {
   .r                 = CIRC_TRAJECTORY_RADIUS,
   .v_max             = CIRC_TRAJECTORY_V_MAX,
@@ -306,7 +312,7 @@ void circ_trajectory_stop(void)
  *   a = w^2 * (target - ref_pos) - 2*w * ref_vel      (zeta = 1)
  */
 static void circ_smooth_step(struct FloatVect3 *ref_pos, struct FloatVect3 *ref_vel,
-                             const struct FloatVect3 *target, float w, float dt,
+                             const struct FloatVect3 *target, float w, float max_accel, float dt,
                              struct FloatVect3 *p_ref, struct FloatVect3 *v_ref,
                              struct FloatVect3 *a_ref)
 {
@@ -317,7 +323,7 @@ static void circ_smooth_step(struct FloatVect3 *ref_pos, struct FloatVect3 *ref_
   VECT3_DIFF(err, *target, *ref_pos);
 
   if (w2 > 1e-6f) {
-    const float d_max_h = circ_traj.max_accel / w2;
+    const float d_max_h = max_accel / w2;
     const float d_max_z = circ_traj.max_accelz / w2;
     const float d_h = sqrtf(err.x * err.x + err.y * err.y);
     if (d_h > d_max_h) {
@@ -435,11 +441,14 @@ void circ_trajectory_run(void)
       hold_mode = false;
       if (entered) { circ_traj.t = 0.f; }
       circ_eval(circ_traj.t, &p_ref, &v_ref, &a_ref, &yaw_ref, &yaw_rate_ref);
+      // v_ref and a_ref run late by the estimator lag
+      struct FloatVect3 p_l, v_l;
+      float yaw_l, yaw_rate_l;
+      const float t_d = Max(circ_traj.t - circ_ref_delay, 0.f);
+      circ_eval(t_d, &p_l, &v_ref, &a_ref, &yaw_l, &yaw_rate_l);
       if (circ_traj.accel_lead > 0.f) {
         // a_ref only, evaluated at t + lead to offset the attitude realization lag
-        struct FloatVect3 p_l, v_l;
-        float yaw_l, yaw_rate_l;
-        circ_eval(circ_traj.t + circ_traj.accel_lead, &p_l, &v_l, &a_ref, &yaw_l, &yaw_rate_l);
+        circ_eval(t_d + circ_traj.accel_lead, &p_l, &v_l, &a_ref, &yaw_l, &yaw_rate_l);
       }
       circ_traj.t += dt;
 
@@ -469,12 +478,15 @@ void circ_trajectory_run(void)
       return;
   }
 
+  const bool goto_start = (status == CIRC_TRAJ_GOTO_START);
+  const float max_accel = goto_start ? Min(circ_traj.max_accel, circ_goto_max_accel) : circ_traj.max_accel;
+
   if (hold_mode && guidance_active) {
     if (entered) {
       VECT3_COPY(ref_pos, *pos);
       VECT3_COPY(ref_vel, *vel);
     }
-    circ_smooth_step(&ref_pos, &ref_vel, &target, circ_traj.smooth_w, dt,
+    circ_smooth_step(&ref_pos, &ref_vel, &target, circ_traj.smooth_w, max_accel, dt,
                      &p_ref, &v_ref, &a_ref);
   } else {
     VECT3_COPY(ref_pos, *pos);
@@ -503,8 +515,12 @@ void circ_trajectory_run(void)
   accel_sp.z = a_ref.z + gih_params.speed_gainz * (v_cmd.z - vel->z);
 
 
-  BoundAbs(accel_sp.x, circ_traj.max_accel);
-  BoundAbs(accel_sp.y, circ_traj.max_accel);
+  if (goto_start) {
+    float_vect3_bound_in_2d(&accel_sp, max_accel);
+  } else {
+    BoundAbs(accel_sp.x, max_accel);
+    BoundAbs(accel_sp.y, max_accel);
+  }
   BoundAbs(accel_sp.z, circ_traj.max_accelz);
 
   guidance_indi_hybrid_set_heading_sp(yaw_ref);

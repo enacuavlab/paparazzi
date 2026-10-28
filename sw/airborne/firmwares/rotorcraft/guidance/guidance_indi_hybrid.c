@@ -911,6 +911,41 @@ struct StabilizationSetpoint guidance_indi_run_mode(bool in_flight UNUSED, struc
   return guidance_indi_run(&accel_sp, gh->sp.heading);
 }
 
+/**
+ * Vertical INDI alone: holds z_ref/zd_ref of gv as V_POS does, the attitude is left to the caller
+ */
+struct ThrustSetpoint guidance_indi_run_vertical(struct VerticalGuidance *gv)
+{
+  guidance_indi_propagate_filters();
+
+  float pos_err_z = POS_FLOAT_OF_BFP(gv->z_ref) - stateGetPositionNed_f()->z;
+  gi_speed_sp.x = 0.f;
+  gi_speed_sp.y = 0.f;
+  gi_speed_sp.z = bound_vz_sp(pos_err_z * gih_params.pos_gainz + SPEED_FLOAT_OF_BFP(gv->zd_ref));
+
+  sp_accel.x = 0.f;
+  sp_accel.y = 0.f;
+  sp_accel.z = (gi_speed_sp.z - stateGetSpeedNed_f()->z) * gih_params.speed_gainz;
+  BoundAbs(sp_accel.z, 3.0f);
+
+  float a_diff_z = sp_accel.z - filt_accel_ned[2].o[0];
+  Bound(a_diff_z, -9.0f, 9.0f);
+
+  // NED z per unit body z specific force, the Tz column of the guidance G
+  struct FloatEulers eulers_filtered;
+  float_eulers_of_quat_zxy(&eulers_filtered, &quat_filt.quat);
+  float g_tz = cosf(eulers_filtered.phi) * cosf(eulers_filtered.theta);
+  Bound(g_tz, 0.5f, 1.0f);
+
+  euler_cmd.x = 0.f;
+  euler_cmd.y = 0.f;
+  euler_cmd.z = a_diff_z / g_tz;
+
+  float thrust_vect[3] = {0.f, 0.f, euler_cmd.z};
+  thrust_sp = th_sp_from_incr_vect_f(thrust_vect);
+  return thrust_sp;
+}
+
 #ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
 /**
  * Filter the thrust, such that it corresponds to the filtered acceleration

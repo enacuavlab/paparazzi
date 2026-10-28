@@ -35,11 +35,12 @@
 
 static const float air_density = PPRZ_ISA_AIR_DENSITY;
 
-/* Aerodynamic model */
-static const float wing_area   = 0.072f;   /* [m^2] */
-static const float CL_0        = 0.1f;
-static const float CL_alpha    = 2.0f;     /* [1/rad] */
-static const float CL_min      = -0.5f;
+/* Aerodynamic model, lift fitted on the 22 Oct F1 circle (forward CG, elevons trailing edge up) */
+static const float wing_area   = 0.13f;    /* [m^2] */
+static const float alpha_0     = 0.13f;    /* zero-lift AoA, body axes [rad]: 7.0-7.9 deg on 22 Oct, 7-8 on 12 Oct, 2.7 on 15 Oct (aft CG) */
+static const float CL_alpha    = 3.6f;     /* [1/rad], S*CLa 0.47 m^2/rad on 22 Oct (0.40-0.52) */
+static const float liftd_scale = 0.4f;     /* share of the lift slope a pitch change delivers within the vertical loop */
+static const float CL_min      = -0.8f;
 static const float CL_max      = 1.2f;
 static const float S_CD        = 0.06f;    /* drag area S*CD [m^2] */
 static const float lift_v_on   = 4.0f;     /* wing term fades in over this band [m/s] */
@@ -129,10 +130,8 @@ void guidance_indi_get_aero(struct FloatVect3 vel, struct FloatEulers *eul,
  const float sth  = sinf(eul->theta), cth  = cosf(eul->theta);
  const float spsi = sinf(eul->psi),   cpsi = cosf(eul->psi);
 
- // Relative wind resolved on the body x and z axes (ZXY, same columns as Tx / Tz)
- const float u = (-sth*sphi*spsi + cth*cpsi) * vel.x
-               + ( sth*sphi*cpsi + cth*spsi) * vel.y
-               + (-sth*cphi)                 * vel.z;
+ // Relative wind on body x from the scheduling airspeed, on body z from the velocity passed in
+ const float u = atlas_eff_sched_v.airspeed;
  const float w = ( cth*sphi*spsi + sth*cpsi) * vel.x
                + (-cth*sphi*cpsi + sth*spsi) * vel.y
                + ( cth*cphi)                 * vel.z;
@@ -150,11 +149,11 @@ void guidance_indi_get_aero(struct FloatVect3 vel, struct FloatEulers *eul,
 
  const float fade = wing_fade(u);
  if (fade > 0.0f) {
-  float CL = CL_0 + CL_alpha * alpha;
+  float CL = CL_alpha * (alpha - alpha_0);
   // Slope tapers to zero over the last 0.2 of CL before a clamp
   float slope = Min(CL - CL_min, CL_max - CL) / 0.2f;
   Bound(slope, 0.0f, 1.0f);
-  *liftd = slope * guidance_indi_get_liftd(u, eul->theta);
+  *liftd = liftd_scale * slope * guidance_indi_get_liftd(u, eul->theta);
   Bound(CL, CL_min, CL_max);
   lift = fade * dyn * wing_area * CL;
  }
@@ -264,6 +263,8 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
   const float min_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MIN_PITCH);
 
   guidance_indi_pitch_pref_deg = GUIDANCE_INDI_PITCH_PREF_DEG;
+  // Fixed preference comes in with the wing, the RC one is direct
+  float pitch_pref_fade UNUSED = wing_fade(atlas_eff_sched_v.airspeed);
 #ifdef RADIO_TILT
   // In GUIDED the tilt wheel sets the pitch preference: wheel min = RC_MIN
   // (-10 deg), center = 0 deg, wheel max = RC_MAX (+20 deg). Falls back to
@@ -274,6 +275,7 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
     guidance_indi_pitch_pref_deg = (wheel >= 0.0f)
         ? wheel * GUIDANCE_INDI_PITCH_PREF_RC_MAX_DEG
         : -wheel * GUIDANCE_INDI_PITCH_PREF_RC_MIN_DEG;
+    pitch_pref_fade = 1.0f;
   }
 #endif
   const float pitch_pref_rad UNUSED = RadOfDeg(guidance_indi_pitch_pref_deg);
@@ -290,22 +292,25 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
   float du_min_thrust_z = 0.f, du_max_thrust_z = 0.f;
   for (int i = 0; i < 4; i++) {
     float ca = (i < 2) ? atlas_eff_sched_v.cos_ar : atlas_eff_sched_v.cos_al;
-    du_max_thrust_z += (MAX_PPRZ - actuator_state_filt_vect[i]) * atlas_eff_sched_v.dT_dpprz[i] * ca / atlas_eff_sched_p.m;
-    du_min_thrust_z +=           (-actuator_state_filt_vect[i]) * atlas_eff_sched_v.dT_dpprz[i] * ca / atlas_eff_sched_p.m;
+    du_min_thrust_z -= (MAX_PPRZ - actuator_state_filt_vect[i]) * atlas_eff_sched_v.dT_dpprz[i] * ca / atlas_eff_sched_p.m;
+    du_max_thrust_z +=             actuator_state_filt_vect[i]  * atlas_eff_sched_v.dT_dpprz[i] * ca / atlas_eff_sched_p.m;
   }
-  Bound(du_min_thrust_z,   6.f, 0.f);
-  Bound(du_max_thrust_z,   0.f, -10.f);
+  Bound(du_min_thrust_z, -10.f, 0.f);
+  Bound(du_max_thrust_z,   0.f, 6.f);
 
-  wls_guid_p.u_min[GIHT_CMD_TZ] = du_max_thrust_z;  // Min Tz: most climb   (<=0)
-  wls_guid_p.u_max[GIHT_CMD_TZ] = du_min_thrust_z;  // Max Tz: most descend (>=0)
+  wls_guid_p.u_min[GIHT_CMD_TZ] = du_min_thrust_z;  // Min Tz: most climb   (<=0)
+  wls_guid_p.u_max[GIHT_CMD_TZ] = du_max_thrust_z;  // Max Tz: most descend (>=0)
 
   // Dynamic forward thrust headroom
   // (a) motor channel: more/less thrust along the current tilt direction
   float du_min_thrust_x = 0.f, du_max_thrust_x = 0.f;
   for (int i = 0; i < 4; i++) {
     float sa = (i < 2) ? atlas_eff_sched_v.sin_ar : atlas_eff_sched_v.sin_al;
-    du_max_thrust_x += (MAX_PPRZ - actuator_state_filt_vect[i]) * atlas_eff_sched_v.dT_dpprz[i] * sa / atlas_eff_sched_p.m;
-    du_min_thrust_x +=           (-actuator_state_filt_vect[i]) * atlas_eff_sched_v.dT_dpprz[i] * sa / atlas_eff_sched_p.m;
+    float dx_up = (MAX_PPRZ - actuator_state_filt_vect[i]) * atlas_eff_sched_v.dT_dpprz[i] * sa / atlas_eff_sched_p.m;
+    float dx_dn =           (-actuator_state_filt_vect[i]) * atlas_eff_sched_v.dT_dpprz[i] * sa / atlas_eff_sched_p.m;
+    // Tilted back (sa < 0), more thrust pushes backward
+    du_max_thrust_x += Max(dx_up, dx_dn);
+    du_min_thrust_x += Min(dx_up, dx_dn);
   }
   // (b) tilt channel: rotating the current thrust vector with the tilt servos.
   // Without this the bounds collapse to [0,0] at alpha = 0 and the guidance
@@ -333,6 +338,6 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
   // wls_guid_p.u_pref[GIHT_CMD_PITCH] = 0.f;
 
   /* Pitch preference */
-   wls_guid_p.u_pref[GIHT_CMD_PITCH] = pitch_pref_rad - pitch_angle;
-   BoundAbs(wls_guid_p.u_pref[GIHT_CMD_PITCH], pitch_pref_max_incr);
+  wls_guid_p.u_pref[GIHT_CMD_PITCH] = pitch_pref_fade * (pitch_pref_rad - pitch_angle);
+  BoundAbs(wls_guid_p.u_pref[GIHT_CMD_PITCH], pitch_pref_max_incr);
 }

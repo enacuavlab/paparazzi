@@ -61,7 +61,7 @@
         <call fun="nav_periodic_task()"/>
       </control>
       <control>
-        <call fun="control_mixing_atlas_quad()"/>
+        <call fun="control_mixing_atlas_z_hold()"/>
       </control>
       <exception cond="RadioControlIsLost()" deroute="FAILSAFE"/>
     </mode>
