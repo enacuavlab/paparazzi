@@ -265,6 +265,7 @@ void control_mixing_quadplane_attitude_plane(void)
 
   stabilization_run(in_flight, &attitude_sp, &thrust_sp, stabilization.cmd);
 
+
   SetRotorcraftCommands(stabilization.cmd, in_flight, autopilot_get_motors_on());
   autopilot.throttle = commands[COMMAND_THRUST];
 }
@@ -333,6 +334,7 @@ void control_mixing_quadplane_nav(void)
   const bool forward_nav = nav.horizontal_mode == NAV_HORIZONTAL_MODE_ROUTE || nav.horizontal_mode == NAV_HORIZONTAL_MODE_CIRCLE;
   const bool forward_request = forward_nav && in_flight && motors_on && stateIsAirspeedValid();
   float hov_motor_decrease = 0.f;
+  int32_t thrust[3] = { 0, 0, 0 };
 
   quadplane_pusher_gate(in_flight && motors_on);
 
@@ -389,6 +391,8 @@ void control_mixing_quadplane_nav(void)
     quadplane_eff_pusher_forced = true;
     quadplane_eff_pusher_forced_cmd = push_ratio * CMQ_TRANSITION_PUSHER_CMD;
     quadplane_eff_forward_mode = false;
+    thrust[THRUST_AXIS_Z] = hover_tz;
+    thrust[THRUST_AXIS_X] = CMQ_TRANSITION_PUSHER_CMD;
 
   //Case 2 : Returning to hover, decrease pusher command proportionally to the transition ratio until it reaches 0 at the end of the transition
   } else if (!forward_request) {
@@ -399,9 +403,13 @@ void control_mixing_quadplane_nav(void)
     if (transition_ratio > 0.f) {
       quadplane_eff_pusher_forced = true;
       quadplane_eff_pusher_forced_cmd = push_ratio * CMQ_TRANSITION_PUSHER_CMD;
+      thrust[THRUST_AXIS_Z] = hover_tz;
+      thrust[THRUST_AXIS_X] = push_ratio * CMQ_TRANSITION_PUSHER_CMD;      
     } else if (transition_ratio <= 0.f) {
       quadplane_eff_pusher_forced = false;
       quadplane_eff_pusher_forced_cmd = 0;
+      thrust[THRUST_AXIS_Z] = hover_tz;
+      thrust[THRUST_AXIS_X] = 0;          
     }
     
   //Case 3 : Forward requested and in plane mode, unleash the pusher command and let the INDI/WLS control it
@@ -410,20 +418,22 @@ void control_mixing_quadplane_nav(void)
     transition_heading_initialized = false;
     quadplane_eff_pusher_forced = false;
     quadplane_eff_pusher_forced_cmd = 0.f;
+    thrust[THRUST_AXIS_X] = 0; //TODO 
 
     if(transition_ratio < 1.f) {
-
-    commands[COMMAND_THRUST] = (int32_t)((1.f - hov_motor_decrease) * hover_tz);
-    //thrust[THRUST_AXIS_Z] = (int32_t)((1.f - hov_motor_decrease) * hover_tz);
-    quadplane_eff_forward_mode = false;
+      //commands[COMMAND_THRUST] = (int32_t)((1.f - hov_motor_decrease) * hover_tz);
+      thrust[THRUST_AXIS_Z] = (int32_t)((1.f - hov_motor_decrease) * hover_tz);
+      quadplane_eff_forward_mode = false;
     } else if(transition_ratio >= 1.f) {
-      commands[COMMAND_THRUST] = 0; //We stop the vertical thrust when in forward mode
-      //thrust[THRUST_AXIS_Z] = 0; //We stop the vertical thrust when in forward mode
+      //commands[COMMAND_THRUST] = 0; //We stop the vertical thrust when in forward mode
+      thrust[THRUST_AXIS_Z] = 0; //We stop the vertical thrust when in forward mode
       quadplane_eff_forward_mode = true;
     }
   }
 
-  stabilization_run(in_flight, &attitude_sp, &th_sp, stabilization.cmd);
+  struct ThrustSetpoint thrust_sp = th_sp_from_thrust_vect_i(thrust);
+
+  stabilization_run(in_flight, &attitude_sp, &thrust_sp, stabilization.cmd);
   SetRotorcraftCommands(stabilization.cmd, in_flight, motors_on);
 
   autopilot.throttle = commands[COMMAND_THRUST];
