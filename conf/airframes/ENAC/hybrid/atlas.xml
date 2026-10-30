@@ -248,7 +248,7 @@
 
         <!-- First order actuator dynamics -->
         <!-- Elevon 20 rad/s is a placeholder, not identified -->
-        <define name="ACT_FREQ" value="{16.0,16.0,16.0,16.0,3.0,3.0,10.0,10.0}"/>
+        <define name="ACT_FREQ" value="{16.0,16.0,16.0,16.0,4.0,4.0,10.0,10.0}"/>
         <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 9600, 9600, 9600, 9600}"/>
         <define name="ACT_IS_SERVO" value="{0, 0, 0, 0, 1, 1, 1, 1}"/>
 

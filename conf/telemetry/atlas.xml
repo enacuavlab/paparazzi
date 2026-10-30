@@ -23,6 +23,7 @@
       <message name="WP_MOVED"                 period="3.5"/>
       <message name="INS_REF"                  period="8.0"/>
       <message name="AIR_DATA"                 period="1.0"/>    <!-- pitot tube: wind speed, temperature, diff pressure -->
+      <message name="PAYLOAD_FLOAT"            period="1.0"/>    <!-- circle wind fit: wind N, E, pitot scale, air track heading offset -->
 
       <!-- control loops -->
       <message name="WLS_U"                    period="5.0"/>    <!-- allocator bounds and weights, rate limited -->
@@ -204,6 +205,7 @@
       <message name="ROTORCRAFT_NAV_STATUS"    period="1.6"/>
       <message name="IMU_MAG_SCALED"           period="0.2"/>    <!-- mag health  -->
       <message name="AIR_DATA"                 period="0.1"/>    <!-- pitot tube: wind speed, temperature, diff pressure -->
+      <message name="PAYLOAD_FLOAT"            period="0.1"/>    <!-- circle wind fit: wind N, E, pitot scale, air track heading offset -->
       <message name="INS_EKF2"                 period="1.0"/>    <!-- EKF2 test ratios -->
 
       <!-- housekeeping -->

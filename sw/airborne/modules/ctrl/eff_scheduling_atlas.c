@@ -524,7 +524,7 @@ static inline void atlas_update_tilt_effectiveness(void)
 /*
  * Control Effectiveness wrt. elevons
  *
- * Convention: +pprz = elevon up (trailing edge up)
+ * Convention: +pprz = elevon up
  * (+)ATLAS_ACT_ELEVON_R (+)ATLAS_ACT_ELEVON_L  -> pitch up (+My)
  * (+)ATLAS_ACT_ELEVON_R (-)ATLAS_ACT_ELEVON_L  -> roll right (+Mx).
  *

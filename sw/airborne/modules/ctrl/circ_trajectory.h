@@ -77,6 +77,7 @@ struct CircTraj {
   float yaw_ff;             ///< heading-rate feedforward gain (1 = full trajectory heading rate)
   float smooth_w;           ///< natural frequency of the critically-damped reference model easing the hold-point setpoint [rad/s]
   float accel_lead;         ///< lead time applied to the accel feedforward [s], 0 disables
+  bool air_track;           ///< nose on the air-relative velocity in START, pitch preference 10 deg
 
   /* --- runtime state --- */
   enum CircTrajStatus status;
@@ -85,6 +86,7 @@ struct CircTraj {
   float hold_yaw;              ///< heading captured by HOVER / CENTER [rad]
   struct FloatVect3 final_pos; ///< circle end position, computed on END entry (NED) [m]
   float final_yaw;             ///< circle end heading, computed on END entry [rad]
+  float air_track_w;           ///< air_track ramped over 2 s [0..1]
 };
 
 extern struct CircTraj circ_traj;

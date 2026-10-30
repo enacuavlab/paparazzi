@@ -28,6 +28,7 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 #include "math/pprz_isa.h"
 #include "modules/ctrl/eff_scheduling_atlas.h"
+#include "modules/ctrl/circ_trajectory.h"
 #ifdef RADIO_TILT
 #include "modules/radio_control/radio_control.h"
 #endif
@@ -52,6 +53,7 @@ static const float Fz_min = -20.0f;        /* [m/s^2] */
 static const float Fz_max = -5.0f;
 
 static const float pitch_pref_max_incr UNUSED = 0.0873f;  /* 5 deg */
+static const float pitch_pref_air_track_deg = 10.0f;      /* with the circle air track on */
 
 float guidance_indi_max_thr_z = GUIDANCE_INDI_MAX_ACC_BODY_Z * GUIDANCE_INDI_MASS;
 float guidance_indi_max_thr_x = GUIDANCE_INDI_MAX_ACC_BODY_X * GUIDANCE_INDI_MASS;
@@ -262,7 +264,8 @@ void guidance_indi_hybrid_set_wls_settings(float body_v[3] UNUSED, float roll_an
   const float max_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MAX_PITCH);
   const float min_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MIN_PITCH);
 
-  guidance_indi_pitch_pref_deg = GUIDANCE_INDI_PITCH_PREF_DEG;
+  guidance_indi_pitch_pref_deg = GUIDANCE_INDI_PITCH_PREF_DEG
+                                 + circ_traj.air_track_w * (pitch_pref_air_track_deg - GUIDANCE_INDI_PITCH_PREF_DEG);
   // Fixed preference comes in with the wing, the RC one is direct
   float pitch_pref_fade UNUSED = wing_fade(atlas_eff_sched_v.airspeed);
 #ifdef RADIO_TILT

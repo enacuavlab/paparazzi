@@ -83,13 +83,13 @@
         <define name="ATLAS_MOTOR_IDLE"            value="0"/>
         <define name="ATLAS_EFF_ALPHA_MIN"         value="-0.261"/>
         <define name="ATLAS_EFF_ALPHA_MAX"         value="1.5708"/>
-        <define name="ATLAS_EFF_TILT_RATE"         value="100.0"/>
+        <define name="ATLAS_EFF_TILT_RATE"         value="80.0"/>
         <define name="ATLAS_EFF_K_ELEVON_DEFLECT"  value="3.2e-5"/>                                 <!-- 0.31 rad (18 deg) / 9600 -->
         <define name="ATLAS_EFF_K_ELEVON_ROLL"     value="0.004"/>
         <define name="ATLAS_EFF_K_ELEVON_PITCH"    value="0.0025"/>
         <define name="ATLAS_EFF_K_ELEVON_PROPWASH" value="0.0"/>
         <define name="ATLAS_EFF_ELEVON_V_FULL"     value="10.0"/>
-        <define name="ATLAS_EFF_ELEVON_RATE"       value="9600.0"/>
+        <define name="ATLAS_EFF_ELEVON_RATE"       value="15000.0"/>
         <file name="eff_scheduling_atlas.c"/>
     </makefile>
 </module>

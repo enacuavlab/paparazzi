@@ -43,6 +43,9 @@
  * and publishes a_sp as an ACCEL_SP ABI message consumed by
  * guidance_indi_hybrid, with the heading commanded through
  * guidance_indi_hybrid_set_heading_sp() / _set_heading_rate_ff().
+ *
+ * With air_track on, START points the nose along the velocity relative to
+ * a wind fitted on the pitot while circling, instead of the circle tangent.
  */
 
 #include "modules/ctrl/circ_trajectory.h"
@@ -115,11 +118,39 @@
 #define CIRC_TRAJECTORY_ACCEL_LEAD_TIME 0.0f
 #endif
 
+/* Nose on the air-relative velocity in the circle (and pitch preference 10 deg in the guidance) */
+#ifndef CIRC_TRAJECTORY_AIR_TRACK
+#define CIRC_TRAJECTORY_AIR_TRACK FALSE
+#endif
+
 /* Delay of the velocity and acceleration references [s] (Optitrack: 0.0 - GPS: 0.07) */
 static const float circ_ref_delay = 0.07f;
 
 /* Horizontal acceleration cap of the GOTO_START transfer [m/s^2] */
 static const float circ_goto_max_accel = 5.0f;
+
+/* Pitot wind fit, pitot = k * u_g - (k * wind) . x_body, recursive least squares while circling */
+static const float wind_fit_dt = 0.1f;        /* [s] */
+static const float wind_fit_lambda = 0.995f;  /* forgetting factor, ~20 s memory */
+static const float wind_fit_v_min = 5.0f;     /* forward ground speed below which the pitot is not fitted [m/s] */
+static const float wind_fit_lag_sd = 0.5f;    /* pitot lag uncertainty [s] (0.24-0.50 s fitted on 28 Oct) */
+static const float wind_fit_noise = 0.5f;     /* pitot residual [m/s] (0.41-0.77 on 28 Oct) */
+static const float wind_max = 5.0f;           /* [m/s] */
+#define WIND_FIT_LAG 4                        /* pitot lag behind the EKF, in fit steps (0.4 s) */
+
+/* Air track faded in over this speed band [m/s] */
+static const float air_track_v_on = 4.0f;
+static const float air_track_v_full = 6.0f;
+static const float air_track_ramp_t = 2.0f;   /* switch ramp [s] */
+
+static struct {
+  float th[3];                 /* k, k * wind_n, k * wind_e */
+  float P[3][3];
+  float lag[WIND_FIT_LAG][3];  /* u_g, x_body n, x_body e */
+  uint8_t lag_idx;
+  struct FloatVect2 wind;      /* fitted wind, NED [m/s] */
+  float yaw_offset;            /* air track minus tangent heading [rad] */
+} circ_wind;
 
 struct CircTraj circ_traj = {
   .r                 = CIRC_TRAJECTORY_RADIUS,
@@ -135,8 +166,10 @@ struct CircTraj circ_traj = {
   .yaw_ff            = CIRC_TRAJECTORY_YAW_FF_GAIN,
   .smooth_w          = CIRC_TRAJECTORY_SMOOTH_W,
   .accel_lead        = CIRC_TRAJECTORY_ACCEL_LEAD_TIME,
+  .air_track         = CIRC_TRAJECTORY_AIR_TRACK,
   .status            = CIRC_TRAJ_HOVER,
   .t                 = 0.0f,
+  .air_track_w       = CIRC_TRAJECTORY_AIR_TRACK,
 };
 
 float circ_trajectory_periodic_freq = CIRC_TRAJECTORY_RUN_FREQ;     /* Module frequency [Hz] */
@@ -275,6 +308,100 @@ void circ_trajectory_set_wp_end(uint8_t wp_id)
   circ_set_wp_ned(wp_id, &p);
 }
 
+static void circ_wind_reset(void)
+{
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      circ_wind.P[i][j] = 0.f;
+    }
+  }
+  circ_wind.th[0] = 1.f;
+  circ_wind.th[1] = 0.f;
+  circ_wind.th[2] = 0.f;
+  circ_wind.P[0][0] = 0.01f;
+  circ_wind.P[1][1] = 4.f;
+  circ_wind.P[2][2] = 4.f;
+  circ_wind.wind.x = 0.f;
+  circ_wind.wind.y = 0.f;
+}
+
+/* One fit step: the EKF side always goes through the lag line, the pitot is fitted only when asked */
+static void circ_wind_step(bool fit)
+{
+  const struct FloatRMat *ned_to_body = stateGetNedToBodyRMat_f();
+  const struct NedCoor_f *vel = stateGetSpeedNed_f();
+
+  float *s = circ_wind.lag[circ_wind.lag_idx];
+  const float phi[3] = { s[0], -s[1], -s[2] };
+  s[0] = RMAT_ELMT(*ned_to_body, 0, 0) * vel->x
+         + RMAT_ELMT(*ned_to_body, 0, 1) * vel->y
+         + RMAT_ELMT(*ned_to_body, 0, 2) * vel->z;
+  s[1] = RMAT_ELMT(*ned_to_body, 0, 0);
+  s[2] = RMAT_ELMT(*ned_to_body, 0, 1);
+  circ_wind.lag_idx = (circ_wind.lag_idx + 1) % WIND_FIT_LAG;
+
+  const float pitot = stateGetAirspeed_f();
+  if (!fit || !(phi[0] > wind_fit_v_min) || !(pitot > 1.f)) {
+    return;
+  }
+
+  // Down-weighted while the speed changes, where a lag error reads as wind
+  const float acc = (s[0] - phi[0]) / (WIND_FIT_LAG * wind_fit_dt) * wind_fit_lag_sd / wind_fit_noise;
+  float Pphi[3];
+  float den = wind_fit_lambda * (1.f + acc * acc);
+  float err = pitot;
+  for (int i = 0; i < 3; i++) {
+    Pphi[i] = circ_wind.P[i][0] * phi[0] + circ_wind.P[i][1] * phi[1] + circ_wind.P[i][2] * phi[2];
+    den += phi[i] * Pphi[i];
+    err -= phi[i] * circ_wind.th[i];
+  }
+  for (int i = 0; i < 3; i++) {
+    circ_wind.th[i] += Pphi[i] / den * err;
+    for (int j = i; j < 3; j++) {
+      circ_wind.P[i][j] = (circ_wind.P[i][j] - Pphi[i] * Pphi[j] / den) / wind_fit_lambda;
+      circ_wind.P[j][i] = circ_wind.P[i][j];
+    }
+  }
+
+  // A pitot scale this far off means the fit went wrong
+  if (!(circ_wind.th[0] > 0.5f && circ_wind.th[0] < 1.5f)) {
+    circ_wind_reset();
+    return;
+  }
+  circ_wind.wind.x = circ_wind.th[1] / circ_wind.th[0];
+  circ_wind.wind.y = circ_wind.th[2] / circ_wind.th[0];
+  float_vect2_bound_in_2d(&circ_wind.wind, wind_max);
+}
+
+/* Nose on the reference velocity relative to the fitted wind, faded in with the speed and over the first lap */
+static void circ_air_track(const struct FloatVect3 *v_ref, const struct FloatVect3 *a_ref, float *yaw, float *yaw_rate)
+{
+  const float rx = v_ref->x - circ_wind.wind.x;
+  const float ry = v_ref->y - circ_wind.wind.y;
+  const float r2 = rx * rx + ry * ry;
+
+  // Slower of the reference and its air speed: 0 at both ends of the circle
+  const float s = Min(sqrtf(v_ref->x * v_ref->x + v_ref->y * v_ref->y), sqrtf(r2));
+  float f = (s - air_track_v_on) / (air_track_v_full - air_track_v_on);
+  Bound(f, 0.f, 1.f);
+  // The wind fit needs about one lap of heading change
+  float theta, theta_dot, theta_ddot;
+  circ_compute_theta(circ_traj.t, &theta, &theta_dot, &theta_ddot);
+  float lap = theta / (2.f * (float)M_PI);
+  Bound(lap, 0.f, 1.f);
+  f *= lap * lap * (3.f - 2.f * lap) * circ_traj.air_track_w;
+  if (f <= 0.f) {
+    return;
+  }
+
+  float dpsi = atan2f(ry, rx) - *yaw;
+  FLOAT_ANGLE_NORMALIZE(dpsi);
+  *yaw += f * dpsi;
+  FLOAT_ANGLE_NORMALIZE(*yaw);
+  *yaw_rate += f * ((rx * a_ref->y - ry * a_ref->x) / r2 - *yaw_rate);
+  circ_wind.yaw_offset = f * dpsi;
+}
+
 #if PERIODIC_TELEMETRY
 #include "modules/datalink/telemetry.h"
 static void send_circ_trajectory(struct transport_tx *trans, struct link_device *dev)
@@ -282,12 +409,21 @@ static void send_circ_trajectory(struct transport_tx *trans, struct link_device 
   uint8_t status = (uint8_t)circ_traj.status;
   pprz_msg_send_CIRC_TRAJECTORY(trans, dev, AC_ID, &status, &circ_traj.t);
 }
+
+// Wind north, east [m/s], pitot scale, air track heading offset [deg]
+static void send_circ_wind(struct transport_tx *trans, struct link_device *dev)
+{
+  float v[4] = { circ_wind.wind.x, circ_wind.wind.y, circ_wind.th[0], DegOfRad(circ_wind.yaw_offset) };
+  pprz_msg_send_PAYLOAD_FLOAT(trans, dev, AC_ID, 4, v);
+}
 #endif
 
 void circ_trajectory_init(void)
 {
+  circ_wind_reset();
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_CIRC_TRAJECTORY, send_circ_trajectory);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PAYLOAD_FLOAT, send_circ_wind);
 #endif
 }
 
@@ -361,6 +497,19 @@ void circ_trajectory_run(void)
   prev_status = status;
 
   const float dt = 1.f / circ_trajectory_periodic_freq;
+
+  // Pitot wind fit at 10 Hz, fitted while flying the circle
+  static uint16_t wind_cnt = 0;
+  if (++wind_cnt >= (uint16_t)(circ_trajectory_periodic_freq * wind_fit_dt + 0.5f)) {
+    wind_cnt = 0;
+    circ_wind_step(status == CIRC_TRAJ_START && autopilot_in_flight());
+  }
+  circ_wind.yaw_offset = 0.f;
+
+  // Ramped so that toggling the switch in the circle does not step the heading or the pitch preference
+  float dw = (circ_traj.air_track ? 1.f : 0.f) - circ_traj.air_track_w;
+  Bound(dw, -dt / air_track_ramp_t, dt / air_track_ramp_t);
+  circ_traj.air_track_w += dw;
 
   struct NedCoor_f *pos = stateGetPositionNed_f();
   struct NedCoor_f *vel = stateGetSpeedNed_f();
@@ -441,6 +590,9 @@ void circ_trajectory_run(void)
       hold_mode = false;
       if (entered) { circ_traj.t = 0.f; }
       circ_eval(circ_traj.t, &p_ref, &v_ref, &a_ref, &yaw_ref, &yaw_rate_ref);
+      if (circ_traj.air_track_w > 0.f) {
+        circ_air_track(&v_ref, &a_ref, &yaw_ref, &yaw_rate_ref);
+      }
       // v_ref and a_ref run late by the estimator lag
       struct FloatVect3 p_l, v_l;
       float yaw_l, yaw_rate_l;
