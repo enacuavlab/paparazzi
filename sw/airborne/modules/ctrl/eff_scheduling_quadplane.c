@@ -399,9 +399,9 @@ static inline void quadplane_update_motor_effectiveness(void)
   float dMz = -y_pusher * pusher_dT;
   float dAx = pusher_dT;
 
-  g1g2[QUADPLANE_VC_MX][QUADPLANE_ACT_PUSHER] = dMx / quadplane_eff_sched_p.Ixx;
-  g1g2[QUADPLANE_VC_MY][QUADPLANE_ACT_PUSHER] = dMy / quadplane_eff_sched_p.Iyy;
-  g1g2[QUADPLANE_VC_MZ][QUADPLANE_ACT_PUSHER] = dMz / quadplane_eff_sched_p.Izz;
+  g1g2[QUADPLANE_VC_MX][QUADPLANE_ACT_PUSHER] = 0.f; //dMx / quadplane_eff_sched_p.Ixx;
+  g1g2[QUADPLANE_VC_MY][QUADPLANE_ACT_PUSHER] = 0.f; //dMy / quadplane_eff_sched_p.Iyy;
+  g1g2[QUADPLANE_VC_MZ][QUADPLANE_ACT_PUSHER] = 0.f; //dMz / quadplane_eff_sched_p.Izz;
   g1g2[QUADPLANE_VC_AX][QUADPLANE_ACT_PUSHER] = dAx / quadplane_eff_sched_p.mass;
   g1g2[QUADPLANE_VC_AZ][QUADPLANE_ACT_PUSHER] = 0.f;
 
@@ -502,8 +502,7 @@ void stabilization_indi_set_wls_settings(void)
 
   // 4 hoovering motors turns off in forward mode
   if (quadplane_eff_forward_mode) {
-    for (uint8_t i = QUADPLANE_ACT_MOTOR_FR;
-        i <= QUADPLANE_ACT_MOTOR_FL; i++) {
+    for (uint8_t i = 0; i < 4; i++) {
       wls_stab_p.u_min[i]  = 0.f;
       wls_stab_p.u_max[i]  = 0.f;
       wls_stab_p.u_pref[i] = 0.f;
@@ -531,9 +530,9 @@ if (quadplane_eff_disable_pusher) {
   /*
    * Pusher forbidden : ground
    */
-  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = 0.f;
-  wls_stab_p.u_max[QUADPLANE_ACT_PUSHER] = 0.f;
-  wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = 0.f;
+  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = -MAX_PPRZ;
+  wls_stab_p.u_max[QUADPLANE_ACT_PUSHER] = -MAX_PPRZ;
+  wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = -MAX_PPRZ;
 
 } else if (quadplane_eff_pusher_forced) {
   /*

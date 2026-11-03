@@ -45,17 +45,12 @@
 
 // Time for forward transition
 #ifndef CMQ_TRANSITION_TIME
-#define CMQ_TRANSITION_TIME 4.f
-#endif
-
-// Timeout for forward transition
-#ifndef CMQ_TRANSITION_TIMEOUT
-#define CMQ_TRANSITION_TIMEOUT 10.f
+#define CMQ_TRANSITION_TIME 6.f
 #endif
 
 // Transition airspeed, set a negative value to disable
 #ifndef CMQ_TRANSITION_AIRSPEED
-#define CMQ_TRANSITION_AIRSPEED 10.f
+#define CMQ_TRANSITION_AIRSPEED 13.f
 #endif
 
 // Transition minimum pusher command
@@ -75,9 +70,18 @@
 #define CMQ_TRANSITION_PITCH 0.f  // radians
 #endif
 
+#ifndef CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY
+#define CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY PERIODIC_FREQUENCY
+#endif
+
+#define TRANSITION_RATIO_COMPLETE 0.99f
+
+
 static float transition_ratio;
-static const float transition_increment = 1.f / (CMQ_TRANSITION_TIME * PERIODIC_FREQUENCY);
+static const float transition_increment = 1.f / (CMQ_TRANSITION_TIME * CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY);
 float   quadplane_heading_sp = 0.f;           // heading setpoint [rad, NED]
+static uint32_t manual_transition_cycles = 0;
+static bool manual_transition_aborted = false;
 
 /**
  * Forward / Hover transition functions
@@ -88,6 +92,9 @@ static void transition_run(bool to_forward) {
       if ((stateGetAirspeed_f() < CMQ_TRANSITION_AIRSPEED && transition_ratio + transition_increment < CMQ_TRANSITION_CUTOFF)
           || stateGetAirspeed_f() >= CMQ_TRANSITION_AIRSPEED) {
         transition_ratio += transition_increment;
+        if (to_forward && transition_ratio >= TRANSITION_RATIO_COMPLETE) {
+          transition_ratio = 1.f;
+        }
       }
     }
   } else if (!to_forward && transition_ratio > 0.f) {
@@ -117,10 +124,19 @@ static inline void quadplane_pusher_gate(bool in_flight)
   quadplane_eff_disable_pusher = !in_flight;
 }
 
+static void quadplane_force_hover(void)
+{
+  transition_ratio = 0.f; // 0. for hover to 1. for forward flight
+
+  quadplane_eff_disable_pusher = true;
+  quadplane_eff_pusher_forced = false;
+  quadplane_eff_pusher_forced_cmd = 0.f;
+  quadplane_eff_forward_mode = false;
+}
 
 void control_mixing_quadplane_init(void)
 {
-  transition_ratio = 0.f; // 0. for hover to 1. for forward flight
+  quadplane_force_hover();
 }
 
 void control_mixing_quadplane_elevon_test_enter(void)
@@ -175,6 +191,7 @@ void control_mixing_quadplane_elevon_test(void)
 /* Attitude direct : Quad only mode in manual for quadplane */
 void control_mixing_quadplane_attitude_direct_enter(void)
 {
+  quadplane_force_hover();
   guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
   guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
   stabilization_mode_changed(STABILIZATION_MODE_NONE, STABILIZATION_ATT_SUBMODE_HEADING);
@@ -183,15 +200,13 @@ void control_mixing_quadplane_attitude_direct_enter(void)
 
 void control_mixing_quadplane_attitude_direct(void)
 {
-  quadplane_eff_forward_mode = false;
-  quadplane_eff_pusher_forced = false;
+  const bool in_flight = true; // TODO autopilot_in_flight();
+  quadplane_force_hover();
   transition_run(TRANSITION_TO_HOVER);
-  commands[COMMAND_YAW] = 0;
-  commands[COMMAND_MOTOR_PUSHER] = MIN_PPRZ;
-  struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
-  stabilization_run(autopilot_in_flight(), &stabilization.rc_sp, &th_sp, stabilization.cmd);
+  struct ThrustSetpoint th_sp = guidance_v_run(in_flight);
+  stabilization_run(in_flight, &stabilization.rc_sp, &th_sp, stabilization.cmd);
 
-  SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
+  SetRotorcraftCommands(stabilization.cmd, in_flight, autopilot_get_motors_on());
   autopilot.throttle = commands[COMMAND_THRUST];
 }
 
@@ -203,60 +218,99 @@ void control_mixing_quadplane_attitude_plane_enter(void)
   guidance_h_mode_changed(GUIDANCE_H_MODE_NONE);
   guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
+  manual_transition_cycles = 0;
+  manual_transition_aborted = false;
 }
 
 void control_mixing_quadplane_attitude_plane(void)
 {
-
-  const bool in_flight = autopilot_in_flight();
-  const bool plane_mode = (transition_ratio >= CMQ_TRANSITION_CUTOFF);
+  const bool in_flight = true; // TODO autopilot_in_flight();
+  const bool motors_on = autopilot_get_motors_on();
   int32_t thrust[3] = { 0, 0, 0 };
   struct StabilizationSetpoint attitude_sp;
 
-  //Activate pusher if in flight
-  quadplane_pusher_gate(in_flight);
-  transition_run(TRANSITION_TO_FORWARD);
-  float hov_motor_decrease = transition_hov_motor(transition_ratio, CMQ_TRANSITION_CUTOFF, 1.f);
+  const uint32_t timeout_cycles = (uint32_t)ceilf(CMQ_TRANSITION_TIME * (float)CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY);
 
+  // *** Check on timeout Part *** //
+  //On ground
+  if (!in_flight || !motors_on) {
+    manual_transition_cycles = 0;
+    control_mixing_quadplane_attitude_direct();
+    return;
+  }
+
+  //After Timeout, abort the transition and go back to attitude direct mode
+  if (manual_transition_aborted) {
+    control_mixing_quadplane_attitude_direct();
+    return;
+  }
+
+  quadplane_pusher_gate(in_flight && motors_on);
+  transition_run(TRANSITION_TO_FORWARD);
+
+  //Check if the transition is completed, if not, count the cycles and abort if timeout reached
+  if (transition_ratio >= 1.f) {
+    manual_transition_cycles = 0;
+  } else {
+    manual_transition_cycles++;
+
+    if (manual_transition_cycles >= timeout_cycles) {
+      manual_transition_aborted = true;
+      //Go back in attitude mode, the transition is aborted
+      control_mixing_quadplane_attitude_direct_enter();
+      control_mixing_quadplane_attitude_direct();
+      return;
+    }
+  }
+
+  // *** Transition Part *** //
+  const bool plane_mode = transition_ratio >= CMQ_TRANSITION_CUTOFF;
+  const float hov_motor_decrease = transition_hov_motor(transition_ratio, CMQ_TRANSITION_CUTOFF, 1.f);
   struct ThrustSetpoint z_sp = guidance_v_run(in_flight);
   const int32_t hover_tz = th_sp_to_thrust_i(&z_sp, 0, THRUST_AXIS_Z);
-    /*
-     * MODE QUAD => RC rotorcraft : roll + pitch + yaw + thrust Z.
-     */
+  float push_ratio = transition_ratio / CMQ_TRANSITION_CUTOFF;
+  Bound(push_ratio, 0.f, 1.f);
+
+  //Case 1 : Forward requested and not yet in plane mode, increase pusher command progressively until cutoff
+  //MODE QUAD => RC rotorcraft : roll + pitch + yaw + thrust Z.
   if (!plane_mode) {
     attitude_sp = stabilization.rc_sp;
 
-    //commands[COMMAND_THRUST] = hover_tz;
-    //commands[COMMAND_THRUST_X] = CMQ_TRANSITION_PUSHER_CMD;
     thrust[THRUST_AXIS_Z] = hover_tz;
-    thrust[THRUST_AXIS_X] = CMQ_TRANSITION_PUSHER_CMD;
-    quadplane_eff_pusher_forced_cmd = CMQ_TRANSITION_PUSHER_CMD;
+    thrust[THRUST_AXIS_X] = push_ratio * CMQ_TRANSITION_PUSHER_CMD;
+    //commands[COMMAND_THRUST] = hover_tz;
+    //commands[COMMAND_THRUST_X] = push_ratio * CMQ_TRANSITION_PUSHER_CMD;
+    
     quadplane_eff_pusher_forced = true;
+    quadplane_eff_pusher_forced_cmd = push_ratio * CMQ_TRANSITION_PUSHER_CMD;
     quadplane_eff_forward_mode = false;
+
+  //Case 2 : Forward requested and in plane mode, unleash the pusher command and let the INDI/WLS control it
+  //MODE PLANE => RC plane : roll + pitch + thrust X.
   } else {
-    /*
-     * MODE PLANE => RC plane : roll + pitch + thrust X.
-     */
     struct FloatEulers plane_rc_sp = {
       .phi = STABILIZATION_ATTITUDE_SP_MAX_PHI * radio_control_get(RADIO_ROLL) / MAX_PPRZ,
       .theta = STABILIZATION_ATTITUDE_SP_MAX_THETA * radio_control_get(RADIO_PITCH) / MAX_PPRZ,
-      .psi = 0.f
+      .psi = stateGetNedToBodyEulers_f()->psi
     };
     attitude_sp = stab_sp_from_eulers_f(&plane_rc_sp);
 
     //X Axis
+    thrust[THRUST_AXIS_X] = Max(radio_control_get(RADIO_THROTTLE), 0);
     //commands[COMMAND_THRUST_X] = Max(radio_control_get(RADIO_THROTTLE), 0);
-    //commands[COMMAND_THRUST_X] = radio_control_get(RADIO_THROTTLE);
-    thrust[THRUST_AXIS_X] =Max(radio_control_get(RADIO_THROTTLE), 0);
     quadplane_eff_pusher_forced = false;
+    quadplane_eff_pusher_forced_cmd = 0.f;
+
     //Z Axis
-    if(transition_ratio < 1.f) {
-      //commands[COMMAND_THRUST] = (int32_t)((1.f - hov_motor_decrease) * hover_tz);
+    if (transition_ratio < 1.f) {
+      //Progressive reduction of vertical thrust
       thrust[THRUST_AXIS_Z] = (int32_t)((1.f - hov_motor_decrease) * hover_tz);
+      //commands[COMMAND_THRUST] = (int32_t)((1.f - hov_motor_decrease) * hover_tz);
       quadplane_eff_forward_mode = false;
-    } else if(transition_ratio >= 1.f) {
-      //commands[COMMAND_THRUST] = 0; //We stop the vertical thrust when in forward mode
-      thrust[THRUST_AXIS_Z] = 0; //We stop the vertical thrust when in forward mode
+    } else {
+      //Transition completed, stop vertical thrust and let the INDI/WLS control the pusher
+      thrust[THRUST_AXIS_Z] = 0;
+      //commands[COMMAND_THRUST] = 0;
       quadplane_eff_forward_mode = true;
     }
   }
@@ -265,21 +319,20 @@ void control_mixing_quadplane_attitude_plane(void)
 
   stabilization_run(in_flight, &attitude_sp, &thrust_sp, stabilization.cmd);
 
-
-  SetRotorcraftCommands(stabilization.cmd, in_flight, autopilot_get_motors_on());
+  SetRotorcraftCommands(stabilization.cmd, in_flight, motors_on);
   autopilot.throttle = commands[COMMAND_THRUST];
 }
 
 void control_mixing_quadplane_guidance_enter(void)
 {
-  quadplane_pusher_gate(autopilot_in_flight());
+  quadplane_pusher_gate(autopilot_in_flight() && autopilot_get_motors_on());
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
 }
 
 void control_mixing_quadplane_guidance(void)
 {
   bool in_flight = autopilot_in_flight();
-  quadplane_pusher_gate(in_flight);
+  quadplane_pusher_gate(in_flight && autopilot_get_motors_on());
 
   if (!in_flight) {
     guidance_h_hover_enter();
@@ -310,13 +363,13 @@ void control_mixing_quadplane_nav_enter(void)
 void control_mixing_quadplane_failsafe(void)
 {
   bool in_flight = autopilot_in_flight();
-  quadplane_pusher_gate(in_flight);
+  quadplane_pusher_gate(in_flight && autopilot_get_motors_on());
 
   struct StabilizationSetpoint stab_sp = stabilization_get_failsafe_sp();
   struct ThrustSetpoint thrust_sp = guidance_v_run(in_flight);
   stabilization_run(in_flight, &stab_sp, &thrust_sp, stabilization.cmd);
 
-  SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
+  SetRotorcraftCommands(stabilization.cmd, in_flight, autopilot_get_motors_on());
   autopilot.throttle = commands[COMMAND_THRUST];
 }
 

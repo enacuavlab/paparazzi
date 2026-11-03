@@ -571,8 +571,8 @@
           <property>aero/qbar-psf</property>
           <property>metrics/Sw-sqft</property>
           <property>metrics/cbarw-ft</property>
-          <property>aero/alpha-rad</property>
-          <value>-0.5</value>
+          <!--property>aero/alpha-rad</property>
+          <value>-0.5</value-->
           <table>
             <independentVar lookup="row">aero/alpha-rad</independentVar>
             <tableData>
