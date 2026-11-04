@@ -104,6 +104,7 @@ extern bool  quadplane_eff_pusher_forced; // If true, pusher command forced for 
 extern float quadplane_eff_pusher_forced_cmd; // Forced pusher command [pprz] when quadplane_eff_pusher_forced is true
 extern bool  quadplane_eff_forward_mode; //Flag if quadplane is in forward mode (== true) or quad mode (== false)
 extern bool quadplane_eff_ground_test;
+extern bool quadplane_eff_disable_elevons; //Disable elevon in hovering phase
 
 void eff_scheduling_quadplane_init(void);
 void eff_scheduling_quadplane_periodic(void);

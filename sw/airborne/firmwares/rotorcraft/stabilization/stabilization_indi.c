@@ -790,12 +790,22 @@ void stabilization_indi_rate_run(bool in_flight, struct StabilizationSetpoint *s
       if (autopilot_get_motors_on()) {
         Bound(indi_u[i], 0, MAX_PPRZ);
       } else {
-        indi_u[i] = -MAX_PPRZ;
+        // Stopped motors have zero input in the internal actuator model.
+        indi_u[i] = 0.f;
       }
     }
 
     // commit actuator command
-    actuators_pprz[i] = (int16_t) indi_u[i];
+    // if indi_u > 0, we commit the command from indi_u
+    // if indi_u <= 0, we commit -MAX_PPRZ for non-servo actuators (motors) to ensure they are off
+    // Used for turning off hovering or pusher motors in flight. 
+    // If we set everything to -MAX_PPRZ, motors will turn off, but model will think it's spinning and try to compensate
+    // Therefore we set the model to 0 (indi_u[i] = 0) and we set the real command to -MAX_PPRZ (actuators_pprz[i] = -MAX_PPRZ;)
+    if (!act_is_servo[i] && indi_u[i] <= 0.f) {
+      actuators_pprz[i] = -MAX_PPRZ;
+    } else {
+      actuators_pprz[i] = (int16_t) indi_u[i];
+    }
 #ifdef STABILIZATION_INDI_COMMANDS
     // copy to actuators to specified commands
     cmd[act_to_commands[i]] = actuators_pprz[i];

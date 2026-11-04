@@ -128,6 +128,7 @@ static void quadplane_force_hover(void)
 {
   transition_ratio = 0.f; // 0. for hover to 1. for forward flight
 
+  quadplane_eff_disable_elevons = true;
   quadplane_eff_disable_pusher = true;
   quadplane_eff_pusher_forced = false;
   quadplane_eff_pusher_forced_cmd = 0.f;
@@ -155,6 +156,7 @@ void control_mixing_quadplane_elevon_test_enter(void)
   quadplane_eff_forward_mode = true;
   quadplane_eff_disable_pusher = true;
   quadplane_eff_pusher_forced = false;
+  quadplane_eff_disable_elevons = false;
 }
 
 void control_mixing_quadplane_elevon_test(void)
@@ -172,7 +174,7 @@ void control_mixing_quadplane_elevon_test(void)
   struct StabilizationSetpoint stab_sp = stab_sp_from_eulers_f(&rc_sp);
   struct ThrustSetpoint thrust_sp = th_sp_from_thrust_vect_i(thrust);
 
-  stabilization_run(false, &stab_sp, &thrust_sp, stabilization.cmd);
+  stabilization_run(true, &stab_sp, &thrust_sp, stabilization.cmd);
 
   // Elevon output calculated by INDI/WLS.
   commands[COMMAND_ELEVON_RIGHT] = stabilization.cmd[COMMAND_ELEVON_RIGHT];
@@ -200,7 +202,7 @@ void control_mixing_quadplane_attitude_direct_enter(void)
 
 void control_mixing_quadplane_attitude_direct(void)
 {
-  const bool in_flight = true; // TODO autopilot_in_flight();
+  const bool in_flight = autopilot_in_flight();
   quadplane_force_hover();
   transition_run(TRANSITION_TO_HOVER);
   struct ThrustSetpoint th_sp = guidance_v_run(in_flight);
@@ -224,7 +226,7 @@ void control_mixing_quadplane_attitude_plane_enter(void)
 
 void control_mixing_quadplane_attitude_plane(void)
 {
-  const bool in_flight = true; // TODO autopilot_in_flight();
+  const bool in_flight = autopilot_in_flight();
   const bool motors_on = autopilot_get_motors_on();
   int32_t thrust[3] = { 0, 0, 0 };
   struct StabilizationSetpoint attitude_sp;
@@ -271,6 +273,8 @@ void control_mixing_quadplane_attitude_plane(void)
   float push_ratio = transition_ratio / CMQ_TRANSITION_CUTOFF;
   Bound(push_ratio, 0.f, 1.f);
 
+
+
   //Case 1 : Forward requested and not yet in plane mode, increase pusher command progressively until cutoff
   //MODE QUAD => RC rotorcraft : roll + pitch + yaw + thrust Z.
   if (!plane_mode) {
@@ -284,6 +288,8 @@ void control_mixing_quadplane_attitude_plane(void)
     quadplane_eff_pusher_forced = true;
     quadplane_eff_pusher_forced_cmd = push_ratio * CMQ_TRANSITION_PUSHER_CMD;
     quadplane_eff_forward_mode = false;
+    //Keep elevons disabled until we reach the cutoff, to avoid any control conflict between elevons and quad motors
+    quadplane_eff_disable_elevons = true;
 
   //Case 2 : Forward requested and in plane mode, unleash the pusher command and let the INDI/WLS control it
   //MODE PLANE => RC plane : roll + pitch + thrust X.
@@ -295,6 +301,8 @@ void control_mixing_quadplane_attitude_plane(void)
     };
     attitude_sp = stab_sp_from_eulers_f(&plane_rc_sp);
 
+    //Unlock the elevons
+    quadplane_eff_disable_elevons = false;
     //X Axis
     thrust[THRUST_AXIS_X] = Max(radio_control_get(RADIO_THROTTLE), 0);
     //commands[COMMAND_THRUST_X] = Max(radio_control_get(RADIO_THROTTLE), 0);

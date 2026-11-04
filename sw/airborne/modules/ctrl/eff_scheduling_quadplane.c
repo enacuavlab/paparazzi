@@ -145,14 +145,6 @@
 #define CMQ_ELEVON_TEST_AIRSPEED_MIN CMQ_TRANSITION_AIRSPEED
 #endif
 
-
-
-bool  quadplane_eff_disable_pusher = false; 
-bool  quadplane_eff_pusher_forced = false; 
-float  quadplane_eff_pusher_forced_cmd = 0.f;
-bool  quadplane_eff_forward_mode = false;
-
-
 struct quadplane_eff_sched_param_t quadplane_eff_sched_p = {
   .Ixx = VEHICLE_IXX,
   .Iyy = VEHICLE_IYY,
@@ -186,12 +178,18 @@ struct quadplane_eff_sched_param_t quadplane_eff_sched_p = {
   .v_wing = VEHICLE_V_WING,
 };
 
+bool  quadplane_eff_disable_pusher = false; 
+bool  quadplane_eff_disable_elevons = false; 
+bool  quadplane_eff_pusher_forced = false; 
+bool  quadplane_eff_forward_mode = false;
+bool quadplane_eff_ground_test = false;
+float  quadplane_eff_pusher_forced_cmd = 0.f;
 static float quadplane_eff_liftd;
 float const grav = 9.81f;  // Gravitational Acceleration [m/s^2]
 float quadplane_eff_elevon_rate = VEHICLE_ELEVON_RATE;                 // Elevon command slew limit [pprz/s]
 float quadplane_eff_periodic_freq = EFF_SCHEDULING_QUADPLANE_PERIODIC_FREQ;   // Module Frequency [Hz]
 struct quadplane_eff_sched_var_t quadplane_eff_sched_v;
-bool quadplane_eff_ground_test = false;
+struct MedianFilterInt airspeed_quadplane_sched_fltr;
 
 static inline void quadplane_update_cmd_cache(void);
 static inline void quadplane_update_airspeed_cache(void);
@@ -233,6 +231,9 @@ void eff_scheduling_quadplane_init(void)
   quadplane_eff_sched_v.cmd_elevon_l = 0.f;
   
   quadplane_eff_liftd = 0.f;
+
+  /* Init median filter for airspeed */
+  init_median_filter_i(&airspeed_quadplane_sched_fltr, MEDIAN_DEFAULT_SIZE);
 }
 
 
@@ -276,12 +277,17 @@ static inline void quadplane_update_airspeed_cache(void)
     u = CMQ_ELEVON_TEST_AIRSPEED_MIN + throttle_ratio * (CMQ_ELEVON_TEST_AIRSPEED_MAX - CMQ_ELEVON_TEST_AIRSPEED_MIN);
 
   } else {
-    const struct FloatRMat *ned_to_body = stateGetNedToBodyRMat_f();
+    // Method 1 :Forward speed in body frame X axis, using EKF speed
+    /*const struct FloatRMat *ned_to_body = stateGetNedToBodyRMat_f();
     const struct NedCoor_f *vel = stateGetSpeedNed_f();
 
     u = RMAT_ELMT(*ned_to_body, 0, 0) * vel->x
       + RMAT_ELMT(*ned_to_body, 0, 1) * vel->y
-      + RMAT_ELMT(*ned_to_body, 0, 2) * vel->z;
+      + RMAT_ELMT(*ned_to_body, 0, 2) * vel->z;*/
+
+    // Method 2 : airspeed from pitot measurements, with a median filter to remove spikes
+    float airspeed_raw = stateGetAirspeed_f();
+    u = update_median_filter_i(&airspeed_quadplane_sched_fltr,airspeed_raw);
   }
 
   if (!(u > 1.f)) { u = 1.f; }
@@ -388,15 +394,15 @@ static inline void quadplane_update_motor_effectiveness(void)
   }
 
   /* Pusher motor Moment and Force calculations to fill G1G2 */
-  const float y_pusher = quadplane_eff_sched_p.pusher_y;
-  const float z_pusher = quadplane_eff_sched_p.pusher_z;
-  const float spin_pusher = quadplane_eff_sched_p.pusher_spin_dir;
-  const float kappa = quadplane_eff_sched_p.kappa;
+  //const float y_pusher = quadplane_eff_sched_p.pusher_y;
+  //const float z_pusher = quadplane_eff_sched_p.pusher_z;
+  //const float spin_pusher = quadplane_eff_sched_p.pusher_spin_dir;
+  //const float kappa = quadplane_eff_sched_p.kappa;
   const float pusher_dT = quadplane_eff_sched_v.pusher_dT_dpprz;
 
-  float dMx = spin_pusher * kappa * pusher_dT;
-  float dMy = z_pusher * pusher_dT;
-  float dMz = -y_pusher * pusher_dT;
+  //float dMx = spin_pusher * kappa * pusher_dT;
+  //float dMy = z_pusher * pusher_dT;
+  //float dMz = -y_pusher * pusher_dT;
   float dAx = pusher_dT;
 
   g1g2[QUADPLANE_VC_MX][QUADPLANE_ACT_PUSHER] = 0.f; //dMx / quadplane_eff_sched_p.Ixx;
@@ -516,23 +522,14 @@ void stabilization_indi_set_wls_settings(void)
     }
   }
 
-  // Elevons : servos 
-  wls_stab_p.u_min[QUADPLANE_ACT_ELEVON_R] = -MAX_PPRZ;
-  wls_stab_p.u_max[QUADPLANE_ACT_ELEVON_R] =  MAX_PPRZ;
-  wls_stab_p.u_pref[QUADPLANE_ACT_ELEVON_R] = act_pref[QUADPLANE_ACT_ELEVON_R];
-
-  wls_stab_p.u_min[QUADPLANE_ACT_ELEVON_L] = -MAX_PPRZ;
-  wls_stab_p.u_max[QUADPLANE_ACT_ELEVON_L] =  MAX_PPRZ;
-  wls_stab_p.u_pref[QUADPLANE_ACT_ELEVON_L] = act_pref[QUADPLANE_ACT_ELEVON_L];
-
 // Pusher motor
 if (quadplane_eff_disable_pusher) {
   /*
    * Pusher forbidden : ground
    */
-  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = -MAX_PPRZ;
-  wls_stab_p.u_max[QUADPLANE_ACT_PUSHER] = -MAX_PPRZ;
-  wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = -MAX_PPRZ;
+  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = 0.f;
+  wls_stab_p.u_max[QUADPLANE_ACT_PUSHER] = 0.f;
+  wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = 0.f;
 
 } else if (quadplane_eff_pusher_forced) {
   /*
@@ -554,29 +551,44 @@ if (quadplane_eff_disable_pusher) {
   wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = act_pref[QUADPLANE_ACT_PUSHER];
 }
 
-/*
-  // Pusher : motor 
-  wls_stab_p.u_min[QUADPLANE_ACT_PUSHER] = 0.f;
-  wls_stab_p.u_max[QUADPLANE_ACT_PUSHER] = MAX_PPRZ;
-  wls_stab_p.u_pref[QUADPLANE_ACT_PUSHER] = act_pref[QUADPLANE_ACT_PUSHER];
-*/
 
+  // Elevons : servos 
+  //Elevons forbidden : ground and Hovering
+  if(quadplane_eff_disable_elevons) {
+    wls_stab_p.u_min[QUADPLANE_ACT_ELEVON_R] = 0.f;
+    wls_stab_p.u_max[QUADPLANE_ACT_ELEVON_R] = 0.f;
+    wls_stab_p.u_pref[QUADPLANE_ACT_ELEVON_R] = 0.f;
 
-  // Elevons: the travel opens with dynamic pressure, (V / elevon_v_full)^2 of the range.
-  // if elevon_v_full = 0 => full travel at any speed
-  float open = 1.f;
-  if (quadplane_eff_sched_p.elevon_v_full > 0.f) {
-    const float q = quadplane_eff_sched_v.airspeed / quadplane_eff_sched_p.elevon_v_full;
-    if (q < 1.f) { open = q * q; }
-  }
-  // Each step moves at most elevon_rate / freq around the last command, inside that travel
-  const float lim = open * MAX_PPRZ;
-  const float step = quadplane_eff_elevon_rate / quadplane_eff_periodic_freq;
-  for (int e = QUADPLANE_ACT_ELEVON_R; e <= QUADPLANE_ACT_ELEVON_L; e++) {
-    float u = actuators_pprz[e];
-    Bound(u, -lim, lim);
-    wls_stab_p.u_min[e]  = Max(u - step, -lim);
-    wls_stab_p.u_max[e]  = Min(u + step, lim);
-    wls_stab_p.u_pref[e] = open * actuator_state_filt_vect[e];
+    wls_stab_p.u_min[QUADPLANE_ACT_ELEVON_L] = 0.f;
+    wls_stab_p.u_max[QUADPLANE_ACT_ELEVON_L] = 0.f;
+    wls_stab_p.u_pref[QUADPLANE_ACT_ELEVON_L] = 0.f;
+
+  //Elevons : INDI/WLS management
+  } else {
+    wls_stab_p.u_min[QUADPLANE_ACT_ELEVON_R] = -MAX_PPRZ;
+    wls_stab_p.u_max[QUADPLANE_ACT_ELEVON_R] =  MAX_PPRZ;
+    wls_stab_p.u_pref[QUADPLANE_ACT_ELEVON_R] = act_pref[QUADPLANE_ACT_ELEVON_R];
+
+    wls_stab_p.u_min[QUADPLANE_ACT_ELEVON_L] = -MAX_PPRZ;
+    wls_stab_p.u_max[QUADPLANE_ACT_ELEVON_L] =  MAX_PPRZ;
+    wls_stab_p.u_pref[QUADPLANE_ACT_ELEVON_L] = act_pref[QUADPLANE_ACT_ELEVON_L];
+
+    // Elevons: the travel opens with dynamic pressure, (V / elevon_v_full)^2 of the range.
+    // if elevon_v_full = 0 => full travel at any speed
+    float open = 1.f;
+    if (quadplane_eff_sched_p.elevon_v_full > 0.f) {
+      const float q = quadplane_eff_sched_v.airspeed / quadplane_eff_sched_p.elevon_v_full;
+      if (q < 1.f) { open = q * q; }
+    }
+    // Each step moves at most elevon_rate / freq around the last command, inside that travel
+    const float lim = open * MAX_PPRZ;
+    const float step = quadplane_eff_elevon_rate / quadplane_eff_periodic_freq;
+    for (int e = QUADPLANE_ACT_ELEVON_R; e <= QUADPLANE_ACT_ELEVON_L; e++) {
+      float u = actuators_pprz[e];
+      Bound(u, -lim, lim);
+      wls_stab_p.u_min[e]  = Max(u - step, -lim);
+      wls_stab_p.u_max[e]  = Min(u + step, lim);
+      wls_stab_p.u_pref[e] = open * actuator_state_filt_vect[e];
+    }
   }
 }
