@@ -3,8 +3,7 @@
 from typing import Optional
 import pathlib
 import subprocess
-import os
-import pickle,copy
+import copy
 import tempfile
 import datetime,time
 import enum,dataclasses
@@ -13,12 +12,9 @@ import asyncio
 import pyproj
 import numpy as np
 
-import matplotlib.pyplot as plt
-
 from Dubins import Pose3D,ACStats,FleetPlan,DubinsMove,BasicPath,Path,min_XY_dist,poses_XY_dist,path_extra_length
 from ioUtils import AC_PP_Problem, write_pathplanning_problem_to_CSV, parse_trajectories_from_JSON
-from Formation import Formation,chevron_formation
-from FleetPath import FleetKeyframes,plot_keyframes,formation_oval,formation_rectangle
+from FleetPath import FleetKeyframes
 
 from uav_data import UAVData,TrackingData,TrackingLogs,LandingSite
 from mission_manager import MissionManager,MissionInsert,send_and_ack_msgs,PprzMessage,\
