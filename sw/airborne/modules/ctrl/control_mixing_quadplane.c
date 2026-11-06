@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2025 Gautier Hattenberger <gautier.hattenberger@enac.fr> Jean-Baptiste Forestier <jean-baptiste.forestier@enac.fr
- *
+ * Copyright (C) 2025 Gautier Hattenberger <gautier.hattenberger@enac.fr> 
  * This file is part of paparazzi
  *
  * paparazzi is free software; you can redistribute it and/or modify
@@ -19,8 +18,56 @@
  */
 
 /** @file "modules/ctrl/control_mixing_quadplane.c"
- * @author Gautier Hattenberger <gautier.hattenberger@enac.fr>
+ * @author Jean-Baptiste Forestier <jean-baptiste.forestier@enac.fr>
+ * @brief Manual and autonomous quadplane control mixing.
  * Control mixing for quadplane
+ * 
+ * Manual control:
+ * - ATT: RC attitude and vertical throttle control using the hovering motors;
+ *   the pusher is stopped and the elevons are neutral.
+ * - FWD: transition to RC roll/pitch and pusher throttle control.
+ *   The pusher ramps up, elevons become active at the transition cutoff,
+ *   and vertical thrust decreases until the hovering motors are commanded off.
+ *   Airspeed gates transition progress; a timeout restores quad control.
+ *
+ * NAV configuration selection through cmq_nav_mode:
+ * - CMQ_NAV_AUTO: request forward flight for ROUTE and CIRCLE, quad otherwise.
+ * - CMQ_NAV_ATTITUDE: use quad configuration for any navigation trajectory.
+ * - CMQ_NAV_FORWARD: explicitly request a forward transition and configuration.
+ * Navigation guidance follows the flight plan in both configurations.
+ * AUTO is the startup default. Explicit selections persist across blocks
+ * until cmq_nav_mode is assigned again. HOME retains quad configuration.
+ *
+ * Independent flight-plan block examples:
+ * @code{.xml}
+ * <block name="Quad route">
+ *   <set var="cmq_nav_mode" value="CMQ_NAV_ATTITUDE"/>
+ *   <go wp="p1" hmode="route"/>
+ * </block>
+ *
+ * <block name="Forward route">
+ *   <set var="cmq_nav_mode" value="CMQ_NAV_FORWARD"/>
+ *   <go wp="p2" from="p1" hmode="route"/>
+ * </block>
+ *
+ * <block name="Quad hold">
+ *   <set var="cmq_nav_mode" value="CMQ_NAV_ATTITUDE"/>
+ *   <stay wp="p2"/>
+ * </block>
+ *
+ * <block name="forward_hold">
+ *   <set var="cmq_nav_mode" value="CMQ_NAV_FORWARD"/>
+ *   <circle wp="p2" radius="nav.radius"/>
+ * </block>
+ *
+ * <block name="Auto route">
+ *   <set var="cmq_nav_mode" value="CMQ_NAV_AUTO"/>
+ *   <go wp="p2" from="p1" hmode="route"/>
+ * </block>
+ * @endcode
+ *
+ * Forward holding uses an orbit around the waypoint; quad holding uses
+ * a stationary position setpoint.
  */
 
 #include "modules/ctrl/control_mixing_quadplane.h"
@@ -38,6 +85,7 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 #include "firmwares/rotorcraft/autopilot_utils.h"
 #include <string.h>
+#include "math/pprz_isa.h"
 
 // Use for Elevon test on ground, turn off motors and allow only elevon to move.
 #ifndef CMQ_GROUND_ELEVON_TEST
@@ -78,11 +126,40 @@
 #define TRANSITION_RATIO_COMPLETE 0.99f
 
 
-static float transition_ratio;
-static const float transition_increment = 1.f / (CMQ_TRANSITION_TIME * CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY);
+static float transition_ratio; // 0. for hover to 1. for forward flight
+static const float transition_increment = 1.f / (CMQ_TRANSITION_TIME * CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY); // Increment per periodic cycle
 float   quadplane_heading_sp = 0.f;           // heading setpoint [rad, NED]
-static uint32_t manual_transition_cycles = 0;
-static bool manual_transition_aborted = false;
+static uint32_t manual_transition_cycles = 0; // Count cycles of a forward transition in manual mode, for timeout detection.
+static bool manual_transition_aborted = false; // Latch to prevent repeated transition attempts when the pilot requests forward flight but the transition fails.
+enum CmqNavMode cmq_nav_mode = CMQ_NAV_AUTO; //Default in AUTO, so attitude or forward depends on NAV_HORIZONTAL_MODE_ROUTE or NAV_HORIZONTAL_MODE_CIRCLE if no flightplan definition.  
+static uint32_t nav_transition_cycles = 0; // Count cycles of a forward transition in NAV mode, for timeout detection.
+static bool nav_transition_aborted = false; // Latch to prevent repeated transition attempts when the flight plan requests forward flight but the transition fails.
+static bool nav_previous_forward_request = false; //Use to detect a new forward request and capture the heading setpoint at the beginning of the transition.
+
+/**
+ * Reurn true if the flight plan requests a quadplane forward transition
+ * Or if the flight plan is in AUTO and the navigation mode is ROUTE or CIRCLE
+ */
+static bool quadplane_nav_forward_requested(void)
+{
+  /* HOME retains quad navigation. */
+  if (autopilot_get_mode() != AP_MODE_NAV) {
+    return false;
+  }
+
+  switch (cmq_nav_mode) {
+    case CMQ_NAV_FORWARD:
+      return true;
+
+    case CMQ_NAV_AUTO:
+      return nav.horizontal_mode == NAV_HORIZONTAL_MODE_ROUTE ||
+             nav.horizontal_mode == NAV_HORIZONTAL_MODE_CIRCLE;
+
+    case CMQ_NAV_ATTITUDE:
+    default:
+      return false;
+  }
+}
 
 /**
  * Return telemetry status of the quadplane transition state
@@ -98,7 +175,8 @@ enum CmqTransitionState {
   CMQ_WAITING = 4
 };
 
-static void send_transition_cmq_status(struct transport_tx *trans, struct link_device *dev)
+static void send_transition_cmq_status(struct transport_tx *trans,
+                                       struct link_device *dev)
 {
   static char state_names[][11] = {
     [CMQ_HOVER]      = "HOVER",
@@ -111,10 +189,20 @@ static void send_transition_cmq_status(struct transport_tx *trans, struct link_d
   uint8_t status = CMQ_HOVER;
   float ratio = 0.f;
 
-  if (autopilot_get_mode() == AP_MODE_FORWARD) {
+  const uint8_t mode = autopilot_get_mode();
+
+  const bool manual_forward = mode == AP_MODE_FORWARD;
+  const bool automatic_forward =
+    quadplane_nav_forward_requested();
+
+  if (manual_forward || automatic_forward) {
     ratio = transition_ratio;
 
-    if (manual_transition_aborted) {
+    const bool aborted = manual_forward
+        ? manual_transition_aborted
+        : nav_transition_aborted;
+
+    if (aborted) {
       status = CMQ_ABORTED;
     } else if (!autopilot_in_flight() || !autopilot_get_motors_on()) {
       status = CMQ_WAITING;
@@ -125,7 +213,6 @@ static void send_transition_cmq_status(struct transport_tx *trans, struct link_d
     }
   }
 
-  // Send the state label as text.
   char *state_text = state_names[status];
 
   pprz_msg_send_TRANSITION_CMQ_STATUS(
@@ -185,6 +272,7 @@ static void quadplane_force_hover(void)
   quadplane_eff_pusher_forced = false;
   quadplane_eff_pusher_forced_cmd = 0.f;
   quadplane_eff_forward_mode = false;
+  quadplane_eff_hover_thrust_factor = 1.f;
 }
 
 void control_mixing_quadplane_init(void)
@@ -392,31 +480,12 @@ void control_mixing_quadplane_attitude_plane(void)
 
 void control_mixing_quadplane_guidance_enter(void)
 {
-  quadplane_pusher_gate(autopilot_in_flight() && autopilot_get_motors_on());
-  stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
+//TODO
 }
 
 void control_mixing_quadplane_guidance(void)
 {
-  bool in_flight = autopilot_in_flight();
-  quadplane_pusher_gate(in_flight && autopilot_get_motors_on());
-
-  if (!in_flight) {
-    guidance_h_hover_enter();
-  }
-
-  /*struct StabilizationSetpoint stab_sp = guidance_indi_run_mode(
-      in_flight, &guidance_h, &guidance_v,
-      GUIDANCE_INDI_HYBRID_H_POS, GUIDANCE_INDI_HYBRID_V_POS);*/
-
-  // Retrieve the vertical thrust setpoint computed inside run_mode
-  struct ThrustSetpoint thrust_sp = guidance_v_run_pos(in_flight, &guidance_v);
-  struct StabilizationSetpoint stab_sp = guidance_h_from_nav(in_flight);
-
-  stabilization_run(in_flight, &stab_sp, &thrust_sp, stabilization.cmd);
-
-  SetRotorcraftCommands(stabilization.cmd, autopilot_in_flight(), autopilot_get_motors_on());
-  autopilot.throttle = commands[COMMAND_THRUST];
+//TODO
 }
 
 void control_mixing_quadplane_nav_enter(void)
@@ -424,8 +493,243 @@ void control_mixing_quadplane_nav_enter(void)
   guidance_h_mode_changed(GUIDANCE_H_MODE_NAV);
   guidance_v_mode_changed(GUIDANCE_V_MODE_NAV);
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
+  nav_transition_cycles = 0;
+  nav_transition_aborted = false;
+  nav_previous_forward_request = false;
 }
 
+void control_mixing_quadplane_nav(void)
+{
+  const bool in_flight = autopilot_in_flight();
+  const bool motors_on = autopilot_get_motors_on();
+
+  //The flight plan selects the aircraft configuration.
+  //HOME retains quad navigation independently of this NAV selector.
+  const bool forward_request =
+      quadplane_nav_forward_requested() &&
+      in_flight &&
+      motors_on;
+
+  const uint32_t timeout_cycles = (uint32_t)ceilf(
+      CMQ_TRANSITION_TIME *
+      (float)CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY);
+
+  /* Capture the requested flight direction when starting a transition. */
+  if (forward_request && !nav_previous_forward_request) {
+    const struct EnuCoor_f *position = stateGetPositionEnu_f();
+
+    float east = nav.carrot.x - position->x;
+    float north = nav.carrot.y - position->y;
+
+    if (nav.setpoint_mode == NAV_SETPOINT_MODE_SPEED) {
+      east = nav.speed.x;
+      north = nav.speed.y;
+    }
+
+    quadplane_heading_sp =
+        east * east + north * north > 0.01f
+        ? atan2f(east, north)
+        : stateGetNedToBodyEulers_f()->psi;
+  }
+
+  /* Capture the current heading when returning to quad navigation. */
+  if (!forward_request && nav_previous_forward_request) {
+    nav.heading = stateGetNedToBodyEulers_f()->psi;
+    guidance_h_set_heading(nav.heading);
+  }
+
+  /*
+   * An abort remains latched while FORWARD is requested.
+   * Selecting ATTITUDE, or entering NAV again, permits another attempt.
+   */
+  if (!forward_request) {
+    nav_transition_cycles = 0;
+    nav_transition_aborted = false;
+    quadplane_force_hover();
+
+  } else if (nav_transition_aborted) {
+    quadplane_force_hover();
+
+  } else {
+    /*
+     * transition_run() checks airspeed validity and the speed threshold.
+     * A blocked transition therefore eventually reaches the timeout.
+     */
+    transition_run(TRANSITION_TO_FORWARD);
+
+    if (transition_ratio >= 1.f) {
+      nav_transition_cycles = 0;
+    } else {
+      nav_transition_cycles++;
+
+      if (nav_transition_cycles >= timeout_cycles) {
+        nav_transition_aborted = true;
+        quadplane_force_hover();
+      }
+    }
+  }
+
+  nav_previous_forward_request = forward_request;
+
+  const bool transition_active =
+      forward_request && !nav_transition_aborted;
+
+  const bool plane_mode =
+      transition_active &&
+      transition_ratio >= CMQ_TRANSITION_CUTOFF;
+
+  /*
+   * Explicitly update this flag on every cycle.
+   * The scheduler stops the hovering motors only after completion.
+   */
+  quadplane_eff_forward_mode =
+      transition_active && transition_ratio >= 1.f;
+
+  float hov_motor_decrease = 0.f;
+  if (plane_mode) {
+    hov_motor_decrease = transition_hov_motor(
+        transition_ratio, CMQ_TRANSITION_CUTOFF, 1.f);
+  }
+  quadplane_eff_hover_thrust_factor = 1.f - hov_motor_decrease;
+
+  float push_ratio = transition_ratio / CMQ_TRANSITION_CUTOFF;
+  Bound(push_ratio, 0.f, 1.f);
+
+  /*
+   * Set actuator availability before guidance and stabilization.
+   * quadplane_force_hover() already handles the inactive cases.
+   */
+  if (transition_active) {
+    quadplane_pusher_gate(in_flight && motors_on);
+
+    quadplane_eff_disable_elevons = !plane_mode;
+    quadplane_eff_pusher_forced = !plane_mode;
+    quadplane_eff_pusher_forced_cmd =
+        plane_mode ? 0.f : push_ratio * CMQ_TRANSITION_PUSHER_CMD;
+  }
+
+  /*
+   * Use the forward speed limit in forward configuration.
+   * guidance_h_from_nav() handles explicit flight-plan speed limits.
+   */
+  if (nav.fp_max_speed <= 0.f) {
+    if (transition_active) {
+      guidance_h_SetMaxSpeed(gih_params.max_airspeed);
+    } else {
+      guidance_h_SetMaxSpeed(GUIDANCE_H_REF_MAX_SPEED);
+    }
+  }
+
+  /* Prepare vertical references, then run hybrid guidance. */
+  struct ThrustSetpoint nav_thrust = guidance_v_run(in_flight);
+  struct StabilizationSetpoint attitude_sp =
+      guidance_h_from_nav(in_flight);
+
+  /*
+   * With the current hybrid INDI implementation, these callbacks return
+   * the shared thrust setpoint. Read it after horizontal guidance has
+   * computed the current cycle.
+   */
+  if (nav.horizontal_mode != NAV_HORIZONTAL_MODE_NONE &&
+      nav.horizontal_mode != NAV_HORIZONTAL_MODE_ATTITUDE) {
+    if (nav.vertical_mode == NAV_VERTICAL_MODE_ALT) {
+      nav_thrust = guidance_v_run_pos(in_flight, &guidance_v);
+    } else if (nav.vertical_mode == NAV_VERTICAL_MODE_CLIMB) {
+      nav_thrust = guidance_v_run_speed(in_flight, &guidance_v);
+    }
+  }
+
+  /*
+   * Convert hybrid INDI acceleration increments into absolute
+   * PPRZ commands using the stabilization effectiveness model.
+   */
+  float hover_tz = Max(stabilization.cmd[COMMAND_THRUST], 0);
+  float pusher_tx = Max(stabilization.cmd[COMMAND_THRUST_X], 0);
+
+  if (nav_thrust.type == THRUST_INCR_SP) {
+    float collective_eff = 0.f;
+    float filtered_z = 0.f;
+
+    for (uint8_t i = 0; i < 4; i++) {
+      const float eff = g1g2[QUADPLANE_VC_AZ][i];
+
+      collective_eff += eff;
+      filtered_z += eff * actuator_state_filt_vect[i];
+    }
+
+    if (collective_eff < -1.e-6f) {
+      const float increment_z =
+          th_sp_to_incr_f(&nav_thrust, 0, THRUST_AXIS_Z);
+
+      hover_tz = (filtered_z + increment_z) / collective_eff;
+    }
+
+    const float pusher_eff =
+        g1g2[QUADPLANE_VC_AX][QUADPLANE_ACT_PUSHER];
+
+    if (pusher_eff > 1.e-6f) {
+      const float increment_x =
+          th_sp_to_incr_f(&nav_thrust, 0, THRUST_AXIS_X);
+
+      pusher_tx =
+          actuator_state_filt_vect[QUADPLANE_ACT_PUSHER] +
+          increment_x / pusher_eff;
+    }
+
+  } else {
+    /* Direct thrust commands, for example during engine-start stages. */
+    hover_tz = th_sp_to_thrust_i(&nav_thrust, 0, THRUST_AXIS_Z);
+    pusher_tx = th_sp_to_thrust_i(&nav_thrust, 0, THRUST_AXIS_X);
+  }
+
+  Bound(hover_tz, 0.f, (float)MAX_PPRZ);
+  Bound(pusher_tx, 0.f, (float)MAX_PPRZ);
+
+  int32_t thrust[3] = { 0, 0, 0 };
+
+  if (!transition_active) {
+    /* Quad navigation, including transition abort. */
+    thrust[THRUST_AXIS_Z] = (int32_t)hover_tz;
+
+  } else if (!plane_mode) {
+    /* Transition before cutoff: fixed attitude and pusher ramp. */
+    struct FloatEulers transition_sp = {
+      .phi = 0.f,
+      .theta = CMQ_TRANSITION_PITCH,
+      .psi = quadplane_heading_sp
+    };
+
+    attitude_sp = stab_sp_from_eulers_f(&transition_sp);
+
+    thrust[THRUST_AXIS_Z] = (int32_t)hover_tz;
+    thrust[THRUST_AXIS_X] =
+        (int32_t)quadplane_eff_pusher_forced_cmd;
+
+  } else {
+    /* After cutoff: navigation controls attitude and forward thrust. */
+    thrust[THRUST_AXIS_X] = (int32_t)pusher_tx;
+
+    if (quadplane_eff_forward_mode) {
+      /* Transition complete: no vertical motor thrust requested. */
+      thrust[THRUST_AXIS_Z] = 0;
+    } else {
+      thrust[THRUST_AXIS_Z] = (int32_t)(quadplane_eff_hover_thrust_factor * hover_tz);
+    }
+  }
+
+  struct ThrustSetpoint thrust_sp = th_sp_from_thrust_vect_i(thrust);
+
+  stabilization_run(
+      in_flight, &attitude_sp, &thrust_sp, stabilization.cmd);
+
+  SetRotorcraftCommands(stabilization.cmd, in_flight, motors_on);
+
+  const uint8_t displayed_command =
+      plane_mode ? COMMAND_THRUST_X : COMMAND_THRUST;
+
+  autopilot.throttle =
+      motors_on ? Max(commands[displayed_command], 0) : 0;
+}
 
 void control_mixing_quadplane_failsafe(void)
 {
@@ -440,125 +744,15 @@ void control_mixing_quadplane_failsafe(void)
   autopilot.throttle = commands[COMMAND_THRUST];
 }
 
-
-
-void control_mixing_quadplane_nav(void)
+// Assumes LIFT_CURVE_SLOPE is the finite-wing lift-curve slope
+// and airspeed is equivalent airspeed (EAS).
+float guidance_indi_get_liftd(float airspeed, float theta)
 {
-  static bool previous_forward_request = false;
-  static bool transition_heading_initialized = false; // Flag to initialize the heading setpoint at the beginning of the transition
+  (void)theta;
 
+  const float lift_accel_asq =
+      0.5f * PPRZ_ISA_AIR_DENSITY * quadplane_eff_sched_p.wing_area
+      * quadplane_eff_sched_p.lift_curve_slope / quadplane_eff_sched_p.mass;
 
-  //Forward / Hover transition
-  const bool in_flight = autopilot_in_flight();
-  const bool motors_on = autopilot_get_motors_on();
-  const bool forward_nav = nav.horizontal_mode == NAV_HORIZONTAL_MODE_ROUTE || nav.horizontal_mode == NAV_HORIZONTAL_MODE_CIRCLE;
-  const bool forward_request = forward_nav && in_flight && motors_on && stateIsAirspeedValid();
-  float hov_motor_decrease = 0.f;
-  int32_t thrust[3] = { 0, 0, 0 };
-
-  quadplane_pusher_gate(in_flight && motors_on);
-
-
-  //Capture heading when returning to hover, do not overwrite nav.heading at each forward cycle
-  if (previous_forward_request && !forward_request) {
-    nav.heading = stateGetNedToBodyEulers_f()->psi;
-    guidance_h_set_heading(nav.heading);
-  }
-
-  struct ThrustSetpoint th_sp = guidance_v_run(in_flight);
-  const int32_t hover_tz = th_sp_to_thrust_i(&th_sp, 0, THRUST_AXIS_Z);
-  struct StabilizationSetpoint attitude_sp;
-
-
-  //If motors ON and in flight, run transition and save the forward request
-  if (!in_flight || !motors_on) {
-    transition_ratio = 0.f;
-    quadplane_eff_disable_pusher = true;
-  } else {
-    transition_run(forward_request ? TRANSITION_TO_FORWARD : TRANSITION_TO_HOVER);
-    hov_motor_decrease = transition_hov_motor(transition_ratio, CMQ_TRANSITION_CUTOFF, 1.f);
-  }
-
-  previous_forward_request = forward_request;
-
-  // Plane mode calculation after transition_run() to avoid using the previous cycle ratio
-  const bool plane_mode = forward_request && transition_ratio >= CMQ_TRANSITION_CUTOFF;
-
-  //Pusher transition command definition at each step
-  quadplane_eff_pusher_forced = false;
-  quadplane_eff_pusher_forced_cmd = 0.f;
-
-  //Transition to forward flight, increase pusher command until cutoff, then maintain the command until forward is established
-  float push_ratio = transition_ratio / CMQ_TRANSITION_CUTOFF;
-  Bound(push_ratio, 0.f, 1.f);
-
-  //Case 1 : Forward requested and not yet in plane mode, increase pusher command progressively until cutoff
-  if (forward_request && !plane_mode) {
-    //Progressive increase of the pusher during the first phase. At cutoff, it reaches CMQ_TRANSITION_PUSHER_CMD, when push_ratio reaches 1
-    //Set heading setpoint to the current heading at the beginning of the transition, and keep it until the end of the transition
-    if (!transition_heading_initialized) {
-      const struct EnuCoor_f *start = stateGetPositionEnu_f();
-      const float east  = nav.carrot.x - start->x;
-      const float north = nav.carrot.y - start->y;
-
-      quadplane_heading_sp = start->x == nav.carrot.x && start->y == nav.carrot.y ? stateGetNedToBodyEulers_f()->psi : atan2f(east, north);
-
-      transition_heading_initialized = true;
-    }
-    //Set the heading setpoint to the captured heading during the transition and the pitch for transition
-    struct FloatEulers eulers_sp = { .phi = 0.f , .theta = CMQ_TRANSITION_PITCH, .psi = quadplane_heading_sp };
-    attitude_sp = stab_sp_from_eulers_f(&eulers_sp);    
-    quadplane_eff_pusher_forced = true;
-    quadplane_eff_pusher_forced_cmd = push_ratio * CMQ_TRANSITION_PUSHER_CMD;
-    quadplane_eff_forward_mode = false;
-    thrust[THRUST_AXIS_Z] = hover_tz;
-    thrust[THRUST_AXIS_X] = CMQ_TRANSITION_PUSHER_CMD;
-
-  //Case 2 : Returning to hover, decrease pusher command proportionally to the transition ratio until it reaches 0 at the end of the transition
-  } else if (!forward_request) {
-    //Back to Hover : pusher command is forced to the previous value, and then reduced proportionally to the transition ratio.
-    attitude_sp = guidance_h_from_nav(in_flight);
-    quadplane_eff_forward_mode = false;
-    transition_heading_initialized = false;
-    if (transition_ratio > 0.f) {
-      quadplane_eff_pusher_forced = true;
-      quadplane_eff_pusher_forced_cmd = push_ratio * CMQ_TRANSITION_PUSHER_CMD;
-      thrust[THRUST_AXIS_Z] = hover_tz;
-      thrust[THRUST_AXIS_X] = push_ratio * CMQ_TRANSITION_PUSHER_CMD;      
-    } else if (transition_ratio <= 0.f) {
-      quadplane_eff_pusher_forced = false;
-      quadplane_eff_pusher_forced_cmd = 0;
-      thrust[THRUST_AXIS_Z] = hover_tz;
-      thrust[THRUST_AXIS_X] = 0;          
-    }
-    
-  //Case 3 : Forward requested and in plane mode, unleash the pusher command and let the INDI/WLS control it
-  }  else if (forward_request && plane_mode) {
-    attitude_sp = guidance_h_from_nav(in_flight);
-    transition_heading_initialized = false;
-    quadplane_eff_pusher_forced = false;
-    quadplane_eff_pusher_forced_cmd = 0.f;
-    thrust[THRUST_AXIS_X] = 0; //TODO 
-
-    if(transition_ratio < 1.f) {
-      //commands[COMMAND_THRUST] = (int32_t)((1.f - hov_motor_decrease) * hover_tz);
-      thrust[THRUST_AXIS_Z] = (int32_t)((1.f - hov_motor_decrease) * hover_tz);
-      quadplane_eff_forward_mode = false;
-    } else if(transition_ratio >= 1.f) {
-      //commands[COMMAND_THRUST] = 0; //We stop the vertical thrust when in forward mode
-      thrust[THRUST_AXIS_Z] = 0; //We stop the vertical thrust when in forward mode
-      quadplane_eff_forward_mode = true;
-    }
-  }
-
-  struct ThrustSetpoint thrust_sp = th_sp_from_thrust_vect_i(thrust);
-
-  stabilization_run(in_flight, &attitude_sp, &thrust_sp, stabilization.cmd);
-  SetRotorcraftCommands(stabilization.cmd, in_flight, motors_on);
-
-  autopilot.throttle = commands[COMMAND_THRUST];
+  return -lift_accel_asq * airspeed * airspeed;
 }
-
-
-
-

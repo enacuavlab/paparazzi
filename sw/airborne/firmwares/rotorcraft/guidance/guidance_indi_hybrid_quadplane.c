@@ -29,6 +29,7 @@
 #include "state.h"
 #include "autopilot.h"
 #include "generated/modules.h"
+#include "modules/ctrl/eff_scheduling_quadplane.h"
 
 #ifndef COMMAND_THRUST_X
 #error "Quadplanes require a forward thrust actuator"
@@ -110,7 +111,8 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
   float lift_thrust_bz = accel_bodyz_filt.o[0]; // Sum of lift and thrust in boxy z axis (level flight)
 
   // get the derivative of the lift wrt to theta
-  float liftd = guidance_indi_get_liftd(0.0f, eulers_filtered.theta);
+  float airspeed_for_lift = quadplane_eff_sched_v.airspeed;
+  float liftd = guidance_indi_get_liftd(airspeed_for_lift, eulers_filtered.theta);
 
   // ZXY Euler order
   Gmat[0][0] =  0.0f;
@@ -124,6 +126,13 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
   Gmat[0][2] =  stheta;
   Gmat[1][2] = -sphi*ctheta;
   Gmat[2][2] =  cphi*ctheta;
+
+  // Match the modeled vertical thrust authority to the mixer fade.
+  float hover_factor = quadplane_eff_hover_thrust_factor;
+  Bound(hover_factor, 0.f, 1.f);
+  Gmat[0][2] *= hover_factor;
+  Gmat[1][2] *= hover_factor;
+  Gmat[2][2] *= hover_factor;
 
   Gmat[0][3] =  ctheta;
   Gmat[1][3] =  sphi*stheta;
@@ -186,6 +195,20 @@ void WEAK guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angl
   wls_guid_p.u_pref[1] = -pitch_angle + pitch_pref_rad;// prefered delta pitch angle
   wls_guid_p.u_pref[2] =  wls_guid_p.u_max[2]; // Low thrust better for efficiency
   wls_guid_p.u_pref[3] = body_v[0]; // solve the body acceleration
+
+  // Hover thrust is unavailable once forward mode is reached.
+  if (quadplane_eff_forward_mode) {
+    wls_guid_p.u_min[2] = 0.f;
+    wls_guid_p.u_max[2] = 0.f;
+    wls_guid_p.u_pref[2] = 0.f;
+  }
+
+  // The mixer owns the pusher command while it is disabled or forced.
+  if (quadplane_eff_disable_pusher || quadplane_eff_pusher_forced) {
+    wls_guid_p.u_min[3] = 0.f;
+    wls_guid_p.u_max[3] = 0.f;
+    wls_guid_p.u_pref[3] = 0.f;
+  }  
 }
 
 

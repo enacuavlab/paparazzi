@@ -87,8 +87,11 @@
 #ifndef VEHICLE_SPIN_DIR
 #error "VEHICLE_SPIN_DIR [4x1 float] (+/-1) not defined in airframe file"
 #endif
-#ifndef VEHICLE_K_LIFT
-#error "VEHICLE_K_LIFT [float] not defined in airframe file"
+#ifndef VEHICLE_LIFT_CURVE_SLOPE
+#error "VEHICLE_LIFT_CURVE_SLOPE [float] not defined in airframe file"
+#endif
+#ifndef VEHICLE_WING_AREA
+#error "VEHICLE_WING_AREA [float] not defined in airframe file"
 #endif
 #ifndef VEHICLE_V_WING
 #define VEHICLE_V_WING 10.0f
@@ -174,7 +177,8 @@ struct quadplane_eff_sched_param_t quadplane_eff_sched_p = {
   .elevon_diff_drag_yaw = VEHICLE_K_ELEVON_DIFF_DRAG_YAW,
   .elevon_v_full = VEHICLE_K_ELEVON_V_FULL,
 
-  .k_lift = VEHICLE_K_LIFT,
+  .lift_curve_slope = VEHICLE_LIFT_CURVE_SLOPE,
+  .wing_area = VEHICLE_WING_AREA,
   .v_wing = VEHICLE_V_WING,
 };
 
@@ -184,12 +188,12 @@ bool  quadplane_eff_pusher_forced = false;
 bool  quadplane_eff_forward_mode = false;
 bool quadplane_eff_ground_test = false;
 float  quadplane_eff_pusher_forced_cmd = 0.f;
-static float quadplane_eff_liftd;
 float const grav = 9.81f;  // Gravitational Acceleration [m/s^2]
 float quadplane_eff_elevon_rate = VEHICLE_ELEVON_RATE;                 // Elevon command slew limit [pprz/s]
 float quadplane_eff_periodic_freq = EFF_SCHEDULING_QUADPLANE_PERIODIC_FREQ;   // Module Frequency [Hz]
 struct quadplane_eff_sched_var_t quadplane_eff_sched_v;
 struct MedianFilterInt airspeed_quadplane_sched_fltr;
+float quadplane_eff_hover_thrust_factor = 1.f; // 1.f: full hover thrust authority; 0.f: hover thrust disabled
 
 static inline void quadplane_update_cmd_cache(void);
 static inline void quadplane_update_airspeed_cache(void);
@@ -230,8 +234,6 @@ void eff_scheduling_quadplane_init(void)
   quadplane_eff_sched_v.cmd_elevon_r = 0.f;
   quadplane_eff_sched_v.cmd_elevon_l = 0.f;
   
-  quadplane_eff_liftd = 0.f;
-
   /* Init median filter for airspeed */
   init_median_filter_i(&airspeed_quadplane_sched_fltr, MEDIAN_DEFAULT_SIZE);
 }

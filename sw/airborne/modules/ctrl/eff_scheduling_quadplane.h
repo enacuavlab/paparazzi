@@ -76,7 +76,8 @@ struct quadplane_eff_sched_param_t {
   float elevon_diff_drag_yaw;      // dMz/dDelta = +/- k_yaw * V^2 * delta [N.m/rad]
   float elevon_v_full;             // Forward speed for full elevon travel [m/s] (0 = always full)
 
-  float k_lift;
+  float lift_curve_slope;
+  float wing_area;
   float v_wing;
 };
 
@@ -105,6 +106,7 @@ extern float quadplane_eff_pusher_forced_cmd; // Forced pusher command [pprz] wh
 extern bool  quadplane_eff_forward_mode; //Flag if quadplane is in forward mode (== true) or quad mode (== false)
 extern bool quadplane_eff_ground_test;
 extern bool quadplane_eff_disable_elevons; //Disable elevon in hovering phase
+extern float quadplane_eff_hover_thrust_factor; // 1.f: full hover thrust authority; 0.f: hover thrust disabled
 
 void eff_scheduling_quadplane_init(void);
 void eff_scheduling_quadplane_periodic(void);

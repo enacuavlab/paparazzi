@@ -309,8 +309,9 @@
       <define name="ROTOR_ROT_Y" value="{0.f, 0.f, 0.f, 0.f}"/> <!-- Rotations on  motors Y axis FR BR BL FL -->
       <define name="ROTOR_ROT_Z" value="{0.f, 0.f, 0.f, 0.f}"/> <!-- Rotations on  motors Z axis FR BR BL FL -->   
       <!-- Wing -->
-      <define name="K_LIFT"             value="0" />  <!-- Wing lift derivative: dL/d(alpha) = k_lift * V^2 [N/rad] -->
-      <define name="V_WING"             value="10.0"/>  <!--Airspeed at which wing lift derivative is applied [m/s] -->
+      <define name="LIFT_CURVE_SLOPE"   value="4.5" /> <!-- Wing lift-curve slope: dCL/dalpha [rad^-1]] -->
+      <define name="WING_AREA"          value="0.235" /> <!-- Wing area [m^2] -->
+      <define name="V_WING"             value="10.0"/> <!--Airspeed at which wing lift derivative is applied [m/s] -->
       <!-- Elevons -->
       <define name="K_ELEVON_DEFLECT"   value="(RadOfDeg(45.f) / 9600.f)"/>  <!-- delta = k*pprz [rad/pprz], = delta_max / MAX_PPRZ / 20 degree of max debatement-->
       <define name="K_ELEVON_ROLL"      value="0.00136f" />  <!-- dMx/ddelta = k_roll * V^2 [N.m/rad per (m/s)^2] 0136f -->
@@ -373,7 +374,7 @@
   </section>
 
   <section name="AUTOPILOT">
-    <define name="MODE_STARTUP" value="AP_MODE_ATTITUDE"/>
+    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE"/>
     <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>

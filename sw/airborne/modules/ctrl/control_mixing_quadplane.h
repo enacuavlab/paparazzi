@@ -26,6 +26,15 @@
 #ifndef CONTROL_MIXING_QUADPLANE_H
 #define CONTROL_MIXING_QUADPLANE_H
 
+//Parameters for quadplane transition in flightplan
+enum CmqNavMode {
+  CMQ_NAV_ATTITUDE = 0,
+  CMQ_NAV_FORWARD = 1,
+  CMQ_NAV_AUTO = 2
+};
+
+extern enum CmqNavMode cmq_nav_mode;
+
 // INDI actuators output indexes
 #define CMQ_ACT_MOTOR_FRONT_RIGHT 0
 #define CMQ_ACT_MOTOR_BACK_RIGHT  1
