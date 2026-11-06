@@ -22,7 +22,6 @@
       <module name="radio_control" type="sbus"/>
       <configure name="BARO_PERIODIC_FREQUENCY" value="50"/>
       <define name="RADIO_KILL_SWITCH" value="RADIO_GAIN1"/>
-      <!--define name="RADIO_CONTROL_THRUST_X"   value="RADIO_GAIN2"/-->   
       <define name="INS_EKF2_MAG_ID" value="MAG_RM3100_SENDER_ID"/>
     </target>
     
@@ -150,8 +149,8 @@
   </servos>
 
   <servos driver="Pwm">  
-    <servo name="AILEVON_RIGHT" no="1" max="1110"  neutral="1510" min="1910"/>
-    <servo name="AILEVON_LEFT"  no="2" min="1100"  neutral="1500" max="1900"/>
+    <servo name="ELEVON_RIGHT_SERVO" no="1" max="1110"  neutral="1510" min="1910"/>
+    <servo name="ELEVON_LEFT_SERVO"  no="2" min="1100"  neutral="1500" max="1900"/>
     <servo name="MOTOR_PUSHER"  no="3" min="1000" neutral="1000" max="2000"/>
     <!--servo name="TRIGGER_CAMERA"  no="12" min="1000" neutral="1000" max="2000"/-->
   </servos>
@@ -171,30 +170,15 @@
     <axis name="THRUST"             group="VIRTUAL" failsafe_value="0"/>  
     <axis name="THRUST_X"           group="VIRTUAL" failsafe_value="0"/> 
   </commands>
-  
-  <section name="MIXER">
-    <define name="AILEVON_AILERON_RATE" value="1"/>
-    <define name="AILEVON_ELEVATOR_RATE" value="1"/>	  
-    <define name="AILERON_DIFF" value="0.9"/>
-  </section>
     
   <command_laws>
-    <!--let var="aileron"          value="@ROLL  * AILEVON_AILERON_RATE"/-->  <!--Max Roll-->
-    <!--let var="elevator"         value="@PITCH * AILEVON_ELEVATOR_RATE"/--> <!--Max Pitch-->	  
-    <!--set servo="MOTOR_FR"       value="(@MOTOR_FRONT_RIGHT > 0) ? @MOTOR_FRONT_RIGHT : -MAX_PPRZ"/>
-    <set servo="MOTOR_BR"       value="(@MOTOR_BACK_RIGHT > 0) ? @MOTOR_BACK_RIGHT : -MAX_PPRZ"/>
-    <set servo="MOTOR_BL"       value="(@MOTOR_BACK_LEFT > 0) ? @MOTOR_BACK_LEFT : -MAX_PPRZ"/>
-    <set servo="MOTOR_FL"       value="(@MOTOR_FRONT_LEFT > 0) ? @MOTOR_FRONT_LEFT : -MAX_PPRZ"/-->
     <set servo="MOTOR_FR"       value="@MOTOR_FRONT_RIGHT"/>
     <set servo="MOTOR_BR"       value="@MOTOR_BACK_RIGHT"/>
     <set servo="MOTOR_BL"       value="@MOTOR_BACK_LEFT"/>
     <set servo="MOTOR_FL"       value="@MOTOR_FRONT_LEFT"/>    
-    <set servo="AILEVON_RIGHT"       value="@ELEVON_RIGHT"/>
-    <set servo="AILEVON_LEFT"       value="@ELEVON_LEFT"/>
+    <set servo="ELEVON_RIGHT_SERVO"       value="@ELEVON_RIGHT"/>
+    <set servo="ELEVON_LEFT_SERVO"       value="@ELEVON_LEFT"/>
     <set servo="MOTOR_PUSHER"       value="@THRUST_X"/>    
-    <!--set servo="AILEVON_RIGHT"  value="- $elevator - ($aileron > 0 ? 1 : AILERON_DIFF) * $aileron"/--> <!-- Adverse yaw-->
-    <!--set servo="AILEVON_LEFT"   value="$elevator - ($aileron > 0 ? AILERON_DIFF : 1) * $aileron"/--> <!-- Adverse yaw-->
-    <!--set servo="MOTOR_PUSHER"   value="@MOTOR_PUSHER"/-->
   </command_laws>
 
   <section name="IMU" prefix="IMU_">
@@ -306,17 +290,7 @@
     <define name="ACT_RATE_LIMIT" value="{9600, 9600, 9600, 9600, 600, 600, 9600}"/>
   </section>
   
-  <section name="STABILIZATION_PLANE" prefix="STABILIZATION_PLANE_">
-    <define name="PHI_PGAIN" value="10000"/>
-    <define name="PHI_IGAIN" value="1200"/>
-    <define name="PHI_DGAIN" value="1300"/>
-    <define name="THETA_PGAIN" value="8000"/>
-    <define name="THETA_IGAIN" value="1300"/>
-    <define name="THETA_DGAIN" value="1300"/>
-  </section>
-  
-  
-	<section name="VEHICLE_PROPERTIES" prefix="VEHICLE_">
+  <section name="VEHICLE_PROPERTIES" prefix="VEHICLE_">
 	  <define name="MASS" value="1.533"/>    <!-- Mass total in kg -->
 	  <define name="IXX" value="0.007445"/>  <!-- MMOI about longitudinal (x) axis [kg.m^2] 0.00372 -->
 	  <define name="IYY" value="0.006033"/>  <!-- MMOI about longitudinal (y) axis [kg.m^2] 0.00389 -->
@@ -350,7 +324,7 @@
       <define name="PUSHER_RZ"          value="0"/>  <!-- Vertical Offset from CG (positive = down) -->
       <define name="PUSHER_SPIN_DIR"    value="1"/>  <!-- Pusher spin direction (+1 for CW. -1 for CCW) -->
       <define name="PUSHER_K_T_PPRZ"    value="{1.22e-4,4.08e-8}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} -->
-	</section>
+  </section>
 
 
   <section name="HYBRID_TRANSITION">
@@ -366,16 +340,11 @@
     <define name="REF_MIN_ZD" value="-2."/>
     <define name="REF_MAX_ZD" value=" 2."/>
     <define name="NOMINAL_HOVER_THROTTLE" value="0.35"/>
-    <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
   </section>
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_"> 
     <define name="MAX_BANK" value="30" unit="deg"/>
     <define name="USE_SPEED_REF" value="TRUE"/>    
-    <define name="PGAIN" value="41"/>
-    <define name="DGAIN" value="108"/>
-    <define name="IGAIN" value="20"/>
-    <define name="AGAIN" value="0"/>
     <define name="REF_MAX_SPEED" value="1."/>
     <define name="REF_MAX_ACCEL" value="2."/>
   </section>
@@ -386,22 +355,6 @@
     <define name="MAX_AIRSPEED" value="25"/> <!-- m/s - Maximum airspeed command used by the guidance controller to limit forward-flight speed requests. -->
     <define name="HEADING_BANK_GAIN" value="1.0"/> <!-- Gain converting heading error into a lateral acceleration demand for coordinated turns. -->
   </section>
-
-  <section name="GUIDANCE_PLANE" prefix="GUIDANCE_PLANE_">
-    <define name="COURSE_KP" value="1.0"/>
-    <define name="COURSE_KD" value="0.1"/>
-    <define name="CLIMB_KP" value="0.1"/>
-    <define name="CLIMB_KP" value="0.1"/>
-    <define name="PITCH_KP" value="0.1"/>
-    <define name="PITCH_KD" value="0.05"/>
-    <define name="PITCH_KI" value="0."/>
-    <define name="THROTTLE_KP" value="0.05"/>
-    <define name="THROTTLE_KD" value="0.05"/>
-    <define name="THROTTLE_KI" value="0."/>
-    <define name="NOMINAL_THROTTLE" value="0.50"/>  <!-- Throttle % in plane mode on rear motor -->
-    <define name="PITCH_TRIM" value="0." unit="deg"/> 
-    <define name="PITCH_OF_VZ" value="2." unit="deg"/>
-  </section>  
 
   <section name="NAV">
     <define name="ARRIVED_AT_WAYPOINT" value="2."/>
@@ -424,7 +377,6 @@
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE"/>
     <define name="MODE_AUTO1" value="AP_MODE_FORWARD"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
-    <define name="FAILSAFE_FIXED_THROTTLE" value="0.4"/>
   </section>
 
   <section name="GCS">

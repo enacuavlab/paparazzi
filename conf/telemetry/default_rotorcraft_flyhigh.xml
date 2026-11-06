@@ -48,6 +48,7 @@
       <message name="PAYLOAD_FLOAT"            period="0.1"/>
       <!--message name="GUIDANCE_INDI_HYBRID"     period="0.1"/!-->
       <!--message name="COMMANDS" period="0.1"/!-->
+      <message name="TRANSITION_CMQ_STATUS" period="0.1"/>
     </mode>
 
     <mode name="ppm">

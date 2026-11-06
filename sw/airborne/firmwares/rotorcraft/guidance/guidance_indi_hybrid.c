@@ -329,33 +329,9 @@ static void send_wls_v_guid(struct transport_tx *trans, struct link_device *dev)
 }
 static void send_wls_u_guid(struct transport_tx *trans, struct link_device *dev)
 {
-  //send_wls_u("guid", &wls_guid_p, trans, dev);
-  static const char name[] = "WLS_GUID_U";
-
-  pprz_msg_send_DEBUG_VECT(trans, dev, AC_ID,
-                           sizeof(name) - 1, (char *)name,
-                           wls_guid_p.nu, wls_guid_p.u);
+  send_wls_u("guid", &wls_guid_p, trans, dev);
 }
 
-static void send_wls_guid_uv(struct transport_tx *trans,
-                             struct link_device *dev)
-{
-  static const char name[] = "WLS_GUID_UV";
-  float vector[GUIDANCE_INDI_HYBRID_U + GUIDANCE_INDI_HYBRID_V];
-
-  for (uint8_t i = 0; i < GUIDANCE_INDI_HYBRID_U; i++) {
-    vector[i] = wls_guid_p.u[i];
-  }
-
-  for (uint8_t i = 0; i < GUIDANCE_INDI_HYBRID_V; i++) {
-    vector[GUIDANCE_INDI_HYBRID_U + i] = wls_guid_p.v[i];
-  }
-
-  pprz_msg_send_DEBUG_VECT(trans, dev, AC_ID,
-                           sizeof(name) - 1, (char *)name,
-                           GUIDANCE_INDI_HYBRID_U + GUIDANCE_INDI_HYBRID_V,
-                           vector);
-}
 #endif // GUIDANCE_INDI_HYBRID_USE_WLS
 
 #endif // PERIODIC_TELEMETRY
@@ -385,9 +361,8 @@ void guidance_indi_init(void)
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GUIDANCE_INDI_HYBRID, send_guidance_indi_hybrid);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_EFF_MAT_GUID, send_eff_mat_guid_indi_hybrid);
 #if GUIDANCE_INDI_HYBRID_USE_WLS
-  //register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_WLS_V, send_wls_v_guid);
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_DEBUG_VECT, send_wls_guid_uv);
-  //register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_WLS_U, send_wls_u_guid);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_WLS_V, send_wls_v_guid);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_WLS_U, send_wls_u_guid);
 #endif
 #endif
 }

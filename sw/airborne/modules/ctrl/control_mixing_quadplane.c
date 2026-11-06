@@ -37,6 +37,7 @@
 #include "firmwares/rotorcraft/guidance/guidance_indi_hybrid.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 #include "firmwares/rotorcraft/autopilot_utils.h"
+#include <string.h>
 
 // Use for Elevon test on ground, turn off motors and allow only elevon to move.
 #ifndef CMQ_GROUND_ELEVON_TEST
@@ -82,6 +83,57 @@ static const float transition_increment = 1.f / (CMQ_TRANSITION_TIME * CONTROL_M
 float   quadplane_heading_sp = 0.f;           // heading setpoint [rad, NED]
 static uint32_t manual_transition_cycles = 0;
 static bool manual_transition_aborted = false;
+
+/**
+ * Return telemetry status of the quadplane transition state
+ */
+#if PERIODIC_TELEMETRY
+#include "modules/datalink/telemetry.h"
+
+enum CmqTransitionState {
+  CMQ_HOVER = 0,
+  CMQ_TRANSITION = 1,
+  CMQ_FORWARD = 2,
+  CMQ_ABORTED = 3,
+  CMQ_WAITING = 4
+};
+
+static void send_transition_cmq_status(struct transport_tx *trans, struct link_device *dev)
+{
+  static char state_names[][11] = {
+    [CMQ_HOVER]      = "HOVER",
+    [CMQ_TRANSITION] = "TRANSITION",
+    [CMQ_FORWARD]    = "FORWARD",
+    [CMQ_ABORTED]    = "ABORTED",
+    [CMQ_WAITING]    = "WAITING"
+  };
+
+  uint8_t status = CMQ_HOVER;
+  float ratio = 0.f;
+
+  if (autopilot_get_mode() == AP_MODE_FORWARD) {
+    ratio = transition_ratio;
+
+    if (manual_transition_aborted) {
+      status = CMQ_ABORTED;
+    } else if (!autopilot_in_flight() || !autopilot_get_motors_on()) {
+      status = CMQ_WAITING;
+    } else if (transition_ratio >= 1.f && quadplane_eff_forward_mode) {
+      status = CMQ_FORWARD;
+    } else {
+      status = CMQ_TRANSITION;
+    }
+  }
+
+  // Send the state label as text.
+  char *state_text = state_names[status];
+
+  pprz_msg_send_TRANSITION_CMQ_STATUS(
+      trans, dev, AC_ID,
+      &ratio,
+      (uint8_t)strlen(state_text), state_text);
+}
+#endif
 
 /**
  * Forward / Hover transition functions
@@ -138,6 +190,12 @@ static void quadplane_force_hover(void)
 void control_mixing_quadplane_init(void)
 {
   quadplane_force_hover();
+
+#if PERIODIC_TELEMETRY
+  register_periodic_telemetry(DefaultPeriodic,
+                             PPRZ_MSG_ID_TRANSITION_CMQ_STATUS,
+                             send_transition_cmq_status);
+#endif  
 }
 
 void control_mixing_quadplane_elevon_test_enter(void)
@@ -290,6 +348,8 @@ void control_mixing_quadplane_attitude_plane(void)
     quadplane_eff_forward_mode = false;
     //Keep elevons disabled until we reach the cutoff, to avoid any control conflict between elevons and quad motors
     quadplane_eff_disable_elevons = true;
+    //Display in GCS the 4 motors mean thrust
+    autopilot.throttle = commands[COMMAND_THRUST];
 
   //Case 2 : Forward requested and in plane mode, unleash the pusher command and let the INDI/WLS control it
   //MODE PLANE => RC plane : roll + pitch + thrust X.
@@ -321,14 +381,13 @@ void control_mixing_quadplane_attitude_plane(void)
       //commands[COMMAND_THRUST] = 0;
       quadplane_eff_forward_mode = true;
     }
+    //Display in GCS the pusher motors thrust
+    autopilot.throttle = Max(commands[COMMAND_THRUST_X], 0);
   }
 
   struct ThrustSetpoint thrust_sp = th_sp_from_thrust_vect_i(thrust);
-
   stabilization_run(in_flight, &attitude_sp, &thrust_sp, stabilization.cmd);
-
   SetRotorcraftCommands(stabilization.cmd, in_flight, motors_on);
-  autopilot.throttle = commands[COMMAND_THRUST];
 }
 
 void control_mixing_quadplane_guidance_enter(void)
