@@ -58,7 +58,7 @@
     <!--Airspeed sensor : get the measured airspeed in the messages 45 and -0.1-->
     <module name="airspeed" type="sdp3x">
       <define name="SDP3X_i2C_DEV" value="i2c2"/>
-      <define name="SDP3X_PRESSURE_SCALE" value="45.0"/>
+      <define name="SDP3X_PRESSURE_SCALE" value="8.5"/>
       <define name="SDP3X_PRESSURE_OFFSET" value="-0.1"/>
       <define name="USE_AIRSPEED_SDP3X" value="TRUE"/>
     </module>
@@ -79,7 +79,7 @@
     <module name="ins" type="ekf2">
     </module> 
     <!--define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_HEADING"/--> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
-    <!--define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_NONE"/--> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
+    <define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_NONE"/> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
 
     
     <module name="stabilization" type="indi">
@@ -96,14 +96,14 @@
     
     
     <!-- Just for debug, TO be ERASE or COMMENT if you pprzlog logging as LIDAR /-->    
-    <!--module name="logger_sd_chibios"/>
+    <module name="logger_sd_chibios"/>
     <module name="logger" type="control_effectiveness">
       <define name="LOGGER_CONTROL_EFFECTIVENESS_COMMANDS" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_POS" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_SPEED" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="TRUE"/>
-    </module-->
+    </module>
 
     <!-- Use to monitor current consumption with external hall effect sensor -->
     <!--module name="current_sensor">
@@ -354,7 +354,7 @@
     <define name="THRUST_DYNAMICS_FREQ" value="30.5"/>
     <define name="PUSHER_INDEX" value="6"/> <!-- Pusher column index in G1G2 matrix -->
     <define name="MAX_AIRSPEED" value="25"/> <!-- m/s - Maximum airspeed command used by the guidance controller to limit forward-flight speed requests. -->
-    <define name="HEADING_BANK_GAIN" value="1.0"/> <!-- Gain converting heading error into a lateral acceleration demand for coordinated turns. -->
+    <define name="HEADING_BANK_GAIN" value="5.0"/> <!-- 1.0 Gain converting heading error into a lateral acceleration demand for coordinated turns. -->
   </section>
 
   <section name="NAV">
