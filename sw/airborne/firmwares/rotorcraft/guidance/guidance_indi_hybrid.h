@@ -106,6 +106,7 @@ extern float guidance_indi_thrust_z_eff;
 
 extern float guidance_indi_specific_force_gain;
 extern bool take_heading_control;
+extern bool guidance_indi_heading_follow; //Boolean to enable/disable heading following for hybrid quadplanes with no yaw control (e.g. Flying Wing or Tailsitter)
 extern float guidance_indi_max_bank;
 extern float guidance_indi_min_pitch;
 extern bool force_forward;       ///< forward flight for hybrid nav

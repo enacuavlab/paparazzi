@@ -79,7 +79,7 @@
     <module name="ins" type="ekf2">
     </module> 
     <!--define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_HEADING"/--> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
-    <define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_NONE"/> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
+    <!--define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_NONE"/--> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
 
     
     <module name="stabilization" type="indi">
@@ -324,13 +324,14 @@
       <define name="PUSHER_RY"          value="0"/>  <!-- Lateral Offset from CG (positive = right) -->
       <define name="PUSHER_RZ"          value="0"/>  <!-- Vertical Offset from CG (positive = down) -->
       <define name="PUSHER_SPIN_DIR"    value="1"/>  <!-- Pusher spin direction (+1 for CW. -1 for CCW) -->
-      <define name="PUSHER_K_T_PPRZ"    value="{1.22e-4,4.08e-8}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} -->
+      <define name="PUSHER_K_T_PPRZ"    value="{1.22e-4,4.08e-8}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} {4.453e-4,1.489e-7} {1.22e-4,4.08e-8} -->
   </section>
 
 
   <section name="HYBRID_TRANSITION">
 	<define name="CMQ_GROUND_ELEVON_TEST" value="FALSE"/> <!-- Use for Elevon test on ground, turn off motors and allow only elevon to move. Go in forward to use it -->
     <define name="CMQ_TRANSITION_AIRSPEED" value="13."/> <!-- Transition speed in m/s when we cut the 4 motors to go in plane mode -->
+    <define name="CMQ_FORWARD_MIN_AIRSPEED" value="14."/> <!-- Minimum flying speed in navigation plane mode -->
     <define name="CMQ_TRANSITION_TIME" value="5."/> <!-- Transition time -->
     <define name="CMQ_TRANSITION_PITCH" value="0.09"/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->
   </section>  
@@ -361,7 +362,7 @@
     <define name="ARRIVED_AT_WAYPOINT" value="2."/>
     <define name="NAV_CLIMB_VSPEED" value="1.5"/> <!-- Climb speed in m/s -->
     <define name="NAV_DESCEND_VSPEED" value="-1.5"/> <!-- Descend speed in m/s -->
-    <define name="DEFAULT_CIRCLE_RADIUS" value="50"/>  <!-- Circle radius in navigation mode around a point -->
+    <define name="DEFAULT_CIRCLE_RADIUS" value="70"/>  <!-- Circle radius in navigation mode around a point -->
   </section>
   
   <section name="BAT">

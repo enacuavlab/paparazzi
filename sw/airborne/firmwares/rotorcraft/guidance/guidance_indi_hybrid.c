@@ -167,6 +167,8 @@ float guidance_indi_pitch_pref_deg = 0;
 
 /*Boolean to force the heading to a static value (only use for specific experiments)*/
 bool take_heading_control = false;
+/*Boolean to enable/disable heading following for hybrid quadplanes with no yaw control in forward flight (e.g. Flying Wing or Tailsitter) False => heading from guidance. True => heading is free */
+bool guidance_indi_heading_follow = false;
 
 bool force_forward = false;
 
@@ -517,6 +519,11 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   omega -= accely_filt.o[0]*FWD_SIDESLIP_GAIN;
 #endif
 
+  //Heading control is taken by the nav, so we don't need to compute a feedforward turn rate
+  if (take_heading_control) {
+    omega = 0.f;
+  }
+
   // We can pre-compute the required rates to achieve this turn rate:
   // NOTE: there *should* not be any problems possible with Euler singularities here
   struct FloatEulers *euler_zyx = stateGetNedToBodyEulers_f();
@@ -525,11 +532,20 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
   ff_rates.q =  cosf(euler_zyx->theta) * sinf(euler_zyx->phi) * omega;
   ff_rates.r =  cosf(euler_zyx->theta) * cosf(euler_zyx->phi) * omega;
 
+  // Note :
+  // take_heading_control = true => heading is fixed by nav
+  // take_heading_control = false and guidance_indi_heading_follow = false => heading comes from ω = g·tan(φ)/V. It supposes it can follow and heading with an actuator
+  // take_heading_control = false and guidance_indi_heading_follow = true => Heading equals the current heading. Forward mode for hybrid quadplanes with no yaw control (e.g. Flying Wing or Tailsitter)
+
   // For a hybrid it is important to reduce the sideslip, which is done by changing the heading.
   // For experiments, it is possible to fix the heading to a different value.
   if (take_heading_control) {
     // heading is fixed by nav
     guidance_euler_cmd.psi = heading_sp;
+  }
+  else if (guidance_indi_heading_follow) {
+    guidance_indi_hybrid_heading_sp = eulers_zxy.psi;
+    guidance_euler_cmd.psi = eulers_zxy.psi;
   }
   else {
     // heading is free and controlled by guidance
@@ -628,7 +644,9 @@ static struct FloatVect3 compute_accel_from_speed_sp(struct FloatVect3 *speed_sp
   float gi_airspeed_sp = norm_des_as;
 
   // Make turn instead of straight line, control airspeed
-  if ((airspeed > TURN_AIRSPEED_TH) && (norm_des_as > (TURN_AIRSPEED_TH+2.0f))) {
+  if (guidance_indi_heading_follow ||
+      ((airspeed > TURN_AIRSPEED_TH) && (norm_des_as > (TURN_AIRSPEED_TH+2.0f)))) {
+
 
     // Give the wind cancellation priority.
     if (norm_des_as > gih_params.max_airspeed) {

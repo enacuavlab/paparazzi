@@ -123,6 +123,11 @@
 #define CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY PERIODIC_FREQUENCY
 #endif
 
+#ifndef CMQ_FORWARD_MIN_AIRSPEED
+#define CMQ_FORWARD_MIN_AIRSPEED 15.f
+#endif
+
+
 #define TRANSITION_RATIO_COMPLETE 0.99f
 
 
@@ -546,6 +551,9 @@ void control_mixing_quadplane_nav(void)
     nav_transition_cycles = 0;
     nav_transition_aborted = false;
     quadplane_force_hover();
+    //We reset the YOLO heading for quad navigation
+    nav.heading = stateGetNedToBodyEulers_f()->psi;
+    guidance_h_set_heading(nav.heading);
 
   } else if (nav_transition_aborted) {
     quadplane_force_hover();
@@ -565,6 +573,8 @@ void control_mixing_quadplane_nav(void)
       if (nav_transition_cycles >= timeout_cycles) {
         nav_transition_aborted = true;
         quadplane_force_hover();
+        nav.heading = stateGetNedToBodyEulers_f()->psi;
+        guidance_h_set_heading(nav.heading);
       }
     }
   }
@@ -577,6 +587,16 @@ void control_mixing_quadplane_nav(void)
   const bool plane_mode =
       transition_active &&
       transition_ratio >= CMQ_TRANSITION_CUTOFF;
+
+  //Activation in plane mode of the heading following for hybrid quadplanes with no yaw control (e.g. Flying Wing or Tailsitter)    
+  take_heading_control = !plane_mode;
+  guidance_indi_heading_follow = plane_mode;
+
+  // Set the low airspeed limits for nav in forward mode.
+  guidance_set_min_max_airspeed(
+      plane_mode ? CMQ_FORWARD_MIN_AIRSPEED : -10.f,
+      gih_params.max_airspeed);
+
 
   /*
    * Explicitly update this flag on every cycle.

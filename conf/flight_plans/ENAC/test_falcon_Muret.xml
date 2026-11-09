@@ -112,6 +112,14 @@
     <block name="land">
       <go wp="TD"/>
     </block>
+     <block name="forward_hold">
+	<set var="cmq_nav_mode" value="CMQ_NAV_FORWARD"/>
+	<circle wp="p2" radius="nav.radius"/>
+    </block>
+    <block name="Hold_to_Standby" strip_button="Standby" strip_icon="home.png">
+      <set var="cmq_nav_mode" value="CMQ_NAV_AUTO"/>
+      <stay wp="STDBY"/>
+    </block>    
     <block name="flare">
       <exception cond="!nav_is_in_flight()" deroute="Kill landed"/>
       <stay climb="nav.descend_vspeed" vmode="climb" wp="TD"/>

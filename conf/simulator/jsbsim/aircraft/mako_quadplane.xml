@@ -52,7 +52,7 @@
     <ixy unit="KG*M2"> 0. </ixy>
     <ixz unit="KG*M2"> 0. </ixz>
     <iyz unit="KG*M2"> 0. </iyz>
-    <emptywt unit="KG">1.</emptywt>
+    <emptywt unit="KG">0.5</emptywt>
     <location name="CG" unit="M">
       <x> 0 </x>
       <y> 0 </y>
@@ -342,12 +342,12 @@
         <sum>
           <product>
             <property>fcs/motor_pusher_lag</property>
-            <value>0.263296234158</value>
+            <value>0.6103</value>   <!-- was 0.263296234158 -->
           </product>
           <product>
             <property>fcs/motor_pusher_lag</property>
             <property>fcs/motor_pusher_lag</property>
-            <value>0.8453104016</value>
+            <value>1.88538</value>   <!-- was 0.8453104016 -->
           </product>
         </sum>
       </function>
@@ -448,12 +448,12 @@
         <sum>
           <product>
             <property>fcs/motor_pusher_lag</property>
-            <value>0.000151170738116</value>
+            <value>0.000351773</value>  <!-- was 0.000151170738116 -->
           </product>
           <product>
             <property>fcs/motor_pusher_lag</property>
             <property>fcs/motor_pusher_lag</property>
-            <value>0.000485332415617</value>
+            <value>0.0009177146</value>   <!-- was 0.000485332415617 -->
           </product>
         </sum>
       </function>
