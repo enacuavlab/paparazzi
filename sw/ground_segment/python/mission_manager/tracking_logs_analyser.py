@@ -147,14 +147,22 @@ def animate_trackingdata(logs: TrackingLogs, color_dict: dict[int,str],
     frame_times = np.arange(min(frame_times_set), max(frame_times_set), 0.5)
     frames = []
     
-    # Freeze for 1s, i.e. for 60 frames when running at 30fps
-    for time in frame_times:
-        replanning_frame = time in replanning_times or time == frame_times[-1]
-        separation_loss_frame = time in critical_times
+    # Freeze for 2s, i.e. for 20 frames when running at 10 fps
+    for frame_index, time in enumerate(frame_times):
+        previous_time = frame_times[frame_index - 1] if frame_index else -np.inf
+        replanning_frame = (
+            any(previous_time < event_time <= time
+                for event_time in replanning_times)
+            or time == frame_times[-1]
+        )
+        separation_loss_frame = any(
+            previous_time < event_time <= time
+            for event_time in critical_times
+        )
         frames.append((time, replanning_frame, separation_loss_frame))
         freeze_frame = replanning_frame or separation_loss_frame
         if freeze_frame:
-            frames.extend((time, replanning_frame, separation_loss_frame) for _ in range(29))
+            frames.extend((time, replanning_frame, separation_loss_frame) for _ in range(19))
             
     artists = (list(traj_ax.lines) + list(traj_ax.collections)
                + list(traj_ax.artists) + list(traj_ax.texts))
@@ -197,7 +205,7 @@ def animate_trackingdata(logs: TrackingLogs, color_dict: dict[int,str],
         return artists
 
     animation = FuncAnimation(
-        fig, update, frames=frames, interval=1000 / 30,
+        fig, update, frames=frames, interval=1000 / 10,
         repeat=False, blit=False)
     return fig, traj_ax, axes, animation
 
@@ -633,7 +641,7 @@ if __name__ == "__main__":
                 print(f'\rSaving animation: [{bar}] {progress:.0%}', end='', flush=True)
 
             animation.save(
-                args.save, writer='ffmpeg', fps=30,
+                args.save, writer='ffmpeg', fps=10,extra_args=['-preset', 'ultrafast','-vcodec', 'libx264'],
                 progress_callback=show_progress)
             print()
         else:
