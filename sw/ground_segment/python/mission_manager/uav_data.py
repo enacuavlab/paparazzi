@@ -123,15 +123,14 @@ class TrackingLogs:
     def ac_stats(self) -> list[ACStats]:
         return self.keyframes.ac_stats
     
-    def zero_coordinates(self) -> tuple[float,float]:
+    def get_local_reference(self) -> tuple[float,float,float]:
         """
-        Shift all coordinates by -min(x),-min(y) and change start_time to start at 0.
+        Get the local reference point for the tracking logs (minx,miny,min time).
 
         Returns:
-            tuple[float,float]: min(x),min(y)
+            tuple[float,float,float]: min(x),min(y),min(time)
         """
         minx,miny,mint = np.inf,np.inf,np.inf
-    
         for log in self.logs.values():
             for data in log:
                 minx = min(minx,data.pose.x)
@@ -140,23 +139,39 @@ class TrackingLogs:
                 if data.expected_pose is not None:
                     minx = min(minx,data.expected_pose.x)
                     miny = min(miny,data.expected_pose.y)
-                    
-        self.start_time = mint
-        
+        return minx,miny,mint
+
+    def shift_logs(self, dx:float, dy:float, dt:float):
         for log in self.logs.values():
             for data in log:
-                data.pose.x -= minx
-                data.pose.y -= miny
+                data.pose.x += dx
+                data.pose.y += dy
+                data.timestamp += dt
                 if data.expected_pose is not None:
-                    data.expected_pose.x -= minx
-                    data.expected_pose.y -= miny
+                    data.expected_pose.x += dx
+                    data.expected_pose.y += dy
                     
+        self.start_time += dt
+
         for keypose in self.keyframes.keyposes:
-            keypose[:,0] -= minx
-            keypose[:,1] -= miny
-        
+            keypose[:,0] += dx
+            keypose[:,1] += dy
+
+        for i in range(len(self.replanning_timestamps)):
+            self.replanning_timestamps[i] += dt
+
+    def zero_coordinates(self) -> tuple[float,float,float]:
+        """
+        Shift all coordinates by -min(x),-min(y) and change start_time to start at 0.
+
+        Returns:
+            tuple[float,float,float]: min(x),min(y),min(time)
+        """
+        minx,miny,mint = self.get_local_reference()
+                    
+        self.shift_logs(-minx, -miny, -mint)
     
-        return minx,miny
+        return minx,miny,mint
     
     def add_tracking_data(self, data: TrackingData):
         self._tpose_lists.pop(data.ac_id, None)
@@ -315,6 +330,19 @@ class TrackingLogs:
         for ac_id, log in self.logs.items():
             trajectories[ac_id] = [(data.timestamp, data.expected_pose) for data in log if data.expected_pose is not None]
         return trajectories
+    
+    def critical_log_timepoints(self) -> list[tuple[int,float]]:
+        """ Return log timepoints (time index, time value) where minimal separation is critical, that is a local minimum below the minimal separation threshold.
+
+        Returns:
+            list[tuple[int,float]]: List of log timepoints where minimal separation is critical.
+        """
+        critical_indexes = []
+        min_seps = self.get_all_min_sep()
+        for i in range(1, len(min_seps) - 1):
+            if min_seps[i][1] < self.separation_threshold and min_seps[i][1] < min_seps[i - 1][1] and min_seps[i][1] < min_seps[i + 1][1]:
+                critical_indexes.append((i, min_seps[i][0]))
+        return critical_indexes
     
     
 @dataclass
