@@ -71,6 +71,8 @@ struct SwarmFishParams {
   float y_z_obs;      ///< obstacle vertical repulsion intensity
   float l_z_obs;      ///< obstacle vertical repulsion length
   // Boundaries, limits and nav settings
+  int nb_neighbors;   ///< number of influential neighbors
+  int intruder_id;    ///< intruder ID (0 to ignore)
   float max_speed;    ///< max horizontal speed
   float min_speed;    ///< min horizontal speed
   float max_yaw;      ///< max yaw rate

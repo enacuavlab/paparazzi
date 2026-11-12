@@ -41,17 +41,26 @@
 #include "autopilot.h"
 #include "autopilot_guided.h"
 #include "modules/nav/waypoints.h"
+#include "math/pprz_algebra_float.h"
 #include "math/pprz_geodetic_float.h"
 #include "generated/flight_plan.h"
-#include <math.h>
 #include "modules/datalink/telemetry.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 /**
  * Default parameters
  */
+
+#ifndef SWARM_FISH_NB_NEIGHBORS
+#define SWARM_FISH_NB_NEIGHBORS 2
+#endif
+
+#ifndef SWARM_FISH_INTRUDER_ID
+#define SWARM_FISH_INTRUDER_ID 0
+#endif
 
 #ifndef SWARM_FISH_MAX_SPEED
 #define SWARM_FISH_MAX_SPEED 5.0f
@@ -220,12 +229,12 @@ struct SwarmFishNav swarm_fish_nav;
 
 //state data
 struct SwarmFish {
-  float heading;        ///< heading command
-  float theta_obs;      ///< angle to wall
-  float f_social[3];    ///< social interactions
-  float f_nav[3];       ///< navigation
-  float f_intruder[3];  ///< intruder repulsion
-  float f_obstacle[3];  ///< obstacle repulsion
+  float heading;                ///< heading command
+  float theta_obs;              ///< angle to wall
+  struct FloatVect3 f_social;   ///< social interactions
+  struct FloatVect3 f_nav;      ///< navigation
+  struct FloatVect3 f_intruder; ///< intruder repulsion
+  struct FloatVect3 f_obstacle; ///< obstacle repulsion
 };
 
 static struct SwarmFish swarm_fish;
@@ -265,6 +274,7 @@ void swarm_fish_init(void)
   swarm_fish_params.y_z_obs      = SWARM_FISH_Y_Z_OBS;
   swarm_fish_params.l_z_obs      = SWARM_FISH_L_Z_OBS;
 
+  swarm_fish_params.nb_neighbors = SWARM_FISH_NB_NEIGHBORS;
   swarm_fish_params.max_speed    = SWARM_FISH_MAX_SPEED;
   swarm_fish_params.min_speed    = SWARM_FISH_MIN_SPEED;
   swarm_fish_params.max_yaw      = SWARM_FISH_MAX_YAW;
@@ -320,29 +330,29 @@ static float anisotropic(float a, float psi)
 /** Calculates distance between the uav and the arena wall
  *  centered on a WP
  *
- * @param wp_id waypoint ID
- * @param pos ENU coordinates
+ * @param[in] wp_id center of the arena waypoint ID
+ * @param[in] radius radius of the arena [m]
+ * @param[in] pos agent position
  * @return distance to circular wall, negatif if outside
  */
-static float distance_to_arena(uint8_t wp_id, struct EnuCoor_f *pos)
+static float distance_to_arena(uint8_t wp_id, float radius, struct EnuCoor_f *pos)
 {
   float x_center = waypoint_get_x(wp_id);
   float y_center = waypoint_get_y(wp_id);
-  float dist = sfp.arena_radius - sqrtf(((pos->x - x_center) * (pos->x - x_center)) + ((pos->y - y_center) * (pos->y - y_center)));
+  float dist = radius - sqrtf(((pos->x - x_center) * (pos->x - x_center)) + ((pos->y - y_center) * (pos->y - y_center)));
   return dist;
 }
 
 /** calculates the relative orientation to the wall
  *
- * @param pos ENU coordinates
- * @param psi angle from north clockwise
+ * @param[in] pos agent position
+ * @param[in] course agent course
  * @return angle to circular wall
  */
-static float angle_to_wall(struct EnuCoor_f *pos, float psi)
+static float angle_to_wall(struct EnuCoor_f *pos, float course)
 {
-  float dir = M_PI_2 - psi;
   float theta = atan2f(pos->y, pos->x);
-  float delta = dir - theta;
+  float delta = course - theta;
   FLOAT_ANGLE_NORMALIZE(delta);
   return delta;
 }
@@ -432,14 +442,13 @@ static float get_course_diff(float course, float course_other)
  * @param[in] vel_other neighbor velocity
  * @param[in] course_other neighbor course
  * @param[in] p pointer to swarm parameters
- * @param[in] nb_neighbors number of influencial neighbors
  * @param[out] influence total influence of the considered neighbor
- * return the acceleration related to social interaction with a neighbor
+ * @return the acceleration related to social interaction with a neighbor
  */
 static struct FloatVect3 interaction_social(
     struct EnuCoor_f *pos, struct EnuCoor_f *vel, float course,
     struct EnuCoor_f *other, struct EnuCoor_f *vel_other, float course_other,
-    struct SwarmFishParams *p, int nb_neighbors,
+    struct SwarmFishParams *p,
     float *influence)
 {
   struct FloatVect3 acc = {0};
@@ -464,7 +473,7 @@ static struct FloatVect3 interaction_social(
   // vertical
   const float f_z = p->y_z * ((delta_z - sign(delta_z) * p->d_z) / p->d_z) * expf(-squared(dij / p->l_z)) * anisotropic(p->a_z, psi);
   // speed
-  const float f_v_base = p->y_v * expf(-squared(dij / p->l_v)) * anisotropic(p->a_v, psi) / (float)(Max(nb_neighbors, 1));
+  const float f_v_base = p->y_v * expf(-squared(dij / p->l_v)) * anisotropic(p->a_v, psi) / (float)(Max(p->nb_neighbors, 1));
   const float f_v_x = f_v_base * (v_h_j * c_phi - v_h_i);
   const float f_v_y = f_v_base * (v_h_j * s_sphi);
   const float f_v_z = f_v_base * (vel_other->z - vel->z);
@@ -486,7 +495,7 @@ static struct FloatVect3 interaction_social(
  * @param[in] course agent course
  * @param[in] p pointer to swarm parameters
  * @param[in] n pointer to swarm navigation setpoint
- * return the acceleration related to the navigation setpoints
+ * @return the acceleration related to the navigation setpoints
  */
 static struct FloatVect3 interaction_nav(
     struct EnuCoor_f *pos, struct EnuCoor_f *vel, float course,
@@ -513,7 +522,14 @@ static struct FloatVect3 interaction_nav(
 
 /** Intruder interaction
  *
- * return the acceleration related to intruder avoidance
+ * @param[in] pos agent position
+ * @param[in] vel agent velocity
+ * @param[in] course agent course
+ * @param[in] other neighbor position
+ * @param[in] vel_other neighbor velocity
+ * @param[in] course_other neighbor course
+ * @param[in] p pointer to swarm parameters
+ * @return the acceleration related to intruder avoidance
  */
 static struct FloatVect3 interaction_intruder(
     struct EnuCoor_f *pos, struct EnuCoor_f *vel, float course,
@@ -542,6 +558,120 @@ static struct FloatVect3 interaction_intruder(
   acc-z = - p->y_z_in * tanhf(delta_z / p->d_z_in) * expf(-squared(dij / p->l_z_in));
 
   return acc;
+}
+
+/** Obstacle interaction
+ *
+ * @param[in] pos agent position
+ * @param[in] vel agent velocity
+ * @param[in] dist distance to obstacle
+ * @param[in] angle viewing angle of the obstacle
+ * @param[in] p pointer to swarm parameters
+ * @return the acceleration related to horizontal obstacle avoidance
+ */
+static struct FloatVect3 interaction_obstacle(
+    struct EnuCoor_f *pos, struct EnuCoor_f *vel,
+    float dist, float angle,
+    struct SwarmFishParams *p)
+{
+  const float speed = FLOAT_VECT2_NORM(*vel);
+  const float collision_speed = speed * cosf(angle);
+
+  const float f_obs = p->y_obs * expf(-(dist / p->l_obs)) * expf(p->y_v_obs * collision_speed / p->v0_obs) * anisotropic(p->a_obs, angle);
+  struct FloatVect3 acc;
+  acc->x = - f_obs * cosf(angle);
+  acc->y = f_obs * sinf(angle);
+  acc->z = 0.f;
+  return acc;
+}
+
+/** Vertical boundaries interactions
+ *
+ * @param[in] pos agent position
+ * @param[in] dist distance to obstacle
+ * @param[in] angle viewing angle of the obstacle
+ * @param[in] p pointer to swarm parameters
+ * @return the acceleration related the floor and ceiling boundaries
+ */
+static struct FloatVect3 interaction_vertical_boundaries(
+    struct EnuCoor_f *pos,
+    float z_min, float z_max,
+    struct SwarmFishParams *p)
+{
+  struct FloatVect3 acc = {0};
+  if (!isnan(z_min)) {
+    const float delta_z = pos->z - zmin;
+    acc.z += p->y_z_obs * expf(-delta_z / p->l_z_obs);
+  }
+  if (!isnan(z_max)) {
+    const float delta_z = z_max - pos->z;
+    acc.z += -p->y_z_obs * expf(-delta_z / p->l_z_obs);
+  }
+  return acc;
+}
+
+/** Compute the total interactions with neighbors and environement
+ */
+static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams *p, struct SwarmFishNav *n)
+{
+  struct EnuCoor_f *pos = stateGetPositionEnu_f();
+  struct EnuCoor_f *vel = stateGetSpeedEnu_f();
+  float course = get_course(p->use_heading);
+
+  // TODO more obstacles than the circular arena
+  float wall_dist = distance_to_arena(SWARM_FISH_ARENA_WP, p->arena_radius, pos);
+  float wall_angle = angle_to_wall(pos, course);
+
+  // We need to store results since we keep only the most influentials
+  struct FloatVect3 socials[NB_ACS];
+  float social_influences[NB_ACS] = {0};
+  for (uint8_t ac = 0; ac < NB_ACS; ac++) {
+    // use if AC is registered
+    if (ti_acs[ac].ac_id == AC_ID || ti_acs[ac].ac_id == 0 || ti_acs[ac].ac_id == p->intruder_id) { continue; }
+
+    // use if AC position is not older than 1s
+    float delta_t = Max((int)(gps.tow - acInfoGetItow(ti_acs[ac].ac_id)) / 1000.f, 0.f);
+    if (delta_t > 1.f) { continue; }
+
+    uint8_t id_other = ti_acs[ac].ac_id;
+    struct EnuCoor_f *pos_other = acInfoGetPositionEnu_f(id_other);
+    struct EnuCoor_f *vel_other = acInfoGetVelocityEnu_f(id_other);
+    float course_other = acInfoGetCourse(id_other);
+    socials[ac] = interaction_social(pos, vel, course, pos_other, vel_other, course_other, p, &social_influences[ac]);
+  }
+  // Sum social interactions of the 'nb_neighbors' most influential.
+  // Since we don't sort the results, just go through the values
+  // as many times as needed.
+  FLOAT_VECT3_ZERO(swarm->f_social);
+  for (uint8_t i = 0; i < p->nb_neighbors; i++) {
+    float best_inf = 0.f;
+    uint8_t best_idx = 0;
+    for (uint8_t ac = 0; ac < NB_ACS; ac++) {
+      if (social_influences[ac] > best_inf) {
+        best_inf = social_influences[ac];
+        best_idx = ac;
+      }
+    }
+    VECT3_ADD(swarm->f_social, socials[best_idx]);
+    social_influences[best_idx] = -1.f; // will be skipped at next loop
+  }
+
+  // navigation
+  swarm->f_nav = interaction_nav(pos, vel, course, p, n);
+
+  // intruder
+  uint8_t ti_int = ti_acs_id[p->intruder_id];
+  if (p->intruder_id != 0 && ti_acs[ti_int].ac_id != 0) {
+    // use if AC position is not older than 1s
+    float delta_t = Max((int)(gps.tow - acInfoGetItow(ti_acs[ti_int].ac_id)) / 1000.f, 0.f);
+    if (delta_t > 1.f) { continue; }
+    struct EnuCoor_f *pos_int = acInfoGetPositionEnu_f(p->intruder_id);
+    struct EnuCoor_f *vel_int = acInfoGetVelocityEnu_f(p->intruder_id);
+    float course_int = acInfoGetCourse(p->intruder_id);
+    swarm->f_intruder = interaction_intruder(pos, vel, course, pos_int, vel_int, course_int, p);
+  }
+
+  // obstacles
 }
 
 
