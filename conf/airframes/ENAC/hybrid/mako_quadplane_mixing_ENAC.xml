@@ -58,7 +58,7 @@
     <!--Airspeed sensor : get the measured airspeed in the messages-->
     <module name="airspeed" type="sdp3x">
       <define name="SDP3X_i2C_DEV" value="i2c2"/>
-      <define name="SDP3X_PRESSURE_SCALE" value="45.0"/>
+      <define name="SDP3X_PRESSURE_SCALE" value="7.1"/>
       <define name="SDP3X_PRESSURE_OFFSET" value="-0.1"/>
       <define name="USE_AIRSPEED_SDP3X" value="TRUE"/>
     </module>
@@ -80,6 +80,8 @@
     <module name="ins" type="ekf2">
     </module>   
     <!--define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_HEADING"/--> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
+    <!--define name="INS_EKF2_MAG_FUSION_TYPE" value="MAG_FUSE_TYPE_NONE"/--> <!-- in voiliere MAG_FUSE_TYPE_NONE -->
+    
 
 
     <module name="stabilization" type="indi">
@@ -94,19 +96,19 @@
     <module name="flight_recorder"/>
       
     <!-- Just for debug, TO be ERASE or COMMENT if you pprzlog logging as LIDAR /-->    
-    <!--module name="logger_sd_chibios"/>
+    <module name="logger_sd_chibios"/>
     <module name="logger" type="control_effectiveness">
       <define name="LOGGER_CONTROL_EFFECTIVENESS_COMMANDS" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_ACTUATORS" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_POS" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_SPEED" value="TRUE"/>
       <define name="LOGGER_CONTROL_EFFECTIVENESS_AIRSPEED" value="TRUE"/>
-    </module-->
+    </module>
 
 	<!-- Use LIDAR telemetry-->
-    <module name="lidar_sf30d">
+    <!--module name="lidar_sf30d">
       <configure name="LIDAR_SF30D_I2C_DEV" value="I2C2"/>
-    </module>
+    </module-->
         
     <!-- Use AEROPROBE telemetry-->    
     <!--module name="trisonica">  
@@ -114,18 +116,18 @@
     </module--> 
 
     <!-- Use ROTORCRAFT_CAM telemetry-->    
-    <module name="trigger_camera_pwm">
+    <!--module name="trigger_camera_pwm">
       <define name="USE_PWM12" value="TRUE"/> 
       <define name="USE_PWM_TIM2" value="TRUE"/> 
       <define name="STM32_PWM_USE_TIM2" value="TRUE"/>
       <define name="TRIGGER_CAMERA_CAPTURE_IMAGE_PERIOD" value="1.5"/> 
       <define name="TRIGGER_CAMERA_SHUTTER_DELAY" value="0.2"/> 
-    </module> 
+    </module--> 
     
-    <module name="gps_nmea_send">
+    <!--module name="gps_nmea_send">
       <define name="STM32_SERIAL_USE_UART4" value="TRUE"/>
       <configure name="NMEA_SEND_UART" value="UART4"/>
-    </module>   
+    </module-->   
     
   </firmware>
 
@@ -140,7 +142,7 @@
     <servo name="AILEVON_RIGHT" no="1" max="1110"  neutral="1510" min="1910"/>
     <servo name="AILEVON_LEFT"  no="2" max="1100"  neutral="1500" min="1900"/>
     <servo name="MOTOR_PUSHER"  no="3" min="1000" neutral="1000" max="2000"/>
-    <servo name="TRIGGER_CAMERA"  no="12" min="1000" neutral="1000" max="2000"/>
+    <!--servo name="TRIGGER_CAMERA"  no="12" min="1000" neutral="1000" max="2000"/-->
   </servos>
   
   <commands>
