@@ -104,7 +104,7 @@
 
 // Transition minimum pusher command
 #ifndef CMQ_TRANSITION_PUSHER_CMD
-#define CMQ_TRANSITION_PUSHER_CMD 7000.f
+#define CMQ_TRANSITION_PUSHER_CMD 9600.f
 #endif
 
 // Transition ratio cutoff (reduce quad motors)
@@ -127,12 +127,24 @@
 #define CMQ_FORWARD_MIN_AIRSPEED 15.f
 #endif
 
+// Rotor cut duration (CUTOFF -> 1) once the airspeed threshold is confirmed
+#ifndef CMQ_TRANSITION_COMPLETION_TIME
+#define CMQ_TRANSITION_COMPLETION_TIME 1.f
+#endif
+
+// Airspeed must stay above the threshold during this time (pitot spikes)
+#ifndef CMQ_TRANSITION_AIRSPEED_CONFIRM_TIME
+#define CMQ_TRANSITION_AIRSPEED_CONFIRM_TIME 0.2f
+#endif
 
 #define TRANSITION_RATIO_COMPLETE 0.99f
 
 
 static float transition_ratio; // 0. for hover to 1. for forward flight
 static const float transition_increment = 1.f / (CMQ_TRANSITION_TIME * CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY); // Increment per periodic cycle
+static const float transition_completion_increment = (1.f - CMQ_TRANSITION_CUTOFF) / (CMQ_TRANSITION_COMPLETION_TIME * CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY);
+static uint32_t transition_airspeed_cycles = 0;
+static bool transition_airspeed_reached = false; // Latched: the transition must complete
 float   quadplane_heading_sp = 0.f;           // heading setpoint [rad, NED]
 static uint32_t manual_transition_cycles = 0; // Count cycles of a forward transition in manual mode, for timeout detection.
 static bool manual_transition_aborted = false; // Latch to prevent repeated transition attempts when the pilot requests forward flight but the transition fails.
@@ -232,20 +244,40 @@ static void send_transition_cmq_status(struct transport_tx *trans,
  */
 static void transition_run(bool to_forward) {
   if (to_forward && transition_ratio < 1.f) {
-    if (stateIsAirspeedValid()) {
-      if ((stateGetAirspeed_f() < CMQ_TRANSITION_AIRSPEED && transition_ratio + transition_increment < CMQ_TRANSITION_CUTOFF)
-          || stateGetAirspeed_f() >= CMQ_TRANSITION_AIRSPEED) {
-        transition_ratio += transition_increment;
-        if (to_forward && transition_ratio >= TRANSITION_RATIO_COMPLETE) {
-          transition_ratio = 1.f;
-        }
-      }
+    const bool airspeed_valid = stateIsAirspeedValid();
+    const float airspeed = stateGetAirspeed_f();
+    const uint32_t confirm_cycles = (uint32_t)ceilf(
+        CMQ_TRANSITION_AIRSPEED_CONFIRM_TIME *
+        (float)CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY);
+
+    // A negative threshold disables the airspeed gate: no early completion
+    if (airspeed_valid && CMQ_TRANSITION_AIRSPEED > 0.f &&
+        airspeed >= CMQ_TRANSITION_AIRSPEED) {
+      transition_airspeed_cycles++;
+    } else {
+      transition_airspeed_cycles = 0;
+    }
+    if (transition_airspeed_cycles >= confirm_cycles) {
+      transition_airspeed_reached = true;
+    }
+
+    if (transition_airspeed_reached) {
+      transition_ratio += Max(transition_increment, transition_completion_increment);
+    } else if (airspeed_valid &&
+               (airspeed >= CMQ_TRANSITION_AIRSPEED ||
+                transition_ratio + transition_increment < CMQ_TRANSITION_CUTOFF)) {
+      transition_ratio += transition_increment;
+    }
+
+    if (transition_ratio >= TRANSITION_RATIO_COMPLETE) {
+      transition_ratio = 1.f;
     }
   } else if (!to_forward && transition_ratio > 0.f) {
     transition_ratio -= transition_increment;
   }
   Bound(transition_ratio, 0.f, 1.f);
 }
+
 
 static float transition_hov_motor(float ratio, float start, float end)
 {
@@ -271,6 +303,8 @@ static inline void quadplane_pusher_gate(bool in_flight)
 static void quadplane_force_hover(void)
 {
   transition_ratio = 0.f; // 0. for hover to 1. for forward flight
+  transition_airspeed_cycles = 0;
+  transition_airspeed_reached = false;
 
   quadplane_eff_disable_elevons = true;
   quadplane_eff_disable_pusher = true;
@@ -402,7 +436,7 @@ void control_mixing_quadplane_attitude_plane(void)
   transition_run(TRANSITION_TO_FORWARD);
 
   //Check if the transition is completed, if not, count the cycles and abort if timeout reached
-  if (transition_ratio >= 1.f) {
+  if (transition_ratio >= 1.f || transition_airspeed_reached) {
     manual_transition_cycles = 0;
   } else {
     manual_transition_cycles++;
@@ -565,7 +599,7 @@ void control_mixing_quadplane_nav(void)
      */
     transition_run(TRANSITION_TO_FORWARD);
 
-    if (transition_ratio >= 1.f) {
+    if (transition_ratio >= 1.f || transition_airspeed_reached) {
       nav_transition_cycles = 0;
     } else {
       nav_transition_cycles++;

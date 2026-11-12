@@ -332,7 +332,7 @@
 	<define name="CMQ_GROUND_ELEVON_TEST" value="FALSE"/> <!-- Use for Elevon test on ground, turn off motors and allow only elevon to move. Go in forward to use it -->
     <define name="CMQ_TRANSITION_AIRSPEED" value="13."/> <!-- Transition speed in m/s when we cut the 4 motors to go in plane mode -->
     <define name="CMQ_FORWARD_MIN_AIRSPEED" value="14."/> <!-- Minimum flying speed in navigation plane mode -->
-    <define name="CMQ_TRANSITION_TIME" value="5."/> <!-- Transition time -->
+    <define name="CMQ_TRANSITION_TIME" value="8."/> <!-- Transition time -->
     <define name="CMQ_TRANSITION_PITCH" value="0.09"/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->
   </section>  
 
