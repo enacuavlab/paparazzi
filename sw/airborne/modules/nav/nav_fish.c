@@ -310,9 +310,9 @@ static float sign(float x)
  *
  * @param a anisotropy coef (0 means isotropic, gain = 1.)
  * @param psi angle of perseption
- * @return anisotripic gain in [-1., 1.]
+ * @return anisotropic gain in [-1., 1.]
  */
-static float anisotripic(float a, float psi)
+static float anisotropic(float a, float psi)
 {
   return (1.f + a * cosf(psi)) / (1.f + a);
 }
@@ -373,110 +373,177 @@ static float get_distance_3D(struct EnuCoor_f *pos, struct EnuCoor_f *other)
   return FLOAT_VECT3_NORM(diff);
 }
 
+/** returns course angle in ENU frame
+ *  it can be the ground course (GPS) or the heading (mag) depending on
+ *  the use_heading flag
+ *
+ * @param use_heading true to use heading instead of ground course
+ * @return course angle
+ */
+static float get_course(bool use_heading)
+{
+  if (use_heading) {
+    return M_PI_2 - stateGetNedToBodyEulers_f()->psi;
+  } else {
+    return M_PI_2 - stateGetHorizontalSpeedDir_f();
+  }
+}
+
 /** calculates a uav's viewing angle on another uav
  * @param pos ENU coordinates of the viewer drone
  * @param other ENU coordinates of the viewed drone
- * @param psi heading of the viewer drone
+ * @param use_heading heading flag (use ground_course or heading)
  * @return viewing angle
  */
-static float viewing_angle(struct EnuCoor_f *pos, struct EnuCoor_f *other, float psi)
+static float get_viewing_angle(struct EnuCoor_f *pos, struct EnuCoor_f *other, bool use_heading)
 {
   struct EnuCoor_f diff;
   VECT3_DIFF(diff, *other, *pos);
-  float dir = 0.f;
-  if (fabsf(diff.x) < 1e-5f) {
-    dir = sign(diff.y) * M_PI_2;
-  } else {
-    dir = atanf(diff.y/diff.x);
-  }
-  return (sign(diff.x)*M_PI_2) - psi - dir;
+  float dir = atan2f(diff.y, diff.x);
+  float angle = dir - get_course(use_heading);
+  FLOAT_ANGLE_NORMALIZE(angle);
+  return angle;
 }
 
-/** calculates difference between two headings
- * @param psi first heading
- * @param psi_other second heading
- * @return the difference between the two headings
- */
-static float delta_phi(float psi, float psi_other)
+/** square function */
+static inline float squared(float x)
 {
-  float dp = psi_other - psi;
-  FLOAT_ANGLE_NORMALIZE(dp);
-  return dp;
+  return x * x;
 }
 
-/** calculates the influence of a uav on a neighbor of his
- * @param pos ENU coordinates of the influenced uav
- * @param other ENU coordinates of the influencing uav
- * @param psi heading of the influenced uav
- * @param psi_other heading of the influencing uav
- * @return influence
+/** calculates difference between two course angle
+ * @param course first course
+ * @param course_other second course
+ * @return the difference between the two angles
  */
-static float neighbor_influence(struct EnuCoor_f *pos, struct EnuCoor_f *other, float psi , float psi_other)
+static float get_course_diff(float course, float course_other)
 {
-  float view = viewing_angle(pos, other, psi);
-  float d2d = distance_drone_to_drone(pos, other);
-  float d_phi = delta_phi(psi, psi_other);
-  float tmp_ali = d2d / sfp.l_ali;
-  tmp_ali = sfp.y_ali * sinf(d_phi) * ((d2d + sfp.d0_ali) / sfp.l_ali) * expf(-tmp_ali * tmp_ali);
-  float amplifier = 1.f;
-  if (d2d < sfp.d0_att) {
-    amplifier = expf(sfp.alpha_rep * ((sfp.d0_att - d2d)/(sfp.d0_att)));
-  }
-  float tmp_att = d2d / sfp.l_att;
-  tmp_att = sfp.y_att * (((d2d - sfp.d0_att) / sfp.l_att) / (1.f + tmp_att * tmp_att)) * sinf(view) * amplifier;
-  return fabs(tmp_att + tmp_ali);
+  float da = course_other - course;
+  FLOAT_ANGLE_NORMALIZE(da);
+  return da;
 }
 
-/** calculates the attraction effect between two uavs
- * @param pos ENU coordinates of the current uav
- * @param other ENU coordinates of the neighbor uav
- * @param psi heading of the current uav
- * @return attraction
+/** Social interaction
+ *
+ * @param[in] pos agent position
+ * @param[in] vel agent velocity
+ * @param[in] course agent course
+ * @param[in] other neighbor position
+ * @param[in] vel_other neighbor velocity
+ * @param[in] course_other neighbor course
+ * @param[in] p pointer to swarm parameters
+ * @param[in] nb_neighbors number of influencial neighbors
+ * @param[out] influence total influence of the considered neighbor
+ * return the acceleration related to social interaction with a neighbor
  */
-static float neighbor_attraction(struct EnuCoor_f *pos, struct EnuCoor_f *other, float psi)
+static struct FloatVect3 interaction_social(
+    struct EnuCoor_f *pos, struct EnuCoor_f *vel, float course,
+    struct EnuCoor_f *other, struct EnuCoor_f *vel_other, float course_other,
+    struct SwarmFishParams *p, int nb_neighbors,
+    float *influence)
 {
-  float view = viewing_angle(pos, other, psi);
-  float d2d = distance_drone_to_drone(pos, other);
+  struct FloatVect3 acc = {0};
+  const float dij = get_distance_3D(pos, other);
+  if (dij < 1e-3) {
+    return acc; // too close to do something, better avoid a division by zero later
+  }
+  const float dphi = get_course_diff(course, course_other);
+  const float psi = get_viewing_angle(pos, other, p->use_heading);
+  const float c_psi = cosf(psi);
+  const float s_psi = sinf(psi);
+  const float c_dphi = cosf(dphi);
+  const float s_dphi = sinf(dphi);
+  const float delta_z = other->z - pos->z;
+  const float v_h_i = FLOAT_VECT2_NORM(*vel);
+  const float v_h_j = FLOAT_VECT2_NORM(*vel_other);
 
-  if(d2d <= sfp.min_d2d) {
-    if (view > -M_PI_2 && view <= M_PI_2) {
-      swarm_fish.velocity = swarm_fish.velocity - sfp.min_velocity;
-    } else {
-      swarm_fish.velocity = swarm_fish.velocity + sfp.min_velocity;
-    }
-  }
-  float amplifier = 1.f;
-  if (d2d < sfp.d0_att) {
-    amplifier = expf(sfp.alpha_rep * ((sfp.d0_att - d2d) / sfp.d0_att));
-  }
-  float tmp_att = d2d / sfp.l_att;
-  tmp_att = sfp.y_att * (((d2d - sfp.d0_att) / sfp.l_att) / (1.f + tmp_att * tmp_att)) * sinf(view) * amplifier;
-  return tmp_att;
+  // attraction
+  const float f_att = p->y_att * ((dij - p->d_att) / p->d_att) / (1.f + squared(dij / p->l_att)) * anisotropic(p->a_att, psi);
+  // alignement
+  const float f_ali = p->y_ali * expf(-squared(dii / p->l_ali)) * s_dphi * anisotropic(p->a_ali, psi);
+  // vertical
+  const float f_z = p->y_z * ((delta_z - sign(delta_z) * p->d_z) / p->d_z) * expf(-squared(dij / p->l_z)) * anisotropic(p->a_z, psi);
+  // speed
+  const float f_v_base = p->y_v * expf(-squared(dij / p->l_v)) * anisotropic(p->a_v, psi) / (float)(Max(nb_neighbors, 1));
+  const float f_v_x = f_v_base * (v_h_j * c_phi - v_h_i);
+  const float f_v_y = f_v_base * (v_h_j * s_sphi);
+  const float f_v_z = f_v_base * (vel_other->z - vel->z);
+
+  acc->x = f_att * c_psi + f_v_x;
+  acc->y = f_att * s_psi + f_ali + f_v_y;
+  acc->z = f_z + f_v_z;
+
+  // FIXME is it really what we want here, or just the norm of the acceleration ?
+  *influence = sqrtf(squared(f_att) + squared(f_ali) + squared(f_z) + squared(f_v_x) + squared(f_v_y) + squared(f_v_z));
+
+  return acc;
 }
 
-/** calculates the alignement effect between two uavs
- * @param pos ENU coordinates of the current uav
- * @param other ENU coordinates of the neighbor uav
- * @param psi heading of the current uav
- * @param psi_other heading of the neighbor uav
- * @return alignement
+/** Navigation interaction
+ *
+ * @param[in] pos agent position
+ * @param[in] vel agent velocity
+ * @param[in] course agent course
+ * @param[in] p pointer to swarm parameters
+ * @param[in] n pointer to swarm navigation setpoint
+ * return the acceleration related to the navigation setpoints
  */
-static float neighbor_alignement(struct EnuCoor_f *pos, struct EnuCoor_f *other, float psi , float psi_other)
+static struct FloatVect3 interaction_nav(
+    struct EnuCoor_f *pos, struct EnuCoor_f *vel, float course,
+    struct SwarmFishParams *p, struct SwarmFishNav *n)
 {
-  float d2d = distance_drone_to_drone(pos, other);
-  float d_phi = delta_phi(psi, psi_other);
-  float tmp_ali = d2d / sfp.l_ali;
-  tmp_ali = sfp.y_ali * sinf(d_phi) * ((d2d + sfp.d0_ali) / sfp.l_ali) * expf(-tmp_ali * tmp_ali);
-  return tmp_ali;
+  float phi_nav = n->course;
+  if (p->free_heading) {
+    // free flight, nav direction is current course
+    phi_nav = course;
+  }
+  float vz_nav = 0.f;
+  if (!p->vz_ctl) {
+    // if not vz control, compute vz_nav from altitude setpoint
+    vz_nav = p->y_z_nav * tanhf((n->alt - pos->z) / p->l_z_nav);
+  }
+  const float h_speed = FLOAT_VECT2_NORM(*vel);
+  struct FloatVect3 acc;
+  acc->x = p->y_nav * (n->speed * cosf(phi_nav - get_course(p->use_heading)) - h_speed);
+  acc->y = p->y_nav * (n->speed * sinf(phi_nav - get_course(p->use_heading)) - h_speed);
+  acc->z = p->y_nav * (vz_nav - vel->z);
+
+  return acc;
 }
 
-//static float perpendicular_distance(float x, float y, float sx, float sy, float dx, float dy)
-//{
-//  float agent = (dy * (y - sy) + dx * (x - sx)) / (dx * dx + dy * dy);
-//  float x_new = sx + dx * agent;
-//  float y_new = sy + dy * agent;
-//  return sqrtf((x - x_new) * (x - x_new) + (y - y_new) * (y - y_new));
-//}
+/** Intruder interaction
+ *
+ * return the acceleration related to intruder avoidance
+ */
+static struct FloatVect3 interaction_intruder(
+    struct EnuCoor_f *pos, struct EnuCoor_f *vel, float course,
+    struct EnuCoor_f *other, struct EnuCoor_f *vel_other, float course_other,
+    struct SwarmFishParams *p)
+{
+  struct FloatVect3 acc = {0};
+  const float dij = get_distance_3D(pos, other);
+  if (dij < 1e-3) {
+    return acc; // too close to do something, better avoid a division by zero later
+  }
+
+  // horizontal repulsion
+  const float psi = get_viewing_angle(pos, other, p->use_heading);
+  const float psi_int = get_viewing_angle(other, pos, p->use_heading);
+  const float speed = FLOAT_VECT2_NORM(*vel);
+  const float speed_int = FLOAT_VECT2_NORM(*vel_other);
+  const float relative_vel_ratio = (speed * cosf(psi) + speed_int * cosf(psi_int)) / (Max(speed + speed_int, 0.1f));
+
+  const float f_rep = p->y_in * expf(-squared(d / p->l_in)) * (1.f + p->a_in * relative_vel_ratio) / (1.f + p->a_in);
+  acc->x = - f_rep * cosf(psi);
+  acc->y = - f_rep * sinf(psi);
+
+  // vertical repulsion
+  const delta_z = other->z - pos->z;
+  acc-z = - p->y_z_in * tanhf(delta_z / p->d_z_in) * expf(-squared(dij / p->l_z_in));
+
+  return acc;
+}
+
 
 /** calculates new variation of the heading for the uav based on current state
  * @return heading variation
