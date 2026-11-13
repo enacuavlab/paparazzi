@@ -41,7 +41,7 @@ struct SwarmFishParams {
   // Alignment parameters
   float y_ali;        ///< alignement intensity
   float l_ali;        ///< alignement length
-  float a_att;        ///< alignement anisotropy (0 for isotropic behavior)
+  float a_ali;        ///< alignement anisotropy (0 for isotropic behavior)
   // Speed parameters
   float y_v;          ///< speed adaptation intensity
   float l_v;          ///< speed adaptation length
@@ -75,6 +75,8 @@ struct SwarmFishParams {
   int intruder_id;    ///< intruder ID (0 to ignore)
   float max_speed;    ///< max horizontal speed
   float min_speed;    ///< min horizontal speed
+  float max_vz;       ///< max vertical speed
+  float min_vz;       ///< min vertical speed
   float max_yaw;      ///< max yaw rate
   float max_alt;      ///< max altitude
   float min_alt;      ///< min altitude
