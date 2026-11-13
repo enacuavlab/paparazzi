@@ -62,6 +62,16 @@
 #define CMQ_TRANSITION_PITCH 0.0f
 #endif
 
+// Pusher motor command during transition (in PPRZ)
+#ifndef CMQ_TRANSITION_PUSHER_CMD
+#define CMQ_TRANSITION_PUSHER_CMD MAX_PPRZ
+#endif
+
+// Max pusher value at ratio 0.25 (≈1 s with TIME=4)
+#ifndef CMQ_TRANSITION_PUSHER_RAMP
+#define CMQ_TRANSITION_PUSHER_RAMP 0.5f   
+#endif
+
 #define TRANSITION_TO_HOVER false
 #define TRANSITION_TO_FORWARD true
 
@@ -199,7 +209,7 @@ void control_mixing_quadplane_attitude_plane(void)
   commands[COMMAND_YAW] = 0;
   if (autopilot_get_motors_on()) {
     if (transition_ratio < 0.90f) {
-      commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, MAX_PPRZ, 0.f, 1.f); // blend from idle, unless thrust is lower
+      commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, CMQ_TRANSITION_PUSHER_CMD, 0.f, CMQ_TRANSITION_PUSHER_RAMP); // blend from idle, unless thrust is lower
     } else {
       commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
     }
@@ -257,6 +267,7 @@ void control_mixing_quadplane_nav_run(void)
     struct StabilizationSetpoint stab_sp = guidance_plane_attitude_from_nav(autopilot_in_flight());
     if (transition_ratio < CMQ_TRANSITION_CUTOFF) {
       stabilization_attitude_plane_pid_run(transition_ratio < CMQ_TRANSITION_CUTOFF ? false : autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
+      guidance_h_run(autopilot_in_flight());
       struct ThrustSetpoint hover_th_sp = guidance_v_run(autopilot_in_flight());
       struct FloatEulers eulers_sp = { .phi = 0.f , .theta = CMQ_TRANSITION_PITCH, .psi = guidance_plane.course_setpoint };
       struct StabilizationSetpoint hover_stab_sp = stab_sp_from_eulers_f(&eulers_sp);
@@ -271,7 +282,7 @@ void control_mixing_quadplane_nav_run(void)
     commands[COMMAND_YAW] = 0;
     if (autopilot_get_motors_on()) {
       if (transition_ratio < 0.90f) {
-        commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, MAX_PPRZ, 0.f, 1.f); // blend from idle, unless thrust is lower
+        commands[COMMAND_MOTOR_PUSHER] = command_from_transition(CMQ_MOTOR_IDLE, CMQ_TRANSITION_PUSHER_CMD, 0.f, CMQ_TRANSITION_PUSHER_RAMP); // blend from idle, unless thrust is lower
       } else {
         commands[COMMAND_MOTOR_PUSHER] = stabilization.cmd[COMMAND_THRUST];
       }
@@ -310,9 +321,9 @@ void control_mixing_quadplane_nav_run(void)
     //commands[COMMAND_ROLL] = 0;
     //commands[COMMAND_PITCH] = 0;
     commands[COMMAND_YAW] = 0;
-    
-    struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
+
     struct StabilizationSetpoint stab_sp = guidance_h_run(autopilot_in_flight());
+    struct ThrustSetpoint th_sp = guidance_v_run(autopilot_in_flight());
     stabilization_run(autopilot_in_flight(), &stab_sp, &th_sp, stabilization.cmd);
 
     if (autopilot_get_motors_on()) {

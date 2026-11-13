@@ -16,6 +16,8 @@
     <waypoint name="p2" x="-35.356" y="78.947"/>
     <waypoint name="p3" x="-11.951" y="182.661"/>
     <waypoint name="p4" x="118.635" y="125.884"/>
+    <waypoint name="C1" x="-1.9" y="121.1"/>
+    <waypoint name="C2" x="71.3" y="88.7"/>    
     <waypoint name="TD" x="31.809" y="46.501"/>
     <waypoint name="_FLY1" x="-120.135" y="264.94"/>
     <waypoint name="_FLY2" x="299.403" y="176.814"/>
@@ -100,6 +102,12 @@
     <block name="circle">
       <circle radius="nav.radius" wp="STDBY"/>
     </block>
+    <block name="eight">
+      <while cond="TRUE">
+        <circle wp="C1" radius="50"  until="NavCircleCount() @GT 0.8 @AND NavQdrCloseTo(114)"/>
+        <circle wp="C2" radius="-50" until="NavCircleCount() @GT 0.8 @AND NavQdrCloseTo(294)"/>
+      </while>
+    </block>    
     <block name="oval_left">
       <oval p1="p4" p2="p3" radius="nav.radius"/>
     </block>

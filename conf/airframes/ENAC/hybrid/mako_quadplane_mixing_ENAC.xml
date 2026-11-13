@@ -220,8 +220,8 @@
           <field name="neutral" value="true"/>
           <field name="scale_f" value="true"/>
         </field>
-		  <field name="neutral" value="-376,719,-751" type="int[]"/>
-          <field name="scale_f" value="{ 0.6085, 0.6106, 0.6011 }"/>
+			<field name="neutral" value="-504,783,-690" type="int[]"/>
+			<field name="scale_f" value="{ 0.6065, 0.6121, 0.6011 }"/>
       </field>
     </define>
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
