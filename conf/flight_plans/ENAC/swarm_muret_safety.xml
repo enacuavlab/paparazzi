@@ -7,6 +7,7 @@
     <waypoint name="HOME" x="0" y="0"/>
     <waypoint name="STDBY" x="-11.596" y="6.168"/>
     <waypoint name="TD" x="-5.782" y="2.583"/>
+    <waypoint name="ARENA" x="-10." y="0"/>
     <waypoint name="p1" x="-35.971" y="34.283"/>
     <waypoint name="p2" x="-26.586" y="30.028"/>
     <waypoint name="p3" x="-17.077" y="24.965"/>
@@ -105,8 +106,11 @@
     <block name="Stay P10">
       <stay wp="p10"/>
     </block>
-    <block group="fish" name="Nav Fish" strip_button="Fish" on_enter="autopilot_set_mode(AP_MODE_GUIDED)" on_exit="autopilot_set_mode(AP_MODE_NAV)">
+    <!--block group="fish" name="Nav Fish" strip_button="Fish" on_enter="autopilot_set_mode(AP_MODE_GUIDED)" on_exit="autopilot_set_mode(AP_MODE_NAV)">
       <call fun="nav_fish_velocity_run()"/>
+    </block-->
+    <block group="fish" name="Nav Fish" strip_button="Fish">
+      <guided flags="GUIDED_FLAG_XY_VEL|GUIDED_FLAG_YAW_RATE|GUIDED_FLAG_Z_VEL" commands="swarm_fish.speed_sp.y, swarm_fish.speed_sp.x, -swarm_fish.speed_sp.z, swarm_fish.yaw_rate_sp" pre_call="swarm_fish_velocity_run()"/>
     </block>
     <block name="Land here" strip_button="Land Here" strip_icon="land-right.png">
       <call_once fun="NavSetWaypointHere(WP_TD)"/>

@@ -28,6 +28,8 @@
 #define SWARM_FISH_H
 
 #include "std.h"
+#include "math/pprz_algebra_float.h"
+#include "math/pprz_geodetic_float.h"
 
 /**
  * nav fish param structure
