@@ -281,7 +281,7 @@
 	<define name="WLS_PRIORITIES" value="{1000, 1000, 1, 100, 100}"/>
 
     <!-- second order filter parameters -->
-    <define name="ACT_FREQ"       value="{26.,26.,26.,26.,20.,20.,27.4}"/>       
+    <define name="ACT_FREQ"       value="{26.,26.,26.,26.,27.,27.,6.}"/>       
     <define name="FILT_CUTOFF"  value="4.0"/>
     <define name="FILT_CUTOFF_R" value="4.0"/>    
     <define name="FILT_CUTOFF_P" value="20.0"/>
@@ -300,9 +300,9 @@
       <define name="RY" value="{ 0.225, 0.220,-0.220,-0.225}"/>  <!-- Rotor y positions [m], order: FR, RR, RL, FL -->
       <define name="RZ"                 value="{0,0,0,0}" />  <!-- Rotor z positions [m], order: FR, RR, RL, FL -->
       <define name="SPIN_DIR"           value="{-1.0,1.0,-1.0,1.0}" />  <!-- Motors spin direction (+1 for CW. -1 for CCW) -->
-      <define name="ROTOR_K_T_PPRZ"     value="{8.33925e-5, 3.09866e-8}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} -->
+      <define name="ROTOR_K_T_PPRZ"     value="{4.7e-4, 2.9e-7}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} {8.33925e-5, 3.09866e-8} -->
       <define name="KAPPA"              value="1.75e-4" />  <!-- Drag-torque to thrust ratio (kappa = k_m/k_t) [m] -->
-      <define name="MOTOR_HOVER"        value="3640" />  <!-- Hover motor command 4640 -->
+      <define name="MOTOR_HOVER"        value="3000" />  <!-- Hover motor command 4640 -->
       <define name="MOTOR_IDLE"         value="150" />  <!-- Idle motor command -->
       <!-- Angle Motor rotation in the body frame X = forward Y = right Z = down  d = Rz(ψ) · Ry(θ) · Rx(φ) · {0, 0, -1} -->
       <define name="ROTOR_ROT_X" value="{RadOfDeg(20.f), RadOfDeg(20.f), RadOfDeg(-20.f), RadOfDeg(-20.f)}"/> <!-- Rotations on motors X axis FR BR BL FL -->
@@ -314,8 +314,8 @@
       <define name="V_WING"             value="10.0"/> <!--Airspeed at which wing lift derivative is applied [m/s] -->
       <!-- Elevons -->
       <define name="K_ELEVON_DEFLECT"   value="(RadOfDeg(45.f) / 9600.f)"/>  <!-- delta = k*pprz [rad/pprz], = delta_max / MAX_PPRZ / 20 degree of max debatement-->
-      <define name="K_ELEVON_ROLL"      value="0.00136f" />  <!-- dMx/ddelta = k_roll * V^2 [N.m/rad per (m/s)^2] 0136f -->
-      <define name="K_ELEVON_PITCH"     value="0.00104f" />  <!-- dMy/ddelta = k_pitch * V^2 [N.m/rad per (m/s)^2] 0104f -->
+      <define name="K_ELEVON_ROLL"      value="0.00100f" />  <!-- dMx/ddelta = k_roll * V^2 [N.m/rad per (m/s)^2] 0.00136f -->
+      <define name="K_ELEVON_PITCH"     value="0.00057f" />  <!-- dMy/ddelta = k_pitch * V^2 [N.m/rad per (m/s)^2] 0.00104f -->
       <define name="K_ELEVON_PROPWASH"  value="0.f" />  <!-- dMy/ddelta += k_propwash * T_x * V (default 0) -->
       <define name="K_ELEVON_DIFF_DRAG_YAW" value="0.f" />  <!-- dMz/ddelta = +/- k_yaw * V^2 * delta [N.m/rad]; + for right elevon -->
       <define name="K_ELEVON_V_FULL"    value="10.f" />  <!-- Elevons travel opening with dynamic pressure, full available at x m/s -->
@@ -324,7 +324,7 @@
       <define name="PUSHER_RY"          value="0"/>  <!-- Lateral Offset from CG (positive = right) -->
       <define name="PUSHER_RZ"          value="0"/>  <!-- Vertical Offset from CG (positive = down) -->
       <define name="PUSHER_SPIN_DIR"    value="1"/>  <!-- Pusher spin direction (+1 for CW. -1 for CCW) -->
-      <define name="PUSHER_K_T_PPRZ"    value="{1.22e-4,4.08e-8}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} {4.453e-4,1.489e-7} {1.22e-4,4.08e-8} -->
+      <define name="PUSHER_K_T_PPRZ"    value="{1.4702e-03,5.8406e-08}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} {4.453e-4,1.489e-7} {1.22e-4,4.08e-8} -->
   </section>
 
 
@@ -333,7 +333,7 @@
     <define name="CMQ_TRANSITION_AIRSPEED" value="13."/> <!-- Transition speed in m/s when we cut the 4 motors to go in plane mode -->
     <define name="CMQ_FORWARD_MIN_AIRSPEED" value="14."/> <!-- Minimum flying speed in navigation plane mode -->
     <define name="CMQ_TRANSITION_TIME" value="8."/> <!-- Transition time -->
-    <define name="CMQ_TRANSITION_PITCH" value="0.09"/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->
+    <define name="CMQ_TRANSITION_PITCH" value="-0.09"/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->
   </section>  
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_"> 
@@ -341,14 +341,14 @@
     <define name="REF_MAX_ZDD" value=" 0.4*9.81"/>
     <define name="REF_MIN_ZD" value="-2."/>
     <define name="REF_MAX_ZD" value=" 2."/>
-    <define name="NOMINAL_HOVER_THROTTLE" value="0.35"/>
+    <define name="NOMINAL_HOVER_THROTTLE" value="0.31"/>
   </section>
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_"> 
-    <define name="MAX_BANK" value="30" unit="deg"/>
+    <define name="MAX_BANK" value="45" unit="deg"/>
     <define name="USE_SPEED_REF" value="TRUE"/>    
     <define name="REF_MAX_SPEED" value="1."/>
-    <define name="REF_MAX_ACCEL" value="2."/>
+    <define name="REF_MAX_ACCEL" value="2."/> <!-- 2. -->
   </section>
 
   <section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
@@ -362,7 +362,8 @@
     <define name="ARRIVED_AT_WAYPOINT" value="2."/>
     <define name="NAV_CLIMB_VSPEED" value="1.5"/> <!-- Climb speed in m/s -->
     <define name="NAV_DESCEND_VSPEED" value="-1.5"/> <!-- Descend speed in m/s -->
-    <define name="DEFAULT_CIRCLE_RADIUS" value="70"/>  <!-- Circle radius in navigation mode around a point -->
+    <define name="DEFAULT_CIRCLE_RADIUS" value="50"/>  <!-- Circle radius in navigation mode around a point -->
+    <define name="NAV_HYBRID_MAX_BANK" value="0.60"/>  <!-- rad, sets the circle speed: V = sqrt(g*R*tan(0.8*max_bank)) -->
   </section>
   
   <section name="BAT">

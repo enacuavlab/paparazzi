@@ -8,20 +8,10 @@
     <description>Proposition de modele alignee sur mako_quadplane_mixing_ENAC_indi.xml (2026-10-29). Voir README_flyhigh_quadplane_proposition.md : loi rotor insuffisante pour le stationnaire a 1.533 kg.</description>
   </fileheader>
   <!--
-  PROPOSITION SEPAREE : ne remplace pas le modele actif.
-  Source : airframe mako_quadplane_mixing_ENAC_indi.xml, 2026-10-29.
-  Commandes NPS normalisees : moteur m = u/9600 dans [0,1], elevon dans [-1,1].
-  Positions : JSBSim STRUCTURAL = (-RX, RY, -RZ), CG a l'origine.
-  Directions et couples : repere BODY (avant, droite, bas).
-  Les lois rotor et pusher sont distinctes. Forces en lbf, couples en ft.lbf.
-  Elevons : efficacite alignee a rho_ref = 1.225 kg/m3 ; hors de cette densite,
-  JSBSim varie avec la densite et le scheduler actuel ne le fait pas.
-  LIMITE : 13.743 N verticaux maximum contre 15.034 N de poids.
-  Cette copie ne peut pas assurer un stationnaire a 1.533 kg avec cette loi rotor.
-  Le G2 INDI n'est pas un couple statique et n'est pas ajoute a la loi Q=kappa*T.
+
 -->
   <metrics>
-    <wingarea unit="M2"> 0.09 </wingarea>
+    <wingarea unit="M2"> 0.235 </wingarea>
     <wingspan unit="M"> 0.73 </wingspan>
     <chord unit="M"> 0.15 </chord>
     <htailarea unit="M2"> 0.029 </htailarea>
@@ -52,7 +42,7 @@
     <ixy unit="KG*M2"> 0. </ixy>
     <ixz unit="KG*M2"> 0. </ixz>
     <iyz unit="KG*M2"> 0. </iyz>
-    <emptywt unit="KG">0.5</emptywt>
+    <emptywt unit="KG">1.533</emptywt>
     <location name="CG" unit="M">
       <x> 0 </x>
       <y> 0 </y>
@@ -123,8 +113,8 @@
   </ground_reactions>
   <flight_control name="actuator_dynamics">
     <property value="26.">fcs/motor_lag</property>
-    <property value="20.">fcs/servo_lag</property>
-    <property value="27.4">fcs/pusher_lag</property>
+    <property value="27.">fcs/servo_lag</property>
+    <property value="6.">fcs/pusher_lag</property>
     <channel name="filtering">
       <!--First order filter represents actuator dynamics-->
       <lag_filter name="motor_front_right_lag">
@@ -241,12 +231,12 @@
         <sum>
           <product>
             <property>fcs/motor_front_right_lag</property>
-            <value>0.179974845959</value>
+            <value>1.01434</value>
           </product>
           <product>
             <property>fcs/motor_front_right_lag</property>
             <property>fcs/motor_front_right_lag</property>
-            <value>0.641992531623</value>
+            <value>6.00834</value>
           </product>
         </sum>
       </function>
@@ -266,12 +256,12 @@
         <sum>
           <product>
             <property>fcs/motor_front_left_lag</property>
-            <value>0.179974845959</value>
+            <value>1.01434</value>
           </product>
           <product>
             <property>fcs/motor_front_left_lag</property>
             <property>fcs/motor_front_left_lag</property>
-            <value>0.641992531623</value>
+            <value>6.00834</value>
           </product>
         </sum>
       </function>
@@ -291,12 +281,12 @@
         <sum>
           <product>
             <property>fcs/motor_back_right_lag</property>
-            <value>0.179974845959</value>
+            <value>1.01434</value>
           </product>
           <product>
             <property>fcs/motor_back_right_lag</property>
             <property>fcs/motor_back_right_lag</property>
-            <value>0.641992531623</value>
+            <value>6.00834</value>
           </product>
         </sum>
       </function>
@@ -316,12 +306,12 @@
         <sum>
           <product>
             <property>fcs/motor_back_left_lag</property>
-            <value>0.179974845959</value>
+            <value>1.01434</value>
           </product>
           <product>
             <property>fcs/motor_back_left_lag</property>
             <property>fcs/motor_back_left_lag</property>
-            <value>0.641992531623</value>
+            <value>6.00834</value>
           </product>
         </sum>
       </function>
@@ -342,12 +332,12 @@
         <sum>
           <product>
             <property>fcs/motor_pusher_lag</property>
-            <value>0.6103</value>   <!-- was 0.263296234158 -->
+            <value>3.1729</value>   <!-- was 0.263296234158 -->
           </product>
           <product>
             <property>fcs/motor_pusher_lag</property>
             <property>fcs/motor_pusher_lag</property>
-            <value>1.88538</value>   <!-- was 0.8453104016 -->
+            <value>1.2101</value>   <!-- was 0.8453104016 -->
           </product>
         </sum>
       </function>
@@ -368,12 +358,12 @@
         <sum>
           <product>
             <property>fcs/motor_front_right_lag</property>
-            <value>0.000103332014576</value>
+            <value>5.8238e-4</value>
           </product>
           <product>
             <property>fcs/motor_front_right_lag</property>
             <property>fcs/motor_front_right_lag</property>
-            <value>0.000368598074258</value>
+            <value>3.4497e-3</value>
           </product>
         </sum>
       </function>
@@ -388,12 +378,12 @@
         <sum>
           <product>
             <property>fcs/motor_front_left_lag</property>
-            <value>0.000103332014576</value>
+            <value>5.8238e-4</value>
           </product>
           <product>
             <property>fcs/motor_front_left_lag</property>
             <property>fcs/motor_front_left_lag</property>
-            <value>0.000368598074258</value>
+            <value>3.4497e-3</value>
           </product>
         </sum>
       </function>
@@ -408,12 +398,12 @@
         <sum>
           <product>
             <property>fcs/motor_back_right_lag</property>
-            <value>0.000103332014576</value>
+            <value>5.8238e-4</value>
           </product>
           <product>
             <property>fcs/motor_back_right_lag</property>
             <property>fcs/motor_back_right_lag</property>
-            <value>0.000368598074258</value>
+            <value>3.4497e-3</value>
           </product>
         </sum>
       </function>
@@ -428,12 +418,12 @@
         <sum>
           <product>
             <property>fcs/motor_back_left_lag</property>
-            <value>0.000103332014576</value>
+            <value>5.8238e-4</value>
           </product>
           <product>
             <property>fcs/motor_back_left_lag</property>
             <property>fcs/motor_back_left_lag</property>
-            <value>0.000368598074258</value>
+            <value>3.4497e-3</value>
           </product>
         </sum>
       </function>
@@ -448,12 +438,12 @@
         <sum>
           <product>
             <property>fcs/motor_pusher_lag</property>
-            <value>0.000351773</value>  <!-- was 0.000151170738116 -->
+            <value>1.8217e-3</value>  <!-- was 0.000151170738116 -->
           </product>
           <product>
             <property>fcs/motor_pusher_lag</property>
             <property>fcs/motor_pusher_lag</property>
-            <value>0.0009177146</value>   <!-- was 0.000485332415617 -->
+            <value>6.948e-4</value>   <!-- was 0.000485332415617 -->
           </product>
         </sum>
       </function>
@@ -560,7 +550,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/aileron_lag</property>
-          <value>0.0265434473885</value>
+          <value>0.007475</value>
         </product>
       </function>
     </axis>
@@ -577,9 +567,9 @@
             <independentVar lookup="row">aero/alpha-rad</independentVar>
             <tableData>
               -1.57  0.
-              -0.60 0.3
+              -0.60 0.123
               0.00  0.
-              0.60  -0.3
+              0.60  -0.123
               1.57  0.
             </tableData>
           </table>
@@ -593,7 +583,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/cbarw-ft</property>
           <property>fcs/elevator_lag</property>
-          <value>0.197566522131</value>
+          <value>0.04147</value>
         </product>
       </function>
       <function name="aero/moment/Pitch_damp">

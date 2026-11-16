@@ -317,16 +317,16 @@ static inline void quadplane_update_thrust_model(void)
     float u = quadplane_eff_sched_v.rotor_cmd[i];
     Bound(u, 0.f, MAX_PPRZ);
     quadplane_eff_sched_v.rotor_cmd_T[i]        = b * u + c * u * u;
-    quadplane_eff_sched_v.rotor_dT_dpprz[i] = b + 2.f * c * u;
-    Bound(quadplane_eff_sched_v.rotor_dT_dpprz[i], 0.1f * b, 5.0f * b);
+    //quadplane_eff_sched_v.rotor_dT_dpprz[i] = b + 2.f * c * u;
+    quadplane_eff_sched_v.rotor_dT_dpprz[i] = Max(b + 2.f * c * u, 0.1f * b);
   }
 
   /* For pusher motor */
   float u = quadplane_eff_sched_v.pusher_cmd;
   Bound(u, 0.f, MAX_PPRZ);
   quadplane_eff_sched_v.pusher_cmd_T = d * u + e * u * u;
-  quadplane_eff_sched_v.pusher_dT_dpprz = d + 2.f * e * u;
-  Bound(quadplane_eff_sched_v.pusher_dT_dpprz, 0.1f * d, 5.0f * d);
+  //quadplane_eff_sched_v.pusher_dT_dpprz = d + 2.f * e * u;
+  quadplane_eff_sched_v.pusher_dT_dpprz = Max(d + 2.f * e * u, 0.1f * d);
 }
 
 /*

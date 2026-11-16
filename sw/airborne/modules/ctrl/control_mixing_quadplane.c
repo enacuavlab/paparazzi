@@ -82,6 +82,7 @@
 #include "firmwares/rotorcraft/guidance.h"
 #include "firmwares/rotorcraft/navigation.h"
 #include "firmwares/rotorcraft/guidance/guidance_indi_hybrid.h"
+#include "firmwares/rotorcraft/guidance/guidance_h_ref.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
 #include "firmwares/rotorcraft/autopilot_utils.h"
 #include <string.h>
@@ -95,6 +96,11 @@
 // Time for forward transition
 #ifndef CMQ_TRANSITION_TIME
 #define CMQ_TRANSITION_TIME 6.f
+#endif
+
+ // Time for forward -> hover
+#ifndef CMQ_BACK_TRANSITION_TIME
+#define CMQ_BACK_TRANSITION_TIME 5.f  
 #endif
 
 // Transition airspeed, set a negative value to disable
@@ -143,6 +149,9 @@
 static float transition_ratio; // 0. for hover to 1. for forward flight
 static const float transition_increment = 1.f / (CMQ_TRANSITION_TIME * CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY); // Increment per periodic cycle
 static const float transition_completion_increment = (1.f - CMQ_TRANSITION_CUTOFF) / (CMQ_TRANSITION_COMPLETION_TIME * CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY);
+static const float back_transition_decrement = 1.f / (CMQ_BACK_TRANSITION_TIME * CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY); // Decrement per periodic cycle
+static bool  nav_back_transition = false;        // forward -> hover in progress
+static float back_transition_start_speed = 0.f;  // ground speed at back transition start
 static uint32_t transition_airspeed_cycles = 0;
 static bool transition_airspeed_reached = false; // Latched: the transition must complete
 float   quadplane_heading_sp = 0.f;           // heading setpoint [rad, NED]
@@ -262,18 +271,20 @@ static void transition_run(bool to_forward) {
     }
 
     if (transition_airspeed_reached) {
-      transition_ratio += Max(transition_increment, transition_completion_increment);
+      transition_ratio = Max(transition_ratio, CMQ_TRANSITION_CUTOFF);  //Go directly to the cutoff if the airspeed is reached
+      transition_ratio += Max(transition_increment, transition_completion_increment); // cutoff -> 1. for completion of the transition
     } else if (airspeed_valid &&
-               (airspeed >= CMQ_TRANSITION_AIRSPEED ||
-                transition_ratio + transition_increment < CMQ_TRANSITION_CUTOFF)) {
-      transition_ratio += transition_increment;
+                transition_ratio + transition_increment < CMQ_TRANSITION_CUTOFF) {
+      transition_ratio += transition_increment; // ramp, held below cutoff until airspeed is confirmed
     }
 
     if (transition_ratio >= TRANSITION_RATIO_COMPLETE) {
       transition_ratio = 1.f;
     }
   } else if (!to_forward && transition_ratio > 0.f) {
-    transition_ratio -= transition_increment;
+    transition_airspeed_reached = false;
+    transition_airspeed_cycles = 0;    
+    transition_ratio -= back_transition_decrement;
   }
   Bound(transition_ratio, 0.f, 1.f);
 }
@@ -535,6 +546,11 @@ void control_mixing_quadplane_nav_enter(void)
   nav_transition_cycles = 0;
   nav_transition_aborted = false;
   nav_previous_forward_request = false;
+  /* Entering NAV/HOME from forward flight: progressive back transition */
+  nav_back_transition = transition_ratio > 0.f;
+  back_transition_start_speed =
+      Max(stateGetHorizontalSpeedNorm_f(), GUIDANCE_H_REF_MAX_SPEED);
+
 }
 
 void control_mixing_quadplane_nav(void)
@@ -575,6 +591,18 @@ void control_mixing_quadplane_nav(void)
   if (!forward_request && nav_previous_forward_request) {
     nav.heading = stateGetNedToBodyEulers_f()->psi;
     guidance_h_set_heading(nav.heading);
+
+    /* Progressive back transition only if a forward transition was engaged */
+    if (transition_ratio > 0.f && !nav_transition_aborted) {
+      nav_back_transition = true;
+      back_transition_start_speed =
+          Max(stateGetHorizontalSpeedNorm_f(), GUIDANCE_H_REF_MAX_SPEED);
+    }    
+  }
+
+  /* New forward request, landing or motors off cancel the back transition */
+  if (forward_request || !in_flight || !motors_on) {
+    nav_back_transition = false;
   }
 
   /*
@@ -584,7 +612,17 @@ void control_mixing_quadplane_nav(void)
   if (!forward_request) {
     nav_transition_cycles = 0;
     nav_transition_aborted = false;
-    quadplane_force_hover();
+
+    /* Time based back transition instead of an immediate hover */
+    if (nav_back_transition) {
+      transition_run(TRANSITION_TO_HOVER);
+      if (transition_ratio <= 0.f) {
+        nav_back_transition = false;
+        quadplane_force_hover();
+      }
+    } else {
+      quadplane_force_hover();
+    }
     //We reset the YOLO heading for quad navigation
     nav.heading = stateGetNedToBodyEulers_f()->psi;
     guidance_h_set_heading(nav.heading);
@@ -618,17 +656,22 @@ void control_mixing_quadplane_nav(void)
   const bool transition_active =
       forward_request && !nav_transition_aborted;
 
+  const bool back_active = nav_back_transition; 
+
+  /* The plane configuration is kept during the whole back transition */
   const bool plane_mode =
-      transition_active &&
-      transition_ratio >= CMQ_TRANSITION_CUTOFF;
+      (transition_active && transition_ratio >= CMQ_TRANSITION_CUTOFF) ||
+      back_active;
+
 
   //Activation in plane mode of the heading following for hybrid quadplanes with no yaw control (e.g. Flying Wing or Tailsitter)    
   take_heading_control = !plane_mode;
   guidance_indi_heading_follow = plane_mode;
 
   // Set the low airspeed limits for nav in forward mode.
+  // No forward min airspeed during the back transition 
   guidance_set_min_max_airspeed(
-      plane_mode ? CMQ_FORWARD_MIN_AIRSPEED : -10.f,
+      (plane_mode && transition_active) ? CMQ_FORWARD_MIN_AIRSPEED : -10.f,
       gih_params.max_airspeed);
 
 
@@ -662,6 +705,16 @@ void control_mixing_quadplane_nav(void)
         plane_mode ? 0.f : push_ratio * CMQ_TRANSITION_PUSHER_CMD;
   }
 
+    /*  Back transition, smooth hover motor recovery over CMQ_BACK_TRANSITION_TIME */
+  if (back_active) {
+    quadplane_eff_forward_mode = false;
+    quadplane_eff_hover_thrust_factor = 1.f - transition_ratio;   // 0 -> 1
+    quadplane_eff_disable_pusher = true;
+    quadplane_eff_pusher_forced = false;
+    quadplane_eff_pusher_forced_cmd = 0.f;
+    quadplane_eff_disable_elevons = false;
+  }
+
   /*
    * Use the forward speed limit in forward configuration.
    * guidance_h_from_nav() handles explicit flight-plan speed limits.
@@ -669,11 +722,37 @@ void control_mixing_quadplane_nav(void)
   if (nav.fp_max_speed <= 0.f) {
     if (transition_active) {
       guidance_h_SetMaxSpeed(gih_params.max_airspeed);
+    } else if (back_active) {
+      /* max speed ramped down with the ratio, avoids a max braking step */
+      guidance_h_SetMaxSpeed(GUIDANCE_H_REF_MAX_SPEED +
+          transition_ratio * (back_transition_start_speed - GUIDANCE_H_REF_MAX_SPEED));  
     } else {
       guidance_h_SetMaxSpeed(GUIDANCE_H_REF_MAX_SPEED);
     }
   }
 
+    /*
+   * Forward flight: follow the nav speed directly (no REF_MAX_ACCEL limit, turns need V^2/R).
+   * Hover and back transition: smoothed reference, restarted from the current state.
+   */
+  static bool ref_was_off = false;
+  const bool ref_off = plane_mode && !back_active;
+  if (ref_off) {
+    guidance_h_SetUseRef(false);
+    ref_was_off = true;
+  } else {
+    if (ref_was_off) {
+      const struct NedCoor_i *pos_i = stateGetPositionNed_i();
+      const struct NedCoor_f *spd_f = stateGetSpeedNed_f();
+      struct Int32Vect2 ref_pos = { pos_i->x, pos_i->y };
+      struct FloatVect2 ref_speed = { spd_f->x, spd_f->y };
+      struct FloatVect2 ref_accel = { 0.f, 0.f };
+      gh_set_ref(ref_pos, ref_speed, ref_accel);
+      ref_was_off = false;
+    }
+    guidance_h_SetUseRef(true);
+  }
+  
   /* Prepare vertical references, then run hybrid guidance. */
   struct ThrustSetpoint nav_thrust = guidance_v_run(in_flight);
   struct StabilizationSetpoint attitude_sp =
@@ -741,7 +820,7 @@ void control_mixing_quadplane_nav(void)
 
   int32_t thrust[3] = { 0, 0, 0 };
 
-  if (!transition_active) {
+  if (!transition_active && !back_active) {
     /* Quad navigation, including transition abort. */
     thrust[THRUST_AXIS_Z] = (int32_t)hover_tz;
 
@@ -761,11 +840,16 @@ void control_mixing_quadplane_nav(void)
 
   } else {
     /* After cutoff: navigation controls attitude and forward thrust. */
-    thrust[THRUST_AXIS_X] = (int32_t)pusher_tx;
+    /* Pusher off during the back transition */
+    thrust[THRUST_AXIS_X] = back_active ? 0 : (int32_t)pusher_tx;
 
     if (quadplane_eff_forward_mode) {
       /* Transition complete: no vertical motor thrust requested. */
       thrust[THRUST_AXIS_Z] = 0;
+    } else if (back_active) {
+      /* Same ramp as the guidance factor, applied as a ceiling (no feedback on the incremental command) */
+      const float back_ceiling = quadplane_eff_hover_thrust_factor * (float)MAX_PPRZ;
+      thrust[THRUST_AXIS_Z] = (int32_t)Min(hover_tz, back_ceiling);      
     } else {
       thrust[THRUST_AXIS_Z] = (int32_t)(quadplane_eff_hover_thrust_factor * hover_tz);
     }
