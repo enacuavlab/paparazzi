@@ -97,8 +97,23 @@ struct SwarmFishNav {
   float course;       ///< target ground course [rad]
 };
 
+/**
+ * nav fish forces and output speed / acceleration
+ */
+struct SwarmFish {
+  struct FloatVect3 f_social;   ///< social interactions
+  struct FloatVect3 f_nav;      ///< navigation
+  struct FloatVect3 f_intruder; ///< intruder repulsion
+  struct FloatVect3 f_obstacle; ///< obstacle repulsion
+  struct FloatVect3 f_v_bound;  ///< vertical boundaries repulsion
+  struct FloatVect3 accel_cmd;  ///< total acceleration
+  struct NedCoor_f speed_sp;    ///< desired setpoint
+  float yaw_rate_sp;            ///< desired yaw rate
+};
+
 extern struct SwarmFishParams swarm_fish_params;
 extern struct SwarmFishNav swarm_fish_nav;
+extern struct SwarmFish swarm_fish;
 
 /**
  * nav fish init

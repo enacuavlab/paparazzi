@@ -237,26 +237,8 @@
 static const float nav_dt = 1.f / NAVIGATION_FREQUENCY;
 
 struct SwarmFishParams swarm_fish_params;
-// shortname to params
-#define sfp swarm_fish_params
-
 struct SwarmFishNav swarm_fish_nav;
-// shortname to nav params
-#define sfn swarm_fish_nav
-
-//state data
-struct SwarmFish {
-  struct FloatVect3 f_social;   ///< social interactions
-  struct FloatVect3 f_nav;      ///< navigation
-  struct FloatVect3 f_intruder; ///< intruder repulsion
-  struct FloatVect3 f_obstacle; ///< obstacle repulsion
-  struct FloatVect3 f_v_bound;  ///< vertical boundaries repulsion
-  struct FloatVect3 accel_cmd;  ///< total acceleration
-  struct NedCoor_f speed_sp;    ///< desired setpoint
-  float yaw_rate_sp;            ///< desired yaw rate
-};
-
-static struct SwarmFish swarm_fish;
+struct SwarmFish swarm_fish;
 
 /** initialization of parameters and state variables
 */
