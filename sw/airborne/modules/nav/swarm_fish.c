@@ -303,6 +303,21 @@ static inline void send_swarm_message(void)
   //    &swarm_fish.f_att);
 }
 
+static void send_draw_arena(uint8_t wp_id, float radius)
+{
+  uint8_t color = 0 << 6 | 5 << 3 | 0;  // Transparent, Magenta (line), Black
+  uint8_t shape = 0; // circle
+  uint8_t status = 0; // create
+  char text[] = " ";
+  int nb_text = 1;
+  uint8_t id = AC_ID;
+  int32_t lat = (int32_t)(waypoint_get_lat_deg(wp_id) * 1e7);
+  int32_t lon = (int32_t)(waypoint_get_lon_deg(wp_id) * 1e7);
+
+  DOWNLINK_SEND_DRAW(DefaultChannel, DefaultDevice, &id, &color, &shape,
+      &status, &radius, 1, &lat, 1, &lon, nb_text, text);
+}
+
 /** sign function
  *
  * @param number x
@@ -745,6 +760,9 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
 
   // compute final speed setpoint
   compute_speed_from_accel(swarm, vel, p, nav_dt);
+
+  // send arena draw message for display
+  RunOnceEvery(40, send_draw_arena(SWARM_FISH_ARENA_WP, p->arena_radius));
 }
 
 
