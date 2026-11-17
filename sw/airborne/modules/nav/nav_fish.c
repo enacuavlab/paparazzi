@@ -89,7 +89,7 @@
 #endif
 
 #ifndef SWARM_FISH_ARENA_RADIUS
-#define SWARM_FISH_ARENA_RADIUS 15.f
+#define SWARM_FISH_ARENA_RADIUS 50.f
 #endif
 
 #ifndef SWARM_FISH_USE_HEADING
@@ -473,7 +473,7 @@ static void compute_speed_from_accel(struct SwarmFish *swarm,
     const float speed_cmd = saturate(speed + speed_incr, speed_incr, p->min_speed, p->max_speed);
     swarm->speed_sp.x = speed_cmd * ch;
     swarm->speed_sp.y = speed_cmd * sh;
-    swarm->speed_sp.z = saturate(vel->z + vz_incr, vz_incr, p->min_alt, p->max_alt);
+    swarm->speed_sp.z = saturate(vel->z + vz_incr, vz_incr, p->min_vz, p->max_vz);
     swarm->yaw_rate_sp = saturate(yaw_incr, yaw_incr, -p->max_yaw, p->max_yaw);
   } else {
     const float a_x = ch * swarm->accel_cmd.x - sh * swarm->accel_cmd.y;

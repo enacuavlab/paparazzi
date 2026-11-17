@@ -7,7 +7,7 @@
     <waypoint name="HOME" x="0" y="0"/>
     <waypoint name="STDBY" x="-11.596" y="6.168"/>
     <waypoint name="TD" x="-5.782" y="2.583"/>
-    <waypoint name="ARENA" x="-10." y="0"/>
+    <waypoint name="ARENA" x="15.83" y="37.419"/>
     <waypoint name="p1" x="-35.971" y="34.283"/>
     <waypoint name="p2" x="-26.586" y="30.028"/>
     <waypoint name="p3" x="-17.077" y="24.965"/>
@@ -18,12 +18,12 @@
     <waypoint name="p8" x="28.28" y="4.954"/>
     <waypoint name="p9" x="36.67" y="1.319"/>
     <waypoint name="p10" x="46.128" y="-3.203"/>
-    <waypoint name="_FLY1" x="-20.813" y="102.774"/>
-    <waypoint name="_FLY2" x="78.797" y="60.272"/>
-    <waypoint name="_FLY3" x="48.515" y="-45.771"/>
-    <waypoint name="_FLY4" x="-57.668" y="5.369"/>
-    <waypoint name="_KILL1" x="-25.083" y="113.34"/>
-    <waypoint name="_KILL2" x="89.222" y="66.313"/>
+    <waypoint name="_FLY1" x="-21.681" y="119.645"/>
+    <waypoint name="_FLY2" x="86.611" y="76.278"/>
+    <waypoint name="_FLY3" x="51.988" y="-44.041"/>
+    <waypoint name="_FLY4" x="-60.49" y="5.585"/>
+    <waypoint name="_KILL1" x="-22.478" y="131.508"/>
+    <waypoint name="_KILL2" x="93.997" y="84.049"/>
     <waypoint name="_KILL3" x="52.903" y="-57.12"/>
     <waypoint name="_KILL4" x="-68.966" y="-3.388"/>
   </waypoints>
@@ -110,7 +110,7 @@
       <call fun="nav_fish_velocity_run()"/>
     </block-->
     <block group="fish" name="Nav Fish" strip_button="Fish">
-      <guided flags="GUIDED_FLAG_XY_VEL|GUIDED_FLAG_YAW_RATE|GUIDED_FLAG_Z_VEL" commands="swarm_fish.speed_sp.y, swarm_fish.speed_sp.x, -swarm_fish.speed_sp.z, swarm_fish.yaw_rate_sp" pre_call="swarm_fish_velocity_run()"/>
+      <guided flags="GUIDED_FLAG_XY_VEL|GUIDED_FLAG_YAW_RATE|GUIDED_FLAG_Z_VEL" commands="swarm_fish.speed_sp.y, swarm_fish.speed_sp.x, -swarm_fish.speed_sp.z, -swarm_fish.yaw_rate_sp" pre_call="swarm_fish_velocity_run()"/>
     </block>
     <block name="Land here" strip_button="Land Here" strip_icon="land-right.png">
       <call_once fun="NavSetWaypointHere(WP_TD)"/>
