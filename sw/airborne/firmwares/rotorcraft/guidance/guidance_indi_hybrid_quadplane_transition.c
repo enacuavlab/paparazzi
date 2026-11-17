@@ -1,0 +1,219 @@
+/*
+ * Copyright (C) 2015 Ewoud Smeur <ewoud.smeur@gmail.com>
+ *
+ * This file is part of paparazzi.
+ *
+ * paparazzi is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * paparazzi is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with paparazzi; see the file COPYING.  If not, write to
+ * the Free Software Foundation, 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ */
+
+/**
+ * @file firmwares/rotorcraft/guidance/guidance_indi_hybrid_quadplane_transition.c
+ *
+ */
+
+#include "firmwares/rotorcraft/guidance/guidance_indi_hybrid.h"
+#include "filters/low_pass_filter.h"
+#include "state.h"
+#include "autopilot.h"
+#include "generated/modules.h"
+#include "modules/ctrl/eff_scheduling_quadplane_indi_transition.h"
+
+#ifndef COMMAND_THRUST_X
+#error "Quadplanes require a forward thrust actuator"
+#endif
+
+#ifndef GUIDANCE_INDI_PUSHER_INDEX
+#error "You need to define GUIDANCE_INDI_PUSHER_INDEX"
+#endif
+
+#ifndef VEHICLE_ROTOR_K_T_PPRZ
+#error "VEHICLE_K_T_PPRZ [2x1 float] not defined in airframe file — {b [N/pprz], c [N/pprz^2]}"
+#endif
+#ifndef VEHICLE_ROTOR_ROT_X
+#error "VEHICLE_ROTOR_ROT_X not defined in airframe file"
+#endif
+#ifndef VEHICLE_ROTOR_ROT_Y
+#error "VEHICLE_ROTOR_ROT_Y not defined in airframe file"
+#endif
+#ifndef VEHICLE_ROTOR_ROT_Z
+#error "VEHICLE_ROTOR_ROT_Z not defined in airframe file"
+#endif
+
+#ifndef GUIDANCE_INDI_BODYZ_FILTER_CUTOFF
+#ifdef GUIDANCE_INDI_FILTER_CUTOFF
+#define GUIDANCE_INDI_BODYZ_FILTER_CUTOFF GUIDANCE_INDI_FILTER_CUTOFF
+#else
+#define GUIDANCE_INDI_BODYZ_FILTER_CUTOFF 3.0
+#endif
+#endif
+
+Butterworth2LowPass accel_bodyz_filt;
+
+/**
+ *
+ * Call upon entering indi guidance
+ */
+void guidance_indi_quadplane_init(void) {
+  float tau_bodyz = 1.0/(2.0*M_PI*GUIDANCE_INDI_BODYZ_FILTER_CUTOFF);
+  float sample_time = 1.0 / PERIODIC_FREQUENCY;
+  init_butterworth_2_low_pass(&accel_bodyz_filt, tau_bodyz, sample_time, -9.81);
+}
+
+/**
+ * Low pass the accelerometer measurements to remove noise from vibrations.
+ * The roll and pitch also need to be filtered to synchronize them with the
+ * acceleration
+ * Called as a periodic function with PERIODIC_FREQ
+ */
+void guidance_indi_quadplane_propagate_filters(void) {
+   // Propagate filter for thrust/lift estimate
+  float accelz = ACCEL_FLOAT_OF_BFP(stateGetAccelBody_i()->z);
+  update_butterworth_2_low_pass(&accel_bodyz_filt, accelz);
+}
+
+/**
+ * Perform WLS
+ *
+ * @param Gmat Dynamics matrix
+ * @param a_diff acceleration errors in earth frame
+ * @param body_v 3D vector to write the control objective v
+ */
+void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_HYBRID_U], struct FloatVect3 a_diff, float body_v[GUIDANCE_INDI_HYBRID_V]) {
+
+  struct FloatEulers eulers_filtered;
+  float_eulers_of_quat_zxy(&eulers_filtered, &quat_filt.quat);
+  /*Pre-calculate sines and cosines*/
+  float sphi = sinf(eulers_filtered.phi);
+  float cphi = cosf(eulers_filtered.phi);
+  float stheta = sinf(eulers_filtered.theta);
+  float ctheta = cosf(eulers_filtered.theta);
+  float spsi = sinf(eulers_filtered.psi);
+  float cpsi = cosf(eulers_filtered.psi);
+
+#ifndef GUIDANCE_INDI_PITCH_EFF_SCALING
+#define GUIDANCE_INDI_PITCH_EFF_SCALING 1.0
+#endif
+
+  /*Amount of lift produced by the wing*/
+  float lift_thrust_bz = accel_bodyz_filt.o[0]; // Sum of lift and thrust in boxy z axis (level flight)
+
+  // get the derivative of the lift wrt to theta
+  float airspeed_for_lift = quadplane_eff_sched_v.airspeed;
+  float liftd = guidance_indi_get_liftd(airspeed_for_lift, eulers_filtered.theta);
+
+  // ZXY Euler order
+  Gmat[0][0] =  0.0f;
+  Gmat[1][0] = -cphi*ctheta*lift_thrust_bz;
+  Gmat[2][0] = -ctheta*sphi*lift_thrust_bz;
+
+  Gmat[0][1] =  ctheta*lift_thrust_bz*GUIDANCE_INDI_PITCH_EFF_SCALING;
+  Gmat[1][1] =  sphi*stheta*lift_thrust_bz*GUIDANCE_INDI_PITCH_EFF_SCALING - sphi*liftd;
+  Gmat[2][1] = -cphi*stheta*lift_thrust_bz*GUIDANCE_INDI_PITCH_EFF_SCALING + cphi*liftd;
+
+  Gmat[0][2] =  stheta;
+  Gmat[1][2] = -sphi*ctheta;
+  Gmat[2][2] =  cphi*ctheta;
+
+  // Match the modeled vertical thrust authority to the mixer fade.
+  float hover_factor = quadplane_eff_hover_thrust_factor;
+  Bound(hover_factor, 0.f, 1.f);
+  Gmat[0][2] *= hover_factor;
+  Gmat[1][2] *= hover_factor;
+  Gmat[2][2] *= hover_factor;
+
+  Gmat[0][3] =  ctheta;
+  Gmat[1][3] =  sphi*stheta;
+  Gmat[2][3] = -cphi*stheta;
+  // Make this term zero to prevent switching 'exploits'
+  // Gmat[2][3] = 0;
+
+  // Convert acceleration error to body axis system
+  body_v[0] =  cpsi * a_diff.x + spsi * a_diff.y;
+  body_v[1] = -spsi * a_diff.x + cpsi * a_diff.y;
+  body_v[2] =  a_diff.z;
+}
+
+
+void WEAK guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angle, float pitch_angle)
+{
+  float max_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MAX_PITCH);
+  float min_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MIN_PITCH);
+
+  float pitch_pref_rad = RadOfDeg(guidance_indi_pitch_pref_deg);
+
+  /* guidance_indi_thrust_z_eff calculation wrt hoovering motor rotation */
+  const float rotor_rot_x[4] = VEHICLE_ROTOR_ROT_X;
+  const float rotor_rot_y[4] = VEHICLE_ROTOR_ROT_Y;
+  const float rotor_k_t_pprz[2] = VEHICLE_ROTOR_K_T_PPRZ;
+  const float b = rotor_k_t_pprz[0];
+  const float c = rotor_k_t_pprz[1];
+
+  /* Actual collective command, bounded in the domain of the T(u) law. */
+  float u_collective = (float)stabilization.cmd[COMMAND_THRUST];
+  Bound(u_collective, 0.f, (float)MAX_PPRZ);
+
+  /* dT/du if each motor, in N/PPRZ. */
+  const float rotor_dT_du = b + 2.f * c * u_collective;
+
+  /* Sum of the four vertical contributions. Negative value: Z body towards the bottom. */
+  float guidance_indi_thrust_z_eff = 0.f;
+  for (uint8_t i = 0; i < 4; i++) {
+    const float fz = -cosf(rotor_rot_y[i]) * cosf(rotor_rot_x[i]);
+    guidance_indi_thrust_z_eff += fz * rotor_dT_du;
+  }
+  guidance_indi_thrust_z_eff /= VEHICLE_MASS;
+
+
+
+  // Set lower limits
+  wls_guid_p.u_min[0] = -guidance_indi_max_bank - roll_angle; //roll
+  wls_guid_p.u_min[1] = min_pitch_limit_rad - pitch_angle; // pitch
+  wls_guid_p.u_min[2] = (MAX_PPRZ - stabilization.cmd[COMMAND_THRUST]) * guidance_indi_thrust_z_eff;
+  wls_guid_p.u_min[3] = -stabilization.cmd[COMMAND_THRUST_X]*g1g2[4][GUIDANCE_INDI_PUSHER_INDEX];
+
+  // Set upper limits limits
+  wls_guid_p.u_max[0] = guidance_indi_max_bank - roll_angle; //roll
+  wls_guid_p.u_max[1] = max_pitch_limit_rad - pitch_angle; // pitch
+  wls_guid_p.u_max[2] = -stabilization.cmd[COMMAND_THRUST] * guidance_indi_thrust_z_eff;
+  wls_guid_p.u_max[3] = (MAX_PPRZ - stabilization.cmd[COMMAND_THRUST_X])*g1g2[4][GUIDANCE_INDI_PUSHER_INDEX];
+
+  // Set prefered states
+  wls_guid_p.u_pref[0] = -roll_angle; // prefered delta roll angle
+  wls_guid_p.u_pref[1] = -pitch_angle + pitch_pref_rad;// prefered delta pitch angle
+  wls_guid_p.u_pref[2] =  wls_guid_p.u_max[2]; // Low thrust better for efficiency
+  wls_guid_p.u_pref[3] = body_v[0]; // solve the body acceleration
+
+  // Hover thrust is unavailable once forward mode is reached.
+  if (quadplane_eff_forward_mode) {
+    wls_guid_p.u_min[2] = 0.f;
+    wls_guid_p.u_max[2] = 0.f;
+    wls_guid_p.u_pref[2] = 0.f;
+  }
+
+  // The mixer owns the pusher command while it is disabled or forced.
+  if (quadplane_eff_disable_pusher || quadplane_eff_pusher_forced) {
+    wls_guid_p.u_min[3] = 0.f;
+    wls_guid_p.u_max[3] = 0.f;
+    wls_guid_p.u_pref[3] = 0.f;
+  }  
+}
+
+
+/** Quadplanes can still be in-flight with COMMAND_THRUST==0 and can even soar not descending in updrafts with all thrust off */
+bool autopilot_in_flight_end_detection(bool motors_on UNUSED) {
+  return ! motors_on;
+}
+

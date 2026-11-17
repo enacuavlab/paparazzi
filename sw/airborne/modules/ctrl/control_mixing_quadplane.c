@@ -100,7 +100,7 @@
 
  // Time for forward -> hover
 #ifndef CMQ_BACK_TRANSITION_TIME
-#define CMQ_BACK_TRANSITION_TIME 5.f  
+#define CMQ_BACK_TRANSITION_TIME 2.f  
 #endif
 
 // Transition airspeed, set a negative value to disable
@@ -752,7 +752,7 @@ void control_mixing_quadplane_nav(void)
     }
     guidance_h_SetUseRef(true);
   }
-  
+
   /* Prepare vertical references, then run hybrid guidance. */
   struct ThrustSetpoint nav_thrust = guidance_v_run(in_flight);
   struct StabilizationSetpoint attitude_sp =

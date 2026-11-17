@@ -1,0 +1,79 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="eff_scheduling_quadplane_indi_transition" dir="ctrl">
+  <doc>
+    <description>
+      Interpolation of control effectivenss matrix of a quadplane (4 motors + 2 elevons + 1 pusher)
+    </description>
+
+    <section name="VEHICLE_PROPERTIES" prefix="VEHICLE_">
+
+      <!-- 4 Hoovering motors -->
+      <define name="RX"                 value="{0,0,0,0}"       description="Rotor x positions [m], order: FR, RR, RL, FL"/>
+      <define name="RY"                 value="{0,0,0,0}"       description="Rotor y positions [m], order: FR, RR, RL, FL"/>
+      <define name="RZ"                 value="{0,0,0,0}"       description="Rotor z positions [m], order: FR, RR, RL, FL"/>
+      <define name="SPIN_DIR"           value="{-1.0,1.0,-1.0,1.0}" description="Motors spin direction (+1 for CW. -1 for CCW)"/>
+      <define name="ROTOR_K_T_PPRZ"     value="{1.22e-4,4.08e-8}" description="Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]}"/>
+      <define name="KAPPA"              value="0"               description="Drag-torque to thrust ratio (kappa = k_m/k_t) [m]"/>
+      <define name="MOTOR_HOVER"        value="4640"            description="Hover motor command"/>
+      <define name="MOTOR_IDLE"         value="0"               description="Idle motor command"/>
+      <define name="ROTOR_ROT_X"        value="{RadOfDeg(20.f), RadOfDeg(20.f), RadOfDeg(-20.f), RadOfDeg(-20.f)}" description="Rotations on motors X axis FR BR BL FL"/> 
+      <define name="ROTOR_ROT_Y"        value="{0.f, 0.f, 0.f, 0.f}" description="Rotations on motors Y axis FR BR BL FL"/>
+      <define name="ROTOR_ROT_Z"        value="{0.f, 0.f, 0.f, 0.f}" description="Rotations on motors Z axis FR BR BL FL"/>
+
+      <!-- Wing -->
+      <define name="K_LIFT"             value="0"               description="Wing lift derivative: dL/d(alpha) = k_lift * V^2 [N/rad]"/>
+      <define name="V_WING"             value="10.0"            description="Airspeed at which wing lift derivative is applied [m/s]"/>
+
+      <!-- Elevons -->
+      <define name="K_ELEVON_DEFLECT"   value="0"               description="delta = k*pprz [rad/pprz], = delta_max / MAX_PPRZ"/>
+      <define name="K_ELEVON_ROLL"      value="0"               description="dMx/ddelta = k_roll * V^2 [N.m/rad per (m/s)^2]"/>
+      <define name="K_ELEVON_PITCH"     value="0"               description="dMy/ddelta = k_pitch * V^2 [N.m/rad per (m/s)^2]"/>
+      <define name="K_ELEVON_PROPWASH"  value="0.0"             description="dMy/ddelta += k_propwash * T_x * V (default 0)"/>
+      <define name="K_ELEVON_DIFF_DRAG_YAW" value="0.0"         description="dMz/ddelta = +/- k_yaw * V^2 * delta [N.m/rad]; + for right elevon"/>
+      <define name="K_ELEVON_V_FULL"    value="0.0"             description="Elevons travel opening with dynamic pressure"/>
+      <define name="ELEVON_RATE"        value="0.0"             description="Elevon rate"/>
+
+      <!-- Pusher -->
+      <define name="PUSHER_RY"          value="0"               description="Lateral Offset from CG (positive = right)"/>
+      <define name="PUSHER_RZ"          value="0"               description="Vertical Offset from CG (positive = down)"/>
+      <define name="PUSHER_SPIN_DIR"    value="0"               description="Pusher spin direction (+1 for CW. -1 for CCW)"/>
+      <define name="PUSHER_K_T_PPRZ"    value="{1.22e-4,4.08e-8}" description="Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]}"/>
+
+      <!-- MOTORS -->
+      <define name="MOTOR_HOVER"              value="0"               description="Motor command in hover [pprz]"/>
+      <define name="MOTOR_IDLE"               value="0"               description="Motor command in idle [pprz]"/>
+    </section>
+
+  </doc>
+
+  <settings>
+    <dl_settings>
+      <dl_settings name="eff_sched_quadplane">
+        <dl_setting var="quadplane_eff_sched_p.mass"   min="0.1"    step="0.01"   max="20"   shortname="mass"/>
+        <dl_setting var="quadplane_eff_sched_p.Ixx"    min="0.0001" step="0.0001" max="1.0"  shortname="Ixx"/>
+        <dl_setting var="quadplane_eff_sched_p.Iyy"    min="0.0001" step="0.0001" max="1.0"  shortname="Iyy"/>
+        <dl_setting var="quadplane_eff_sched_p.Izz"    min="0.0001" step="0.0001" max="1.0"  shortname="Izz"/>
+        <dl_setting var="quadplane_eff_sched_p.kappa"  min="0.0001" step="0.001"  max="1.0"  shortname="kappa"/>
+        <dl_setting var="quadplane_eff_sched_p.v_wing" min="0"      step="0.1"    max="30.0" shortname="v_wing"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+
+  <dep>
+    <conflicts>eff_scheduling_quadplane</conflicts>
+  </dep>
+
+  <header>
+    <file name="eff_scheduling_quadplane_indi_transition.h"/>
+  </header>
+
+  <init fun="eff_scheduling_quadplane_init()"/>
+  <periodic fun="eff_scheduling_quadplane_periodic()" freq="500.0"/>
+  <periodic fun="eff_scheduling_quadplane_report()" freq="0.5" autorun="TRUE"/> <!-- TRUE  FALSE-->
+
+  <makefile target="ap|nps" firmware="rotorcraft">
+
+
+    <file name="eff_scheduling_quadplane_indi_transition.c"/>
+  </makefile>
+</module>

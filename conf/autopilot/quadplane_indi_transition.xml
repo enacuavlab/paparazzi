@@ -1,14 +1,14 @@
 <!DOCTYPE autopilot SYSTEM "autopilot.dtd">
 
-<autopilot name="Quadplane VTOL">
+<autopilot name="Quadplane VTOL INDI transition">
 
   <state_machine name="ap" freq="PERIODIC_FREQUENCY" gcs_mode="true" settings_mode="true" settings_handler="autopilot_generated|SetModeHandler">
 
     <modules>
       <module name="nav" type="rotorcraft"/>
-      <module name="control_mixing" type="quadplane"/>
+      <module name="control_mixing" type="quadplane_indi_transition"/>
       <module name="stabilization" type="indi"/>
-      <module name="guidance" type="indi_hybrid_quadplane"/>
+      <module name="guidance" type="indi_hybrid_quadplane_transition"/>
     </modules>
 
     <includes>
