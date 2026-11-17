@@ -331,9 +331,16 @@
   <section name="HYBRID_TRANSITION">
 	<define name="CMQ_GROUND_ELEVON_TEST" value="FALSE"/> <!-- Use for Elevon test on ground, turn off motors and allow only elevon to move. Go in forward to use it -->
     <define name="CMQ_TRANSITION_AIRSPEED" value="13."/> <!-- Transition speed in m/s when we cut the 4 motors to go in plane mode -->
-    <define name="CMQ_FORWARD_MIN_AIRSPEED" value="14."/> <!-- Minimum flying speed in navigation plane mode -->
+    <define name="CMQ_FORWARD_MIN_AIRSPEED" value="15."/> <!-- Minimum flying speed in navigation plane mode -->
     <define name="CMQ_TRANSITION_TIME" value="8."/> <!-- Transition time -->
-    <define name="CMQ_TRANSITION_PITCH" value="-0.09"/> <!-- Pitch angle to go forward during transition in radians 0.09 ==> 5 degrees-->
+	<define name="CMQ_ROTOR_FULL_AIRSPEED" value="8."/>   <!-- rotors full authority below -->
+	<define name="CMQ_ROTOR_OFF_AIRSPEED"  value="13."/>  <!-- rotors may stop above -->
+	<define name="CMQ_ROTOR_AUTH_DOWN_TIME" value="2."/>  <!-- s, 1->0 -->
+	<define name="CMQ_ROTOR_AUTH_UP_TIME"   value="0.3"/> <!-- s, 0->1 (fast recovery) -->
+	<define name="CMQ_ROTOR_WU_GAIN"        value="20."/>
+	<define name="CMQ_PLANE_MODE_AIRSPEED"  value="12."/>
+	<define name="CMQ_PLANE_MODE_HYST"      value="2."/>
+	<define name="CMQ_BACK_TRANSITION_TIME" value="5."/>
   </section>  
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_"> 
@@ -356,6 +363,11 @@
     <define name="PUSHER_INDEX" value="6"/> <!-- Pusher column index in G1G2 matrix -->
     <define name="MAX_AIRSPEED" value="25"/> <!-- m/s - Maximum airspeed command used by the guidance controller to limit forward-flight speed requests. -->
     <define name="HEADING_BANK_GAIN" value="5.0"/> <!-- 1.0 Gain converting heading error into a lateral acceleration demand for coordinated turns. -->
+	<define name="MIN_PITCH" value="-20"/>
+	<define name="MAX_PITCH" value="20"/>
+	<define name="PITCH_PREF_CRUISE_DEG" value="0."/>
+	<define name="THRUST_WU_GAIN" value="10."/>
+	<define name="PITCH_HOVER_WU" value="10."/>
   </section>
 
   <section name="NAV">

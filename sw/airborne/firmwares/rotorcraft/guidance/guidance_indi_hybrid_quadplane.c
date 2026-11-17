@@ -60,6 +60,37 @@
 #endif
 #endif
 
+// preferred pitch when wing-borne [deg]
+#ifndef GUIDANCE_INDI_PITCH_PREF_CRUISE_DEG
+#define GUIDANCE_INDI_PITCH_PREF_CRUISE_DEG 0.f   
+#endif
+// extra WLS weight on hover thrust when wing-borne
+#ifndef GUIDANCE_INDI_THRUST_WU_GAIN
+#define GUIDANCE_INDI_THRUST_WU_GAIN 10.f         
+#endif
+// extra WLS weight on pitch in hover (pusher does the x translation)
+#ifndef GUIDANCE_INDI_PITCH_HOVER_WU
+#define GUIDANCE_INDI_PITCH_HOVER_WU 10.f   
+#endif
+/* Same thresholds and names as the default rotorcraft detection (autopilot_firmware.c),
+ * so that an airframe setting applies to both */
+#ifndef AUTOPILOT_IN_FLIGHT_TIME
+#define AUTOPILOT_IN_FLIGHT_TIME 20
+#endif
+#ifndef AUTOPILOT_IN_FLIGHT_MIN_SPEED
+#define AUTOPILOT_IN_FLIGHT_MIN_SPEED 0.2
+#endif
+#ifndef AUTOPILOT_IN_FLIGHT_MIN_ACCEL
+#define AUTOPILOT_IN_FLIGHT_MIN_ACCEL 2.0
+#endif
+#ifndef AUTOPILOT_IN_FLIGHT_MIN_THRUST
+#define AUTOPILOT_IN_FLIGHT_MIN_THRUST 500
+#endif
+/* Quadplane guard: a wing-borne flight (hover rotors off) always has some ground speed */
+#ifndef CMQ_LANDED_MAX_GROUNDSPEED
+#define CMQ_LANDED_MAX_GROUNDSPEED 1.f
+#endif
+
 Butterworth2LowPass accel_bodyz_filt;
 
 /**
@@ -127,16 +158,11 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
   Gmat[1][2] = -sphi*ctheta;
   Gmat[2][2] =  cphi*ctheta;
 
-  // Match the modeled vertical thrust authority to the mixer fade.
-  float hover_factor = quadplane_eff_hover_thrust_factor;
-  Bound(hover_factor, 0.f, 1.f);
-  Gmat[0][2] *= hover_factor;
-  Gmat[1][2] *= hover_factor;
-  Gmat[2][2] *= hover_factor;
-
   Gmat[0][3] =  ctheta;
   Gmat[1][3] =  sphi*stheta;
   Gmat[2][3] = -cphi*stheta;
+  /* Pusher lift only counted when wing-borne: removes the hover null-space drift */
+  Gmat[2][3] *= (1.f - quadplane_eff_rotor_authority);
   // Make this term zero to prevent switching 'exploits'
   // Gmat[2][3] = 0;
 
@@ -149,71 +175,94 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
 
 void WEAK guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angle, float pitch_angle)
 {
-  float max_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MAX_PITCH);
-  float min_pitch_limit_rad = RadOfDeg(GUIDANCE_INDI_MIN_PITCH);
+  /* Hover rotor authority from eff_scheduling: 1 = quad, 0 = wing-borne */
+  const float a = quadplane_eff_rotor_authority;
 
-  float pitch_pref_rad = RadOfDeg(guidance_indi_pitch_pref_deg);
+  /* ---------- Pitch preference, scheduled from hover to cruise ---------- */
+  const float pitch_pref_rad = a * RadOfDeg(guidance_indi_pitch_pref_deg)
+                             + (1.f - a) * RadOfDeg(GUIDANCE_INDI_PITCH_PREF_CRUISE_DEG);
 
-  /* guidance_indi_thrust_z_eff calculation wrt hoovering motor rotation */
+  /* ---------- Collective thrust effectiveness (unchanged physics) ---------- */
   const float rotor_rot_x[4] = VEHICLE_ROTOR_ROT_X;
   const float rotor_rot_y[4] = VEHICLE_ROTOR_ROT_Y;
   const float rotor_k_t_pprz[2] = VEHICLE_ROTOR_K_T_PPRZ;
-  const float b = rotor_k_t_pprz[0];
-  const float c = rotor_k_t_pprz[1];
-
-  /* Actual collective command, bounded in the domain of the T(u) law. */
-  float u_collective = (float)stabilization.cmd[COMMAND_THRUST];
-  Bound(u_collective, 0.f, (float)MAX_PPRZ);
-
-  /* dT/du if each motor, in N/PPRZ. */
-  const float rotor_dT_du = b + 2.f * c * u_collective;
-
-  /* Sum of the four vertical contributions. Negative value: Z body towards the bottom. */
-  float guidance_indi_thrust_z_eff = 0.f;
+  float u_col = (float)stabilization.cmd[COMMAND_THRUST];   /* mean of Z thrusters */
+  Bound(u_col, 0.f, (float)MAX_PPRZ);
+  const float rotor_dT_du = rotor_k_t_pprz[0] + 2.f * rotor_k_t_pprz[1] * u_col;
+  float thrust_z_eff = 0.f;                                  /* [m/s^2 per pprz], negative */
   for (uint8_t i = 0; i < 4; i++) {
-    const float fz = -cosf(rotor_rot_y[i]) * cosf(rotor_rot_x[i]);
-    guidance_indi_thrust_z_eff += fz * rotor_dT_du;
+    thrust_z_eff += -cosf(rotor_rot_y[i]) * cosf(rotor_rot_x[i]) * rotor_dT_du;
   }
-  guidance_indi_thrust_z_eff /= VEHICLE_MASS;
+  thrust_z_eff /= VEHICLE_MASS;
 
+  /* Same rotor range as the inner WLS (stabilization_indi_set_wls_settings) */
+  const float u_top = (a > 0.f) ? VEHICLE_MOTOR_IDLE + a * (MAX_PPRZ - VEHICLE_MOTOR_IDLE) : 0.f;
+  const float u_bot = (a > 0.f) ? VEHICLE_MOTOR_IDLE : 0.f;
 
+  /* ---------- Roll ---------- */
+  wls_guid_p.u_min[0]  = -guidance_indi_max_bank - roll_angle;
+  wls_guid_p.u_max[0]  =  guidance_indi_max_bank - roll_angle;
+  wls_guid_p.u_pref[0] = -roll_angle;
 
-  // Set lower limits
-  wls_guid_p.u_min[0] = -guidance_indi_max_bank - roll_angle; //roll
-  wls_guid_p.u_min[1] = min_pitch_limit_rad - pitch_angle; // pitch
-  wls_guid_p.u_min[2] = (MAX_PPRZ - stabilization.cmd[COMMAND_THRUST]) * guidance_indi_thrust_z_eff;
-  wls_guid_p.u_min[3] = -stabilization.cmd[COMMAND_THRUST_X]*g1g2[4][GUIDANCE_INDI_PUSHER_INDEX];
+  /* ---------- Pitch: kept level in hover, free when wing-borne ---------- */
+  wls_guid_p.u_min[1]  = RadOfDeg(GUIDANCE_INDI_MIN_PITCH) - pitch_angle;
+  wls_guid_p.u_max[1]  = RadOfDeg(GUIDANCE_INDI_MAX_PITCH) - pitch_angle;
+  wls_guid_p.u_pref[1] = pitch_pref_rad - pitch_angle;
+  wls_guid_p.Wu[1]     = 1.f + a * GUIDANCE_INDI_PITCH_HOVER_WU;
 
-  // Set upper limits limits
-  wls_guid_p.u_max[0] = guidance_indi_max_bank - roll_angle; //roll
-  wls_guid_p.u_max[1] = max_pitch_limit_rad - pitch_angle; // pitch
-  wls_guid_p.u_max[2] = -stabilization.cmd[COMMAND_THRUST] * guidance_indi_thrust_z_eff;
-  wls_guid_p.u_max[3] = (MAX_PPRZ - stabilization.cmd[COMMAND_THRUST_X])*g1g2[4][GUIDANCE_INDI_PUSHER_INDEX];
+  /* ---------- Hover thrust (body z): bounded by rotor authority ---------- */
+  wls_guid_p.u_min[2]  = (u_top - u_col) * thrust_z_eff;   /* more upward thrust */
+  wls_guid_p.u_max[2]  = (u_bot - u_col) * thrust_z_eff;   /* less upward thrust */
+  wls_guid_p.u_pref[2] = (1.f - a) * wls_guid_p.u_max[2]; //wls_guid_p.u_max[2];              /* low thrust preferred */
+  wls_guid_p.Wu[2]     = 1.f + (1.f - a) * GUIDANCE_INDI_THRUST_WU_GAIN;
 
-  // Set prefered states
-  wls_guid_p.u_pref[0] = -roll_angle; // prefered delta roll angle
-  wls_guid_p.u_pref[1] = -pitch_angle + pitch_pref_rad;// prefered delta pitch angle
-  wls_guid_p.u_pref[2] =  wls_guid_p.u_max[2]; // Low thrust better for efficiency
-  wls_guid_p.u_pref[3] = body_v[0]; // solve the body acceleration
-
-  // Hover thrust is unavailable once forward mode is reached.
-  if (quadplane_eff_forward_mode) {
-    wls_guid_p.u_min[2] = 0.f;
-    wls_guid_p.u_max[2] = 0.f;
-    wls_guid_p.u_pref[2] = 0.f;
-  }
-
-  // The mixer owns the pusher command while it is disabled or forced.
+  /* ---------- Pusher: main x actuator in every flight phase ---------- */
+  const float pusher_eff = g1g2[4][GUIDANCE_INDI_PUSHER_INDEX];
+  float u_x = actuator_state_filt_vect[QUADPLANE_ACT_PUSHER];
+  Bound(u_x, 0.f, (float)MAX_PPRZ);
   if (quadplane_eff_disable_pusher || quadplane_eff_pusher_forced) {
-    wls_guid_p.u_min[3] = 0.f;
-    wls_guid_p.u_max[3] = 0.f;
+    /* Ground, or pusher owned by the mixer (manual FWD / legacy transition) */
+    wls_guid_p.u_min[3]  = 0.f;
+    wls_guid_p.u_max[3]  = 0.f;
     wls_guid_p.u_pref[3] = 0.f;
-  }  
+  } else {
+    wls_guid_p.u_min[3]  = -u_x * pusher_eff;
+    wls_guid_p.u_max[3]  = ((float)MAX_PPRZ - u_x) * pusher_eff;
+    /* Pusher takes the whole x acceleration demand, within its range */
+    float pref_x = body_v[0];
+    Bound(pref_x, wls_guid_p.u_min[3], wls_guid_p.u_max[3]);
+    wls_guid_p.u_pref[3] = pref_x;
+  }
+  wls_guid_p.Wu[3] = 1.f;
 }
 
 
-/** Quadplanes can still be in-flight with COMMAND_THRUST==0 and can even soar not descending in updrafts with all thrust off */
-bool autopilot_in_flight_end_detection(bool motors_on UNUSED) {
-  return ! motors_on;
-}
 
+/**
+ * Landing detection, same rule as the default rotorcraft one (low hover thrust,
+ * no vertical speed, no vertical acceleration during AUTOPILOT_IN_FLIGHT_TIME calls),
+ * plus a ground speed guard: in cruise the hover thrust is zero but the aircraft moves.
+ */
+bool autopilot_in_flight_end_detection(bool motors_on)
+{
+  static uint32_t landed_counter = 0;
+
+  if (!motors_on) {
+    landed_counter = 0;
+    return true;
+  }
+
+  if ((stabilization.cmd[COMMAND_THRUST] <= AUTOPILOT_IN_FLIGHT_MIN_THRUST) &&
+      (fabsf(stateGetSpeedNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_SPEED) &&
+      (fabsf(stateGetAccelNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_ACCEL) &&
+      (stateGetHorizontalSpeedNorm_f() < CMQ_LANDED_MAX_GROUNDSPEED)) {
+    landed_counter++;
+    if (landed_counter >= AUTOPILOT_IN_FLIGHT_TIME) {
+      landed_counter = 0;
+      return true;
+    }
+  } else {
+    landed_counter = 0;
+  }
+  return false;
+}

@@ -145,8 +145,32 @@
 #endif
 /* Airspeed range for elevon testing */
 #ifndef CMQ_ELEVON_TEST_AIRSPEED_MIN
-#define CMQ_ELEVON_TEST_AIRSPEED_MIN CMQ_TRANSITION_AIRSPEED
+#define CMQ_ELEVON_TEST_AIRSPEED_MIN CMQ_ROTOR_OFF_AIRSPEED
 #endif
+// rotors full authority below [m/s]
+#ifndef CMQ_ROTOR_FULL_AIRSPEED
+#define CMQ_ROTOR_FULL_AIRSPEED 8.f    
+#endif
+// rotors may stop above [m/s]
+#ifndef CMQ_ROTOR_OFF_AIRSPEED
+#define CMQ_ROTOR_OFF_AIRSPEED 13.f    
+#endif
+_Static_assert(CMQ_ROTOR_OFF_AIRSPEED > CMQ_ROTOR_FULL_AIRSPEED,
+               "CMQ_ROTOR_OFF_AIRSPEED must be greater than CMQ_ROTOR_FULL_AIRSPEED");
+// [s] authority 1 -> 0
+#ifndef CMQ_ROTOR_AUTH_DOWN_TIME
+#define CMQ_ROTOR_AUTH_DOWN_TIME 2.f   
+#endif
+// [s] authority 0 -> 1
+#ifndef CMQ_ROTOR_AUTH_UP_TIME
+#define CMQ_ROTOR_AUTH_UP_TIME 0.3f    
+#endif
+// extra WLS weight on rotors when wing-borne
+#ifndef CMQ_ROTOR_WU_GAIN
+#define CMQ_ROTOR_WU_GAIN 20.f         
+#endif
+
+
 
 struct quadplane_eff_sched_param_t quadplane_eff_sched_p = {
   .Ixx = VEHICLE_IXX,
@@ -194,9 +218,11 @@ float quadplane_eff_periodic_freq = EFF_SCHEDULING_QUADPLANE_PERIODIC_FREQ;   //
 struct quadplane_eff_sched_var_t quadplane_eff_sched_v;
 struct MedianFilterInt airspeed_quadplane_sched_fltr;
 float quadplane_eff_hover_thrust_factor = 1.f; // 1.f: full hover thrust authority; 0.f: hover thrust disabled
+float quadplane_eff_rotor_authority = 1.f; //Hover rotor authority: 1 = full (hover), 0 = rotors may stop (wing-borne)
 
 static inline void quadplane_update_cmd_cache(void);
 static inline void quadplane_update_airspeed_cache(void);
+static inline void quadplane_update_rotor_authority(void);
 static inline void quadplane_update_thrust_model(void);
 static inline void quadplane_update_motor_effectiveness(void);
 static inline void quadplane_update_elevon_effectiveness(void);
@@ -243,6 +269,7 @@ void eff_scheduling_quadplane_periodic(void)
 {
   quadplane_update_cmd_cache();
   quadplane_update_airspeed_cache();
+  quadplane_update_rotor_authority();
   quadplane_update_thrust_model();
 
   quadplane_update_motor_effectiveness();
@@ -297,6 +324,27 @@ static inline void quadplane_update_airspeed_cache(void)
 
   quadplane_eff_sched_v.airspeed = u;
   quadplane_eff_sched_v.airspeed_sq = u * u;
+}
+
+/* 
+* Compute hover-rotor authority (1 = full quad, 0 = rotors may stop) from airspeed, 
+* rate-limited: slow decrease (CMQ_ROTOR_AUTH_DOWN_TIME), fast recovery (CMQ_ROTOR_AUTH_UP_TIME); 
+* defaults to 1 if airspeed is invalid. 
+*/
+static inline void quadplane_update_rotor_authority(void)
+{
+  float a = 1.f;
+  if (stateIsAirspeedValid()) {
+    const float v = quadplane_eff_sched_v.airspeed;
+    a = (CMQ_ROTOR_OFF_AIRSPEED - v) / (CMQ_ROTOR_OFF_AIRSPEED - CMQ_ROTOR_FULL_AIRSPEED);
+    Bound(a, 0.f, 1.f);
+  }
+  /* Rate limit: authority can drop slowly, but is restored fast */
+  const float dn = 1.f / (CMQ_ROTOR_AUTH_DOWN_TIME * quadplane_eff_periodic_freq);
+  const float up = 1.f / (CMQ_ROTOR_AUTH_UP_TIME   * quadplane_eff_periodic_freq);
+  static float a_f = 1.f;
+  a_f += Clip(a - a_f, -dn, up);
+  quadplane_eff_rotor_authority = a_f;
 }
 
 /* Quadratic thrust model:
@@ -502,25 +550,25 @@ void stabilization_indi_set_wls_settings(void)
   }
 #endif
 
- /* for (uint8_t i = 0; i < INDI_NUM_ACT; i++) {
-    wls_stab_p.u_min[i] = act_is_servo[i] ? -MAX_PPRZ : VEHICLE_MOTOR_IDLE;
-    wls_stab_p.u_max[i]  =  MAX_PPRZ;
-    wls_stab_p.u_pref[i] =  act_pref[i];
-  }*/
-
-  // 4 hoovering motors turns off in forward mode
-  if (quadplane_eff_forward_mode) {
+  /*
+   * Hover rotors: continuous authority from airspeed (quadplane_eff_rotor_authority)
+   *  a = 1 : full range, normal weight (quad)
+   *  a = 0 : rotors may stop, strongly penalised (wing-borne)
+   * Ground elevon test: rotors forbidden so that the allocation uses the elevons only.
+   */
+  if (quadplane_eff_ground_test) {
     for (uint8_t i = 0; i < 4; i++) {
       wls_stab_p.u_min[i]  = 0.f;
       wls_stab_p.u_max[i]  = 0.f;
       wls_stab_p.u_pref[i] = 0.f;
     }
-  }  else {
-    // 4 hoovering motors 
+  } else {
+    const float a = quadplane_eff_rotor_authority;
     for (uint8_t i = 0; i < 4; i++) {
-      wls_stab_p.u_min[i] = VEHICLE_MOTOR_IDLE;
-      wls_stab_p.u_max[i] = MAX_PPRZ;
-      wls_stab_p.u_pref[i] = act_pref[i];
+      wls_stab_p.u_min[i]  = (a > 0.f) ? VEHICLE_MOTOR_IDLE : 0.f;
+      wls_stab_p.u_max[i]  = (a > 0.f) ? VEHICLE_MOTOR_IDLE + a * (MAX_PPRZ - VEHICLE_MOTOR_IDLE) : 0.f;
+      wls_stab_p.u_pref[i] = a * act_pref[i];
+      wls_stab_p.Wu[i]     = 1.f + (1.f - a) * CMQ_ROTOR_WU_GAIN;
     }
   }
 

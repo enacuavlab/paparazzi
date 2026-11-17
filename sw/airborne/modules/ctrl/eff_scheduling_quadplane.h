@@ -107,6 +107,7 @@ extern bool  quadplane_eff_forward_mode; //Flag if quadplane is in forward mode 
 extern bool quadplane_eff_ground_test;
 extern bool quadplane_eff_disable_elevons; //Disable elevon in hovering phase
 extern float quadplane_eff_hover_thrust_factor; // 1.f: full hover thrust authority; 0.f: hover thrust disabled
+extern float quadplane_eff_rotor_authority; // Hover rotor authority: 1 = full (hover), 0 = rotors may stop (wing-borne)
 
 void eff_scheduling_quadplane_init(void);
 void eff_scheduling_quadplane_periodic(void);
