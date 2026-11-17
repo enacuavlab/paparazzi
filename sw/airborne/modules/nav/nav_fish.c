@@ -41,8 +41,6 @@
 #include "autopilot.h"
 #include "autopilot_guided.h"
 #include "modules/nav/waypoints.h"
-#include "math/pprz_algebra_float.h"
-#include "math/pprz_geodetic_float.h"
 #include "generated/flight_plan.h"
 #include "modules/datalink/telemetry.h"
 
