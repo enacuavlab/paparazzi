@@ -42,7 +42,7 @@
     </sector>
   </sectors>
   <modules>
-    <module name="nav_fish"/>
+    <module name="swarm_fish"/>
   </modules>
   <exceptions>
     <exception cond="(!InsideFlight_Area(GetPosX(), GetPosY()) @OR (GetPosAlt() @GT GetAltRef() + 50)) @AND (nav_block @GEQ IndexOfBlock('Takeoff')) @AND (nav_block @LT IndexOfBlock('Flare'))" deroute="Standby"/>

@@ -19,7 +19,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-/** @file "modules/nav/nav_fish.c"
+/** @file "modules/nav/swarm_fish.c"
  * @author Adjiri Adam <adam.adjiri@etu.isae-ensma.fr>
  * Bio-inspired swarm navigation
  *
@@ -33,7 +33,7 @@
  * https://doi.org/10.1371/journal.pcbi.1005933
  */
 
-#include "modules/nav/nav_fish.h"
+#include "modules/nav/swarm_fish.h"
 #include "modules/multi/traffic_info.h"
 #include "firmwares/rotorcraft/navigation.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
