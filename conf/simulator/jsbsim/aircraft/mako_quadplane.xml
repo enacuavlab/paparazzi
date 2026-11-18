@@ -36,9 +36,9 @@
     </location>
   </metrics>
   <mass_balance>
-    <ixx unit="KG*M2">.007445</ixx>
-    <iyy unit="KG*M2">.006033</iyy>
-    <izz unit="KG*M2">.012950</izz>
+    <ixx unit="KG*M2">.0477</ixx>
+    <iyy unit="KG*M2">.0387</iyy>
+    <izz unit="KG*M2">.0830</izz>
     <ixy unit="KG*M2"> 0. </ixy>
     <ixz unit="KG*M2"> 0. </ixz>
     <iyz unit="KG*M2"> 0. </iyz>
@@ -231,12 +231,12 @@
         <sum>
           <product>
             <property>fcs/motor_front_right_lag</property>
-            <value>1.01434</value>
+            <value>0.7810</value>
           </product>
           <product>
             <property>fcs/motor_front_right_lag</property>
             <property>fcs/motor_front_right_lag</property>
-            <value>6.00834</value>
+            <value>4.6264</value>
           </product>
         </sum>
       </function>
@@ -256,12 +256,12 @@
         <sum>
           <product>
             <property>fcs/motor_front_left_lag</property>
-            <value>1.01434</value>
+            <value>0.7810</value>
           </product>
           <product>
             <property>fcs/motor_front_left_lag</property>
             <property>fcs/motor_front_left_lag</property>
-            <value>6.00834</value>
+            <value>4.6264</value>
           </product>
         </sum>
       </function>
@@ -281,12 +281,12 @@
         <sum>
           <product>
             <property>fcs/motor_back_right_lag</property>
-            <value>1.01434</value>
+            <value>0.7810</value>
           </product>
           <product>
             <property>fcs/motor_back_right_lag</property>
             <property>fcs/motor_back_right_lag</property>
-            <value>6.00834</value>
+            <value>4.6264</value>
           </product>
         </sum>
       </function>
@@ -306,12 +306,12 @@
         <sum>
           <product>
             <property>fcs/motor_back_left_lag</property>
-            <value>1.01434</value>
+            <value>0.7810</value>
           </product>
           <product>
             <property>fcs/motor_back_left_lag</property>
             <property>fcs/motor_back_left_lag</property>
-            <value>6.00834</value>
+            <value>4.6264</value>
           </product>
         </sum>
       </function>
@@ -358,12 +358,12 @@
         <sum>
           <product>
             <property>fcs/motor_front_right_lag</property>
-            <value>5.8238e-4</value>
+            <value>4.4843e-4</value>
           </product>
           <product>
             <property>fcs/motor_front_right_lag</property>
             <property>fcs/motor_front_right_lag</property>
-            <value>3.4497e-3</value>
+            <value>2.6563e-3</value>
           </product>
         </sum>
       </function>
@@ -378,12 +378,12 @@
         <sum>
           <product>
             <property>fcs/motor_front_left_lag</property>
-            <value>5.8238e-4</value>
+            <value>4.4843e-4</value>
           </product>
           <product>
             <property>fcs/motor_front_left_lag</property>
             <property>fcs/motor_front_left_lag</property>
-            <value>3.4497e-3</value>
+            <value>2.6563e-3</value>
           </product>
         </sum>
       </function>
@@ -398,12 +398,12 @@
         <sum>
           <product>
             <property>fcs/motor_back_right_lag</property>
-            <value>5.8238e-4</value>
+            <value>4.4843e-4</value>
           </product>
           <product>
             <property>fcs/motor_back_right_lag</property>
             <property>fcs/motor_back_right_lag</property>
-            <value>3.4497e-3</value>
+            <value>2.6563e-3</value>
           </product>
         </sum>
       </function>
@@ -418,12 +418,12 @@
         <sum>
           <product>
             <property>fcs/motor_back_left_lag</property>
-            <value>5.8238e-4</value>
+            <value>4.4843e-4</value>
           </product>
           <product>
             <property>fcs/motor_back_left_lag</property>
             <property>fcs/motor_back_left_lag</property>
-            <value>3.4497e-3</value>
+            <value>2.6563e-3</value>
           </product>
         </sum>
       </function>

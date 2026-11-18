@@ -160,7 +160,7 @@
 
 // pusher allowed above this height [m]
 #ifndef CMQ_PUSHER_MIN_HEIGHT
-#define CMQ_PUSHER_MIN_HEIGHT 3.f      
+#define CMQ_PUSHER_MIN_HEIGHT 4.f      
 #endif
 
 // pusher disabled again below MIN_HEIGHT - HYST [m]
@@ -171,6 +171,14 @@
 // max yaw rate of the heading command while aligning the nose before a transition [deg/s]
 #ifndef CMQ_HEADING_ALIGN_RATE
 #define CMQ_HEADING_ALIGN_RATE 45.f
+#endif
+// hover navigation: turn the nose towards the motion above this nav speed [m/s] (SPEED setpoint mode)
+#ifndef CMQ_HOVER_TRACK_SPEED
+#define CMQ_HOVER_TRACK_SPEED 2.f
+#endif
+// hover navigation: same, above this distance to the carrot [m] (POS setpoint mode, e.g. HOME)
+#ifndef CMQ_HOVER_TRACK_DIST
+#define CMQ_HOVER_TRACK_DIST 5.f
 #endif
 
 
@@ -594,32 +602,48 @@ void control_mixing_quadplane_nav(void)
   const float as = stateIsAirspeedValid() ? stateGetAirspeed_f() : 0.f;
   if (!plane_mode && forward_request && as > CMQ_PLANE_MODE_AIRSPEED) plane_mode = true;
   if ( plane_mode && (as < CMQ_PLANE_MODE_AIRSPEED - CMQ_PLANE_MODE_HYST || !in_flight)) plane_mode = false;
-
-  /* Point the nose along the route while the rotors still control yaw (before plane mode). */
+  /* Point the nose along the motion while the rotors still control yaw (not in plane mode):
+   *  - forward requested: along the route, before and during the transition;
+   *  - hover navigation (stay, go, HOME): along the nav velocity as soon as the translation
+   *    is significant, so that the aircraft never flies sideways or tail first
+   *    (fin weathervaning overpowers the rotor yaw authority, and the pusher only pushes forward).
+   * The heading command is rate limited. When the translation stops, the heading is kept. */
   static float heading_cmd = 0.f;
   static bool heading_cmd_init = false;
-  if (forward_request && !plane_mode) {
+  bool align_nose = false;
+  float east = 0.f, north = 0.f;
+  if (!plane_mode) {
+    const struct EnuCoor_f *pos = stateGetPositionEnu_f();
+    if (nav.setpoint_mode == NAV_SETPOINT_MODE_SPEED) {
+      east = nav.speed.x;
+      north = nav.speed.y;
+      align_nose = forward_request ||
+                   (east * east + north * north > CMQ_HOVER_TRACK_SPEED * CMQ_HOVER_TRACK_SPEED);
+    } else {
+      east = nav.carrot.x - pos->x;
+      north = nav.carrot.y - pos->y;
+      align_nose = forward_request ||
+                   (east * east + north * north > CMQ_HOVER_TRACK_DIST * CMQ_HOVER_TRACK_DIST);
+    }
+    if (east * east + north * north < 1.e-2f) {
+      align_nose = false;   /* no meaningful direction */
+    }
+  }
+  if (align_nose) {
     if (!heading_cmd_init) {
       heading_cmd = stateGetNedToBodyEulers_f()->psi;
       heading_cmd_init = true;
     }
-    const struct EnuCoor_f *pos = stateGetPositionEnu_f();
-    float east  = nav.carrot.x - pos->x;
-    float north = nav.carrot.y - pos->y;
-    if (nav.setpoint_mode == NAV_SETPOINT_MODE_SPEED) { east = nav.speed.x; north = nav.speed.y; }
-    if (east * east + north * north > 1.f) {
-      float err = atan2f(east, north) - heading_cmd;
-      FLOAT_ANGLE_NORMALIZE(err);
-      const float step = RadOfDeg(CMQ_HEADING_ALIGN_RATE) / (float)CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY;
-      heading_cmd += Clip(err, -step, step);
-      FLOAT_ANGLE_NORMALIZE(heading_cmd);
-    }
+    float err = atan2f(east, north) - heading_cmd;
+    FLOAT_ANGLE_NORMALIZE(err);
+    const float step = RadOfDeg(CMQ_HEADING_ALIGN_RATE) / (float)CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY;
+    heading_cmd += Clip(err, -step, step);
+    FLOAT_ANGLE_NORMALIZE(heading_cmd);
     nav.heading = heading_cmd;
     guidance_h_set_heading(nav.heading);
   } else {
-    heading_cmd_init = false;
+    heading_cmd_init = false;   /* nav.heading keeps its last value */
   }
-
 
   /* 3. [2c] Leaving plane mode: hold the current heading (no yaw jump) */
   static bool prev_plane_mode = false;

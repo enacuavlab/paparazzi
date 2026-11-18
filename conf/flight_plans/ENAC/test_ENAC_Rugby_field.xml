@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">
-<flight_plan alt="172" ground_alt="142" lat0="43.56360224300044" lon0="1.484305509579363" max_dist_from_home="400" name="Enac Rugby Field" security_height="1" wp_frame="ltp">
+<flight_plan alt="158" ground_alt="152" lat0="43.56360224300044" lon0="1.484305509579363" max_dist_from_home="400" name="Enac Rugby Field" security_height="1" wp_frame="ltp">
   <header>
     #if DIGITAL_CAM
     #define LINE_START_FUNCTION dc_Survey(20);
@@ -11,10 +11,11 @@
     <waypoint name="HOME" x="1.109" y="-5.363"/>
     <waypoint name="CLIMB" x="-1.249" y="-6.944"/>
     <waypoint name="STDBY" x="-3.092" y="-4.527"/>
-    <waypoint name="p1" x="-24.246" y="-4.333"/>
-    <waypoint name="p2" x="7.898" y="19.241"/>
-    <waypoint name="p3" x="50.803" y="-39.434"/>
-    <waypoint name="p4" x="17.606" y="-62.736"/>
+    <waypoint name="p1" x="-24.246" y="-4.333" height="12."/>
+    <waypoint name="p2" x="7.898" y="19.241" height="12."/>
+    <waypoint name="p3" x="50.803" y="-39.434" height="12."/>
+    <waypoint name="p4" x="17.606" y="-62.736" height="12."/>
+    <waypoint name="p5" x="-3.320" y="-33.535" height="12."/>
     <waypoint name="TD" x="1.065" y="-1.532"/>
     <waypoint name="_FLY1" x="6.846" y="36.911"/>
     <waypoint name="_FLY2" x="69.069" y="-46.301"/>
@@ -79,6 +80,12 @@
     </block>
     <block name="stay_p1">
       <stay wp="p1"/>
+    </block>
+    <block name="stay_p4">
+      <stay wp="p4"/>
+    </block>
+    <block name="stay_p5">
+      <stay wp="p5"/>
     </block>
     <block name="line_p1_p2">
       <stay wp="p1" until="stage_time @GT 5"/>

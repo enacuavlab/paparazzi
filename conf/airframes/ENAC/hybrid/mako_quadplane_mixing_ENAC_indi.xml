@@ -300,10 +300,11 @@
       <define name="RY" value="{ 0.225, 0.220,-0.220,-0.225}"/>  <!-- Rotor y positions [m], order: FR, RR, RL, FL -->
       <define name="RZ"                 value="{0,0,0,0}" />  <!-- Rotor z positions [m], order: FR, RR, RL, FL -->
       <define name="SPIN_DIR"           value="{-1.0,1.0,-1.0,1.0}" />  <!-- Motors spin direction (+1 for CW. -1 for CCW) -->
-      <define name="ROTOR_K_T_PPRZ"     value="{4.7e-4, 2.9e-7}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} {8.33925e-5, 3.09866e-8} -->
+      <define name="ROTOR_K_T_PPRZ"     value="{8.33925e-5, 3.09866e-8}"/>  <!-- Quadratic thrust model: T = b*u + c*u^2, value = {b [N/pprz], c [N/pprz^2]} {4.7e-4, 2.9e-7} -->
       <define name="KAPPA"              value="1.75e-4" />  <!-- Drag-torque to thrust ratio (kappa = k_m/k_t) [m] -->
       <define name="MOTOR_HOVER"        value="3000" />  <!-- Hover motor command 4640 -->
       <define name="MOTOR_IDLE"         value="150" />  <!-- Idle motor command -->
+      <define name="ROTOR_AZ_EFF_SCALE" value="4.0"/>
       <!-- Angle Motor rotation in the body frame X = forward Y = right Z = down  d = Rz(ψ) · Ry(θ) · Rx(φ) · {0, 0, -1} -->
       <define name="ROTOR_ROT_X" value="{RadOfDeg(20.f), RadOfDeg(20.f), RadOfDeg(-20.f), RadOfDeg(-20.f)}"/> <!-- Rotations on motors X axis FR BR BL FL -->
       <define name="ROTOR_ROT_Y" value="{0.f, 0.f, 0.f, 0.f}"/> <!-- Rotations on  motors Y axis FR BR BL FL -->

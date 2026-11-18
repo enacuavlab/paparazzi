@@ -169,6 +169,11 @@ _Static_assert(CMQ_ROTOR_OFF_AIRSPEED > CMQ_ROTOR_FULL_AIRSPEED,
 #ifndef CMQ_ROTOR_WU_GAIN
 #define CMQ_ROTOR_WU_GAIN 20.f         
 #endif
+/* Corrective scale for vertical rotor efficiency */
+#ifndef VEHICLE_ROTOR_AZ_EFF_SCALE
+#define VEHICLE_ROTOR_AZ_EFF_SCALE 1.f
+#endif
+
 
 
 
@@ -440,7 +445,7 @@ static inline void quadplane_update_motor_effectiveness(void)
     g1g2[QUADPLANE_VC_MY][i] = dMy / quadplane_eff_sched_p.Iyy;
     g1g2[QUADPLANE_VC_MZ][i] = dMz / quadplane_eff_sched_p.Izz + g2[i] / INDI_G_SCALING;
     g1g2[QUADPLANE_VC_AX][i] = 0.f;
-    g1g2[QUADPLANE_VC_AZ][i] = dAz / quadplane_eff_sched_p.mass;
+    g1g2[QUADPLANE_VC_AZ][i] = VEHICLE_ROTOR_AZ_EFF_SCALE * dAz / quadplane_eff_sched_p.mass;
   }
 
   /* Pusher motor Moment and Force calculations to fill G1G2 */

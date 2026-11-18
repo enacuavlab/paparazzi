@@ -49,10 +49,14 @@
         <call fun="autopilot_set_motors_on(false)"/>
         <!--call fun="stabilization.cmd[COMMAND_THRUST] = 0"/-->
       </on_enter>
+      <control freq="NAVIGATION_FREQUENCY">
+        <call fun="nav_periodic_task()"/>
+      </control>
       <control>
         <call fun="SetCommands(commands_failsafe)"/>
       </control>
     </mode>
+
 
     <!-- Glide (same as KILL ?) -->
     <mode name="FAILSAFE" shortname="FAIL">

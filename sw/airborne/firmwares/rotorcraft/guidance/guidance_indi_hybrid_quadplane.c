@@ -212,7 +212,8 @@ void WEAK guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angl
   for (uint8_t i = 0; i < 4; i++) {
     thrust_z_eff += -cosf(rotor_rot_y[i]) * cosf(rotor_rot_x[i]) * rotor_dT_du;
   }
-  thrust_z_eff /= VEHICLE_MASS;
+  //thrust_z_eff /= VEHICLE_MASS;
+  thrust_z_eff *= VEHICLE_ROTOR_AZ_EFF_SCALE / VEHICLE_MASS;
 
   /* Same rotor range as the inner WLS (stabilization_indi_set_wls_settings) */
   const float u_top = (a > 0.f) ? VEHICLE_MOTOR_IDLE + a * (MAX_PPRZ - VEHICLE_MOTOR_IDLE) : 0.f;
