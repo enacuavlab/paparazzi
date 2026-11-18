@@ -52,6 +52,14 @@
  * Default parameters
  */
 
+#ifndef SWARM_FISH_SPEED
+#define SWARM_FISH_SPEED 2.f
+#endif
+
+#ifndef SWARM_FISH_ALT
+#define SWARM_FISH_ALT 10.f
+#endif
+
 #ifndef SWARM_FISH_NB_NEIGHBORS
 #define SWARM_FISH_NB_NEIGHBORS 2
 #endif
@@ -285,6 +293,20 @@ void swarm_fish_init(void)
   swarm_fish_params.use_heading  = SWARM_FISH_USE_HEADING;
   swarm_fish_params.free_heading = SWARM_FISH_FREE_HEADING;
   swarm_fish_params.vz_ctl       = SWARM_FISH_VZ_CTL;
+
+  swarm_fish_nav.speed           = SWARM_FISH_SPEED;
+  swarm_fish_nav.alt             = SWARM_FISH_ALT;
+  swarm_fish_nav.vz              = 0.f;
+  swarm_fish_nav.course          = 0.f;
+
+  FLOAT_VECT3_ZERO(swarm_fish.f_social);
+  FLOAT_VECT3_ZERO(swarm_fish.f_nav);
+  FLOAT_VECT3_ZERO(swarm_fish.f_intruder);
+  FLOAT_VECT3_ZERO(swarm_fish.f_obstacle);
+  FLOAT_VECT3_ZERO(swarm_fish.f_v_bound);
+  FLOAT_VECT3_ZERO(swarm_fish.accel_cmd);
+  FLOAT_VECT3_ZERO(swarm_fish.speed_sp);
+  swarm_fish.yaw_rate_sp = 0.f;
 }
 
 
@@ -509,13 +531,14 @@ static void compute_speed_from_accel(struct SwarmFish *swarm,
  * @param[in] vel_other neighbor velocity
  * @param[in] course_other neighbor course
  * @param[in] p pointer to swarm parameters
+ * @param[in] nb_neighbors number of neighbors
  * @param[out] influence total influence of the considered neighbor
  * @return the acceleration related to social interaction with a neighbor
  */
 static struct FloatVect3 interaction_social(
     struct EnuCoor_f *pos, struct EnuCoor_f *vel, float course,
     struct EnuCoor_f *other, struct EnuCoor_f *vel_other, float course_other,
-    struct SwarmFishParams *p,
+    struct SwarmFishParams *p, uint8_t nb_neighbors,
     float *influence)
 {
   struct FloatVect3 acc = {0};
@@ -540,7 +563,7 @@ static struct FloatVect3 interaction_social(
   // vertical
   const float f_z = p->y_z * ((delta_z - sign(delta_z) * p->d_z) / p->d_z) * expf(-squared(dij / p->l_z)) * anisotropic(p->a_z, psi);
   // speed
-  const float f_v_base = p->y_v * expf(-squared(dij / p->l_v)) * anisotropic(p->a_v, psi) / (float)(Max(p->nb_neighbors, 1));
+  const float f_v_base = p->y_v * expf(-squared(dij / p->l_v)) * anisotropic(p->a_v, psi) / (float)(Max(nb_neighbors, 1));
   const float f_v_x = f_v_base * (v_h_j * c_dphi - v_h_i);
   const float f_v_y = f_v_base * (v_h_j * s_dphi);
   const float f_v_z = f_v_base * (vel_other->z - vel->z);
@@ -691,6 +714,13 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
   // We need to store results since we keep only the most influentials
   struct FloatVect3 socials[NB_ACS];
   float social_influences[NB_ACS] = {0};
+  uint8_t nb_valid_neighbors = 0;
+  // check the number of valid neighbors
+  for (uint8_t ac = 0; ac < NB_ACS; ac++) {
+    if (ti_acs[ac].ac_id == AC_ID || ti_acs[ac].ac_id == 0 || ti_acs[ac].ac_id == p->intruder_id) { continue; }
+    nb_valid_neighbors++;
+  }
+  uint8_t nb_neighbors = Min(p->nb_neighbors, nb_valid_neighbors);
   for (uint8_t ac = 0; ac < NB_ACS; ac++) {
     // use if AC is registered
     if (ti_acs[ac].ac_id == AC_ID || ti_acs[ac].ac_id == 0 || ti_acs[ac].ac_id == p->intruder_id) { continue; }
@@ -703,7 +733,7 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
     struct EnuCoor_f *pos_other = acInfoGetPositionEnu_f(id_other);
     struct EnuCoor_f *vel_other = acInfoGetVelocityEnu_f(id_other);
     float course_other = acInfoGetCourse(id_other);
-    socials[ac] = interaction_social(pos, vel, course, pos_other, vel_other, course_other, p, &social_influences[ac]);
+    socials[ac] = interaction_social(pos, vel, course, pos_other, vel_other, course_other, p, nb_neighbors, &social_influences[ac]);
   }
   // Sum social interactions of the 'nb_neighbors' most influential.
   // Since we don't sort the results, just go through the values
@@ -772,14 +802,7 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
  */
 bool swarm_fish_velocity_run(void)
 {
-  // TODO
   compute_interactions(&swarm_fish, &swarm_fish_params, &swarm_fish_nav);
-//  float diff_heading = calculate_new_heading();
-//  float new_heading = swarm_fish.heading + diff_heading;
-//  FLOAT_ANGLE_NORMALIZE(new_heading);
-//  swarm_fish.heading = new_heading;
-//  autopilot_guided_update(GUIDED_FLAG_XY_BODY | GUIDED_FLAG_XY_VEL, swarm_fish.velocity, 0.0f, -sfp.alt, swarm_fish.heading);
-//  swarm_fish.velocity = sfp.max_velocity;
 //#if SWARM_FISH_SYNC_SEND
 //  send_swarm_message();
 //#endif
