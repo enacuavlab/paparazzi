@@ -72,24 +72,43 @@
 #ifndef GUIDANCE_INDI_PITCH_HOVER_WU
 #define GUIDANCE_INDI_PITCH_HOVER_WU 10.f   
 #endif
-/* Same thresholds and names as the default rotorcraft detection (autopilot_firmware.c),
- * so that an airframe setting applies to both */
-#ifndef AUTOPILOT_IN_FLIGHT_TIME
-#define AUTOPILOT_IN_FLIGHT_TIME 20
+/* Landing detection thresholds (quadplane specific, see autopilot_in_flight_end_detection) */
+// mean hover motor command below which the aircraft may be landed [pprz] (hover ~VEHICLE_MOTOR_HOVER)
+#ifndef CMQ_LANDED_MAX_THRUST
+#define CMQ_LANDED_MAX_THRUST (0.5f * VEHICLE_MOTOR_HOVER)
 #endif
-#ifndef AUTOPILOT_IN_FLIGHT_MIN_SPEED
-#define AUTOPILOT_IN_FLIGHT_MIN_SPEED 0.2
+// max |vz| when landed [m/s]: the INS vz estimate settles slowly after touchdown
+#ifndef CMQ_LANDED_MAX_VZ
+#define CMQ_LANDED_MAX_VZ 0.5f
 #endif
-#ifndef AUTOPILOT_IN_FLIGHT_MIN_ACCEL
-#define AUTOPILOT_IN_FLIGHT_MIN_ACCEL 2.0
+// max |az| when landed [m/s^2]
+#ifndef CMQ_LANDED_MAX_ACCEL
+#define CMQ_LANDED_MAX_ACCEL 2.f
 #endif
-#ifndef AUTOPILOT_IN_FLIGHT_MIN_THRUST
-#define AUTOPILOT_IN_FLIGHT_MIN_THRUST 500
-#endif
-/* Quadplane guard: a wing-borne flight (hover rotors off) always has some ground speed */
+// max ground speed when landed [m/s]: a wing-borne flight (hover rotors off) always moves
 #ifndef CMQ_LANDED_MAX_GROUNDSPEED
 #define CMQ_LANDED_MAX_GROUNDSPEED 1.f
 #endif
+// conditions must hold this long [s]
+#ifndef CMQ_LANDED_TIME
+#define CMQ_LANDED_TIME 1.f
+#endif
+// extra WLS weight on the pusher in hover when the forward demand is inside the deadband
+#ifndef GUIDANCE_INDI_PUSHER_HOVER_WU
+#define GUIDANCE_INDI_PUSHER_HOVER_WU 30.f
+#endif
+// hover: the pusher is used only above this desired forward acceleration [m/s^2] ...
+#ifndef GUIDANCE_INDI_PUSHER_HOVER_ON
+#define GUIDANCE_INDI_PUSHER_HOVER_ON 0.7f
+#endif
+// ... and released below this one (hysteresis) [m/s^2]
+#ifndef GUIDANCE_INDI_PUSHER_HOVER_OFF
+#define GUIDANCE_INDI_PUSHER_HOVER_OFF 0.3f
+#endif
+
+/* Desired acceleration of the hybrid guidance (NED), from guidance_indi_hybrid.c */
+extern struct FloatVect3 sp_accel;
+
 
 Butterworth2LowPass accel_bodyz_filt;
 
@@ -220,6 +239,7 @@ void WEAK guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angl
   const float pusher_eff = g1g2[4][GUIDANCE_INDI_PUSHER_INDEX];
   float u_x = actuator_state_filt_vect[QUADPLANE_ACT_PUSHER];
   Bound(u_x, 0.f, (float)MAX_PPRZ);
+  wls_guid_p.Wu[3] = 1.f;
   if (quadplane_eff_disable_pusher || quadplane_eff_pusher_forced) {
     /* Ground, or pusher owned by the mixer (manual FWD / legacy transition) */
     wls_guid_p.u_min[3]  = 0.f;
@@ -230,18 +250,34 @@ void WEAK guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angl
     wls_guid_p.u_max[3]  = ((float)MAX_PPRZ - u_x) * pusher_eff;
     /* Pusher takes the whole x acceleration demand, within its range */
     float pref_x = body_v[0];
+    /* Hover: decide on the DESIRED forward acceleration (sp_accel along the nose),
+     * not on body_v[0], which is only the remaining error: once pitch provides the
+     * acceleration the error drops to ~0 and the pusher would be pushed out. */
+    static bool pusher_hover_active = false;
+    const float psi = stateGetNedToBodyEulers_f()->psi;
+    const float sp_fwd = cosf(psi) * sp_accel.x + sinf(psi) * sp_accel.y;
+    if (sp_fwd > GUIDANCE_INDI_PUSHER_HOVER_ON) {
+      pusher_hover_active = true;
+    } else if (sp_fwd < GUIDANCE_INDI_PUSHER_HOVER_OFF) {
+      pusher_hover_active = false;
+    }
+    if (a > 0.5f && !pusher_hover_active) {
+      /* Incremental WLS: prefer the change that stops the pusher, small moves done by pitch */
+      pref_x = wls_guid_p.u_min[3];
+      wls_guid_p.Wu[3] = 1.f + a * GUIDANCE_INDI_PUSHER_HOVER_WU;
+    }
     Bound(pref_x, wls_guid_p.u_min[3], wls_guid_p.u_max[3]);
     wls_guid_p.u_pref[3] = pref_x;
   }
-  wls_guid_p.Wu[3] = 1.f;
 }
 
 
-
 /**
- * Landing detection, same rule as the default rotorcraft one (low hover thrust,
- * no vertical speed, no vertical acceleration during AUTOPILOT_IN_FLIGHT_TIME calls),
- * plus a ground speed guard: in cruise the hover thrust is zero but the aircraft moves.
+ * Landing detection: low hover thrust, no vertical motion and no ground speed
+ * during CMQ_LANDED_TIME. The ground speed condition keeps wing-borne flight
+ * (hover rotors off) in flight. Thresholds tuned on simulation logs:
+ * after touchdown the INS vz needs several seconds to settle, and the attitude
+ * loop may spool up one side of the rotors on the ground.
  */
 bool autopilot_in_flight_end_detection(bool motors_on)
 {
@@ -252,12 +288,12 @@ bool autopilot_in_flight_end_detection(bool motors_on)
     return true;
   }
 
-  if ((stabilization.cmd[COMMAND_THRUST] <= AUTOPILOT_IN_FLIGHT_MIN_THRUST) &&
-      (fabsf(stateGetSpeedNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_SPEED) &&
-      (fabsf(stateGetAccelNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_ACCEL) &&
+  if ((stabilization.cmd[COMMAND_THRUST] <= CMQ_LANDED_MAX_THRUST) &&
+      (fabsf(stateGetSpeedNed_f()->z) < CMQ_LANDED_MAX_VZ) &&
+      (fabsf(stateGetAccelNed_f()->z) < CMQ_LANDED_MAX_ACCEL) &&
       (stateGetHorizontalSpeedNorm_f() < CMQ_LANDED_MAX_GROUNDSPEED)) {
     landed_counter++;
-    if (landed_counter >= AUTOPILOT_IN_FLIGHT_TIME) {
+    if (landed_counter >= (uint32_t)(CMQ_LANDED_TIME * PERIODIC_FREQUENCY)) {
       landed_counter = 0;
       return true;
     }
@@ -266,3 +302,4 @@ bool autopilot_in_flight_end_detection(bool motors_on)
   }
   return false;
 }
+

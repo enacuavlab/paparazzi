@@ -158,6 +158,22 @@
 #define CMQ_TRANSITION_ABORT_FACTOR 2.f   
 #endif
 
+// pusher allowed above this height [m]
+#ifndef CMQ_PUSHER_MIN_HEIGHT
+#define CMQ_PUSHER_MIN_HEIGHT 3.f      
+#endif
+
+// pusher disabled again below MIN_HEIGHT - HYST [m]
+#ifndef CMQ_PUSHER_HEIGHT_HYST
+#define CMQ_PUSHER_HEIGHT_HYST 1.f     
+#endif
+
+// max yaw rate of the heading command while aligning the nose before a transition [deg/s]
+#ifndef CMQ_HEADING_ALIGN_RATE
+#define CMQ_HEADING_ALIGN_RATE 45.f
+#endif
+
+
 
 #define TRANSITION_RATIO_COMPLETE 0.99f
 
@@ -312,16 +328,20 @@ static float transition_hov_motor(float ratio, float start, float end)
 /**
  * Pusher GATE
  *
- * Pusher can be controlled only once the autopilot inflight flag is true. 
- * The autonomous take-off and langing behaves as a pure quad. 
+ * The pusher is allowed only in flight and above CMQ_PUSHER_MIN_HEIGHT
  */
 static inline void quadplane_pusher_gate(bool in_flight)
 {
-  if (!in_flight && !quadplane_eff_disable_pusher) {
-    actuators_pprz[QUADPLANE_ACT_PUSHER] = 0;
+  static bool high_enough = false;
+  const float height = GetPosHeight();
+  if (!high_enough && height > CMQ_PUSHER_MIN_HEIGHT) {
+    high_enough = true;
+  } else if (high_enough && height < CMQ_PUSHER_MIN_HEIGHT - CMQ_PUSHER_HEIGHT_HYST) {
+    high_enough = false;
   }
-  quadplane_eff_disable_pusher = !in_flight;
+  quadplane_eff_disable_pusher = !(in_flight && high_enough);
 }
+
 
 static void quadplane_force_hover(void)
 {
@@ -575,18 +595,32 @@ void control_mixing_quadplane_nav(void)
   if (!plane_mode && forward_request && as > CMQ_PLANE_MODE_AIRSPEED) plane_mode = true;
   if ( plane_mode && (as < CMQ_PLANE_MODE_AIRSPEED - CMQ_PLANE_MODE_HYST || !in_flight)) plane_mode = false;
 
-  /* Point the nose along the route while the rotors still control yaw (before plane mode) */
+  /* Point the nose along the route while the rotors still control yaw (before plane mode). */
+  static float heading_cmd = 0.f;
+  static bool heading_cmd_init = false;
   if (forward_request && !plane_mode) {
+    if (!heading_cmd_init) {
+      heading_cmd = stateGetNedToBodyEulers_f()->psi;
+      heading_cmd_init = true;
+    }
     const struct EnuCoor_f *pos = stateGetPositionEnu_f();
     float east  = nav.carrot.x - pos->x;
     float north = nav.carrot.y - pos->y;
     if (nav.setpoint_mode == NAV_SETPOINT_MODE_SPEED) { east = nav.speed.x; north = nav.speed.y; }
     if (east * east + north * north > 1.f) {
-      nav.heading = atan2f(east, north);
-      guidance_h_set_heading(nav.heading);
+      float err = atan2f(east, north) - heading_cmd;
+      FLOAT_ANGLE_NORMALIZE(err);
+      const float step = RadOfDeg(CMQ_HEADING_ALIGN_RATE) / (float)CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY;
+      heading_cmd += Clip(err, -step, step);
+      FLOAT_ANGLE_NORMALIZE(heading_cmd);
     }
+    nav.heading = heading_cmd;
+    guidance_h_set_heading(nav.heading);
+  } else {
+    heading_cmd_init = false;
   }
-  
+
+
   /* 3. [2c] Leaving plane mode: hold the current heading (no yaw jump) */
   static bool prev_plane_mode = false;
   if (prev_plane_mode && !plane_mode) {
@@ -628,7 +662,9 @@ void control_mixing_quadplane_nav(void)
   /* 8. [2b] Horizontal reference: off in plane mode (turns need V^2/R),
    *    on in hover, restarted from the current state on re-entry */
   static bool ref_was_off = false;
-  if (plane_mode) {
+  const bool ref_off = plane_mode &&
+                       (forward_request || nav.setpoint_mode != NAV_SETPOINT_MODE_POS);
+  if (ref_off) {
     guidance_h_SetUseRef(false);
     ref_was_off = true;
   } else {
@@ -643,6 +679,7 @@ void control_mixing_quadplane_nav(void)
     }
     guidance_h_SetUseRef(true);
   }
+
 
   /* 9. Guidance, then direct incremental thrust to the inner INDI */
   struct ThrustSetpoint nav_thrust = guidance_v_run(in_flight);
