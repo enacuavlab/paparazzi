@@ -117,11 +117,11 @@
 #endif
 
 #ifndef SWARM_FISH_L_ATT
-#define SWARM_FISH_L_ATT 6.0f
+#define SWARM_FISH_L_ATT 10.0f
 #endif
 
 #ifndef SWARM_FISH_D_ATT
-#define SWARM_FISH_D_ATT 2.f
+#define SWARM_FISH_D_ATT 5.f
 #endif
 
 #ifndef SWARM_FISH_A_ATT
@@ -133,7 +133,7 @@
 #endif
 
 #ifndef SWARM_FISH_L_ALI
-#define SWARM_FISH_L_ALI 3.f
+#define SWARM_FISH_L_ALI 6.f
 #endif
 
 #ifndef SWARM_FISH_A_ALI
@@ -145,7 +145,7 @@
 #endif
 
 #ifndef SWARM_FISH_L_V
-#define SWARM_FISH_L_V 3.f
+#define SWARM_FISH_L_V 6.f
 #endif
 
 #ifndef SWARM_FISH_A_V
@@ -157,11 +157,11 @@
 #endif
 
 #ifndef SWARM_FISH_L_Z
-#define SWARM_FISH_L_Z 4.f
+#define SWARM_FISH_L_Z 6.f
 #endif
 
 #ifndef SWARM_FISH_D_Z
-#define SWARM_FISH_D_Z 2.0f
+#define SWARM_FISH_D_Z 4.0f
 #endif
 
 #ifndef SWARM_FISH_A_Z
@@ -185,7 +185,7 @@
 #endif
 
 #ifndef SWARM_FISH_L_IN
-#define SWARM_FISH_L_IN 4.0f
+#define SWARM_FISH_L_IN 8.0f
 #endif
 
 #ifndef SWARM_FISH_A_IN
@@ -201,7 +201,7 @@
 #endif
 
 #ifndef SWARM_FISH_D_Z_IN
-#define SWARM_FISH_D_Z_IN 1.0f
+#define SWARM_FISH_D_Z_IN 2.0f
 #endif
 
 #ifndef SWARM_FISH_Y_OBS
@@ -213,7 +213,7 @@
 #endif
 
 #ifndef SWARM_FISH_L_OBS
-#define SWARM_FISH_L_OBS 4.0f
+#define SWARM_FISH_L_OBS 8.0f
 #endif
 
 #ifndef SWARM_FISH_A_OBS
@@ -229,7 +229,7 @@
 #endif
 
 #ifndef SWARM_FISH_L_Z_OBS
-#define SWARM_FISH_L_Z_OBS 0.2f
+#define SWARM_FISH_L_Z_OBS 1.0f
 #endif
 
 #ifndef SWARM_FISH_ARENA_WP
