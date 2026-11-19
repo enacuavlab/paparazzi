@@ -118,6 +118,7 @@
       <stay climb="nav.descend_vspeed" vmode="climb" wp="TD"/>
     </block>
     <block name="Kill landed">
+      <call_once fun="NavKillThrottle()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
   </blocks>
