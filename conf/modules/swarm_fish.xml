@@ -38,35 +38,35 @@
           <dl_setting var="swarm_fish_params.max_yaw" shortname="max vz" min="-90." step="1." max="90.0" module="modules/nav/swarm_fish" unit="rad/s" alt_unit="deg/s"/>
         </dl_settings>
         <dl_settings NAME="params">
-          <dl_setting var="swarm_fish_params.y_att" shortname="y_att" min="0.01" step=".01" max="1.0" module="modules/nav/swarm_fish"/>
+          <dl_setting var="swarm_fish_params.y_att" shortname="y_att" min="0.0" step=".01" max="1.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.l_att" shortname="l_att" min="0.01" step=".1" max="20.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.d_att" shortname="d_att" min="2.0" step=".1" max="15.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.a_att" shortname="a_att" min="0.01" step=".1" max="5.0" module="modules/nav/swarm_fish"/>
-          <dl_setting var="swarm_fish_params.y_ali" shortname="y_ali" min="0.01" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
+          <dl_setting var="swarm_fish_params.y_ali" shortname="y_ali" min="0.0" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.l_ali" shortname="l_ali" min="0.01" step=".1" max="20.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.a_ali" shortname="a_ali" min="0.01" step=".1" max="5.0" module="modules/nav/swarm_fish"/>
-          <dl_setting var="swarm_fish_params.y_v" shortname="y_v" min="0.01" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
+          <dl_setting var="swarm_fish_params.y_v" shortname="y_v" min="0.0" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.l_v" shortname="l_v" min="0.01" step=".1" max="20.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.a_v" shortname="a_v" min="0.01" step=".1" max="5.0" module="modules/nav/swarm_fish"/>
-          <dl_setting var="swarm_fish_params.y_z" shortname="y_z" min="0.01" step=".01" max="1.0" module="modules/nav/swarm_fish"/>
+          <dl_setting var="swarm_fish_params.y_z" shortname="y_z" min="0.0" step=".01" max="1.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.l_z" shortname="l_z" min="0.01" step=".1" max="5.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.d_z" shortname="d_z" min="0.01" step=".1" max="5.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.a_z" shortname="a_z" min="0.01" step=".1" max="5.0" module="modules/nav/swarm_fish"/>
-          <dl_setting var="swarm_fish_params.y_nav" shortname="y_nav" min="0.01" step=".01" max="1.0" module="modules/nav/swarm_fish"/>
-          <dl_setting var="swarm_fish_params.y_z_nav" shortname="y_z_nav" min="0.01" step=".01" max="1.0" module="modules/nav/swarm_fish"/>
+          <dl_setting var="swarm_fish_params.y_nav" shortname="y_nav" min="0.0" step=".01" max="1.0" module="modules/nav/swarm_fish"/>
+          <dl_setting var="swarm_fish_params.y_z_nav" shortname="y_z_nav" min="0.0" step=".01" max="1.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.l_z_nav" shortname="l_z_nav" min="0.01" step=".1" max="5.0" module="modules/nav/swarm_fish"/>
-          <dl_setting var="swarm_fish_params.y_in" shortname="y_in" min="0.01" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
+          <dl_setting var="swarm_fish_params.y_in" shortname="y_in" min="0.0" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.l_in" shortname="l_in" min="0.01" step=".1" max="20.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.a_in" shortname="a_in" min="0.01" step=".1" max="5.0" module="modules/nav/swarm_fish"/>
-          <dl_setting var="swarm_fish_params.y_z_in" shortname="y_z_in" min="0.01" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
+          <dl_setting var="swarm_fish_params.y_z_in" shortname="y_z_in" min="0.0" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.l_z_in" shortname="l_z_in" min="0.01" step=".1" max="20.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.d_z_in" shortname="d_z_in" min="0.01" step=".1" max="5.0" module="modules/nav/swarm_fish"/>
-          <dl_setting var="swarm_fish_params.y_obs" shortname="y_obs" min="0.01" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
-          <dl_setting var="swarm_fish_params.y_v_obs" shortname="y_v_obs" min="0.01" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
+          <dl_setting var="swarm_fish_params.y_obs" shortname="y_obs" min="0.0" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
+          <dl_setting var="swarm_fish_params.y_v_obs" shortname="y_v_obs" min="0.0" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.l_obs" shortname="l_obs" min="0.01" step=".1" max="20.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.a_obs" shortname="a_osb" min="0.01" step=".1" max="5.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.v0_obs" shortname="v0_obs" min="0.01" step=".1" max="8.0" module="modules/nav/swarm_fish"/>
-          <dl_setting var="swarm_fish_params.y_z_obs" shortname="y_z_obs" min="0.01" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
+          <dl_setting var="swarm_fish_params.y_z_obs" shortname="y_z_obs" min="0.0" step=".01" max="10.0" module="modules/nav/swarm_fish"/>
           <dl_setting var="swarm_fish_params.l_z_obs" shortname="l_z_obs" min="0.01" step=".1" max="20.0" module="modules/nav/swarm_fish"/>
         </dl_settings>
       </dl_settings>

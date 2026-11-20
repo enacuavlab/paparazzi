@@ -303,26 +303,26 @@ void swarm_fish_init(void)
   FLOAT_VECT3_ZERO(swarm_fish.f_nav);
   FLOAT_VECT3_ZERO(swarm_fish.f_intruder);
   FLOAT_VECT3_ZERO(swarm_fish.f_obstacle);
-  FLOAT_VECT3_ZERO(swarm_fish.f_v_bound);
   FLOAT_VECT3_ZERO(swarm_fish.accel_cmd);
   FLOAT_VECT3_ZERO(swarm_fish.speed_sp);
   swarm_fish.yaw_rate_sp = 0.f;
+  for (int i = 0; i < SWARM_FISH_MAX_NEIGHBORS; i++) {
+    swarm_fish.neighbors[i] = 0;
+  }
 }
 
 
 static inline void send_swarm_message(void)
 {
-  // TODO update message fields
-  //DOWNLINK_SEND_SWARM_FISH(DefaultChannel, DefaultDevice,
-  //    &swarm_fish.heading,
-  //    &swarm_fish.step_size,
-  //    &swarm_fish.r_w,
-  //    &swarm_fish.f_w,
-  //    &swarm_fish.theta_w,
-  //    &swarm_fish.f_fluct,
-  //    &swarm_fish.f_wall,
-  //    &swarm_fish.f_ali,
-  //    &swarm_fish.f_att);
+  DOWNLINK_SEND_SWARM_FISH(DefaultChannel, DefaultDevice,
+      (float *)&swarm_fish.f_social,
+      (float *)&swarm_fish.f_nav,
+      (float *)&swarm_fish.f_intruder,
+      (float *)&swarm_fish.f_obstacle,
+      (float *)&swarm_fish.accel_cmd,
+      (float *)&swarm_fish.speed_sp,
+      &swarm_fish.yaw_rate_sp,
+      Max(1, swarm_fish_params.nb_neighbors), swarm_fish.neighbors);
 }
 
 static void send_draw_arena(uint8_t wp_id, float radius)
@@ -381,15 +381,18 @@ static float distance_to_arena(uint8_t wp_id, float radius, struct EnuCoor_f *po
   return dist;
 }
 
-/** calculates the relative orientation to the wall
+/** calculates the relative orientation to the arena wall
  *
+ * @param[in] wp_id center of the arena waypoint ID
  * @param[in] pos agent position
  * @param[in] course agent course
  * @return angle to circular wall
  */
-static float angle_to_wall(struct EnuCoor_f *pos, float course)
+static float angle_to_arena(uint8_t wp_id, struct EnuCoor_f *pos, float course)
 {
-  float theta = atan2f(pos->y, pos->x);
+  float dx = pos->x - waypoint_get_x(wp_id);
+  float dy = pos->y - waypoint_get_y(wp_id);
+  float theta = atan2f(dy, dx);
   float delta = course - theta;
   FLOAT_ANGLE_NORMALIZE(delta);
   return delta;
@@ -555,6 +558,7 @@ static struct FloatVect3 interaction_social(
   const float delta_z = other->z - pos->z;
   const float v_h_i = FLOAT_VECT2_NORM(*vel);
   const float v_h_j = FLOAT_VECT2_NORM(*vel_other);
+  printf("social %d p=%f d=%f z=%f dij=%f\n", AC_ID,psi,dphi,delta_z,dij);
 
   // attraction
   const float f_att = p->y_att * ((dij - p->d_att) / p->d_att) / (1.f + squared(dij / p->l_att)) * anisotropic(p->a_att, psi);
@@ -603,8 +607,8 @@ static struct FloatVect3 interaction_nav(
   }
   const float h_speed = FLOAT_VECT2_NORM(*vel);
   struct FloatVect3 acc;
-  acc.x = p->y_nav * (n->speed * cosf(phi_nav - get_course(p->use_heading)) - h_speed);
-  acc.y = p->y_nav * (n->speed * sinf(phi_nav - get_course(p->use_heading)) - h_speed);
+  acc.x = p->y_nav * (n->speed * cosf(phi_nav - course) - h_speed);
+  acc.y = p->y_nav * (n->speed * sinf(phi_nav - course));
   acc.z = p->y_nav * (vz_nav - vel->z);
 
   return acc;
@@ -680,19 +684,19 @@ static struct FloatVect3 interaction_obstacle(
  * @param[in] p pointer to swarm parameters
  * @return the acceleration related the floor and ceiling boundaries
  */
-static struct FloatVect3 interaction_vertical_boundaries(
+static float interaction_vertical_boundaries(
     struct EnuCoor_f *pos,
     float z_min, float z_max,
     struct SwarmFishParams *p)
 {
-  struct FloatVect3 acc = {0};
+  float acc = 0.f;
   if (!isnan(z_min)) {
     const float delta_z = pos->z - z_min;
-    acc.z += p->y_z_obs * expf(-delta_z / p->l_z_obs);
+    acc += p->y_z_obs * expf(-delta_z / p->l_z_obs);
   }
   if (!isnan(z_max)) {
     const float delta_z = z_max - pos->z;
-    acc.z += -p->y_z_obs * expf(-delta_z / p->l_z_obs);
+    acc += -p->y_z_obs * expf(-delta_z / p->l_z_obs);
   }
   return acc;
 }
@@ -739,7 +743,10 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
   // Since we don't sort the results, just go through the values
   // as many times as needed.
   FLOAT_VECT3_ZERO(swarm->f_social);
-  for (uint8_t i = 0; i < p->nb_neighbors; i++) {
+  for (int i = 0; i < SWARM_FISH_MAX_NEIGHBORS; i++) {
+    swarm_fish.neighbors[i] = 0;
+  }
+  for (uint8_t i = 0; i < nb_neighbors; i++) {
     float best_inf = 0.f;
     uint8_t best_idx = 0;
     for (uint8_t ac = 0; ac < NB_ACS; ac++) {
@@ -747,6 +754,9 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
         best_inf = social_influences[ac];
         best_idx = ac;
       }
+    }
+    if (i < SWARM_FISH_MAX_NEIGHBORS) {
+      swarm->neighbors[i] = best_idx; // store neighbors list
     }
     VECT3_ADD(swarm->f_social, socials[best_idx]);
     social_influences[best_idx] = -1.f; // will be skipped at next loop
@@ -777,16 +787,13 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
   // obstacles
   // TODO more obstacles than the circular arena
   float wall_dist = distance_to_arena(SWARM_FISH_ARENA_WP, p->arena_radius, pos);
-  float wall_angle = angle_to_wall(pos, course);
+  float wall_angle = angle_to_arena(SWARM_FISH_ARENA_WP, pos, course);
   swarm->f_obstacle = interaction_obstacle(vel, wall_dist, wall_angle, p);
-  // add to total acceleration
-  VECT3_ADD(swarm->accel_cmd, swarm->f_obstacle);
-
   // vertical borders
   // TODO manage NaN to disable if needed
-  swarm->f_v_bound = interaction_vertical_boundaries(pos, p->min_alt, p->max_alt, p);
+  swarm->f_obstacle.z += interaction_vertical_boundaries(pos, p->min_alt, p->max_alt, p);
   // add to total acceleration
-  VECT3_ADD(swarm->accel_cmd, swarm->f_v_bound);
+  VECT3_ADD(swarm->accel_cmd, swarm->f_obstacle);
 
   // compute final speed setpoint
   compute_speed_from_accel(swarm, vel, p, nav_dt);
@@ -804,7 +811,7 @@ bool swarm_fish_velocity_run(void)
 {
   compute_interactions(&swarm_fish, &swarm_fish_params, &swarm_fish_nav);
 //#if SWARM_FISH_SYNC_SEND
-//  send_swarm_message();
+  send_swarm_message();
 //#endif
   return true;
 }

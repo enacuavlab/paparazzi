@@ -31,6 +31,8 @@
 #include "math/pprz_algebra_float.h"
 #include "math/pprz_geodetic_float.h"
 
+#define SWARM_FISH_MAX_NEIGHBORS 4
+
 /**
  * nav fish param structure
  */
@@ -106,11 +108,11 @@ struct SwarmFish {
   struct FloatVect3 f_social;   ///< social interactions
   struct FloatVect3 f_nav;      ///< navigation
   struct FloatVect3 f_intruder; ///< intruder repulsion
-  struct FloatVect3 f_obstacle; ///< obstacle repulsion
-  struct FloatVect3 f_v_bound;  ///< vertical boundaries repulsion
+  struct FloatVect3 f_obstacle; ///< obstacle repulsion (2D) and vertical boundaries repulsion
   struct FloatVect3 accel_cmd;  ///< total acceleration
   struct NedCoor_f speed_sp;    ///< desired setpoint
   float yaw_rate_sp;            ///< desired yaw rate
+  uint8_t neighbors[SWARM_FISH_MAX_NEIGHBORS]; ///< list of influention neighbors
 };
 
 extern struct SwarmFishParams swarm_fish_params;
