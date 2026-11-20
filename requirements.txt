@@ -8,6 +8,7 @@ PyQtWebEngine
 pyqtgraph
 PyOpenGL
 pyproj
+contextily
 unidecode
 matplotlib
 distro
