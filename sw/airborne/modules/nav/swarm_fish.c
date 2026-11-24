@@ -558,7 +558,7 @@ static struct FloatVect3 interaction_social(
   const float delta_z = other->z - pos->z;
   const float v_h_i = FLOAT_VECT2_NORM(*vel);
   const float v_h_j = FLOAT_VECT2_NORM(*vel_other);
-  printf("social %d p=%f d=%f z=%f dij=%f\n", AC_ID,psi,dphi,delta_z,dij);
+  //printf("social %d p=%f d=%f z=%f dij=%f\n", AC_ID,DegOfRad(psi),DegOfRad(dphi),delta_z,dij);
 
   // attraction
   const float f_att = p->y_att * ((dij - p->d_att) / p->d_att) / (1.f + squared(dij / p->l_att)) * anisotropic(p->a_att, psi);
@@ -736,7 +736,7 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
     uint8_t id_other = ti_acs[ac].ac_id;
     struct EnuCoor_f *pos_other = acInfoGetPositionEnu_f(id_other);
     struct EnuCoor_f *vel_other = acInfoGetVelocityEnu_f(id_other);
-    float course_other = acInfoGetCourse(id_other);
+    float course_other = M_PI_2 - acInfoGetCourse(id_other);
     socials[ac] = interaction_social(pos, vel, course, pos_other, vel_other, course_other, p, nb_neighbors, &social_influences[ac]);
   }
   // Sum social interactions of the 'nb_neighbors' most influential.
@@ -756,7 +756,7 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
       }
     }
     if (i < SWARM_FISH_MAX_NEIGHBORS) {
-      swarm->neighbors[i] = best_idx; // store neighbors list
+      swarm->neighbors[i] = ti_acs[best_idx].ac_id; // store neighbors list
     }
     VECT3_ADD(swarm->f_social, socials[best_idx]);
     social_influences[best_idx] = -1.f; // will be skipped at next loop

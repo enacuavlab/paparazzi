@@ -77,7 +77,7 @@ class Proxy:
             return
         if self.verbose:
             print("new message from %i (%s) [%d Bytes]: %s" % (sender, address, length, msg))
-        if receiver_id == self.gcs_id or receiver_id == 255:
+        if (receiver_id == self.gcs_id or receiver_id == 255) and msg.msg_class == 'telemetry':
             # normal telemetry message for the GCS
             if self.verbose:
                 print("mav %d sending to gcs %i: %s" % (sender, receiver_id, msg))
