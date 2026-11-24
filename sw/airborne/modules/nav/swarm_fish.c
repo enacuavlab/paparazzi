@@ -725,13 +725,15 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
     nb_valid_neighbors++;
   }
   uint8_t nb_neighbors = Min(p->nb_neighbors, nb_valid_neighbors);
+  //printf("AC %d -> ", AC_ID);
   for (uint8_t ac = 0; ac < NB_ACS; ac++) {
     // use if AC is registered
     if (ti_acs[ac].ac_id == AC_ID || ti_acs[ac].ac_id == 0 || ti_acs[ac].ac_id == p->intruder_id) { continue; }
 
     // use if AC position is not older than 1s
     float delta_t = Max((int)(gps.tow - acInfoGetItow(ti_acs[ac].ac_id)) / 1000.f, 0.f);
-    if (delta_t > 1.f) { continue; }
+    //printf("N=[%d, %d] (%.2f) {%u | %u} | ", ac, ti_acs[ac].ac_id, delta_t, gps.tow, acInfoGetItow(ti_acs[ac].ac_id));
+    //if (delta_t > 1.f) { continue; } // FIXME !!!
 
     uint8_t id_other = ti_acs[ac].ac_id;
     struct EnuCoor_f *pos_other = acInfoGetPositionEnu_f(id_other);
@@ -755,6 +757,7 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
         best_idx = ac;
       }
     }
+    //printf(" best %d %d %d (%f) |", i, best_idx, ti_acs[best_idx].ac_id, best_inf);
     if (i < SWARM_FISH_MAX_NEIGHBORS) {
       swarm->neighbors[i] = ti_acs[best_idx].ac_id; // store neighbors list
     }
@@ -763,6 +766,7 @@ static void compute_interactions(struct SwarmFish *swarm, struct SwarmFishParams
   }
   // add to total acceleration
   VECT3_ADD(swarm->accel_cmd, swarm->f_social);
+  //printf("\n");
 
   // navigation
   swarm->f_nav = interaction_nav(pos, vel, course, p, n);
