@@ -30,44 +30,7 @@
  *   and vertical thrust decreases until the hovering motors are commanded off.
  *   Airspeed gates transition progress; a timeout restores quad control.
  *
- * NAV configuration selection through cmq_nav_mode:
- * - CMQ_NAV_AUTO: request forward flight for ROUTE and CIRCLE, quad otherwise.
- * - CMQ_NAV_ATTITUDE: use quad configuration for any navigation trajectory.
- * - CMQ_NAV_FORWARD: explicitly request a forward transition and configuration.
- * Navigation guidance follows the flight plan in both configurations.
- * AUTO is the startup default. Explicit selections persist across blocks
- * until cmq_nav_mode is assigned again. HOME retains quad configuration.
- *
- * Independent flight-plan block examples:
- * @code{.xml}
- * <block name="Quad route">
- *   <set var="cmq_nav_mode" value="CMQ_NAV_ATTITUDE"/>
- *   <go wp="p1" hmode="route"/>
- * </block>
- *
- * <block name="Forward route">
- *   <set var="cmq_nav_mode" value="CMQ_NAV_FORWARD"/>
- *   <go wp="p2" from="p1" hmode="route"/>
- * </block>
- *
- * <block name="Quad hold">
- *   <set var="cmq_nav_mode" value="CMQ_NAV_ATTITUDE"/>
- *   <stay wp="p2"/>
- * </block>
- *
- * <block name="forward_hold">
- *   <set var="cmq_nav_mode" value="CMQ_NAV_FORWARD"/>
- *   <circle wp="p2" radius="nav.radius"/>
- * </block>
- *
- * <block name="Auto route">
- *   <set var="cmq_nav_mode" value="CMQ_NAV_AUTO"/>
- *   <go wp="p2" from="p1" hmode="route"/>
- * </block>
- * @endcode
- *
- * Forward holding uses an orbit around the waypoint; quad holding uses
- * a stationary position setpoint.
+ * NAV : Full INDI
  */
 
 #include "modules/ctrl/control_mixing_quadplane.h"
@@ -121,16 +84,8 @@
 #define TRANSITION_TO_HOVER false
 #define TRANSITION_TO_FORWARD true
 
-#ifndef CMQ_TRANSITION_PITCH
-#define CMQ_TRANSITION_PITCH 0.f  // radians
-#endif
-
 #ifndef CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY
 #define CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY PERIODIC_FREQUENCY
-#endif
-
-#ifndef CMQ_FORWARD_MIN_AIRSPEED
-#define CMQ_FORWARD_MIN_AIRSPEED 15.f
 #endif
 
 // Rotor cut duration (CUTOFF -> 1) once the airspeed threshold is confirmed
@@ -143,42 +98,59 @@
 #define CMQ_TRANSITION_AIRSPEED_CONFIRM_TIME 0.2f
 #endif
 
-// airspeed to enter plane mode [m/s]
-#ifndef CMQ_PLANE_MODE_AIRSPEED
-#define CMQ_PLANE_MODE_AIRSPEED 12.f      
+// quadplane_eff_rotor_authority below -> plane mode   (~12.5 m/s)
+#ifndef CMQ_PLANE_MODE_A_ON
+#define CMQ_PLANE_MODE_A_ON  0.1f     
 #endif
 
-// plane mode exit hysteresis [m/s]
-#ifndef CMQ_PLANE_MODE_HYST
-#define CMQ_PLANE_MODE_HYST 2.f           
+// quadplane_eff_rotor_authority above -> hover mode   (~10.5 m/s)
+#ifndef CMQ_PLANE_MODE_A_OFF
+#define CMQ_PLANE_MODE_A_OFF 0.5f     
 #endif
 
-// abort after FACTOR * CMQ_TRANSITION_TIME without plane mode
-#ifndef CMQ_TRANSITION_ABORT_FACTOR
-#define CMQ_TRANSITION_ABORT_FACTOR 2.f   
-#endif
+_Static_assert(CMQ_PLANE_MODE_A_ON < CMQ_PLANE_MODE_A_OFF, "plane mode hysteresis inverted");
 
 // pusher allowed above this height [m]
 #ifndef CMQ_PUSHER_MIN_HEIGHT
-#define CMQ_PUSHER_MIN_HEIGHT 4.f      
+#define CMQ_PUSHER_MIN_HEIGHT 7.f      
 #endif
 
 // pusher disabled again below MIN_HEIGHT - HYST [m]
 #ifndef CMQ_PUSHER_HEIGHT_HYST
-#define CMQ_PUSHER_HEIGHT_HYST 1.f     
+#define CMQ_PUSHER_HEIGHT_HYST 4.f     
 #endif
 
 // max yaw rate of the heading command while aligning the nose before a transition [deg/s]
 #ifndef CMQ_HEADING_ALIGN_RATE
-#define CMQ_HEADING_ALIGN_RATE 45.f
+#define CMQ_HEADING_ALIGN_RATE 25.f
 #endif
 // hover navigation: turn the nose towards the motion above this nav speed [m/s] (SPEED setpoint mode)
 #ifndef CMQ_HOVER_TRACK_SPEED
-#define CMQ_HOVER_TRACK_SPEED 2.f
+#define CMQ_HOVER_TRACK_SPEED 4.f
 #endif
 // hover navigation: same, above this distance to the carrot [m] (POS setpoint mode, e.g. HOME)
 #ifndef CMQ_HOVER_TRACK_DIST
 #define CMQ_HOVER_TRACK_DIST 5.f
+#endif
+// wing-borne floor on route/circle [m/s]
+#ifndef CMQ_FORWARD_MIN_AIRSPEED
+#define CMQ_FORWARD_MIN_AIRSPEED 14.f   
+#endif
+// [deg] max lead of the heading command over the real heading
+#ifndef CMQ_HEADING_MAX_LEAD
+#define CMQ_HEADING_MAX_LEAD 30.f   
+#endif
+// weathervane: yaw rate per roll angle [1/s] (10 deg of roll -> 10 deg/s of yaw)
+#ifndef CMQ_WVANE_GAIN
+#define CMQ_WVANE_GAIN 1.f
+#endif
+// weathervane: active above this airspeed [m/s]
+#ifndef CMQ_WVANE_MIN_AIRSPEED
+#define CMQ_WVANE_MIN_AIRSPEED 3.f
+#endif
+// weathervane: max yaw rate [deg/s]
+#ifndef CMQ_WVANE_MAX_RATE
+#define CMQ_WVANE_MAX_RATE 20.f
 #endif
 
 
@@ -192,36 +164,10 @@ static const float transition_completion_increment = (1.f - CMQ_TRANSITION_CUTOF
 static const float back_transition_decrement = 1.f / (CMQ_BACK_TRANSITION_TIME * CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY); // Decrement per periodic cycle
 static uint32_t transition_airspeed_cycles = 0;
 static bool transition_airspeed_reached = false; // Latched: the transition must complete
-float   quadplane_heading_sp = 0.f;           // heading setpoint [rad, NED]
 static uint32_t manual_transition_cycles = 0; // Count cycles of a forward transition in manual mode, for timeout detection.
 static bool manual_transition_aborted = false; // Latch to prevent repeated transition attempts when the pilot requests forward flight but the transition fails.
-enum CmqNavMode cmq_nav_mode = CMQ_NAV_AUTO; //Default in AUTO, so attitude or forward depends on NAV_HORIZONTAL_MODE_ROUTE or NAV_HORIZONTAL_MODE_CIRCLE if no flightplan definition.  
-static bool nav_transition_aborted = false; // Latch to prevent repeated transition attempts when the flight plan requests forward flight but the transition fails.
+static bool nav_plane_mode = false;   // NAV: wing-borne state, from rotor authority only
 
-/**
- * Reurn true if the flight plan requests a quadplane forward transition
- * Or if the flight plan is in AUTO and the navigation mode is ROUTE or CIRCLE
- */
-static bool quadplane_nav_forward_requested(void)
-{
-  /* HOME retains quad navigation. */
-  if (autopilot_get_mode() != AP_MODE_NAV) {
-    return false;
-  }
-
-  switch (cmq_nav_mode) {
-    case CMQ_NAV_FORWARD:
-      return true;
-
-    case CMQ_NAV_AUTO:
-      return nav.horizontal_mode == NAV_HORIZONTAL_MODE_ROUTE ||
-             nav.horizontal_mode == NAV_HORIZONTAL_MODE_CIRCLE;
-
-    case CMQ_NAV_ATTITUDE:
-    default:
-      return false;
-  }
-}
 
 /**
  * Return telemetry status of the quadplane transition state
@@ -252,27 +198,18 @@ static void send_transition_cmq_status(struct transport_tx *trans,
   float ratio = 0.f;
 
   const uint8_t mode = autopilot_get_mode();
-
-  const bool manual_forward = mode == AP_MODE_FORWARD;
-  const bool automatic_forward =
-    quadplane_nav_forward_requested();
-
-  if (manual_forward || automatic_forward) {
-    ratio = transition_ratio;
-
-    const bool aborted = manual_forward
-        ? manual_transition_aborted
-        : nav_transition_aborted;
-
-    if (aborted) {
-      status = CMQ_ABORTED;
-    } else if (!autopilot_in_flight() || !autopilot_get_motors_on()) {
-      status = CMQ_WAITING;
-    } else if (transition_ratio >= 1.f && quadplane_eff_forward_mode) {
-      status = CMQ_FORWARD;
-    } else {
-      status = CMQ_TRANSITION;
-    }
+  if (mode == AP_MODE_FORWARD) {
+    ratio  = transition_ratio;
+    status = manual_transition_aborted ? CMQ_ABORTED
+           : (transition_ratio >= 1.f && quadplane_eff_forward_mode) ? CMQ_FORWARD
+           : CMQ_TRANSITION;
+  } else if (mode == AP_MODE_NAV || mode == AP_MODE_HOME) {
+    const float a = quadplane_eff_rotor_authority;
+    ratio = 1.f - a;                                   // 0 hover .. 1 wing-borne
+    if (!autopilot_in_flight() || !autopilot_get_motors_on()) status = CMQ_WAITING;
+    else if (nav_plane_mode)  status = CMQ_FORWARD;
+    else if (a < 1.f)         status = CMQ_TRANSITION;
+    else                      status = CMQ_HOVER;
   }
 
   char *state_text = state_names[status];
@@ -362,7 +299,6 @@ static void quadplane_force_hover(void)
   quadplane_eff_pusher_forced = false;
   quadplane_eff_pusher_forced_cmd = 0.f;
   quadplane_eff_forward_mode = false;
-  quadplane_eff_hover_thrust_factor = 1.f;
 }
 
 void control_mixing_quadplane_init(void)
@@ -583,31 +519,26 @@ void control_mixing_quadplane_nav_enter(void)
   guidance_h_mode_changed(GUIDANCE_H_MODE_NAV);
   guidance_v_mode_changed(GUIDANCE_V_MODE_NAV);
   stabilization_mode_changed(STABILIZATION_MODE_ATTITUDE, STABILIZATION_ATT_SUBMODE_HEADING);
-  nav_transition_aborted = false;
+  force_forward = false; //Set to false this guidance parameter, it will be set to true if the nav is in plane mode and performing a ROUTE or CIRCLE
 }
 
 void control_mixing_quadplane_nav(void)
 {
   const bool in_flight = autopilot_in_flight();
   const bool motors_on = autopilot_get_motors_on();
-  const bool forward_request = quadplane_nav_forward_requested() && in_flight && motors_on;
 
-  /* 1. Setpoint ramp only */
-  if (forward_request) { transition_ratio += transition_increment; }
-  else                 { transition_ratio -= back_transition_decrement; }
-  Bound(transition_ratio, 0.f, 1.f);
+  /* 1. Plane mode from the hover rotor authority only (airspeed driven) */
+  const float a = quadplane_eff_rotor_authority;
+  if (!nav_plane_mode && in_flight && motors_on && a < CMQ_PLANE_MODE_A_ON) {
+    nav_plane_mode = true;
+  }
+  if (nav_plane_mode && (a > CMQ_PLANE_MODE_A_OFF || !in_flight)) {
+    nav_plane_mode = false;
+  }
+  const bool plane_mode = nav_plane_mode;
 
-  /* 2. Plane mode by airspeed, with hysteresis */
-  static bool plane_mode = false;
-  const float as = stateIsAirspeedValid() ? stateGetAirspeed_f() : 0.f;
-  if (!plane_mode && forward_request && as > CMQ_PLANE_MODE_AIRSPEED) plane_mode = true;
-  if ( plane_mode && (as < CMQ_PLANE_MODE_AIRSPEED - CMQ_PLANE_MODE_HYST || !in_flight)) plane_mode = false;
-  /* Point the nose along the motion while the rotors still control yaw (not in plane mode):
-   *  - forward requested: along the route, before and during the transition;
-   *  - hover navigation (stay, go, HOME): along the nav velocity as soon as the translation
-   *    is significant, so that the aircraft never flies sideways or tail first
-   *    (fin weathervaning overpowers the rotor yaw authority, and the pusher only pushes forward).
-   * The heading command is rate limited. When the translation stops, the heading is kept. */
+  /* 2. Nose along the motion while the rotors control yaw (hover / hybrid band) */
+  /*
   static float heading_cmd = 0.f;
   static bool heading_cmd_init = false;
   bool align_nose = false;
@@ -617,35 +548,61 @@ void control_mixing_quadplane_nav(void)
     if (nav.setpoint_mode == NAV_SETPOINT_MODE_SPEED) {
       east = nav.speed.x;
       north = nav.speed.y;
-      align_nose = forward_request ||
-                   (east * east + north * north > CMQ_HOVER_TRACK_SPEED * CMQ_HOVER_TRACK_SPEED);
+      align_nose = (east * east + north * north > CMQ_HOVER_TRACK_SPEED * CMQ_HOVER_TRACK_SPEED);
     } else {
       east = nav.carrot.x - pos->x;
       north = nav.carrot.y - pos->y;
-      align_nose = forward_request ||
-                   (east * east + north * north > CMQ_HOVER_TRACK_DIST * CMQ_HOVER_TRACK_DIST);
+      align_nose = (east * east + north * north > CMQ_HOVER_TRACK_DIST * CMQ_HOVER_TRACK_DIST);
     }
     if (east * east + north * north < 1.e-2f) {
-      align_nose = false;   /* no meaningful direction */
+      align_nose = false;
     }
-  }
+  }*/
+
+  /*
   if (align_nose) {
     if (!heading_cmd_init) {
       heading_cmd = stateGetNedToBodyEulers_f()->psi;
       heading_cmd_init = true;
     }
+    // Limit the rotation speed when aligning && you are not in plane mode. You limit your rotation rate to CMQ_HEADING_ALIGN_RATE
     float err = atan2f(east, north) - heading_cmd;
     FLOAT_ANGLE_NORMALIZE(err);
     const float step = RadOfDeg(CMQ_HEADING_ALIGN_RATE) / (float)CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY;
     heading_cmd += Clip(err, -step, step);
+    // Limit the lead angle to avoid excessive yaw ask 
+    const float psi_now = stateGetNedToBodyEulers_f()->psi;
+    float lead = heading_cmd - psi_now;
+    FLOAT_ANGLE_NORMALIZE(lead);
+    BoundAbs(lead, RadOfDeg(CMQ_HEADING_MAX_LEAD));
+    heading_cmd = psi_now + lead;
     FLOAT_ANGLE_NORMALIZE(heading_cmd);
+
     nav.heading = heading_cmd;
     guidance_h_set_heading(nav.heading);
-  } else {
-    heading_cmd_init = false;   /* nav.heading keeps its last value */
-  }
+  } else { 
+     // Holding a point in hover (small nav speed), or plane mode (heading follows the turn) 
+    heading_cmd_init = false;
+    if (!plane_mode && in_flight) {
+      const struct FloatEulers *e = stateGetNedToBodyEulers_f();
+      const float as = stateIsAirspeedValid() ? stateGetAirspeed_f() : 0.f;
+       //Weathervane: the aircraft leans into the wind -> yaw towards the lean side 
+      if (as > CMQ_WVANE_MIN_AIRSPEED) {
+        float rate = CMQ_WVANE_GAIN * e->phi;
+        BoundAbs(rate, RadOfDeg(CMQ_WVANE_MAX_RATE));
+        nav.heading += rate / (float)CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY;
+      }
+       //Anti-windup: the heading command stays within CMQ_HEADING_MAX_LEAD of psi 
+      float lead = nav.heading - e->psi;
+      FLOAT_ANGLE_NORMALIZE(lead);
+      BoundAbs(lead, RadOfDeg(CMQ_HEADING_MAX_LEAD));
+      nav.heading = e->psi + lead;
+      FLOAT_ANGLE_NORMALIZE(nav.heading);
+      guidance_h_set_heading(nav.heading);
+    }
+  }*/
 
-  /* 3. [2c] Leaving plane mode: hold the current heading (no yaw jump) */
+  /* 3. Leaving plane mode: hold the current heading (no yaw jump) */
   static bool prev_plane_mode = false;
   if (prev_plane_mode && !plane_mode) {
     nav.heading = stateGetNedToBodyEulers_f()->psi;
@@ -653,41 +610,34 @@ void control_mixing_quadplane_nav(void)
   }
   prev_plane_mode = plane_mode;
 
-  /* 4. [2d] Abort: forward requested but plane mode not reached in time */
-  static uint32_t fwd_wait_cycles = 0;
-  const uint32_t fwd_timeout_cycles = (uint32_t)(CMQ_TRANSITION_ABORT_FACTOR * CMQ_TRANSITION_TIME
-                                      * (float)CONTROL_MIXING_QUADPLANE_PERIODIC_FREQUENCY);
-  if (forward_request && !plane_mode) {
-    if (fwd_wait_cycles <= fwd_timeout_cycles) { fwd_wait_cycles++; }
-  } else {
-    fwd_wait_cycles = 0;
-  }
-  const bool fwd_aborted = fwd_wait_cycles > fwd_timeout_cycles;
-
-  /* 5. Actuator gates: ground only */
+  /* 4. Actuator gates: ground only */
   quadplane_pusher_gate(in_flight && motors_on);
   quadplane_eff_disable_elevons = !in_flight;
   quadplane_eff_pusher_forced   = false;
   quadplane_eff_forward_mode    = false;   /* no longer used by NAV */
 
-  /* 6. Guidance speed envelope */
-  const float min_as = (forward_request && !fwd_aborted)
-                       ? transition_ratio * CMQ_FORWARD_MIN_AIRSPEED : -10.f;
-  guidance_set_min_max_airspeed(min_as, gih_params.max_airspeed);
+  /* 5. Stay in plane mode once you are in it and performing ROUTE or CIRCLE with force_forward guidance parameter */
+  const bool keep_flying = plane_mode &&
+      (nav.horizontal_mode == NAV_HORIZONTAL_MODE_ROUTE ||
+       nav.horizontal_mode == NAV_HORIZONTAL_MODE_CIRCLE);
+  force_forward = keep_flying;
+  /*guidance_set_min_max_airspeed(keep_flying ? CMQ_FORWARD_MIN_AIRSPEED : -10.f,
+                                gih_params.max_airspeed);
   if (nav.fp_max_speed <= 0.f) {
     guidance_h_SetMaxSpeed(GUIDANCE_H_REF_MAX_SPEED
-        + transition_ratio * (gih_params.max_airspeed - GUIDANCE_H_REF_MAX_SPEED));
-  }
+        + (1.f - a) * (gih_params.max_airspeed - GUIDANCE_H_REF_MAX_SPEED));
+  }*/
 
-  /* 7. Heading: rotors control yaw in hover, coordinated turn in plane mode */
-  take_heading_control         = !plane_mode;
+
+  /* 6. Heading: rotors control yaw in hover, coordinated turn in plane mode */
+  //take_heading_control         = !plane_mode;
   guidance_indi_heading_follow = plane_mode;
 
-  /* 8. [2b] Horizontal reference: off in plane mode (turns need V^2/R),
+  /* 7. Horizontal reference: off in plane mode (turns need V^2/R),
    *    on in hover, restarted from the current state on re-entry */
   static bool ref_was_off = false;
-  const bool ref_off = plane_mode &&
-                       (forward_request || nav.setpoint_mode != NAV_SETPOINT_MODE_POS);
+  const bool ref_off = plane_mode;
+
   if (ref_off) {
     guidance_h_SetUseRef(false);
     ref_was_off = true;
@@ -705,11 +655,11 @@ void control_mixing_quadplane_nav(void)
   }
 
 
-  /* 9. Guidance, then direct incremental thrust to the inner INDI */
+  /* 8. Guidance, then direct incremental thrust to the inner INDI */
   struct ThrustSetpoint nav_thrust = guidance_v_run(in_flight);
   struct StabilizationSetpoint attitude_sp = guidance_h_from_nav(in_flight);
 
-  /* [2a] The hybrid guidance computes thrust_sp inside guidance_h_from_nav():
+  /* 9. The hybrid guidance computes thrust_sp inside guidance_h_from_nav():
    *      read it again so that thrust and attitude come from the same cycle */
   if (nav.horizontal_mode != NAV_HORIZONTAL_MODE_NONE &&
       nav.horizontal_mode != NAV_HORIZONTAL_MODE_ATTITUDE) {

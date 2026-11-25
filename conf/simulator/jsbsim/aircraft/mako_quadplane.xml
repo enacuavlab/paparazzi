@@ -495,6 +495,7 @@
           <value> 0.18 </value>
         </product>
       </function>
+      
     </axis>
     <axis name="SIDE">
       <function name="aero/force/Side_beta">
@@ -528,7 +529,7 @@
           <property>metrics/bw-ft</property>
           <property>aero/bi2vel</property>
           <property>velocities/p-aero-rad_sec</property>
-          <value>-0.4</value>
+          <value>-2.563</value>
         </product>
       </function>
       <function name="aero/moment/Roll_yaw">
@@ -550,7 +551,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/bw-ft</property>
           <property>fcs/aileron_lag</property>
-          <value>0.007475</value>
+          <value>0.04789</value>
         </product>
       </function>
     </axis>
@@ -567,10 +568,10 @@
             <independentVar lookup="row">aero/alpha-rad</independentVar>
             <tableData>
               -1.57  0.
-              -0.60 0.123
-              0.00  0.
-              0.60  -0.123
-              1.57  0.
+              -0.60  0.789
+               0.00  0.
+               0.60 -0.789
+               1.57  0.
             </tableData>
           </table>
         </product>
@@ -583,7 +584,7 @@
           <property>metrics/Sw-sqft</property>
           <property>metrics/cbarw-ft</property>
           <property>fcs/elevator_lag</property>
-          <value>0.04147</value>
+          <value>0.2660</value>
         </product>
       </function>
       <function name="aero/moment/Pitch_damp">
@@ -594,7 +595,7 @@
           <property>metrics/cbarw-ft</property>
           <property>aero/ci2vel</property>
           <property>velocities/q-aero-rad_sec</property>
-          <value>-12</value>
+          <value>-76.98</value>
         </product>
       </function>
     </axis>
@@ -608,7 +609,7 @@
           <sin>
             <property>aero/beta-rad</property>
           </sin>
-          <value>0.12</value>
+          <value>0.769</value>
         </product>
       </function>
       <function name="aero/moment/Yaw_damp">
@@ -619,7 +620,7 @@
           <property>metrics/bw-ft</property>
           <property>aero/bi2vel</property>
           <property>velocities/r-aero-rad_sec</property>
-          <value>-0.15</value>
+          <value>-0.961</value>
         </product>
       </function>
       <function name="aero/moment/Yaw_aileron">

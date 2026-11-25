@@ -180,7 +180,7 @@ void guidance_indi_calcg_wing(float Gmat[GUIDANCE_INDI_HYBRID_V][GUIDANCE_INDI_H
   Gmat[0][3] =  ctheta;
   Gmat[1][3] =  sphi*stheta;
   Gmat[2][3] = -cphi*stheta;
-  /* Pusher lift only counted when wing-borne: removes the hover null-space drift */
+    /* Pusher vertical-thrust faded in hover: avoids WLS pitch/pusher drift with the strange equilibrium */
   Gmat[2][3] *= (1.f - quadplane_eff_rotor_authority);
   // Make this term zero to prevent switching 'exploits'
   // Gmat[2][3] = 0;
@@ -283,6 +283,13 @@ void WEAK guidance_indi_hybrid_set_wls_settings(float body_v[3], float roll_angl
 bool autopilot_in_flight_end_detection(bool motors_on)
 {
   static uint32_t landed_counter = 0;
+  //We want to avoid a landing detection in flight 
+  const bool descending = (nav.vertical_mode == NAV_VERTICAL_MODE_CLIMB) && (nav.climb < -0.1f);
+  const bool rotor_borne = quadplane_eff_rotor_authority > 0.9f;
+  if (!descending && !rotor_borne) {   /* wing-borne hover in wind: never "landed" */
+    landed_counter = 0;
+    return false;
+  }  
 
   if (!motors_on) {
     landed_counter = 0;

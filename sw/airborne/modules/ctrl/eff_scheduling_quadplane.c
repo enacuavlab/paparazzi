@@ -222,7 +222,6 @@ float quadplane_eff_elevon_rate = VEHICLE_ELEVON_RATE;                 // Elevon
 float quadplane_eff_periodic_freq = EFF_SCHEDULING_QUADPLANE_PERIODIC_FREQ;   // Module Frequency [Hz]
 struct quadplane_eff_sched_var_t quadplane_eff_sched_v;
 struct MedianFilterInt airspeed_quadplane_sched_fltr;
-float quadplane_eff_hover_thrust_factor = 1.f; // 1.f: full hover thrust authority; 0.f: hover thrust disabled
 float quadplane_eff_rotor_authority = 1.f; //Hover rotor authority: 1 = full (hover), 0 = rotors may stop (wing-borne)
 
 static inline void quadplane_update_cmd_cache(void);
@@ -339,7 +338,9 @@ static inline void quadplane_update_airspeed_cache(void)
 static inline void quadplane_update_rotor_authority(void)
 {
   float a = 1.f;
-  if (stateIsAirspeedValid()) {
+  /* Pusher blocked (ground, take-off and landing below CMQ_PUSHER_MIN_HEIGHT):
+   * pure quad, the wind must not remove rotor authority */  
+  if (stateIsAirspeedValid() && !quadplane_eff_disable_pusher) {
     const float v = quadplane_eff_sched_v.airspeed;
     a = (CMQ_ROTOR_OFF_AIRSPEED - v) / (CMQ_ROTOR_OFF_AIRSPEED - CMQ_ROTOR_FULL_AIRSPEED);
     Bound(a, 0.f, 1.f);

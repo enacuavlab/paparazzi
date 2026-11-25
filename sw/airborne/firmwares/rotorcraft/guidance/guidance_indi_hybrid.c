@@ -520,9 +520,9 @@ struct StabilizationSetpoint guidance_indi_run(struct FloatVect3 *accel_sp, floa
 #endif
 
   //Heading control is taken by the nav, so we don't need to compute a feedforward turn rate
-  if (take_heading_control) {
+  /*if (take_heading_control) {
     omega = 0.f;
-  }
+  }*/
 
   // We can pre-compute the required rates to achieve this turn rate:
   // NOTE: there *should* not be any problems possible with Euler singularities here
@@ -684,6 +684,13 @@ static struct FloatVect3 compute_accel_from_speed_sp(struct FloatVect3 *speed_sp
     // In turn acceleration proportional to heading diff
     sp_accel_b.y = atan2f(desired_airspeed.y, desired_airspeed.x) - psi;
     FLOAT_ANGLE_NORMALIZE(sp_accel_b.y);
+    /* Target behind: keep the turn direction instead of chattering at ±180° */
+    static float turn_sign = 1.f;
+    if (fabsf(sp_accel_b.y) > RadOfDeg(150.f)) {
+      sp_accel_b.y = turn_sign * fabsf(sp_accel_b.y);
+    } else {
+      turn_sign = (sp_accel_b.y >= 0.f) ? 1.f : -1.f;
+    }
     sp_accel_b.y *= gih_params.heading_bank_gain;
 
     BoundAbs(sp_accel_b.y, GUIDANCE_INDI_MAX_LAT_ACCEL);

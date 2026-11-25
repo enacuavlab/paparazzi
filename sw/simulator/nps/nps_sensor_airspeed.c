@@ -68,7 +68,12 @@ void nps_sensor_airspeed_run_step(struct NpsSensorAirspeed *airspeed, double tim
   }
 
   /* equivalent airspeed + sensor offset */
+#if NPS_AIRSPEED_PITOT_MODEL
+  /* Pitot: only the flow along the body x axis is seen (~0 when the air comes from behind) */
+  airspeed->value = Max(fdm.airspeed * cos(fdm.aoa) * cos(fdm.sideslip), 0.) + airspeed->offset;
+#else
   airspeed->value = fdm.airspeed + airspeed->offset;
+#endif
   /* add noise with std dev meters/second */
   airspeed->value += get_gaussian_noise() * airspeed->noise_std_dev;
   /* can't be negative, min is zero */

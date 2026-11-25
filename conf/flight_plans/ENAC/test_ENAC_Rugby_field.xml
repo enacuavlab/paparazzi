@@ -10,7 +10,7 @@
   <waypoints>
     <waypoint name="HOME" x="1.109" y="-5.363"/>
     <waypoint name="CLIMB" x="-1.249" y="-6.944"/>
-    <waypoint name="STDBY" x="-3.092" y="-4.527"/>
+    <waypoint name="STDBY" x="-3.092" y="-4.527" height="12."/>
     <waypoint name="p1" x="-24.246" y="-4.333" height="12."/>
     <waypoint name="p2" x="7.898" y="19.241" height="12."/>
     <waypoint name="p3" x="50.803" y="-39.434" height="12."/>
