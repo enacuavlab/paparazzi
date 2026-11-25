@@ -603,12 +603,12 @@ void control_mixing_quadplane_nav(void)
   }*/
 
   /* 3. Leaving plane mode: hold the current heading (no yaw jump) */
-  static bool prev_plane_mode = false;
+  /*static bool prev_plane_mode = false;
   if (prev_plane_mode && !plane_mode) {
     nav.heading = stateGetNedToBodyEulers_f()->psi;
     guidance_h_set_heading(nav.heading);
   }
-  prev_plane_mode = plane_mode;
+  prev_plane_mode = plane_mode;*/
 
   /* 4. Actuator gates: ground only */
   quadplane_pusher_gate(in_flight && motors_on);
