@@ -121,7 +121,7 @@
 #endif
 
 #ifndef SWARM_FISH_D_ATT
-#define SWARM_FISH_D_ATT 5.f
+#define SWARM_FISH_D_ATT 6.f
 #endif
 
 #ifndef SWARM_FISH_A_ATT
@@ -129,11 +129,11 @@
 #endif
 
 #ifndef SWARM_FISH_Y_ALI
-#define SWARM_FISH_Y_ALI 0.5f
+#define SWARM_FISH_Y_ALI 0.8f
 #endif
 
 #ifndef SWARM_FISH_L_ALI
-#define SWARM_FISH_L_ALI 6.f
+#define SWARM_FISH_L_ALI 8.f
 #endif
 
 #ifndef SWARM_FISH_A_ALI
@@ -141,11 +141,11 @@
 #endif
 
 #ifndef SWARM_FISH_Y_V
-#define SWARM_FISH_Y_V 0.5f
+#define SWARM_FISH_Y_V 0.8f
 #endif
 
 #ifndef SWARM_FISH_L_V
-#define SWARM_FISH_L_V 6.f
+#define SWARM_FISH_L_V 8.f
 #endif
 
 #ifndef SWARM_FISH_A_V
@@ -153,15 +153,15 @@
 #endif
 
 #ifndef SWARM_FISH_Y_Z
-#define SWARM_FISH_Y_Z 0.3f
+#define SWARM_FISH_Y_Z 1.0f
 #endif
 
 #ifndef SWARM_FISH_L_Z
-#define SWARM_FISH_L_Z 6.f
+#define SWARM_FISH_L_Z 8.f
 #endif
 
 #ifndef SWARM_FISH_D_Z
-#define SWARM_FISH_D_Z 4.0f
+#define SWARM_FISH_D_Z 5.0f
 #endif
 
 #ifndef SWARM_FISH_A_Z
@@ -169,11 +169,11 @@
 #endif
 
 #ifndef SWARM_FISH_Y_NAV
-#define SWARM_FISH_Y_NAV 0.3f
+#define SWARM_FISH_Y_NAV 1.0f
 #endif
 
 #ifndef SWARM_FISH_Y_Z_NAV
-#define SWARM_FISH_Y_Z_NAV 0.5f
+#define SWARM_FISH_Y_Z_NAV 0.8f
 #endif
 
 #ifndef SWARM_FISH_L_Z_NAV
